@@ -1,0 +1,24 @@
+syntax: glob
+
+.externals
+dev/target
+dev/target_*
+dev/asio
+dev/asio_mxxru
+dev/so_5
+dev/timertt
+dev/nodejs
+dev/fmt
+dev/fmt_mxxru
+dev/rapidjson_mxxru
+dev/rapidjson
+dev/json_dto
+dev/args
+dev/catch
+o/*
+./wiki
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.log
+dev/local-build.rb
