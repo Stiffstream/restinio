@@ -58,12 +58,12 @@ For building samples, benchmarks and tests:
 ### Cloning of hg repository
 
 ```
-hg clone INSERT_REPO_LINK
+hg clone https://bitbucket.org/sobjectizerteam/restinio-0.1
 ```
 
 And then:
 ```
-cd INSERT_SRC_ROOT
+cd restinio-0.1
 mxxruexternals
 ```
 to download and extract *RESTinio*'s dependencies.
@@ -79,11 +79,17 @@ While *RESTinio* is header-only library, samples, tests and benches require a bu
 
 Compiling with Mxx_ru:
 ```
-hg clone INSERT_REPO_LINK
-cd INSERT_SRC_ROOT
+hg clone https://bitbucket.org/sobjectizerteam/restinio-0.1
+cd restinio-0.1
 mxxruexternals
 cd dev
 ruby build.rb
+```
+
+For release or debug builds use the following commands:
+```
+ruby build.rb --mxx-cpp-release
+ruby build.rb --mxx-cpp-debug
 ```
 
 *NOTE.* It might be necessary to set up `MXX_RU_CPP_TOOLSET` environment variable,
