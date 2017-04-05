@@ -177,7 +177,7 @@ class http_server_t
 						acceptor->open();
 						ok_cb();
 					}
-					catch( const std::exception & ex )
+					catch( const std::exception & )
 					{
 						err_cb( std::current_exception() );
 					}
@@ -239,7 +239,7 @@ class http_server_t
 						ctx->close();
 						ok_cb();
 					}
-					catch( const std::exception & ex )
+					catch( const std::exception & )
 					{
 						err_cb( std::current_exception() );
 					}

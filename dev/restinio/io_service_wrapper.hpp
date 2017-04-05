@@ -90,7 +90,7 @@ class child_io_service_wrapper_t
 {
 	public:
 		child_io_service_wrapper_t(
-			unsigned int thread_pool_size )
+			std::size_t thread_pool_size )
 			:	m_iosvc{ thread_pool_size }
 		{}
 
@@ -127,7 +127,7 @@ class child_io_service_wrapper_t
 	A separate ioservice object is created and runs on a thread pool.
 */
 inline io_service_wrapper_unique_ptr_t
-create_child_io_service( unsigned int thread_pool_size )
+create_child_io_service( std::size_t thread_pool_size )
 {
 	return std::make_unique< child_io_service_wrapper_t >( thread_pool_size );
 }
