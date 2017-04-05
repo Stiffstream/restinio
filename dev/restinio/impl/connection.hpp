@@ -580,7 +580,7 @@ class connection_t final
 		void
 		after_write(
 			const std::error_code & ec,
-			std::size_t written,
+			std::size_t /*written*/,
 			bool should_keep_alive )
 		{
 			if( ec )
