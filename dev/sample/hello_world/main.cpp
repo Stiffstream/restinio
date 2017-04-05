@@ -67,7 +67,7 @@ R"-(<html>
 		};
 }
 
-int main(int argc, char const *argv[] )
+int main()
 {
 	using namespace std::chrono;
 
