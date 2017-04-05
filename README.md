@@ -55,11 +55,14 @@ For building samples, benchmarks and tests:
 
 ## Obtaining
 
-There are two ways of obtainig *RESTinio*:
+There are two ways of obtainig *RESTinio*.
 
-* getting from [repository](https://bitbucket.org/sobjectizerteam/restinio-0.1);
-* getting [archive](https://bitbucket.org/sobjectizerteam/restinio-0.1/downloads/restinio-0.1.0-full.tar.bz2).
-
+* Getting from
+[repository](https://bitbucket.org/sobjectizerteam/restinio-0.1).
+In this case external must be obtained with Mxx_ru externals tool.
+* Getting
+[archive](https://bitbucket.org/sobjectizerteam/restinio-0.1/downloads/restinio-0.1.0-full.tar.bz2).
+Archive includes sorce code for all dependencies.
 
 ### Cloning of hg repository
 
