@@ -55,6 +55,12 @@ For building samples, benchmarks and tests:
 
 ## Obtaining
 
+There are two ways of obtainig *RESTinio*:
+
+* getting from [repository](https://bitbucket.org/sobjectizerteam/restinio-0.1);
+* getting [archive](https://bitbucket.org/sobjectizerteam/restinio-0.1/downloads/restinio-0.1.0-full.tar.bz2).
+
+
 ### Cloning of hg repository
 
 ```
@@ -73,6 +79,14 @@ to download and extract *RESTinio*'s dependencies.
 See MxxRu::externals recipies for *RESTinio*
 [here](./doc/MxxRu_externals_recipe.md).
 
+### Getting archive
+
+```
+wget https://bitbucket.org/sobjectizerteam/restinio-0.1/downloads/restinio-0.1.0-full.tar.bz2
+tar xjvf restinio-0.1.0-full.tar.bz2
+cd restinio-0.1.0-full
+```
+
 ## Build
 
 ### CMake
@@ -84,6 +98,18 @@ hg clone https://bitbucket.org/sobjectizerteam/restinio-0.1
 cd restinio-0.1
 mxxruexternals
 cd dev
+mkdir cmake_build
+cd cmake_build
+cmake -DCMAKE_INSTALL_PREFIX=target -DCMAKE_BUILD_TYPE=Release ..
+make
+make install
+```
+
+Or, if getting sources from archive:
+```
+wget https://bitbucket.org/sobjectizerteam/restinio-0.1/downloads/restinio-0.1.0-full.tar.bz2
+tar xjvf restinio-0.1.0-full.tar.bz2
+cd restinio-0.1.0-full/dev
 mkdir cmake_build
 cd cmake_build
 cmake -DCMAKE_INSTALL_PREFIX=target -DCMAKE_BUILD_TYPE=Release ..
