@@ -15,6 +15,10 @@
 
 #include "../common/pub.hpp"
 
+#if defined(__GNUG__)
+#pragma GCC diagnostic ignored "-Wparentheses"
+#endif
+
 const std::string RESP_BODY{ "-=UNIT-TEST=-" };
 
 TEST_CASE( "Throw exception" , "[exception]" )
@@ -28,7 +32,7 @@ TEST_CASE( "Throw exception" , "[exception]" )
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.read_next_http_message_timelimit( std::chrono::milliseconds( 5 ) )
-				.request_handler( []( auto req, auto conn ){
+				.request_handler( []( auto /*req*/, auto /*conn*/ ){
 					throw std::runtime_error( "unit test exception" );
 					return restinio::request_accepted();
 				} );
@@ -37,7 +41,7 @@ TEST_CASE( "Throw exception" , "[exception]" )
 
 	http_server.open();
 
-	do_with_socket( [ & ]( auto & socket, auto & io_service ){
+	do_with_socket( [ & ]( auto & socket, auto & /*io_service*/ ){
 
 		const std::string request{
 			"GET / HTTP/1.1\r\n"

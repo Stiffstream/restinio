@@ -15,6 +15,10 @@
 
 #include "../common/pub.hpp"
 
+#if defined(__GNUG__)
+#pragma GCC diagnostic ignored "-Wparentheses"
+#endif
+
 const std::string RESP_BODY{ "-=UNIT-TEST=-" };
 
 TEST_CASE( "Slow transmit" , "[slow_trunsmit]" )
