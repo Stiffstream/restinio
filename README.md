@@ -110,14 +110,14 @@ ruby build.rb --mxx-cpp-debug
 ```
 
 *NOTE.* It might be necessary to set up `MXX_RU_CPP_TOOLSET` environment variable,
-see Mxxx_ru documentation for further details.
+see Mxx_ru documentation for further details.
 
 ### Dependencies default settings
 
 External libraries used by *RESTinio* have the following default settings:
 
 * A standalone version of *asio* is used and a chrono library is used,
-so `ASIO_STANDALONE` and 'ASIO_HAS_STD_CHRONO' defines are necessary;
+so `ASIO_STANDALONE` and `ASIO_HAS_STD_CHRONO` defines are necessary;
 * a less strict version of *nodejs/http-parser* is used, so the following
 definition `HTTP_PARSER_STRICT=0` is used;
 * *fmtlib* is used as a header-only library, hence a `FMT_HEADER_ONLY`
