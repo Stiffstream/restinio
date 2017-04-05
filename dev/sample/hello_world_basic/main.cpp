@@ -23,8 +23,7 @@ auto request_handler()
 		};
 }
 
-int
-main(int argc, char const *argv[] )
+int main()
 {
 	try
 	{

@@ -40,7 +40,7 @@ do_request(
 {
 	std::string result;
 	do_with_socket(
-		[ & ]( auto & socket, auto & io_service ){
+		[ & ]( auto & socket, auto & /*io_service*/ ){
 
 			asio::streambuf b;
 			std::ostream req_stream(&b);

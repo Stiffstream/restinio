@@ -17,7 +17,7 @@ restinio_url_cb( http_parser * parser, const char * at, size_t length )
 
 		ctx->m_header.append_request_target( at, length );
 	}
-	catch( const std::exception & ex )
+	catch( const std::exception & )
 	{
 		return 1;
 	}
@@ -44,7 +44,7 @@ restinio_header_field_cb( http_parser * parser, const char *at, size_t length )
 			ctx->m_current_field_name.append( at, length );
 		}
 	}
-	catch( const std::exception & ex )
+	catch( const std::exception & )
 	{
 		return 1;
 	}
@@ -73,7 +73,7 @@ restinio_header_value_cb( http_parser * parser, const char *at, size_t length )
 			ctx->m_header.append_last_field( std::string{ at, length } );
 		}
 	}
-	catch( const std::exception & ex )
+	catch( const std::exception & )
 	{
 		return 1;
 	}
@@ -95,7 +95,7 @@ restinio_headers_complete_cb( http_parser * parser )
 
 			ctx->m_body.reserve( parser->content_length );
 		}
-		catch( const std::exception & ex )
+		catch( const std::exception & )
 		{
 			return 1;
 		}
@@ -116,7 +116,7 @@ restinio_body_cb( http_parser * parser, const char *at, size_t length )
 
 		ctx->m_body.append( at, length );
 	}
-	catch( const std::exception & ex )
+	catch( const std::exception & )
 	{
 		return 1;
 	}

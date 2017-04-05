@@ -14,7 +14,7 @@
 using namespace restinio;
 
 #define RESTINIO_REQHANDLER_UTEST_INTERNALS \
-auto operator () (	http_request_handle_t req, connection_handle_t conn ) const \
+auto operator () (http_request_handle_t, connection_handle_t) const \
 {	return restinio::request_rejected(); }
 
 TEST_CASE( "Request handler" , "[settings][request_handler]" )

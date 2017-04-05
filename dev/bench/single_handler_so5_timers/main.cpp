@@ -160,12 +160,8 @@ create_main_coop(
 			restinio::so5::so_timer_factory_t,
 			restinio::null_logger_t,
 			req_handler_t >;
-	using http_server_t =
-		restinio::http_server_t< traits_t >;
-	using server_settings_t =
-		restinio::server_settings_t< traits_t >;
 
-	server_settings_t settings{};
+	restinio::server_settings_t< traits_t > settings{};
 
 	{
 		std::ifstream fin{ args.m_config_file, std::ios::binary };

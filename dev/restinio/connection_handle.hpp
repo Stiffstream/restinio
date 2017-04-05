@@ -26,6 +26,7 @@ class connection_base_t
 		connection_base_t(std::uint64_t id )
 			:	m_connection_id{ id }
 		{}
+		virtual ~connection_base_t() = default;
 
 		//! Get connection id.
 		std::uint64_t

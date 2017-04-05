@@ -200,18 +200,16 @@ create_header_string(
 	constexpr const char * header_part1 = "HTTP/";
 	result.append( header_part1, ct_cstr_len( header_part1 ) );
 
-	result += '0' + h.http_major();
+	result += static_cast<char>('0' + h.http_major());
 	result += '.';
-	result += '0' + h.http_minor();
+	result += static_cast<char>('0' + h.http_minor());
 	result += ' ';
 
 	auto status_code = h.status_code();
 
-//FIXME: я думаю, что для status_code нужно делать какую-то проверку того,
-//что status_code находится в диапазоне 100..999.
-//Возможно, это нужно делать на уровне http_response_header_t (например,
-//в соответствующем setter-е). Или за счет введения типа
-//bounded_value_t<100, 999>.
+//FIXME: there should be a check for status_code in range 100..999.
+//May be a special type like bounded_value_t<100,999> must be used in
+//http_response_header_t.
 	result += '0' + ( status_code / 100 ) % 10;
 	result += '0' + ( status_code / 10 ) % 10;
 	result += '0' + ( status_code ) % 10;
@@ -242,7 +240,7 @@ create_header_string(
 				"Content-Length: %llu\r\n",
 				static_cast< unsigned long long >( h.content_length() ) );
 
-		result.append( buf.data(), n );
+		result.append( buf.data(), static_cast<std::string::size_type>(n) );
 	}
 
 
@@ -580,7 +578,7 @@ class connection_t final
 		void
 		after_write(
 			const std::error_code & ec,
-			std::size_t written,
+			std::size_t /*written*/,
 			bool should_keep_alive )
 		{
 			if( ec )
@@ -757,7 +755,7 @@ class connection_t final
 				return fmt::format(
 						"[connection:{}] request received: {} {}",
 						connection_id(),
-						http_method_str( (http_method) m_parser.method ),
+						http_method_str( static_cast<http_method>(m_parser.method) ),
 						m_parser_ctx.m_header.request_target() );
 			} );
 

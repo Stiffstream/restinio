@@ -1,0 +1,42 @@
+MxxRu::Cpp::composite_target do
+  global_obj_placement MxxRu::Cpp::PrjAwareRuntimeSubdirObjPlacement.new(
+    'target', MxxRu::Cpp::PrjAwareRuntimeSubdirObjPlacement::USE_COMPILER_ID )
+  default_runtime_mode( MxxRu::Cpp::RUNTIME_RELEASE )
+  MxxRu::enable_show_brief
+
+  if 'vc' == toolset.name
+    global_compiler_option '/W3'
+=begin
+    global_compiler_option '/Zi'
+    global_linker_option '/DEBUG'
+    global_linker_option '/Profile'
+=end
+  end
+
+  if 'gcc' == toolset.name
+    global_compiler_option '-Wextra'
+    global_compiler_option '-Wall'
+    global_linker_option "-Wl,-rpath='$ORIGIN'"
+  end
+
+  if 'clang' == toolset.name
+    global_linker_option "-Wl,-rpath='$ORIGIN'"
+
+    global_compiler_option '-Weverything'
+    global_compiler_option '-Wno-c++98-compat'
+    global_compiler_option '-Wno-c++98-compat-pedantic'
+    global_compiler_option '-Wno-padded'
+    global_compiler_option '-Wno-missing-noreturn'
+    global_compiler_option '-Wno-documentation-unknown-command'
+    global_compiler_option '-Wno-documentation-deprecated-sync'
+    global_compiler_option '-Wno-documentation'
+    global_compiler_option '-Wno-weak-vtables'
+    global_compiler_option '-Wno-missing-prototypes'
+    global_compiler_option '-Wno-missing-variable-declarations'
+    global_compiler_option '-Wno-exit-time-destructors'
+    global_compiler_option '-Wno-global-constructors'
+  end
+
+end
+
+# vim:ts=2:sw=2:expandtab

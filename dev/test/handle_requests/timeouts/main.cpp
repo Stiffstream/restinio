@@ -15,6 +15,10 @@
 
 #include "../common/pub.hpp"
 
+#if defined(__GNUG__)
+#pragma GCC diagnostic ignored "-Wparentheses"
+#endif
+
 const std::string RESP_BODY{ "-=UNIT-TEST=-" };
 
 TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
@@ -50,7 +54,7 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 
 	SECTION( "write nothing" )
 	{
-		do_with_socket( [ & ]( auto & socket, auto & io_service ){
+		do_with_socket( [ & ]( auto & socket, auto & /*io_service*/ ){
 			std::this_thread::sleep_for( std::chrono::milliseconds( 6 ) );
 
 			std::array< char, 64 > data;
@@ -67,7 +71,7 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 
 	SECTION( "write a little" )
 	{
-		do_with_socket( [ & ]( auto & socket, auto & io_service ){
+		do_with_socket( [ & ]( auto & socket, auto & /*io_service*/ ){
 
 			const std::string a_part_of_request{ "GET / HTT" };
 
@@ -90,7 +94,7 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 
 	SECTION( "write almost all" )
 	{
-		do_with_socket( [ & ]( auto & socket, auto & io_service ){
+		do_with_socket( [ & ]( auto & socket, auto & /*io_service*/ ){
 
 			const std::string a_part_of_request{
 				"GET / HTTP/1.1\r\n"
@@ -133,7 +137,7 @@ TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.handle_request_timeout( std::chrono::milliseconds( 5 ) )
-				.request_handler( [ &conn_to_store ]( auto req, auto conn ){
+				.request_handler( [ &conn_to_store ]( auto /*req*/, auto conn ){
 
 					// Store connection.
 					conn_to_store = std::move( conn );
