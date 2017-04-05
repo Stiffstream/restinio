@@ -33,15 +33,14 @@ MxxRu::arch_externals :nodejs_http_parser do |e|
   e.map_file 'http_parser.c' => 'dev/nodejs/http_parser/*'
 end
 
-MxxRu::hg_externals :nodejs_http_parser_mxxru do |e|
-  e.url 'https://bitbucket.org/sobjectizerteam/nodejs_http_parser_mxxru-0.1.draft'
-  e.tag 'v.0.1.1'
+MxxRu::arch_externals :nodejs_http_parser_mxxru do |e|
+  e.url 'https://bitbucket.org/sobjectizerteam/nodejs_http_parser_mxxru-0.1/get/v.0.1.0.tar.bz2'
 
   e.map_dir 'dev/nodejs/http_parser_mxxru' => 'dev/nodejs'
 end
 
 MxxRu::arch_externals :fmt do |e|
-  e.url 'https://github.com/fmtlib/fmt/archive/3.0.0.zip'
+  e.url 'https://github.com/fmtlib/fmt/archive/3.0.1.zip'
 
   e.map_dir 'cppformat' => 'dev/fmt'
   e.map_dir 'fmt' => 'dev/fmt'
