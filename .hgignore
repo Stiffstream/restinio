@@ -15,6 +15,7 @@ dev/rapidjson
 dev/json_dto
 dev/args
 dev/catch
+dev/cmake_build
 o/*
 ./wiki
 *.sublime-project
