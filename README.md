@@ -613,6 +613,8 @@ on the range of various scenarios.
 * HTTP client. Introduce functionality for building and sending requests and
 receiving and parsing results.
 * TLS support.
+* Want more features?
+Please send us feedback and we will take your opinion into account.
 
 # License
 
@@ -625,11 +627,9 @@ see LICENSE file in *nodejs/http-parser* distributive.
 
 For the license of *fmtlib* see LICENSE file in *fmtlib* distributive.
 
-For the license of *SObjectizer* library see
-LICENSE file in *SObjectizer* distributive.
+For the license of *SObjectizer* library see LICENSE file in *SObjectizer* distributive.
 
-For the license of *rapidjson* library
-see LICENSE file in *rapidjson* distributive.
+For the license of *rapidjson* library see LICENSE file in *rapidjson* distributive.
 
 For the license of *json_dto* library see LICENSE file in *json_dto* distributive.
 
