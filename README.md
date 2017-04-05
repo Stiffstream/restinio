@@ -42,7 +42,7 @@ To use *RESTinio* it is necessary to have:
 * Reasonably modern C++14 compiler (VC++14.0, GCC 5.2 or above, clang 3.6 or above);
 * [asio](http://think-async.com/Asio) 1.11.0;
 * [nodejs/http-parser](https://github.com/nodejs/http-parser) 2.7.1 or above;
-* [fmtlib](http://fmtlib.net/latest/index.html) 3.0.0 or above.
+* [fmtlib](http://fmtlib.net/latest/index.html) 3.0.1 or above.
 * Optional: [SObjectizer](https://sourceforge.net/projects/sobjectizer/) 5.5.18 and above;
 
 For building samples, benchmarks and tests:
