@@ -7,6 +7,9 @@ MxxRu::arch_externals :restinio do |e|
   e.url 'https://bitbucket.org/sobjectizerteam/restinio-0.1/get/v.0.1.0.tar.bz2'
 
   e.map_dir 'dev/restinio' => 'dev'
+
+  # For building nodejs http-parser with cmake.
+  e.map_file 'dev/nodejs/http_parser/CMakeLists.txt' => 'dev/nodejs/http_parser/*'
 end
 ~~~~~
 

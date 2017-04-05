@@ -75,6 +75,23 @@ See MxxRu::externals recipies for *RESTinio*
 
 ## Build
 
+### CMake
+
+Building with CMake currently is confined with two samples.
+To build them run the following commands:
+```
+hg clone https://bitbucket.org/sobjectizerteam/restinio-0.1
+cd restinio-0.1
+mxxruexternals
+cd dev
+mkdir cmake_build
+cd cmake_build
+cmake -DCMAKE_INSTALL_PREFIX=target -DCMAKE_BUILD_TYPE=Release ..
+make
+make install
+```
+
+### Mxx_ru
 While *RESTinio* is header-only library, samples, tests and benches require a build.
 
 Compiling with Mxx_ru:
@@ -613,6 +630,7 @@ on the range of various scenarios.
 * HTTP client. Introduce functionality for building and sending requests and
 receiving and parsing results.
 * TLS support.
+* Full CMake support.
 * Want more features?
 Please send us feedback and we will take your opinion into account.
 
