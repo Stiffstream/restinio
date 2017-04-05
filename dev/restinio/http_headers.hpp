@@ -70,7 +70,13 @@ class http_header_fields_t
 	public:
 		using fields_container_t = std::vector< http_header_field_t >;
 
+		http_header_fields_t() = default;
+		http_header_fields_t(const http_header_fields_t &) = default;
+		http_header_fields_t(http_header_fields_t &&) = default;
 		virtual ~http_header_fields_t() {}
+
+		http_header_fields_t & operator=(const http_header_fields_t &) = default;
+		http_header_fields_t & operator=(http_header_fields_t &&) = default;
 
 		bool
 		has_field( const std::string & field_name ) const
@@ -231,11 +237,11 @@ struct http_header_common_t
 		//! Length of body of an http-message.
 		std::uint64_t
 		content_length() const
-		{ return m_content_length; };
+		{ return m_content_length; }
 
 		void
 		content_length( std::uint64_t l )
-		{ m_content_length = l; };
+		{ m_content_length = l; }
 
 		bool
 		should_keep_alive() const
