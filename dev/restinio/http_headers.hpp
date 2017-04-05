@@ -348,8 +348,8 @@ http_method_from_nodejs( int m )
 		http_method_t::http_unknown
 	};
 
-	if( 0 <= m &&
-		sizeof(method_maping)/sizeof( method_maping[0] ) > m )
+	if( m >= 0 &&
+		std::distance(std::begin(method_maping), std::end(method_maping)) > m)
 	{
 		method = method_maping[ m ];
 	}
