@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 SET(CMAKE_CXX_STANDARD 14)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if ("x${CMAKE_CXX_COMPILER_ID}" MATCHES "xGNU" 
+if ("x${CMAKE_CXX_COMPILER_ID}" MATCHES "xGNU"
 		OR "x${CMAKE_CXX_COMPILER_ID}" MATCHES "xClang"
 		OR "x${CMAKE_CXX_COMPILER_ID}" MATCHES "xIntel")
 	add_definitions(-pthread -mtune=native -march=native)
@@ -25,4 +25,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(nodejs/http_parser)
 
 add_subdirectory(sample)
+
+enable_testing()
+add_subdirectory(test)
+if(WIN32)
+	configure_file(${CMAKE_SOURCE_DIR}/cmake/run_tests.bat ${CMAKE_BINARY_DIR} NEWLINE_STYLE WIN32)
+endif()
 
