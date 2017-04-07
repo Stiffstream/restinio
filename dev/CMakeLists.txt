@@ -20,11 +20,14 @@ add_definitions(-DASIO_STANDALONE -DASIO_HAS_STD_CHRONO)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/fmt)
 add_definitions(-DFMT_HEADER_ONLY)
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/args)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/rapidjson/include)
+add_definitions(-DRAPIDJSON_HAS_STDSTRING -DRAPIDJSON_HAS_CXX11_RVALUE_REFS)
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(nodejs/http_parser)
 
-add_subdirectory(sample)
 
 enable_testing()
 add_subdirectory(test)
@@ -32,3 +35,5 @@ if(WIN32)
 	configure_file(${CMAKE_SOURCE_DIR}/cmake/run_tests.bat ${CMAKE_BINARY_DIR} NEWLINE_STYLE WIN32)
 endif()
 
+add_subdirectory(sample)
+add_subdirectory(bench)
