@@ -94,7 +94,8 @@ cd restinio-0.1.0-full
 
 ### CMake
 
-Building with CMake currently is confined with two samples.
+Building with CMake currently is provided for samples, tests and benches
+not depending on SObjectizer.
 To build them run the following commands:
 ```
 hg clone https://bitbucket.org/sobjectizerteam/restinio-0.1
