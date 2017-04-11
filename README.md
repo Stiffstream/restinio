@@ -1,3 +1,5 @@
+**NOTE** Currently this repo contains *RESTinio* version that is under development.
+
 [TOC]
 
 # What Is It?
@@ -30,7 +32,7 @@ control timeouts on operations of reading request from socket,
 handling request and writing resposne to socket.
 And a header-only design is a plus.
 
-And it happens that under such conditions it you don't have a lot of options.
+And it happens that under such conditions you don't have a lot of options.
 So we have come up with *RESTinio*...
 
 # Obtain And Build
