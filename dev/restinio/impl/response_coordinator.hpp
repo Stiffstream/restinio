@@ -44,6 +44,10 @@ struct response_context_t
 	bool m_response_complete{ false };
 };
 
+//
+// response_context_table_t
+//
+
 //! Helper storage for responses' contexts.
 class response_context_table_t
 {
@@ -53,12 +57,37 @@ class response_context_table_t
 			m_contexts.resize( max_elements_count );
 		}
 
+		//! If table is empty.
 		bool
 		empty() const
 		{
 			return 0UL == m_elements_exists;
 		}
 
+		//! If table is full.
+		bool
+		is_full() const
+		{
+			return m_contexts.size() == m_elements_exists;
+		}
+
+		//! Get first context.
+		response_context_t &
+		front()
+		{
+			return m_contexts[ m_first_element_indx ];
+		}
+
+		//! Get last context.
+		response_context_t &
+		back()
+		{
+			return m_contexts[
+				(m_first_element_indx + (m_elements_exists - 1) ) %
+					m_contexts.size() ];
+		}
+
+		//! Get context of specified request.
 		response_context_t &
 		operator [] ( request_id_t req_id )
 		{
@@ -67,8 +96,6 @@ class response_context_table_t
 					"operator [] not allowed on "
 					"empty response_context_table" };
 
-			const auto base_id = ;
-
 			if( req_id < front().m_request_id ||
 				req_id > back().m_request_id )
 				throw std::runtime_error{
@@ -76,34 +103,58 @@ class response_context_table_t
 						"operator [] error: bad request id ({}) "
 						"for response_context_table ({}..{})",
 						req_id,
-						base_id,
+						front().m_request_id,
 						back().m_request_id ) };
 
 			return m_contexts[ get_real_index( req_id ) ];
 		}
 
+		//! Insert new context into queue.
+		void
+		push_response_context( request_id_t req_id )
+		{
+			if( m_contexts.size() == m_elements_exists )
+				throw std::runtime_error{
+					"unable to insert context because "
+					"response_context_table is full" };
+
+			auto & ctx =
+				m_contexts[
+						// Current next.
+						( m_first_element_indx + m_elements_exists ) % m_contexts.size()
+					];
+
+				ctx.m_request_id = req_id;
+				ctx.m_response_complete = false;
+
+			// 1 more element added.
+			++m_elements_exists;
+		}
+
+		void
+		pop_response_context()
+		{
+			if( empty() )
+				throw std::runtime_error{
+					"unable to pop context because "
+					"response_context_table is empty" };
+
+			--m_elements_exists;
+			++m_first_element_indx;
+			if( m_contexts.size() == m_first_element_indx )
+			{
+				m_first_element_indx = 0UL;
+			}
+		}
+
 	private:
-		auto
+		std::size_t
 		get_real_index( request_id_t req_id )
 		{
 			const auto distance_from_first =
 				req_id - front().m_request_id;
 
 			return ( m_first_element_indx + distance_from_first ) % m_contexts.size();
-		}
-
-		response_context_t &
-		front()
-		{
-			return m_contexts[ m_first_element_indx ];
-		}
-
-		response_context_t &
-		back()
-		{
-			return m_contexts[
-				(m_first_element_indx + (m_elements_exists - 1) ) %
-					m_contexts.size() ];
 		}
 
 		std::vector< response_context_t > m_contexts;
@@ -135,8 +186,6 @@ class response_coordinator_t
 
 	private:
 		const unsigned int m_max_req_count;
-
-		using std::deque< response_context_t > m_response_contexts;
 };
 
 } /* namespace impl */
