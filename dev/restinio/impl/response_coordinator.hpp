@@ -88,25 +88,17 @@ class response_context_table_t
 		}
 
 		//! Get context of specified request.
-		response_context_t &
-		operator [] ( request_id_t req_id )
+		response_context_t *
+		get_by_req_id( request_id_t req_id )
 		{
-			if( empty() )
-				throw std::runtime_error{
-					"operator [] not allowed on "
-					"empty response_context_table" };
-
-			if( req_id < front().m_request_id ||
+			if( empty() ||
+				req_id < front().m_request_id ||
 				req_id > back().m_request_id )
-				throw std::runtime_error{
-					fmt::format(
-						"operator [] error: bad request id ({}) "
-						"for response_context_table ({}..{})",
-						req_id,
-						front().m_request_id,
-						back().m_request_id ) };
+			{
+				return nullptr;
+			}
 
-			return m_contexts[ get_real_index( req_id ) ];
+			return &m_contexts[ get_real_index( req_id ) ];
 		}
 
 		//! Insert new context into queue.
@@ -179,13 +171,125 @@ class response_coordinator_t
 		response_coordinator_t(
 			//! Maximum count of requests to keep track of.
 			unsigned int max_req_count )
-			:	m_max_req_count{ max_req_count }
-		{
+			:	m_context_table{ max_req_count }
+		{}
 
+		bool
+		is_full() const
+		{
+			return m_context_table.is_full();
+		}
+
+		//! Create a new request and reserve context for its response.
+		request_id_t
+		register_new_request()
+		{
+			m_context_table.push_response_context( m_request_id_counter );
+
+			return m_request_id_counter++;
+		}
+
+		//! Add outgoing data for specified request.
+		void
+		append_response(
+			//! Request id the responses parts are for.
+			request_id_t req_id,
+			//! Are this parts final?
+			bool is_final,
+			//! The parts of response.
+			std::vector< std::string > bufs )
+		{
+			auto * ctx = m_context_table.get_by_req_id( req_id );
+
+			if( nullptr == ctx )
+			{
+				// Request is unknown...
+				throw std::runtime_error(
+					fmt::format(
+						"no context associated with request {}",
+						req_id ) );
+			}
+
+			if( ctx->m_response_complete )
+			{
+				// Request is already completed...
+				throw std::runtime_error(
+					"unable to append response, "
+					"it marked as complete" );
+			}
+
+			ctx->m_response_complete = is_final;
+
+			if( ctx->m_bufs.empty() )
+				ctx->m_bufs = std::move( bufs );
+			else
+			{
+				ctx->m_bufs.reserve(
+					ctx->m_bufs.size() +  bufs.size() );
+
+				for( auto & buf : bufs )
+					ctx->m_bufs.emplace_back( std::move( buf ) );
+			}
+		}
+
+		//! Get ready to send buffers
+		void
+		pop_ready_buffers(
+			//! The maximum count of buffers to obtain.
+			unsigned int max_buf_count,
+			//! Receiver for buffers.
+			std::vector< std::string > & bufs )
+		{
+			while(
+				0 != max_buf_count &&
+				!m_context_table.empty() )
+			{
+				auto & current_ctx = m_context_table.front();
+				const auto bufs_to_get_from_current_context =
+					std::min< unsigned int >(
+						current_ctx.m_bufs.size(), max_buf_count );
+
+				max_buf_count -= bufs_to_get_from_current_context;
+
+				auto extracted_bufs_end = std::begin( current_ctx.m_bufs );
+				std::advance(
+					extracted_bufs_end,
+					bufs_to_get_from_current_context );
+
+				std::for_each(
+					std::begin( current_ctx.m_bufs ),
+					extracted_bufs_end,
+					[ & ]( auto & buf ){
+						bufs.emplace_back( std::move( buf ) );
+					} );
+
+				if( current_ctx.m_bufs.end() == extracted_bufs_end )
+				{
+					current_ctx.m_bufs.clear();
+					if( current_ctx.m_response_complete )
+					{
+						// Response for first request is completed.
+						m_context_table.pop_response_context();
+					}
+					else
+					{
+						break;
+					}
+				}
+				else
+				{
+					current_ctx.m_bufs.erase(
+						std::begin( current_ctx.m_bufs ),
+						extracted_bufs_end );
+				}
+			}
 		}
 
 	private:
-		const unsigned int m_max_req_count;
+		//! Counter for asigining id to new requests.
+		request_id_t m_request_id_counter{ 0 };
+
+		response_context_table_t m_context_table;
 };
 
 } /* namespace impl */
