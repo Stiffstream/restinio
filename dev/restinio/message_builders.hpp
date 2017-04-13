@@ -13,6 +13,7 @@
 #include <fmt/format.h>
 #include <fmt/time.h>
 
+#include <restinio/common_types.hpp>
 #include <restinio/http_headers.hpp>
 #include <restinio/connection_handle.hpp>
 #include <restinio/os.hpp>
@@ -185,7 +186,6 @@ class resp_builder_t< restinio_controlled_output_t >
 			}
 		}
 };
-
 
 //
 // response_builder_t
