@@ -10,6 +10,8 @@
 
 #include <memory>
 
+#include <restinio/common_types.hpp>
+
 namespace restinio
 {
 
@@ -20,6 +22,7 @@ namespace restinio
 class connection_base_t
 	:	public std::enable_shared_from_this< connection_base_t >
 {
+		friend class response_builder_t;
 		friend class response_builder_t;
 
 	public:
@@ -35,7 +38,18 @@ class connection_base_t
 			return m_connection_id;
 		}
 
+		//! Write parts for specified request.
+		virtual void
+		write_response_parts(
+			//! Request id.
+			request_id_t request_id,
+			//! Is these parts are final parts of response?
+			bool is_final,
+			//! parts of a response.
+			std::vector< std::string > bufs ) = 0;
+
 	protected:
+
 		virtual void
 		write_response_message(
 			//! Response header.

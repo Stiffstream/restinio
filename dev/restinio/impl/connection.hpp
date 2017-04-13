@@ -18,6 +18,7 @@
 #include <restinio/connection_handle.hpp>
 #include <restinio/request_handler.hpp>
 #include <restinio/impl/header_helpers.hpp>
+#include <restinio/impl/response_coordinator.hpp>
 
 namespace restinio
 {
@@ -205,6 +206,7 @@ struct connection_settings_t final
 				settings.write_http_response_timelimit() }
 		,	m_handle_request_timeout{
 				settings.handle_request_timeout() }
+		,	m_max_pipelined_requests{ settings.max_pipelined_requests() }
 		,	m_logger{ settings.logger() }
 	{}
 
@@ -219,7 +221,7 @@ struct connection_settings_t final
 
 	//! Params from server_settings_t.
 	//! \{
-	std::size_t m_buffer_size{ 4 * 1024 };
+	std::size_t m_buffer_size;
 
 	std::chrono::steady_clock::duration
 		m_read_next_http_message_timelimit{ std::chrono::seconds( 60 ) };
@@ -230,7 +232,10 @@ struct connection_settings_t final
 	std::chrono::steady_clock::duration
 		m_handle_request_timeout{ std::chrono::seconds( 10 ) };
 
+	std::size_t m_max_pipelined_requests;
+
 	const std::unique_ptr< logger_t > m_logger;
+	//! \}
 };
 
 template < typename TRAITS >
@@ -281,6 +286,7 @@ class connection_t final
 			,	m_strand{ m_socket.get_executor() }
 			,	m_settings{ std::move( settings ) }
 			,	m_buf{ m_settings->m_buffer_size }
+			,	m_response_coordinator{ m_settings->m_max_pipelined_requests }
 			,	m_timer_guard{ std::move( timer_guard ) }
 			,	m_request_handler{ *( m_settings->m_request_handler ) }
 			,	m_logger{ *( m_settings->m_logger ) }
@@ -328,19 +334,24 @@ class connection_t final
 			// Prepare parser for consuming new request message.
 			reset_parser();
 
-			// Guard total time for a request to be read.
-			// guarding here makes the total read process
-			// to run in read_next_http_message_timelimit.
-			schedule_operation_timeout_callback(
-				m_settings->m_read_next_http_message_timelimit,
-				[ this ](){
-					m_logger.trace( [&](){
-						return fmt::format(
-								"[connection:{}] wait for request timed out",
-								this->connection_id() );
+			// Guard read timeout for read operation only when
+			// there is no request in process.
+			if( m_response_coordinator.empty() )
+			{
+				// Guard total time for a request to be read.
+				// guarding here makes the total read process
+				// to run in read_next_http_message_timelimit.
+				schedule_operation_timeout_callback(
+					m_settings->m_read_next_http_message_timelimit,
+					[ this ](){
+						m_logger.trace( [&](){
+							return fmt::format(
+									"[connection:{}] wait for request timed out",
+									this->connection_id() );
+						} );
+						close();
 					} );
-					close();
-				} );
+			}
 
 			if( 0 != m_buf.length() )
 			{
@@ -355,6 +366,32 @@ class connection_t final
 				// Next request (if any) must be obtained from socket.
 				consume_message();
 			}
+		}
+
+		//! Write parts for specified request.
+		virtual void
+		write_response_parts(
+			//! Request id.
+			request_id_t request_id,
+			//! Is these parts are final parts of response?
+			bool is_final,
+			//! parts of a response.
+			std::vector< std::string > bufs ) override
+		{
+			//! Run write message on io_service loop if possible.
+			asio::dispatch(
+				get_executor(),
+				[ this,
+					request_id,
+					is_final,
+					bufs = std::move( bufs ),
+					ctx = shared_from_this() ](){
+
+						write_response_parts_impl(
+							request_id,
+							is_final,
+							std::move( bufs ) );
+				} );
 		}
 
 		//! Initiate write response data to socket.
@@ -410,6 +447,51 @@ class connection_t final
 			// Reset context and attach it to parser.
 			m_parser_ctx.reset();
 			m_parser.data = &m_parser_ctx;
+		}
+
+		//! Write parts for specified request.
+		void
+		write_response_parts_impl(
+			//! Request id.
+			request_id_t request_id,
+			//! Is these parts are final parts of response?
+			bool is_final,
+			//! parts of a response.
+			std::vector< std::string > bufs )
+		{
+			try
+			{
+				if( !m_socket.is_open() )
+				{
+					m_logger.warn( [&](){
+						return fmt::format(
+								"[connection:{}] try to write response, "
+								"while socket is closed",
+								connection_id() );
+					} );
+					return;
+				}
+
+				m_response_coordinator.append_response(
+					request_id,
+					is_final,
+					std::move( bufs ) );
+
+				if( !m_resp_ctx.transmitting() )
+				{
+					// Mb there is somethig to write.
+					// TODO: init write
+				}
+			}
+			catch( const std::exception & ex )
+			{
+				trigger_error_and_close( [&](){
+					return fmt::format(
+						"[connection:{}] unable to handle response: {}",
+						connection_id(),
+						ex.what() );
+				} );
+			}
 		}
 
 		//! Write response data to socket.
@@ -777,6 +859,9 @@ class connection_t final
 		};
 
 		raw_resp_ctx_t m_resp_ctx;
+
+		//! Response coordinator.
+		response_coordinator_t m_response_coordinator;
 
 		//! Timer to controll operations.
 		//! \{

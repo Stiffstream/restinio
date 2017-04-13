@@ -52,7 +52,7 @@ struct response_context_t
 class response_context_table_t
 {
 	public:
-		response_context_table_t( unsigned int max_elements_count )
+		response_context_table_t( std::size_t max_elements_count )
 		{
 			m_contexts.resize( max_elements_count );
 		}
@@ -150,8 +150,8 @@ class response_context_table_t
 		}
 
 		std::vector< response_context_t > m_contexts;
-		unsigned int m_first_element_indx{0};
-		unsigned int m_elements_exists{0};
+		std::size_t m_first_element_indx{0};
+		std::size_t m_elements_exists{0};
 };
 
 //
@@ -170,7 +170,7 @@ class response_coordinator_t
 	public:
 		response_coordinator_t(
 			//! Maximum count of requests to keep track of.
-			unsigned int max_req_count )
+			std::size_t max_req_count )
 			:	m_context_table{ max_req_count }
 		{}
 

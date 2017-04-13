@@ -217,6 +217,23 @@ class server_settings_t
 		}
 		//! \}
 
+		//! Max pipelined requests to receive on single connection.
+		//! \{
+		server_settings_t &
+		max_pipelined_requests( std::size_t mpr )
+		{
+			m_max_pipelined_requests = mpr;
+			return *this;
+		}
+
+		std::size_t
+		max_pipelined_requests() const
+		{
+			return m_max_pipelined_requests;
+		}
+		//! \}
+
+
 		//! Request handler.
 		//! \{
 		using request_handler_t = typename TRAITS::request_handler_t;
@@ -317,6 +334,10 @@ class server_settings_t
 
 		std::chrono::steady_clock::duration
 			m_handle_request_timeout{ std::chrono::seconds( 10 ) };
+		//! \}
+
+		//! Max pipelined requests to receive on single connection.
+		std::size_t m_max_pipelined_requests{ 1 };
 
 		//! Request handler.
 		std::unique_ptr< request_handler_t > m_request_handler;

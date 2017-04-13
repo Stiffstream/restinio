@@ -12,11 +12,10 @@
 
 #include <restinio/http_headers.hpp>
 #include <restinio/connection_handle.hpp>
+#include <restinio/message_builders.hpp>
 
 namespace restinio
 {
-
-using request_id_t = unsigned int;
 
 //
 // request_t
@@ -52,6 +51,21 @@ class request_t final
 		body() const
 		{
 			return m_body;
+		}
+
+		template < typename RESPONSE_BUILDER =
+					resp_builder_t< restinio_controlled_output_t > >
+		auto
+		create_response(
+			std::uint16_t status_code = 200,
+			std::string reason_phrase = "OK" )
+		{
+			return RESPONSE_BUILDER{
+				status_code,
+				reason_phrase,
+				std::move( m_connection ),
+				m_request_id,
+				m_header.should_keep_alive() };
 		}
 
 	private:

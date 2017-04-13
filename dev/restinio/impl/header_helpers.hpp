@@ -29,7 +29,7 @@ ct_cstr_len( const char * s )
 inline std::string
 create_header_string(
 	const http_response_header_t & h,
-	std::size_t buffer_size )
+	std::size_t buffer_size = 1024 )
 {
 	std::string result;
 	result.reserve( buffer_size );

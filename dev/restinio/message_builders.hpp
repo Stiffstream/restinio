@@ -18,6 +18,8 @@
 #include <restinio/connection_handle.hpp>
 #include <restinio/os.hpp>
 
+#include <restinio/impl/header_helpers.hpp>
+
 namespace restinio
 {
 
@@ -66,14 +68,6 @@ class base_response_builder_t
 		}
 		//! \}
 
-		//! Set body
-		RESPONSE_BUILDER &
-		set_body( std::string body )
-		{
-			m_body.assign( std::move( body ) );
-			return static_cast< RESPONSE_BUILDER & >( *this );
-		}
-
 		//! Add header field.
 		RESPONSE_BUILDER &
 		append_header(
@@ -121,17 +115,8 @@ class base_response_builder_t
 			return static_cast< RESPONSE_BUILDER & >( *this );
 		}
 
-		//! Append body.
-		RESPONSE_BUILDER &
-		append_body( const std::string & body_part )
-		{
-			m_body.append( body_part );
-			return static_cast< RESPONSE_BUILDER & >( *this );
-		}
-
 	protected:
 		http_response_header_t m_header;
-		std::string m_body;
 
 		connection_handle_t m_connection;
 		const request_id_t m_request_id;
@@ -151,7 +136,7 @@ class resp_builder_t
 struct restinio_controlled_output_t {};
 
 template <>
-class resp_builder_t< restinio_controlled_output_t >
+class resp_builder_t< restinio_controlled_output_t > final
 	:	public base_response_builder_t< resp_builder_t< restinio_controlled_output_t > >
 {
 		using base_type_t =
@@ -173,6 +158,20 @@ class resp_builder_t< restinio_controlled_output_t >
 					should_keep_alive }
 		{}
 
+		//! Set body
+		auto &
+		set_body( std::string body )
+		{
+			m_body.assign( std::move( body ) );
+			return *this;
+		}
+		//! Append body.
+		auto &
+		append_body( const std::string & body_part )
+		{
+			m_body.append( body_part );
+			return *this;
+		}
 
 		//! Complete response.
 		void
@@ -182,9 +181,21 @@ class resp_builder_t< restinio_controlled_output_t >
 			{
 				auto conn = std::move( m_connection );
 
-				// TODO
+				std::vector< std::string > bufs{
+					 };
+
+				conn->write_response_parts(
+					m_request_id,
+					true /* response is final */,
+					{
+						impl::create_header_string( m_header ),
+						std::move( m_body )
+					} );
 			}
 		}
+
+	private:
+		std::string m_body;
 };
 
 //
