@@ -315,11 +315,6 @@ class connection_t final
 			{}
 		}
 
-		strand_t &
-		get_executor()
-		{
-			return m_strand;
-		}
 
 		//! Start reading next htttp-message.
 		void
@@ -352,6 +347,13 @@ class connection_t final
 				// Next request (if any) must be obtained from socket.
 				consume_message();
 			}
+		}
+
+	private:
+		strand_t &
+		get_executor()
+		{
+			return m_strand;
 		}
 
 		//! Write parts for specified request.
@@ -422,7 +424,6 @@ class connection_t final
 			m_socket.close();
 		}
 
-	private:
 		//! Prepare parser for reading new http-message.
 		void
 		reset_parser()
