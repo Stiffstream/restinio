@@ -21,6 +21,122 @@ namespace restinio
 {
 
 //
+// base_response_builder_t
+//
+
+template < typename RESPONSE_BUILDER >
+class base_response_builder_t
+{
+	public:
+		base_response_builder_t( const base_response_builder_t & ) = delete;
+		void
+		operator = ( const base_response_builder_t & ) = delete;
+
+		base_response_builder_t( base_response_builder_t && ) = default;
+
+		virtual ~base_response_builder_t()
+		{}
+
+		base_response_builder_t(
+			std::uint16_t status_code,
+			std::string reason_phrase,
+			connection_handle_t connection,
+			request_id_t request_id,
+			bool should_keep_alive )
+			:	m_header{ status_code, std::move( reason_phrase ) }
+			,	m_connection{ std::move( connection ) }
+		{
+			m_header.should_keep_alive( should_keep_alive );
+		}
+
+		//! Accessors for header.
+		//! \{
+		http_response_header_t &
+		header()
+		{
+			return m_header;
+		}
+
+		const http_response_header_t &
+		header() const
+		{
+			return m_header;
+		}
+		//! \}
+
+		//! Set body
+		RESPONSE_BUILDER &
+		set_body( std::string body )
+		{
+			m_body.assign( std::move( body ) );
+			return static_cast< RESPONSE_BUILDER & >( *this );
+		}
+
+		//! Add header field.
+		RESPONSE_BUILDER &
+		append_header(
+			std::string field_name,
+			std::string field_value )
+		{
+			m_header.set_field(
+				std::move( field_name ),
+				std::move( field_value ) );
+			return static_cast< RESPONSE_BUILDER & >( *this );
+		}
+
+		//! Add header `Date` field.
+		RESPONSE_BUILDER &
+		append_header_date_field(
+			std::time_t t = std::time( nullptr ) )
+		{
+			const auto tpoint = make_gmtime( t );
+
+			std::array< char, 64 > buf;
+			strftime(
+				buf.data(),
+				buf.size(),
+				":%a, %d %b %Y %T GMT",
+				&tpoint );
+
+			m_header.set_field(
+				std::string{ "Date" },
+				buf.data() );
+
+			return static_cast< RESPONSE_BUILDER & >( *this );
+		}
+
+		RESPONSE_BUILDER &
+		connection_close()
+		{
+			m_header.should_keep_alive( false );
+			return static_cast< RESPONSE_BUILDER & >( *this );
+		}
+
+		RESPONSE_BUILDER &
+		connection_keep_alive()
+		{
+			m_header.should_keep_alive();
+			return static_cast< RESPONSE_BUILDER & >( *this );
+		}
+
+		//! Append body.
+		RESPONSE_BUILDER &
+		append_body( const std::string & body_part )
+		{
+			m_body.append( body_part );
+			return static_cast< RESPONSE_BUILDER & >( *this );
+		}
+
+	protected:
+		http_response_header_t m_header;
+		std::string m_body;
+
+		connection_handle_t m_connection;
+		const request_id_t m_request_id;
+};
+
+
+//
 // response_builder_t
 //
 
