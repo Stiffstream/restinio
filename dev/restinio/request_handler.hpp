@@ -16,6 +16,8 @@
 namespace restinio
 {
 
+using request_id_t = unsigned int;
+
 //
 // http_request_t
 //

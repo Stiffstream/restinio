@@ -14,13 +14,13 @@
 
 #include <fmt/format.h>
 
+#include <restinio/request_handler.hpp>
+
 namespace restinio
 {
 
 namespace impl
 {
-
-using request_id_t = unsigned int;
 
 //
 // response_context_t

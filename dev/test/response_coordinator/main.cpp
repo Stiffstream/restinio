@@ -13,6 +13,7 @@
 
 #include <restinio/impl/response_coordinator.hpp>
 
+using namespace restinio;
 using namespace restinio::impl;
 
 TEST_CASE( "response_context_table" , "[response_context][response_context_table]" )
