@@ -175,6 +175,12 @@ class response_coordinator_t
 		{}
 
 		bool
+		empty() const
+		{
+			return m_context_table.empty();
+		}
+
+		bool
 		is_full() const
 		{
 			return m_context_table.is_full();

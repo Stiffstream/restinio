@@ -170,10 +170,10 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 			return res;
 		};
 
-
 	SECTION( "simple" )
 	{
 		response_coordinator_t coordinator{ 2 };
+		REQUIRE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 
 		out_bufs.clear();
@@ -185,10 +185,12 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_NOTHROW( req_id[ 0 ] = coordinator.register_new_request() );
 		REQUIRE( req_id[ 0 ] == 0UL );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 
 		CHECK_NOTHROW( req_id[ 1 ] = coordinator.register_new_request() );
 		REQUIRE( req_id[ 1 ] == 1UL );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
 
 		CHECK_NOTHROW( coordinator.append_response(
@@ -198,7 +200,6 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		// #0: "a", "b", "c"
 		// #1: <nothing>
-
 
 		out_bufs.clear();
 		CHECK_NOTHROW(
@@ -286,6 +287,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_NOTHROW( req_id[ 0 ] = coordinator.register_new_request() );
 		REQUIRE( req_id[ 0 ] == 2UL );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
 
 		// #1: "LAST", "PARTS"
@@ -300,9 +302,11 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		// #2: <nothing>
 
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 		CHECK_NOTHROW( req_id[ 1 ] = coordinator.register_new_request() );
 		REQUIRE( req_id[ 1 ] == 3UL );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
 
 		// #2: <nothing>
@@ -312,21 +316,26 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 	SECTION( "complex scenario")
 	{
 		response_coordinator_t coordinator{ 4 };
+		REQUIRE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 
 		request_id_t req_id[ 4 ];
 
 		CHECK_NOTHROW( req_id[ 0 ] = coordinator.register_new_request() );
 		REQUIRE( req_id[ 0 ] == 0UL );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 		CHECK_NOTHROW( req_id[ 1 ] = coordinator.register_new_request() );
 		REQUIRE( req_id[ 1 ] == 1UL );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 		CHECK_NOTHROW( req_id[ 2 ] = coordinator.register_new_request() );
 		REQUIRE( req_id[ 2 ] == 2UL );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 		CHECK_NOTHROW( req_id[ 3 ] = coordinator.register_new_request() );
 		REQUIRE( req_id[ 3 ] == 3UL );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
 
 		// #0: <nothing>
@@ -376,6 +385,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		out_bufs.clear();
 		CHECK_NOTHROW(
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
 		REQUIRE( 24UL == out_bufs.size() );
 		REQUIRE( concat_bufs() == "0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c" );
@@ -388,6 +398,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		out_bufs.clear();
 		CHECK_NOTHROW(
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
 		REQUIRE( 0UL == out_bufs.size() );
 		REQUIRE( concat_bufs() == "" );
@@ -421,6 +432,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		out_bufs.clear();
 		CHECK_NOTHROW(
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 		REQUIRE( 64UL == out_bufs.size() );
 		REQUIRE( concat_bufs() ==
@@ -435,6 +447,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		out_bufs.clear();
 		CHECK_NOTHROW(
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 		REQUIRE( 0UL == out_bufs.size() );
 		REQUIRE( concat_bufs() == "" );
@@ -453,6 +466,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		out_bufs.clear();
 		CHECK_NOTHROW(
 			coordinator.pop_ready_buffers( 4UL, out_bufs ) );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 		REQUIRE( 4UL == out_bufs.size() );
 		REQUIRE( concat_bufs() == "LASTPARTSLASTPARTS" );
@@ -463,6 +477,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		out_bufs.clear();
 		CHECK_NOTHROW(
 			coordinator.pop_ready_buffers( 16UL, out_bufs ) );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 		REQUIRE( 16UL == out_bufs.size() );
 		REQUIRE( concat_bufs() ==
@@ -473,12 +488,15 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_NOTHROW( req_id[ 0 ] = coordinator.register_new_request() );
 		REQUIRE( req_id[ 0 ] == 4UL );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 		CHECK_NOTHROW( req_id[ 1 ] = coordinator.register_new_request() );
 		REQUIRE( req_id[ 1 ] == 5UL );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 		CHECK_NOTHROW( req_id[ 2 ] = coordinator.register_new_request() );
 		REQUIRE( req_id[ 2 ] == 6UL );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
 
 		// #3: ["3a", "3b", "3c"] * 1*4
@@ -527,6 +545,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		out_bufs.clear();
 		CHECK_NOTHROW(
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 		REQUIRE( 64UL == out_bufs.size() );
 		REQUIRE( concat_bufs() ==
@@ -551,6 +570,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		out_bufs.clear();
 		CHECK_NOTHROW(
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
+		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 		REQUIRE( 4UL == out_bufs.size() );
 		REQUIRE( concat_bufs() ==
@@ -574,17 +594,19 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		out_bufs.clear();
 		CHECK_NOTHROW(
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
+		REQUIRE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 		REQUIRE( 32UL == out_bufs.size() );
 		REQUIRE( concat_bufs() ==
 			"LASTPARTSLASTPARTSLASTPARTSLASTPARTS"
 			"6a6b6c6a6b6c6a6b6c6a6b6c6a6b6c6a6b6c6a6b6c6a6b6c" );
 
-		REQUIRE_FALSE( coordinator.is_full() );
+		// EMPTY
 
 		out_bufs.clear();
 		CHECK_NOTHROW(
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
+		REQUIRE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 		REQUIRE( 0UL == out_bufs.size() );
 
