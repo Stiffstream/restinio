@@ -53,7 +53,9 @@ TEST_CASE( "response_context_table" , "[response_context][response_context_table
 		REQUIRE( nullptr == table.get_by_req_id( 43UL ) );
 
 		REQUIRE( table.get_by_req_id( 42UL )->m_request_id == 42UL );
-		REQUIRE_FALSE( table.get_by_req_id( 42UL )->m_response_complete );
+
+		REQUIRE_FALSE( table.get_by_req_id( 42UL )->m_response_output_flags.m_response_is_complete );
+		REQUIRE( table.get_by_req_id( 42UL )->m_response_output_flags.m_connection_should_keep_alive );
 
 		CHECK_NOTHROW( table.pop_response_context() );
 	}
@@ -158,6 +160,18 @@ TEST_CASE( "response_context_table" , "[response_context][response_context_table
 	}
 }
 
+constexpr bool
+response_is_not_complete() { return false; }
+
+constexpr bool
+response_is_complete() { return true; }
+
+constexpr bool
+connection_should_keep_alive() { return true; }
+
+constexpr bool
+connection_should_close() { return false; }
+
 TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 {
 	std::vector< std::string > out_bufs;
@@ -176,6 +190,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		response_coordinator_t coordinator{ 2 };
 		REQUIRE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
+		REQUIRE_FALSE( coordinator.closed() );
 
 		out_bufs.clear();
 		CHECK_NOTHROW(
@@ -196,7 +211,9 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 0 ],
-			false,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
 			{ "a", "b", "c" } ) );
 
 		// #0: "a", "b", "c"
@@ -212,14 +229,18 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 0 ],
-			false,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
 			{ "A", "B", "C" } ) );
 		// #0: "A", "B", "C"
 		// #1: <nothing>
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 1 ],
-			false,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
 			{ "X", "Y", "Z" } ) );
 		// #0: "A", "B", "C"
 		// #1: "X", "Y", "Z"
@@ -242,7 +263,9 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 1 ],
-			true,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
 			{ "LAST", "PARTS" } ) );
 		// #0: <nothing>
 		// #1: "X", "Y", "Z", "LAST", "PARTS"
@@ -250,19 +273,25 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// Append complete response error:
 		CHECK_THROWS( coordinator.append_response(
 			req_id[ 1 ],
-			false,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
 			{ "!LAST!", "!PARTS!" } ) );
 
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 0 ],
-			true,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
 			{ "LAST", "PARTS" } ) );
 
 		// Append complete response error:
 		CHECK_THROWS( coordinator.append_response(
 			req_id[ 0 ],
-			true,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
 			{ "!LAST!", "!PARTS!" } ) );
 
 		// #0: "LAST", "PARTS"
@@ -283,7 +312,9 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// Response doesn't exist any more error:
 		CHECK_THROWS( coordinator.append_response(
 			req_id[ 0 ],
-			true,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
 			{ "!NO!", "!WAY!" } ) );
 
 		CHECK_NOTHROW( req_id[ 0 ] = coordinator.register_new_request() );
@@ -312,6 +343,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		// #2: <nothing>
 		// #3: <nothing>
+
+		REQUIRE_FALSE( coordinator.closed() );
 	}
 
 	SECTION( "complex scenario")
@@ -319,6 +352,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		response_coordinator_t coordinator{ 4 };
 		REQUIRE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
+		REQUIRE_FALSE( coordinator.closed() );
 
 		request_id_t req_id[ 4 ];
 
@@ -346,7 +380,9 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 0 ],
-			false,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
 			{ "0a", "0b", "0c", "0a", "0b", "0c",
 			  "0a", "0b", "0c", "0a", "0b", "0c",
 			  "0a", "0b", "0c", "0a", "0b", "0c",
@@ -354,7 +390,9 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 1 ],
-			false,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
 			{ "1a", "1b", "1c", "1a", "1b", "1c",
 			  "1a", "1b", "1c", "1a", "1b", "1c",
 			  "1a", "1b", "1c", "1a", "1b", "1c",
@@ -362,7 +400,9 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 2 ],
-			false,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
 			{ "2a", "2b", "2c", "2a", "2b", "2c",
 			  "2a", "2b", "2c", "2a", "2b", "2c",
 			  "2a", "2b", "2c", "2a", "2b", "2c",
@@ -370,7 +410,9 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 3 ],
-			false,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
 			{ "3a", "3b", "3c", "3a", "3b", "3c",
 			  "3a", "3b", "3c", "3a", "3b", "3c",
 			  "3a", "3b", "3c", "3a", "3b", "3c",
@@ -406,7 +448,9 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 0 ],
-			true,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
 			{ "LAST", "PARTS",
 			  "LAST", "PARTS",
 			  "LAST", "PARTS",
@@ -419,7 +463,9 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 1 ],
-			true,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
 			{ "LAST", "PARTS",
 			  "LAST", "PARTS",
 			  "LAST", "PARTS",
@@ -455,7 +501,9 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 2 ],
-			true,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
 			{ "LAST", "PARTS",
 			  "LAST", "PARTS",
 			  "LAST", "PARTS",
@@ -508,7 +556,9 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 0 ],
-			true,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
 			{ "4a", "4b", "4c", "4a", "4b", "4c",
 			  "4a", "4b", "4c", "4a", "4b", "4c",
 			  "4a", "4b", "4c", "4a", "4b", "4c",
@@ -516,7 +566,9 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 1 ],
-			false,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
 			{ "5a", "5b", "5c", "5a", "5b", "5c",
 			  "5a", "5b", "5c", "5a", "5b", "5c",
 			  "5a", "5b", "5c", "5a", "5b", "5c",
@@ -524,7 +576,9 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 2 ],
-			true,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
 			{ "6a", "6b", "6c", "6a", "6b", "6c",
 			  "6a", "6b", "6c", "6a", "6b", "6c",
 			  "6a", "6b", "6c", "6a", "6b", "6c",
@@ -532,7 +586,9 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 3 ],
-			true,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
 			{ "LAST", "PARTS",
 			  "LAST", "PARTS",
 			  "LAST", "PARTS",
@@ -565,7 +621,9 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_THROWS( coordinator.append_response(
 			req_id[ 3 ],
-			true,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
 			{ "NO", "WAY" } ) );
 
 		out_bufs.clear();
@@ -583,7 +641,9 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 1 ],
-			true,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
 			{ "LAST", "PARTS",
 			  "LAST", "PARTS",
 			  "LAST", "PARTS",
@@ -613,22 +673,262 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		CHECK_THROWS( coordinator.append_response(
 			req_id[ 0 ],
-			true,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
 			{ "NO", "WAY" } ) );
 
 		CHECK_THROWS( coordinator.append_response(
 			req_id[ 1 ],
-			true,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
 			{ "NO", "WAY" } ) );
 
 		CHECK_THROWS( coordinator.append_response(
 			req_id[ 2 ],
-			true,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
 			{ "NO", "WAY" } ) );
 
 		CHECK_THROWS( coordinator.append_response(
 			req_id[ 3 ],
-			true,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
 			{ "NO", "WAY" } ) );
+
+		REQUIRE_FALSE( coordinator.closed() );
+	}
+}
+
+TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connection_close]" )
+{
+	std::vector< std::string > out_bufs;
+	auto concat_bufs =
+		[ & ](){
+			std::string res;
+			for( const auto & s : out_bufs )
+			{
+				res += s;
+			}
+			return res;
+		};
+
+	SECTION( "first request causes close" )
+	{
+		response_coordinator_t coordinator{ 3 };
+		REQUIRE_FALSE( coordinator.closed() );
+
+		request_id_t req_id[ 3 ];
+
+		CHECK_NOTHROW( req_id[ 0 ] = coordinator.register_new_request() );
+		CHECK_NOTHROW( req_id[ 1 ] = coordinator.register_new_request() );
+		CHECK_NOTHROW( req_id[ 2 ] = coordinator.register_new_request() );
+
+		// #0: <nothing>
+		// #1: <nothing>
+		// #2: <nothing>
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id[ 0 ],
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_close() }, // CLOSE CONNECTION AT RESP #0
+			{ "0a", "0b", "0c", "0a", "0b", "0c",
+			  "0a", "0b", "0c", "0a", "0b", "0c",
+			  "0a", "0b", "0c", "0a", "0b", "0c",
+			  "0a", "0b", "0c", "0a", "0b", "0c" } ) );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id[ 1 ],
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
+			{ "1a", "1b", "1c", "1a", "1b", "1c",
+			  "1a", "1b", "1c", "1a", "1b", "1c",
+			  "1a", "1b", "1c", "1a", "1b", "1c",
+			  "1a", "1b", "1c", "1a", "1b", "1c" } ) );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id[ 2 ],
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
+			{ "2a", "2b", "2c", "2a", "2b", "2c",
+			  "2a", "2b", "2c", "2a", "2b", "2c",
+			  "2a", "2b", "2c", "2a", "2b", "2c",
+			  "2a", "2b", "2c", "2a", "2b", "2c" } ) );
+
+
+		// #0: ["0a", "0b", "0c"] * 2*4
+		// #1: ["0a", "0b", "0c"] * 2*4
+		// #2: ["2a", "2b", "2c"] * 2*4
+		// #3: ["3a", "3b", "3c"] * 2*4
+
+		// Only bufs for #0 response mast be presented:
+
+		out_bufs.clear();
+		CHECK_NOTHROW(
+			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
+		REQUIRE_FALSE( coordinator.empty() );
+		REQUIRE( coordinator.is_full() );
+		REQUIRE_FALSE( coordinator.closed() );
+
+		REQUIRE( 24UL == out_bufs.size() );
+		REQUIRE( concat_bufs() == "0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c" );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id[ 0 ],
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_close() }, // CLOSE CONNECTION AT RESP #0
+			{ "LAST", " ", "PARTS" } ) );
+
+		out_bufs.clear();
+		CHECK_NOTHROW(
+			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
+		REQUIRE_FALSE( coordinator.empty() );
+		REQUIRE_FALSE( coordinator.is_full() );
+		REQUIRE( coordinator.closed() );
+
+		REQUIRE( 3UL == out_bufs.size() );
+		REQUIRE( concat_bufs() == "LAST PARTS" );
+
+		CHECK_THROWS( coordinator.append_response(
+			req_id[ 1 ],
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
+			{ "LAST", " ", "PARTS" } ) );
+
+		CHECK_THROWS( coordinator.append_response(
+			req_id[ 2 ],
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
+			{ "LAST", " ", "PARTS" } ) );
+
+
+		out_bufs.clear();
+		CHECK_THROWS(
+			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
+
+		REQUIRE( coordinator.closed() );
+	}
+
+	SECTION( "second request causes close" )
+	{
+		response_coordinator_t coordinator{ 3 };
+		REQUIRE_FALSE( coordinator.closed() );
+
+		request_id_t req_id[ 3 ];
+
+		CHECK_NOTHROW( req_id[ 0 ] = coordinator.register_new_request() );
+		CHECK_NOTHROW( req_id[ 1 ] = coordinator.register_new_request() );
+		CHECK_NOTHROW( req_id[ 2 ] = coordinator.register_new_request() );
+
+		// #0: <nothing>
+		// #1: <nothing>
+		// #2: <nothing>
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id[ 0 ],
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive },
+			{ "0a", "0b", "0c", "0a", "0b", "0c",
+			  "0a", "0b", "0c", "0a", "0b", "0c",
+			  "0a", "0b", "0c", "0a", "0b", "0c",
+			  "0a", "0b", "0c", "0a", "0b", "0c" } ) );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id[ 1 ],
+			response_output_flags_t{
+				response_is_complete(), // Complete from beggining.
+				connection_should_close() },  // CLOSE CONNECTION AT RESP #1
+			{ "1a", "1b", "1c", "1a", "1b", "1c",
+			  "1a", "1b", "1c", "1a", "1b", "1c",
+			  "1a", "1b", "1c", "1a", "1b", "1c",
+			  "1a", "1b", "1c", "LAST", " ", "PARTS" } ) );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id[ 2 ],
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
+			{ "2a", "2b", "2c", "2a", "2b", "2c",
+			  "2a", "2b", "2c", "2a", "2b", "2c",
+			  "2a", "2b", "2c", "2a", "2b", "2c",
+			  "2a", "2b", "2c", "2a", "2b", "2c" } ) );
+
+
+		// #0: ["0a", "0b", "0c"] * 2*4
+		// #1: ["0a", "0b", "0c"] * 2*4
+		// #2: ["2a", "2b", "2c"] * 2*4
+		// #3: ["3a", "3b", "3c"] * 2*4
+
+		// Only bufs for #0 response mast be presented:
+
+		out_bufs.clear();
+		CHECK_NOTHROW(
+			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
+		REQUIRE_FALSE( coordinator.empty() );
+		REQUIRE( coordinator.is_full() );
+		REQUIRE_FALSE( coordinator.closed() );
+
+		REQUIRE( 24UL == out_bufs.size() );
+		REQUIRE( concat_bufs() == "0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c" );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id[ 0 ],
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
+			{ "LAST", " ", "PARTS" } ) );
+
+		out_bufs.clear();
+		CHECK_NOTHROW(
+			coordinator.pop_ready_buffers( 24UL, out_bufs ) );
+		REQUIRE_FALSE( coordinator.empty() );
+		REQUIRE_FALSE( coordinator.is_full() );
+		REQUIRE_FALSE( coordinator.closed() );
+
+		REQUIRE( 24UL == out_bufs.size() );
+		REQUIRE( concat_bufs() ==
+			"LAST PARTS"
+			"1a1b1c1a1b1c1a1b1c1a1b1c1a1b1c1a1b1c1a1b1c" );
+
+		out_bufs.clear();
+		CHECK_NOTHROW(
+			coordinator.pop_ready_buffers( 24UL, out_bufs ) );
+		REQUIRE_FALSE( coordinator.empty() );
+		REQUIRE_FALSE( coordinator.is_full() );
+		REQUIRE( coordinator.closed() );
+
+
+		REQUIRE( 3UL == out_bufs.size() );
+		REQUIRE( concat_bufs() == "LAST PARTS" );
+
+		CHECK_THROWS( coordinator.append_response(
+			req_id[ 0 ],
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
+			{ "NO", " ", "WAY" } ) );
+
+		CHECK_THROWS( coordinator.append_response(
+			req_id[ 2 ],
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
+			{ "REQUEST", "IS", "ACTUAL",
+			  "BUT", "REQ #1", "SIGNALED", "CONNECTION-CLOSE" } ) );
+
+		out_bufs.clear();
+		CHECK_THROWS(
+			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
+
+		REQUIRE( coordinator.closed() );
 	}
 }

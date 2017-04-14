@@ -29,19 +29,20 @@ namespace impl
 //! A context for a single response.
 struct response_context_t
 {
-	response_context_t() {}
-
-	response_context_t( request_id_t request_id )
-		:	m_request_id{ request_id }
-	{}
+	void
+	reinit( request_id_t request_id )
+	{
+		m_request_id = request_id;
+		m_response_output_flags = { false, true };
+	}
 
 	request_id_t m_request_id{ 0 };
 
 	//! Unsent responses parts.
 	std::vector< std::string > m_bufs;
 
-	//! Are existing bufs complete the response?
-	bool m_response_complete{ false };
+	//! Response flags
+	response_output_flags_t m_response_output_flags{ false, true };
 };
 
 //
@@ -116,8 +117,7 @@ class response_context_table_t
 						( m_first_element_indx + m_elements_exists ) % m_contexts.size()
 					];
 
-				ctx.m_request_id = req_id;
-				ctx.m_response_complete = false;
+				ctx.reinit( req_id );
 
 			// 1 more element added.
 			++m_elements_exists;
@@ -175,6 +175,12 @@ class response_coordinator_t
 		{}
 
 		bool
+		closed() const
+		{
+			return m_connection_closed_response_occured;
+		}
+
+		bool
 		empty() const
 		{
 			return m_context_table.empty();
@@ -200,31 +206,37 @@ class response_coordinator_t
 		append_response(
 			//! Request id the responses parts are for.
 			request_id_t req_id,
-			//! Are this parts final?
-			bool is_final,
+			//! Resp output flag.
+			response_output_flags_t response_output_flags,
 			//! The parts of response.
 			std::vector< std::string > bufs )
 		{
+			// Nothing to do if already closed response emitted.
+			if( closed() )
+				throw std::runtime_error{
+					"unable to append response parts, "
+					"response coordinator is closed" };
+
 			auto * ctx = m_context_table.get_by_req_id( req_id );
 
 			if( nullptr == ctx )
 			{
 				// Request is unknown...
-				throw std::runtime_error(
+				throw std::runtime_error{
 					fmt::format(
 						"no context associated with request {}",
-						req_id ) );
+						req_id ) };
 			}
 
-			if( ctx->m_response_complete )
+			if( ctx->m_response_output_flags.m_response_is_complete )
 			{
 				// Request is already completed...
-				throw std::runtime_error(
+				throw std::runtime_error{
 					"unable to append response, "
-					"it marked as complete" );
+					"it marked as complete" };
 			}
 
-			ctx->m_response_complete = is_final;
+			ctx->m_response_output_flags = response_output_flags;
 
 			if( ctx->m_bufs.empty() )
 				ctx->m_bufs = std::move( bufs );
@@ -246,6 +258,16 @@ class response_coordinator_t
 			//! Receiver for buffers.
 			std::vector< std::string > & bufs )
 		{
+			if( closed() )
+				throw std::runtime_error{
+					"unable to prepare output buffers, "
+					"response coordinator is closed" };
+
+			// Select buffers one by one while
+			// it is possible to follow the order of the data
+			// that must be sent to client
+			// and buf count not exceed max_buf_count.
+
 			while(
 				0 != max_buf_count &&
 				!m_context_table.empty() )
@@ -272,18 +294,42 @@ class response_coordinator_t
 				if( current_ctx.m_bufs.end() == extracted_bufs_end )
 				{
 					current_ctx.m_bufs.clear();
-					if( current_ctx.m_response_complete )
+
+					// All existing parts for current response were
+					// selected for output, so it might be the case
+					// entire response was selected.
+
+					if( current_ctx.m_response_output_flags.m_response_is_complete )
 					{
-						// Response for first request is completed.
+						// Response for currently first tracked
+						// request is completed.
 						m_context_table.pop_response_context();
+
+						if( !current_ctx.m_response_output_flags.m_connection_should_keep_alive )
+						{
+							// Not onle the response is complete
+							// but it has a connection-close property.
+							// So the response coordinator must
+							// stop its work.
+
+							m_connection_closed_response_occured = true;
+							break;
+						}
 					}
 					else
 					{
+						// All existing parts of current response were selected
+						// but there must be more parts for current response
+						// that a not already received by coordinator
+						// so breake selection loop.
 						break;
 					}
 				}
 				else
 				{
+					// Current response is definetely not over
+					// but max_buf_count bufers are obtained
+					// while condition will fail.
 					current_ctx.m_bufs.erase(
 						std::begin( current_ctx.m_bufs ),
 						extracted_bufs_end );
@@ -296,6 +342,9 @@ class response_coordinator_t
 		request_id_t m_request_id_counter{ 0 };
 
 		response_context_table_t m_context_table;
+
+		//! Indicate whether a response with connection close flag was emitted.
+		bool m_connection_closed_response_occured{ false };
 };
 
 } /* namespace impl */

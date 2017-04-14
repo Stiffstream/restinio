@@ -361,8 +361,8 @@ class connection_t final
 		write_response_parts(
 			//! Request id.
 			request_id_t request_id,
-			//! Is these parts are final parts of response?
-			bool is_final,
+			//! Resp output flag.
+			response_output_flags_t response_output_flags,
 			//! parts of a response.
 			std::vector< std::string > bufs ) override
 		{
@@ -371,13 +371,13 @@ class connection_t final
 				get_executor(),
 				[ this,
 					request_id,
-					is_final,
+					response_output_flags,
 					bufs = std::move( bufs ),
 					ctx = shared_from_this() ](){
 
 						write_response_parts_impl(
 							request_id,
-							is_final,
+							response_output_flags,
 							std::move( bufs ) );
 				} );
 		}
@@ -441,8 +441,8 @@ class connection_t final
 		write_response_parts_impl(
 			//! Request id.
 			request_id_t request_id,
-			//! Is these parts are final parts of response?
-			bool is_final,
+			//! Resp output flag.
+			response_output_flags_t response_output_flags,
 			//! parts of a response.
 			std::vector< std::string > bufs )
 		{
@@ -461,7 +461,7 @@ class connection_t final
 
 				m_response_coordinator.append_response(
 					request_id,
-					is_final,
+					response_output_flags,
 					std::move( bufs ) );
 
 				if( !m_resp_ctx.transmitting() )

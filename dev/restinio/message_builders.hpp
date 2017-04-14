@@ -184,9 +184,14 @@ class resp_builder_t< restinio_controlled_output_t > final
 				std::vector< std::string > bufs{
 					 };
 
+				const response_output_flags_t
+					response_output_flags{
+						true, // response_is_complete
+						m_header.should_keep_alive() };
+
 				conn->write_response_parts(
 					m_request_id,
-					true /* response is final */,
+					response_output_flags,
 					{
 						impl::create_header_string( m_header ),
 						std::move( m_body )

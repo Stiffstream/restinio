@@ -43,8 +43,8 @@ class connection_base_t
 		write_response_parts(
 			//! Request id.
 			request_id_t request_id,
-			//! Is these parts are final parts of response?
-			bool is_final,
+			//! Resp output flag.
+			response_output_flags_t response_output_flags,
 			//! parts of a response.
 			std::vector< std::string > bufs ) = 0;
 
