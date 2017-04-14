@@ -296,6 +296,8 @@ class response_coordinator_t
 		request_id_t m_request_id_counter{ 0 };
 
 		response_context_table_t m_context_table;
+
+		boo
 };
 
 } /* namespace impl */
