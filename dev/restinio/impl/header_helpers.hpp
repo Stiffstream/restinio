@@ -102,7 +102,7 @@ create_error_resp( std::uint16_t status, std::string phrase )
 	h.should_keep_alive( false );
 	h.http_major( 1 );
 	h.http_minor( 1 );
-	return h;
+	return create_header_string( h );
 }
 
 inline auto

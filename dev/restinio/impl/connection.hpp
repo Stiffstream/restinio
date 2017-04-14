@@ -374,11 +374,22 @@ class connection_t final
 					response_output_flags,
 					bufs = std::move( bufs ),
 					ctx = shared_from_this() ](){
-
-						write_response_parts_impl(
-							request_id,
-							response_output_flags,
-							std::move( bufs ) );
+						try
+						{
+							write_response_parts_impl(
+								request_id,
+								response_output_flags,
+								std::move( bufs ) );
+						}
+						catch( const std::exception & ex )
+						{
+							trigger_error_and_close( [&](){
+								return fmt::format(
+									"[connection:{}] unable to handle response: {}",
+									connection_id(),
+									ex.what() );
+							} );
+						}
 				} );
 		}
 
@@ -423,38 +434,89 @@ class connection_t final
 			//! parts of a response.
 			std::vector< std::string > bufs )
 		{
-			try
+			if( !m_socket.is_open() )
 			{
-				if( !m_socket.is_open() )
-				{
-					m_logger.warn( [&](){
-						return fmt::format(
-								"[connection:{}] try to write response, "
-								"while socket is closed",
-								connection_id() );
-					} );
-					return;
-				}
+				m_logger.warn( [&](){
+					return fmt::format(
+							"[connection:{}] try to write response, "
+							"while socket is closed",
+							connection_id() );
+				} );
+				return;
+			}
 
+			if( !m_response_coordinator.closed() )
+			{
 				m_response_coordinator.append_response(
 					request_id,
 					response_output_flags,
 					std::move( bufs ) );
 
-				if( !m_resp_out_ctx.transmitting() )
-				{
-					// Mb there is somethig to write.
-					// TODO: init write
-				}
+				init_write_if_necessary();
 			}
-			catch( const std::exception & ex )
+			else
 			{
-				trigger_error_and_close( [&](){
+				m_logger.warn( [&](){
 					return fmt::format(
-						"[connection:{}] unable to handle response: {}",
-						connection_id(),
-						ex.what() );
+							"[connection:{}] receive response parts for "
+							"request (#{}), but response with connection-close "
+							"attribute happened before",
+							connection_id() );
 				} );
+			}
+
+		}
+
+		// Check if there is something to write,
+		// and if so starts write operation.
+		void
+		init_write_if_necessary()
+		{
+			// Remember if all response cells were busy.
+			const auto full_before = m_response_coordinator.is_full();
+
+			if( !m_resp_out_ctx.transmitting() &&
+				m_resp_out_ctx.obtain_bufs( m_response_coordinator ) )
+			{
+				// Remember if all response cells were busy.
+				const auto full_after = m_response_coordinator.is_full();
+
+				// There is somethig to write.
+				asio::async_write(
+					m_socket,
+					m_resp_out_ctx.create_bufs(),
+					asio::wrap(
+						get_executor(),
+						[ this,
+							ctx = shared_from_this(),
+							should_keep_alive = !m_response_coordinator.closed(),
+							init_read_after_this_write =
+								full_before && !full_after ]
+							( auto ec, std::size_t written ){
+								this->after_write(
+									ec,
+									written,
+									should_keep_alive,
+									init_read_after_this_write );
+						} ) );
+
+				guard_write_operation();
+
+				if( m_response_coordinator.closed() )
+				{
+					m_logger.trace( [&](){
+						return fmt::format(
+								"[connection:{}] sending response with "
+								"connection-close attribute",
+								connection_id() );
+					} );
+
+					// Reading new requests is useless.
+					asio::error_code ignored_ec;
+					m_socket.shutdown(
+						asio::ip::tcp::socket::shutdown_receive,
+						ignored_ec );
+				}
 			}
 		}
 
@@ -514,14 +576,15 @@ class connection_t final
 		after_write(
 			const std::error_code & ec,
 			std::size_t /*written*/,
-			bool should_keep_alive )
+			bool should_keep_alive,
+			bool init_read_after_this_write )
 		{
 			if( ec )
 			{
 				if( ec != asio::error::operation_aborted )
 					trigger_error_and_close( [&](){
 						return fmt::format(
-							"[connection:{}] unable to write response: {}",
+							"[connection:{}] unable to write: {}",
 							connection_id(),
 							ec.message() );
 					} );
@@ -538,7 +601,7 @@ class connection_t final
 
 				m_logger.trace( [&](){
 					return fmt::format(
-							"[connection:{}] response was sent",
+							"[connection:{}] outgoing data was sent",
 							connection_id() );
 				} );
 
@@ -550,9 +613,12 @@ class connection_t final
 								this->connection_id() );
 					} );
 
-					// If keep-alive needed
-					// then start waiting for request
-					wait_for_http_message();
+					if( init_read_after_this_write )
+						wait_for_http_message();
+
+					// Start another write opertion
+					// there is somethin to send.
+					init_write_if_necessary();
 				}
 				else
 				{
@@ -662,6 +728,7 @@ class connection_t final
 				// PARSE ERROR:
 				auto err = HTTP_PARSER_ERRNO( &m_parser );
 
+				// TODO: handle case when there are some request in process.
 				trigger_error_and_close( [&](){
 					return fmt::format(
 							"[connection:{}] parser error {}: {}",
@@ -686,16 +753,19 @@ class connection_t final
 		void
 		on_request_message_complete()
 		{
-			m_logger.trace( [&](){
-				return fmt::format(
-						"[connection:{}] request received: {} {}",
-						connection_id(),
-						http_method_str( static_cast<http_method>(m_parser.method) ),
-						m_parser_ctx.m_header.request_target() );
-			} );
-
 			try
 			{
+				const auto request_id = m_response_coordinator.register_new_request();
+
+				m_logger.trace( [&](){
+					return fmt::format(
+							"[connection:{}] request received (#{}): {} {}",
+							connection_id(),
+							request_id,
+							http_method_str( static_cast<http_method>(m_parser.method) ),
+							m_parser_ctx.m_header.request_target() );
+				} );
+
 				// TODO: mb there is a way to
 				// track if response was emmited immediately in handler
 				// or it was delegated
@@ -704,16 +774,18 @@ class connection_t final
 
 				if( request_rejected() ==
 					m_request_handler(
-						std::make_shared< http_request_t >(
+						std::make_shared< request_t >(
+							request_id,
 							std::move( m_parser_ctx.m_header ),
-							std::move( m_parser_ctx.m_body ) ),
-						shared_from_this() ) )
+							std::move( m_parser_ctx.m_body ),
+							shared_from_this() ) ) )
 				{
 					// If handler refused request, say not implemented.
-
-					// write_response_message_impl( create_not_implemented_resp() );
+					write_response_parts_impl(
+						request_id,
+						response_output_flags_t{ true, false },
+						{ create_not_implemented_resp() } );
 				}
-
 			}
 			catch( const std::exception & ex )
 			{
@@ -740,7 +812,6 @@ class connection_t final
 			close();
 		}
 
-
 		//! Connection
 		asio::ip::tcp::socket m_socket;
 
@@ -766,10 +837,17 @@ class connection_t final
 		//! Helper class for writting response data.
 		struct raw_resp_output_ctx_t
 		{
+			static constexpr auto
+			max_iov_len()
+			{
+				using len_t = decltype( asio::detail::max_iov_len);
+				return std::min< len_t >( asio::detail::max_iov_len, 64 );
+			}
+
 			raw_resp_output_ctx_t()
 			{
-				m_asio_bufs.reserve( asio::details::max_iov_len );
-				m_bufs.reserve( asio::details::max_iov_len );
+				m_asio_bufs.reserve( max_iov_len() );
+				m_bufs.reserve( max_iov_len() );
 			}
 
 			const std::vector< asio::const_buffer > &
@@ -777,7 +855,7 @@ class connection_t final
 			{
 				for( const auto & buf : m_bufs )
 				{
-					m_asio_bufs.emplace_back( buf.data(), buf.size() )
+					m_asio_bufs.emplace_back( buf.data(), buf.size() );
 				}
 
 				m_transmitting = true;
@@ -804,7 +882,7 @@ class connection_t final
 				response_coordinator_t & resp_coordinator )
 			{
 				resp_coordinator.pop_ready_buffers(
-					asio::details::max_iov_len,
+					max_iov_len(),
 					m_bufs );
 
 				return !m_bufs.empty();
@@ -889,7 +967,13 @@ class connection_t final
 									this->connection_id() );
 						} );
 
-						write_response_message_impl( create_timeout_resp() );
+						// TODO: it is not always possible to write such resp.
+
+						// // If handler refused request, say not implemented.
+						// write_response_parts_impl(
+						// 	request_id,
+						// 	response_output_flags_t{ true, false },
+						// 	{ create_timeout_resp() } );
 					} );
 			}
 		}

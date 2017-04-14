@@ -143,8 +143,6 @@ request_rejected()
 //
 
 using default_request_handler_t =
-		std::function< request_handling_status_t (
-			http_request_handle_t,
-			connection_handle_t ) >;
+		std::function< request_handling_status_t ( request_handle_t ) >;
 
 } /* namespace restinio */
