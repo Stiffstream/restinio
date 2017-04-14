@@ -22,9 +22,6 @@ namespace restinio
 class connection_base_t
 	:	public std::enable_shared_from_this< connection_base_t >
 {
-		friend class response_builder_t;
-		friend class response_builder_t;
-
 	public:
 		connection_base_t(std::uint64_t id )
 			:	m_connection_id{ id }
@@ -47,15 +44,6 @@ class connection_base_t
 			response_output_flags_t response_output_flags,
 			//! parts of a response.
 			std::vector< std::string > bufs ) = 0;
-
-	protected:
-
-		virtual void
-		write_response_message(
-			//! Response header.
-			http_response_header_t http_header,
-			//! Body.
-			std::string body ) = 0;
 
 	private:
 		//! Id of a connection.

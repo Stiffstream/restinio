@@ -11,6 +11,7 @@
 namespace restinio
 {
 
+//! Request id in scope of single connection.
 using request_id_t = unsigned int;
 
 //! Response output flags for buffers commited to response-coordinator

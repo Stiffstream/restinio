@@ -382,29 +382,6 @@ class connection_t final
 				} );
 		}
 
-		//! Initiate write response data to socket.
-		virtual void
-		write_response_message(
-			//! Response header.
-			http_response_header_t http_header,
-			//! Body.
-			std::string http_body ) override
-		{
-			http_header.content_length( http_body.size() );
-
-			//! Run write message on io_service loop if possible.
-			asio::dispatch(
-				get_executor(),
-				[ this,
-					header = std::move( http_header ),
-					body = std::move( http_body ),
-					ctx = shared_from_this() ](){
-					write_response_message_impl(
-						header,
-						std::move( body ) );
-				} );
-		}
-
 		//! Close this connection
 		void
 		close()
@@ -464,7 +441,7 @@ class connection_t final
 					response_output_flags,
 					std::move( bufs ) );
 
-				if( !m_resp_ctx.transmitting() )
+				if( !m_resp_out_ctx.transmitting() )
 				{
 					// Mb there is somethig to write.
 					// TODO: init write
@@ -481,56 +458,56 @@ class connection_t final
 			}
 		}
 
-		//! Write response data to socket.
-		/*!
-			\note Body param is value,
-			because it is supposed to passed using move-semantics.
-		*/
-		void
-		write_response_message_impl(
-			//! Response header.
-			const http_response_header_t & http_header,
-			//! Body.
-			std::string body = std::string{} )
-		{
-			if( !m_socket.is_open() ||
-				m_resp_ctx.transmitting() )
-			{
-				m_logger.warn( [&](){
-					return fmt::format(
-							"[connection:{}] try to write response, "
-							"while already sending response",
-							connection_id() );
-				} );
+		// //! Write response data to socket.
+		// /*!
+		// 	\note Body param is value,
+		// 	because it is supposed to passed using move-semantics.
+		// */
+		// void
+		// write_response_message_impl(
+		// 	//! Response header.
+		// 	const http_response_header_t & http_header,
+		// 	//! Body.
+		// 	std::string body = std::string{} )
+		// {
+		// 	if( !m_socket.is_open() ||
+		// 		m_resp_out_ctx.transmitting() )
+		// 	{
+		// 		m_logger.warn( [&](){
+		// 			return fmt::format(
+		// 					"[connection:{}] try to write response, "
+		// 					"while already sending response",
+		// 					connection_id() );
+		// 		} );
 
-				return;
-			}
+		// 		return;
+		// 	}
 
-			m_logger.trace( [&](){
-				return fmt::format(
-					"[connection:{}] writing response ",
-					connection_id() );
-			} );
+		// 	m_logger.trace( [&](){
+		// 		return fmt::format(
+		// 			"[connection:{}] writing response ",
+		// 			connection_id() );
+		// 	} );
 
-			// Start writting.
-			asio::async_write(
-				m_socket,
-				m_resp_ctx.create_bufs(
-					create_header_string(
-						http_header,
-						m_settings->m_buffer_size ),
-					std::move( body ) ),
-				asio::wrap(
-					get_executor(),
-					[ this,
-						ctx = shared_from_this(),
-						should_keep_alive = http_header.should_keep_alive() ]
-						( auto ec, std::size_t written ){
-							this->after_write( ec, written, should_keep_alive );
-					} ) );
+		// 	// Start writting.
+		// 	asio::async_write(
+		// 		m_socket,
+		// 		m_resp_out_ctx.create_bufs(
+		// 			create_header_string(
+		// 				http_header,
+		// 				m_settings->m_buffer_size ),
+		// 			std::move( body ) ),
+		// 		asio::wrap(
+		// 			get_executor(),
+		// 			[ this,
+		// 				ctx = shared_from_this(),
+		// 				should_keep_alive = http_header.should_keep_alive() ]
+		// 				( auto ec, std::size_t written ){
+		// 					this->after_write( ec, written, should_keep_alive );
+		// 			} ) );
 
-			guard_write_operation();
-		}
+		// 	guard_write_operation();
+		// }
 
 		//! Handle write response finished.
 		void
@@ -557,7 +534,7 @@ class connection_t final
 			else
 			{
 				// Release allocated strings data.
-				m_resp_ctx.done();
+				m_resp_out_ctx.done();
 
 				m_logger.trace( [&](){
 					return fmt::format(
@@ -733,8 +710,10 @@ class connection_t final
 						shared_from_this() ) )
 				{
 					// If handler refused request, say not implemented.
-					write_response_message_impl( create_not_implemented_resp() );
+
+					// write_response_message_impl( create_not_implemented_resp() );
 				}
+
 			}
 			catch( const std::exception & ex )
 			{
@@ -781,35 +760,35 @@ class connection_t final
 		//! \}
 
 		//
-		// raw_resp_ctx_t
+		// raw_resp_output_ctx_t
 		//
 
 		//! Helper class for writting response data.
-		struct raw_resp_ctx_t
+		struct raw_resp_output_ctx_t
 		{
-			const std::array< asio::const_buffer, 2 > &
-			create_bufs(
-				std::string header,
-				std::string body )
+			raw_resp_output_ctx_t()
 			{
-				m_header.assign( std::move( header ) );
-				m_body.assign( std::move( body ) );
+				m_asio_bufs.reserve( asio::details::max_iov_len );
+				m_bufs.reserve( asio::details::max_iov_len );
+			}
 
-
-				m_bufs[ 0 ] = asio::buffer( m_header.data(), m_header.size() );
-
-				if( !m_body.empty() )
-					m_bufs[ 1 ] = asio::buffer( m_body.data(), m_body.size() );
+			const std::vector< asio::const_buffer > &
+			create_bufs()
+			{
+				for( const auto & buf : m_bufs )
+				{
+					m_asio_bufs.emplace_back( buf.data(), buf.size() )
+				}
 
 				m_transmitting = true;
-				return m_bufs;
+				return m_asio_bufs;
 			}
 
 			void
 			done()
 			{
-				m_header.clear();
-				m_body.clear();
+				m_asio_bufs.clear();
+				m_bufs.clear();
 				m_transmitting = false;
 			}
 
@@ -819,14 +798,31 @@ class connection_t final
 				return m_transmitting;
 			}
 
+			//! Obtains ready buffers if any;
+			bool
+			obtain_bufs(
+				response_coordinator_t & resp_coordinator )
+			{
+				resp_coordinator.pop_ready_buffers(
+					asio::details::max_iov_len,
+					m_bufs );
+
+				return !m_bufs.empty();
+			}
+
 			private:
-				std::string m_header;
-				std::string m_body;
-				std::array< asio::const_buffer, 2 > m_bufs;
+				//! Asio buffers.
+				std::vector< asio::const_buffer > m_asio_bufs;
+
+				//! Real buffers with data.
+				std::vector< std::string > m_bufs;
+
+				//! Is transmition running?
 				bool m_transmitting{ false };
 		};
 
-		raw_resp_ctx_t m_resp_ctx;
+		//! Write to socket operation context.
+		raw_resp_output_ctx_t m_resp_out_ctx;
 
 		//! Response coordinator.
 		response_coordinator_t m_response_coordinator;
@@ -882,7 +878,7 @@ class connection_t final
 		{
 			// Guard handling request only when
 			// there is no responses that are written.
-			if( !m_resp_ctx.transmitting() )
+			if( !m_resp_out_ctx.transmitting() )
 			{
 				schedule_operation_timeout_callback(
 					m_settings->m_handle_request_timeout,
