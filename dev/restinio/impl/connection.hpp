@@ -311,6 +311,34 @@ struct raw_resp_output_ctx_t
 		bool m_transmitting{ false };
 };
 
+//! Data associated with connection read routine.
+struct connection_input_t
+{
+	connection_input_t( std::size_t buffer_size )
+		:	m_buf{ buffer_size }
+	{}
+
+	//! Input buffer.
+	input_buffer_t m_buf;
+
+	//! HTTP-parser.
+	//! \{
+	http_parser m_parser;
+	parser_ctx_t m_parser_ctx;
+
+	//! Prepare parser for reading new http-message.
+	void
+	reset_parser()
+	{
+		// Reinit parser.
+		http_parser_init( &m_parser, HTTP_REQUEST);
+
+		// Reset context and attach it to parser.
+		m_parser_ctx.reset();
+		m_parser.data = &m_parser_ctx;
+	}
+	//! \}
+};
 
 //
 // connection_t
@@ -355,7 +383,7 @@ class connection_t final
 			,	m_socket{ std::move( socket ) }
 			,	m_strand{ m_socket.get_executor() }
 			,	m_settings{ std::move( settings ) }
-			,	m_buf{ m_settings->m_buffer_size }
+			,	m_input{ m_settings->m_buffer_size }
 			,	m_response_coordinator{ m_settings->m_max_pipelined_requests }
 			,	m_timer_guard{ std::move( timer_guard ) }
 			,	m_request_handler{ *( m_settings->m_request_handler ) }
@@ -397,20 +425,20 @@ class connection_t final
 			} );
 
 			// Prepare parser for consuming new request message.
-			reset_parser();
+			m_input.reset_parser();
 
 			// Guard total time for a request to be read.
 			// guarding here makes the total read process
 			// to run in read_next_http_message_timelimit.
 			guard_read_operation();
 
-			if( 0 != m_buf.length() )
+			if( 0 != m_input.m_buf.length() )
 			{
 				// If a pipeline requests were sent by client
 				// then the biginning (or even entire request) of it
 				// is in the buffer obtained from socket in previous
 				// read operation.
-				consume_data( m_buf.bytes(), m_buf.length() );
+				consume_data( m_input.m_buf.bytes(), m_input.m_buf.length() );
 			}
 			else
 			{
@@ -426,6 +454,126 @@ class connection_t final
 		{
 			return m_strand;
 		}
+
+		//! Start (continue) a chain of read-parse-read-... operations.
+		void
+		consume_message()
+		{
+			m_logger.trace( [&](){
+				return fmt::format(
+						"[connection:{}] continue reading request",
+						connection_id() );
+			} );
+
+			m_socket.async_read_some(
+				m_input.m_buf.make_asio_buffer(),
+				asio::wrap(
+					get_executor(),
+					[ this, ctx = shared_from_this() ]( auto ec, std::size_t length ){
+						this->after_read( ec, length );
+					} ) );
+		}
+
+		void
+		after_read( const std::error_code & ec, std::size_t length )
+		{
+			if( !ec )
+			{
+				m_logger.trace( [&](){
+					return fmt::format(
+							"[connection:{}] received {} bytes",
+							this->connection_id(),
+							length );
+				} );
+
+				m_input.m_buf.obtained_bytes( length );
+
+				consume_data( m_input.m_buf.bytes(), length );
+			}
+			else
+			{
+				// Well, if it is actually an error
+				// then close connection.
+				if( ec != asio::error::operation_aborted )
+				{
+					if ( ec != asio::error::eof || 0 != m_input.m_parser.nread )
+						trigger_error_and_close( [&](){
+							return fmt::format(
+									"[connection:{}] read socket error: {}; "
+									"parsed bytes: {}",
+									connection_id(),
+									ec.message(),
+									m_input.m_parser.nread );
+						} );
+					else
+					{
+						// A case that is not such an  error:
+						// on a connection (most probably keeped alive
+						// after previous request, but a new also applied)
+						// no bytes were consumed and remote peer closes connection.
+						m_logger.trace( [&](){
+							return fmt::format(
+									"[connection:{}] EOF and no request, "
+									"close connection",
+									connection_id() );
+						} );
+
+						close();
+					}
+				}
+				// else: read operation was cancelled.
+			}
+		}
+
+		//! Parse some data.
+		void
+		consume_data( const char * data, std::size_t length )
+		{
+			auto & parser = m_input.m_parser;
+
+			const auto nparsed =
+				http_parser_execute(
+					&parser,
+					&( m_settings->m_parser_settings ),
+					data,
+					length );
+
+			// If entire http-message was obtained,
+			// parser is stopped and the might be a part of consecutive request
+			// left in buffer, so we mark how many bytes were obtained.
+			// and next message read (if any) will be started from already existing
+			// data left in buffer.
+			m_input.m_buf.consumed_bytes( nparsed );
+
+			if( HPE_OK != parser.http_errno &&
+				HPE_PAUSED != parser.http_errno )
+			{
+				// PARSE ERROR:
+				auto err = HTTP_PARSER_ERRNO( &parser );
+
+				// TODO: handle case when there are some request in process.
+				trigger_error_and_close( [&](){
+					return fmt::format(
+							"[connection:{}] parser error {}: {}",
+							connection_id(),
+							http_errno_name( err ),
+							http_errno_description( err ) );
+				} );
+
+				// nothing to do.
+				return;
+			}
+
+			if( m_input.m_parser_ctx.m_message_complete )
+			{
+				on_request_message_complete();
+			}
+			else
+				consume_message();
+		}
+
+
+
 
 		//! Close connection functions.
 		//! \{
@@ -473,26 +621,20 @@ class connection_t final
 		//! Common paramaters for buffer.
 		connection_settings_shared_ptr_t< TRAITS > m_settings;
 
-		//! Input buffer.
-		input_buffer_t m_buf;
+		//! Input routine.
+		connection_input_t m_input;
 
-		//! HTTP-parser.
-		//! \{
-		http_parser m_parser;
-		parser_ctx_t m_parser_ctx;
 
-		//! Prepare parser for reading new http-message.
-		void
-		reset_parser()
-		{
-			// Reinit parser.
-			http_parser_init( &m_parser, HTTP_REQUEST);
 
-			// Reset context and attach it to parser.
-			m_parser_ctx.reset();
-			m_parser.data = &m_parser_ctx;
-		}
-		//! \}
+
+
+
+
+
+
+
+
+
 
 		//! Write to socket operation context.
 		raw_resp_output_ctx_t m_resp_out_ctx;
