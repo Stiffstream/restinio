@@ -15,20 +15,20 @@
 
 auto server_handler()
 {
-	return []( auto req, auto conn ) {
+	return []( auto req ) {
 			auto create_common_resp =
 				[&] {
-					restinio::response_builder_t resp{ req->m_header, std::move( conn ) };
-							resp.append_header( "Server", "RESTinio sample server /v.0.2" );
-							resp.append_header_date_field();
+					auto resp = req->create_response();
+					resp.append_header( "Server", "RESTinio sample server /v.0.2" );
+					resp.append_header_date_field();
 					return resp;
 				};
 
 			auto result = restinio::request_rejected();
 
-			if( restinio::http_method_get() == req->m_header.method() )
+			if( restinio::http_method_get() == req->header().method() )
 			{
-				if( req->m_header.request_target() == "/" )
+				if( req->header().request_target() == "/" )
 				{
 					create_common_resp()
 						.append_header( "Content-Type", "text/plain; charset=utf-8" )
@@ -37,7 +37,7 @@ auto server_handler()
 
 					result = restinio::request_accepted();
 				}
-				else if( req->m_header.request_target() == "/json" )
+				else if( req->header().request_target() == "/json" )
 				{
 					create_common_resp()
 						.append_header( "Content-Type", "text/json; charset=utf-8" )
@@ -46,7 +46,7 @@ auto server_handler()
 
 					result = restinio::request_accepted();
 				}
-				else if( req->m_header.request_target() == "/html" )
+				else if( req->header().request_target() == "/html" )
 				{
 					create_common_resp()
 						.append_header( "Content-Type", "text/html; charset=utf-8" )

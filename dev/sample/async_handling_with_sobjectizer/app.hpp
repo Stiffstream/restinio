@@ -16,14 +16,11 @@
 struct msg_request_t final : public so_5::message_t
 {
 	msg_request_t(
-		restinio::http_request_handle_t req,
-		restinio::connection_handle_t conn )
+		restinio::request_handle_t req )
 		:	m_req{ std::move( req ) }
-		,	m_conn{ std::move( conn ) }
 	{}
 
-	restinio::http_request_handle_t m_req;
-	restinio::connection_handle_t m_conn;
+	restinio::request_handle_t m_req;
 };
 
 auto now_string_utc()
@@ -63,7 +60,7 @@ class a_target_t final : public so_5::agent_t
 
 			++m_req_count;
 
-			restinio::response_builder_t{ req.m_req->m_header, req.m_conn }
+			req.m_req->create_response()
 				.append_header( "Server", "RESTinio sample server /v.0.2" )
 				.append_header_date_field()
 				.append_header( "Content-Type", "text/html; charset=utf-8" )
@@ -172,7 +169,7 @@ class a_main_handler_t final : public so_5::agent_t
 		void evt_req( const msg_request_t & req )
 		{
 			const auto target =
-				clarify_target( req.m_req->m_header.request_target() );
+				clarify_target( req.m_req->header().request_target() );
 
 			if( target == "/" )
 			{
@@ -186,9 +183,7 @@ class a_main_handler_t final : public so_5::agent_t
 
 		void handle_request( const msg_request_t & req )
 		{
-			restinio::response_builder_t response{
-				req.m_req->m_header,
-				req.m_conn };
+			auto response = req.m_req->create_response();
 
 			// Build main page:
 			response
@@ -264,7 +259,7 @@ class a_main_handler_t final : public so_5::agent_t
 				target_mbox = it->second;
 			}
 
-			so_5::send< msg_request_t >( target_mbox, req.m_req, req.m_conn );
+			so_5::send< msg_request_t >( target_mbox, req.m_req );
 		}
 
 	std::map< std::string, so_5::mbox_t > m_available_targets;
@@ -273,13 +268,10 @@ class a_main_handler_t final : public so_5::agent_t
 // Create request handler that sends a request to a specified mbox.
 auto create_request_handler( so_5::mbox_t mbox )
 {
-	return [mbox](
-			restinio::http_request_handle_t req,
-			restinio::connection_handle_t conn )
-		{
-			if( restinio::http_method_get() == req->m_header.method() )
+	return [mbox]( restinio::request_handle_t req ){
+			if( restinio::http_method_get() == req->header().method() )
 			{
-				so_5::send< msg_request_t >( mbox, std::move( req ), std::move( conn ) );
+				so_5::send< msg_request_t >( mbox, std::move( req ) );
 				return restinio::request_accepted();
 			}
 

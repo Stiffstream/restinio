@@ -63,14 +63,12 @@ const std::string RESP_BODY{ "Hello world!" };
 struct req_handler_t
 {
 	auto
-	operator () (
-		restinio::http_request_handle_t req,
-		restinio::connection_handle_t conn ) const
+	operator () ( restinio::request_handle_t req ) const
 	{
-		if( restinio::http_method_get() == req->m_header.method() &&
-			req->m_header.request_target() == "/" )
+		if( restinio::http_method_get() == req->header().method() &&
+			req->header().request_target() == "/" )
 		{
-			restinio::response_builder_t{ req->m_header, std::move( conn ) }
+			req->create_response()
 				.append_header( "Server", "RESTinio Benchmark server" )
 				.append_header_date_field()
 				.append_header( "Content-Type", "text/plain; charset=utf-8" )
