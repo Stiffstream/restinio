@@ -572,6 +572,254 @@ class connection_t final
 				consume_message();
 		}
 
+		//! Handle a given request message.
+		void
+		on_request_message_complete()
+		{
+			try
+			{
+				auto & parser = m_input.m_parser;
+				auto & parser_ctx = m_input.m_parser_ctx;
+
+				const auto request_id = m_response_coordinator.register_new_request();
+
+				m_logger.trace( [&](){
+					return fmt::format(
+							"[connection:{}] request received (#{}): {} {}",
+							connection_id(),
+							request_id,
+							http_method_str(
+								static_cast<http_method>( parser.method ) ),
+							parser_ctx.m_header.request_target() );
+				} );
+
+				// TODO: mb there is a way to
+				// track if response was emmited immediately in handler
+				// or it was delegated
+				// so it is possible to omit this timer scheduling.
+				guard_request_handling_operation();
+
+				if( request_rejected() ==
+					m_request_handler(
+						std::make_shared< request_t >(
+							request_id,
+							std::move( parser_ctx.m_header ),
+							std::move( parser_ctx.m_body ),
+							shared_from_this() ) ) )
+				{
+					// If handler refused request, say not implemented.
+					write_response_parts_impl(
+						request_id,
+						response_output_flags_t{
+							response_parts_attr_t::final_parts,
+							response_connection_attr_t::connection_close },
+						{ create_not_implemented_resp() } );
+				}
+				else if(
+					!m_response_coordinator.closed() &&
+					!m_response_coordinator.is_full() )
+				{
+					// Request was accepted,
+					// didn't create immediate response that closes connection after,
+					// and it is possible to receive more requests
+					// then start consuming yet another request.
+					wait_for_http_message();
+				}
+			}
+			catch( const std::exception & ex )
+			{
+				trigger_error_and_close( [&](){
+					return fmt::format(
+							"[connection:{}] error while handling request: {}",
+							this->connection_id(),
+							ex.what() );
+				} );
+			}
+		}
+
+
+		//! Write parts for specified request.
+		void
+		write_response_parts_impl(
+			//! Request id.
+			request_id_t request_id,
+			//! Resp output flag.
+			response_output_flags_t response_output_flags,
+			//! parts of a response.
+			std::vector< std::string > bufs )
+		{
+			if( !m_socket.is_open() )
+			{
+				m_logger.warn( [&](){
+					return fmt::format(
+							"[connection:{}] try to write response, "
+							"while socket is closed",
+							connection_id() );
+				} );
+				return;
+			}
+
+			if( !m_response_coordinator.closed() )
+			{
+				m_response_coordinator.append_response(
+					request_id,
+					response_output_flags,
+					std::move( bufs ) );
+
+				init_write_if_necessary();
+			}
+			else
+			{
+				m_logger.warn( [&](){
+					return fmt::format(
+							"[connection:{}] receive response parts for "
+							"request (#{}), but response with connection-close "
+							"attribute happened before",
+							connection_id() );
+				} );
+			}
+
+		}
+
+		// Check if there is something to write,
+		// and if so starts write operation.
+		void
+		init_write_if_necessary()
+		{
+			// Remember if all response cells were busy.
+			const auto full_before = m_response_coordinator.is_full();
+
+			if( !m_resp_out_ctx.transmitting() )
+			{
+				if( m_resp_out_ctx.obtain_bufs( m_response_coordinator ) )
+				{
+					// Remember if all response cells were busy.
+					const auto full_after = m_response_coordinator.is_full();
+
+					// There is somethig to write.
+					asio::async_write(
+						m_socket,
+						m_resp_out_ctx.create_bufs(),
+						asio::wrap(
+							get_executor(),
+							[ this,
+								ctx = shared_from_this(),
+								should_keep_alive = !m_response_coordinator.closed(),
+								init_read_after_this_write =
+									full_before && !full_after ]
+								( auto ec, std::size_t written ){
+									this->after_write(
+										ec,
+										written,
+										should_keep_alive,
+										init_read_after_this_write );
+							} ) );
+
+					guard_write_operation();
+
+					if( m_response_coordinator.closed() )
+					{
+						m_logger.trace( [&](){
+							return fmt::format(
+									"[connection:{}] sending response with "
+									"connection-close attribute",
+									connection_id() );
+						} );
+
+						// Reading new requests is useless.
+						asio::error_code ignored_ec;
+						m_socket.shutdown(
+							asio::ip::tcp::socket::shutdown_receive,
+							ignored_ec );
+					}
+				}
+				else
+				{
+					// Not writing anything, so need to deal with timouts.
+					if( m_response_coordinator.empty() )
+					{
+						// No requests in processing.
+						// So set read next request timeout.
+						guard_read_operation();
+					}
+					else
+					{
+						// Have requests in process.
+						// So take control over request handling.
+						guard_request_handling_operation();
+					}
+				}
+			}
+		}
+
+		//! Handle write response finished.
+		void
+		after_write(
+			const std::error_code & ec,
+			std::size_t /*written*/,
+			bool should_keep_alive,
+			bool init_read_after_this_write )
+		{
+			if( !ec )
+			{
+				// Release allocated strings data.
+				m_resp_out_ctx.done();
+
+				m_logger.trace( [&](){
+					return fmt::format(
+							"[connection:{}] outgoing data was sent",
+							connection_id() );
+				} );
+
+				if( should_keep_alive )
+				{
+					m_logger.trace( [&](){
+						return fmt::format(
+								"[connection:{}] should keep alive",
+								this->connection_id() );
+					} );
+
+					if( init_read_after_this_write )
+						wait_for_http_message();
+
+					// Start another write opertion
+					// if there is something to send.
+					init_write_if_necessary();
+				}
+				else
+				{
+					// No keep-alive, close connection.
+					close();
+				}
+			}
+			else
+			{
+				if( ec != asio::error::operation_aborted )
+				{
+					trigger_error_and_close( [&](){
+						return fmt::format(
+							"[connection:{}] unable to write: {}",
+							connection_id(),
+							ec.message() );
+					} );
+				}
+				// else: Operation aborted only in case of close was called.
+			}
+		}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
