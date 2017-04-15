@@ -13,6 +13,7 @@
 
 #include <restinio/all.hpp>
 
+#include "../../../sample/common/ostream_logger.hpp"
 #include "../../handle_requests/common/pub.hpp"
 
 
@@ -80,6 +81,11 @@ struct req_handler_t
 TEST_CASE( "HTTP piplining" , "[reverse_handling]" )
 {
 	using http_server_t = restinio::http_server_t<>;
+	// using http_server_t =
+	// 	restinio::http_server_t<
+	// 		restinio::traits_t<
+	// 			restinio::asio_timer_factory_t,
+	// 			restinio::sample::single_threaded_ostream_logger_t > >;
 
 	http_server_t http_server{
 		restinio::create_child_io_service( 1 ),
@@ -87,9 +93,12 @@ TEST_CASE( "HTTP piplining" , "[reverse_handling]" )
 			settings
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
-				.read_next_http_message_timelimit( std::chrono::seconds( 5 ) )
-				.handle_request_timeout( std::chrono::seconds( 1 ) )
-				.max_pipelined_requests( 5 )
+
+				// Must have notable timeouts:
+				.read_next_http_message_timelimit( std::chrono::hours( 24 ) )
+				.handle_request_timeout( std::chrono::hours( 24 ) )
+
+				.max_pipelined_requests( 10 )
 				.request_handler(
 					[]( auto req ){
 						if( restinio::http_method_post() == req->header().method() )
@@ -147,30 +156,42 @@ TEST_CASE( "HTTP piplining" , "[reverse_handling]" )
 	}
 
 	{
-		const auto pipelinedrequests =
-			create_request( "first", "FIRST" ) +
-			create_request( "second", "SECOND" ) +
-			create_request( "third", "THIRD" ) +
-			create_request( "first", "FIRST" ) +
-			create_request( "second", "SECOND" );
+		std::thread helper_thread{
+			[&](){
+				const auto pipelinedrequests =
+					create_request( "first", "FIRST" ) +
+					create_request( "second", "SECOND" ) +
+					create_request( "third", "THIRD" ) +
+					create_request( "first", "FIRST" ) +
+					create_request( "second", "SECOND", "close" );
 
-		REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
+				REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
+				{
+					auto first_pos = response.find( "FIRST" );
+					auto second_pos = response.find( "SECOND" );
+					auto third_pos = response.find( "THIRD" );
 
-		{
-			const auto first_pos = response.find( "FIRST" );
-			const auto second_pos = response.find( "SECOND" );
-			const auto third_pos = response.find( "THIRD" );
+					REQUIRE_FALSE( std::string::npos == first_pos );
+					REQUIRE_FALSE( std::string::npos == second_pos );
+					REQUIRE_FALSE( std::string::npos == third_pos );
 
-			REQUIRE_FALSE( std::string::npos == first_pos );
-			REQUIRE_FALSE( std::string::npos == second_pos );
-			REQUIRE_FALSE( std::string::npos == third_pos );
+					REQUIRE( first_pos < second_pos );
+					REQUIRE( second_pos < third_pos );
 
-			REQUIRE( first_pos < second_pos );
-			REQUIRE( second_pos < third_pos );
-		}
+					first_pos = response.find( "FIRST", third_pos );
+					second_pos = response.find( "SECOND", third_pos );
+
+					REQUIRE_FALSE( std::string::npos == first_pos );
+					REQUIRE_FALSE( std::string::npos == second_pos );
+
+					REQUIRE( first_pos < second_pos );
+				}
+			} };
+
 
 		// Send 3rd reques through another connection.
-		REQUIRE_NOTHROW( response = do_request( create_request( "third", "THIRD", "close" ) ) );
+		REQUIRE_NOTHROW(
+			response = do_request( create_request( "third", "THIRD", "close" ) ) );
 
 		// It must not contain responses on 1st and 2dn request
 		// leaved in handler.
@@ -184,6 +205,8 @@ TEST_CASE( "HTTP piplining" , "[reverse_handling]" )
 			REQUIRE( std::string::npos == second_pos );
 			REQUIRE_FALSE( std::string::npos == third_pos );
 		}
+
+		helper_thread.join();
 	}
 
 	http_server.close();
