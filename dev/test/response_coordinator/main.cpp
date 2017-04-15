@@ -16,6 +16,18 @@
 using namespace restinio;
 using namespace restinio::impl;
 
+constexpr response_parts_attr_t
+response_is_not_complete() { return response_parts_attr_t::not_final_parts; }
+
+constexpr response_parts_attr_t
+response_is_complete() { return response_parts_attr_t::final_parts; }
+
+constexpr response_connection_attr_t
+connection_should_keep_alive() { return response_connection_attr_t::connection_keepalive; }
+
+constexpr response_connection_attr_t
+connection_should_close() { return response_connection_attr_t::connection_close; }
+
 TEST_CASE( "response_context_table" , "[response_context][response_context_table]" )
 {
 	SECTION( "empty" )
@@ -54,8 +66,11 @@ TEST_CASE( "response_context_table" , "[response_context][response_context_table
 
 		REQUIRE( table.get_by_req_id( 42UL )->m_request_id == 42UL );
 
-		REQUIRE_FALSE( table.get_by_req_id( 42UL )->m_response_output_flags.m_response_is_complete );
-		REQUIRE( table.get_by_req_id( 42UL )->m_response_output_flags.m_connection_should_keep_alive );
+		REQUIRE( response_parts_attr_t::not_final_parts ==
+			table.get_by_req_id( 42UL )->m_response_output_flags.m_response_parts );
+		REQUIRE(
+			response_connection_attr_t::connection_keepalive ==
+			table.get_by_req_id( 42UL )->m_response_output_flags.m_response_connection );
 
 		CHECK_NOTHROW( table.pop_response_context() );
 	}
@@ -159,18 +174,6 @@ TEST_CASE( "response_context_table" , "[response_context][response_context_table
 		REQUIRE_FALSE( table.is_full() );
 	}
 }
-
-constexpr bool
-response_is_not_complete() { return false; }
-
-constexpr bool
-response_is_complete() { return true; }
-
-constexpr bool
-connection_should_keep_alive() { return true; }
-
-constexpr bool
-connection_should_close() { return false; }
 
 TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 {
@@ -836,7 +839,7 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 			req_id[ 0 ],
 			response_output_flags_t{
 				response_is_not_complete(),
-				connection_should_keep_alive },
+				connection_should_keep_alive() },
 			{ "0a", "0b", "0c", "0a", "0b", "0c",
 			  "0a", "0b", "0c", "0a", "0b", "0c",
 			  "0a", "0b", "0c", "0a", "0b", "0c",

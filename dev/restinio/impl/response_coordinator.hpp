@@ -33,7 +33,10 @@ struct response_context_t
 	reinit( request_id_t request_id )
 	{
 		m_request_id = request_id;
-		m_response_output_flags = { false, true };
+		m_response_output_flags =
+			response_output_flags_t{
+				response_parts_attr_t::not_final_parts,
+				response_connection_attr_t::connection_keepalive };
 	}
 
 	request_id_t m_request_id{ 0 };
@@ -42,7 +45,10 @@ struct response_context_t
 	std::vector< std::string > m_bufs;
 
 	//! Response flags
-	response_output_flags_t m_response_output_flags{ false, true };
+	response_output_flags_t
+		m_response_output_flags{
+			response_parts_attr_t::not_final_parts,
+			response_connection_attr_t::connection_keepalive };
 };
 
 //
@@ -228,7 +234,8 @@ class response_coordinator_t
 						req_id ) };
 			}
 
-			if( ctx->m_response_output_flags.m_response_is_complete )
+			if( response_parts_attr_t::final_parts ==
+				ctx->m_response_output_flags.m_response_parts )
 			{
 				// Request is already completed...
 				throw std::runtime_error{
@@ -299,13 +306,15 @@ class response_coordinator_t
 					// selected for output, so it might be the case
 					// entire response was selected.
 
-					if( current_ctx.m_response_output_flags.m_response_is_complete )
+					if( response_parts_attr_t::final_parts ==
+						current_ctx.m_response_output_flags.m_response_parts )
 					{
 						// Response for currently first tracked
 						// request is completed.
 						m_context_table.pop_response_context();
 
-						if( !current_ctx.m_response_output_flags.m_connection_should_keep_alive )
+						if( response_connection_attr_t::connection_close ==
+							current_ctx.m_response_output_flags.m_response_connection )
 						{
 							// Not onle the response is complete
 							// but it has a connection-close property.

@@ -186,8 +186,8 @@ class resp_builder_t< restinio_controlled_output_t > final
 
 				const response_output_flags_t
 					response_output_flags{
-						true, // response_is_complete
-						m_header.should_keep_alive() };
+						response_parts_attr_t::final_parts,
+						response_connection_attr( m_header.should_keep_alive() ) };
 
 				conn->write_response_parts(
 					m_request_id,
