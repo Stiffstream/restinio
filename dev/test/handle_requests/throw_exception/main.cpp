@@ -32,7 +32,7 @@ TEST_CASE( "Throw exception" , "[exception]" )
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.read_next_http_message_timelimit( std::chrono::milliseconds( 5 ) )
-				.request_handler( []( auto /*req*/, auto /*conn*/ ){
+				.request_handler( []( auto /*req*/ ){
 					throw std::runtime_error( "unit test exception" );
 					return restinio::request_accepted();
 				} );

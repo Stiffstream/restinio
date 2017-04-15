@@ -25,19 +25,18 @@ TEST_CASE( "HTTP method" , "[method]" )
 			settings
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
-				.request_handler( []( auto req, auto conn ){
+				.request_handler(
+					[]( auto req ){
+						req->create_response()
+							.append_header( "Server", "RESTinio utest server" )
+							.append_header_date_field()
+							.append_header( "Content-Type", "text/plain; charset=utf-8" )
+							.set_body( method_to_string( req->header().method() ) )
+							.done();
 
-					restinio::response_builder_t{ req->m_header, std::move( conn ) }
-						.append_header( "Server", "RESTinio utest server" )
-						.append_header_date_field()
-						.append_header( "Content-Type", "text/plain; charset=utf-8" )
-						.set_body( method_to_string( req->m_header.method() ) )
-						.done();
-
-					return restinio::request_accepted();
-				} );
-		}
-	};
+						return restinio::request_accepted();
+					} );
+		} };
 
 	http_server.open();
 

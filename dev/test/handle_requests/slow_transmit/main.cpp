@@ -32,10 +32,10 @@ TEST_CASE( "Slow transmit" , "[slow_trunsmit]" )
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.read_next_http_message_timelimit( std::chrono::seconds( 5 ) )
-				.request_handler( []( auto req, auto conn ){
-					if( restinio::http_method_get() == req->m_header.method() )
+				.request_handler( []( auto req ){
+					if( restinio::http_method_get() == req->header().method() )
 					{
-						restinio::response_builder_t{ req->m_header, std::move( conn ) }
+						req->create_response()
 							.append_header( "Server", "RESTinio utest server" )
 							.append_header_date_field()
 							.append_header( "Content-Type", "text/plain; charset=utf-8" )

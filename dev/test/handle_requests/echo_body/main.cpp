@@ -25,22 +25,21 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 			settings
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
-				.request_handler( []( auto req, auto conn ){
+				.request_handler(
+					[]( auto req ){
+						if( restinio::http_method_post() == req->header().method() )
+						{
+							req->create_response()
+								.append_header( "Server", "RESTinio utest server" )
+								.append_header_date_field()
+								.append_header( "Content-Type", "text/plain; charset=utf-8" )
+								.set_body( req->body() )
+								.done();
+							return restinio::request_accepted();
+						}
 
-					if( restinio::http_method_post() == req->m_header.method() )
-					{
-						restinio::response_builder_t{ req->m_header, std::move( conn ) }
-							.append_header( "Server", "RESTinio utest server" )
-							.append_header_date_field()
-							.append_header( "Content-Type", "text/plain; charset=utf-8" )
-							.set_body( req->m_body )
-							.done();
-
-						return restinio::request_accepted();
-					}
-
-					return restinio::request_rejected();
-				} );
+						return restinio::request_rejected();
+					} );
 		}
 	};
 

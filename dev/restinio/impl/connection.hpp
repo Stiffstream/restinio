@@ -637,6 +637,42 @@ class connection_t final
 			}
 		}
 
+		//! Write parts for specified request.
+		virtual void
+		write_response_parts(
+			//! Request id.
+			request_id_t request_id,
+			//! Resp output flag.
+			response_output_flags_t response_output_flags,
+			//! parts of a response.
+			std::vector< std::string > bufs ) override
+		{
+			//! Run write message on io_service loop if possible.
+			asio::dispatch(
+				get_executor(),
+				[ this,
+					request_id,
+					response_output_flags,
+					bufs = std::move( bufs ),
+					ctx = shared_from_this() ](){
+						try
+						{
+							write_response_parts_impl(
+								request_id,
+								response_output_flags,
+								std::move( bufs ) );
+						}
+						catch( const std::exception & ex )
+						{
+							trigger_error_and_close( [&](){
+								return fmt::format(
+									"[connection:{}] unable to handle response: {}",
+									connection_id(),
+									ex.what() );
+							} );
+						}
+				} );
+		}
 
 		//! Write parts for specified request.
 		void
