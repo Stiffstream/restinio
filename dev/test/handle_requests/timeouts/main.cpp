@@ -13,7 +13,8 @@
 
 #include <restinio/all.hpp>
 
-#include "../common/pub.hpp"
+#include <test/common/utest_logger.hpp>
+#include <test/common/pub.hpp>
 
 #if defined(__GNUG__)
 #pragma GCC diagnostic ignored "-Wparentheses"
@@ -23,7 +24,11 @@ const std::string RESP_BODY{ "-=UNIT-TEST=-" };
 
 TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 {
-	using http_server_t = restinio::http_server_t<>;
+	using http_server_t =
+		restinio::http_server_t<
+			restinio::traits_t<
+				restinio::asio_timer_factory_t,
+				utest_logger_t > >;
 
 	http_server_t http_server{
 		restinio::create_child_io_service( 1 ),
@@ -32,10 +37,10 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.read_next_http_message_timelimit( std::chrono::milliseconds( 5 ) )
-				.request_handler( []( auto req, auto conn ){
-					if( restinio::http_method_get() == req->m_header.method() )
+				.request_handler( []( auto req ){
+					if( restinio::http_method_get() == req->header().method() )
 					{
-						restinio::response_builder_t{ req->m_header, std::move( conn ) }
+						req->create_response()
 							.append_header( "Server", "RESTinio utest server" )
 							.append_header_date_field()
 							.append_header( "Content-Type", "text/plain; charset=utf-8" )
@@ -44,7 +49,6 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 
 						return restinio::request_accepted();
 					}
-
 					return restinio::request_rejected();
 				} );
 		}
@@ -126,21 +130,25 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 
 TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
 {
-	using http_server_t = restinio::http_server_t<>;
+	using http_server_t =
+		restinio::http_server_t<
+			restinio::traits_t<
+				restinio::asio_timer_factory_t,
+				utest_logger_t > >;
 
-	restinio::connection_handle_t conn_to_store;
+	restinio::request_handle_t req_to_store;
 
 	http_server_t http_server{
 		restinio::create_child_io_service( 1 ),
-		[ &conn_to_store ]( auto & settings ){
+		[ &req_to_store ]( auto & settings ){
 			settings
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.handle_request_timeout( std::chrono::milliseconds( 5 ) )
-				.request_handler( [ &conn_to_store ]( auto /*req*/, auto conn ){
+				.request_handler( [ &req_to_store ]( auto req){
 
 					// Store connection.
-					conn_to_store = std::move( conn );
+					req_to_store = std::move( req );
 
 					// Signal that request is going to be handled.
 					return restinio::request_accepted();
@@ -167,22 +175,19 @@ TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
 		std::array< char, 1024 > data;
 
 		socket.async_read_some(
-			asio::buffer( data.data(), data.size() ),
+			asio::buffer( data ),
 			[ & ]( auto ec, std::size_t length ){
 
-				REQUIRE( 0 != length );
-				REQUIRE_FALSE( ec );
-
-				const std::string response{ data.data(), length };
-
-				REQUIRE_THAT( response, Catch::Matchers::StartsWith( "HTTP/1.1 504" ) );
+				REQUIRE( 0 == length );
+				REQUIRE( ec );
+				REQUIRE( ec == asio::error::eof );
 			} );
 
 		io_service.run();
 
 	} );
 
-	conn_to_store.reset();
+	req_to_store.reset();
 
 	http_server.close();
 }

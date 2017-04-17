@@ -18,11 +18,8 @@
 
 #include <restinio/all.hpp>
 
-#include "../../../sample/common/ostream_logger.hpp"
-#include "../../handle_requests/common/pub.hpp"
-
-using utest_logger_t = restinio::sample::single_threaded_ostream_logger_t;
-// using utest_logger_t = restinio::null_logger_t;
+#include <test/common/utest_logger.hpp>
+#include <test/common/pub.hpp>
 
 void
 send_response_if_needed( restinio::request_handle_t rh )

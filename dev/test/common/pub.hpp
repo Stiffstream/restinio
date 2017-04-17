@@ -10,7 +10,6 @@ utest_default_port()
 	return 8085;
 }
 
-
 template < typename LAMBDA >
 void
 do_with_socket(

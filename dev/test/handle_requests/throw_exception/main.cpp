@@ -13,7 +13,8 @@
 
 #include <restinio/all.hpp>
 
-#include "../common/pub.hpp"
+#include <test/common/utest_logger.hpp>
+#include <test/common/pub.hpp>
 
 #if defined(__GNUG__)
 #pragma GCC diagnostic ignored "-Wparentheses"
@@ -23,7 +24,11 @@ const std::string RESP_BODY{ "-=UNIT-TEST=-" };
 
 TEST_CASE( "Throw exception" , "[exception]" )
 {
-	using http_server_t = restinio::http_server_t<>;
+	using http_server_t =
+		restinio::http_server_t<
+			restinio::traits_t<
+				restinio::asio_timer_factory_t,
+				utest_logger_t > >;
 
 	http_server_t http_server{
 		restinio::create_child_io_service( 1 ),

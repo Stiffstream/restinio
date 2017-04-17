@@ -33,6 +33,7 @@ struct response_context_t
 	reinit( request_id_t request_id )
 	{
 		m_request_id = request_id;
+		m_total_bufs_count = 0;
 		m_response_output_flags =
 			response_output_flags_t{
 				response_parts_attr_t::not_final_parts,
@@ -43,6 +44,9 @@ struct response_context_t
 
 	//! Unsent responses parts.
 	std::vector< std::string > m_bufs;
+
+	//! Total used bufs, historical count of bufs used to send this response.
+	std::size_t m_total_bufs_count{ 0 };
 
 	//! Response flags
 	response_output_flags_t

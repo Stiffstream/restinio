@@ -970,9 +970,8 @@ class connection_t final
 									this->connection_id() );
 						} );
 
+						close();
 						// TODO: it is not always possible to write such resp.
-
-						// // If handler refused request, say not implemented.
 						// write_response_parts_impl(
 						// 	request_id,
 						// 	response_output_flags_t{ true, false },
