@@ -210,8 +210,10 @@ TEST_CASE( "Simple HTTP piplining " , "[reverse_handling]" )
 	http_server.close();
 }
 
-TEST_CASE( "Long sequesnces HTTP piplining" , "[longseuences]" )
+TEST_CASE( "Long sequesnces HTTP piplining" , "[long_sequences]" )
 {
+	std::srand( std::time( nullptr ) );
+
 	using http_server_t =
 		restinio::http_server_t<
 			restinio::traits_t<
@@ -258,35 +260,85 @@ TEST_CASE( "Long sequesnces HTTP piplining" , "[longseuences]" )
 		}
 	}
 
-	// SECTION( "not direct order" )
-	// {
-	// 	std::ostringstream sout;
-	// 	sout << create_request( 0 );
+	SECTION( "not direct order" )
+	{
+		std::ostringstream sout;
+		sout << create_request( 0 );
 
-	// 	std::vector< unsigned int > seq;
-	// 	for( auto i = 0; i < 10; ++i )
-	// 	{
-	// 		seq.
-	// 	}
+		std::vector< unsigned int > seq;
+		seq.push_back( 0 );
+		for( auto i = 0; i < 120; ++i )
+		{
+			seq.push_back( 1 + std::rand()%100 );
+			sout << create_request( seq.back() );
+		}
 
-	// 	sout << create_request( 127, "close" );
+		sout << create_request( 127, "close" );
 
-	// 	std::string response;
-	// 	REQUIRE_NOTHROW( response = do_request( sout.str() ) );
+		seq.push_back( 127 );
 
-	// 	const auto resp_seq = get_response_sequence( response );
-	// 	REQUIRE( 128 == resp_seq.size() );
+		std::string response;
+		REQUIRE_NOTHROW( response = do_request( sout.str() ) );
 
-	// 	for( auto i = 0; i < 128; ++i )
-	// 	{
-	// 		REQUIRE( i == resp_seq[ i ] );
-	// 	}
-	// }
+		const auto resp_seq = get_response_sequence( response );
+		REQUIRE( 122 == resp_seq.size() );
+
+		for( auto i = 0; i < 122; ++i )
+		{
+			REQUIRE( seq[ i ] == resp_seq[ i ] );
+		}
+	}
 
 	http_server.close();
 }
 
-TEST_CASE( "ERR AND EXIT!" , "[ERR][stop compile]" )
+TEST_CASE( "Interrupt sequesnces HTTP piplining" , "[long_sequences][interrupt]" )
 {
-	REQUIRE( false );
+	std::srand( std::time( nullptr ) );
+
+	using http_server_t =
+		restinio::http_server_t<
+			restinio::traits_t<
+				restinio::asio_timer_factory_t,
+				utest_logger_t,
+				req_handler_t< 20 > > >;
+
+	http_server_t http_server{
+		restinio::create_child_io_service( 1 ),
+		[]( auto & settings ){
+			settings
+				.port( utest_default_port() )
+				.address( "127.0.0.1" )
+
+				// Must have notable timeouts:
+				.read_next_http_message_timelimit(
+					std::chrono::hours( 24 ) )
+				.handle_request_timeout( std::chrono::hours( 24 ) )
+
+				.max_pipelined_requests( 20 );
+		} };
+
+	http_server.open();
+
+	std::ostringstream sout;
+	for( auto i = 0; i < 20; ++i )
+	{
+		if( i < 9 )
+			sout << create_request( i );
+		else
+			sout << create_request( i, "close" );
+	}
+
+	std::string response;
+	REQUIRE_NOTHROW( response = do_request( sout.str() ) );
+
+	const auto resp_seq = get_response_sequence( response );
+	REQUIRE( 10 == resp_seq.size() );
+
+	for( auto i = 0; i < 10; ++i )
+	{
+		REQUIRE( i == resp_seq[ i ] );
+	}
+
+	http_server.close();
 }
