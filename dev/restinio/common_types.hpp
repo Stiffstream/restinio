@@ -23,6 +23,17 @@ enum class response_parts_attr_t
 	final_parts
 };
 
+inline std::ostream &
+operator << ( std::ostream & o, response_parts_attr_t attr )
+{
+	if( response_parts_attr_t::not_final_parts == attr )
+		o << "not_final_parts";
+	else
+		o << "final_parts";
+
+	return o;
+}
+
 //! Attribute for parts.
 enum class response_connection_attr_t
 {
@@ -31,6 +42,17 @@ enum class response_connection_attr_t
 	//! This response says to close connection.
 	connection_close
 };
+
+inline std::ostream &
+operator << ( std::ostream & o, response_connection_attr_t attr )
+{
+	if( response_connection_attr_t::connection_keepalive == attr )
+		o << "connection_keepalive";
+	else
+		o << "connection_close";
+
+	return o;
+}
 
 constexpr response_connection_attr_t
 response_connection_attr( bool should_keep_alive )
@@ -54,5 +76,12 @@ struct response_output_flags_t
 	response_parts_attr_t m_response_parts;
 	response_connection_attr_t m_response_connection;
 };
+
+inline std::ostream &
+operator << ( std::ostream & o, const response_output_flags_t & flags )
+{
+	return o << "{ " << flags.m_response_parts << ", "
+		<< flags.m_response_connection << " }";
+}
 
 } /* namespace restinio */

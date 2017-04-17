@@ -7,6 +7,11 @@
 */
 
 #define CATCH_CONFIG_MAIN
+
+#include <algorithm>
+#include <cctype>
+#include <sstream>
+
 #include <catch/catch.hpp>
 
 #include <asio.hpp>
@@ -16,7 +21,22 @@
 #include "../../../sample/common/ostream_logger.hpp"
 #include "../../handle_requests/common/pub.hpp"
 
+using utest_logger_t = restinio::sample::single_threaded_ostream_logger_t;
+// using utest_logger_t = restinio::null_logger_t;
 
+void
+send_response_if_needed( restinio::request_handle_t rh )
+{
+	if( rh )
+		rh->create_response()
+			.append_header( "Server", "RESTinio utest server" )
+			.append_header_date_field()
+			.append_header( "Content-Type", "text/plain; charset=utf-8" )
+			.set_body( rh->body() )
+			.done();
+}
+
+template < unsigned int N >
 struct req_handler_t
 {
 	auto
@@ -24,68 +44,89 @@ struct req_handler_t
 	{
 		if( restinio::http_method_post() == req->header().method() )
 		{
-			if( req->header().request_target() == "/first" )
-			{
-				m_first_request = std::move( req );
-				return restinio::request_accepted();
-			}
-			else if( req->header().request_target() == "/second" )
-			{
-				m_second_request = std::move( req );
-				return restinio::request_accepted();
-			}
-			else if( req->header().request_target() == "/third" )
-			{
-				req->create_response()
-					.append_header( "Server", "RESTinio utest server" )
-					.append_header_date_field()
-					.append_header( "Content-Type", "text/plain; charset=utf-8" )
-					.set_body( req->body() )
-					.done();
+			const auto & target = req->header().request_target();
 
-				if( m_second_request )
+			if( target == "/" + std::to_string( N - 1 ) )
+			{
+				m_requests.back() = std::move( req );
+				std::for_each(
+					std::rbegin( m_requests ),
+					std::rend( m_requests ),
+					[]( auto & req ){
+						send_response_if_needed( std::move( req ) );
+					} );
+			}
+			else
+			{
+				for( unsigned int i = 0; i < N - 1; ++i )
 				{
-					m_second_request->create_response()
-						.append_header( "Server", "RESTinio utest server" )
-						.append_header_date_field()
-						.append_header( "Content-Type", "text/plain; charset=utf-8" )
-						.set_body( m_second_request->body() )
-						.done();
-
-					m_second_request.reset();
+					if( target == "/" + std::to_string( i ) )
+					{
+						send_response_if_needed( std::move( m_requests[ i ] ) );
+						m_requests[ i ] = std::move( req );
+						break;
+					}
 				}
-
-				if( m_first_request )
-				{
-					m_first_request->create_response()
-						.append_header( "Server", "RESTinio utest server" )
-						.append_header_date_field()
-						.append_header( "Content-Type", "text/plain; charset=utf-8" )
-						.set_body( m_first_request->body() )
-						.done();
-
-					m_first_request.reset();
-				}
-
-				return restinio::request_accepted();
 			}
+
+			return restinio::request_accepted();
 		}
 
 		return restinio::request_rejected();
 	}
 
-	restinio::request_handle_t m_first_request;
-	restinio::request_handle_t m_second_request;
+	std::array< restinio::request_handle_t, N >  m_requests;
 };
 
-TEST_CASE( "HTTP piplining" , "[reverse_handling]" )
+const std::string REQ_BODY_STARTER{ "REQUESTBODY#" };
+
+auto
+create_request(
+	unsigned int req_id,
+	const std::string & conn_field_value = "keep-alive" )
 {
-	using http_server_t = restinio::http_server_t<>;
-	// using http_server_t =
-	// 	restinio::http_server_t<
-	// 		restinio::traits_t<
-	// 			restinio::asio_timer_factory_t,
-	// 			restinio::sample::single_threaded_ostream_logger_t > >;
+	const std::string body = REQ_BODY_STARTER + std::to_string( req_id );
+	return
+		"POST /" + std::to_string( req_id ) + " HTTP/1.0\r\n"
+		"From: unit-test\r\n"
+		"User-Agent: unit-test\r\n"
+		"Content-Length: " + std::to_string( body.size() ) + "\r\n"
+		"Connection: " + conn_field_value +"\r\n"
+		"\r\n" +
+		body;
+};
+
+std::vector< unsigned int >
+get_response_sequence( const std::string responses )
+{
+	std::vector< unsigned int > result;
+	std::size_t pos = 0;
+	while( std::string::npos !=
+		(pos = responses.find( REQ_BODY_STARTER, pos ) ) )
+	{
+		pos += REQ_BODY_STARTER.size();
+
+		unsigned int item = 0;
+		while( pos != responses.size() &&
+			std::isdigit( responses[ pos ] ) )
+		{
+			item = item * 10 + ( responses[ pos++ ] - '0' );
+		}
+
+		result.push_back( item );
+	}
+
+	return result;
+}
+
+TEST_CASE( "Simple HTTP piplining " , "[reverse_handling]" )
+{
+	using http_server_t =
+		restinio::http_server_t<
+			restinio::traits_t<
+				restinio::asio_timer_factory_t,
+				utest_logger_t,
+				req_handler_t< 3 > > >;
 
 	http_server_t http_server{
 		restinio::create_child_io_service( 1 ),
@@ -95,119 +136,157 @@ TEST_CASE( "HTTP piplining" , "[reverse_handling]" )
 				.address( "127.0.0.1" )
 
 				// Must have notable timeouts:
-				.read_next_http_message_timelimit( std::chrono::hours( 24 ) )
+				.read_next_http_message_timelimit(
+					std::chrono::hours( 24 ) )
 				.handle_request_timeout( std::chrono::hours( 24 ) )
 
-				.max_pipelined_requests( 10 )
-				.request_handler(
-					[]( auto req ){
-						if( restinio::http_method_post() == req->header().method() )
-						{
-							req->create_response()
-								.append_header( "Server", "RESTinio utest server" )
-								.append_header_date_field()
-								.append_header( "Content-Type", "text/plain; charset=utf-8" )
-								.set_body( req->body() )
-								.done();
-							return restinio::request_accepted();
-						}
-
-						return restinio::request_rejected();
-					} );
-		}
-	};
+				.max_pipelined_requests( 10 );
+		} };
 
 	http_server.open();
 
-	std::string response;
-	auto create_request = [](
-		const std::string & path,
-		const std::string & body,
-		const std::string & conn_field_value = "keep-alive" ){
-		return
-			"POST /" + path + " HTTP/1.0\r\n"
-			"From: unit-test\r\n"
-			"User-Agent: unit-test\r\n"
-			"Content-Type: application/x-www-form-urlencoded\r\n"
-			"Content-Length: " + std::to_string( body.size() ) + "\r\n"
-			"Connection: " + conn_field_value +"\r\n"
-			"\r\n" +
-			body;
-	};
 
 	{
+		std::string response;
+
 		const auto pipelinedrequests =
-			create_request( "first", "FIRST" ) +
-			create_request( "second", "SECOND" ) +
-			create_request( "third", "THIRD", "close" );
+			create_request( 0 ) +
+			create_request( 1 ) +
+			create_request( 2, "close" );
 
 		REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
 
-		const auto first_pos = response.find( "FIRST" );
-		const auto second_pos = response.find( "SECOND" );
-		const auto third_pos = response.find( "THIRD" );
+		const auto resp_seq = get_response_sequence( response );
+		REQUIRE( 3 == resp_seq.size() );
 
-		REQUIRE_FALSE( std::string::npos == first_pos );
-		REQUIRE_FALSE( std::string::npos == second_pos );
-		REQUIRE_FALSE( std::string::npos == third_pos );
-
-		REQUIRE( first_pos < second_pos );
-		REQUIRE( second_pos < third_pos );
+		REQUIRE( 0 == resp_seq[ 0 ] );
+		REQUIRE( 1 == resp_seq[ 1 ] );
+		REQUIRE( 2 == resp_seq[ 2 ] );
 	}
 
 	{
 		std::thread helper_thread{
-			[&](){
+			[](){
 				const auto pipelinedrequests =
-					create_request( "first", "FIRST" ) +
-					create_request( "second", "SECOND" ) +
-					create_request( "third", "THIRD" ) +
-					create_request( "first", "FIRST" ) +
-					create_request( "second", "SECOND", "close" );
+					create_request( 0 ) +
+					create_request( 1 ) +
+					create_request( 2 ) +
+					create_request( 0 ) +
+					create_request( 1, "close" );
 
+				std::string response;
 				REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
 				{
-					auto first_pos = response.find( "FIRST" );
-					auto second_pos = response.find( "SECOND" );
-					auto third_pos = response.find( "THIRD" );
+					const auto resp_seq =
+						get_response_sequence( response );
+					REQUIRE( 5 == resp_seq.size() );
 
-					REQUIRE_FALSE( std::string::npos == first_pos );
-					REQUIRE_FALSE( std::string::npos == second_pos );
-					REQUIRE_FALSE( std::string::npos == third_pos );
-
-					REQUIRE( first_pos < second_pos );
-					REQUIRE( second_pos < third_pos );
-
-					first_pos = response.find( "FIRST", third_pos );
-					second_pos = response.find( "SECOND", third_pos );
-
-					REQUIRE_FALSE( std::string::npos == first_pos );
-					REQUIRE_FALSE( std::string::npos == second_pos );
-
-					REQUIRE( first_pos < second_pos );
+					REQUIRE( 0 == resp_seq[ 0 ] );
+					REQUIRE( 1 == resp_seq[ 1 ] );
+					REQUIRE( 2 == resp_seq[ 2 ] );
+					REQUIRE( 0 == resp_seq[ 3 ] );
+					REQUIRE( 1 == resp_seq[ 4 ] );
 				}
 			} };
 
+		// To ensure that requests from aux thread will be send earlier.
+		std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
+		std::string response;
 		// Send 3rd reques through another connection.
 		REQUIRE_NOTHROW(
-			response = do_request( create_request( "third", "THIRD", "close" ) ) );
+			response = do_request( create_request( 2, "close" ) ) );
 
 		// It must not contain responses on 1st and 2dn request
 		// leaved in handler.
-
-		{
-			const auto first_pos = response.find( "FIRST" );
-			const auto second_pos = response.find( "SECOND" );
-			const auto third_pos = response.find( "THIRD" );
-
-			REQUIRE( std::string::npos == first_pos );
-			REQUIRE( std::string::npos == second_pos );
-			REQUIRE_FALSE( std::string::npos == third_pos );
-		}
+		const auto resp_seq =
+			get_response_sequence( response );
+		REQUIRE( 1 == resp_seq.size() );
+		REQUIRE( 2 == resp_seq[ 0 ] );
 
 		helper_thread.join();
 	}
 
 	http_server.close();
+}
+
+TEST_CASE( "Long sequesnces HTTP piplining" , "[longseuences]" )
+{
+	using http_server_t =
+		restinio::http_server_t<
+			restinio::traits_t<
+				restinio::asio_timer_factory_t,
+				utest_logger_t,
+				req_handler_t< 128 > > >;
+
+	http_server_t http_server{
+		restinio::create_child_io_service( 1 ),
+		[]( auto & settings ){
+			settings
+				.port( utest_default_port() )
+				.address( "127.0.0.1" )
+
+				// Must have notable timeouts:
+				.read_next_http_message_timelimit(
+					std::chrono::hours( 24 ) )
+				.handle_request_timeout( std::chrono::hours( 24 ) )
+
+				.max_pipelined_requests( 128 );
+		} };
+
+	http_server.open();
+
+	SECTION( "simple order" )
+	{
+		std::ostringstream sout;
+		for( auto i = 0; i < 127; ++i )
+		{
+			sout << create_request( i );
+		}
+
+		sout << create_request( 127, "close" );
+
+		std::string response;
+		REQUIRE_NOTHROW( response = do_request( sout.str() ) );
+
+		const auto resp_seq = get_response_sequence( response );
+		REQUIRE( 128 == resp_seq.size() );
+
+		for( auto i = 0; i < 128; ++i )
+		{
+			REQUIRE( i == resp_seq[ i ] );
+		}
+	}
+
+	// SECTION( "not direct order" )
+	// {
+	// 	std::ostringstream sout;
+	// 	sout << create_request( 0 );
+
+	// 	std::vector< unsigned int > seq;
+	// 	for( auto i = 0; i < 10; ++i )
+	// 	{
+	// 		seq.
+	// 	}
+
+	// 	sout << create_request( 127, "close" );
+
+	// 	std::string response;
+	// 	REQUIRE_NOTHROW( response = do_request( sout.str() ) );
+
+	// 	const auto resp_seq = get_response_sequence( response );
+	// 	REQUIRE( 128 == resp_seq.size() );
+
+	// 	for( auto i = 0; i < 128; ++i )
+	// 	{
+	// 		REQUIRE( i == resp_seq[ i ] );
+	// 	}
+	// }
+
+	http_server.close();
+}
+
+TEST_CASE( "ERR AND EXIT!" , "[ERR][stop compile]" )
+{
+	REQUIRE( false );
 }

@@ -697,6 +697,16 @@ class connection_t final
 
 			if( !m_response_coordinator.closed() )
 			{
+				m_logger.trace( [&](){
+					return fmt::format(
+							"[connection:{}] append response (#{}), "
+							"flags: {}, bufs count: {}",
+							connection_id(),
+							request_id,
+							response_output_flags,
+							bufs.size() );
+				} );
+
 				m_response_coordinator.append_response(
 					request_id,
 					response_output_flags,
@@ -757,7 +767,7 @@ class connection_t final
 					{
 						m_logger.trace( [&](){
 							return fmt::format(
-									"[connection:{}] sending response with "
+									"[connection:{}] sending resp data with "
 									"connection-close attribute",
 									connection_id() );
 						} );
