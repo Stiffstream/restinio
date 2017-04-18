@@ -67,6 +67,10 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 		const auto body = "01234567890123456789";
 		REQUIRE_NOTHROW( response = do_request( create_request( body ) ) );
 
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains(
+				"Content-Length: " + std::to_string( body.size() ) ) );
 		REQUIRE_THAT( response, Catch::Matchers::EndsWith( body ) );
 	}
 
@@ -79,6 +83,10 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 
 		REQUIRE_NOTHROW( response = do_request( create_request( body ) ) );
 
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains(
+				"Content-Length: " + std::to_string( body.size() ) ) );
 		REQUIRE_THAT( response, Catch::Matchers::EndsWith( body ) );
 	}
 
@@ -87,6 +95,10 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 
 		REQUIRE_NOTHROW( response = do_request( create_request( body ) ) );
 
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains(
+				"Content-Length: " + std::to_string( body.size() ) ) );
 		REQUIRE_THAT( response, Catch::Matchers::EndsWith( body ) );
 	}
 

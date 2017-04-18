@@ -150,6 +150,8 @@ class response_builder_t< restinio_controlled_output_t > final
 				response_builder_t<
 					restinio_controlled_output_t > >;
 	public:
+		response_builder_t( response_builder_t && ) = default;
+
 		response_builder_t(
 			std::uint16_t status_code,
 			std::string reason_phrase,
@@ -191,6 +193,8 @@ class response_builder_t< restinio_controlled_output_t > final
 					response_output_flags{
 						response_parts_attr_t::final_parts,
 						response_connection_attr( m_header.should_keep_alive() ) };
+
+				m_header.content_length( m_body.size() );
 
 				conn->write_response_parts(
 					m_request_id,
