@@ -134,6 +134,13 @@ class response_builder_t
 
 struct restinio_controlled_output_t {};
 
+//! Simple standard response builder.
+/*!
+	Requires user to set header and body.
+	Content length is automatically calculated.
+	Once the data is ready, the user calls done() method
+	and the resulting response is scheduled for sending.
+*/
 template <>
 class response_builder_t< restinio_controlled_output_t > final
 	:	public base_response_builder_t< response_builder_t< restinio_controlled_output_t > >
@@ -180,9 +187,6 @@ class response_builder_t< restinio_controlled_output_t > final
 			{
 				auto conn = std::move( m_connection );
 
-				std::vector< std::string > bufs{
-					 };
-
 				const response_output_flags_t
 					response_output_flags{
 						response_parts_attr_t::final_parts,
@@ -199,6 +203,120 @@ class response_builder_t< restinio_controlled_output_t > final
 		}
 
 	private:
+		std::string m_body;
+};
+
+struct user_controlled_output_t {};
+
+template <>
+class response_builder_t< user_controlled_output_t > final
+	:	public base_response_builder_t< response_builder_t< user_controlled_output_t > >
+{
+		using base_type_t =
+			base_response_builder_t<
+				response_builder_t<
+					user_controlled_output_t > >;
+	public:
+		response_builder_t(
+			std::uint16_t status_code,
+			std::string reason_phrase,
+			connection_handle_t connection,
+			request_id_t request_id,
+			bool should_keep_alive )
+			:	base_type_t{
+					status_code,
+					std::move( reason_phrase ),
+					std::move( connection ),
+					request_id,
+					should_keep_alive }
+		{}
+
+		//! Set body
+		auto &
+		set_body( std::string body )
+		{
+			m_body.assign( std::move( body ) );
+			return *this;
+		}
+		//! Append body.
+		auto &
+		append_body( const std::string & body_part )
+		{
+			m_body.append( body_part );
+			return *this;
+		}
+
+		//! Flush ready outgoing data.
+		/*!
+			Schedules for sending currently ready data.
+		*/
+		void
+		flush()
+		{
+			if( m_connection )
+			{
+				send_ready_data(
+					m_connection,
+					response_parts_attr_t::not_final_parts );
+			}
+		}
+
+		//! Complete response.
+		void
+		done()
+		{
+			if( m_connection )
+			{
+				send_ready_data(
+					std::move( m_connection ),
+					response_parts_attr_t::final_parts );
+			}
+		}
+
+	private:
+		void
+		send_ready_data(
+			connection_handle_t conn,
+			response_parts_attr_t response_parts_attr )
+		{
+			if( !m_header_was_sent )
+			{
+				m_should_keep_alive_when_header_was_sent =
+					m_header.should_keep_alive();
+
+				const response_output_flags_t
+					response_output_flags{
+						response_parts_attr,
+						response_connection_attr( m_should_keep_alive_when_header_was_sent ) };
+
+				conn->write_response_parts(
+					m_request_id,
+					response_output_flags,
+					{
+						impl::create_header_string( m_header ),
+						std::move( m_body )
+					} );
+			}
+			else if( !m_body.empty() )
+			{
+				const response_output_flags_t
+					response_output_flags{
+						response_parts_attr,
+						response_connection_attr( m_should_keep_alive_when_header_was_sent ) };
+
+				conn->write_response_parts(
+					m_request_id,
+					response_output_flags,
+					{
+						std::move( m_body )
+					} );
+			}
+
+		}
+
+		//! flag used by flush() function.
+		bool m_header_was_sent{ false };
+		bool m_should_keep_alive_when_header_was_sent{ true };
 		std::string m_body;
 };
 
