@@ -1,5 +1,6 @@
 MxxRu::Cpp::composite_target {
 
+	required_prj( "test/handle_requests/user_controlled_output/prj.ut.rb" )
 
 
 	required_prj( "test/header/prj.ut.rb" )

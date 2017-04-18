@@ -64,7 +64,7 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 	};
 
 	{
-		const auto body = "01234567890123456789";
+		const std::string body = "01234567890123456789";
 		REQUIRE_NOTHROW( response = do_request( create_request( body ) ) );
 
 		REQUIRE_THAT(
@@ -75,7 +75,7 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 	}
 
 	{
-		const auto body =
+		const std::string body =
 			"0123456789012345678901234567890123456789\r\n"
 			"ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n"
 			"abcdefghijklmnopqrstuvwxyz\r\n"

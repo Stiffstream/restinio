@@ -166,7 +166,7 @@ class response_builder_t< restinio_controlled_output_t > final
 					should_keep_alive }
 		{}
 
-		//! Set body
+		//! Set body.
 		auto &
 		set_body( std::string body )
 		{
@@ -212,6 +212,13 @@ class response_builder_t< restinio_controlled_output_t > final
 
 struct user_controlled_output_t {};
 
+//! User controlled response output builder.
+/*!
+	This type of output allows user
+	to send body divided into parts.
+	But it is up to user to set the correct
+	Content-Length field.
+*/
 template <>
 class response_builder_t< user_controlled_output_t > final
 	:	public base_response_builder_t< response_builder_t< user_controlled_output_t > >
@@ -235,14 +242,21 @@ class response_builder_t< user_controlled_output_t > final
 					should_keep_alive }
 		{}
 
-		//! Set body
+		auto &
+		set_content_length( std::size_t content_length )
+		{
+			m_header.content_length( content_length );
+			return *this;
+		}
+
+		//! Set body (part).
 		auto &
 		set_body( std::string body )
 		{
 			m_body.assign( std::move( body ) );
 			return *this;
 		}
-		//! Append body.
+		//! Append body (part).
 		auto &
 		append_body( const std::string & body_part )
 		{
@@ -293,13 +307,27 @@ class response_builder_t< user_controlled_output_t > final
 						response_parts_attr,
 						response_connection_attr( m_should_keep_alive_when_header_was_sent ) };
 
-				conn->write_response_parts(
-					m_request_id,
-					response_output_flags,
-					{
-						impl::create_header_string( m_header ),
-						std::move( m_body )
-					} );
+				if( !m_body.empty() )
+				{
+					conn->write_response_parts(
+						m_request_id,
+						response_output_flags,
+						{
+							impl::create_header_string( m_header ),
+							std::move( m_body )
+						} );
+				}
+				else
+				{
+					conn->write_response_parts(
+						m_request_id,
+						response_output_flags,
+						{
+							impl::create_header_string( m_header )
+						} );
+				}
+
+				m_header_was_sent = true;
 			}
 			else if( !m_body.empty() )
 			{
@@ -315,12 +343,25 @@ class response_builder_t< user_controlled_output_t > final
 						std::move( m_body )
 					} );
 			}
-
 		}
 
-		//! flag used by flush() function.
+		//! Flag used by flush() function.
 		bool m_header_was_sent{ false };
+
+		//! Saved keep_alive attr actual at the point
+		//! a header data was sent.
+		/*!
+			It is neccessary to guarantee that all parts of response
+			will have the same response-connection-attr
+			(keep-alive or close);
+		*/
 		bool m_should_keep_alive_when_header_was_sent{ true };
+
+		//! Body accumulator.
+		/*!
+			For this type of output it contains a part of a body.
+			On each flush it is cleared.
+		*/
 		std::string m_body;
 };
 
