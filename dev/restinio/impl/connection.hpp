@@ -721,7 +721,8 @@ class connection_t final
 							"[connection:{}] receive response parts for "
 							"request (#{}), but response with connection-close "
 							"attribute happened before",
-							connection_id() );
+							connection_id(),
+							request_id );
 				} );
 			}
 
@@ -732,6 +733,8 @@ class connection_t final
 		void
 		init_write_if_necessary()
 		{
+			assert( !m_response_coordinator.closed() );
+
 			// Remember if all response cells were busy.
 			const auto full_before = m_response_coordinator.is_full();
 
@@ -742,10 +745,12 @@ class connection_t final
 					// Remember if all response cells were busy.
 					const auto full_after = m_response_coordinator.is_full();
 
+					auto & bufs = m_resp_out_ctx.create_bufs();
+
 					// There is somethig to write.
 					asio::async_write(
 						m_socket,
-						m_resp_out_ctx.create_bufs(),
+						bufs,
 						asio::wrap(
 							get_executor(),
 							[ this,
@@ -768,8 +773,10 @@ class connection_t final
 						m_logger.trace( [&](){
 							return fmt::format(
 									"[connection:{}] sending resp data with "
-									"connection-close attribute",
-									connection_id() );
+									"connection-close attribute "
+									"buf count: {}",
+									connection_id(),
+									bufs.size() );
 						} );
 
 						// Reading new requests is useless.
@@ -778,6 +785,35 @@ class connection_t final
 							asio::ip::tcp::socket::shutdown_receive,
 							ignored_ec );
 					}
+					else
+					{
+						m_logger.trace( [&](){
+							return fmt::format(
+								"[connection:{}] sending resp data, "
+								"buf count: {}",
+								connection_id(),
+								bufs.size() ); } );
+					}
+				}
+				else if( m_response_coordinator.closed() )
+				{
+					// Bufs empty but there happened to
+					// be a response context marked as complete
+					// (final_parts) and having connection-close attr.
+					// It is because `init_write_if_necessary()`
+					// is called only under `!m_response_coordinator.closed()`
+					// conditio, so if no bufs were obtained
+					// and response coordinator is closed means
+					// that a first response stored by
+					// response coordinator was marked as complete
+					// without data.
+
+					m_logger.trace( [&](){
+						return fmt::format(
+							"[connection:{}] last sent response was marked "
+							"as complete",
+							connection_id() ); } );
+					close();
 				}
 				else
 				{

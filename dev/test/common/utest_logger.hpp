@@ -9,5 +9,5 @@
 
 #include <sample/common/ostream_logger.hpp>
 
-using utest_logger_t = restinio::sample::single_threaded_ostream_logger_t;
+using utest_logger_t = restinio::sample::shared_ostream_logger_t;
 // using utest_logger_t = restinio::null_logger_t;

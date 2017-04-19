@@ -242,6 +242,7 @@ class response_builder_t< user_controlled_output_t > final
 					should_keep_alive }
 		{}
 
+		//! Manualy set content length.
 		auto &
 		set_content_length( std::size_t content_length )
 		{
@@ -329,19 +330,32 @@ class response_builder_t< user_controlled_output_t > final
 
 				m_header_was_sent = true;
 			}
-			else if( !m_body.empty() )
+			else
 			{
 				const response_output_flags_t
 					response_output_flags{
 						response_parts_attr,
 						response_connection_attr( m_should_keep_alive_when_header_was_sent ) };
 
-				conn->write_response_parts(
-					m_request_id,
-					response_output_flags,
-					{
-						std::move( m_body )
-					} );
+				if( !m_body.empty() )
+				{
+					conn->write_response_parts(
+						m_request_id,
+						response_output_flags,
+						{
+							std::move( m_body )
+						} );
+				}
+				else
+					conn->write_response_parts(
+						m_request_id,
+						response_output_flags,
+						{
+							/*
+								Pass nothing
+								just to mark response as finished.
+							*/
+						} );
 			}
 		}
 
