@@ -17,6 +17,7 @@ class request_handler_pool_t
 			std::function< void ( restinio::request_handle_t ) >
 				handler )
 		{
+			m_request_queue.reset();
 			m_handler = std::move( handler );
 
 			for( auto & t : m_pool )

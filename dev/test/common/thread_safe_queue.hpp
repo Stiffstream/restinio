@@ -50,6 +50,14 @@ class thread_safe_queue_t
 			std::unique_lock< decltype( m_lock ) > lock{ m_lock };
 			m_is_closed = true;
 			m_cv.notify_all();
+			std::queue< ITEM > tmp{ std::move( m_queue ) };
+		}
+
+		void
+		reset()
+		{
+			std::unique_lock< decltype( m_lock ) > lock{ m_lock };
+			m_is_closed = false;
 		}
 
 	private:
