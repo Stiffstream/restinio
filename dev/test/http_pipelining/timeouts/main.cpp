@@ -36,7 +36,7 @@ send_response_if_needed( restinio::request_handle_t rh )
 struct req_handler_t
 {
 	auto
-	operator () ( restinio::request_handle_t req )
+	operator () ( restinio::request_handle_t req ) const
 	{
 		if( m_request )
 			throw std::runtime_error{ "second request must never come" };
@@ -46,8 +46,10 @@ struct req_handler_t
 		return restinio::request_accepted();
 	}
 
-	restinio::request_handle_t m_request;
+	static restinio::request_handle_t m_request;
 };
+
+restinio::request_handle_t req_handler_t::m_request;
 
 TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 {
@@ -116,5 +118,6 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 
 	} );
 
+	req_handler_t::m_request.reset(); // Make address sanitizer happy.
 	http_server.close();
 }
