@@ -21,12 +21,13 @@ class thread_safe_queue_t
 		{
 			std::unique_lock< decltype( m_lock ) > lock{ m_lock };
 
-			while( m_queue.empty() )
+			while( !m_is_closed && m_queue.empty() )
 			{
 				m_cv.wait( lock );
-				if( m_is_closed )
-					return queue_pop_result_t::obtain_queue_is_closed;
 			}
+
+			if( m_is_closed )
+				return queue_pop_result_t::obtain_queue_is_closed;
 
 			item = std::move( m_queue.front() );
 			m_queue.pop();
