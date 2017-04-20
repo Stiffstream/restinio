@@ -162,8 +162,11 @@ TEST_CASE( "Simple HTTP piplining " , "[reverse_handling]" )
 	}
 
 	{
+		// Check on this thread.
+
+		std::function< void (void ) > final_checks;
 		std::thread helper_thread{
-			[](){
+			[&](){
 				const auto pipelinedrequests =
 					create_request( 0 ) +
 					create_request( 1 ) +
@@ -171,9 +174,9 @@ TEST_CASE( "Simple HTTP piplining " , "[reverse_handling]" )
 					create_request( 0 ) +
 					create_request( 1, "close" );
 
-				std::string response;
-				REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
-				{
+				std::string response = do_request( pipelinedrequests );
+
+				final_checks = [ response ](){
 					const auto resp_seq =
 						get_response_sequence( response );
 					REQUIRE( 5 == resp_seq.size() );
@@ -183,7 +186,8 @@ TEST_CASE( "Simple HTTP piplining " , "[reverse_handling]" )
 					REQUIRE( 2 == resp_seq[ 2 ] );
 					REQUIRE( 0 == resp_seq[ 3 ] );
 					REQUIRE( 1 == resp_seq[ 4 ] );
-				}
+				};
+
 			} };
 
 		// To ensure that requests from aux thread will be send earlier.
@@ -202,6 +206,7 @@ TEST_CASE( "Simple HTTP piplining " , "[reverse_handling]" )
 		REQUIRE( 2 == resp_seq[ 0 ] );
 
 		helper_thread.join();
+		final_checks();
 	}
 
 	http_server.close();

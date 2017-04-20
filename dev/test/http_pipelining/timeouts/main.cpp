@@ -118,6 +118,7 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 
 	} );
 
-	req_handler_t::m_request.reset(); // Make address sanitizer happy.
 	http_server.close();
+
+	req_handler_t::m_request.reset();
 }

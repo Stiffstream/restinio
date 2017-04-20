@@ -140,12 +140,12 @@ TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
 
 	http_server_t http_server{
 		restinio::create_child_io_service( 1 ),
-		[ &req_to_store ]( auto & settings ){
+		[ & ]( auto & settings ){
 			settings
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.handle_request_timeout( std::chrono::milliseconds( 5 ) )
-				.request_handler( [ &req_to_store ]( auto req ){
+				.request_handler( [ & ]( auto req ){
 
 					// Store connection.
 					req_to_store = std::move( req );
@@ -184,9 +184,9 @@ TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
 			} );
 
 		io_service.run();
-		req_to_store.reset();
 	} );
 
 
 	http_server.close();
+	req_to_store.reset();
 }
