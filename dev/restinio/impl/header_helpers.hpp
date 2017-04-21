@@ -25,10 +25,18 @@ ct_cstr_len( const char * s )
 	return *s ? 1 + ct_cstr_len( s + 1) : 0;
 }
 
+enum class content_length_field_presence_t
+{
+	add_content_length,
+	skip_content_length
+};
+
 //! Creates a string for http response header.
 inline std::string
 create_header_string(
 	const http_response_header_t & h,
+	content_length_field_presence_t content_length_field_presence =
+		content_length_field_presence_t::add_content_length,
 	std::size_t buffer_size = 1024 )
 {
 	std::string result;
@@ -68,6 +76,8 @@ create_header_string(
 		result.append( header_part2_2, ct_cstr_len( header_part2_2 ) );
 	}
 
+	if( content_length_field_presence_t::add_content_length ==
+		content_length_field_presence )
 	{
 		std::array< char, 64 > buf;
 		const auto n =

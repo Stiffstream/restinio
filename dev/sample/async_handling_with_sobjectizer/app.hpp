@@ -183,31 +183,34 @@ class a_main_handler_t final : public so_5::agent_t
 
 		void handle_request( const msg_request_t & req )
 		{
-			auto response = req.m_req->create_response();
+			auto response = req.m_req->create_response< restinio::chunked_output_t >();
 
 			// Build main page:
 			response
 				.append_header( "Server", "RESTinio sample server /v.0.2" )
 				.append_header_date_field()
 				.append_header( "Content-Type", "text/html; charset=utf-8" )
-				.set_body(
+				.start_chunk(
 					"<html>"
 					"<head><title>Targets list</title></head>"
 					"<body>"
 					"<h1>Available targets</h1>"
 					"<ul>" );
 
+			response.flush();
 			// List of available targets.
 			for( const auto & t : m_available_targets )
 			{
-				response.append_body(
+				response.start_chunk(
 					fmt::format(
 						R"-(<li><a href="{0}">{0}</a></li>)-",
 						t.first ) );
 			}
 
+			response.flush();
+
 			response
-				.append_body(
+				.start_chunk(
 					"</ul>"
 					"<br/>"
 					"total: " + std::to_string( m_available_targets.size() ) +
