@@ -556,11 +556,6 @@ class response_builder_t< chunked_output_t > final
 
 			m_chunks.clear();
 
-			for( const auto & b : bufs )
-				std::cout << b;
-
-			std::cout << std::endl;
-
 			return bufs;
 		}
 
