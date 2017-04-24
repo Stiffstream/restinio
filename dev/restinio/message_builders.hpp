@@ -77,7 +77,7 @@ class base_response_builder_t
 			m_header.set_field(
 				std::move( field_name ),
 				std::move( field_value ) );
-			return static_cast< RESPONSE_BUILDER & >( *this );
+			return upcast_reference();
 		}
 
 		//! Add header `Date` field.
@@ -98,21 +98,21 @@ class base_response_builder_t
 				std::string{ "Date" },
 				buf.data() );
 
-			return static_cast< RESPONSE_BUILDER & >( *this );
+			return upcast_reference();
 		}
 
 		RESPONSE_BUILDER &
 		connection_close()
 		{
 			m_header.should_keep_alive( false );
-			return static_cast< RESPONSE_BUILDER & >( *this );
+			return upcast_reference();
 		}
 
 		RESPONSE_BUILDER &
 		connection_keep_alive()
 		{
 			m_header.should_keep_alive();
-			return static_cast< RESPONSE_BUILDER & >( *this );
+			return upcast_reference();
 		}
 
 	protected:
@@ -120,6 +120,12 @@ class base_response_builder_t
 
 		connection_handle_t m_connection;
 		const request_id_t m_request_id;
+
+	private:
+		RESPONSE_BUILDER & upcast_reference()
+		{
+			return static_cast< RESPONSE_BUILDER & >( *this );
+		}
 };
 
 //
