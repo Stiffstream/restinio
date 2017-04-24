@@ -10,6 +10,7 @@
 
 #include <future>
 
+#include <restinio/exception.hpp>
 #include <restinio/settings.hpp>
 #include <restinio/io_service_wrapper.hpp>
 #include <restinio/request_handler.hpp>

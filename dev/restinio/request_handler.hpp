@@ -10,6 +10,7 @@
 
 #include <functional>
 
+#include <restinio/exception.hpp>
 #include <restinio/http_headers.hpp>
 #include <restinio/connection_handle.hpp>
 #include <restinio/message_builders.hpp>
@@ -76,7 +77,7 @@ class request_t final
 		{
 			if( !m_connection )
 			{
-				throw std::runtime_error{
+				throw exception_t{
 					"cannot create response builder, "
 					"connection moved earlier"
 				};

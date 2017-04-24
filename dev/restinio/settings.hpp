@@ -14,6 +14,7 @@
 
 #include <asio.hpp>
 
+#include <restinio/exception.hpp>
 #include <restinio/request_handler.hpp>
 #include <restinio/io_service_wrapper.hpp>
 
@@ -81,7 +82,7 @@ ensure_created(
 		result = create_default_object_instance< OBJECT_TYPE >();
 
 	if( !result )
-		throw std::runtime_error{ fail_description };
+		throw exception_t{ fail_description };
 
 	return result;
 }

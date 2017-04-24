@@ -14,6 +14,7 @@
 
 #include <fmt/format.h>
 
+#include <restinio/exception.hpp>
 #include <restinio/http_headers.hpp>
 #include <restinio/connection_handle.hpp>
 #include <restinio/request_handler.hpp>
@@ -1066,7 +1067,7 @@ class connection_factory_t
 			,	m_logger{ *(m_connection_settings->m_logger ) }
 		{
 			if( !m_timer_factory )
-				throw std::invalid_argument{ "timer_factory not set" };
+				throw exception_t{ "timer_factory not set" };
 		}
 
 		auto

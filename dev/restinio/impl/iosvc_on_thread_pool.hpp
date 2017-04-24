@@ -4,6 +4,8 @@
 
 #include <asio.hpp>
 
+#include <restinio/exception.hpp>
+
 namespace restinio
 {
 
@@ -46,7 +48,7 @@ class iosvc_on_thread_pool_t
 		{
 			if( started() )
 			{
-				throw std::runtime_error{
+				throw exception_t{
 					"io_service_with_thread_pool is already started" };
 			}
 

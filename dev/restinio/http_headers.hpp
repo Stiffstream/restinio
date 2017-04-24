@@ -16,6 +16,8 @@
 
 #include <nodejs/http_parser/http_parser.h>
 
+#include <restinio/exception.hpp>
+
 namespace restinio
 {
 
@@ -134,7 +136,7 @@ class http_header_fields_t
 			auto it = cfind( field_name );
 
 			if( m_fields.end() == it )
-				throw std::runtime_error(
+				throw exception_t(
 					fmt::format( "field '{}' doesn't exist", field_name ) );
 
 			return it->m_value;

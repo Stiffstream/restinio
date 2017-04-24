@@ -14,6 +14,7 @@
 
 #include <fmt/format.h>
 
+#include <restinio/exception.hpp>
 #include <restinio/request_handler.hpp>
 
 namespace restinio
@@ -117,7 +118,7 @@ class response_context_table_t
 		push_response_context( request_id_t req_id )
 		{
 			if( m_contexts.size() == m_elements_exists )
-				throw std::runtime_error{
+				throw exception_t{
 					"unable to insert context because "
 					"response_context_table is full" };
 
@@ -137,7 +138,7 @@ class response_context_table_t
 		pop_response_context()
 		{
 			if( empty() )
-				throw std::runtime_error{
+				throw exception_t{
 					"unable to pop context because "
 					"response_context_table is empty" };
 
@@ -223,7 +224,7 @@ class response_coordinator_t
 		{
 			// Nothing to do if already closed response emitted.
 			if( closed() )
-				throw std::runtime_error{
+				throw exception_t{
 					"unable to append response parts, "
 					"response coordinator is closed" };
 
@@ -232,7 +233,7 @@ class response_coordinator_t
 			if( nullptr == ctx )
 			{
 				// Request is unknown...
-				throw std::runtime_error{
+				throw exception_t{
 					fmt::format(
 						"no context associated with request {}",
 						req_id ) };
@@ -242,7 +243,7 @@ class response_coordinator_t
 				ctx->m_response_output_flags.m_response_parts )
 			{
 				// Request is already completed...
-				throw std::runtime_error{
+				throw exception_t{
 					"unable to append response, "
 					"it marked as complete" };
 			}
@@ -270,7 +271,7 @@ class response_coordinator_t
 			std::vector< std::string > & bufs )
 		{
 			if( closed() )
-				throw std::runtime_error{
+				throw exception_t{
 					"unable to prepare output buffers, "
 					"response coordinator is closed" };
 
