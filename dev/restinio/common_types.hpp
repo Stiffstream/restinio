@@ -54,7 +54,7 @@ operator << ( std::ostream & o, response_connection_attr_t attr )
 	return o;
 }
 
-constexpr response_connection_attr_t
+inline response_connection_attr_t
 response_connection_attr( bool should_keep_alive )
 {
 	if( should_keep_alive )

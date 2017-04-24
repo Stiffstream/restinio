@@ -123,7 +123,7 @@ TEST_CASE( "Using user controlled output response builder" , "[user_controlled_o
 				.address( "127.0.0.1" )
 				.read_next_http_message_timelimit( std::chrono::hours( 24 ) )
 				.handle_request_timeout( std::chrono::hours( 24 ) )
-				.max_pipelined_requests( 16 );
+				.max_pipelined_requests( 20 );
 		}
 	};
 
