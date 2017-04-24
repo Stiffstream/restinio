@@ -17,14 +17,14 @@ namespace impl
 {
 
 //
-// ct_cstr_len
+// ct_correct_len
 //
 
 //! Compile time c-string length.
 constexpr std::size_t
-ct_cstr_len( const char * s )
+ct_correct_len( std::size_t size_with_term )
 {
-	return *s ? 1 + ct_cstr_len( s + 1) : 0;
+	return size_with_term - 1;
 }
 
 enum class content_length_field_presence_t
@@ -44,8 +44,8 @@ create_header_string(
 	std::string result;
 	result.reserve( buffer_size );
 
-	constexpr const char * header_part1 = "HTTP/";
-	result.append( header_part1, ct_cstr_len( header_part1 ) );
+	constexpr const char header_part1[] = "HTTP/";
+	result.append( header_part1, ct_correct_len( sizeof( header_part1 ) ) );
 
 	result += static_cast<char>( '0' + h.http_major() );
 	result += '.';
@@ -64,18 +64,18 @@ create_header_string(
 	result += ' ';
 	result += h.reason_phrase();
 
-	constexpr const char * header_rn = "\r\n";
-	result.append( header_rn, ct_cstr_len( header_rn ) );
+	constexpr const char header_rn[] = "\r\n";
+	result.append( header_rn, ct_correct_len( sizeof( header_rn ) ) );
 
 	if( h.should_keep_alive() )
 	{
-		constexpr const char * header_part2_1 = "Connection: keep-alive\r\n";
-		result.append( header_part2_1, ct_cstr_len( header_part2_1 ) );
+		constexpr const char header_part2_1[] = "Connection: keep-alive\r\n";
+		result.append( header_part2_1, ct_correct_len( sizeof( header_part2_1 ) ) );
 	}
 	else
 	{
-		constexpr const char * header_part2_2 = "Connection: close\r\n";
-		result.append( header_part2_2, ct_cstr_len( header_part2_2 ) );
+		constexpr const char header_part2_2[] = "Connection: close\r\n";
+		result.append( header_part2_2, ct_correct_len( sizeof( header_part2_2 ) ) );
 	}
 
 	if( content_length_field_presence_t::add_content_length ==
@@ -93,16 +93,16 @@ create_header_string(
 	}
 
 
-	constexpr const char * header_field_sep = ": ";
+	constexpr const char header_field_sep[] = ": ";
 	for( const auto & f : h )
 	{
 		result += f.m_name;
-		result.append( header_field_sep, ct_cstr_len( header_field_sep ) );
+		result.append( header_field_sep, ct_correct_len( sizeof( header_field_sep ) ) );
 		result += f.m_value;
-		result.append( header_rn, ct_cstr_len( header_rn ) );
+		result.append( header_rn, ct_correct_len( sizeof( header_rn ) ) );
 	}
 
-	result.append( header_rn, ct_cstr_len( header_rn ) );
+	result.append( header_rn, ct_correct_len( sizeof( header_rn ) ) );
 
 	return result;
 }
