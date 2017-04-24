@@ -150,19 +150,8 @@ class response_builder_t< restinio_controlled_output_t > final
 	public:
 		response_builder_t( response_builder_t && ) = default;
 
-		response_builder_t(
-			std::uint16_t status_code,
-			std::string reason_phrase,
-			connection_handle_t connection,
-			request_id_t request_id,
-			bool should_keep_alive )
-			:	base_type_t{
-					status_code,
-					std::move( reason_phrase ),
-					std::move( connection ),
-					request_id,
-					should_keep_alive }
-		{}
+		// Reuse construstors from base.
+		using base_type_t::base_type_t;
 
 		//! Set body.
 		auto &
@@ -224,19 +213,8 @@ class response_builder_t< user_controlled_output_t > final
 		using base_type_t =
 			base_response_builder_t< response_builder_t< user_controlled_output_t > >;
 	public:
-		response_builder_t(
-			std::uint16_t status_code,
-			std::string reason_phrase,
-			connection_handle_t connection,
-			request_id_t request_id,
-			bool should_keep_alive )
-			:	base_type_t{
-					status_code,
-					std::move( reason_phrase ),
-					std::move( connection ),
-					request_id,
-					should_keep_alive }
-		{}
+		// Reuse construstors from base.
+		using base_type_t::base_type_t;
 
 		//! Manualy set content length.
 		auto &
