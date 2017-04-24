@@ -6,6 +6,7 @@ MxxRu::Cpp::composite_target do
 
   if 'vc' == toolset.name
     global_compiler_option '/W3'
+    global_define '_CRT_SECURE_NO_WARNINGS'
 =begin
     global_compiler_option '/Zi'
     global_linker_option '/DEBUG'
