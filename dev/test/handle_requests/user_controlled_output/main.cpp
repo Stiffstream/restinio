@@ -289,7 +289,7 @@ TEST_CASE( "Using user controlled output response builder" , "[user_controlled_o
 
 	SECTION( "sequence with mixed order" )
 	{
-		std::srand( std::time( nullptr ) );
+		std::srand( static_cast<unsigned int>(std::time( nullptr )) );
 
 		auto create_body = []( auto i ){
 			return "====" + std::to_string( i ) + "====";

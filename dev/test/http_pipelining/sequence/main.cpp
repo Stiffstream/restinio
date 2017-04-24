@@ -214,7 +214,7 @@ TEST_CASE( "Simple HTTP piplining " , "[reverse_handling]" )
 
 TEST_CASE( "Long sequesnces HTTP piplining" , "[long_sequences]" )
 {
-	std::srand( std::time( nullptr ) );
+	std::srand( static_cast<unsigned int>(std::time( nullptr )) );
 
 	using http_server_t =
 		restinio::http_server_t<
@@ -296,7 +296,7 @@ TEST_CASE( "Long sequesnces HTTP piplining" , "[long_sequences]" )
 
 TEST_CASE( "Interrupt sequesnces HTTP piplining" , "[long_sequences][interrupt]" )
 {
-	std::srand( std::time( nullptr ) );
+	std::srand( static_cast<unsigned int>(std::time( nullptr )) );
 
 	using http_server_t =
 		restinio::http_server_t<
