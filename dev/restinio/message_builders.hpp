@@ -77,7 +77,7 @@ class base_response_builder_t
 			m_header.set_field(
 				std::move( field_name ),
 				std::move( field_value ) );
-			return static_cast< RESPONSE_BUILDER & >( *this );
+			return upcast_reference();
 		}
 
 		//! Add header `Date` field.
@@ -98,21 +98,21 @@ class base_response_builder_t
 				std::string{ "Date" },
 				buf.data() );
 
-			return static_cast< RESPONSE_BUILDER & >( *this );
+			return upcast_reference();
 		}
 
 		RESPONSE_BUILDER &
 		connection_close()
 		{
 			m_header.should_keep_alive( false );
-			return static_cast< RESPONSE_BUILDER & >( *this );
+			return upcast_reference();
 		}
 
 		RESPONSE_BUILDER &
 		connection_keep_alive()
 		{
 			m_header.should_keep_alive();
-			return static_cast< RESPONSE_BUILDER & >( *this );
+			return upcast_reference();
 		}
 
 	protected:
@@ -120,6 +120,13 @@ class base_response_builder_t
 
 		connection_handle_t m_connection;
 		const request_id_t m_request_id;
+
+	private:
+		RESPONSE_BUILDER &
+		upcast_reference()
+		{
+			return static_cast< RESPONSE_BUILDER & >( *this );
+		}
 };
 
 //
@@ -150,19 +157,8 @@ class response_builder_t< restinio_controlled_output_t > final
 	public:
 		response_builder_t( response_builder_t && ) = default;
 
-		response_builder_t(
-			std::uint16_t status_code,
-			std::string reason_phrase,
-			connection_handle_t connection,
-			request_id_t request_id,
-			bool should_keep_alive )
-			:	base_type_t{
-					status_code,
-					std::move( reason_phrase ),
-					std::move( connection ),
-					request_id,
-					should_keep_alive }
-		{}
+		// Reuse construstors from base.
+		using base_type_t::base_type_t;
 
 		//! Set body.
 		auto &
@@ -224,19 +220,8 @@ class response_builder_t< user_controlled_output_t > final
 		using base_type_t =
 			base_response_builder_t< response_builder_t< user_controlled_output_t > >;
 	public:
-		response_builder_t(
-			std::uint16_t status_code,
-			std::string reason_phrase,
-			connection_handle_t connection,
-			request_id_t request_id,
-			bool should_keep_alive )
-			:	base_type_t{
-					status_code,
-					std::move( reason_phrase ),
-					std::move( connection ),
-					request_id,
-					should_keep_alive }
-		{}
+		// Reuse construstors from base.
+		using base_type_t::base_type_t;
 
 		//! Manualy set content length.
 		auto &
@@ -494,14 +479,14 @@ class response_builder_t< chunked_output_t > final
 			std::string
 				transfer_encoding_field_name{
 					transfer_encoding,
-					impl::ct_correct_len( sizeof( transfer_encoding ) ) };
+					impl::ct_string_len( transfer_encoding ) };
 
 			constexpr const char value[] = "chunked";
 			if( !m_header.has_field( transfer_encoding ) )
 			{
 				m_header.set_field(
 					std::move( transfer_encoding_field_name ),
-					std::string{ value, impl::ct_correct_len( sizeof( value ) ) } );
+					std::string{ value, impl::ct_string_len( value ) } );
 			}
 			else
 			{
@@ -513,7 +498,7 @@ class response_builder_t< chunked_output_t > final
 						transfer_encoding,
 						std::string{
 							comma_value,
-							impl::ct_correct_len( sizeof( comma_value ) ) } );
+							impl::ct_string_len( comma_value ) } );
 				}
 			}
 		}
@@ -560,7 +545,7 @@ class response_builder_t< chunked_output_t > final
 				constexpr const char zero_chunk[] = "0\r\n\r\n";
 				bufs.emplace_back(
 					zero_chunk,
-					impl::ct_correct_len( sizeof( zero_chunk ) ) );
+					impl::ct_string_len( zero_chunk ) );
 			}
 
 			m_chunks.clear();

@@ -17,14 +17,15 @@ namespace impl
 {
 
 //
-// ct_correct_len
+// ct_string_len
 //
 
 //! Compile time c-string length.
-constexpr std::size_t
-ct_correct_len( std::size_t size_with_term )
+template< std::size_t N >
+std::size_t
+ct_string_len( const char (&a)[N] )
 {
-	return size_with_term - 1;
+	return N-1;
 }
 
 enum class content_length_field_presence_t
@@ -45,7 +46,7 @@ create_header_string(
 	result.reserve( buffer_size );
 
 	constexpr const char header_part1[] = "HTTP/";
-	result.append( header_part1, ct_correct_len( sizeof( header_part1 ) ) );
+	result.append( header_part1, ct_string_len( header_part1 ) );
 
 	result += static_cast<char>( '0' + h.http_major() );
 	result += '.';
@@ -65,17 +66,17 @@ create_header_string(
 	result += h.reason_phrase();
 
 	constexpr const char header_rn[] = "\r\n";
-	result.append( header_rn, ct_correct_len( sizeof( header_rn ) ) );
+	result.append( header_rn, ct_string_len( header_rn ) );
 
 	if( h.should_keep_alive() )
 	{
 		constexpr const char header_part2_1[] = "Connection: keep-alive\r\n";
-		result.append( header_part2_1, ct_correct_len( sizeof( header_part2_1 ) ) );
+		result.append( header_part2_1, ct_string_len( header_part2_1 ) );
 	}
 	else
 	{
 		constexpr const char header_part2_2[] = "Connection: close\r\n";
-		result.append( header_part2_2, ct_correct_len( sizeof( header_part2_2 ) ) );
+		result.append( header_part2_2, ct_string_len( header_part2_2 ) );
 	}
 
 	if( content_length_field_presence_t::add_content_length ==
@@ -97,12 +98,12 @@ create_header_string(
 	for( const auto & f : h )
 	{
 		result += f.m_name;
-		result.append( header_field_sep, ct_correct_len( sizeof( header_field_sep ) ) );
+		result.append( header_field_sep, ct_string_len( header_field_sep ) );
 		result += f.m_value;
-		result.append( header_rn, ct_correct_len( sizeof( header_rn ) ) );
+		result.append( header_rn, ct_string_len( header_rn ) );
 	}
 
-	result.append( header_rn, ct_correct_len( sizeof( header_rn ) ) );
+	result.append( header_rn, ct_string_len( header_rn ) );
 
 	return result;
 }
