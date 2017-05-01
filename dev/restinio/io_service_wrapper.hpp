@@ -70,12 +70,12 @@ class proxy_io_service_wrapper_t
 };
 
 //
-// create_proxy_io_service()
+// use_existing_io_service()
 //
 
 //! Create io_service wrapper for external io_service object.
 inline io_service_wrapper_unique_ptr_t
-create_proxy_io_service( asio::io_service & io_service )
+use_existing_io_service( asio::io_service & io_service )
 {
 	return std::make_unique< proxy_io_service_wrapper_t >( io_service );
 }
@@ -119,7 +119,7 @@ class child_io_service_wrapper_t
 
 
 //
-// create_proxy_io_service_wrapper()
+// create_child_io_service()
 //
 
 //! Create io_service wrapper for external io_service object.
