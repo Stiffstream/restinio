@@ -7,8 +7,6 @@
 #include <restinio/all.hpp>
 #include <restinio/so5/so_timer_factory.hpp>
 
-#include <sample/common/ostream_logger.hpp>
-
 // Application agents.
 #include "app.hpp"
 
@@ -84,7 +82,7 @@ void create_main_coop(
 	using traits_t =
 		restinio::traits_t<
 			restinio::so5::so_timer_factory_t,
-			restinio::sample::single_threaded_ostream_logger_t >;
+			restinio::single_threaded_ostream_logger_t >;
 
 	restinio::server_settings_t< traits_t > settings{};
 

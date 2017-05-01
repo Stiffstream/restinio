@@ -15,7 +15,7 @@
 #include <restinio/io_service_wrapper.hpp>
 #include <restinio/request_handler.hpp>
 #include <restinio/asio_timer_factory.hpp>
-#include <restinio/loggers.hpp>
+#include <restinio/null_logger.hpp>
 #include <restinio/impl/acceptor.hpp>
 
 namespace restinio

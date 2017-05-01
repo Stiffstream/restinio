@@ -11,8 +11,6 @@
 
 #include <restinio/all.hpp>
 
-#include <sample/common/ostream_logger.hpp>
-
 auto server_handler()
 {
 	return []( auto req ) {
@@ -77,7 +75,7 @@ int main()
 			restinio::http_server_t<
 				restinio::traits_t<
 					restinio::asio_timer_factory_t,
-					restinio::sample::single_threaded_ostream_logger_t > >;
+					restinio::single_threaded_ostream_logger_t > >;
 
 		http_server_t http_server{
 			restinio::create_child_io_service( 1 ),

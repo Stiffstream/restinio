@@ -253,7 +253,7 @@ struct raw_resp_output_ctx_t
 	static constexpr auto
 	max_iov_len()
 	{
-		using len_t = decltype( asio::detail::max_iov_len);
+		using len_t = decltype( asio::detail::max_iov_len );
 		return std::min< len_t >( asio::detail::max_iov_len, 64 );
 	}
 

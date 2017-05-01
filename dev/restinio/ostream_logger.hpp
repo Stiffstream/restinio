@@ -20,14 +20,11 @@
 namespace restinio
 {
 
-namespace sample
-{
-
 //
 // null_lock_t
 //
 
-//! Null logger lock.
+//! Fake lock.
 struct null_lock_t
 {
 	constexpr void
@@ -57,6 +54,9 @@ template < typename LOCK >
 class ostream_logger_t
 {
 	public:
+		ostream_logger_t( const ostream_logger_t & ) = delete;
+		void operator = ( const ostream_logger_t & ) = delete;
+
 		ostream_logger_t()
 			:	m_out{ &std::cout }
 		{}
@@ -97,7 +97,7 @@ class ostream_logger_t
 		void
 		log_message( const char * tag, const std::string & msg )
 		{
-			std::unique_lock< LOCK > lock( *m_lock );
+			std::unique_lock< LOCK > lock{ m_lock };
 
 			using namespace std;
 			using namespace chrono;
@@ -109,20 +109,18 @@ class ostream_logger_t
 			( *m_out )
 				<< fmt::format(
 						"[ {:%Y-%m-%d %H:%M:%S}.{:03d}] {}: {}",
-						*localtime( &unix_time ),
+						make_localtime( unix_time ),
 						static_cast< int >( ms.count() % 1000u ),
 						tag,
 						msg )
 				<< std::endl;
 		}
 
-		std::shared_ptr< LOCK > m_lock{ std::make_shared< LOCK >() };
+		LOCK m_lock;
 		std::ostream * m_out;
 };
 
 using single_threaded_ostream_logger_t = ostream_logger_t< null_lock_t >;
 using shared_ostream_logger_t = ostream_logger_t< std::mutex >;
-
-} /* namespace sample */
 
 } /* namespace restinio */

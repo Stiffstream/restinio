@@ -7,7 +7,7 @@
 */
 #pragma once
 
-#include <sample/common/ostream_logger.hpp>
+#include <restinio/ostream_logger.hpp>
 
-using utest_logger_t = restinio::sample::shared_ostream_logger_t;
+using utest_logger_t = restinio::shared_ostream_logger_t;
 // using utest_logger_t = restinio::null_logger_t;
