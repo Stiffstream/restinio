@@ -106,10 +106,16 @@ class server_settings_t
 		//! Server endpoint.
 		//! \{
 		server_settings_t &
-		port( std::uint16_t p )
+		port( std::uint16_t p ) &
 		{
 			m_port = p;
 			return *this;
+		}
+
+		server_settings_t &&
+		port( std::uint16_t p ) &&
+		{
+			return std::move( this->port( p ) );
 		}
 
 		std::uint16_t
@@ -119,10 +125,16 @@ class server_settings_t
 		}
 
 		server_settings_t &
-		protocol( asio::ip::tcp p )
+		protocol( asio::ip::tcp p ) &
 		{
 			m_protocol = p;
 			return *this;
+		}
+
+		server_settings_t &&
+		protocol( asio::ip::tcp p ) &&
+		{
+			return std::move( this->protocol( p ) );
 		}
 
 		asio::ip::tcp
@@ -132,10 +144,16 @@ class server_settings_t
 		}
 
 		server_settings_t &
-		address( std::string addr )
+		address( std::string addr ) &
 		{
 			m_address = std::move(addr);
 			return *this;
+		}
+
+		server_settings_t &&
+		address( std::string addr ) &&
+		{
+			return std::move( this->address( std::move( addr ) ) );
 		}
 
 		const std::string &
@@ -152,10 +170,16 @@ class server_settings_t
 		*/
 		//! {
 		server_settings_t &
-		buffer_size( std::size_t s )
+		buffer_size( std::size_t s ) &
 		{
 			m_buffer_size = s;
 			return *this;
+		}
+
+		server_settings_t &&
+		buffer_size( std::size_t s ) &&
+		{
+			return std::move( this->buffer_size( s ) );
 		}
 
 		std::size_t
@@ -173,10 +197,16 @@ class server_settings_t
 		*/
 		//! \{
 		server_settings_t &
-		read_next_http_message_timelimit( std::chrono::steady_clock::duration d )
+		read_next_http_message_timelimit( std::chrono::steady_clock::duration d ) &
 		{
 			m_read_next_http_message_timelimit = std::move( d );
 			return *this;
+		}
+
+		server_settings_t &&
+		read_next_http_message_timelimit( std::chrono::steady_clock::duration d ) &&
+		{
+			return std::move( this->read_next_http_message_timelimit( std::move( d ) ) );
 		}
 
 		std::chrono::steady_clock::duration
@@ -189,10 +219,16 @@ class server_settings_t
 		//! A period of time wait for response to be written to socket.
 		//! \{
 		server_settings_t &
-		write_http_response_timelimit( std::chrono::steady_clock::duration d )
+		write_http_response_timelimit( std::chrono::steady_clock::duration d ) &
 		{
 			m_write_http_response_timelimit = std::move( d );
 			return *this;
+		}
+
+		server_settings_t &&
+		write_http_response_timelimit( std::chrono::steady_clock::duration d ) &&
+		{
+			return std::move( this->write_http_response_timelimit( std::move( d ) ) );
 		}
 
 		std::chrono::steady_clock::duration
@@ -205,10 +241,16 @@ class server_settings_t
 		//! A period of time that is given for a handler to create response.
 		//! \{
 		server_settings_t &
-		handle_request_timeout( std::chrono::steady_clock::duration d )
+		handle_request_timeout( std::chrono::steady_clock::duration d ) &
 		{
 			m_handle_request_timeout = std::move( d );
 			return *this;
+		}
+
+		server_settings_t &&
+		handle_request_timeout( std::chrono::steady_clock::duration d ) &&
+		{
+			return std::move( this->handle_request_timeout( std::move( d ) ) );
 		}
 
 		std::chrono::steady_clock::duration
@@ -221,10 +263,16 @@ class server_settings_t
 		//! Max pipelined requests to receive on single connection.
 		//! \{
 		server_settings_t &
-		max_pipelined_requests( std::size_t mpr )
+		max_pipelined_requests( std::size_t mpr ) &
 		{
 			m_max_pipelined_requests = mpr;
 			return *this;
+		}
+
+		server_settings_t &&
+		max_pipelined_requests( std::size_t mpr ) &&
+		{
+			return std::move( this->max_pipelined_requests( mpr ) );
 		}
 
 		std::size_t
@@ -241,11 +289,18 @@ class server_settings_t
 
 		template< typename... PARAMS >
 		server_settings_t &
-		request_handler( PARAMS &&... params )
+		request_handler( PARAMS &&... params ) &
 		{
 			return set_instance(
 					m_request_handler,
 					std::forward< PARAMS >( params )... );
+		}
+
+		template< typename... PARAMS >
+		server_settings_t &&
+		request_handler( PARAMS &&... params ) &&
+		{
+			return std::move( this->request_handler( std::forward< PARAMS >( params )... ) );
 		}
 
 		std::unique_ptr< request_handler_t >
@@ -264,11 +319,18 @@ class server_settings_t
 
 		template< typename... PARAMS >
 		server_settings_t &
-		timer_factory( PARAMS &&... params )
+		timer_factory( PARAMS &&... params ) &
 		{
 			return set_instance(
 					m_timer_factory,
 					std::forward< PARAMS >( params )... );
+		}
+
+		template< typename... PARAMS >
+		server_settings_t &&
+		timer_factory( PARAMS &&... params ) &&
+		{
+			return std::move( this->timer_factory( std::forward< PARAMS >( params )... ) );
 		}
 
 		std::unique_ptr< timer_factory_t >
@@ -287,11 +349,18 @@ class server_settings_t
 
 		template< typename... PARAMS >
 		server_settings_t &
-		logger( PARAMS &&... params )
+		logger( PARAMS &&... params ) &
 		{
 			return set_instance(
 					m_logger,
 					std::forward< PARAMS >( params )... );
+		}
+
+		template< typename... PARAMS >
+		server_settings_t &&
+		logger( PARAMS &&... params ) &&
+		{
+			return std::move( this->logger( std::forward< PARAMS >( params )... ) );
 		}
 
 		std::unique_ptr< logger_t >
