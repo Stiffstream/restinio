@@ -282,22 +282,44 @@ Acceptors life cycle is trivial and is the following:
 
 When the server is closed cycle breaks up.
 
-Connections life cycle is more complicated and
-without error handling and timeouts control looks like this:
+Connections life cycle is more complicated and cannot be expressed lineary.
+Simultaneously connection runs two logical objectives. The first one is
+responsible for receiving requests and passing them to handler (read part) and
+the second objective is streaming resulting responses back to client (write part).
+Such logical separation comes from http-pipelining support and
+various types of response building strategies.
+
+Without error handling and timeouts control Read part looks like this:
 
 1. Start reading from socket;
 2. Receive a portion of data from socket and parse http request out of it;
 3. If http message parsing is incomplete then go back to step 1;
-4. If http message parsing is complete
-pass request and connection to request handler;
-5. If request handler reject request, then write not-implemented (status 501)
-response and close connection;
-6. Wait for response initiated from user domain either directly inside of handler call
-or from other context where response actually is being built;
-7. Write response to socket;
-8. When write operation is complete and response was marked as connection-keep-alive
-then go back to step 1;
-9. If response was marked to connection-close then connection is closed and destroyed.
+4. If http message parsing is complete pass request and connection to request handler;
+5. If request handler reject request, then push not-implemented response (status 501)
+to outgoing queue ans stop reading from socket;
+5. If request was accepted and the number of requests int process is less than
+`max_pipelined_requests` then go back to step 1;
+6. Stop reading socket until awaken by the write part.
+
+And the Write part looks like this:
+
+1. Wait for response pieces initiated from user domain
+either directly inside of handler call or from other context where
+response actually is being built;
+2. Push response data to outgoing queue with considering associated response position
+(multiple request can be in process, and response for a given request
+connot be written to socket before writing all previous responses to it);
+3. Check if there is outgoing data ready to send;
+4. If there is no ready data available then go back to step 1;
+5. Send ready data;
+6. Wait for write operation to complete. If more response pieces comes while
+write operation runs it is simply received (steps 1-2 without any further go);
+7. After write operation completes:
+if last commited response was marked to close connection
+then connection is closed and destroyed;
+8. If it appears that the room for more pipeline requests bacame available again
+then awake the read part;
+9. Go back to step 3.
 
 Of course implementation has error checks. Also implementation controls timeouts of
 operations that are spread in time:
@@ -320,7 +342,7 @@ The second case and its possibility is a key point of *RESTinio* being created f
 As request data and connection handle are wrapped in shared pointers
 so they can be moved to other context.
 So it is possible to create handlers that can interact with async API.
-When response data is ready response can be built and sent using connection handle.
+When response data is ready response can be built and sent using request handle.
 After response building is complete connection handle
 will post the necessary job to run on host `asio::io_service`.
 So one can perform asynchronous request handling and
@@ -511,11 +533,11 @@ class timer_guard_t
     schedule_operation_timeout_callback(
       const EXECUTOR & e,
       std::chrono::steady_clock::duration d,
-      CALLBACK_FUNC && cb ) const;
+      CALLBACK_FUNC && cb );
 
     // Cancel timeout guard if any.
     void
-    cancel() const;
+    cancel();
 };
 ~~~~~
 
@@ -583,8 +605,8 @@ class null_logger_t
 This approach allows compiler to optimize logging when it is possible,
 see [`null_logger_t`](./dev/restinio/loggers.hpp).
 
-For implementation examples see
-[`ostream_logger_t`](./dev/sample/common/ostream_logger.hpp).
+For implementation example see
+[`ostream_logger_t`](./dev/restinio/ostream_logger.hpp).
 
 ### request_handler_t
 
@@ -593,14 +615,12 @@ It must be a function-object with the following invocation interface:
 ~~~~~
 ::c++
 request_handling_status_t
-handler(
-  restinio::http_request_handle_t req,
-  restinio::connection_handle_t conn );
+handler( restinio::request_handle_t req );
 ~~~~~
 
-The first parameter defines request data,
-and the second one provides connection handle.
-Both parameters passed by value and thus can be passed to another
+The `req` parameter defines request data and stores some data
+necessary for creating responses.
+Parameter is passed by value and thus can be passed to another
 processing flow (that is where an async handling becomes possible).
 
 Handler must return handling status via `request_handling_status_t` enum.
@@ -629,10 +649,11 @@ on a particular request is ready to be created and send.
 The key here is to use a given connection handle and
 [response_builder_t](./dev/restinio/message_builders.hpp):
 
+Basic example of response builder with default response builder:
 ~~~~~
 ::c++
 // Construct response builder.
-restinio::response_builder_t resp{ req->m_header, std::move( conn ) };
+auto resp = req->create_response(); // 200 OK
 
 // Set header fields:
 resp.append_header( "Server", "RESTinio server" );
@@ -646,17 +667,95 @@ resp.set_body( "Hello world!" );
 resp.done();
 ~~~~~
 
+Currently there are three types of response builders.
+Each builder type is a specialization of a template class `response_builder_t< TAG >`
+with a specific tag-type:
+
+* Tag `restinio_controlled_output_t`. Simple standard response builder.
+* Tag `user_controlled_output_t`. User controlled response output builder.
+* Tag `chunked_output_t`. Chunked transfer encoding output builder.
+
+### Simple standard response builder
+
+Requires user to set header and body.
+Content length is automatically calculated.
+Once the data is ready, the user calls done() method
+and the resulting response is scheduled for sending.
+
+### User controlled response output builder
+
+This type of output allows user
+to send body divided into parts.
+But it is up to user to set the correct
+Content-Length field.
+
+~~~~~
+::c++
+ handler =
+  []( restinio::request_handle_t req ){
+    using output_type_t = restinio::user_controlled_output_t;
+    auto resp = req->create_response< output_type_t >();
+
+    resp.append_header( "Server", "RESTinio" )
+      .append_header_date_field()
+      .append_header( "Content-Type", "text/plain; charset=utf-8" )
+      .set_content_length( req->body().size() );
+
+    resp.flush(); // Send only header
+
+
+    for( const char c : req->body() )
+    {
+      resp.append_body( std::string{ 1, c } );
+      if( '\n' == c )
+      {
+        resp.flush();
+      }
+    }
+
+    resp.done();
+  }
+~~~~~
+
+### Chunked transfer encoding output builder
+
+This type of output sets transfer-encoding to chunked
+and expects user to set body using chunks of data.
+
+~~~~~
+::c++
+ handler =
+  []( restinio::request_handle_t req ){
+    using output_type_t = restinio::chunked_output_t;
+    auto resp = req->create_response< output_type_t >();
+
+    resp.append_header( "Server", "RESTinio" )
+      .append_header_date_field()
+      .append_header( "Content-Type", "text/plain; charset=utf-8" );
+
+    resp.flush(); // Send only header
+
+
+    for( const char c : req->body() )
+    {
+      resp.append_chunk( std::string{ 1, c } );
+      if( '\n' == c )
+      {
+        resp.flush();
+      }
+    }
+
+    resp.done();
+  }
+~~~~~
+
+
 # Road Map
 
 Features for next releases:
 
 * Routers for message handlers.
 Support for a URI dependent routing to a set of handlers.
-* Support for chunked transfer encoding. Separate responses on header and body chunks,
-so it will be possible to send header and then body divided on chunks.
-* True [HTTP pipelining](https://en.wikipedia.org/wiki/HTTP_pipelining) support.
-Read, parse and call a handler for incoming requests independently.
-When responses become available send them to client in order of corresponding requests.
 * Non trivial benchmarks. Comparison with other libraries with similar features
 on the range of various scenarios.
 * HTTP client. Introduce functionality for building and sending requests and
@@ -665,6 +764,16 @@ receiving and parsing results.
 * Full CMake support.
 * Want more features?
 Please send us feedback and we will take your opinion into account.
+
+## Done features
+
+Features implemented in 0.2.0:
+
+* True [HTTP pipelining](https://en.wikipedia.org/wiki/HTTP_pipelining) support.
+Read, parse and call a handler for incoming requests independently.
+When responses become available send them to client in order of corresponding requests.
+* Support for chunked transfer encoding. Separate responses on header and body chunks,
+so it will be possible to send header and then body divided on chunks.
 
 # License
 

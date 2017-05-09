@@ -81,11 +81,9 @@ using default_traits_t =
 					.port( args.port() )
 					// .set_more_params( ... )
 					.request_handler(
-						[](
-							restinio::http_request_data_shared_ptr_t req,
-							restinio::connection_handle_shared_ptr_t conn ){
+						[]( restinio::request_handle_t req ){
 								// Handle request.
-							} );
+						} );
 			} };
 
 	server.open();
