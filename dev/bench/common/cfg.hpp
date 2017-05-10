@@ -102,6 +102,7 @@ json_io(
 		read_next_http_message_timelimit,
 		write_http_response_timelimit,
 		handle_request_timeout;
+	std::size_t max_pipelined_requests;
 
 	input
 		& json_dto::optional( "m_port", port, 8080 )
@@ -121,7 +122,11 @@ json_io(
 		& json_dto::optional(
 			"handle_request_timeout_ms",
 			handle_request_timeout,
-			std::chrono::milliseconds( 10 * 1000 ) );
+			std::chrono::milliseconds( 10 * 1000 ) )
+		& json_dto::optional(
+			"max_pipelined_requests",
+			max_pipelined_requests,
+			32 );
 
 	p
 		.port( port )
@@ -129,7 +134,8 @@ json_io(
 		.buffer_size( buffer_size )
 		.read_next_http_message_timelimit( read_next_http_message_timelimit )
 		.write_http_response_timelimit( write_http_response_timelimit )
-		.handle_request_timeout( handle_request_timeout );
+		.handle_request_timeout( handle_request_timeout )
+		.max_pipelined_requests( max_pipelined_requests );
 }
 
 } /* namespace json_dto */
