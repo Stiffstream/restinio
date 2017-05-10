@@ -14,7 +14,7 @@ being able to handle request asynchronously.
 ## Why creating yet another library of that kind?
 
 Well, there are lots of libraries and frameworks
-of all sorts of complexity and maturety for
+of all sorts of complexity and maturity for
 building REST service in C++.
 Isn't it really a [NIH syndrom](https://en.wikipedia.org/wiki/Not_invented_here)?
 
@@ -29,7 +29,7 @@ And that hurts when the rest of the application is built on async bases.
 In addition to async handling feature we though it would be nice
 for such library to keep track of what is going on with connections and
 control timeouts on operations of reading request from socket,
-handling request and writing resposne to socket.
+handling request and writing response to socket.
 And a header-only design is a plus.
 
 And it happens that under such conditions you don't have a lot of options.
@@ -57,14 +57,14 @@ For building samples, benchmarks and tests:
 
 ## Obtaining
 
-There are two ways of obtainig *RESTinio*.
+There are two ways of obtaining *RESTinio*.
 
 * Getting from
 [repository](https://bitbucket.org/sobjectizerteam/restinio-0.1).
 In this case external dependencies must be obtained with Mxx_ru externals tool.
 * Getting
 [archive](https://bitbucket.org/sobjectizerteam/restinio-0.1/downloads/restinio-0.1.0-full.tar.bz2).
-Archive includes sorce code for all external dependencies.
+Archive includes source code for all external dependencies.
 
 ### Cloning of hg repository
 
@@ -81,7 +81,7 @@ to download and extract *RESTinio*'s dependencies.
 
 ### MxxRu::externals recipe
 
-See MxxRu::externals recipies for *RESTinio*
+See MxxRu::externals recipes for *RESTinio*
 [here](./doc/MxxRu_externals_recipe.md).
 
 ### Getting archive
@@ -286,15 +286,15 @@ Connections life cycle is more complicated and cannot be expressed lineary.
 Simultaneously connection runs two logical objectives. The first one is
 responsible for receiving requests and passing them to handler (read part) and
 the second objective is streaming resulting responses back to client (write part).
-Such logical separation comes from http-pipelining support and
+Such logical separation comes from HTTP pipelining support and
 various types of response building strategies.
 
 Without error handling and timeouts control Read part looks like this:
 
 1. Start reading from socket;
-2. Receive a portion of data from socket and parse http request out of it;
-3. If http message parsing is incomplete then go back to step 1;
-4. If http message parsing is complete pass request and connection to request handler;
+2. Receive a portion of data from socket and parse HTTP request out of it;
+3. If HTTP message parsing is incomplete then go back to step 1;
+4. If HTTP message parsing is complete pass request and connection to request handler;
 5. If request handler reject request, then push not-implemented response (status 501)
 to outgoing queue ans stop reading from socket;
 5. If request was accepted and the number of requests int process is less than
@@ -308,16 +308,16 @@ either directly inside of handler call or from other context where
 response actually is being built;
 2. Push response data to outgoing queue with considering associated response position
 (multiple request can be in process, and response for a given request
-connot be written to socket before writing all previous responses to it);
+cannot be written to socket before writing all previous responses to it);
 3. Check if there is outgoing data ready to send;
 4. If there is no ready data available then go back to step 1;
 5. Send ready data;
 6. Wait for write operation to complete. If more response pieces comes while
 write operation runs it is simply received (steps 1-2 without any further go);
 7. After write operation completes:
-if last commited response was marked to close connection
+if last committed response was marked to close connection
 then connection is closed and destroyed;
-8. If it appears that the room for more pipeline requests bacame available again
+8. If it appears that the room for more pipeline requests became available again
 then awake the read part;
 9. Go back to step 3.
 
@@ -767,7 +767,7 @@ Please send us feedback and we will take your opinion into account.
 
 ## Done features
 
-Features implemented in 0.2.0:
+0.2.0:
 
 * True [HTTP pipelining](https://en.wikipedia.org/wiki/HTTP_pipelining) support.
 Read, parse and call a handler for incoming requests independently.
