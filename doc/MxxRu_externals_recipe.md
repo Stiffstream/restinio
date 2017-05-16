@@ -4,7 +4,7 @@ For *RESTinio* itself:
 ~~~~~
 ::ruby
 MxxRu::arch_externals :restinio do |e|
-  e.url 'https://bitbucket.org/sobjectizerteam/restinio-0.1/get/v.0.1.0.tar.bz2'
+  e.url 'https://bitbucket.org/sobjectizerteam/restinio-0.2/get/v.0.2.0.tar.bz2'
 
   e.map_dir 'dev/restinio' => 'dev'
 
@@ -56,7 +56,7 @@ MxxRu::arch_externals :fmtlib_mxxru do |e|
 end
 
 MxxRu::arch_externals :so5 do |e|
-  e.url 'https://sourceforge.net/projects/sobjectizer/files/sobjectizer/SObjectizer%20Core%20v.5.5/so-5.5.18.tar.xz'
+  e.url 'https://sourceforge.net/projects/sobjectizer/files/sobjectizer/SObjectizer%20Core%20v.5.5/so-5.5.19.tar.xz'
 
   e.map_dir 'dev/so_5' => 'dev'
   e.map_dir 'dev/timertt' => 'dev'
