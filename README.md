@@ -6,7 +6,7 @@
 *RESTinio* is a header-only library for creating REST applications in c++.
 It helps to create http server that can handle requests asynchronously.
 Currently it is in alpha state and represents
-the first view on the solution of the problem of
+an attempt to find a nice solution for the problem of
 being able to handle request asynchronously.
 
 *RESTinio* is a free software and is distributed under GNU Affero GPL v.3 license.
@@ -151,7 +151,7 @@ External libraries used by *RESTinio* have the following default settings:
 * A standalone version of *asio* is used and a chrono library is used,
 so `ASIO_STANDALONE` and `ASIO_HAS_STD_CHRONO` defines are necessary;
 * a less strict version of *nodejs/http-parser* is used, so the following
-definition `HTTP_PARSER_STRICT=0` is used;
+definition `HTTP_PARSER_STRICT=0` is applied;
 * *fmtlib* is used as a header-only library, hence a `FMT_HEADER_ONLY`
 define is necessary;
 
@@ -204,7 +204,7 @@ Internal logic of *RESTinio* is separated from
 maintaining `asio::ioservice` directly by a wrapper class.
 In most cases it would be enough to use one of standard
 wrappers. The first one is provided by
-`create_proxy_io_service( asio::io_service & )`
+`use_existing_io_service( asio::io_service & )`
 and is a proxy for user managed `asio::io_service` instance.
 And the second is the one provided by
 `create_child_io_service( unsigned int thread_pool_size )`
@@ -218,7 +218,7 @@ naming the concrete type of `server_settings_t<TRAITS>`.
 View `server_settings_t` class to see all available params
 ([settings.hpp](./dev/restinio/settings.hpp)).
 
-To run a server `open()` and `close()` methods are used.
+To run the server `open()` and `close()` methods are used.
 When open method is called server posts a callback on
 `asio::ioservice` to bind on a server port and listen for new connections.
 If callback executes without errors, open returns, in case of error
@@ -227,13 +227,14 @@ asynchronously so to make them sync a future-promise is used.
 
 To make server complete we must set request handler.
 Request handler as defined by default `TRATS` is a
-`std::function< request_handling_status_t ( request_handle_t ) >`:
+`default_request_handler_t`:
 ~~~~~
 ::c++
-std::function< request_handling_status_t ( request_handle_t ) >
+using default_request_handler_t =
+  std::function< request_handling_status_t ( request_handle_t ) >
 ~~~~~
 
-To create handler `request_handler()` function is used:
+To create handler a `request_handler()` function is used:
 ~~~~~
 ::c++
 auto request_handler()
@@ -257,7 +258,7 @@ auto request_handler()
 }
 ~~~~~
 
-Request handler here is a lambda-function, it check if request method is `GET`
+Request handler here is a lambda-function, it checks if request method is `GET`
 and target is `/` and if so makes a response and returns
 `restinio::request_handling_status_t::accepted`
 meaning that request had been taken for processing.
@@ -266,7 +267,7 @@ meaning that request was not accepted for handling and *RESTinio* must take care
 
 ## Basic idea
 
-In general *RESTinio*  runs its logic on `asio::io_service`.
+In general *RESTinio* runs its logic on `asio::io_service`.
 There are two major object types running:
 
 * acceptor -- receives new connections and creates connection objects that
@@ -277,10 +278,10 @@ There is a single instance of acceptor and as much connections as needed.
 
 Acceptors life cycle is trivial and is the following:
 
-1. Start listening for new connection;
-2. Receive new tcp-connection;
-3. Create connection handler object and start running it;
-4. Back to step 1.
+1. Start listening for new connection.
+2. Receive new tcp-connection.
+3. Create connection handler object and start running it.
+4. Back to step 1'.
 
 When the server is closed cycle breaks up.
 
@@ -293,34 +294,34 @@ various types of response building strategies.
 
 Without error handling and timeouts control Read part looks like this:
 
-1. Start reading from socket;
-2. Receive a portion of data from socket and parse HTTP request out of it;
-3. If HTTP message parsing is incomplete then go back to step 1;
-4. If HTTP message parsing is complete pass request and connection to request handler;
-5. If request handler reject request, then push not-implemented response (status 501)
-to outgoing queue ans stop reading from socket;
-5. If request was accepted and the number of requests int process is less than
-`max_pipelined_requests` then go back to step 1;
+1. Start reading from socket.
+2. Receive a portion of data from socket and parse HTTP request out of it.
+3. If HTTP message parsing is incomplete then go back to step 1.
+4. If HTTP message parsing is complete pass request and connection to request handler.
+5. If request handler rejects request, then push not-implemented response (status 501)
+to outgoing queue and stop reading from socket.
+5. If request was accepted and the number of requests in process is less than
+`max_pipelined_requests` then go back to step 1.
 6. Stop reading socket until awaken by the write part.
 
 And the Write part looks like this:
 
 1. Wait for response pieces initiated from user domain
 either directly inside of handler call or from other context where
-response actually is being built;
-2. Push response data to outgoing queue with considering associated response position
+response actually is being built.
+2. Push response data to outgoing queue with consideration of associated response position
 (multiple request can be in process, and response for a given request
-cannot be written to socket before writing all previous responses to it);
-3. Check if there is outgoing data ready to send;
-4. If there is no ready data available then go back to step 1;
-5. Send ready data;
+cannot be written to socket before writing all previous responses to it).
+3. Check if there is outgoing data ready to send.
+4. If there is no ready data available then go back to step 1.
+5. Send ready data.
 6. Wait for write operation to complete. If more response pieces comes while
-write operation runs it is simply received (steps 1-2 without any further go);
+write operation runs it is simply received (steps 1-2 without any further go).
 7. After write operation completes:
 if last committed response was marked to close connection
-then connection is closed and destroyed;
+then connection is closed and destroyed.
 8. If it appears that the room for more pipeline requests became available again
-then awake the read part;
+then awake the read part.
 9. Go back to step 3.
 
 Of course implementation has error checks. Also implementation controls timeouts of
@@ -412,7 +413,7 @@ The first is the main one. It obtains `io_service_wrapper` as an
 The second constructor simplifies setting of parameters via generic lambda:
 ~~~~~
 ::c++
-http_server{
+http_server_t http_server{
   restinio::create_child_io_service( 1 ),
   []( auto & settings ){ // Omit concrete name of settings type.
     settings
@@ -641,7 +642,7 @@ it guarantees serialized chain of callback invocation.
 But if `asio::ioservice` runs on a single thread there is no need
 to use `asio::strand` because there is no way to run callbacks
 in parallel. So in such cases it is enough to use `asio::executor`
-directly an eliminate overhead of `asio::strand`.
+directly and eliminate overhead of `asio::strand`.
 
 ## Request handling
 
@@ -770,7 +771,7 @@ Please send us feedback and we will take your opinion into account.
 
 0.2.0:
 
-* True [HTTP pipelining](https://en.wikipedia.org/wiki/HTTP_pipelining) support.
+* [HTTP pipelining](https://en.wikipedia.org/wiki/HTTP_pipelining) support.
 Read, parse and call a handler for incoming requests independently.
 When responses become available send them to client in order of corresponding requests.
 * Support for chunked transfer encoding. Separate responses on header and body chunks,
