@@ -60,21 +60,21 @@ For building samples, benchmarks and tests:
 There are two ways of obtaining *RESTinio*.
 
 * Getting from
-[repository](https://bitbucket.org/sobjectizerteam/restinio-0.1).
+[repository](https://bitbucket.org/sobjectizerteam/restinio-0.2).
 In this case external dependencies must be obtained with Mxx_ru externals tool.
 * Getting
-[archive](https://bitbucket.org/sobjectizerteam/restinio-0.1/downloads/restinio-0.1.0-full.tar.bz2).
+[archive](https://bitbucket.org/sobjectizerteam/restinio-0.2/downloads/restinio-0.2.0-full.tar.bz2).
 Archive includes source code for all external dependencies.
 
 ### Cloning of hg repository
 
 ```
-hg clone https://bitbucket.org/sobjectizerteam/restinio-0.1
+hg clone https://bitbucket.org/sobjectizerteam/restinio-0.2
 ```
 
 And then:
 ```
-cd restinio-0.1
+cd restinio-0.2
 mxxruexternals
 ```
 to download and extract *RESTinio*'s dependencies.
@@ -87,9 +87,9 @@ See MxxRu::externals recipes for *RESTinio*
 ### Getting archive
 
 ```
-wget https://bitbucket.org/sobjectizerteam/restinio-0.1/downloads/restinio-0.1.0-full.tar.bz2
-tar xjvf restinio-0.1.0-full.tar.bz2
-cd restinio-0.1.0-full
+wget https://bitbucket.org/sobjectizerteam/restinio-0.2/downloads/restinio-0.2.0-full.tar.bz2
+tar xjvf restinio-0.2.0-full.tar.bz2
+cd restinio-0.2.0-full
 ```
 
 ## Build
@@ -100,8 +100,8 @@ Building with CMake currently is provided for samples, tests and benches
 not depending on SObjectizer.
 To build them run the following commands:
 ```
-hg clone https://bitbucket.org/sobjectizerteam/restinio-0.1
-cd restinio-0.1
+hg clone https://bitbucket.org/sobjectizerteam/restinio-0.2
+cd restinio-0.2
 mxxruexternals
 cd dev
 mkdir cmake_build
@@ -113,9 +113,9 @@ make install
 
 Or, if getting sources from archive:
 ```
-wget https://bitbucket.org/sobjectizerteam/restinio-0.1/downloads/restinio-0.1.0-full.tar.bz2
-tar xjvf restinio-0.1.0-full.tar.bz2
-cd restinio-0.1.0-full/dev
+wget https://bitbucket.org/sobjectizerteam/restinio-0.2/downloads/restinio-0.2.0-full.tar.bz2
+tar xjvf restinio-0.2.0-full.tar.bz2
+cd restinio-0.2.0-full/dev
 mkdir cmake_build
 cd cmake_build
 cmake -DCMAKE_INSTALL_PREFIX=target -DCMAKE_BUILD_TYPE=Release ..
@@ -128,8 +128,8 @@ While *RESTinio* is header-only library, samples, tests and benches require a bu
 
 Compiling with Mxx_ru:
 ```
-hg clone https://bitbucket.org/sobjectizerteam/restinio-0.1
-cd restinio-0.1
+hg clone https://bitbucket.org/sobjectizerteam/restinio-0.2
+cd restinio-0.2
 mxxruexternals
 cd dev
 ruby build.rb
@@ -227,10 +227,10 @@ asynchronously so to make them sync a future-promise is used.
 
 To make server complete we must set request handler.
 Request handler as defined by default `TRATS` is a
-`std::function< bool ( request_data, conn ) >`:
+`std::function< request_handling_status_t ( request_handle_t ) >`:
 ~~~~~
 ::c++
-std::function< request_handling_status_t (http_request_handle_t, connection_handle_t) >
+std::function< request_handling_status_t ( request_handle_t ) >
 ~~~~~
 
 To create handler `request_handler()` function is used:
@@ -238,11 +238,11 @@ To create handler `request_handler()` function is used:
 ::c++
 auto request_handler()
 {
-  return []( auto req, auto conn ) {
-      if( restinio::http_method_get() == req->m_header.method() &&
-        req->m_header.request_target() == "/" )
+  return []( auto req ) {
+      if( restinio::http_method_get() == req->header().method() &&
+        req->header().request_target() == "/" )
       {
-        restinio::response_builder_t{ req->m_header, std::move( conn ) }
+        req->create_response()
           .append_header( "Server", "RESTinio hello world server" )
           .append_header_date_field()
           .append_header( "Content-Type", "text/plain; charset=utf-8" )
@@ -258,9 +258,11 @@ auto request_handler()
 ~~~~~
 
 Request handler here is a lambda-function, it check if request method is `GET`
-and target is `/` and if so makes a response and returns `restinio::request_handling_status_t::accepted`
+and target is `/` and if so makes a response and returns
+`restinio::request_handling_status_t::accepted`
 meaning that request had been taken for processing.
-Otherwise handler returns `restinio::request_handling_status_t::rejected` value meaning that request was not accepted for handling and *RESTinio* must take care of it.
+Otherwise handler returns `restinio::request_handling_status_t::rejected` value
+meaning that request was not accepted for handling and *RESTinio* must take care of it.
 
 ## Basic idea
 
@@ -419,8 +421,7 @@ http_server{
       .handle_request_timeout( std::chrono::milliseconds( 3900 ) )
       .write_http_response_timelimit( std::chrono::milliseconds( 100 ) )
       .logger( /* logger params */ )
-      .request_handler( /* request handler params */ )
-      .request_handler( request_handler() );
+      .request_handler( /* request handler params */ );
   } };
 ~~~~~
 
@@ -614,7 +615,7 @@ For implementation example see
 It must be a function-object with the following invocation interface:
 ~~~~~
 ::c++
-request_handling_status_t
+restinio::request_handling_status_t
 handler( restinio::request_handle_t req );
 ~~~~~
 
@@ -640,7 +641,7 @@ it guarantees serialized chain of callback invocation.
 But if `asio::ioservice` runs on a single thread there is no need
 to use `asio::strand` because there is no way to run callbacks
 in parallel. So in such cases it is enough to use `asio::executor`
-directly.
+directly an eliminate overhead of `asio::strand`.
 
 ## Request handling
 
