@@ -1,2 +1,2 @@
 add_subdirectory(sequence)
-add_subdirectory(timouts)
+add_subdirectory(timeouts)
