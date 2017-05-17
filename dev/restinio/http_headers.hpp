@@ -397,6 +397,15 @@ struct http_request_header_t final
 	:	public http_header_common_t
 {
 	public:
+		http_request_header_t() = default;
+
+		http_request_header_t(
+			http_method_t method,
+			std::string request_target )
+			:	m_method{ method }
+			,	m_request_target{ std::move( request_target ) }
+		{}
+
 		http_method_t
 		method() const
 		{ return m_method; }
