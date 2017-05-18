@@ -29,6 +29,19 @@ template < typename MATCHER >
 class first_match_router_t
 {
 	public:
+		struct handler_entry_t
+		{
+			handler_entry_t() = default;
+			handler_entry_t( handler_entry_t && ) = default;
+			handler_entry_t( MATCHER matcher, default_request_handler_t handler )
+				:	m_matcher{ std::move( matcher ) }
+				,	m_handler{ std::move( handler ) }
+			{}
+
+			MATCHER m_matcher;
+			default_request_handler_t m_handler;
+		};
+
 		first_match_router_t() = default;
 		first_match_router_t( first_match_router_t && ) = default;
 
@@ -57,19 +70,6 @@ class first_match_router_t
 		}
 
 	private:
-		struct handler_entry_t
-		{
-			handler_entry_t() = default;
-			handler_entry_t( handler_entry_t && ) = default;
-			handler_entry_t( MATCHER matcher, default_request_handler_t handler )
-				:	m_matcher{ std::move( matcher ) }
-				,	m_handler{ std::move( handler ) }
-			{}
-
-			MATCHER m_matcher;
-			default_request_handler_t m_handler;
-		};
-
 		std::vector< handler_entry_t > m_handlers;
 };
 

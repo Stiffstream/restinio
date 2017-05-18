@@ -29,7 +29,6 @@ create_fake_request( std::string target )
 
 TEST_CASE( "Exact match" , "[first_match][exact]" )
 {
-	first_match_router_t< exact_target_matcher_t > router;
 
 	int last_handler_called = -1;
 
@@ -39,6 +38,7 @@ TEST_CASE( "Exact match" , "[first_match][exact]" )
 		return result;
 	};
 
+	first_match_router_t< exact_target_matcher_t > router;
 	router.add_handler(
 		{ http_method_get(), "/" },
 		[&]( auto ){ last_handler_called = 0; return request_accepted(); } );
