@@ -31,10 +31,14 @@ class route_params_t
 		//! Prefix and suffix of the matched route.
 		//! \{
 		const auto &
+		match() const { return m_match; }
+		const auto &
 		prefix() const { return m_prefix; }
 		const auto &
 		suffix() const { return m_suffix; }
 
+		void
+		match( std::string value ){ m_match = std::move( value ); }
 		void
 		prefix( std::string value ) { m_prefix = std::move( value ); }
 		void
@@ -65,7 +69,18 @@ class route_params_t
 			m_named_parameters[ std::move( key ) ] = std::move( value );
 		}
 
+		void
+		reset()
+		{
+			m_match.clear();
+			m_prefix.clear();
+			m_suffix.clear();
+			m_named_parameters.clear();
+			m_indexed_parameters.clear();
+		}
+
 	private:
+		std::string m_match;
 		std::string m_prefix;
 		std::string m_suffix;
 
@@ -95,32 +110,41 @@ class route_matcher_t
 			,	m_param_appender_sequence{ std::move( param_appender_sequence ) }
 		{}
 
+		route_matcher_t() = default;
 		route_matcher_t( route_matcher_t && ) = default;
+
+		bool
+		match_route(
+			const std::string & request_target,
+			route_params_t & parameters ) const
+		{
+			std::smatch matches;
+			if( std::regex_search( request_target, matches, m_route_regex ) )
+			{
+				assert( m_param_appender_sequence.size() + 1 == matches.size() );
+
+				parameters.match( matches[0].str() );
+				parameters.prefix( matches.prefix() );
+				parameters.suffix( matches.suffix() );
+
+				for( std::size_t i = 1; i < matches.size(); ++i )
+				{
+					m_param_appender_sequence[ i - 1]( parameters, matches[ i ] );
+				}
+
+				return true;
+			}
+
+			return false;
+		}
 
 		bool
 		operator () (
 			const http_request_header_t & h,
 			route_params_t & parameters ) const
 		{
-			if( m_method == h.method() )
-			{
-				std::smatch matches;
-				if( std::regex_search( h.request_target(), matches, m_route_regex ) )
-				{
-					parameters.prefix( matches.prefix() );
-					parameters.suffix( matches.suffix() );
-					assert( m_param_appender_sequence.size() + 1 == matches.size() );
-
-					for( std::size_t i = 1; i < matches.size(); ++i )
-					{
-						m_param_appender_sequence[ i - 1]( parameters, matches[ i ] );
-					}
-
-					return true;
-				}
-			}
-
-			return false;
+			return m_method == h.method() &&
+					match_route( h.request_target(), parameters );
 		}
 
 	private:

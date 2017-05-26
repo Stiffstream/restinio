@@ -442,8 +442,8 @@ handle_param_token(
 				std::size_t{ 0 }, // just to have a variable of this type.
 				std::move( prefix ),
 				std::move( delimiter ),
-				repeat,
 				optional,
+				repeat,
 				partial,
 				create_pattern( match[ group_group_idx ].str() ) ) );
 	}
@@ -463,6 +463,12 @@ parse( const std::string & route_str, const options_t & options )
 	auto token_it =
 		std::sregex_iterator( route_str.begin(), route_str.end(), main_path_regex );
 	auto token_end = std::sregex_iterator{};
+
+	if( token_it == token_end )
+	{
+		// Path is a single token.
+		path = route_str;
+	}
 
 	while( token_it != token_end )
 	{
@@ -533,7 +539,7 @@ tokens2regexp( const token_list_t< PARAM_CONTAINER > & tokens, const options_t &
 		t->append_self_to( route, param_appender_sequence );
 	}
 
-	const auto & delimiter = options.delimiter();
+	const auto & delimiter = escape_string( options.delimiter() );
 	const bool ends_with_delimiter =
 		route.size() >= delimiter.size() &&
 		route.substr( route.size() - delimiter.size() ) == delimiter;
@@ -542,7 +548,7 @@ tokens2regexp( const token_list_t< PARAM_CONTAINER > & tokens, const options_t &
 	// match already ends with a slash, we remove it for consistency. The slash
 	// is valid at the end of a path match, not in the middle. This is important
 	// in non-ending mode, where "/test/" shouldn't match "/test//route".
-	if( options.strict() )
+	if( !options.strict() )
 	{
 		if( ends_with_delimiter )
 			route.resize( route.size() - delimiter.size() );
@@ -554,7 +560,7 @@ tokens2regexp( const token_list_t< PARAM_CONTAINER > & tokens, const options_t &
 	{
 		route += '$';
 	}
-	else if( options.strict() && ends_with_delimiter )
+	else if( !( options.strict() && ends_with_delimiter ) )
 	{
 		// In non-ending mode, we need the capturing groups to match as much as
 		// possible by using a positive lookahead to the end or next path segment.
@@ -567,7 +573,7 @@ tokens2regexp( const token_list_t< PARAM_CONTAINER > & tokens, const options_t &
 		regex_flags |= std::regex::icase;
 	}
 
-	result.m_regex.assign( route, regex_flags );
+	result.m_regex.assign( "^" + route, regex_flags );
 	return result;
 }
 
