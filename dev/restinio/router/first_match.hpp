@@ -28,7 +28,6 @@ namespace router
 template < typename MATCHER >
 class first_match_router_t
 {
-	public:
 		struct handler_entry_t
 		{
 			handler_entry_t() = default;
@@ -42,6 +41,7 @@ class first_match_router_t
 			default_request_handler_t m_handler;
 		};
 
+	public:
 		first_match_router_t() = default;
 		first_match_router_t( first_match_router_t && ) = default;
 

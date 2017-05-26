@@ -18,3 +18,4 @@
 #include <restinio/ostream_logger.hpp>
 
 #include <restinio/router/first_match.hpp>
+#include <restinio/router/express.hpp>
