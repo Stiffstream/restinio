@@ -3,7 +3,7 @@
 */
 
 /*!
-	Tests for header objects.
+	Tests for first match routers.
 */
 
 #define CATCH_CONFIG_MAIN

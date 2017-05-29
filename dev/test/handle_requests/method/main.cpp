@@ -3,7 +3,7 @@
 */
 
 /*!
-	Tests for settings parameters that have default constructor.
+	Test method detection.
 */
 
 #define CATCH_CONFIG_MAIN

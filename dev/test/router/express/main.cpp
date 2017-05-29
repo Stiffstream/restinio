@@ -3,7 +3,7 @@
 */
 
 /*!
-	Tests for header objects.
+	Tests for express router.
 */
 
 #define CATCH_CONFIG_MAIN
@@ -17,45 +17,34 @@ using namespace restinio;
 using namespace restinio::router;
 using restinio::router::impl::route_matcher_t;
 
-request_handle_t
-create_fake_request( std::string target )
+TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 {
-	return
-		std::make_shared< request_t >(
-			0,
-			http_request_header_t{ http_method_get(), std::move( target ) },
-			"",
-			connection_handle_t{} );
+	auto mather_data =
+		path2regex::path2regex< route_params_t >(
+			"/foo/:bar",
+			path2regex::options_t{} );
+
+	route_matcher_t
+		rm{
+			http_method_t::http_get,
+			std::move( mather_data.m_regex ),
+			std::move( mather_data.m_param_appender_sequence ) };
+
+	route_params_t params;
+
+	REQUIRE_FALSE( rm.match_route( "/foo/42/q", params ) );
+	REQUIRE_FALSE( rm.match_route( "/oof/42", params ) );
+
+	REQUIRE( rm.match_route( "/foo/42", params ) );
+	REQUIRE( params.match() == "/foo/42" );
+	const auto & nps = params.named_parameters();
+	REQUIRE( nps.size() == 1 );
+	REQUIRE( nps.count( "bar" ) > 0 );
+	REQUIRE( nps.at( "bar" ) == "42" );
+
+	REQUIRE( params.indexed_parameters().size() == 0 );
+
 }
-
-// TEST_CASE( "Path to regex" , "[path2regex][simple]" )
-// {
-// 	auto mather_data =
-// 		path2regex::path2regex< route_params_t >(
-// 			"/foo/:bar",
-// 			path2regex::options_t{} );
-
-// 	route_matcher_t
-// 		rm{
-// 			http_method_t::http_get,
-// 			std::move( mather_data.m_regex ),
-// 			std::move( mather_data.m_param_appender_sequence ) };
-
-// 	route_params_t params;
-
-// 	REQUIRE_FALSE( rm.match_route( "/foo/42/q", params ) );
-// 	REQUIRE_FALSE( rm.match_route( "/oof/42", params ) );
-
-// 	REQUIRE( rm.match_route( "/foo/42", params ) );
-// 	REQUIRE( params.match() == "/foo/42" );
-// 	const auto & nps = params.named_parameters();
-// 	REQUIRE( nps.size() == 1 );
-// 	REQUIRE( nps.count( "bar" ) > 0 );
-// 	REQUIRE( nps.at( "bar" ) == "42" );
-
-// 	REQUIRE( params.indexed_parameters().size() == 0 );
-
-// }
 
 TEST_CASE( "Original tests" , "[path2regex][original][generated]" )
 {
