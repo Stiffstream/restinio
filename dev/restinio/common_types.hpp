@@ -11,6 +11,37 @@
 namespace restinio
 {
 
+//! Request handling status.
+/*!
+	If handler handles request it must return accepted.
+
+	If handler refuses to handle request
+	it must return rejected.
+*/
+enum class request_handling_status_t
+{
+	//! Request accepted for handling.
+	accepted,
+
+	//! Request wasn't accepted for handling.
+	rejected
+};
+
+//! Helper funcs for working with request_handling_status_t
+// \{
+constexpr request_handling_status_t
+request_accepted()
+{
+	return request_handling_status_t::accepted;
+}
+
+constexpr request_handling_status_t
+request_rejected()
+{
+	return request_handling_status_t::rejected;
+}
+// \}
+
 //! Request id in scope of single connection.
 using request_id_t = unsigned int;
 
