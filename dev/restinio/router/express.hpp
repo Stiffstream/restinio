@@ -28,6 +28,9 @@ class route_params_t
 		route_params_t() = default;
 		route_params_t( route_params_t && ) = default;
 
+		route_params_t &
+		operator = ( route_params_t && ) = default;
+
 		//! Prefix and suffix of the matched route.
 		//! \{
 		const auto &
