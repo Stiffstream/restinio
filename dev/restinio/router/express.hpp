@@ -54,10 +54,22 @@ class route_params_t
 			return m_named_parameters;
 		}
 
+		const std::string &
+		operator [] ( const std::string & key ) const
+		{
+			return m_named_parameters.at( key );
+		}
+
 		const auto &
 		indexed_parameters()
 		{
 			return m_indexed_parameters;
+		}
+
+		const std::string &
+		operator [] ( std::size_t i ) const
+		{
+			return m_indexed_parameters.at( i );
 		}
 
 		void
