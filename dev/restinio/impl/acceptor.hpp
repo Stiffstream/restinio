@@ -70,7 +70,7 @@ class acceptor_t final
 
 			try
 			{
-				m_logger.trace( [&]() -> auto {
+				m_logger.trace( [&]{
 					return fmt::format( "starting server on {}", ep );
 				} );
 
@@ -85,7 +85,7 @@ class acceptor_t final
 				// Call accept connections routine.
 				accept_next();
 
-				m_logger.info( [&]() -> auto {
+				m_logger.info( [&]{
 					return fmt::format( "server started  on {}", ep );
 				} );
 			}
@@ -107,7 +107,7 @@ class acceptor_t final
 		{
 			const auto ep = m_acceptor.local_endpoint();
 
-			m_logger.trace( [&]() -> auto {
+			m_logger.trace( [&]{
 				return fmt::format( "closing server on {}", ep );
 			} );
 
@@ -116,7 +116,7 @@ class acceptor_t final
 				m_acceptor.close();
 			}
 
-			m_logger.info( [&]() -> auto {
+			m_logger.info( [&]{
 				return fmt::format( "server closed on {}", ep );
 			} );
 		}
@@ -154,7 +154,7 @@ class acceptor_t final
 		{
 			if( !ec )
 			{
-				m_logger.trace( [&]() -> auto {
+				m_logger.trace( [&]{
 					return fmt::format(
 							"accept connection from: {}",
 							m_socket.remote_endpoint() );
@@ -173,7 +173,7 @@ class acceptor_t final
 			else
 			{
 				// Something goes wrong with connection.
-				m_logger.error( [&]() -> auto {
+				m_logger.error( [&]{
 					return fmt::format(
 						"failed to accept connection: {}",
 						ec );

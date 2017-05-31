@@ -391,7 +391,7 @@ class connection_t final
 			,	m_logger{ *( m_settings->m_logger ) }
 		{
 			// Notify of a new connection instance.
-			m_logger.trace( [&](){
+			m_logger.trace( [&]{
 					return fmt::format(
 						"[connection:{}] start connection with {}",
 						connection_id(),
@@ -404,7 +404,7 @@ class connection_t final
 			try
 			{
 				// Notify of a new connection instance.
-				m_logger.trace( [&](){
+				m_logger.trace( [&]{
 					return fmt::format(
 						"[connection:{}] destroyed",
 						connection_id() );
@@ -419,7 +419,7 @@ class connection_t final
 		void
 		wait_for_http_message()
 		{
-			m_logger.trace( [&](){
+			m_logger.trace( [&]{
 				 return fmt::format(
 						"[connection:{}] start waiting for request",
 						connection_id() );
@@ -460,7 +460,7 @@ class connection_t final
 		void
 		consume_message()
 		{
-			m_logger.trace( [&](){
+			m_logger.trace( [&]{
 				return fmt::format(
 						"[connection:{}] continue reading request",
 						connection_id() );
@@ -480,7 +480,7 @@ class connection_t final
 		{
 			if( !ec )
 			{
-				m_logger.trace( [&](){
+				m_logger.trace( [&]{
 					return fmt::format(
 							"[connection:{}] received {} bytes",
 							this->connection_id(),
@@ -498,7 +498,7 @@ class connection_t final
 				if( ec != asio::error::operation_aborted )
 				{
 					if ( ec != asio::error::eof || 0 != m_input.m_parser.nread )
-						trigger_error_and_close( [&](){
+						trigger_error_and_close( [&]{
 							return fmt::format(
 									"[connection:{}] read socket error: {}; "
 									"parsed bytes: {}",
@@ -512,7 +512,7 @@ class connection_t final
 						// on a connection (most probably keeped alive
 						// after previous request, but a new also applied)
 						// no bytes were consumed and remote peer closes connection.
-						m_logger.trace( [&](){
+						m_logger.trace( [&]{
 							return fmt::format(
 									"[connection:{}] EOF and no request, "
 									"close connection",
@@ -553,7 +553,7 @@ class connection_t final
 				auto err = HTTP_PARSER_ERRNO( &parser );
 
 				// TODO: handle case when there are some request in process.
-				trigger_error_and_close( [&](){
+				trigger_error_and_close( [&]{
 					return fmt::format(
 							"[connection:{}] parser error {}: {}",
 							connection_id(),
@@ -584,7 +584,7 @@ class connection_t final
 
 				const auto request_id = m_response_coordinator.register_new_request();
 
-				m_logger.trace( [&](){
+				m_logger.trace( [&]{
 					return fmt::format(
 							"[connection:{}] request received (#{}): {} {}",
 							connection_id(),
@@ -629,7 +629,7 @@ class connection_t final
 			}
 			catch( const std::exception & ex )
 			{
-				trigger_error_and_close( [&](){
+				trigger_error_and_close( [&]{
 					return fmt::format(
 							"[connection:{}] error while handling request: {}",
 							this->connection_id(),
@@ -665,7 +665,7 @@ class connection_t final
 						}
 						catch( const std::exception & ex )
 						{
-							trigger_error_and_close( [&](){
+							trigger_error_and_close( [&]{
 								return fmt::format(
 									"[connection:{}] unable to handle response: {}",
 									connection_id(),
@@ -687,7 +687,7 @@ class connection_t final
 		{
 			if( !m_socket.is_open() )
 			{
-				m_logger.warn( [&](){
+				m_logger.warn( [&]{
 					return fmt::format(
 							"[connection:{}] try to write response, "
 							"while socket is closed",
@@ -698,7 +698,7 @@ class connection_t final
 
 			if( !m_response_coordinator.closed() )
 			{
-				m_logger.trace( [&](){
+				m_logger.trace( [&]{
 					return fmt::format(
 							"[connection:{}] append response (#{}), "
 							"flags: {}, bufs count: {}",
@@ -717,7 +717,7 @@ class connection_t final
 			}
 			else
 			{
-				m_logger.warn( [&](){
+				m_logger.warn( [&]{
 					return fmt::format(
 							"[connection:{}] receive response parts for "
 							"request (#{}), but response with connection-close "
@@ -771,7 +771,7 @@ class connection_t final
 
 					if( m_response_coordinator.closed() )
 					{
-						m_logger.trace( [&](){
+						m_logger.trace( [&]{
 							return fmt::format(
 									"[connection:{}] sending resp data with "
 									"connection-close attribute "
@@ -788,7 +788,7 @@ class connection_t final
 					}
 					else
 					{
-						m_logger.trace( [&](){
+						m_logger.trace( [&]{
 							return fmt::format(
 								"[connection:{}] sending resp data, "
 								"buf count: {}",
@@ -809,7 +809,7 @@ class connection_t final
 					// response coordinator was marked as complete
 					// without data.
 
-					m_logger.trace( [&](){
+					m_logger.trace( [&]{
 						return fmt::format(
 							"[connection:{}] last sent response was marked "
 							"as complete",
@@ -848,7 +848,7 @@ class connection_t final
 				// Release allocated strings data.
 				m_resp_out_ctx.done();
 
-				m_logger.trace( [&](){
+				m_logger.trace( [&]{
 					return fmt::format(
 							"[connection:{}] outgoing data was sent",
 							connection_id() );
@@ -856,7 +856,7 @@ class connection_t final
 
 				if( should_keep_alive )
 				{
-					m_logger.trace( [&](){
+					m_logger.trace( [&]{
 						return fmt::format(
 								"[connection:{}] should keep alive",
 								this->connection_id() );
@@ -879,7 +879,7 @@ class connection_t final
 			{
 				if( ec != asio::error::operation_aborted )
 				{
-					trigger_error_and_close( [&](){
+					trigger_error_and_close( [&]{
 						return fmt::format(
 							"[connection:{}] unable to write: {}",
 							connection_id(),
@@ -899,7 +899,7 @@ class connection_t final
 		{
 			m_timer_guard->cancel();
 
-			m_logger.trace( [&](){
+			m_logger.trace( [&]{
 				return fmt::format(
 						"[connection:{}] close",
 						connection_id() );
@@ -980,7 +980,7 @@ class connection_t final
 				schedule_operation_timeout_callback(
 					m_settings->m_read_next_http_message_timelimit,
 					[ this ](){
-						m_logger.trace( [&](){
+						m_logger.trace( [&]{
 							return fmt::format(
 									"[connection:{}] wait for request timed out",
 									this->connection_id() );
@@ -1001,7 +1001,7 @@ class connection_t final
 				schedule_operation_timeout_callback(
 					m_settings->m_handle_request_timeout,
 					[ this ](){
-						m_logger.warn( [&](){
+						m_logger.warn( [&]{
 							return fmt::format(
 									"[connection:{}] handle request timed out",
 									this->connection_id() );
@@ -1024,7 +1024,7 @@ class connection_t final
 			schedule_operation_timeout_callback(
 				m_settings->m_write_http_response_timelimit,
 				[ this ](){
-					m_logger.trace( [&](){
+					m_logger.trace( [&]{
 						return fmt::format(
 								"[connection:{}] writing response timed out",
 								this->connection_id() );
