@@ -275,15 +275,63 @@ TEST_CASE( "Many params" , "[express][named_params]" )
 			return request_accepted();
 		} );
 
+	router.http_get( R"(/news/:year(\d{4})-:month(\d{2})-:day(\d{2}))",
+		[&]( auto r, auto p ){
+			last_handler_called = 1;
+			route_params = std::move( p );
+			return request_accepted();
+		} );
+
+	router.http_get( R"(/events/(\d{4})-(\d{2})-(\d{2}))",
+		[&]( auto r, auto p ){
+			last_handler_called = 2;
+			route_params = std::move( p );
+			return request_accepted();
+		} );
 
 	REQUIRE( request_accepted() == router( create_fake_request( "/717/abcd/99.AA/x" ) ) );
 	REQUIRE( 0 == extract_last_handler_called() );
 
-	const auto & nps = route_params.named_parameters();
-	REQUIRE( 4 == route_params.named_parameters().size() );
-	REQUIRE( route_params.named_parameters().at( "p1" ) == "717" );
-	REQUIRE( route_params.named_parameters().at( "p2" ) == "abcd" );
-	REQUIRE( route_params.named_parameters().at( "p3" ) == "99.AA" );
-	REQUIRE( route_params.named_parameters().at( "opt" ) == "x" );
+	{
+		const auto & nps = route_params.named_parameters();
+		REQUIRE( 4 == route_params.named_parameters().size() );
+
+		const auto & ips = route_params.indexed_parameters();
+		REQUIRE( 0 == ips.size() );
+
+		REQUIRE( nps.at( "p1" ) == "717" );
+		REQUIRE( nps.at( "p2" ) == "abcd" );
+		REQUIRE( nps.at( "p3" ) == "99.AA" );
+		REQUIRE( nps.at( "opt" ) == "x" );
+	}
+
+	REQUIRE( request_accepted() == router( create_fake_request( "/news/2017-04-01" ) ) );
+	REQUIRE( 1 == extract_last_handler_called() );
+
+	{
+		const auto & nps = route_params.named_parameters();
+		REQUIRE( 3 == nps.size() );
+
+		const auto & ips = route_params.indexed_parameters();
+		REQUIRE( 0 == ips.size() );
+
+		REQUIRE( nps.at( "year" ) == "2017" );
+		REQUIRE( nps.at( "month" ) == "04" );
+		REQUIRE( nps.at( "day" ) == "01" );
+	}
+
+	REQUIRE( request_accepted() == router( create_fake_request( "/events/2017-06-03" ) ) );
+	REQUIRE( 2 == extract_last_handler_called() );
+
+	{
+		const auto & nps = route_params.named_parameters();
+		REQUIRE( 0 == route_params.named_parameters().size() );
+
+		const auto & ips = route_params.indexed_parameters();
+		REQUIRE( 3 == ips.size() );
+		REQUIRE( ips.at( 0 ) == "2017" );
+		REQUIRE( ips.at( 1 ) == "06" );
+		REQUIRE( ips.at( 2 ) == "03" );
+	}
 }
 

@@ -10,6 +10,8 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include <json_dto/pub.hpp>
+
 #include <restinio/all.hpp>
 
 struct book_t
@@ -22,6 +24,15 @@ struct book_t
 		:	m_author{ std::move( author ) }
 		,	m_title{ std::move( title ) }
 	{}
+
+	template < typename JSON_IO >
+	void
+	json_io( JSON_IO & io )
+	{
+		io
+			& json_dto::mandatory( "author", m_author )
+			& json_dto::mandatory( "title", m_title );
+	}
 
 	std::string m_author;
 	std::string m_title;
@@ -42,6 +53,14 @@ init_resp( RESP resp )
 		.append_header( "Content-Type", "text/plain; charset=utf-8" );
 
 	return resp;
+};
+
+template < typename RESP >
+void
+mark_as_bad_request( RESP & resp )
+{
+	resp.header().status_code( 400 );
+	resp.header().reason_phrase( "Bad Request" );
 };
 
 auto server_handler( book_collection_t & book_collection )
@@ -79,7 +98,7 @@ auto server_handler( book_collection_t & book_collection )
 					const auto & b = book_collection[ booknum - 1 ];
 					resp.set_body(
 						"Book #" + std::to_string( booknum ) + " is: " +
-							b.m_title + "[" + b.m_author + "]\n" );
+							b.m_title + " [" + b.m_author + "]\n" );
 				}
 				else
 				{
@@ -93,7 +112,8 @@ auto server_handler( book_collection_t & book_collection )
 	router->http_get(
 		"/author/:author",
 		[ &book_collection ]( auto req, auto params ){
-				const auto & author = params[ "author" ];
+				auto author = params[ "author" ];
+				std::replace( author.begin(), author.end(), '+', ' ' );
 
 				auto resp = init_resp( req->create_response() );
 				resp.set_body( "Books of " + author + ":\n" );
@@ -114,9 +134,17 @@ auto server_handler( book_collection_t & book_collection )
 	router->http_post(
 		"/",
 		[ &book_collection ]( auto req, auto ){
-			// TODO
-
 			auto resp = init_resp( req->create_response() );
+
+			try
+			{
+				book_collection.emplace_back(
+					json_dto::from_json< book_t >( req->body() ) );
+			}
+			catch( const std::exception & ex )
+			{
+				mark_as_bad_request( resp );
+			}
 
 			return resp.done();
 		} );
@@ -127,8 +155,26 @@ auto server_handler( book_collection_t & book_collection )
 			// TODO
 			const std::size_t booknum = std::atoi( params[ "booknum" ].c_str() );
 
-
 			auto resp = init_resp( req->create_response() );
+
+			try
+			{
+				auto b = json_dto::from_json< book_t >( req->body() );
+
+				if( 0 != booknum && booknum < book_collection.size() )
+				{
+					book_collection[ booknum - 1 ] = b;
+				}
+				else
+				{
+					mark_as_bad_request( resp );
+					resp.set_body( "No book with #" + std::to_string( booknum ) + "\n" );
+				}
+			}
+			catch( const std::exception & ex )
+			{
+				mark_as_bad_request( resp );
+			}
 
 			return resp.done();
 		} );
@@ -177,7 +223,7 @@ int main()
 		book_collection_t book_collection;
 		book_collection.emplace_back( "Agatha Christie", "Murder on the Orient Express" );
 		book_collection.emplace_back( "Agatha Christie", "Sleeping Murder" );
-		book_collection.emplace_back( "B. Stroustrup", " The C++ Programming Language" );
+		book_collection.emplace_back( "B. Stroustrup", "The C++ Programming Language" );
 
 		http_server_t http_server{
 			restinio::create_child_io_service( 1 ),
