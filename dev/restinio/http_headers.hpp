@@ -314,7 +314,7 @@ struct http_header_common_t
 //
 
 //! C++ enum that repeats nodejs c-style enum.
-enum class http_method_t
+enum class http_method_t : std::uint8_t
 {
 #define RESTINIO_HTTP_METHOD_GEN( name, ignored1, ignored2 ) name,
 	RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_GEN )

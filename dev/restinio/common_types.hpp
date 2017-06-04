@@ -18,7 +18,7 @@ namespace restinio
 	If handler refuses to handle request
 	it must return rejected.
 */
-enum class request_handling_status_t
+enum class request_handling_status_t : std::uint8_t
 {
 	//! Request accepted for handling.
 	accepted,
@@ -46,7 +46,7 @@ request_rejected()
 using request_id_t = unsigned int;
 
 //! Attribute for parts.
-enum class response_parts_attr_t
+enum class response_parts_attr_t : std::uint8_t
 {
 	//! Intermediate parts (more parts of response to follow).
 	not_final_parts,
@@ -66,7 +66,7 @@ operator << ( std::ostream & o, response_parts_attr_t attr )
 }
 
 //! Attribute for parts.
-enum class response_connection_attr_t
+enum class response_connection_attr_t : std::uint8_t
 {
 	//! This response says to keep connection.
 	connection_keepalive,
