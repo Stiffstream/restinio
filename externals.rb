@@ -69,7 +69,7 @@ MxxRu::arch_externals :args do |e|
 end
 
 MxxRu::arch_externals :catch do |e|
-  e.url 'https://github.com/philsquared/Catch/archive/v1.8.2.tar.gz'
+  e.url 'https://github.com/philsquared/Catch/archive/v1.9.4.tar.gz'
 
   e.map_file 'single_include/catch.hpp' => 'dev/catch/*'
 end
