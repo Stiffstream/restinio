@@ -11,6 +11,9 @@
 #include <restinio/path2regex/path2regex.hpp>
 #include <restinio/request_handler.hpp>
 
+#include <map>
+#include <vector>
+
 namespace restinio
 {
 

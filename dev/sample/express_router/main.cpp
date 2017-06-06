@@ -141,7 +141,7 @@ auto server_handler( book_collection_t & book_collection )
 				book_collection.emplace_back(
 					json_dto::from_json< book_t >( req->body() ) );
 			}
-			catch( const std::exception & ex )
+			catch( const std::exception & /*ex*/ )
 			{
 				mark_as_bad_request( resp );
 			}
@@ -171,7 +171,7 @@ auto server_handler( book_collection_t & book_collection )
 					resp.set_body( "No book with #" + std::to_string( booknum ) + "\n" );
 				}
 			}
-			catch( const std::exception & ex )
+			catch( const std::exception & /*ex*/ )
 			{
 				mark_as_bad_request( resp );
 			}
