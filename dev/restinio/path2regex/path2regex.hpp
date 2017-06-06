@@ -287,7 +287,7 @@ template < typename PARAM_CONTAINER >
 token_unique_ptr_t< PARAM_CONTAINER >
 create_token( std::string path )
 {
-	using token_t = plain_string_token_t< PARAM_CONTAINER >
+	using token_t = plain_string_token_t< PARAM_CONTAINER >;
 	return std::make_unique< token_t >( std::move( path ) );
 }
 
