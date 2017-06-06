@@ -43,166 +43,198 @@ using book_collection_t = std::vector< book_t >;
 namespace rr = restinio::router;
 using router_t = rr::express_router_t;
 
-template < typename RESP >
-RESP
-init_resp( RESP resp )
+class books_handler_t
 {
-	resp
-		.append_header( "Server", "RESTinio sample server /v.0.2" )
-		.append_header_date_field()
-		.append_header( "Content-Type", "text/plain; charset=utf-8" );
+public :
+	books_handler_t( book_collection_t & books )
+		:	m_books( books )
+	{}
 
-	return resp;
-};
+	books_handler_t( const books_handler_t & ) = delete;
+	books_handler_t( books_handler_t && ) = delete;
 
-template < typename RESP >
-void
-mark_as_bad_request( RESP & resp )
-{
-	resp.header().status_code( 400 );
-	resp.header().reason_phrase( "Bad Request" );
+	auto on_books_list(
+		restinio::request_handle_t req, rr::route_params_t ) const
+	{
+		auto resp = init_resp( req->create_response() );
+
+		resp.set_body(
+			"Book collection (book count: " +
+				std::to_string( m_books.size() ) + ")\n" );
+
+		for( std::size_t i = 0; i < m_books.size(); ++i )
+		{
+			resp.append_body( std::to_string( i + 1 ) + ". " );
+			const auto & b = m_books[ i ];
+			resp.append_body( b.m_title + "[" + b.m_author + "]\n" );
+		}
+
+		return resp.done();
+	}
+
+	auto on_book_get(
+		restinio::request_handle_t req, rr::route_params_t params )
+	{
+		const std::size_t booknum = std::atoi( params[ "booknum" ].c_str() );
+
+		auto resp = init_resp( req->create_response() );
+
+		if( 0 != booknum && booknum < m_books.size() )
+		{
+			const auto & b = m_books[ booknum - 1 ];
+			resp.set_body(
+				"Book #" + std::to_string( booknum ) + " is: " +
+					b.m_title + " [" + b.m_author + "]\n" );
+		}
+		else
+		{
+			resp.set_body(
+				"No book with #" + std::to_string( booknum ) + "\n" );
+		}
+
+		return resp.done();
+	}
+
+	auto on_author_get(
+		restinio::request_handle_t req, rr::route_params_t params )
+	{
+		auto author = params[ "author" ];
+		std::replace( author.begin(), author.end(), '+', ' ' );
+
+		auto resp = init_resp( req->create_response() );
+		resp.set_body( "Books of " + author + ":\n" );
+
+		for( std::size_t i = 0; i < m_books.size(); ++i )
+		{
+			const auto & b = m_books[ i ];
+			if( author == b.m_author )
+			{
+				resp.append_body( std::to_string( i + 1 ) + ". " );
+				resp.append_body( b.m_title + "[" + b.m_author + "]\n" );
+			}
+		}
+
+		return resp.done();
+	}
+
+	auto on_new_book(
+		restinio::request_handle_t req, rr::route_params_t )
+	{
+		auto resp = init_resp( req->create_response() );
+
+		try
+		{
+			m_books.emplace_back(
+				json_dto::from_json< book_t >( req->body() ) );
+		}
+		catch( const std::exception & /*ex*/ )
+		{
+			mark_as_bad_request( resp );
+		}
+
+		return resp.done();
+	}
+
+	auto on_book_update(
+		restinio::request_handle_t req, rr::route_params_t params )
+	{
+		// TODO
+		const std::size_t booknum = std::atoi( params[ "booknum" ].c_str() );
+
+		auto resp = init_resp( req->create_response() );
+
+		try
+		{
+			auto b = json_dto::from_json< book_t >( req->body() );
+
+			if( 0 != booknum && booknum < m_books.size() )
+			{
+				m_books[ booknum - 1 ] = b;
+			}
+			else
+			{
+				mark_as_bad_request( resp );
+				resp.set_body( "No book with #" + std::to_string( booknum ) + "\n" );
+			}
+		}
+		catch( const std::exception & /*ex*/ )
+		{
+			mark_as_bad_request( resp );
+		}
+
+		return resp.done();
+	}
+
+	auto on_book_delete(
+		restinio::request_handle_t req, rr::route_params_t params )
+	{
+		const std::size_t booknum = std::atoi( params[ "booknum" ].c_str() );
+
+		auto resp = init_resp( req->create_response() );
+
+		if( 0 != booknum && booknum < m_books.size() )
+		{
+			const auto & b = m_books[ booknum - 1 ];
+			resp.set_body(
+				"Delete book #" + std::to_string( booknum ) + ": " +
+					b.m_title + "[" + b.m_author + "]\n" );
+
+			m_books.erase( m_books.begin() + ( booknum - 1 ) );
+		}
+		else
+		{
+			resp.set_body(
+				"No book with #" + std::to_string( booknum ) + "\n" );
+		}
+
+		return resp.done();
+	}
+
+private :
+	book_collection_t & m_books;
+
+	template < typename RESP >
+	static RESP
+	init_resp( RESP resp )
+	{
+		resp
+			.append_header( "Server", "RESTinio sample server /v.0.2" )
+			.append_header_date_field()
+			.append_header( "Content-Type", "text/plain; charset=utf-8" );
+
+		return resp;
+	};
+
+	template < typename RESP >
+	static void
+	mark_as_bad_request( RESP & resp )
+	{
+		resp.header().status_code( 400 );
+		resp.header().reason_phrase( "Bad Request" );
+	};
 };
 
 auto server_handler( book_collection_t & book_collection )
 {
 	auto router = std::make_unique< router_t >();
+	auto handler = std::make_shared< books_handler_t >( std::ref(book_collection) );
 
-	router->http_get(
-		"/",
-		[ &book_collection ]( auto req, auto ){
-				auto resp = init_resp( req->create_response() );
+	auto by = [&]( auto method ) {
+		using namespace std::placeholders;
+		return std::bind( method, handler, _1, _2 );
+	};
 
-				resp.set_body(
-					"Book collection (book count: " +
-						std::to_string( book_collection.size() ) + ")\n" );
+	router->http_get( "/", by( &books_handler_t::on_books_list ) );
 
-				for( std::size_t i = 0; i < book_collection.size(); ++i )
-				{
-					resp.append_body( std::to_string( i + 1 ) + ". " );
-					const auto & b = book_collection[ i ];
-					resp.append_body( b.m_title + "[" + b.m_author + "]\n" );
-				}
+	router->http_get( R"(/:booknum(\d+))", by( &books_handler_t::on_book_get ) );
 
-				return resp.done();
-		} );
+	router->http_get( "/author/:author", by( &books_handler_t::on_author_get ) );
 
-	router->http_get(
-		R"(/:booknum(\d+))",
-		[ &book_collection ]( auto req, auto params ){
-				const std::size_t booknum = std::atoi( params[ "booknum" ].c_str() );
+	router->http_post( "/", by( &books_handler_t::on_new_book ) );
 
-				auto resp = init_resp( req->create_response() );
+	router->http_put( R"(/:booknum(\d+))", by( &books_handler_t::on_book_update ) );
 
-				if( 0 != booknum && booknum < book_collection.size() )
-				{
-					const auto & b = book_collection[ booknum - 1 ];
-					resp.set_body(
-						"Book #" + std::to_string( booknum ) + " is: " +
-							b.m_title + " [" + b.m_author + "]\n" );
-				}
-				else
-				{
-					resp.set_body(
-						"No book with #" + std::to_string( booknum ) + "\n" );
-				}
-
-				return resp.done();
-		} );
-
-	router->http_get(
-		"/author/:author",
-		[ &book_collection ]( auto req, auto params ){
-				auto author = params[ "author" ];
-				std::replace( author.begin(), author.end(), '+', ' ' );
-
-				auto resp = init_resp( req->create_response() );
-				resp.set_body( "Books of " + author + ":\n" );
-
-				for( std::size_t i = 0; i < book_collection.size(); ++i )
-				{
-					const auto & b = book_collection[ i ];
-					if( author == b.m_author )
-					{
-						resp.append_body( std::to_string( i + 1 ) + ". " );
-						resp.append_body( b.m_title + "[" + b.m_author + "]\n" );
-					}
-				}
-
-				return resp.done();
-		} );
-
-	router->http_post(
-		"/",
-		[ &book_collection ]( auto req, auto ){
-			auto resp = init_resp( req->create_response() );
-
-			try
-			{
-				book_collection.emplace_back(
-					json_dto::from_json< book_t >( req->body() ) );
-			}
-			catch( const std::exception & /*ex*/ )
-			{
-				mark_as_bad_request( resp );
-			}
-
-			return resp.done();
-		} );
-
-	router->http_put(
-		R"(/:booknum(\d+))",
-		[ &book_collection ]( auto req, auto params ){
-			// TODO
-			const std::size_t booknum = std::atoi( params[ "booknum" ].c_str() );
-
-			auto resp = init_resp( req->create_response() );
-
-			try
-			{
-				auto b = json_dto::from_json< book_t >( req->body() );
-
-				if( 0 != booknum && booknum < book_collection.size() )
-				{
-					book_collection[ booknum - 1 ] = b;
-				}
-				else
-				{
-					mark_as_bad_request( resp );
-					resp.set_body( "No book with #" + std::to_string( booknum ) + "\n" );
-				}
-			}
-			catch( const std::exception & /*ex*/ )
-			{
-				mark_as_bad_request( resp );
-			}
-
-			return resp.done();
-		} );
-
-	router->http_delete(
-		R"(/:booknum(\d+))",
-		[ &book_collection ]( auto req, auto params ){
-			const std::size_t booknum = std::atoi( params[ "booknum" ].c_str() );
-
-			auto resp = init_resp( req->create_response() );
-
-			if( 0 != booknum && booknum < book_collection.size() )
-			{
-				const auto & b = book_collection[ booknum - 1 ];
-				resp.set_body(
-					"Delete book #" + std::to_string( booknum ) + ": " +
-						b.m_title + "[" + b.m_author + "]\n" );
-
-				book_collection.erase( book_collection.begin() + ( booknum - 1 ) );
-			}
-			else
-			{
-				resp.set_body(
-					"No book with #" + std::to_string( booknum ) + "\n" );
-			}
-
-			return resp.done();
-		} );
+	router->http_delete( R"(/:booknum(\d+))", by( &books_handler_t::on_book_delete ) );
 
 	return router;
 }
@@ -220,10 +252,11 @@ int main()
 					restinio::single_threaded_ostream_logger_t,
 					router_t > >;
 
-		book_collection_t book_collection;
-		book_collection.emplace_back( "Agatha Christie", "Murder on the Orient Express" );
-		book_collection.emplace_back( "Agatha Christie", "Sleeping Murder" );
-		book_collection.emplace_back( "B. Stroustrup", "The C++ Programming Language" );
+		book_collection_t book_collection{
+			{ "Agatha Christie", "Murder on the Orient Express" },
+			{ "Agatha Christie", "Sleeping Murder" },
+			{ "B. Stroustrup", "The C++ Programming Language" }
+		};
 
 		http_server_t http_server{
 			restinio::create_child_io_service( 1 ),
