@@ -135,6 +135,7 @@ class options_t
 // param_appender_t
 //
 
+//! Appends sub-match as a request parameter to specified container.
 template < typename PARAM_CONTAINER >
 using param_appender_t =
 	std::function< void ( PARAM_CONTAINER &, std::string ) >;
@@ -143,10 +144,15 @@ using param_appender_t =
 // param_appender_sequence_t
 //
 
+//! A sequence of appenders for submatches.
 template < typename PARAM_CONTAINER >
 using param_appender_sequence_t = std::vector< param_appender_t< PARAM_CONTAINER > >;
 
+//
+// make_param_setter
+//
 
+//! Create default appender for named parameter.
 template < typename PARAM_CONTAINER >
 inline param_appender_t< PARAM_CONTAINER >
 make_param_setter( std::string key )
@@ -157,18 +163,20 @@ make_param_setter( std::string key )
 	};
 }
 
+//! Create default appender indexed parameter.
 template < typename PARAM_CONTAINER >
 inline param_appender_t< PARAM_CONTAINER >
-make_param_setter( std::size_t key )
+make_param_setter( std::size_t /* index */)
 {
 	return
-		[ key ]( PARAM_CONTAINER & parameters, std::string value ){
+		[ ]( PARAM_CONTAINER & parameters, std::string value ){
 			parameters.add_indexed_param( std::move( value ) );
 	};
 }
 
 namespace impl
 {
+
 //! The main path matching expression.
 constexpr auto PATH_REGEX_STR =
 	R"((\\.)|([\/.])?(?:(?:\:(\w+)(?:\(((?:\\.|[^\\()])+)\))?|\(((?:\\.|[^\\()])+)\))([+*?])?|(\*)))";
@@ -177,6 +185,7 @@ constexpr auto PATH_REGEX_STR =
 // escape_group()
 //
 
+//! Escapes not allowed symbols in a sub-match group assigned to a parameter.
 inline auto
 escape_group( const std::string & group )
 {
@@ -199,6 +208,7 @@ escape_group( const std::string & group )
 // escape_string()
 //
 
+//! Excape regex control chars.
 inline auto
 escape_string( const std::string & group )
 {
@@ -230,6 +240,9 @@ template < typename PARAM_CONTAINER >
 class token_t
 {
 	public:
+		token_t() = default;
+		token_t( const token_t & ) = delete;
+		token_t( token_t && ) = delete;
 		virtual ~token_t() = default;
 
 		virtual void
@@ -266,6 +279,7 @@ class plain_string_token_t final : public token_t< PARAM_CONTAINER >
 		}
 
 	private:
+		//! Already escaped piece of the route.
 		const std::string m_escaped_path;
 };
 
@@ -273,18 +287,22 @@ template < typename PARAM_CONTAINER >
 token_unique_ptr_t< PARAM_CONTAINER >
 create_token( std::string path )
 {
-	return std::make_unique< plain_string_token_t< PARAM_CONTAINER > >( std::move( path ) );
+	using token_t = plain_string_token_t< PARAM_CONTAINER >
+	return std::make_unique< token_t >( std::move( path ) );
 }
 
 //
 // parameter_token_t
 //
 
-//! .
+//! Token for paramater (named/indexed).
 template < typename PARAM_CONTAINER, typename NAME_TYPE >
 class parameter_token_t final : public token_t< PARAM_CONTAINER >
 {
 	public:
+		parameter_token_t( const parameter_token_t & ) = delete;
+		parameter_token_t( parameter_token_t && ) = delete;
+
 		parameter_token_t(
 			NAME_TYPE name,
 			const std::string & prefix,
@@ -307,15 +325,18 @@ class parameter_token_t final : public token_t< PARAM_CONTAINER >
 			std::string & route,
 			param_appender_sequence_t< PARAM_CONTAINER > & param_appender_sequence ) const override
 		{
+			// Basic capturing pattern.
 			auto capture = "(?:" + m_pattern + ")";
 
 			if( m_repeat )
 			{
+				// Add * as the parameter can be repeeated.
 				capture += "(?:" + m_escaped_prefix + capture + ")*";
 			}
 
 			if( m_optional )
 			{
+				// Optional param goes in ()?.
 				if( !m_partial )
 				{
 					capture = "(?:" + m_escaped_prefix + "(" + capture + "))?";
@@ -327,6 +348,7 @@ class parameter_token_t final : public token_t< PARAM_CONTAINER >
 			}
 			else
 			{
+				// Mandatory param goes in ().
 				capture = m_escaped_prefix + "(" + capture + ")";
 			}
 
@@ -346,9 +368,10 @@ class parameter_token_t final : public token_t< PARAM_CONTAINER >
 };
 
 //
-// create_token
+// create_token()
 //
 
+//! Creates tokent for specific parameter.
 template < typename PARAM_CONTAINER, typename NAME_TYPE >
 inline token_unique_ptr_t< PARAM_CONTAINER >
 create_token(
@@ -370,7 +393,8 @@ create_token(
 		std::move( pattern ) );
 }
 
-//! Indexes for different groups in matched result.
+//! Indexes for different groups in matched result
+//! (used when extructing tokens from initial route).
 //! \{
 constexpr std::size_t group_escaped_idx = 1;
 constexpr std::size_t group_prefix_idx = 2;
@@ -382,7 +406,7 @@ constexpr std::size_t group_asterisk_idx = 7;
 //! \}
 
 //
-// handle_param_token
+// handle_param_token()
 //
 
 //! Handling of a parameterized token.
@@ -394,6 +418,7 @@ handle_param_token(
 	std::string & path,
 	token_list_t< PARAM_CONTAINER > & result )
 {
+	// Add preceding path as a plain string token.
 	if( !path.empty() )
 		result.push_back( create_token< PARAM_CONTAINER >( std::move( path ) ) );
 
@@ -426,6 +451,7 @@ handle_param_token(
 
 	if( !name.empty() )
 	{
+		// Named parameter.
 		result.push_back(
 			create_token< PARAM_CONTAINER >(
 				name,
@@ -438,6 +464,7 @@ handle_param_token(
 	}
 	else
 	{
+		// Indexed parameter.
 		result.push_back(
 			create_token< PARAM_CONTAINER >(
 				std::size_t{ 0 }, // just to have a variable of this type.
@@ -450,6 +477,9 @@ handle_param_token(
 	}
 }
 
+//
+// parse()
+//
 
 //! Parse a string for the raw tokens.
 template < typename PARAM_CONTAINER >
@@ -511,6 +541,8 @@ parse( const std::string & route_str, const options_t & options )
 //
 // route_regex_matcher_data_t
 //
+
+//! Resulting regex and param extraction for a specific route.
 template < typename PARAM_CONTAINER >
 struct route_regex_matcher_data_t
 {
@@ -525,8 +557,7 @@ struct route_regex_matcher_data_t
 // tokens2regexp()
 //
 
-//! Makes regex string out of path tokens.
-
+//! Makes route regex matcher out of path tokens.
 template < typename PARAM_CONTAINER >
 auto
 tokens2regexp( const token_list_t< PARAM_CONTAINER > & tokens, const options_t & options )
