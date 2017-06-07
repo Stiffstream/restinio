@@ -138,7 +138,6 @@ public :
 	auto on_book_update(
 		restinio::request_handle_t req, rr::route_params_t params )
 	{
-		// TODO
 		const std::size_t booknum = std::atoi( params[ "booknum" ].c_str() );
 
 		auto resp = init_resp( req->create_response() );

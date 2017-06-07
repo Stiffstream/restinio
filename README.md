@@ -30,6 +30,8 @@ In addition to async handling feature we though it would be nice
 for such library to keep track of what is going on with connections and
 control timeouts on operations of reading request from socket,
 handling request and writing response to socket.
+And it would also be nice to have request handler router
+(like in [express](https://expressjs.com/)).
 And a header-only design is a plus.
 
 And it happens that under such conditions you don't have a lot of options.
@@ -53,7 +55,7 @@ For building samples, benchmarks and tests:
 * [rapidjson](https://github.com/miloyip/rapidjson) 1.1.0;
 * [json_dto](https://bitbucket.org/sobjectizerteam/json_dto-0.1) 0.1.2.1 or above;
 * [args](https://github.com/Taywee/args) 6.0.4;
-* [CATCH](https://github.com/philsquared/Catch) 1.8.2.
+* [CATCH](https://github.com/philsquared/Catch) 1.8.2 or above.
 
 ## Obtaining
 
@@ -751,13 +753,58 @@ and expects user to set body using chunks of data.
   }
 ~~~~~
 
+## Routers
+
+One of the reasons to create *RESTinio* was an ability to have
+[express](https://expressjs.com/)-like request handler router.
+
+Since v 0.2.1 *RESTinio* has two routers:
+
+* *express* - a router based on idea borrowed
+from [express](https://expressjs.com/) - a JavaScript framework.
+* *first_match* - a router that picks the first handler that matches the request.
+
+Each routers acts as a request handler (it means it is a function-objeject
+that can be called as a request handler).
+But router aggregates several handlers and picks one or none of them
+to handle the request. The choice of the handler to execute depends on
+router implementation.
+Note that that the signature of the handlers put in router in general
+might not be the same as standard request handler (for example see express router).
+
+### Express
+
+Express router is defined by `express_router_t` class.
+Its implementation is inspired by
+[express-router](https://expressjs.com/en/starter/basic-routing.html).
+It allows to define route path with injection
+of parameters that become available for handlers.
+For example the following code sets a handler with 2 paramaters:
+```
+::c++
+  router.http_get(
+    R"(/article/:article_id/:page(\d+))",
+    []( auto req, auto params ){
+      const auto article_id = params[ "article_id" ];
+      auto page = std::to_string( params[ "page" ] );
+      // ...
+    } );
+```
+
+Note that express handler receives 2 paramaters not only request handle
+but also `route_params_t` instance that holds parameters of the request.
+
+Route path defines a set of named and indexed paramaters.
+Named parameters starts with `:`, followed by non-empty paramater name
+(only A-Za-z0-9_ are allowed). After paramater name it is possible to
+set a capture regex enclosed in brackets
+(actually a subset of regex - none of the group types are allowed).
+Indexed parameters are simply a capture regex in brackets.
 
 # Road Map
 
 Features for next releases:
 
-* Routers for message handlers.
-Support for a URI dependent routing to a set of handlers.
 * Non trivial benchmarks. Comparison with other libraries with similar features
 on the range of various scenarios.
 * HTTP client. Introduce functionality for building and sending requests and
@@ -769,7 +816,12 @@ Please send us feedback and we will take your opinion into account.
 
 ## Done features
 
-0.2.0:
+*0.2.1*
+
+* Routers for message handlers.
+Support for a URI dependent routing to a set of handlers.
+
+*0.2.0*
 
 * [HTTP pipelining](https://en.wikipedia.org/wiki/HTTP_pipelining) support.
 Read, parse and call a handler for incoming requests independently.
