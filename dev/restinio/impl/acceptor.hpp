@@ -65,7 +65,13 @@ class acceptor_t final
 
 			if( !m_address.empty() )
 			{
-				ep.address( asio::ip::address::from_string( m_address ) );
+				auto addr = m_address;
+				if( addr == "localhost" )
+					addr = "127.0.0.1";
+				else if( addr == "ip6-localhost" )
+					addr = "::1";
+
+				ep.address( asio::ip::address::from_string( addr ) );
 			}
 
 			try
