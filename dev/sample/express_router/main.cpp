@@ -98,20 +98,26 @@ public :
 	auto on_author_get(
 		restinio::request_handle_t req, rr::route_params_t params )
 	{
-		auto author = params[ "author" ];
-		std::replace( author.begin(), author.end(), '+', ' ' );
-
 		auto resp = init_resp( req->create_response() );
-		resp.set_body( "Books of " + author + ":\n" );
-
-		for( std::size_t i = 0; i < m_books.size(); ++i )
+		try
 		{
-			const auto & b = m_books[ i ];
-			if( author == b.m_author )
+			auto author = restinio::unescape( params[ "author" ] );
+
+			resp.set_body( "Books of " + author + ":\n" );
+
+			for( std::size_t i = 0; i < m_books.size(); ++i )
 			{
-				resp.append_body( std::to_string( i + 1 ) + ". " );
-				resp.append_body( b.m_title + "[" + b.m_author + "]\n" );
+				const auto & b = m_books[ i ];
+				if( author == b.m_author )
+				{
+					resp.append_body( std::to_string( i + 1 ) + ". " );
+					resp.append_body( b.m_title + "[" + b.m_author + "]\n" );
+				}
 			}
+		}
+		catch( const std::exception & ex )
+		{
+			mark_as_bad_request( resp );
 		}
 
 		return resp.done();
