@@ -87,6 +87,7 @@ int main()
 			restinio::create_child_io_service( 1 ),
 			[]( auto & settings ){
 				settings
+					.address( "localhost" )
 					.request_handler( server_handler() )
 					.read_next_http_message_timelimit( 10s )
 					.write_http_response_timelimit( 1s )

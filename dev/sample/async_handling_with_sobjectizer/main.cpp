@@ -88,6 +88,7 @@ void create_main_coop(
 
 	settings
 		.port( args.m_port )
+		.address( "localhost" )
 		.timer_factory(
 			coop.environment(),
 			coop.make_agent< restinio::so5::a_timeout_handler_t >()->so_direct_mbox() )

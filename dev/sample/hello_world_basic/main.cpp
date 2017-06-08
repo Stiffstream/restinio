@@ -32,7 +32,10 @@ int main()
 		http_server_t http_server{
 			restinio::create_child_io_service( 1 ),
 			[]( auto & settings ){
-				settings.port( 8080 ).request_handler( request_handler() );
+				settings
+					.port( 8080 )
+					.address( "localhost" )
+					.request_handler( request_handler() );
 			}
 		};
 
