@@ -22,15 +22,15 @@ init_resp( RESP resp )
 };
 
 namespace rr = restinio::router;
-using router_t = rr::first_match_router_t< rr::exact_target_matcher_t >;
+using router_t = rr::express_router_t;
 
 auto server_handler()
 {
 	auto router = std::make_unique< router_t >();
 
-	router->add_handler(
-		{ restinio::http_method_get(), "/" },
-		[]( auto req ){
+	router->http_get(
+		"/",
+		[]( auto req, auto ){
 				init_resp( req->create_response() )
 					.append_header( "Content-Type", "text/plain; charset=utf-8" )
 					.set_body( "Hello world!")
@@ -39,9 +39,9 @@ auto server_handler()
 				return restinio::request_accepted();
 		} );
 
-	router->add_handler(
-		{ restinio::http_method_get(), "/json" },
-		[]( auto req ){
+	router->http_get(
+		"/json",
+		[]( auto req, auto ){
 				init_resp( req->create_response() )
 					.append_header( "Content-Type", "text/json; charset=utf-8" )
 					.set_body( R"-({"message" : "Hello world!"})-")
@@ -50,9 +50,9 @@ auto server_handler()
 				return restinio::request_accepted();
 		} );
 
-	router->add_handler(
-		{ restinio::http_method_get(), "/html" },
-		[]( auto req ){
+	router->http_get(
+		"/html",
+		[]( auto req, auto ){
 				init_resp( req->create_response() )
 						.append_header( "Content-Type", "text/html; charset=utf-8" )
 						.set_body(
@@ -61,7 +61,7 @@ R"-(<html>
 <body>
 <center><h1>Hello world</h1></center>
 </body>
-</html>)-")
+</html>)-" )
 						.done();
 
 				return restinio::request_accepted();

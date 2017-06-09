@@ -17,7 +17,6 @@ MxxRu::Cpp::composite_target {
 	required_prj( "test/http_pipelining/sequence/prj.ut.rb" )
 	required_prj( "test/http_pipelining/timeouts/prj.ut.rb" )
 
-	required_prj( "test/router/first_match_router/prj.ut.rb" )
 	required_prj( "test/router/express/prj.ut.rb" )
 	required_prj( "test/router/express_router/prj.ut.rb" )
 }

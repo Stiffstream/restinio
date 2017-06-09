@@ -758,22 +758,18 @@ and expects user to set body using chunks of data.
 One of the reasons to create *RESTinio* was an ability to have
 [express](https://expressjs.com/)-like request handler router.
 
-Since v 0.2.1 *RESTinio* has two routers:
-
-* *express* - a router based on idea borrowed
+Since v 0.2.1 *RESTinio* has a router based on idea borrowed
 from [express](https://expressjs.com/) - a JavaScript framework.
-* *first_match* - a router that picks the first handler that matches the request.
 
-Each routers acts as a request handler (it means it is a function-objeject
+Routers acts as a request handler (it means it is a function-objeject
 that can be called as a request handler).
 But router aggregates several handlers and picks one or none of them
 to handle the request. The choice of the handler to execute depends on
-router implementation. If router finds no handler matching request then it
+request target and HTTP method. If router finds no handler matching request then it
 rejects it.
-Note that that the signature of the handlers put in router in general
-might not be the same as standard request handler (for example see express router).
-
-### Express
+Note that that the signature of the handlers put in router
+are not the same as standard request handler.
+It has an additional parameter -- a container with parameters extracted from URI.
 
 Express router is defined by `express_router_t` class.
 Its implementation is inspired by
@@ -892,22 +888,6 @@ See full [example](./dev/sample/express_router_tutorial.cpp)
 
 For details on `route_params_t` and `express_router_t` see
 [express.hpp](./dev/restinio/router/express.cpp).
-
-### First match
-
-First match router `first_match_router_t<MATCHER>` performs
-a simple matching algorithm.
-Each request handler in it must be associated with MATCHER.
-Matcher is a function-object that receives request header
-as input parameter and returns true if it matches the request.
-
-There are three reqdy to use matchers:
-
-* `exact_target_matcher_t` -- expects exact request target matching;
-* `begins_with_target_matcher_t` -- expect target request start with specific string;
-* `regex_target_matcher_t` -- expects request target to match specific regex.
-
-See [first_match.hpp](./dev/restinio/router/first_match.cpp) for more details.
 
 # Road Map
 
