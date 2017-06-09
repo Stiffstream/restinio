@@ -5,9 +5,8 @@
 # What Is It?
 *RESTinio* is a header-only library for creating REST applications in c++.
 It helps to create http server that can handle requests asynchronously.
-Currently it is in alpha state and represents
-an attempt to find a nice solution for the problem of
-being able to handle request asynchronously.
+Currently it is in beta state and represents our solution for the problem of
+being able to handle request asynchronously with additional features.
 
 *RESTinio* is a free software and is distributed under GNU Affero GPL v.3 license.
 
@@ -686,6 +685,27 @@ Content length is automatically calculated.
 Once the data is ready, the user calls done() method
 and the resulting response is scheduled for sending.
 
+~~~~~
+::c++
+ handler =
+  []( auto req ) {
+    if( restinio::http_method_get() == req->header().method() &&
+      req->header().request_target() == "/" )
+    {
+      req->create_response()
+        .append_header( "Server", "RESTinio hello world server" )
+        .append_header_date_field()
+        .append_header( "Content-Type", "text/plain; charset=utf-8" )
+        .set_body( "Hello world!")
+        .done();
+
+      return restinio::request_accepted();
+    }
+
+    return restinio::request_rejected();
+  };
+~~~~~
+
 ### User controlled response output builder
 
 This type of output allows user
@@ -707,7 +727,6 @@ Content-Length field.
 
     resp.flush(); // Send only header
 
-
     for( const char c : req->body() )
     {
       resp.append_body( std::string{ 1, c } );
@@ -717,7 +736,7 @@ Content-Length field.
       }
     }
 
-    resp.done();
+    return resp.done();
   }
 ~~~~~
 
@@ -749,7 +768,7 @@ and expects user to set body using chunks of data.
       }
     }
 
-    resp.done();
+    return resp.done();
   }
 ~~~~~
 
