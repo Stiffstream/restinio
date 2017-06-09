@@ -489,8 +489,8 @@ Class `server_settings_t<TRAITS>` serves to pass settings to `http_server_t`.
 It is defined in [restinio/settings.hpp](./dev/restinio/settings.hpp);
 
 For each parameter a setter/getter pair is provided.
-While setting most of params is pretty straightforward,
-there are some params with a bit tricky setter/getter semantics.
+While setting most of parameters is pretty straightforward,
+there are some parameters with a bit tricky setter/getter semantics.
 They are request_handler, timer_factory, logger.
 
 For example setter for request_handler looks like this:
@@ -780,7 +780,7 @@ One of the reasons to create *RESTinio* was an ability to have
 Since v 0.2.1 *RESTinio* has a router based on idea borrowed
 from [express](https://expressjs.com/) - a JavaScript framework.
 
-Routers acts as a request handler (it means it is a function-objeject
+Routers acts as a request handler (it means it is a function-object
 that can be called as a request handler).
 But router aggregates several handlers and picks one or none of them
 to handle the request. The choice of the handler to execute depends on
@@ -795,7 +795,7 @@ Its implementation is inspired by
 [express-router](https://expressjs.com/en/starter/basic-routing.html).
 It allows to define route path with injection
 of parameters that become available for handlers.
-For example the following code sets a handler with 2 paramaters:
+For example the following code sets a handler with 2 parameters:
 ```
 ::c++
   router.http_get(
@@ -807,7 +807,7 @@ For example the following code sets a handler with 2 paramaters:
     } );
 ```
 
-Note that express handler receives 2 paramaters not only request handle
+Note that express handler receives 2 parameters not only request handle
 but also `route_params_t` instance that holds parameters of the request:
 ```
 ::c++
@@ -815,15 +815,15 @@ using express_request_handler_t =
     std::function< request_handling_status_t( request_handle_t, route_params_t ) >;
 ```
 
-Route path defines a set of named and indexed paramaters.
-Named parameters starts with `:`, followed by non-empty paramater name
-(only A-Za-z0-9_ are allowed). After paramater name it is possible to
+Route path defines a set of named and indexed parameters.
+Named parameters starts with `:`, followed by non-empty parameter name
+(only A-Za-z0-9_ are allowed). After parameter name it is possible to
 set a capture regex enclosed in brackets
 (actually a subset of regex - none of the group types are allowed).
 Indexed parameters are simply a capture regex in brackets.
 
 Let's show how it works by example.
-First let's assume that varible `router` is a pointer to express router.
+First let's assume that variable `router` is a pointer to express router.
 So that is how we add a request handler with a single parameter:
 ```
 ::c++
