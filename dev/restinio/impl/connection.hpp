@@ -278,8 +278,8 @@ struct raw_resp_output_ctx_t
 	void
 	done()
 	{
-		m_asio_bufs.clear();
-		m_bufs.clear();
+		m_asio_bufs.resize( 0 );
+		m_bufs.resize( 0 );
 		m_transmitting = false;
 	}
 
@@ -450,7 +450,7 @@ class connection_t final
 
 	private:
 		//! An executor for callbacks on async operations.
-		strand_t &
+		inline strand_t &
 		get_executor()
 		{
 			return m_strand;
@@ -475,7 +475,7 @@ class connection_t final
 					} ) );
 		}
 
-		void
+		inline void
 		after_read( const std::error_code & ec, std::size_t length )
 		{
 			if( !ec )
@@ -836,7 +836,7 @@ class connection_t final
 		}
 
 		//! Handle write response finished.
-		void
+		inline void
 		after_write(
 			const std::error_code & ec,
 			std::size_t /*written*/,

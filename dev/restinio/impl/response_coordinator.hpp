@@ -291,13 +291,14 @@ class response_coordinator_t
 
 				max_buf_count -= bufs_to_get_from_current_context;
 
-				auto extracted_bufs_end = std::begin( current_ctx.m_bufs );
+				auto extracted_bufs_begin = std::begin( current_ctx.m_bufs );
+				auto extracted_bufs_end = extracted_bufs_begin;
 				std::advance(
 					extracted_bufs_end,
 					bufs_to_get_from_current_context );
 
 				std::for_each(
-					std::begin( current_ctx.m_bufs ),
+					extracted_bufs_begin,
 					extracted_bufs_end,
 					[ & ]( auto & buf ){
 						bufs.emplace_back( std::move( buf ) );
@@ -345,7 +346,7 @@ class response_coordinator_t
 					// but max_buf_count bufers are obtained
 					// while condition will fail.
 					current_ctx.m_bufs.erase(
-						std::begin( current_ctx.m_bufs ),
+						extracted_bufs_begin,
 						extracted_bufs_end );
 				}
 			}

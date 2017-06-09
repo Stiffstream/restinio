@@ -55,7 +55,7 @@ TEST_CASE( "Simple named param" , "[express][simple][named_params]" )
 
 	router.http_get(
 		"/a-route/:id",
-		[&]( auto r, auto p ){
+		[&]( auto , auto p ){
 			last_handler_called = 0;
 			route_params = std::move( p );
 			return request_accepted();
@@ -64,7 +64,7 @@ TEST_CASE( "Simple named param" , "[express][simple][named_params]" )
 
 	router.http_get(
 		"/b-route/:id",
-		[&]( auto r, auto p ){
+		[&]( auto , auto p ){
 			last_handler_called = 1;
 			route_params = std::move( p );
 			return request_accepted();
@@ -72,7 +72,7 @@ TEST_CASE( "Simple named param" , "[express][simple][named_params]" )
 
 	router.http_get(
 		"/c-route/:id",
-		[&]( auto r, auto p ){
+		[&]( auto , auto p ){
 			last_handler_called = 2;
 			route_params = std::move( p );
 			return request_accepted();
@@ -80,7 +80,7 @@ TEST_CASE( "Simple named param" , "[express][simple][named_params]" )
 
 	router.http_get(
 		"/d-route/:id",
-		[&]( auto r, auto p ){
+		[&]( auto , auto p ){
 			last_handler_called = 3;
 			route_params = std::move( p );
 			return request_accepted();
@@ -134,7 +134,7 @@ TEST_CASE( "Simple indexed param" , "[express][simple][indexed_params]" )
 
 	router.http_get(
 		R"(/a-route/(\d+)/ending)",
-		[&]( auto r, auto p ){
+		[&]( auto , auto p ){
 			last_handler_called = 0;
 			route_params = std::move( p );
 			return request_accepted();
@@ -143,7 +143,7 @@ TEST_CASE( "Simple indexed param" , "[express][simple][indexed_params]" )
 
 	router.http_get(
 		R"(/b-route/(\d+)/ending)",
-		[&]( auto r, auto p ){
+		[&]( auto , auto p ){
 			last_handler_called = 1;
 			route_params = std::move( p );
 			return request_accepted();
@@ -151,7 +151,7 @@ TEST_CASE( "Simple indexed param" , "[express][simple][indexed_params]" )
 
 	router.http_get(
 		R"(/c-route/(\d+)/ending)",
-		[&]( auto r, auto p ){
+		[&]( auto , auto p ){
 			last_handler_called = 2;
 			route_params = std::move( p );
 			return request_accepted();
@@ -159,7 +159,7 @@ TEST_CASE( "Simple indexed param" , "[express][simple][indexed_params]" )
 
 	router.http_get(
 		R"(/d-route/(\d+)/ending)",
-		[&]( auto r, auto p ){
+		[&]( auto , auto p ){
 			last_handler_called = 3;
 			route_params = std::move( p );
 			return request_accepted();
@@ -269,21 +269,21 @@ TEST_CASE( "Many params" , "[express][named_params]" )
 	express_router_t router;
 
 	router.http_get( R"(/:p1(\d+)/:p2([a-z]+)/:p3(\d{2}\.[AB]{0,2})/:opt([a-z]?))",
-		[&]( auto r, auto p ){
+		[&]( auto , auto p ){
 			last_handler_called = 0;
 			route_params = std::move( p );
 			return request_accepted();
 		} );
 
 	router.http_get( R"(/news/:year(\d{4})-:month(\d{2})-:day(\d{2}))",
-		[&]( auto r, auto p ){
+		[&]( auto , auto p ){
 			last_handler_called = 1;
 			route_params = std::move( p );
 			return request_accepted();
 		} );
 
 	router.http_get( R"(/events/(\d{4})-(\d{2})-(\d{2}))",
-		[&]( auto r, auto p ){
+		[&]( auto , auto p ){
 			last_handler_called = 2;
 			route_params = std::move( p );
 			return request_accepted();

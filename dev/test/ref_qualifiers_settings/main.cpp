@@ -63,7 +63,7 @@ struct tester_req_handler_t
 	using tagged_object_t::tagged_object_t;
 
 	auto
-	operator () ( restinio::request_handle_t req ) const
+	operator () ( restinio::request_handle_t ) const
 	{
 		return restinio::request_rejected();
 	}

@@ -1,7 +1,7 @@
 /*
 	restinio bench single handler.
 */
-
+#include <stdexcept>
 #include <iostream>
 #include <fstream>
 
@@ -81,6 +81,44 @@ struct req_handler_t
 	}
 };
 
+template < typename TRAITS >
+void
+run_app( const app_args_t args )
+{
+	using http_server_t =
+		restinio::http_server_t< TRAITS >;
+	using server_settings_t =
+		restinio::server_settings_t< TRAITS >;
+
+	server_settings_t settings{};
+
+	{
+		std::ifstream fin{ args.m_config_file, std::ios::binary };
+		if( !fin )
+		{
+			throw std::runtime_error{ "unable to open config: " + args.m_config_file };
+		}
+		json_dto::from_stream( fin, settings );
+		fin.close();
+	}
+
+	http_server_t http_server{
+		restinio::create_child_io_service( args.m_asio_pool_size ),
+		std::move( settings ) };
+
+	http_server.open();
+	// Wait for quit command.
+	std::cout << "Type \"quit\" or \"q\" to quit." << std::endl;
+
+	std::string cmd;
+	do
+	{
+		std::cin >> cmd;
+	} while( cmd != "quit" && cmd != "q" );
+
+	http_server.close();
+}
+
 int
 main(int argc, const char *argv[] )
 {
@@ -92,43 +130,30 @@ main(int argc, const char *argv[] )
 		{
 			std::cout << "pool size: " << args.m_asio_pool_size << std::endl;
 
-			using traits_t =
-				restinio::traits_t<
-					restinio::asio_timer_factory_t,
-					restinio::null_logger_t,
-					req_handler_t >;
-			using http_server_t =
-				restinio::http_server_t< traits_t >;
-			using server_settings_t =
-				restinio::server_settings_t< traits_t >;
-
-			server_settings_t settings{};
-
+			if( 1 < args.m_asio_pool_size )
 			{
-				std::ifstream fin{ args.m_config_file, std::ios::binary };
-				if( !fin )
-				{
-					throw std::runtime_error{ "unable to open config: " + args.m_config_file };
-				}
-				json_dto::from_stream( fin, settings );
-				fin.close();
+				using traits_t =
+					restinio::traits_t<
+						restinio::asio_timer_factory_t,
+						restinio::null_logger_t,
+						req_handler_t >;
+
+				run_app< traits_t >( args );
 			}
-
-			http_server_t http_server{
-				restinio::create_child_io_service( args.m_asio_pool_size ),
-				std::move( settings ) };
-
-			http_server.open();
-			// Wait for quit command.
-			std::cout << "Type \"quit\" or \"q\" to quit." << std::endl;
-
-			std::string cmd;
-			do
+			else if( 1 == args.m_asio_pool_size )
 			{
-				std::cin >> cmd;
-			} while( cmd != "quit" && cmd != "q" );
+				using traits_t =
+					restinio::single_thread_traits_t<
+						restinio::asio_timer_factory_t,
+						restinio::null_logger_t,
+						req_handler_t >;
 
-			http_server.close();
+				run_app< traits_t >( args );
+			}
+			else
+			{
+				throw std::runtime_error{ "invalid asio pool size" };
+			}
 		}
 	}
 	catch( const std::exception & ex )
