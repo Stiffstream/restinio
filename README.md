@@ -907,8 +907,7 @@ Please send us feedback and we will take your opinion into account.
 *0.2.1*
 
 * Routers for message handlers.
-Support for a URI dependent routing to a set of handlers
-(express-like anf first-match routers).
+Support for a URI dependent routing to a set of handlers (express-like router).
 * Enable `localhost` and `ip6-localhost` aliases for setting server address.
 
 *0.2.0*
