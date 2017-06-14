@@ -91,7 +91,7 @@ class base_response_builder_t
 			strftime(
 				buf.data(),
 				buf.size(),
-				":%a, %d %b %Y %T GMT",
+				"%a, %d %b %Y %T GMT",
 				&tpoint );
 
 			m_header.set_field(
