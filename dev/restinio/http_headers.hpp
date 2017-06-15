@@ -370,7 +370,7 @@ http_method_from_nodejs( int m )
 //
 
 //! Helper sunction to get method string name.
-inline const char *
+constexpr inline const char *
 method_to_string( http_method_t m )
 {
 	const char * result = "<unknown>";
