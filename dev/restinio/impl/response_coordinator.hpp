@@ -357,10 +357,11 @@ class response_coordinator_t
 		//! Counter for asigining id to new requests.
 		request_id_t m_request_id_counter{ 0 };
 
-		response_context_table_t m_context_table;
-
 		//! Indicate whether a response with connection close flag was emitted.
 		bool m_connection_closed_response_occured{ false };
+
+		response_context_table_t m_context_table;
+
 };
 
 } /* namespace impl */
