@@ -91,7 +91,7 @@ class http_header_fields_t
 			std::string field_name,
 			std::string field_value )
 		{
-			auto it = find( field_name );
+			const auto it = find( field_name );
 
 			if( m_fields.end() != it )
 			{
@@ -111,7 +111,7 @@ class http_header_fields_t
 			const std::string & field_name,
 			const std::string & field_value )
 		{
-			auto it = find( field_name );
+			const auto it = find( field_name );
 
 			if( m_fields.end() != it )
 			{
@@ -133,7 +133,7 @@ class http_header_fields_t
 		get_field(
 			const std::string & field_name ) const
 		{
-			auto it = cfind( field_name );
+			const auto it = cfind( field_name );
 
 			if( m_fields.end() == it )
 				throw exception_t(
@@ -147,7 +147,7 @@ class http_header_fields_t
 			const std::string & field_name,
 			const std::string & default_value ) const
 		{
-			auto it = cfind( field_name );
+			const auto it = cfind( field_name );
 
 			if( m_fields.end() == it )
 				return default_value;
@@ -158,7 +158,7 @@ class http_header_fields_t
 		void
 		remove_field( const std::string & field_name )
 		{
-			auto it = find( field_name );
+			const auto it = find( field_name );
 
 			if( m_fields.end() != it )
 				m_fields.erase( it );

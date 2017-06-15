@@ -285,13 +285,14 @@ class response_coordinator_t
 				!m_context_table.empty() )
 			{
 				auto & current_ctx = m_context_table.front();
-				const auto bufs_to_get_from_current_context = std::min(
-						static_cast<decltype(max_buf_count)>(current_ctx.m_bufs.size()),
+				const auto bufs_to_get_from_current_context =
+					std::min(
+						static_cast<decltype(max_buf_count)>( current_ctx.m_bufs.size() ),
 						max_buf_count );
 
 				max_buf_count -= bufs_to_get_from_current_context;
 
-				auto extracted_bufs_begin = std::begin( current_ctx.m_bufs );
+				const auto extracted_bufs_begin = std::begin( current_ctx.m_bufs );
 				auto extracted_bufs_end = extracted_bufs_begin;
 				std::advance(
 					extracted_bufs_end,

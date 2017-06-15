@@ -121,7 +121,7 @@ create_parser_settings()
 class input_buffer_t
 {
 	public:
-		input_buffer_t( std::size_t size )
+		explicit input_buffer_t( std::size_t size )
 		{
 			m_buf.resize( size );
 		}
@@ -195,6 +195,11 @@ struct connection_settings_t final
 {
 	using request_handler_t = typename TRAITS::request_handler_t;
 	using logger_t = typename TRAITS::logger_t;
+
+	connection_settings_t( const connection_settings_t & ) = delete;
+	connection_settings_t( const connection_settings_t && ) = delete;
+	void operator = ( const connection_settings_t & ) = delete;
+	void operator = ( const connection_settings_t && ) = delete;
 
 	template < typename SETTINGS >
 	connection_settings_t(
@@ -302,14 +307,14 @@ struct raw_resp_output_ctx_t
 	}
 
 	private:
+		//! Is transmition running?
+		bool m_transmitting{ false };
+
 		//! Asio buffers.
 		std::vector< asio::const_buffer > m_asio_bufs;
 
 		//! Real buffers with data.
 		std::vector< std::string > m_bufs;
-
-		//! Is transmition running?
-		bool m_transmitting{ false };
 };
 
 //! Data associated with connection read routine.
@@ -319,13 +324,14 @@ struct connection_input_t
 		:	m_buf{ buffer_size }
 	{}
 
-	//! Input buffer.
-	input_buffer_t m_buf;
-
 	//! HTTP-parser.
 	//! \{
 	http_parser m_parser;
 	parser_ctx_t m_parser_ctx;
+	//! \}
+
+	//! Input buffer.
+	input_buffer_t m_buf;
 
 	//! Prepare parser for reading new http-message.
 	void
@@ -338,7 +344,6 @@ struct connection_input_t
 		m_parser_ctx.reset();
 		m_parser.data = &m_parser_ctx;
 	}
-	//! \}
 };
 
 //
@@ -399,6 +404,11 @@ class connection_t final
 			} );
 		}
 
+		connection_t( const connection_t & ) = delete;
+		connection_t( const connection_t && ) = delete;
+		void operator = ( const connection_t & ) = delete;
+		void operator = ( const connection_t && ) = delete;
+
 		~connection_t()
 		{
 			try
@@ -457,7 +467,7 @@ class connection_t final
 		}
 
 		//! Start (continue) a chain of read-parse-read-... operations.
-		void
+		inline void
 		consume_message()
 		{
 			m_logger.trace( [&]{
