@@ -3,7 +3,7 @@
 */
 
 /*!
-	Tests for settings parameters that have default constructor.
+	Test triggering timeouts.
 */
 
 #define CATCH_CONFIG_MAIN

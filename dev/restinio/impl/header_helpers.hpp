@@ -28,7 +28,7 @@ ct_string_len( const char (&)[N] )
 	return N-1;
 }
 
-enum class content_length_field_presence_t
+enum class content_length_field_presence_t : std::uint8_t
 {
 	add_content_length,
 	skip_content_length

@@ -3,7 +3,7 @@
 */
 
 /*!
-	Tests for settings parameters that have default constructor.
+	Echo server.
 */
 
 #define CATCH_CONFIG_MAIN

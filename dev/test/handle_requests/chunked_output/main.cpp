@@ -3,7 +3,7 @@
 */
 
 /*!
-	Tests for settings parameters that have default constructor.
+	Tests for chunked output.
 */
 
 #define CATCH_CONFIG_MAIN

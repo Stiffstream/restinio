@@ -287,6 +287,13 @@ class server_settings_t
 		//! \{
 		using request_handler_t = typename TRAITS::request_handler_t;
 
+		server_settings_t &
+		request_handler( std::unique_ptr< request_handler_t > handler ) &
+		{
+			m_request_handler = std::move( handler );
+			return *this;
+		}
+
 		template< typename... PARAMS >
 		server_settings_t &
 		request_handler( PARAMS &&... params ) &
@@ -295,6 +302,7 @@ class server_settings_t
 					m_request_handler,
 					std::forward< PARAMS >( params )... );
 		}
+
 
 		template< typename... PARAMS >
 		server_settings_t &&

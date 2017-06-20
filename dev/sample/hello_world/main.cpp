@@ -11,42 +11,49 @@
 
 #include <restinio/all.hpp>
 
+template < typename RESP >
+RESP
+init_resp( RESP resp )
+{
+	resp.append_header( "Server", "RESTinio sample server /v.0.2" );
+	resp.append_header_date_field();
+
+	return resp;
+};
+
+namespace rr = restinio::router;
+using router_t = rr::express_router_t;
+
 auto server_handler()
 {
-	return []( auto req ) {
-			auto create_common_resp =
-				[&] {
-					auto resp = req->create_response();
-					resp.append_header( "Server", "RESTinio sample server /v.0.2" );
-					resp.append_header_date_field();
-					return resp;
-				};
+	auto router = std::make_unique< router_t >();
 
-			auto result = restinio::request_rejected();
+	router->http_get(
+		"/",
+		[]( auto req, auto ){
+				init_resp( req->create_response() )
+					.append_header( "Content-Type", "text/plain; charset=utf-8" )
+					.set_body( "Hello world!")
+					.done();
 
-			if( restinio::http_method_get() == req->header().method() )
-			{
-				if( req->header().request_target() == "/" )
-				{
-					create_common_resp()
-						.append_header( "Content-Type", "text/plain; charset=utf-8" )
-						.set_body( "Hello world!")
-						.done();
+				return restinio::request_accepted();
+		} );
 
-					result = restinio::request_accepted();
-				}
-				else if( req->header().request_target() == "/json" )
-				{
-					create_common_resp()
-						.append_header( "Content-Type", "text/json; charset=utf-8" )
-						.set_body( R"-({"message" : "Hello world!"})-")
-						.done();
+	router->http_get(
+		"/json",
+		[]( auto req, auto ){
+				init_resp( req->create_response() )
+					.append_header( "Content-Type", "text/json; charset=utf-8" )
+					.set_body( R"-({"message" : "Hello world!"})-")
+					.done();
 
-					result = restinio::request_accepted();
-				}
-				else if( req->header().request_target() == "/html" )
-				{
-					create_common_resp()
+				return restinio::request_accepted();
+		} );
+
+	router->http_get(
+		"/html",
+		[]( auto req, auto ){
+				init_resp( req->create_response() )
 						.append_header( "Content-Type", "text/html; charset=utf-8" )
 						.set_body(
 R"-(<html>
@@ -54,15 +61,13 @@ R"-(<html>
 <body>
 <center><h1>Hello world</h1></center>
 </body>
-</html>)-")
+</html>)-" )
 						.done();
 
-					result = restinio::request_accepted();
-				}
-			}
+				return restinio::request_accepted();
+		} );
 
-			return result;
-		};
+	return router;
 }
 
 int main()
@@ -75,12 +80,14 @@ int main()
 			restinio::http_server_t<
 				restinio::traits_t<
 					restinio::asio_timer_factory_t,
-					restinio::single_threaded_ostream_logger_t > >;
+					restinio::single_threaded_ostream_logger_t,
+					router_t > >;
 
 		http_server_t http_server{
 			restinio::create_child_io_service( 1 ),
 			[]( auto & settings ){
 				settings
+					.address( "localhost" )
 					.request_handler( server_handler() )
 					.read_next_http_message_timelimit( 10s )
 					.write_http_response_timelimit( 1s )

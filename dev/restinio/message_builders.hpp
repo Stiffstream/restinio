@@ -91,7 +91,7 @@ class base_response_builder_t
 			strftime(
 				buf.data(),
 				buf.size(),
-				":%a, %d %b %Y %T GMT",
+				"%a, %d %b %Y %T GMT",
 				&tpoint );
 
 			m_header.set_field(
@@ -176,7 +176,7 @@ class response_builder_t< restinio_controlled_output_t > final
 		}
 
 		//! Complete response.
-		void
+		request_handling_status_t
 		done()
 		{
 			if( m_connection )
@@ -198,6 +198,8 @@ class response_builder_t< restinio_controlled_output_t > final
 						std::move( m_body )
 					} );
 			}
+
+			return restinio::request_accepted();
 		}
 
 	private:
@@ -262,7 +264,7 @@ class response_builder_t< user_controlled_output_t > final
 		}
 
 		//! Complete response.
-		void
+		request_handling_status_t
 		done()
 		{
 			if( m_connection )
@@ -271,6 +273,7 @@ class response_builder_t< user_controlled_output_t > final
 					std::move( m_connection ),
 					response_parts_attr_t::final_parts );
 			}
+			return restinio::request_accepted();
 		}
 
 	private:
@@ -430,7 +433,7 @@ class response_builder_t< chunked_output_t > final
 		}
 
 		//! Complete response.
-		void
+		request_handling_status_t
 		done()
 		{
 			if( m_connection )
@@ -439,6 +442,7 @@ class response_builder_t< chunked_output_t > final
 					std::move( m_connection ),
 					response_parts_attr_t::final_parts );
 			}
+			return restinio::request_accepted();
 		}
 
 	private:

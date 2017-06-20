@@ -91,7 +91,7 @@ class http_header_fields_t
 			std::string field_name,
 			std::string field_value )
 		{
-			auto it = find( field_name );
+			const auto it = find( field_name );
 
 			if( m_fields.end() != it )
 			{
@@ -111,7 +111,7 @@ class http_header_fields_t
 			const std::string & field_name,
 			const std::string & field_value )
 		{
-			auto it = find( field_name );
+			const auto it = find( field_name );
 
 			if( m_fields.end() != it )
 			{
@@ -133,7 +133,7 @@ class http_header_fields_t
 		get_field(
 			const std::string & field_name ) const
 		{
-			auto it = cfind( field_name );
+			const auto it = cfind( field_name );
 
 			if( m_fields.end() == it )
 				throw exception_t(
@@ -147,7 +147,7 @@ class http_header_fields_t
 			const std::string & field_name,
 			const std::string & default_value ) const
 		{
-			auto it = cfind( field_name );
+			const auto it = cfind( field_name );
 
 			if( m_fields.end() == it )
 				return default_value;
@@ -158,7 +158,7 @@ class http_header_fields_t
 		void
 		remove_field( const std::string & field_name )
 		{
-			auto it = find( field_name );
+			const auto it = find( field_name );
 
 			if( m_fields.end() != it )
 				m_fields.erase( it );
@@ -314,7 +314,7 @@ struct http_header_common_t
 //
 
 //! C++ enum that repeats nodejs c-style enum.
-enum class http_method_t
+enum class http_method_t : std::uint8_t
 {
 #define RESTINIO_HTTP_METHOD_GEN( name, ignored1, ignored2 ) name,
 	RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_GEN )
@@ -370,7 +370,7 @@ http_method_from_nodejs( int m )
 //
 
 //! Helper sunction to get method string name.
-inline const char *
+constexpr inline const char *
 method_to_string( http_method_t m )
 {
 	const char * result = "<unknown>";
@@ -397,6 +397,15 @@ struct http_request_header_t final
 	:	public http_header_common_t
 {
 	public:
+		http_request_header_t() = default;
+
+		http_request_header_t(
+			http_method_t method,
+			std::string request_target )
+			:	m_method{ method }
+			,	m_request_target{ std::move( request_target ) }
+		{}
+
 		http_method_t
 		method() const
 		{ return m_method; }

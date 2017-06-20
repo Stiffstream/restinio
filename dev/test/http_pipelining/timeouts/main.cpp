@@ -3,7 +3,7 @@
 */
 
 /*!
-	Tests for settings parameters that have default constructor.
+	Test timputs with http pipelining.
 */
 
 #define CATCH_CONFIG_MAIN

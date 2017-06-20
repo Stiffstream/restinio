@@ -285,19 +285,21 @@ class response_coordinator_t
 				!m_context_table.empty() )
 			{
 				auto & current_ctx = m_context_table.front();
-				const auto bufs_to_get_from_current_context = std::min(
-						static_cast<decltype(max_buf_count)>(current_ctx.m_bufs.size()),
+				const auto bufs_to_get_from_current_context =
+					std::min(
+						static_cast<decltype(max_buf_count)>( current_ctx.m_bufs.size() ),
 						max_buf_count );
 
 				max_buf_count -= bufs_to_get_from_current_context;
 
-				auto extracted_bufs_end = std::begin( current_ctx.m_bufs );
+				const auto extracted_bufs_begin = std::begin( current_ctx.m_bufs );
+				auto extracted_bufs_end = extracted_bufs_begin;
 				std::advance(
 					extracted_bufs_end,
 					bufs_to_get_from_current_context );
 
 				std::for_each(
-					std::begin( current_ctx.m_bufs ),
+					extracted_bufs_begin,
 					extracted_bufs_end,
 					[ & ]( auto & buf ){
 						bufs.emplace_back( std::move( buf ) );
@@ -345,7 +347,7 @@ class response_coordinator_t
 					// but max_buf_count bufers are obtained
 					// while condition will fail.
 					current_ctx.m_bufs.erase(
-						std::begin( current_ctx.m_bufs ),
+						extracted_bufs_begin,
 						extracted_bufs_end );
 				}
 			}
@@ -355,10 +357,11 @@ class response_coordinator_t
 		//! Counter for asigining id to new requests.
 		request_id_t m_request_id_counter{ 0 };
 
-		response_context_table_t m_context_table;
-
 		//! Indicate whether a response with connection close flag was emitted.
 		bool m_connection_closed_response_occured{ false };
+
+		response_context_table_t m_context_table;
+
 };
 
 } /* namespace impl */

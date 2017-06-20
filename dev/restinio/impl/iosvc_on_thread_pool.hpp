@@ -102,7 +102,7 @@ class iosvc_on_thread_pool_t
 		io_service() { return m_io_service; }
 
 	private:
-		enum class status_t { stopped, started };
+		enum class status_t : std::uint8_t { stopped, started };
 
 		asio::io_service m_io_service;
 		std::vector< std::thread > m_pool;

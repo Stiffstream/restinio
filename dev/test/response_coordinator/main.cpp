@@ -3,7 +3,7 @@
 */
 
 /*!
-	Tests for header objects.
+	Tests response coordinator.
 */
 
 #define CATCH_CONFIG_MAIN

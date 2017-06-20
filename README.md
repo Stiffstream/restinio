@@ -5,9 +5,14 @@
 # What Is It?
 *RESTinio* is a header-only library for creating REST applications in c++.
 It helps to create http server that can handle requests asynchronously.
+<<<<<<< local
 Currently it is in alpha state and represents
 an attempt to find a nice solution for the problem of
 being able to handle request asynchronously.
+=======
+Currently it is in beta state and represents our solution for the problem of
+being able to handle request asynchronously with additional features.
+>>>>>>> other
 
 *RESTinio* is a free software and is distributed under GNU Affero GPL v.3 license.
 
@@ -30,6 +35,8 @@ In addition to async handling feature we though it would be nice
 for such library to keep track of what is going on with connections and
 control timeouts on operations of reading request from socket,
 handling request and writing response to socket.
+And it would also be nice to have request handler router
+(like in [express](https://expressjs.com/)).
 And a header-only design is a plus.
 
 And it happens that under such conditions you don't have a lot of options.
@@ -53,7 +60,7 @@ For building samples, benchmarks and tests:
 * [rapidjson](https://github.com/miloyip/rapidjson) 1.1.0;
 * [json_dto](https://bitbucket.org/sobjectizerteam/json_dto-0.1) 0.1.2.1 or above;
 * [args](https://github.com/Taywee/args) 6.0.4;
-* [CATCH](https://github.com/philsquared/Catch) 1.8.2.
+* [CATCH](https://github.com/philsquared/Catch) 1.8.2 or above.
 
 ## Obtaining
 
@@ -488,8 +495,8 @@ Class `server_settings_t<TRAITS>` serves to pass settings to `http_server_t`.
 It is defined in [restinio/settings.hpp](./dev/restinio/settings.hpp);
 
 For each parameter a setter/getter pair is provided.
-While setting most of params is pretty straightforward,
-there are some params with a bit tricky setter/getter semantics.
+While setting most of parameters is pretty straightforward,
+there are some parameters with a bit tricky setter/getter semantics.
 They are request_handler, timer_factory, logger.
 
 For example setter for request_handler looks like this:
@@ -684,6 +691,27 @@ Content length is automatically calculated.
 Once the data is ready, the user calls done() method
 and the resulting response is scheduled for sending.
 
+~~~~~
+::c++
+ handler =
+  []( auto req ) {
+    if( restinio::http_method_get() == req->header().method() &&
+      req->header().request_target() == "/" )
+    {
+      req->create_response()
+        .append_header( "Server", "RESTinio hello world server" )
+        .append_header_date_field()
+        .append_header( "Content-Type", "text/plain; charset=utf-8" )
+        .set_body( "Hello world!")
+        .done();
+
+      return restinio::request_accepted();
+    }
+
+    return restinio::request_rejected();
+  };
+~~~~~
+
 ### User controlled response output builder
 
 This type of output allows user
@@ -705,7 +733,6 @@ Content-Length field.
 
     resp.flush(); // Send only header
 
-
     for( const char c : req->body() )
     {
       resp.append_body( std::string{ 1, c } );
@@ -715,7 +742,7 @@ Content-Length field.
       }
     }
 
-    resp.done();
+    return resp.done();
   }
 ~~~~~
 
@@ -747,17 +774,150 @@ and expects user to set body using chunks of data.
       }
     }
 
-    resp.done();
+    return resp.done();
   }
 ~~~~~
 
+## Routers
+
+One of the reasons to create *RESTinio* was an ability to have
+[express](https://expressjs.com/)-like request handler router.
+
+Since v 0.2.1 *RESTinio* has a router based on idea borrowed
+from [express](https://expressjs.com/) - a JavaScript framework.
+
+Routers acts as a request handler (it means it is a function-object
+that can be called as a request handler).
+But router aggregates several handlers and picks one or none of them
+to handle the request. The choice of the handler to execute depends on
+request target and HTTP method. If router finds no handler matching request then it
+rejects it.
+Note that that the signature of the handlers put in router
+are not the same as standard request handler.
+It has an additional parameter -- a container with parameters extracted from URI.
+
+Express router is defined by `express_router_t` class.
+Its implementation is inspired by
+[express-router](https://expressjs.com/en/starter/basic-routing.html).
+It allows to define route path with injection
+of parameters that become available for handlers.
+For example the following code sets a handler with 2 parameters:
+```
+::c++
+  router.http_get(
+    R"(/article/:article_id/:page(\d+))",
+    []( auto req, auto params ){
+      const auto article_id = params[ "article_id" ];
+      auto page = std::to_string( params[ "page" ] );
+      // ...
+    } );
+```
+
+Note that express handler receives 2 parameters not only request handle
+but also `route_params_t` instance that holds parameters of the request:
+```
+::c++
+using express_request_handler_t =
+    std::function< request_handling_status_t( request_handle_t, route_params_t ) >;
+```
+
+Route path defines a set of named and indexed parameters.
+Named parameters starts with `:`, followed by non-empty parameter name
+(only A-Za-z0-9_ are allowed). After parameter name it is possible to
+set a capture regex enclosed in brackets
+(actually a subset of regex - none of the group types are allowed).
+Indexed parameters are simply a capture regex in brackets.
+
+Let's show how it works by example.
+First let's assume that variable `router` is a pointer to express router.
+So that is how we add a request handler with a single parameter:
+```
+::c++
+  // GET request with single parameter.
+  router->http_get( "/single/:param", []( auto req, auto params ){
+    return
+      init_resp( req->create_response() )
+        .set_body( "GET request with single parameter: " + params[ "param" ] )
+        .done();
+  } );
+```
+
+The following requests will be routed to that handler:
+
+* http://localhost/single/123 param="123"
+* http://localhost/single/parameter/ param="parameter"
+* http://localhost/single/another-param param="another-param"
+
+But the following will not:
+
+* http://localhost/single/123/and-more
+* http://localhost/single/
+* http://localhost/single-param/123
+
+Let's use more parameters and assign a capture regex for them:
+```
+::c++
+  // POST request with several parameters.
+  router->http_post( R"(/many/:year(\d{4}).:month(\d{2}).:day(\d{2}))",
+    []( auto req, auto params ){
+      return
+        init_resp( req->create_response() )
+          .set_body( "POST request with many parameters:\n"
+            "year: "+ params[ "year" ] + "\n" +
+            "month: "+ params[ "month" ] + "\n" +
+            "day: "+ params[ "day" ] + "\n"
+            "body: " + req->body() )
+          .done();
+    } );
+```
+The following requests will be routed to that handler:
+
+* http://localhost/many/2017.01.01 year="2017", month="01", day="01"
+* http://localhost/many/2018.06.03 year="2018", month="06", day="03"
+* http://localhost/many/2017.12.22 year="2017", month="12", day="22"
+
+But the following will not:
+
+* http://localhost/many/2o17.01.01
+* http://localhost/many/2018.06.03/events
+* http://localhost/many/17.12.22
+
+Using indexed parameters is practically the same, just omit parameters names:
+```
+::c++
+  // GET request with indexed parameters.
+  router->http_get( R"(/indexed/([a-z]+)-(\d+)/(one|two|three))",
+    []( auto req, auto params ){
+      return
+        init_resp( req->create_response() )
+          .set_body( "POST request with indexed parameters:\n"
+            "#0: "+ params[ 0 ] + "\n" +
+            "#1: "+ params[ 1 ] + "\n" +
+            "#2: "+ params[ 2 ] + "\n" )
+          .done();
+    } );
+```
+The following requests will be routed to that handler:
+
+* http://localhost/indexed/xyz-007/one #0="xyz", #1="007", #2="one"
+* http://localhost/indexed/ABCDE-2017/two #0="ABCDE", #1="2017", #2="two"
+* http://localhost/indexed/sobjectizer-5/three #0="sobjectizer", #1="5", #2="three"
+
+But the following will not:
+
+* http://localhost/indexed/xyz-007/zero
+* http://localhost/indexed/173-xyz/one
+* http://localhost/indexed/ABCDE-2017/one/two/three
+
+See full [example](./dev/sample/express_router_tutorial.cpp)
+
+For details on `route_params_t` and `express_router_t` see
+[express.hpp](./dev/restinio/router/express.cpp).
 
 # Road Map
 
 Features for next releases:
 
-* Routers for message handlers.
-Support for a URI dependent routing to a set of handlers.
 * Non trivial benchmarks. Comparison with other libraries with similar features
 on the range of various scenarios.
 * HTTP client. Introduce functionality for building and sending requests and
@@ -769,9 +929,19 @@ Please send us feedback and we will take your opinion into account.
 
 ## Done features
 
-0.2.0:
+*0.2.1*
+
+<<<<<<< local
+* [HTTP pipelining](https://en.wikipedia.org/wiki/HTTP_pipelining) support.
+=======
+* Routers for message handlers.
+Support for a URI dependent routing to a set of handlers (express-like router).
+* Enable `localhost` and `ip6-localhost` aliases for setting server address.
+
+*0.2.0*
 
 * [HTTP pipelining](https://en.wikipedia.org/wiki/HTTP_pipelining) support.
+>>>>>>> other
 Read, parse and call a handler for incoming requests independently.
 When responses become available send them to client in order of corresponding requests.
 * Support for chunked transfer encoding. Separate responses on header and body chunks,
