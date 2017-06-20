@@ -8,7 +8,10 @@ It helps to create http server that can handle requests asynchronously.
 Currently it is in beta state and represents our solution for the problem of
 being able to handle request asynchronously with additional features.
 
-*RESTinio* is a free software and is distributed under GNU Affero GPL v.3 license.
+RESTinio is distributed on dual-license mode.
+There is a GNU Affero GPL v.3 license for usage of RESTinio in OpenSource software.
+There is also a commercial license for usage of RESTinio in proprietary projects
+(contact "info at stiffstream dot com" for more information).
 
 ## Why creating yet another library of that kind?
 
