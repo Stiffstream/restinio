@@ -5,14 +5,8 @@
 # What Is It?
 *RESTinio* is a header-only library for creating REST applications in c++.
 It helps to create http server that can handle requests asynchronously.
-<<<<<<< local
-Currently it is in alpha state and represents
-an attempt to find a nice solution for the problem of
-being able to handle request asynchronously.
-=======
 Currently it is in beta state and represents our solution for the problem of
 being able to handle request asynchronously with additional features.
->>>>>>> other
 
 *RESTinio* is a free software and is distributed under GNU Affero GPL v.3 license.
 
@@ -931,9 +925,6 @@ Please send us feedback and we will take your opinion into account.
 
 *0.2.1*
 
-<<<<<<< local
-* [HTTP pipelining](https://en.wikipedia.org/wiki/HTTP_pipelining) support.
-=======
 * Routers for message handlers.
 Support for a URI dependent routing to a set of handlers (express-like router).
 * Enable `localhost` and `ip6-localhost` aliases for setting server address.
@@ -941,7 +932,6 @@ Support for a URI dependent routing to a set of handlers (express-like router).
 *0.2.0*
 
 * [HTTP pipelining](https://en.wikipedia.org/wiki/HTTP_pipelining) support.
->>>>>>> other
 Read, parse and call a handler for incoming requests independently.
 When responses become available send them to client in order of corresponding requests.
 * Support for chunked transfer encoding. Separate responses on header and body chunks,
