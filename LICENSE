@@ -1,6 +1,8 @@
 RESTinio - library for creating REST applications in c++.
 Copyright (c) 2017 Stiffstream <info at stiffstream dot com>. All rights reserved.
 
+This project is dual licensed under GNU Affero General Public License and Commercial License.
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
 published by the Free Software Foundation, either version 3 of the
@@ -13,3 +15,10 @@ GNU Affero General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+You can be released from the requirements of the license by purchasing
+a commercial license. Buying such a license is mandatory as soon as you
+develop commercial activities involving the RESTinio without
+disclosing the source code of your own applications.
+For full terms and conditions of the Commercial License,
+please contact info at stiffstream dot com.
