@@ -67,7 +67,7 @@ There are two ways of obtaining *RESTinio*.
 [repository](https://bitbucket.org/sobjectizerteam/restinio-0.2).
 In this case external dependencies must be obtained with Mxx_ru externals tool.
 * Getting
-[archive](https://bitbucket.org/sobjectizerteam/restinio-0.2/downloads/restinio-0.2.0-full.tar.bz2).
+[archive](https://bitbucket.org/sobjectizerteam/restinio-0.2/downloads/restinio-0.2.1-full.tar.bz2).
 Archive includes source code for all external dependencies.
 
 ### Cloning of hg repository
@@ -91,9 +91,9 @@ See MxxRu::externals recipes for *RESTinio*
 ### Getting archive
 
 ```
-wget https://bitbucket.org/sobjectizerteam/restinio-0.2/downloads/restinio-0.2.0-full.tar.bz2
-tar xjvf restinio-0.2.0-full.tar.bz2
-cd restinio-0.2.0-full
+wget https://bitbucket.org/sobjectizerteam/restinio-0.2/downloads/restinio-0.2.1-full.tar.bz2
+tar xjvf restinio-0.2.1-full.tar.bz2
+cd restinio-0.2.1-full
 ```
 
 ## Build
@@ -117,9 +117,9 @@ make install
 
 Or, if getting sources from archive:
 ```
-wget https://bitbucket.org/sobjectizerteam/restinio-0.2/downloads/restinio-0.2.0-full.tar.bz2
-tar xjvf restinio-0.2.0-full.tar.bz2
-cd restinio-0.2.0-full/dev
+wget https://bitbucket.org/sobjectizerteam/restinio-0.2/downloads/restinio-0.2.1-full.tar.bz2
+tar xjvf restinio-0.2.1-full.tar.bz2
+cd restinio-0.2.1-full/dev
 mkdir cmake_build
 cd cmake_build
 cmake -DCMAKE_INSTALL_PREFIX=target -DCMAKE_BUILD_TYPE=Release ..
