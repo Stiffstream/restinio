@@ -920,6 +920,14 @@ The list of features for next releases
 | Benchmarks | Non trivial benchmarks. Comparison with other libraries with similar features on the range of various scenarios. | started independent [project](https://bitbucket.org/sobjectizerteam/restinio-benchmark-jun2017) |
 | HTTP client | Introduce functionality for building and sending requests and receiving and parsing results. | ? |
 | TLS support | Sopport for HTTPS with OpenSSL | ? |
+| Web Sockets | Support for Web Sockets | ? |
+| Improve router | Improve router with type conversion of parameters | ? |
+| Compresion | Support compressed content | ? |
+| Improve API | Make easy cases easy by hiding template stuff | ? |
+| Improve header fields API | Type/enum support for known header fields and their values. | ? |
+| External buffers| Support external (constant) buffers support for body and/or body parts. | ? |
+| Raw response | Support raw response, when response message data is fully constructed in user domain. | ? |
+| Client disconnect detection | In case client disconnects before response is ready, clean up connection. | ? |
 | Full CMake support | Add missing cmake support for [SObjectizer](https://sourceforge.net/projects/sobjectizer/) samples | ? |
 
 ## Done features
@@ -934,6 +942,7 @@ The list of features for next releases
 | Timeout control | Enable timeout guards for operations of receiving request (read and parse complete request), handling request, write response | 0.1.0 |
 | Logging | Support for logging of internal server work. | 0.1.0 |
 | ASIO thread pool | Support ASIO running on a thread pool. | 0.1.0 |
+| IPv6 | IPv6 support. | 0.1.0 |
 
 # License
 
