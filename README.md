@@ -911,34 +911,29 @@ See full [example](./dev/sample/express_router_tutorial.cpp)
 For details on `route_params_t` and `express_router_t` see
 [express.hpp](./dev/restinio/router/express.cpp).
 
-# Road Map
+# Roadmap
 
-Features for next releases:
+The list of features for next releases
 
-* Non trivial benchmarks. Comparison with other libraries with similar features
-on the range of various scenarios.
-* HTTP client. Introduce functionality for building and sending requests and
-receiving and parsing results.
-* TLS support.
-* Full CMake support.
-* Want more features?
-Please send us feedback and we will take your opinion into account.
+|       Feature        | description | release  |
+|----------------------|-------------|----------|
+| Benchmarks | Non trivial benchmarks. Comparison with other libraries with similar features on the range of various scenarios. | started independent [project](https://bitbucket.org/sobjectizerteam/restinio-benchmark-jun2017) |
+| HTTP client | Introduce functionality for building and sending requests and receiving and parsing results. | ? |
+| TLS support | Sopport for HTTPS with OpenSSL | ? |
+| Full CMake support | Add missing cmake support for [SObjectizer](https://sourceforge.net/projects/sobjectizer/) samples | ? |
 
 ## Done features
 
-*0.2.1*
-
-* Routers for message handlers.
-Support for a URI dependent routing to a set of handlers (express-like router).
-* Enable `localhost` and `ip6-localhost` aliases for setting server address.
-
-*0.2.0*
-
-* [HTTP pipelining](https://en.wikipedia.org/wiki/HTTP_pipelining) support.
-Read, parse and call a handler for incoming requests independently.
-When responses become available send them to client in order of corresponding requests.
-* Support for chunked transfer encoding. Separate responses on header and body chunks,
-so it will be possible to send header and then body divided on chunks.
+|       Feature        | description | release  |
+|----------------------|-------------|----------|
+| Routers for message handlers | Support for a URI dependent routing to a set of handlers (express-like router). | 0.2.1 |
+| Bind localhost aliases | Accept "localhost" and "ip6-localhost" as address parameter for server to bound to.  | 0.2.1 |
+| Chunked transfer encoding | Support for chunked transfer encoding. Separate responses on header and body chunks, so it will be possible to send header and then body divided on chunks. | 0.2.0 |
+| HTTP pipelining | [HTTP pipelining](https://en.wikipedia.org/wiki/HTTP_pipelining) support. Read, parse and call a handler for incoming requests independently. When responses become available send them to client in order of corresponding requests. | 0.2.0 |
+| Address binding | Bind server to specific ip address. | 0.1.0 |
+| Timeout control | Enable timeout guards for operations of receiving request (read and parse complete request), handling request, write response | 0.1.0 |
+| Logging | Support for logging of internal server work. | 0.1.0 |
+| ASIO thread pool | Support ASIO running on a thread pool. | 0.1.0 |
 
 # License
 
