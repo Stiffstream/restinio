@@ -105,7 +105,7 @@ json_io(
 	std::size_t max_pipelined_requests;
 
 	input
-		& json_dto::optional( "m_port", port, 8080 )
+		& json_dto::optional( "port", port, 8080 )
 		& json_dto::optional(
 			"protocol",
 			protocol,
