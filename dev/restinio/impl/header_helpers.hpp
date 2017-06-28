@@ -55,7 +55,6 @@ calculate_approx_buffer_size_for_header( const http_response_header_t & h )
 	result += 2; // Final "\r\n\r\n".
 
 	return result;
-
 }
 
 //
