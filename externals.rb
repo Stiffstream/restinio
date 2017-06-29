@@ -32,9 +32,8 @@ MxxRu::arch_externals :nodejs_http_parser_mxxru do |e|
 end
 
 MxxRu::arch_externals :fmt do |e|
-  e.url 'https://github.com/fmtlib/fmt/archive/3.0.2.zip'
+  e.url 'https://github.com/fmtlib/fmt/archive/4.0.0.zip'
 
-  e.map_dir 'cppformat' => 'dev/fmt'
   e.map_dir 'fmt' => 'dev/fmt'
 end
 
@@ -69,7 +68,7 @@ MxxRu::arch_externals :args do |e|
 end
 
 MxxRu::arch_externals :catch do |e|
-  e.url 'https://github.com/philsquared/Catch/archive/v1.9.5.tar.gz'
+  e.url 'https://github.com/philsquared/Catch/archive/v1.9.6.tar.gz'
 
   e.map_file 'single_include/catch.hpp' => 'dev/catch/*'
 end
