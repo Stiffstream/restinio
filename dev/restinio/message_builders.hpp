@@ -312,12 +312,26 @@ class response_builder_t< user_controlled_output_t > final
 		}
 
 		//! Set body (part).
-		auto &
+		//! \{
+		self_type_t &
 		set_body( std::string body )
 		{
-			m_body.assign( std::move( body ) );
-			return *this;
+			const auto size = body.size();
+			return set_body_impl( std::move( body ), size );
 		}
+
+		template < typename BUFFER >
+		self_type_t &
+		set_body( std::shared_ptr< BUFFER > body )
+		{
+			if( !body )
+				return set_body( std::string{ "" } );
+
+			const auto size = body->size();
+			return set_body_impl( std::move( body ), size );
+		}
+		//! \}
+
 		//! Append body (part).
 		auto &
 		append_body( const std::string & body_part )
@@ -421,6 +435,45 @@ class response_builder_t< user_controlled_output_t > final
 			}
 		}
 
+		template < typename BUFFER >
+		self_type_t &
+		set_body_impl( BUFFER buffer, std::size_t body_size )
+		{
+			if_neccessary_reserve_first_element_for_header();
+
+			// Leave only buf that is reserved for header,
+			// so forget all the previous data.
+			m_response_parts.resize( 1 );
+
+			if( 0 < body_size )
+			{
+				m_response_parts.emplace_back( std::move( buffer ) );
+				m_body_size = body_size;
+			}
+
+			return *this;
+		}
+
+		template < typename BUFFER >
+		self_type_t &
+		append_body_impl( BUFFER buffer )
+		{
+			if_neccessary_reserve_first_element_for_header();
+			m_response_parts.emplace_back( std::move( buffer ) );
+			return *this;
+		}
+
+		void
+		if_neccessary_reserve_first_element_for_header()
+		{
+			if( !m_header_was_sent && 0 == m_response_parts.size() )
+			{
+				m_response_parts.reserve( 2 );
+				m_response_parts.emplace_back();
+			}
+		}
+
+
 		//! Flag used by flush() function.
 		bool m_header_was_sent{ false };
 
@@ -438,7 +491,7 @@ class response_builder_t< user_controlled_output_t > final
 			For this type of output it contains a part of a body.
 			On each flush it is cleared.
 		*/
-		std::string m_body;
+		buffers_container_t m_response_parts;
 };
 
 struct chunked_output_t {};
