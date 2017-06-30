@@ -24,8 +24,6 @@ namespace restinio
 namespace impl
 {
 
-using buffers_container_t = std::vector< buffer_storage_t >;
-
 //
 // response_context_t
 //

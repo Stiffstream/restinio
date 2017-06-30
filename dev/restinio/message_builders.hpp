@@ -152,29 +152,62 @@ template <>
 class response_builder_t< restinio_controlled_output_t > final
 	:	public base_response_builder_t< response_builder_t< restinio_controlled_output_t > >
 {
+	public:
 		using base_type_t =
 			base_response_builder_t< response_builder_t< restinio_controlled_output_t > >;
-	public:
+		using self_type_t =
+			response_builder_t< restinio_controlled_output_t >;
+
 		response_builder_t( response_builder_t && ) = default;
 
 		// Reuse construstors from base.
 		using base_type_t::base_type_t;
 
 		//! Set body.
-		auto &
+		//! \{
+		self_type_t &
 		set_body( std::string body )
 		{
-			m_body.assign( std::move( body ) );
-			return *this;
-		}
-		//! Append body.
-		auto &
-		append_body( const std::string & body_part )
-		{
-			m_body.append( body_part );
-			return *this;
+			const auto size = body.size();
+			return set_body_impl( std::move( body ), size );
 		}
 
+		template < typename BUFFER >
+		self_type_t &
+		set_body( std::shared_ptr< BUFFER > body )
+		{
+			if( !body )
+				return set_body( std::string{ "" } );
+
+			const auto size = body->size();
+			return set_body_impl( std::move( body ), size );
+		}
+		//! \}
+
+		//! Append body.
+		//! \{
+		self_type_t &
+		append_body( std::string body_part )
+		{
+			if( body_part.empty() )
+				return *this;
+
+			const auto size = body_part.size();
+			return append_body_impl( std::move( body_part ), size );
+		}
+
+		template < typename BUFFER >
+		self_type_t &
+		append_body( std::shared_ptr< BUFFER > body_part  )
+		{
+			if( !body_part || 0 == body_part->size() )
+				return *this;
+
+			const auto size = body_part->size();
+			return append_body_impl( std::move( body_part ), size );
+		}
+
+		//! \}
 		//! Complete response.
 		request_handling_status_t
 		done()
@@ -188,22 +221,64 @@ class response_builder_t< restinio_controlled_output_t > final
 						response_parts_attr_t::final_parts,
 						response_connection_attr( m_header.should_keep_alive() ) };
 
-				m_header.content_length( m_body.size() );
+				m_header.content_length( m_body_size );
+
+				if_neccessary_reserve_first_element_for_header();
+
+				m_response_parts[ 0 ] =
+					buffer_storage_t{ impl::create_header_string( m_header ) };
 
 				conn->write_response_parts(
 					m_request_id,
 					response_output_flags,
-					{
-						impl::create_header_string( m_header ),
-						std::move( m_body )
-					} );
+					std::move( m_response_parts ) );
 			}
 
 			return restinio::request_accepted();
 		}
 
 	private:
-		std::string m_body;
+		template < typename BUFFER >
+		self_type_t &
+		set_body_impl( BUFFER buffer, std::size_t body_size )
+		{
+			if_neccessary_reserve_first_element_for_header();
+
+			// Leave only buf that is reserved for header,
+			// so forget all the previous data.
+			m_response_parts.resize( 1 );
+
+			if( 0 < body_size )
+			{
+				m_response_parts.emplace_back( std::move( buffer ) );
+				m_body_size = body_size;
+			}
+
+			return *this;
+		}
+
+		template < typename BUFFER >
+		self_type_t &
+		append_body_impl( BUFFER buffer, std::size_t append_size )
+		{
+			if_neccessary_reserve_first_element_for_header();
+			m_response_parts.emplace_back( std::move( buffer ) );
+			m_body_size += append_size;
+			return *this;
+		}
+
+		void
+		if_neccessary_reserve_first_element_for_header()
+		{
+			if( 0 == m_response_parts.size() )
+			{
+				m_response_parts.reserve( 2 );
+				m_response_parts.emplace_back();
+			}
+		}
+
+		std::size_t m_body_size{ 0 };
+		buffers_container_t m_response_parts;
 };
 
 struct user_controlled_output_t {};
@@ -219,9 +294,12 @@ template <>
 class response_builder_t< user_controlled_output_t > final
 	:	public base_response_builder_t< response_builder_t< user_controlled_output_t > >
 {
+	public:
 		using base_type_t =
 			base_response_builder_t< response_builder_t< user_controlled_output_t > >;
-	public:
+		using self_type_t =
+			response_builder_t< user_controlled_output_t >;
+
 		// Reuse construstors from base.
 		using base_type_t::base_type_t;
 

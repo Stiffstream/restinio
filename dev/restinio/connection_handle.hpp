@@ -11,6 +11,7 @@
 #include <memory>
 
 #include <restinio/common_types.hpp>
+#include <restinio/buffers.hpp>
 
 namespace restinio
 {
@@ -43,7 +44,7 @@ class connection_base_t
 			//! Resp output flag.
 			response_output_flags_t response_output_flags,
 			//! parts of a response.
-			std::vector< std::string > bufs ) = 0;
+			buffers_container_t bufs ) = 0;
 
 	private:
 		//! Id of a connection.

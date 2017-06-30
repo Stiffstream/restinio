@@ -194,5 +194,12 @@ class alignas( std::max_align_t ) buffer_storage_t
 		buffer_destructor_func_t m_destructor{ nullptr };
 
 };
+
+//
+// buffers_container_t
+//
+
+using buffers_container_t = std::vector< buffer_storage_t >;
+
 } /* namespace restinio */
 
