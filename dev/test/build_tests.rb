@@ -1,10 +1,10 @@
 MxxRu::Cpp::composite_target {
 
-	required_prj( "test/buffers/prj.ut.rb" )
 
 	required_prj( "test/header/prj.ut.rb" )
 	required_prj( "test/default_constructed_settings/prj.ut.rb" )
 	required_prj( "test/ref_qualifiers_settings/prj.ut.rb" )
+	required_prj( "test/buffers/prj.ut.rb" )
 	required_prj( "test/response_coordinator/prj.ut.rb" )
 	required_prj( "test/escape/prj.ut.rb" )
 

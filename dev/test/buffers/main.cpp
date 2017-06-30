@@ -175,49 +175,339 @@ TEST_CASE( "buffers on custom" , "[buffers][custom]" )
 	REQUIRE( 0 == bufs_count );
 }
 
-// TEST_CASE( "buffer conversion std::string shared_ptr" , "[buffers][std::shared_ptr][std::string][c-string][custom]" )
+TEST_CASE(
+	"buffer conversion c-string std::string" ,
+	"[buffers][std::string][c-string]" )
+{
+	{
+		buffer_storage_t bs1;
+		buffer_storage_t bs2;
+
+		auto s1 = "01234567890123456789xy";
+		const char * s2 = "abc";
+		std::string str2 = { s2 };
+
+		bs1 = buffer_storage_t{ s1 };
+		bs2 = buffer_storage_t{ std::move( str2 ) };
+
+		auto buf1 = bs1.buf();
+		auto buf2 = bs2.buf();
+
+		REQUIRE( size( buf1 ) == std::strlen( s1 ) );
+		REQUIRE( address( buf1 ) == (void*)s1 );
+
+		REQUIRE( size( buf2 ) == std::strlen( s2 ) );
+		REQUIRE( 0 == memcmp( address( buf2 ), s2, size( buf2 ) )  );
+
+		buffer_storage_t bs3;
+
+		bs3 = std::move( bs1 );
+		bs1 = std::move( bs2 );
+		bs2 = std::move( bs3 );
+
+		buf1 = bs1.buf();
+		buf2 = bs2.buf();
+
+		REQUIRE( size( buf1 ) == std::strlen( s2 ) );
+		REQUIRE( 0 == memcmp( address( buf1 ), s2, size( buf1 ) )  );
+
+		REQUIRE( size( buf2 ) == std::strlen( s1 ) );
+		REQUIRE( address( buf2 ) == (void*)s1 );
+	}
+	{
+		buffer_storage_t bs1;
+		buffer_storage_t bs2;
+
+		auto s1 = "01234567890123456789xy 01234567890123456789xy 01234567890123456789xy";
+		const char * s2 = "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef";
+		std::string str2 = { s2 };
+
+		bs1 = buffer_storage_t{ s1 };
+		bs2 = buffer_storage_t{ std::move( str2 ) };
+
+		auto buf1 = bs1.buf();
+		auto buf2 = bs2.buf();
+
+		REQUIRE( size( buf1 ) == std::strlen( s1 ) );
+		REQUIRE( address( buf1 ) == (void*)s1 );
+
+		REQUIRE( size( buf2 ) == std::strlen( s2 ) );
+		REQUIRE( 0 == memcmp( address( buf2 ), s2, size( buf2 ) )  );
+
+		buffer_storage_t bs3;
+
+		bs3 = std::move( bs1 );
+		bs1 = std::move( bs2 );
+		bs2 = std::move( bs3 );
+
+		buf1 = bs1.buf();
+		buf2 = bs2.buf();
+
+		REQUIRE( size( buf1 ) == std::strlen( s2 ) );
+		REQUIRE( 0 == memcmp( address( buf1 ), s2, size( buf1 ) )  );
+
+		REQUIRE( size( buf2 ) == std::strlen( s1 ) );
+		REQUIRE( address( buf2 ) == (void*)s1 );
+	}
+}
 
 TEST_CASE(
 	"buffer conversion std::string and shared_ptr" ,
 	"[buffers][std::shared_ptr][std::string]" )
 {
-	alignas( std::max_align_t ) std::array< char, sizeof( std::string ) > storage1;
-	alignas( std::max_align_t ) std::array< char, sizeof( std::string ) > storage2;
+	{
+		buffer_storage_t bs1;
+		buffer_storage_t bs2;
 
-	const char * s = "abc";
-	std::string str = { s };
+		auto str1 = std::make_shared< std::string >( "01234567890123456789xy" );
+		const char * s2 = "abc";
+		std::string str2 = { s2 };
 
-	new( storage1.data() ) std::string{ std::move( str ) };
+		bs1 = buffer_storage_t{ str1 };
+		bs2 = buffer_storage_t{ std::move( str2 ) };
 
-	// storage2 = storage1;
-	memcpy( storage2.data(), storage1.data(), storage2.size() );
+		auto buf1 = bs1.buf();
+		auto buf2 = bs2.buf();
 
-	std::string * ss = reinterpret_cast< std::string * >( (void*)storage2.data() );
+		REQUIRE( size( buf1 ) == str1->size() );
+		REQUIRE( address( buf1 ) == (void*)str1->data() );
 
-	std::cout << ss << std::endl;
+		REQUIRE( size( buf2 ) == std::strlen( s2 ) );
+		REQUIRE( 0 == memcmp( address( buf2 ), s2, size( buf2 ) )  );
 
-	using namespace std;
-	ss->std::string::~string();
+		buffer_storage_t bs3;
 
-	// buffer_storage_t bs1;
-	// // buffer_storage_t bs2;
+		bs3 = std::move( bs1 );
+		bs1 = std::move( bs2 );
+		bs2 = std::move( bs3 );
 
-	// auto str1 = std::make_shared< std::string >( "01234567890123456789xy" );
-	// const char * s2 = "abc";
-	// std::string str2 = { s2 };
-	// buffer_storage_t bs2{ std::move( str2 ) };
+		buf1 = bs1.buf();
+		buf2 = bs2.buf();
 
-	// bs1 = buffer_storage_t{ str1 };
-	// bs2 = buffer_storage_t{ std::move( str2 ) };
+		REQUIRE( size( buf1 ) == std::strlen( s2 ) );
+		REQUIRE( 0 == memcmp( address( buf1 ), s2, size( buf1 ) )  );
 
-	// auto buf1 = bs1.buf();
-	// auto buf2 = bs2.buf();
+		REQUIRE( size( buf2 ) == str1->size() );
+		REQUIRE( address( buf2 ) == (void*)str1->data() );
+	}
 
-	// REQUIRE( size( buf1 ) == str1->size() );
-	// REQUIRE( address( buf1 ) == (void*)str1->data() );
+	{
+		buffer_storage_t bs1;
+		buffer_storage_t bs2;
 
-	// REQUIRE( size( buf2 ) == std::strlen( s2 ) );
-	// REQUIRE( 0 == memcmp( address( buf2 ), s2, size( buf2 ) )  );
+		auto str1 = std::make_shared< std::string >(
+			"01234567890123456789xy01234567890123456789xy01234567890123456789xy" );
 
+		const char * s2 = "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef";
+		std::string str2 = { s2 };
+
+		bs1 = buffer_storage_t{ str1 };
+		bs2 = buffer_storage_t{ std::move( str2 ) };
+
+		auto buf1 = bs1.buf();
+		auto buf2 = bs2.buf();
+
+		REQUIRE( size( buf1 ) == str1->size() );
+		REQUIRE( address( buf1 ) == (void*)str1->data() );
+
+		REQUIRE( size( buf2 ) == std::strlen( s2 ) );
+		REQUIRE( 0 == memcmp( address( buf2 ), s2, size( buf2 ) )  );
+
+		buffer_storage_t bs3;
+
+		bs3 = std::move( bs1 );
+		bs1 = std::move( bs2 );
+		bs2 = std::move( bs3 );
+
+		buf1 = bs1.buf();
+		buf2 = bs2.buf();
+
+		REQUIRE( size( buf1 ) == std::strlen( s2 ) );
+		REQUIRE( 0 == memcmp( address( buf1 ), s2, size( buf1 ) )  );
+
+		REQUIRE( size( buf2 ) == str1->size() );
+		REQUIRE( address( buf2 ) == (void*)str1->data() );
+	}
 }
 
+TEST_CASE(
+	"buffer conversion std::string custom" ,
+	"[buffers][std::string][custom]" )
+{
+	int bufs_count = 0;
+	{
+		buffer_storage_t bs1;
+		buffer_storage_t bs2;
+
+		auto str1 = std::make_shared< custom_buffer_t >( bufs_count, "custom" );
+		REQUIRE( 1 == bufs_count );
+
+		const char * s2 = "abc";
+		std::string str2 = { s2 };
+
+		bs1 = buffer_storage_t{ str1 };
+		REQUIRE( 1 == bufs_count );
+
+		bs2 = buffer_storage_t{ std::move( str2 ) };
+
+		auto buf1 = bs1.buf();
+		auto buf2 = bs2.buf();
+
+		REQUIRE( size( buf1 ) == str1->size() );
+		REQUIRE( address( buf1 ) == (void*)str1->data() );
+
+		REQUIRE( size( buf2 ) == std::strlen( s2 ) );
+		REQUIRE( 0 == memcmp( address( buf2 ), s2, size( buf2 ) )  );
+
+		buffer_storage_t bs3;
+
+		bs3 = std::move( bs1 );
+		REQUIRE( 1 == bufs_count );
+		bs1 = std::move( bs2 );
+		REQUIRE( 1 == bufs_count );
+		bs2 = std::move( bs3 );
+		REQUIRE( 1 == bufs_count );
+
+		buf1 = bs1.buf();
+		buf2 = bs2.buf();
+
+		REQUIRE( size( buf1 ) == std::strlen( s2 ) );
+		REQUIRE( 0 == memcmp( address( buf1 ), s2, size( buf1 ) )  );
+
+		REQUIRE( size( buf2 ) == str1->size() );
+		REQUIRE( address( buf2 ) == (void*)str1->data() );
+
+	}
+	REQUIRE( 0 == bufs_count );
+
+	{
+		buffer_storage_t bs1;
+		buffer_storage_t bs2;
+
+		auto str1 = std::make_shared< custom_buffer_t >(
+			bufs_count, "customcustomcustomcustomcustomcustomcustomcustomcustom" );
+		REQUIRE( 1 == bufs_count );
+
+		const char * s2 = "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef";
+		std::string str2 = { s2 };
+
+		bs1 = buffer_storage_t{ str1 };
+		REQUIRE( 1 == bufs_count );
+
+		bs2 = buffer_storage_t{ std::move( str2 ) };
+
+		auto buf1 = bs1.buf();
+		auto buf2 = bs2.buf();
+
+		REQUIRE( size( buf1 ) == str1->size() );
+		REQUIRE( address( buf1 ) == (void*)str1->data() );
+
+		REQUIRE( size( buf2 ) == std::strlen( s2 ) );
+		REQUIRE( 0 == memcmp( address( buf2 ), s2, size( buf2 ) )  );
+
+		buffer_storage_t bs3;
+
+		bs3 = std::move( bs1 );
+		REQUIRE( 1 == bufs_count );
+		bs1 = std::move( bs2 );
+		REQUIRE( 1 == bufs_count );
+		bs2 = std::move( bs3 );
+		REQUIRE( 1 == bufs_count );
+
+		buf1 = bs1.buf();
+		buf2 = bs2.buf();
+
+		REQUIRE( size( buf1 ) == std::strlen( s2 ) );
+		REQUIRE( 0 == memcmp( address( buf1 ), s2, size( buf1 ) )  );
+
+		REQUIRE( size( buf2 ) == str1->size() );
+		REQUIRE( address( buf2 ) == (void*)str1->data() );
+
+	}
+	REQUIRE( 0 == bufs_count );
+}
+
+TEST_CASE(
+	"buffers in vector" ,
+	"[buffers][std::string][c-string][std::shared_ptr][custom]" )
+{
+	int bufs_count = 0;
+	{
+		std::vector< buffer_storage_t > v;
+
+		v.reserve( 4 );
+
+		const char * strings[] = {
+			"0",
+			"01",
+			"012",
+			"0123",
+			"01234",
+			"012345",
+			"0123456",
+			"01234567",
+			"012345678",
+			"0123456789",
+			"abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0",
+			"abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ" "01",
+			"abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ" "012",
+			"abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0123",
+			"abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ" "01234",
+			"abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ" "012345",
+			"abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0123456",
+			"abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ" "01234567",
+			"abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ" "012345678",
+			"abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0123456789",
+		};
+
+		v.emplace_back( strings[ 0 ] );
+		v.emplace_back( strings[ 1 ], std::strlen( strings[ 1 ] ) );
+		v.emplace_back( std::string{ strings[ 2 ] } );
+		v.emplace_back( std::make_shared< std::string >( strings[ 3 ] ) );
+
+		v.emplace_back( std::make_shared< custom_buffer_t >( bufs_count, strings[ 4 ] ) );
+		REQUIRE( 1 == bufs_count );
+		v.emplace_back( std::make_shared< custom_buffer_t >( bufs_count, strings[ 5 ] ) );
+		REQUIRE( 2 == bufs_count );
+
+		v.emplace_back( strings[ 6 ] );
+		v.emplace_back( strings[ 7 ] );
+		v.emplace_back( strings[ 8 ] );
+		v.emplace_back( strings[ 9 ] );
+
+		v.emplace_back( std::string{ strings[ 10 ] } );
+		v.emplace_back( std::string{ strings[ 11 ] } );
+		v.emplace_back( std::string{ strings[ 12 ] } );
+		v.emplace_back( std::string{ strings[ 13 ] } );
+		v.emplace_back( std::string{ strings[ 14 ] } );
+		v.emplace_back( std::string{ strings[ 15 ] } );
+
+		v.emplace_back( std::make_shared< std::string >( strings[ 16 ] ) );
+		v.emplace_back( std::make_shared< std::string >( strings[ 17 ] ) );
+		v.emplace_back( std::make_shared< std::string >( strings[ 18 ] ) );
+
+		v.emplace_back( std::make_shared< custom_buffer_t >( bufs_count, strings[ 19 ] ) );
+		REQUIRE( 3 == bufs_count );
+
+		for( std::size_t i = 0; i < v.size(); ++i )
+		{
+			auto buf = v[ i ].buf();
+
+			REQUIRE( size( buf ) == std::strlen( strings[ i ] ) );
+			REQUIRE( 0 == memcmp( address( buf ), strings[ i ], size( buf ) )  );
+		}
+
+		std::vector< buffer_storage_t > w;
+		w = std::move( v );
+
+		for( std::size_t i = 0; i < w.size(); ++i )
+		{
+			auto buf = w[ i ].buf();
+
+			REQUIRE( size( buf ) == std::strlen( strings[ i ] ) );
+			REQUIRE( 0 == memcmp( address( buf ), strings[ i ], size( buf ) )  );
+		}
+	}
+
+	REQUIRE( 0 == bufs_count );
+}

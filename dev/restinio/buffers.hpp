@@ -67,6 +67,15 @@ class alignas( std::max_align_t ) buffer_storage_t
 
 						return asio::const_buffer{ s, n };
 					} }
+			,	m_move{
+					[]( const void * src, void * dest ){
+						const auto s = impl::buf_access< const char * >( src );
+						const auto n = impl::buf_access< std::size_t >(
+								(const char *)src + sizeof( const char *) );
+
+						impl::buf_access< const char * >( dest ) = s;
+						impl::buf_access< std::size_t >( (char *)dest + sizeof( const char *) ) = n;
+					} }
 		{
 			auto * p = m_storage.data();
 			impl::buf_access< const char * >( p ) = str;
@@ -82,12 +91,17 @@ class alignas( std::max_align_t ) buffer_storage_t
 			:	buffer_storage_t{ str, N-1 }
 		{}
 
-
 		explicit buffer_storage_t( std::string str )
 			:	m_accessor{
 					[]( const void * p ){
 						const auto & s = impl::buf_access< std::string >( p );
 						return asio::const_buffer{ s.data(), s.size() };
+					} }
+			,	m_move{
+					[]( const void * src, void * dest ){
+						auto & s = impl::buf_access< std::string >( src );
+
+						new( dest ) std::string{ std::move( s ) };
 					} }
 			,	m_destructor{
 					[]( void * p ){
@@ -104,13 +118,19 @@ class alignas( std::max_align_t ) buffer_storage_t
 		explicit buffer_storage_t( std::shared_ptr< T > sp )
 			:	m_accessor{
 					[]( const void * p ){
-						const auto & s = impl::buf_access< std::shared_ptr< T > >( p );
-						return asio::const_buffer{ s->data(), s->size() };
+						const auto & sp = impl::buf_access< std::shared_ptr< T > >( p );
+						return asio::const_buffer{ sp->data(), sp->size() };
+					} }
+			,	m_move{
+					[]( const void * src, void * dest ){
+						auto & sp = impl::buf_access< std::shared_ptr< T > >( src );
+
+						new( dest ) std::shared_ptr< T >{ std::move( sp ) };
 					} }
 			,	m_destructor{
 					[]( void * p ){
-						auto & s = impl::buf_access< std::shared_ptr< T > >( p );
-						s.~shared_ptr();
+						auto & sp = impl::buf_access< std::shared_ptr< T > >( p );
+						sp.~shared_ptr();
 					} }
 		{
 			static_assert(
@@ -121,11 +141,11 @@ class alignas( std::max_align_t ) buffer_storage_t
 		}
 
 		buffer_storage_t( buffer_storage_t && b )
-			:	m_storage{ b.m_storage }
-			,	m_accessor{ b.m_accessor }
+			:	m_accessor{ b.m_accessor }
+			,	m_move{ b.m_move }
 			,	m_destructor{ b.m_destructor }
 		{
-			b.m_destructor = nullptr;
+			(*m_move)( b.m_storage.data(), m_storage.data() );
 		}
 
 		void
@@ -134,10 +154,11 @@ class alignas( std::max_align_t ) buffer_storage_t
 			if( this != &b )
 			{
 				destroy_stored_buffer();
-				b.m_move( b.m_storage.data(), m_storage.data() );
 				m_accessor = b.m_accessor;
+				m_move = b.m_move;
 				m_destructor = b.m_destructor;
-				b.m_destructor = nullptr;
+
+				(*m_move)( b.m_storage.data(), m_storage.data() );
 			}
 		}
 
@@ -165,7 +186,7 @@ class alignas( std::max_align_t ) buffer_storage_t
 		alignas( std::max_align_t ) std::array< char, impl::needed_storage_max_size > m_storage;
 
 		using buffer_accessor_func_t = asio::const_buffer (*)( const void * );
-		using buffer_move_func_t = void (*)( void *, void * );
+		using buffer_move_func_t = void (*)( const void *, void * );
 		using buffer_destructor_func_t = void (*)( void * );
 
 		buffer_accessor_func_t m_accessor{ nullptr };
