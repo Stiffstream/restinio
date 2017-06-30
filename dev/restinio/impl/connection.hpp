@@ -273,7 +273,7 @@ struct raw_resp_output_ctx_t
 	{
 		for( const auto & buf : m_bufs )
 		{
-			m_asio_bufs.emplace_back( buf.data(), buf.size() );
+			m_asio_bufs.emplace_back( buf.buf() );
 		}
 
 		m_transmitting = true;
@@ -314,7 +314,7 @@ struct raw_resp_output_ctx_t
 		std::vector< asio::const_buffer > m_asio_bufs;
 
 		//! Real buffers with data.
-		std::vector< std::string > m_bufs;
+		buffers_container_t m_bufs;
 };
 
 //! Data associated with connection read routine.
@@ -656,7 +656,7 @@ class connection_t final
 			//! Resp output flag.
 			response_output_flags_t response_output_flags,
 			//! parts of a response.
-			std::vector< std::string > bufs ) override
+			buffers_container_t bufs ) override
 		{
 			//! Run write message on io_service loop if possible.
 			asio::dispatch(
@@ -693,7 +693,7 @@ class connection_t final
 			//! Resp output flag.
 			response_output_flags_t response_output_flags,
 			//! parts of a response.
-			std::vector< std::string > bufs )
+			buffers_container_t bufs )
 		{
 			if( !m_socket.is_open() )
 			{

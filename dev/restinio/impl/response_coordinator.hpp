@@ -16,12 +16,15 @@
 
 #include <restinio/exception.hpp>
 #include <restinio/request_handler.hpp>
+#include <restinio/buffers.hpp>
 
 namespace restinio
 {
 
 namespace impl
 {
+
+using buffers_container_t = std::vector< buffer_storage_t >;
 
 //
 // response_context_t
@@ -44,7 +47,7 @@ struct response_context_t
 	request_id_t m_request_id{ 0 };
 
 	//! Unsent responses parts.
-	std::vector< std::string > m_bufs;
+	buffers_container_t m_bufs;
 
 	//! Total used bufs, historical count of bufs used to send this response.
 	std::size_t m_total_bufs_count{ 0 };
@@ -220,7 +223,7 @@ class response_coordinator_t
 			//! Resp output flag.
 			response_output_flags_t response_output_flags,
 			//! The parts of response.
-			std::vector< std::string > bufs )
+			buffers_container_t bufs )
 		{
 			// Nothing to do if already closed response emitted.
 			if( closed() )
@@ -268,7 +271,7 @@ class response_coordinator_t
 			//! The maximum count of buffers to obtain.
 			unsigned int max_buf_count,
 			//! Receiver for buffers.
-			std::vector< std::string > & bufs )
+			buffers_container_t & bufs )
 		{
 			if( closed() )
 				throw exception_t{

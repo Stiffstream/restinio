@@ -177,16 +177,18 @@ TEST_CASE( "response_context_table" , "[response_context][response_context_table
 
 TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 {
-	std::vector< std::string > out_bufs;
+	buffers_container_t out_bufs;
 	auto concat_bufs =
 		[ & ](){
 			std::string res;
-			for( const auto & s : out_bufs )
+			for( const auto & b : out_bufs )
 			{
-				res += s;
+				auto buf = b.buf();
+				res.append( asio::buffer_cast< const char * >( buf ), asio::buffer_size( buf ) );
 			}
 			return res;
 		};
+
 
 	SECTION( "simple" )
 	{
@@ -708,13 +710,14 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connection_close]" )
 {
-	std::vector< std::string > out_bufs;
+	buffers_container_t out_bufs;
 	auto concat_bufs =
 		[ & ](){
 			std::string res;
-			for( const auto & s : out_bufs )
+			for( const auto & b : out_bufs )
 			{
-				res += s;
+				auto buf = b.buf();
+				res.append( asio::buffer_cast< const char * >( buf ), asio::buffer_size( buf ) );
 			}
 			return res;
 		};
