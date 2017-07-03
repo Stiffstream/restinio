@@ -546,3 +546,21 @@ TEST_CASE(
 	REQUIRE_THROWS( x = buffer_storage_t{ b1 } );
 	REQUIRE_THROWS( x = buffer_storage_t{ b2 } );
 }
+
+TEST_CASE(
+	"empty (default constructed) buffers" ,
+	"[buffers][empty]" )
+{
+	buffer_storage_t x;
+	asio::const_buffer b;
+	REQUIRE_NOTHROW( b = x.buf() );
+	REQUIRE( 0 == size( b ) );
+	REQUIRE( nullptr == address( b ) );
+
+	buffer_storage_t y;
+	y = std::move( x );
+
+	REQUIRE_NOTHROW( b = y.buf() );
+	REQUIRE( 0 == size( b ) );
+	REQUIRE( nullptr == address( b ) );
+}
