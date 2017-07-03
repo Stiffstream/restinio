@@ -10,6 +10,8 @@
 
 #include <array>
 
+#include <restinio/buffers.hpp>
+
 namespace restinio
 {
 
@@ -151,13 +153,29 @@ create_error_resp( std::uint16_t status, std::string phrase )
 inline auto
 create_not_implemented_resp()
 {
-	return create_error_resp( 501, "Not Implemented" );
+	constexpr const char raw_501_response[] =
+		"HTTP/1.1 501 Not Implemented\r\n"
+		"Connection: close\r\n"
+		"Content-Length: 0\r\n"
+		"\r\n";
+
+	buffers_container_t result;
+	result.emplace_back( raw_501_response );
+	return result;
 }
 
 inline auto
 create_timeout_resp()
 {
-	return create_error_resp( 504, "Gateway Time-out" );
+	constexpr const char raw_504_response[] =
+		"HTTP/1.1 504 Gateway Time-out\r\n"
+		"Connection: close\r\n"
+		"Content-Length: 0\r\n"
+		"\r\n";
+
+	buffers_container_t result;
+	result.emplace_back( raw_504_response );
+	return result;
 }
 
 } /* namespace impl */

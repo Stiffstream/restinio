@@ -190,7 +190,7 @@ class a_main_handler_t final : public so_5::agent_t
 				.append_header( "Server", "RESTinio sample server /v.0.2" )
 				.append_header_date_field()
 				.append_header( "Content-Type", "text/html; charset=utf-8" )
-				.start_chunk(
+				.append_chunk(
 					"<html>"
 					"<head><title>Targets list</title></head>"
 					"<body>"
@@ -201,7 +201,7 @@ class a_main_handler_t final : public so_5::agent_t
 			// List of available targets.
 			for( const auto & t : m_available_targets )
 			{
-				response.start_chunk(
+				response.append_chunk(
 					fmt::format(
 						R"-(<li><a href="{0}">{0}</a></li>)-",
 						t.first ) );
@@ -210,7 +210,7 @@ class a_main_handler_t final : public so_5::agent_t
 			response.flush();
 
 			response
-				.start_chunk(
+				.append_chunk(
 					"</ul>"
 					"<br/>"
 					"total: " + std::to_string( m_available_targets.size() ) +

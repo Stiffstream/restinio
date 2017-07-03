@@ -497,16 +497,39 @@ TEST_CASE(
 			REQUIRE( 0 == memcmp( address( buf ), strings[ i ], size( buf ) )  );
 		}
 
-		std::vector< buffer_storage_t > w;
-		w = std::move( v );
-
-		for( std::size_t i = 0; i < w.size(); ++i )
 		{
-			auto buf = w[ i ].buf();
+			std::vector< buffer_storage_t > w{ std::move( v ) };
 
-			REQUIRE( size( buf ) == std::strlen( strings[ i ] ) );
-			REQUIRE( 0 == memcmp( address( buf ), strings[ i ], size( buf ) )  );
+			for( std::size_t i = 0; i < w.size(); ++i )
+			{
+				auto buf = w[ i ].buf();
+
+				REQUIRE( size( buf ) == std::strlen( strings[ i ] ) );
+				REQUIRE( 0 == memcmp( address( buf ), strings[ i ], size( buf ) )  );
+			}
+
+			v = std::move( w );
 		}
+
+		{
+			auto lambda = [ &strings, w = std::move( v ) ]() -> bool {
+				for( std::size_t i = 0; i < w.size(); ++i )
+				{
+					auto buf = w[ i ].buf();
+
+					if( size( buf ) != std::strlen( strings[ i ] ) ||
+						0 != memcmp( address( buf ), strings[ i ], size( buf ) ) )
+						return false;
+				}
+
+				return true;
+			};
+
+			auto lambda2 = std::move( lambda );
+
+			REQUIRE( lambda2() );
+		}
+
 	}
 
 	REQUIRE( 0 == bufs_count );

@@ -624,7 +624,7 @@ class connection_t final
 						response_output_flags_t{
 							response_parts_attr_t::final_parts,
 							response_connection_attr_t::connection_close },
-						{ create_not_implemented_resp() } );
+						create_not_implemented_resp() );
 				}
 				else if(
 					!m_response_coordinator.closed() &&
@@ -658,20 +658,28 @@ class connection_t final
 			//! parts of a response.
 			buffers_container_t bufs ) override
 		{
+			// TODO: Avoid heap allocation:
+
+			// Unfortunately ASIO tends to call a copy ctor for bufs
+			// If pass it to lambda as `bufs = std::move( bufs ),`
+			// so bufs_transmit_instance workaround is used.
+			auto bufs_transmit_instance =
+				std::make_unique< buffers_container_t >( std::move( bufs ) );
+
 			//! Run write message on io_service loop if possible.
 			asio::dispatch(
 				get_executor(),
 				[ this,
 					request_id,
 					response_output_flags,
-					bufs = std::move( bufs ),
+					bufs = std::move( bufs_transmit_instance ),
 					ctx = shared_from_this() ](){
 						try
 						{
 							write_response_parts_impl(
 								request_id,
 								response_output_flags,
-								std::move( bufs ) );
+								std::move( *bufs ) );
 						}
 						catch( const std::exception & ex )
 						{
