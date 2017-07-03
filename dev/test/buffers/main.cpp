@@ -29,22 +29,22 @@ TEST_CASE( "buffers on c-string" , "[buffers][c-string]" )
 {
 	const char * s1 = "0123456789";
 
-	buffer_storage_t bs{ s1 };
+	buffer_storage_t bs{ const_buffer( s1 ) };
 
 	auto buf = bs.buf();
 
 	REQUIRE( address( buf ) == (void*)s1 );
 	REQUIRE( size( buf ) == 10 );
 
-	const char s2[] = "012345678901234567890123456789";
-	bs = buffer_storage_t{ s2 };
+	static const char s2[] = "012345678901234567890123456789";
+	bs = buffer_storage_t{ const_buffer( s2 ) };
 
 	buf = bs.buf();
 	REQUIRE( address( buf ) == (void*)s2 );
 	REQUIRE( size( buf ) == 30 );
 
 	const char * s3 = "qweasdzxcrtyfghvbnuiojklm,.";
-	bs = buffer_storage_t{ s3, 8 };
+	bs = buffer_storage_t{ const_buffer( s3, 8 ) };
 
 	buf = bs.buf();
 	REQUIRE( address( buf ) == (void*)s3 );
@@ -187,7 +187,7 @@ TEST_CASE(
 		const char * s2 = "abc";
 		std::string str2 = { s2 };
 
-		bs1 = buffer_storage_t{ s1 };
+		bs1 = buffer_storage_t{ const_buffer( s1 ) };
 		bs2 = buffer_storage_t{ std::move( str2 ) };
 
 		auto buf1 = bs1.buf();
@@ -222,7 +222,7 @@ TEST_CASE(
 		const char * s2 = "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef";
 		std::string str2 = { s2 };
 
-		bs1 = buffer_storage_t{ s1 };
+		bs1 = buffer_storage_t{ const_buffer( s1 ) };
 		bs2 = buffer_storage_t{ std::move( str2 ) };
 
 		auto buf1 = bs1.buf();
@@ -460,8 +460,8 @@ TEST_CASE(
 			"abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0123456789",
 		};
 
-		v.emplace_back( strings[ 0 ] );
-		v.emplace_back( strings[ 1 ], std::strlen( strings[ 1 ] ) );
+		v.emplace_back( const_buffer( strings[ 0 ] ) );
+		v.emplace_back( const_buffer( strings[ 1 ], std::strlen( strings[ 1 ] ) ) );
 		v.emplace_back( std::string{ strings[ 2 ] } );
 		v.emplace_back( std::make_shared< std::string >( strings[ 3 ] ) );
 
@@ -470,10 +470,10 @@ TEST_CASE(
 		v.emplace_back( std::make_shared< custom_buffer_t >( bufs_count, strings[ 5 ] ) );
 		REQUIRE( 2 == bufs_count );
 
-		v.emplace_back( strings[ 6 ] );
-		v.emplace_back( strings[ 7 ] );
-		v.emplace_back( strings[ 8 ] );
-		v.emplace_back( strings[ 9 ] );
+		v.emplace_back( const_buffer( strings[ 6 ] ) );
+		v.emplace_back( const_buffer( strings[ 7 ] ) );
+		v.emplace_back( const_buffer( strings[ 8 ] ) );
+		v.emplace_back( const_buffer( strings[ 9 ] ) );
 
 		v.emplace_back( std::string{ strings[ 10 ] } );
 		v.emplace_back( std::string{ strings[ 11 ] } );
@@ -533,4 +533,16 @@ TEST_CASE(
 	}
 
 	REQUIRE( 0 == bufs_count );
+}
+
+TEST_CASE(
+	"buffers in shared_ptr exceptions" ,
+	"[buffers][std::shared_ptr][exception]" )
+{
+	buffer_storage_t x;
+	std::shared_ptr< std::string > b1;
+	std::shared_ptr< custom_buffer_t > b2;
+
+	REQUIRE_THROWS( x = buffer_storage_t{ b1 } );
+	REQUIRE_THROWS( x = buffer_storage_t{ b2 } );
 }

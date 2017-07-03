@@ -57,7 +57,6 @@ start_request_handler_pool()
 				pause = std::chrono::milliseconds( 3 );
 			}
 
-
 			const auto & body = req->body();
 			std::string::size_type chunk_begin = 0;
 			std::string::size_type chunk_end = body.find( "\r\n", chunk_begin );

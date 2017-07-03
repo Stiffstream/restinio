@@ -191,11 +191,12 @@ class a_main_handler_t final : public so_5::agent_t
 				.append_header_date_field()
 				.append_header( "Content-Type", "text/html; charset=utf-8" )
 				.append_chunk(
-					"<html>"
-					"<head><title>Targets list</title></head>"
-					"<body>"
-					"<h1>Available targets</h1>"
-					"<ul>" );
+					restinio::const_buffer(
+						"<html>"
+						"<head><title>Targets list</title></head>"
+						"<body>"
+						"<h1>Available targets</h1>"
+						"<ul>" ) );
 
 			response.flush();
 			// List of available targets.

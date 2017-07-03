@@ -15,6 +15,8 @@
 
 #include <asio/buffer.hpp>
 
+#include <restinio/exception.hpp>
+
 namespace restinio
 {
 
@@ -44,6 +46,39 @@ constexpr std::size_t needed_storage_max_size =
 } /* namespace impl */
 
 //
+// const_buffer_t
+//
+
+//! Helper class for setting a constant buffer storage explicitly.
+struct const_buffer_t
+{
+	const_buffer_t(
+		const char * str,
+		std::size_t size )
+		:	m_str{ str }
+		,	m_size{ size }
+	{}
+
+	const char * const m_str;
+	const std::size_t m_size;
+};
+
+//! Create const buffers
+//! \{
+inline const_buffer_t
+const_buffer( const char * str, std::size_t size )
+{
+	return const_buffer_t{ str, size };
+}
+
+inline const_buffer_t
+const_buffer( const char * str )
+{
+	return const_buffer( str, std::strlen( str ) );
+}
+//! \}
+
+//
 // buffer_storage_t
 //
 
@@ -56,9 +91,12 @@ class alignas( std::max_align_t ) buffer_storage_t
 		void operator = ( const buffer_storage_t & ) = delete;
 
 		buffer_storage_t()
+			:	m_accessor{
+					[]( const void * ){ return asio::const_buffer{ nullptr, 0 }; } }
+			,	m_move{ []( const void * , void * ){} }
 		{}
 
-		buffer_storage_t( const char * str, std::size_t n )
+		buffer_storage_t( const_buffer_t const_buf )
 			:	m_accessor{
 					[]( const void * p ){
 						const auto s = impl::buf_access< const char * >( p );
@@ -69,8 +107,8 @@ class alignas( std::max_align_t ) buffer_storage_t
 					} }
 			,	m_move{
 					[]( const void * src, void * dest ){
-						const auto s = impl::buf_access< const char * >( src );
-						const auto n = impl::buf_access< std::size_t >(
+						const char * s = impl::buf_access< const char * >( src );
+						const std::size_t n = impl::buf_access< std::size_t >(
 								(const char *)src + sizeof( const char *) );
 
 						impl::buf_access< const char * >( dest ) = s;
@@ -78,20 +116,11 @@ class alignas( std::max_align_t ) buffer_storage_t
 					} }
 		{
 			auto * p = m_storage.data();
-			impl::buf_access< const char * >( p ) = str;
-			impl::buf_access< std::size_t >( (char *)p + sizeof( const char *) ) = n;
+			impl::buf_access< const char * >( p ) = const_buf.m_str;
+			impl::buf_access< std::size_t >( (char *)p + sizeof( const char *) ) = const_buf.m_size;
 		}
 
-		buffer_storage_t( const char * str )
-			:	buffer_storage_t{ str, std::strlen( str ) }
-		{}
-
-		template < std::size_t N >
-		buffer_storage_t( const char (*str)[ N ] )
-			:	buffer_storage_t{ str, N-1 }
-		{}
-
-		explicit buffer_storage_t( std::string str )
+		buffer_storage_t( std::string str )
 			:	m_accessor{
 					[]( const void * p ){
 						const auto & s = impl::buf_access< std::string >( p );
@@ -114,8 +143,12 @@ class alignas( std::max_align_t ) buffer_storage_t
 			new( m_storage.data() ) std::string{ std::move( str ) };
 		}
 
+		buffer_storage_t( const char * str )
+			:	buffer_storage_t{ std::string{ str } }
+		{}
+
 		template < typename T >
-		explicit buffer_storage_t( std::shared_ptr< T > sp )
+		buffer_storage_t( std::shared_ptr< T > sp )
 			:	m_accessor{
 					[]( const void * p ){
 						const auto & sp = impl::buf_access< std::shared_ptr< T > >( p );
@@ -136,6 +169,9 @@ class alignas( std::max_align_t ) buffer_storage_t
 			static_assert(
 				sizeof( std::shared_ptr< T > ) <= impl::needed_storage_max_size,
 				"size of shared_ptr on a type is too big" );
+
+			if( !sp )
+				throw exception_t{ "ampty shared_ptr cannot be used as buffer" };
 
 			new( m_storage.data() ) std::shared_ptr< T >{ std::move( sp ) };
 		}
@@ -192,7 +228,6 @@ class alignas( std::max_align_t ) buffer_storage_t
 		buffer_accessor_func_t m_accessor{ nullptr };
 		buffer_move_func_t m_move{ nullptr };
 		buffer_destructor_func_t m_destructor{ nullptr };
-
 };
 
 //
@@ -202,4 +237,3 @@ class alignas( std::max_align_t ) buffer_storage_t
 using buffers_container_t = std::vector< buffer_storage_t >;
 
 } /* namespace restinio */
-

@@ -164,47 +164,20 @@ class response_builder_t< restinio_controlled_output_t > final
 		using base_type_t::base_type_t;
 
 		//! Set body.
-		//! \{
 		self_type_t &
-		set_body( std::string body )
+		set_body( buffer_storage_t body )
 		{
-			const auto size = body.size();
-			return set_body_impl( std::move( body ), size );
+			auto size = asio::buffer_size( body.buf() );
+			return set_body_impl( body, size );
 		}
-
-		template < typename BUFFER >
-		self_type_t &
-		set_body( std::shared_ptr< BUFFER > body )
-		{
-			if( !body )
-				return set_body( std::string{ "" } );
-
-			const auto size = body->size();
-			return set_body_impl( std::move( body ), size );
-		}
-		//! \}
 
 		//! Append body.
 		//! \{
 		self_type_t &
-		append_body( std::string body_part )
+		append_body( buffer_storage_t body_part )
 		{
-			if( body_part.empty() )
-				return *this;
-
-			const auto size = body_part.size();
-			return append_body_impl( std::move( body_part ), size );
-		}
-
-		template < typename BUFFER >
-		self_type_t &
-		append_body( std::shared_ptr< BUFFER > body_part  )
-		{
-			if( !body_part || 0 == body_part->size() )
-				return *this;
-
-			const auto size = body_part->size();
-			return append_body_impl( std::move( body_part ), size );
+			auto size = asio::buffer_size( body_part.buf() );
+			return append_body_impl( body_part, size );
 		}
 		//! \}
 
@@ -238,9 +211,8 @@ class response_builder_t< restinio_controlled_output_t > final
 		}
 
 	private:
-		template < typename BUFFER >
 		self_type_t &
-		set_body_impl( BUFFER buffer, std::size_t body_size )
+		set_body_impl( buffer_storage_t & body, std::size_t body_size )
 		{
 			if_neccessary_reserve_first_element_for_header();
 
@@ -250,19 +222,18 @@ class response_builder_t< restinio_controlled_output_t > final
 
 			if( 0 < body_size )
 			{
-				m_response_parts.emplace_back( std::move( buffer ) );
+				m_response_parts.emplace_back( std::move( body ) );
 				m_body_size = body_size;
 			}
 
 			return *this;
 		}
 
-		template < typename BUFFER >
 		self_type_t &
-		append_body_impl( BUFFER buffer, std::size_t append_size )
+		append_body_impl( buffer_storage_t & body_part, std::size_t append_size )
 		{
 			if_neccessary_reserve_first_element_for_header();
-			m_response_parts.emplace_back( std::move( buffer ) );
+			m_response_parts.emplace_back( std::move( body_part ) );
 			m_body_size += append_size;
 			return *this;
 		}
@@ -314,43 +285,24 @@ class response_builder_t< user_controlled_output_t > final
 		//! Set body (part).
 		//! \{
 		self_type_t &
-		set_body( std::string body )
+		set_body( buffer_storage_t body )
 		{
-			const auto size = body.size();
-			return set_body_impl( std::move( body ), size );
-		}
-
-		template < typename BUFFER >
-		self_type_t &
-		set_body( std::shared_ptr< BUFFER > body )
-		{
-			if( !body )
-				return set_body( std::string{ "" } );
-
-			const auto size = body->size();
-			return set_body_impl( std::move( body ), size );
+			auto size = asio::buffer_size( body.buf() );
+			return set_body_impl( body, size );
 		}
 		//! \}
 
 		//! Append body.
 		//! \{
 		self_type_t &
-		append_body( std::string body_part )
+		append_body( buffer_storage_t body_part )
 		{
-			if( body_part.empty() )
+			auto size = asio::buffer_size( body_part.buf() );
+
+			if( 0 == size )
 				return *this;
 
-			return append_body_impl( std::move( body_part ) );
-		}
-
-		template < typename BUFFER >
-		self_type_t &
-		append_body( std::shared_ptr< BUFFER > body_part  )
-		{
-			if( !body_part || 0 == body_part->size() )
-				return *this;
-
-			return append_body_impl( std::move( body_part ) );
+			return append_body_impl( body_part );
 		}
 		//! \}
 
@@ -424,9 +376,8 @@ class response_builder_t< user_controlled_output_t > final
 			}
 		}
 
-		template < typename BUFFER >
 		self_type_t &
-		set_body_impl( BUFFER buffer, std::size_t body_size )
+		set_body_impl( buffer_storage_t & body, std::size_t body_size )
 		{
 			if_neccessary_reserve_first_element_for_header();
 
@@ -440,19 +391,18 @@ class response_builder_t< user_controlled_output_t > final
 			if( 0 < body_size )
 			{
 				// if body is not empty:
-				m_response_parts.emplace_back( std::move( buffer ) );
+				m_response_parts.emplace_back( std::move( body ) );
 			}
 
 			return *this;
 		}
 
-		template < typename BUFFER >
 		self_type_t &
-		append_body_impl( BUFFER buffer )
+		append_body_impl( buffer_storage_t & body_part )
 		{
 			if_neccessary_reserve_first_element_for_header();
 
-			m_response_parts.emplace_back( std::move( buffer ) );
+			m_response_parts.emplace_back( std::move( body_part ) );
 			return *this;
 		}
 
@@ -514,29 +464,22 @@ class response_builder_t< chunked_output_t > final
 					request_id,
 					should_keep_alive }
 		{
-			m_chunks.reserve( 16 );
+			m_chunks.reserve( 4 );
 		}
 
 		//! Append current chunk.
 		//! \{
 		auto &
-		append_chunk( std::string part )
+		append_chunk( buffer_storage_t chunk )
 		{
-			if( !part.empty() )
-				m_chunks.emplace_back( std::move( part ) );
+			auto size = asio::buffer_size( chunk.buf() );
+
+			if( 0 != size )
+				m_chunks.emplace_back( std::move( chunk ) );
 
 			return *this;
 		}
 
-		template < typename BUFFER >
-		auto &
-		append_chunk( std::shared_ptr< BUFFER > part )
-		{
-			if( part && 0 != part->size() )
-				m_chunks.emplace_back( std::move( part ) );
-
-			return *this;
-		}
 		//! \}
 
 		//! Flush ready outgoing data.
@@ -674,13 +617,13 @@ class response_builder_t< chunked_output_t > final
 			{
 				// Add "\r\n"-ending for the last part (if any).
 				const char * rn_ending = "\r\n";
-				bufs.emplace_back( rn_ending, 2 );
+				bufs.emplace_back( const_buffer( rn_ending, 2 ) );
 			}
 
 			if( add_zero_chunk )
 			{
 				const char * zero_chunk = "0\r\n\r\n";
-				bufs.emplace_back( zero_chunk, 5 );
+				bufs.emplace_back( const_buffer( zero_chunk, 5 ) );
 			}
 
 			m_chunks.clear();
