@@ -10,6 +10,7 @@ MxxRu::Cpp::exe_target {
 
 	cpp_source( "const_buffer.cpp" )
 	cpp_source( "std_string.cpp" )
+	cpp_source( "shared_ptr_std_string.cpp" )
 	cpp_source( "main.cpp" )
 }
 
