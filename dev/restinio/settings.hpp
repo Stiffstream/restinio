@@ -26,14 +26,14 @@ namespace details
 
 //! Default instantiation for a specific type.
 template < typename OBJECT_TYPE >
-auto
+inline auto
 create_default_object_instance( std::false_type )
 {
 	return std::unique_ptr< OBJECT_TYPE >{};
 }
 
 template < typename OBJECT_TYPE >
-auto
+inline auto
 create_default_object_instance( std::true_type )
 {
 	return std::make_unique< OBJECT_TYPE >();
@@ -47,7 +47,7 @@ create_default_object_instance( std::true_type )
 
 //! Default instantiation for a specific type.
 template < typename OBJECT_TYPE>
-auto
+inline auto
 create_default_object_instance()
 {
 	typename std::is_default_constructible< OBJECT_TYPE >::type tag;
@@ -56,7 +56,7 @@ create_default_object_instance()
 
 //! Default instantiation for default_request_handler_t.
 template <>
-auto
+inline auto
 create_default_object_instance< default_request_handler_t >()
 {
 	return details::create_default_object_instance< default_request_handler_t >(
