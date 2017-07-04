@@ -223,8 +223,9 @@ class response_builder_t< restinio_controlled_output_t > final
 			if( 0 < body_size )
 			{
 				m_response_parts.emplace_back( std::move( body ) );
-				m_body_size = body_size;
 			}
+
+			m_body_size = body_size;
 
 			return *this;
 		}
