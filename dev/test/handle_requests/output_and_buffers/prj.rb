@@ -8,6 +8,8 @@ MxxRu::Cpp::exe_target {
 
 	target( "_unit.test.handle_requests.output_and_buffers" )
 
+	cpp_source( "const_buffer.cpp" )
+	cpp_source( "std_string.cpp" )
 	cpp_source( "main.cpp" )
 }
 
