@@ -790,20 +790,20 @@ that creates `asio::const_buffer` out of different implementations:
 * string buffers based on `std::string`;
 * shared buffer - a shared_ptr on an object with data-size interface:
  `std::shared_ptr< BUF >` where `BUF` has `data()` and `size()`
- methods returning `void*` (or convertable to it) and
+ methods returning `void*` (or convertible to it) and
 `size_t` (or convertible to).
 
 Const buffers are intended for cases when the data is defined
 as a constant char sequence and its lifetime is guaranteed to be long enough
-(for example a c-strings defined globaly).
+(for example a c-strings defined globally).
 To make the usage of const buffers safer `buffer_storage_t` constructors
 don't accept pointer and size params directly, and to instantiate
 a `buffer_storage_t` object that refers to const buffers a helper `const_buffer_t`
 class must be used. There is a helper function `const_buffer()` that helps to create
 `const_buffer_t`. Let's have a look on a clarifying example:
 
-```
-::с++
+~~~~~
+::c++
 
 // Request handler:
 []( restinio::request_handle_t req ){
@@ -817,8 +817,8 @@ class must be used. There is a helper function `const_buffer()` that helps to cr
   resp.set_body( restinio::const_buffer( resp, 4 ) ); // OK, size will be 4.
 
   // When not using restinio::const_buffer() helper function
-  // char* will be traeted as a parameter for std::string constructor.
-  resp.set_body( resp ); // OK, but std::string will be actualy used.
+  // char* will be treated as a parameter for std::string constructor.
+  resp.set_body( resp ); // OK, but std::string will be actually used.
 
   const std::string temp{ "watch the lifetime, please" };
 
@@ -830,7 +830,7 @@ class must be used. There is a helper function `const_buffer()` that helps to cr
 
   // Though using a temporary source directly is OK.
   resp.set_body( temp ); // OK, will create a copy of the string.
-```
+~~~~~
 
 The simplest option is to use std::string. Passed string is copied or moved if possible.
 
