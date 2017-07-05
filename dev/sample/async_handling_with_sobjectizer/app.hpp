@@ -41,10 +41,9 @@ class a_target_t final : public so_5::agent_t
 	public:
 		a_target_t(
 			context_t ctx,
-			std::string target )
+			const std::string & target )
 			:	so_5::agent_t{ std::move( ctx ) }
-			,	m_target{ std::move( target ) }
-			,	m_created_at{ now_string_utc() }
+			,	m_response_segments{ target }
 		{
 			so_subscribe_self()
 				.event( &a_target_t::evt_req )
@@ -64,18 +63,9 @@ class a_target_t final : public so_5::agent_t
 				.append_header( "Server", "RESTinio sample server /v.0.2" )
 				.append_header_date_field()
 				.append_header( "Content-Type", "text/html; charset=utf-8" )
-				.set_body(
-					fmt::format(
-						"<html>"
-						"<head><title>Target: {target}</title></head>"
-						"<body>"
-						"<h1>{target}</h1>"
-						"Target was requested {req_count} time(s) since {created_at}."
-						"</body>"
-						"</html>",
-						fmt::arg( "target", m_target ),
-						fmt::arg( "req_count", m_req_count ),
-						fmt::arg( "created_at", m_created_at ) ) )
+				.append_body( m_response_segments.m_begin_segment )
+				.append_body( fmt::format( "{}", m_req_count ) )
+				.append_body( m_response_segments.m_end_segment )
 				.done();
 		}
 
@@ -92,14 +82,37 @@ class a_target_t final : public so_5::agent_t
 			}
 		}
 
-		// Target name.
-		const std::string m_target;
+		// Response segments with 3 types of buffer optimization
+		struct response_segments_t
+		{
+			response_segments_t( const std::string & target )
+				:	m_begin_segment{
+						std::make_shared< std::string >(
+							fmt::format(
+								"<html>\r\n"
+								"<head><title>Target: {target}</title></head>\r\n"
+								"<body>\r\n"
+								"\t<h1>{target}</h1>\r\n"
+								"\tTarget was requested ",
+								fmt::arg( "target", target ) ) ) }
+				,	m_end_segment{
+						std::make_shared< std::string >(
+							fmt::format(
+								" time(s) since {}.\r\n"
+								"</body>\r\n"
+								"</html>\r\n",
+								now_string_utc() ) ) }
+			{}
+
+			//! Cached response segments.
+			std::shared_ptr< std::string > m_begin_segment;
+			std::shared_ptr< std::string > m_end_segment;
+		};
+
+		const response_segments_t m_response_segments;
 
 		// How many request were directed to this target since its creation.
 		std::uint32_t m_req_count{ 0 };
-
-		// When target was created.
-		const std::string m_created_at;
 
 		// TTL stuff.
 		std::chrono::steady_clock::time_point m_timeout_point;
