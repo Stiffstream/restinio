@@ -106,8 +106,8 @@ TEST_CASE( "buffers on shared pointer" , "[buffers][std::shared_ptr]" )
 struct custom_buffer_t
 {
 	custom_buffer_t( int & counter, std::string str )
-		:	m_counter{ counter }
-		,	m_str{ std::move( str ) }
+		:	m_str{ std::move( str ) }
+		,	m_counter{ counter }
 	{
 		++m_counter;
 	}

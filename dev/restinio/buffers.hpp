@@ -88,7 +88,7 @@ class alignas( std::max_align_t ) buffer_storage_t
 		//! Get size of storage.
 	public:
 		buffer_storage_t( const buffer_storage_t & ) = delete;
-		void operator = ( const buffer_storage_t & ) = delete;
+		buffer_storage_t & operator = ( const buffer_storage_t & ) = delete;
 
 		buffer_storage_t()
 			:	m_accessor{
@@ -137,7 +137,7 @@ class alignas( std::max_align_t ) buffer_storage_t
 						auto & s = impl::buf_access< std::string >( p );
 
 						using namespace std;
-						s.string::~string();
+						s.~string();
 					} }
 		{
 			new( m_storage.data() ) std::string{ std::move( str ) };
@@ -151,19 +151,19 @@ class alignas( std::max_align_t ) buffer_storage_t
 		buffer_storage_t( std::shared_ptr< T > sp )
 			:	m_accessor{
 					[]( const void * p ){
-						const auto & sp = impl::buf_access< std::shared_ptr< T > >( p );
-						return asio::const_buffer{ sp->data(), sp->size() };
+						const auto & v = impl::buf_access< std::shared_ptr< T > >( p );
+						return asio::const_buffer{ v->data(), v->size() };
 					} }
 			,	m_move{
 					[]( const void * src, void * dest ){
-						auto & sp = impl::buf_access< std::shared_ptr< T > >( src );
+						auto & v = impl::buf_access< std::shared_ptr< T > >( src );
 
-						new( dest ) std::shared_ptr< T >{ std::move( sp ) };
+						new( dest ) std::shared_ptr< T >{ std::move( v ) };
 					} }
 			,	m_destructor{
 					[]( void * p ){
-						auto & sp = impl::buf_access< std::shared_ptr< T > >( p );
-						sp.~shared_ptr();
+						auto & v = impl::buf_access< std::shared_ptr< T > >( p );
+						v.~shared_ptr();
 					} }
 		{
 			static_assert(
@@ -171,7 +171,7 @@ class alignas( std::max_align_t ) buffer_storage_t
 				"size of shared_ptr on a type is too big" );
 
 			if( !sp )
-				throw exception_t{ "ampty shared_ptr cannot be used as buffer" };
+				throw exception_t{ "empty shared_ptr cannot be used as buffer" };
 
 			new( m_storage.data() ) std::shared_ptr< T >{ std::move( sp ) };
 		}
