@@ -830,6 +830,9 @@ class must be used. There is a helper function `const_buffer()` that helps to cr
 
   // Though using a temporary source directly is OK.
   resp.set_body( temp ); // OK, will create a copy of the string.
+
+  // ...
+}
 ~~~~~
 
 The simplest option is to use std::string. Passed string is copied or moved if possible.
