@@ -29,13 +29,15 @@ template <
 		typename TIMER_FACTORY,
 		typename LOGGER,
 		typename REQUEST_HANDLER = default_request_handler_t,
-		typename STRAND = asio::strand< asio::executor > >
+		typename STRAND = asio::strand< asio::executor >,
+		typename STREAM_SOCKET = asio::ip::tcp::socket >
 struct traits_t
 {
 	using timer_factory_t = TIMER_FACTORY;
 	using logger_t = LOGGER;
 	using request_handler_t = REQUEST_HANDLER;
 	using strand_t = STRAND;
+	using stream_socket_t = STREAM_SOCKET;
 };
 
 using noop_strand_t = asio::executor;

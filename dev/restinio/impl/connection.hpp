@@ -346,6 +346,19 @@ struct connection_input_t
 	}
 };
 
+template < typename CONNECTION, typename START_READ_CB, typename FAILED_CB >
+void
+prepare_connection_and_start_read(
+	asio::ip::tcp::socket & ,
+	CONNECTION & ,
+	START_READ_CB start_read_cb,
+	FAILED_CB )
+{
+	// No preparation is needed, start
+	start_read_cb();
+}
+
+
 //
 // connection_t
 //
@@ -375,12 +388,13 @@ class connection_t final
 		using request_handler_t = typename TRAITS::request_handler_t;
 		using logger_t = typename TRAITS::logger_t;
 		using strand_t = typename TRAITS::strand_t;
+		using stream_socket_t = typename TRAITS::stream_socket_t;
 
 		connection_t(
 			//! Connection id.
 			std::uint64_t conn_id,
 			//! Connection socket.
-			asio::ip::tcp::socket && socket,
+			stream_socket_t && socket,
 			//! Settings that are common for connections.
 			connection_settings_shared_ptr_t< TRAITS > settings,
 			//! Operation timeout guard.
@@ -424,6 +438,22 @@ class connection_t final
 			{}
 		}
 
+		void
+		init()
+		{
+			prepare_connection_and_start_read(
+				m_socket,
+				*this,
+				[ & ]{ wait_for_http_message(); },
+				[ & ]( const asio::error_code & ec ){
+					trigger_error_and_close( [&]{
+						return fmt::format(
+								"[connection:{}] prepare connection error: {}",
+								connection_id(),
+								ec.message() );
+					} );
+				} );
+		}
 
 		//! Start reading next htttp-message.
 		void
@@ -946,7 +976,7 @@ class connection_t final
 		//! \}
 
 		//! Connection
-		asio::ip::tcp::socket m_socket;
+		stream_socket_t m_socket;
 
 		//! Sync object for connection events.
 		strand_t m_strand;
@@ -1062,7 +1092,6 @@ class connection_t final
 		logger_t & m_logger;
 };
 
-
 //
 // connection_factory_t
 //
@@ -1074,6 +1103,7 @@ class connection_factory_t
 	public:
 		using timer_factory_t = typename TRAITS::timer_factory_t;
 		using logger_t = typename TRAITS::logger_t;
+		using stream_socket_t = typename TRAITS::stream_socket_t;
 
 		connection_factory_t(
 			connection_settings_shared_ptr_t< TRAITS > connection_settings,
@@ -1090,7 +1120,7 @@ class connection_factory_t
 
 		auto
 		create_new_connection(
-			asio::ip::tcp::socket && socket )
+			stream_socket_t && socket )
 		{
 			using connection_type_t = connection_t< TRAITS >;
 			return std::make_shared< connection_type_t >(

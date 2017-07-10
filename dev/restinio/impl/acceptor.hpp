@@ -34,6 +34,7 @@ class acceptor_t final
 			std::shared_ptr< connection_factory_t >;
 		using logger_t = typename TRAITS::logger_t;
 		using strand_t = typename TRAITS::strand_t;
+		using stream_socket_t = typename TRAITS::stream_socket_t;
 
 		acceptor_t(
 			//! Server port.
@@ -174,7 +175,7 @@ class acceptor_t final
 				//! If connection handler was created,
 				// then start waiting for request message.
 				if( conn )
-					conn->wait_for_http_message();
+					conn->init();
 			}
 			else
 			{
@@ -200,7 +201,7 @@ class acceptor_t final
 		//! Server port listener and connection receiver routine.
 		//! \{
 		asio::ip::tcp::acceptor m_acceptor;
-		asio::ip::tcp::socket m_socket;
+		stream_socket_t m_socket;
 		//! \}
 
 		//! Sync object for acceptor events.

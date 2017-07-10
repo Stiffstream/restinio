@@ -3,7 +3,7 @@
 */
 
 /*!
-	helpers for http communication.
+	Include all necessary header files in one.
 */
 
 #pragma once
