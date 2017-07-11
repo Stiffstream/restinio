@@ -88,12 +88,26 @@ ensure_created(
 }
 
 //
+// extra_settings_t
+//
+
+//! Extra settings needed for working with socket.
+template < typename SETTINGS, typename SOCKET_TYPE >
+struct extra_settings_t
+{
+	virtual ~extra_settings_t() = default;
+
+	// No extra settings by default.
+};
+
+//
 // server_settings_t
 //
 
 //! A fluent style interface for setting http server params.
 template < typename TRAITS >
-class server_settings_t
+class server_settings_t final
+	:	public extra_settings_t< server_settings_t< TRAITS > , typename TRAITS::stream_socket_t >
 {
 	public:
 		server_settings_t(

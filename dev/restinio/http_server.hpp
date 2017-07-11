@@ -114,9 +114,10 @@ class http_server_t
 
 			m_acceptor =
 				std::make_shared< acceptor_t >(
-					settings.port(),
-					settings.protocol(),
-					settings.address(),
+					settings,
+					// settings.port(),
+					// settings.protocol(),
+					// settings.address(),
 					m_io_service_wrapper->io_service(),
 					std::make_shared< connection_factory_t >(
 						conn_settings,
