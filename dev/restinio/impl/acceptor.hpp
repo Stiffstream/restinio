@@ -27,10 +27,27 @@ class socket_holder_t
 		socket_holder_t(
 			SETTINGS & ,
 			asio::io_service & io_service )
-			:	m_socket{ io_service }
+			:	m_io_service{}
+			,	m_socket{ io_service }
 		{}
 
-		STREAM_SOCKET m_socket;
+		STREAM_SOCKET &
+		socket()
+		{
+			return *m_socket;
+		}
+
+		std::unique_ptr< STREAM_SOCKET >
+		move_socket()
+		{
+			auto res = make_unqique< STREAM_SOCKET >{ m_io_service };
+			std::swap( res, m_socket );
+			return res;
+		}
+
+	private:
+		asio::io_service & m_io_service;
+		std::unique_ptr< STREAM_SOCKET > m_socket{ make_unqique< STREAM_SOCKET >{ m_io_service} };
 };
 
 //
@@ -71,7 +88,7 @@ class acceptor_t final
 			,	m_protocol{ settings.protocol() }
 			,	m_address{ settings.address() }
 			,	m_acceptor{ io_service }
-			,	m_strand{ this->m_socket.get_executor() }
+			,	m_strand{ this->socket().lowest_layer().get_executor() }
 			,	m_connection_factory{ std::move( connection_factory ) }
 			,	m_logger{ logger }
 		{}
@@ -158,7 +175,7 @@ class acceptor_t final
 		accept_next()
 		{
 			m_acceptor.async_accept(
-				this->m_socket,
+				this->socket().lowest_layer(),
 				asio::wrap(
 					get_executor(),
 					[ ctx = this->shared_from_this() ]( auto ec ){
@@ -182,13 +199,13 @@ class acceptor_t final
 				m_logger.trace( [&]{
 					return fmt::format(
 							"accept connection from: {}",
-							this->m_socket.remote_endpoint() );
+							this->socket().lowest_layer().remote_endpoint() );
 				} );
 
 				// Create new connection handler.
 				auto conn =
 					m_connection_factory
-						->create_new_connection( std::move( this->m_socket ) );
+						->create_new_connection( this->move_socket() );
 
 				//! If connection handler was created,
 				// then start waiting for request message.
