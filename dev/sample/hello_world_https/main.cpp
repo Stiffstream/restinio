@@ -104,7 +104,7 @@ int main( int argc, const char * argv[] )
 				tls_context.use_private_key_file(
 					certs_dir + "/key.pem",
 					asio::ssl::context::pem );
-				tls_context.use_tmp_dh_file( certs_dir + "/dh512.pem" );
+				tls_context.use_tmp_dh_file( certs_dir + "/dh2048.pem" );
 
 				settings
 					.address( "localhost" )
