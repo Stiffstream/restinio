@@ -978,8 +978,17 @@ class connection_t final
 		//! Connection
 		std::unique_ptr< stream_socket_t > m_socket;
 
-		auto
+		stream_socket_t &
 		socket_ref()
+		{
+			return m_socket;
+		}
+
+		auto &
+		socket_lowest_layer()
+		{
+			return m_socket.lowest_layer();
+		}
 
 		//! Sync object for connection events.
 		strand_t m_strand;

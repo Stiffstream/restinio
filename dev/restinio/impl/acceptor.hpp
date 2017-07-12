@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
@@ -40,14 +42,16 @@ class socket_holder_t
 		std::unique_ptr< STREAM_SOCKET >
 		move_socket()
 		{
-			auto res = make_unqique< STREAM_SOCKET >{ m_io_service };
+			auto res = std::make_unique< STREAM_SOCKET >( m_io_service );
 			std::swap( res, m_socket );
 			return res;
 		}
 
 	private:
 		asio::io_service & m_io_service;
-		std::unique_ptr< STREAM_SOCKET > m_socket{ make_unqique< STREAM_SOCKET >{ m_io_service} };
+		std::unique_ptr< STREAM_SOCKET >
+			m_socket{
+				std::make_unique< STREAM_SOCKET >( m_io_service ) };
 };
 
 //
