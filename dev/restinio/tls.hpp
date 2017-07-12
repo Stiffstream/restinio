@@ -116,11 +116,29 @@ class socket_holder_t< tls_socket_t >
 			SETTINGS & settings,
 			asio::io_service & io_service )
 			:	m_tls_context{ settings.tls_context() }
-			,	m_socket{ io_service, m_tls_context }
+			,	m_io_service{ io_service }
+			,	m_socket{
+					std::make_unique< tls_socket_t >( m_io_service, m_tls_context ) }
 		{}
 
+		tls_socket_t &
+		socket()
+		{
+			return *m_socket;
+		}
+
+		std::unique_ptr< tls_socket_t >
+		move_socket()
+		{
+			auto res = std::make_unique< tls_socket_t >( m_io_service, m_tls_context );
+			std::swap( res, m_socket );
+			return res;
+		}
+
+	private:
 		asio::ssl::context m_tls_context;
-		tls_socket_t m_socket;
+		asio::io_service & m_io_service;
+		std::unique_ptr< tls_socket_t > m_socket;
 };
 
 } /* namespace impl */

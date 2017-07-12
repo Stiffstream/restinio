@@ -29,8 +29,8 @@ class socket_holder_t
 		socket_holder_t(
 			SETTINGS & ,
 			asio::io_service & io_service )
-			:	m_io_service{}
-			,	m_socket{ io_service }
+			:	m_io_service{ io_service }
+			,	m_socket{ std::make_unique< STREAM_SOCKET >( m_io_service ) }
 		{}
 
 		STREAM_SOCKET &
@@ -49,9 +49,7 @@ class socket_holder_t
 
 	private:
 		asio::io_service & m_io_service;
-		std::unique_ptr< STREAM_SOCKET >
-			m_socket{
-				std::make_unique< STREAM_SOCKET >( m_io_service ) };
+		std::unique_ptr< STREAM_SOCKET > m_socket;
 };
 
 //

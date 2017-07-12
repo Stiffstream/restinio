@@ -506,7 +506,7 @@ class connection_t final
 						connection_id() );
 			} );
 
-			m_socket.async_read_some(
+			socket_ref().async_read_some(
 				m_input.m_buf.make_asio_buffer(),
 				asio::wrap(
 					get_executor(),
@@ -981,13 +981,13 @@ class connection_t final
 		stream_socket_t &
 		socket_ref()
 		{
-			return m_socket;
+			return *m_socket;
 		}
 
 		auto &
 		socket_lowest_layer()
 		{
-			return m_socket.lowest_layer();
+			return m_socket->lowest_layer();
 		}
 
 		//! Sync object for connection events.
@@ -1132,7 +1132,7 @@ class connection_factory_t
 
 		auto
 		create_new_connection(
-			stream_socket_t && socket )
+			std::unique_ptr< stream_socket_t > socket )
 		{
 			using connection_type_t = connection_t< TRAITS >;
 			return std::make_shared< connection_type_t >(
