@@ -367,6 +367,7 @@ timer_factory_t;
 logger_t;
 request_handler_t;
 strand_t;
+stream_socket_t;
 ~~~~~
 
 It is easier to use `restinio::traits_t<>` helper type:
@@ -376,7 +377,8 @@ template <
     typename TIMER_FACTORY,
     typename LOGGER,
     typename REQUEST_HANDLER = default_request_handler_t,
-    typename STRAND = asio::strand< asio::executor > >
+    typename STRAND = asio::strand< asio::executor >,
+    typename STREAM_SOCKET = asio::ip::tcp::socket >
 struct traits_t;
 ~~~~~
 
@@ -392,7 +394,11 @@ for its callback-handlers running on `asio::io_service` thread(s)
 in order to guarantee serialized callbacks invocation
 (see [asio doc](http://think-async.com/Asio/asio-1.11.0/doc/asio/reference/strand.html)).
 Actually there are two options for the strand type:
-`asio::strand< asio::executor >` and `asio::executor`.
+`asio::strand< asio::executor >` and `asio::executor`;
+* `stream_socket_t` is a customization point that tells restinio
+what type of socket used for connections. This parameter allows restinio
+to support TLS connection
+(see [TLS support](#markdown-header-tls-support) section).
 
 It is handy to consider `http_server_t<TRAITS>` class as a root class
 for the rest of *RESTinio* ecosystem, because pretty much all of them are
@@ -976,10 +982,70 @@ But the following will not:
 * http://localhost/indexed/173-xyz/one
 * http://localhost/indexed/ABCDE-2017/one/two/three
 
-See full [example](./dev/sample/express_router_tutorial.cpp)
+See full [example](./dev/sample/express_router_tutorial/main.cpp)
 
 For details on `route_params_t` and `express_router_t` see
 [express.hpp](./dev/restinio/router/express.cpp).
+
+## TLS support
+
+Restinio support HTTS using ASIO ssl facilities (based on OpenSSL).
+
+To create https server it is needed to include extra header file `restinio/tls.hpp`.
+This file contains necessary customization classes and structs
+that make `restinio::http_server_t` usable as https server.
+For specializing `restinio::http_server_t` to work as https server
+one should use `restinio::tls_traits_t` (or `restinio::single_thread_tls_traits_t`)
+for it and also it is vital to set TLS context using `asio::ssl::context`.
+That setting is added to `server_settings_t` class instantiated with TLS traits.
+
+Lets look through an example:
+```
+::c++
+// ...
+
+using traits_t =
+  restinio::single_thread_tls_traits_t<
+    restinio::asio_timer_factory_t,
+    restinio::single_threaded_ostream_logger_t,
+    router_t >;
+
+using http_server_t = restinio::http_server_t< traits_t >;
+
+const std::string certs_dir{ "." }; // Or another path.
+
+http_server_t http_server{
+  restinio::create_child_io_service( 1 ),
+  [ & ]( auto & settings ){
+    // Set TLS context.
+    asio::ssl::context tls_context{ asio::ssl::context::sslv23 };
+    tls_context.set_options(
+      asio::ssl::context::default_workarounds
+      | asio::ssl::context::no_sslv2
+      | asio::ssl::context::single_dh_use );
+
+    tls_context.use_certificate_chain_file( certs_dir + "/server.pem" );
+    tls_context.use_private_key_file(
+      certs_dir + "/key.pem",
+      asio::ssl::context::pem );
+    tls_context.use_tmp_dh_file( certs_dir + "/dh2048.pem" );
+
+    settings
+      .address( "localhost" )
+      .request_handler( server_handler() )
+      .read_next_http_message_timelimit( 10s )
+      .write_http_response_timelimit( 1s )
+      .handle_request_timeout( 1s )
+      // Set the context:
+      .tls_context( std::move( tls_context ) );
+  } };
+
+http_server.open();
+
+// ...
+```
+
+See full [example](./dev/sample/hello_world_https/main.cpp) for details.
 
 # Roadmap
 
@@ -987,9 +1053,7 @@ The list of features for next releases
 
 |       Feature        | description | release  |
 |----------------------|-------------|----------|
-| Benchmarks | Non trivial benchmarks. Comparison with other libraries with similar features on the range of various scenarios. | started independent [project](https://bitbucket.org/sobjectizerteam/restinio-benchmark-jun2017) |
 | HTTP client | Introduce functionality for building and sending requests and receiving and parsing results. | ? |
-| TLS support | Sopport for HTTPS with OpenSSL | ? |
 | Web Sockets | Support for Web Sockets | ? |
 | Improve router | Improve router with type conversion of parameters | ? |
 | Compresion | Support compressed content | ? |
@@ -1003,7 +1067,9 @@ The list of features for next releases
 
 |       Feature        | description | release  |
 |----------------------|-------------|----------|
-| External buffers| Support external (constant) buffers support for body and/or body parts. | 0.2.2 |
+| TLS support | Sopport for HTTPS with OpenSSL | 0.2.2 |
+| External buffers | Support external (constant) buffers support for body and/or body parts. | 0.2.2 |
+| Benchmarks | Non trivial benchmarks. Comparison with other libraries with similar features on the range of various scenarios. | started independent [project](https://bitbucket.org/sobjectizerteam/restinio-benchmark-jun2017) |
 | Routers for message handlers | Support for a URI dependent routing to a set of handlers (express-like router). | 0.2.1 |
 | Bind localhost aliases | Accept "localhost" and "ip6-localhost" as address parameter for server to bound to.  | 0.2.1 |
 | Chunked transfer encoding | Support for chunked transfer encoding. Separate responses on header and body chunks, so it will be possible to send header and then body divided on chunks. | 0.2.0 |
