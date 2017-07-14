@@ -46,9 +46,9 @@ TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 
 }
 
-TEST_CASE( "Original tests" , "[path2regex][original][generated]" )
-{
+// TEST_CASE( "Original tests" , "[path2regex][original][generated]" )
+// {
 
-#include "original_tests.inl"
+// #include "original_tests.inl"
 
-}
+// }
