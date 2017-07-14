@@ -9,7 +9,7 @@ MxxRu::Cpp::exe_target {
   required_prj 'fmt_mxxru/prj.rb'
   required_prj 'sample/platform_specific_libs.rb'
 
-  if 'mswin' == toolset.tag( 'target_os' )
+  if 'vc' == toolset.name
     lib 'libeay32.lib'
     lib 'ssleay32.lib'
   else
