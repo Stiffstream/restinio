@@ -9,8 +9,13 @@ MxxRu::Cpp::exe_target {
   required_prj 'fmt_mxxru/prj.rb'
   required_prj 'sample/platform_specific_libs.rb'
 
-  lib 'ssl'
-  lib 'crypto'
+  if 'mswin' == toolset.tag( 'target_os' )
+    lib 'libeay32.lib'
+    lib 'ssleay32.lib'
+  else
+    lib 'ssl'
+    lib 'crypto'
+  end
 
   cpp_source 'main.cpp'
 }
