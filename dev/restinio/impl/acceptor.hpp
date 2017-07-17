@@ -21,6 +21,19 @@ namespace restinio
 namespace impl
 {
 
+//
+// socket_holder_t
+//
+
+/*
+	A helper base class that hides socket instance.
+
+	It prepares a socket for new connections.
+	And as it is template class over a socket type
+	it givies an oportunity to customize details for
+	other types of sockets (like `asio::ssl::stream< asio::ip::tcp::socket >`)
+	that can be used.
+*/
 template < typename STREAM_SOCKET >
 class socket_holder_t
 {
@@ -33,22 +46,34 @@ class socket_holder_t
 			,	m_socket{ std::make_unique< STREAM_SOCKET >( m_io_service ) }
 		{}
 
+		virtual ~socket_holder_t() = default;
+
+		//! Get the reference to socket.
 		STREAM_SOCKET &
 		socket()
 		{
 			return *m_socket;
 		}
 
+		//! Extract current socet via move.
 		std::unique_ptr< STREAM_SOCKET >
 		move_socket()
 		{
+			// As a socket must never be empty,
+			// first a new socket is created,
+			// and then it is swapped with m_socket
+			// and the result is returned.
 			auto res = std::make_unique< STREAM_SOCKET >( m_io_service );
 			std::swap( res, m_socket );
 			return res;
 		}
 
 	private:
+		//! io_service for sockets to run on.
 		asio::io_service & m_io_service;
+
+		//! A temporary socket for receiving new connections.
+		//! \note Must never be empty.
 		std::unique_ptr< STREAM_SOCKET > m_socket;
 };
 

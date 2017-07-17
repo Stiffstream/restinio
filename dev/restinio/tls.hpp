@@ -39,6 +39,12 @@ template <
 using single_thread_tls_traits_t =
 	tls_traits_t< TIMER_FACTORY, LOGGER, REQUEST_HANDLER, noop_strand_t >;
 
+//
+// prepare_connection_and_start_read()
+//
+
+//! Customizes connection init routine with an additional step:
+//! perform handshake and only then start reading.
 template < typename CONNECTION, typename START_READ_CB, typename FAILED_CB >
 void
 prepare_connection_and_start_read(
@@ -63,7 +69,10 @@ prepare_connection_and_start_read(
 // extra_settings_t
 //
 
-//! Extra settings needed for working with socket.
+//! Customizes extra settings needed for working with socket.
+/*!
+	Adds tls context setting.
+*/
 template < typename SETTINGS >
 class extra_settings_t< SETTINGS, tls_socket_t >
 {
@@ -107,6 +116,11 @@ class extra_settings_t< SETTINGS, tls_socket_t >
 namespace impl
 {
 
+//
+// socket_holder_t
+//
+
+//! A custom socket storage for tls_socket_t.
 template <>
 class socket_holder_t< tls_socket_t >
 {
@@ -120,6 +134,8 @@ class socket_holder_t< tls_socket_t >
 			,	m_socket{
 					std::make_unique< tls_socket_t >( m_io_service, m_tls_context ) }
 		{}
+
+		virtual ~socket_holder_t() = default;
 
 		tls_socket_t &
 		socket()
