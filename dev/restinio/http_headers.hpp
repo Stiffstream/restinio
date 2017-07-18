@@ -48,11 +48,15 @@ struct http_header_field_t
 
 //! Comparator for fields names.
 inline bool
-caseless_cmp( const std::string & a, const std::string & b )
+caseless_cmp(
+	const char * a,
+	std::size_t a_size,
+	const char * b,
+	std::size_t b_size )
 {
-	if( a.size() == b.size() )
+	if( a_size == b_size )
 	{
-		for( std::size_t i = 0; i < a.size(); ++i )
+		for( std::size_t i = 0; i < a_size; ++i )
 			if( std::tolower( a[ i ] ) != std::tolower( b[ i ] ) )
 				return false;
 
@@ -62,162 +66,245 @@ caseless_cmp( const std::string & a, const std::string & b )
 	return false;
 }
 
-// Adopted header fields
-// (https://en.wikipedia.org/wiki/List_of_HTTP_header_fields).
-#define RESTINIO_HTTP_FIELDS_MAP \
-	RESTINIO_GEN( a-im,                         A-IM ) \
-	RESTINIO_GEN( accept,                       Accept ) \
-	RESTINIO_GEN( accept-additions,             Accept-Additions ) \
-	RESTINIO_GEN( accept-charset,               Accept-Charset ) \
-	RESTINIO_GEN( accept-datetime,              Accept-Datetime ) \
-	RESTINIO_GEN( accept-encoding,              Accept-Encoding ) \
-	RESTINIO_GEN( accept-features,              Accept-Features ) \
-	RESTINIO_GEN( accept-language,              Accept-Language ) \
-	RESTINIO_GEN( accept-patch,                 Accept-Patch ) \
-	RESTINIO_GEN( accept-post,                  Accept-Post ) \
-	RESTINIO_GEN( accept-ranges,                Accept-Ranges ) \
-	RESTINIO_GEN( age,                         Age ) \
-	RESTINIO_GEN( allow,                         Allow ) \
-	RESTINIO_GEN( alpn,                         ALPN ) \
-	RESTINIO_GEN( alt-svc,                      Alt-Svc ) \
-	RESTINIO_GEN( alt-used,                     Alt-Used ) \
-	RESTINIO_GEN( alternates,                   Alternates ) \
-	RESTINIO_GEN( apply-to-redirect-ref,        Apply-To-Redirect-Ref ) \
-	RESTINIO_GEN( authentication-control,       Authentication-Control ) \
-	RESTINIO_GEN( authentication-info,          Authentication-Info ) \
-	RESTINIO_GEN( authorization,                Authorization ) \
-	RESTINIO_GEN( c-ext,                        C-Ext ) \
-	RESTINIO_GEN( c-man,                        C-Man ) \
-	RESTINIO_GEN( c-opt,                        C-Opt ) \
-	RESTINIO_GEN( c-pep,                        C-PEP ) \
-	RESTINIO_GEN( c-pep-info,                   C-PEP-Info ) \
-	RESTINIO_GEN( cache-control,                Cache-Control ) \
-	RESTINIO_GEN( caldav-timezones,             CalDAV-Timezones ) \
-	RESTINIO_GEN( close,                        Close ) \
-	RESTINIO_GEN( connection,                   Connection ) \
-	RESTINIO_GEN( content-base,                 Content-Base ) \
-	RESTINIO_GEN( content-disposition,          Content-Disposition ) \
-	RESTINIO_GEN( content-encoding,             Content-Encoding ) \
-	RESTINIO_GEN( content-id,                   Content-ID ) \
-	RESTINIO_GEN( content-language,             Content-Language ) \
-	RESTINIO_GEN( content-length,               Content-Length ) \
-	RESTINIO_GEN( content-location,             Content-Location ) \
-	RESTINIO_GEN( content-md5,                  Content-MD5 ) \
-	RESTINIO_GEN( content-range,                Content-Range ) \
-	RESTINIO_GEN( content-script-type,          Content-Script-Type ) \
-	RESTINIO_GEN( content-style-type,           Content-Style-Type ) \
-	RESTINIO_GEN( content-type,                 Content-Type ) \
-	RESTINIO_GEN( content-version,              Content-Version ) \
-	RESTINIO_GEN( cookie,                       Cookie ) \
-	RESTINIO_GEN( cookie2,                      Cookie2 ) \
-	RESTINIO_GEN( dasl,                         DASL ) \
-	RESTINIO_GEN( dav,                         DAV ) \
-	RESTINIO_GEN( date,                         Date ) \
-	RESTINIO_GEN( default-style,                Default-Style ) \
-	RESTINIO_GEN( delta-base,                   Delta-Base ) \
-	RESTINIO_GEN( depth,                        Depth ) \
-	RESTINIO_GEN( derived-from,                 Derived-From ) \
-	RESTINIO_GEN( destination,                  Destination ) \
-	RESTINIO_GEN( differential-id,              Differential-ID ) \
-	RESTINIO_GEN( digest,                       Digest ) \
-	RESTINIO_GEN( etag,                         ETag ) \
-	RESTINIO_GEN( expect,                         Expect ) \
-	RESTINIO_GEN( expires,                         Expires ) \
-	RESTINIO_GEN( ext,                         Ext ) \
-	RESTINIO_GEN( forwarded,                         Forwarded ) \
-	RESTINIO_GEN( from,                         From ) \
-	RESTINIO_GEN( getprofile,                         GetProfile ) \
-	RESTINIO_GEN( hobareg,                         Hobareg ) \
-	RESTINIO_GEN( host,                         Host ) \
-	RESTINIO_GEN( http2-settings,                         HTTP2-Settings ) \
-	RESTINIO_GEN( im,                         IM ) \
-	RESTINIO_GEN( if,                         If ) \
-	RESTINIO_GEN( if-match,                   If-Match ) \
-	RESTINIO_GEN( if-modified-since,          If-Modified-Since ) \
-	RESTINIO_GEN( if-none-match,              If-None-Match ) \
-	RESTINIO_GEN( if-range,                   If-Range ) \
-	RESTINIO_GEN( if-schedule-tag-match,      If-Schedule-Tag-Match ) \
-	RESTINIO_GEN( if-unmodified-since,        If-Unmodified-Since ) \
-	RESTINIO_GEN( keep-alive,                 Keep-Alive ) \
-	RESTINIO_GEN( label,                      Label ) \
-	RESTINIO_GEN( last-modified,                         Last-Modified ) \
-	RESTINIO_GEN( link,                         Link ) \
-	RESTINIO_GEN( location,                         Location ) \
-	RESTINIO_GEN( lock-token,                         Lock-Token ) \
-	RESTINIO_GEN( man,                         Man ) \
-	RESTINIO_GEN( max-forwards,                         Max-Forwards ) \
-	RESTINIO_GEN( memento-datetime,                         Memento-Datetime ) \
-	RESTINIO_GEN( meter,                         Meter ) \
-	RESTINIO_GEN( mime-version,                         MIME-Version ) \
-	RESTINIO_GEN( negotiate,                         Negotiate ) \
-	RESTINIO_GEN( opt,                         Opt ) \
-	RESTINIO_GEN( optional-www-authenticate,                         Optional-WWW-Authenticate ) \
-	RESTINIO_GEN( ordering-type,                         Ordering-Type ) \
-	RESTINIO_GEN( origin,                         Origin ) \
-	RESTINIO_GEN( overwrite,                         Overwrite ) \
-	RESTINIO_GEN( p3p,                         P3P ) \
-	RESTINIO_GEN( pep,                         PEP ) \
-	RESTINIO_GEN( pics-label,                         PICS-Label ) \
-	RESTINIO_GEN( pep-info,                         Pep-Info ) \
-	RESTINIO_GEN( position,                         Position ) \
-	RESTINIO_GEN( pragma,                         Pragma ) \
-	RESTINIO_GEN( prefer,                         Prefer ) \
-	RESTINIO_GEN( preference-applied,                         Preference-Applied ) \
-	RESTINIO_GEN( profileobject,                         ProfileObject ) \
-	RESTINIO_GEN( protocol,                         Protocol ) \
-	RESTINIO_GEN( protocol-info,                         Protocol-Info ) \
-	RESTINIO_GEN( protocol-query,                         Protocol-Query ) \
-	RESTINIO_GEN( protocol-request,                         Protocol-Request ) \
-	RESTINIO_GEN( proxy-authenticate,                         Proxy-Authenticate ) \
-	RESTINIO_GEN( proxy-authentication-info,                         Proxy-Authentication-Info ) \
-	RESTINIO_GEN( proxy-authorization,                         Proxy-Authorization ) \
-	RESTINIO_GEN( proxy-features,                         Proxy-Features ) \
-	RESTINIO_GEN( proxy-instruction,                         Proxy-Instruction ) \
-	RESTINIO_GEN( public,                         Public ) \
-	RESTINIO_GEN( public-key-pins,                         Public-Key-Pins ) \
-	RESTINIO_GEN( public-key-pins-report-only,                         Public-Key-Pins-Report-Only ) \
-	RESTINIO_GEN( range,                         Range ) \
-	RESTINIO_GEN( redirect-ref,                         Redirect-Ref ) \
-	RESTINIO_GEN( referer,                         Referer ) \
-	RESTINIO_GEN( retry-after,                         Retry-After ) \
-	RESTINIO_GEN( safe,                         Safe ) \
-	RESTINIO_GEN( schedule-reply,                         Schedule-Reply ) \
-	RESTINIO_GEN( schedule-tag,                         Schedule-Tag ) \
-	RESTINIO_GEN( sec-websocket-accept,                         Sec-WebSocket-Accept ) \
-	RESTINIO_GEN( sec-websocket-extensions,                         Sec-WebSocket-Extensions ) \
-	RESTINIO_GEN( sec-websocket-key,                         Sec-WebSocket-Key ) \
-	RESTINIO_GEN( sec-websocket-protocol,                         Sec-WebSocket-Protocol ) \
-	RESTINIO_GEN( sec-websocket-version,                         Sec-WebSocket-Version ) \
-	RESTINIO_GEN( security-scheme,                         Security-Scheme ) \
-	RESTINIO_GEN( server,                         Server ) \
-	RESTINIO_GEN( set-cookie,                         Set-Cookie ) \
-	RESTINIO_GEN( set-cookie2,                         Set-Cookie2 ) \
-	RESTINIO_GEN( setprofile,                         SetProfile ) \
-	RESTINIO_GEN( slug,                         SLUG ) \
-	RESTINIO_GEN( soapaction,                         SoapAction ) \
-	RESTINIO_GEN( status-uri,                         Status-URI ) \
-	RESTINIO_GEN( strict-transport-security,                         Strict-Transport-Security ) \
-	RESTINIO_GEN( surrogate-capability,                         Surrogate-Capability ) \
-	RESTINIO_GEN( surrogate-control,                         Surrogate-Control ) \
-	RESTINIO_GEN( tcn,                         TCN ) \
-	RESTINIO_GEN( te,                         TE ) \
-	RESTINIO_GEN( timeout,                         Timeout ) \
-	RESTINIO_GEN( topic,                         Topic ) \
-	RESTINIO_GEN( trailer,                         Trailer ) \
-	RESTINIO_GEN( transfer-encoding,                         Transfer-Encoding ) \
-	RESTINIO_GEN( ttl,                         TTL ) \
-	RESTINIO_GEN( urgency,                         Urgency ) \
-	RESTINIO_GEN( uri,                         URI ) \
-	RESTINIO_GEN( upgrade,                         Upgrade ) \
-	RESTINIO_GEN( user-agent,                         User-Agent ) \
-	RESTINIO_GEN( variant-vary,                         Variant-Vary ) \
-	RESTINIO_GEN( vary,                         Vary ) \
-	RESTINIO_GEN( via,                         Via ) \
-	RESTINIO_GEN( www-authenticate,                         WWW-Authenticate ) \
-	RESTINIO_GEN( want-digest,                         Want-Digest ) \
-	RESTINIO_GEN( warning,                         Warning ) \
-	RESTINIO_GEN( x-frame-options,                         X-Frame-Options ) \
+//
+// caseless_cmp()
+//
 
+//! Comparator for fields names.
+inline bool
+caseless_cmp( const std::string & a, const std::string & b )
+{
+	return caseless_cmp( a.data(), a.size(), b.data(), b.size() );
+}
+
+// Adopted header fields
+// (https://www.iana.org/assignments/message-headers/message-headers.xml#perm-headers).
+#define RESTINIO_HTTP_FIELDS_MAP( RESTINIO_GEN ) \
+	RESTINIO_GEN( a_im,                         A-IM )                        \
+	RESTINIO_GEN( accept,                       Accept )                      \
+	RESTINIO_GEN( accept_additions,             Accept-Additions )            \
+	RESTINIO_GEN( accept_charset,               Accept-Charset )              \
+	RESTINIO_GEN( accept_datetime,              Accept-Datetime )             \
+	RESTINIO_GEN( accept_encoding,              Accept-Encoding )             \
+	RESTINIO_GEN( accept_features,              Accept-Features )             \
+	RESTINIO_GEN( accept_language,              Accept-Language )             \
+	RESTINIO_GEN( accept_patch,                 Accept-Patch )                \
+	RESTINIO_GEN( accept_post,                  Accept-Post )                 \
+	RESTINIO_GEN( accept_ranges,                Accept-Ranges )               \
+	RESTINIO_GEN( age,                          Age )                         \
+	RESTINIO_GEN( allow,                        Allow )                       \
+	RESTINIO_GEN( alpn,                         ALPN )                        \
+	RESTINIO_GEN( alt_svc,                      Alt-Svc )                     \
+	RESTINIO_GEN( alt_used,                     Alt-Used )                    \
+	RESTINIO_GEN( alternates,                   Alternates )                  \
+	RESTINIO_GEN( apply_to_redirect_ref,        Apply-To-Redirect-Ref )       \
+	RESTINIO_GEN( authentication_control,       Authentication-Control )      \
+	RESTINIO_GEN( authentication_info,          Authentication-Info )         \
+	RESTINIO_GEN( authorization,                Authorization )               \
+	RESTINIO_GEN( c_ext,                        C-Ext )                       \
+	RESTINIO_GEN( c_man,                        C-Man )                       \
+	RESTINIO_GEN( c_opt,                        C-Opt )                       \
+	RESTINIO_GEN( c_pep,                        C-PEP )                       \
+	RESTINIO_GEN( c_pep_info,                   C-PEP-Info )                  \
+	RESTINIO_GEN( cache_control,                Cache-Control )               \
+	RESTINIO_GEN( caldav_timezones,             CalDAV-Timezones )            \
+	RESTINIO_GEN( close,                        Close )                       \
+	RESTINIO_GEN( connection,                   Connection )                  \
+	RESTINIO_GEN( content_base,                 Content-Base )                \
+	RESTINIO_GEN( content_disposition,          Content-Disposition )         \
+	RESTINIO_GEN( content_encoding,             Content-Encoding )            \
+	RESTINIO_GEN( content_id,                   Content-ID )                  \
+	RESTINIO_GEN( content_language,             Content-Language )            \
+	RESTINIO_GEN( content_length,               Content-Length )              \
+	RESTINIO_GEN( content_location,             Content-Location )            \
+	RESTINIO_GEN( content_md5,                  Content-MD5 )                 \
+	RESTINIO_GEN( content_range,                Content-Range )               \
+	RESTINIO_GEN( content_script_type,          Content-Script-Type )         \
+	RESTINIO_GEN( content_style_type,           Content-Style-Type )          \
+	RESTINIO_GEN( content_type,                 Content-Type )                \
+	RESTINIO_GEN( content_version,              Content-Version )             \
+	RESTINIO_GEN( cookie,                       Cookie )                      \
+	RESTINIO_GEN( cookie2,                      Cookie2 )                     \
+	RESTINIO_GEN( dasl,                         DASL )                        \
+	RESTINIO_GEN( dav,                          DAV )                         \
+	RESTINIO_GEN( date,                         Date )                        \
+	RESTINIO_GEN( default_style,                Default-Style )               \
+	RESTINIO_GEN( delta_base,                   Delta-Base )                  \
+	RESTINIO_GEN( depth,                        Depth )                       \
+	RESTINIO_GEN( derived_from,                 Derived-From )                \
+	RESTINIO_GEN( destination,                  Destination )                 \
+	RESTINIO_GEN( differential_id,              Differential-ID )             \
+	RESTINIO_GEN( digest,                       Digest )                      \
+	RESTINIO_GEN( etag,                         ETag )                        \
+	RESTINIO_GEN( expect,                       Expect )                      \
+	RESTINIO_GEN( expires,                      Expires )                     \
+	RESTINIO_GEN( ext,                          Ext )                         \
+	RESTINIO_GEN( forwarded,                    Forwarded )                   \
+	RESTINIO_GEN( from,                         From )                        \
+	RESTINIO_GEN( getprofile,                   GetProfile )                  \
+	RESTINIO_GEN( hobareg,                      Hobareg )                     \
+	RESTINIO_GEN( host,                         Host )                        \
+	RESTINIO_GEN( http2_settings,               HTTP2-Settings )              \
+	RESTINIO_GEN( im,                           IM )                          \
+	RESTINIO_GEN( if_,                          If )                          \
+	RESTINIO_GEN( if_match,                     If-Match )                    \
+	RESTINIO_GEN( if_modified_since,            If-Modified-Since )           \
+	RESTINIO_GEN( if_none_match,                If-None-Match )               \
+	RESTINIO_GEN( if_range,                     If-Range )                    \
+	RESTINIO_GEN( if_schedule_tag_match,        If-Schedule-Tag-Match )       \
+	RESTINIO_GEN( if_unmodified_since,          If-Unmodified-Since )         \
+	RESTINIO_GEN( keep_alive,                   Keep-Alive )                  \
+	RESTINIO_GEN( label,                        Label )                       \
+	RESTINIO_GEN( last_modified,                Last-Modified )               \
+	RESTINIO_GEN( link,                         Link )                        \
+	RESTINIO_GEN( location,                     Location )                    \
+	RESTINIO_GEN( lock_token,                   Lock-Token )                  \
+	RESTINIO_GEN( man,                          Man )                         \
+	RESTINIO_GEN( max_forwards,                 Max-Forwards )                \
+	RESTINIO_GEN( memento_datetime,             Memento-Datetime )            \
+	RESTINIO_GEN( meter,                        Meter )                       \
+	RESTINIO_GEN( mime_version,                 MIME-Version )                \
+	RESTINIO_GEN( negotiate,                    Negotiate )                   \
+	RESTINIO_GEN( opt,                          Opt )                         \
+	RESTINIO_GEN( optional_www_authenticate,    Optional-WWW-Authenticate )   \
+	RESTINIO_GEN( ordering_type,                Ordering-Type )               \
+	RESTINIO_GEN( origin,                       Origin )                      \
+	RESTINIO_GEN( overwrite,                    Overwrite )                   \
+	RESTINIO_GEN( p3p,                          P3P )                         \
+	RESTINIO_GEN( pep,                          PEP )                         \
+	RESTINIO_GEN( pics_label,                   PICS-Label )                  \
+	RESTINIO_GEN( pep_info,                     Pep-Info )                    \
+	RESTINIO_GEN( position,                     Position )                    \
+	RESTINIO_GEN( pragma,                       Pragma )                      \
+	RESTINIO_GEN( prefer,                       Prefer )                      \
+	RESTINIO_GEN( preference_applied,           Preference-Applied )          \
+	RESTINIO_GEN( profileobject,                ProfileObject )               \
+	RESTINIO_GEN( protocol,                     Protocol )                    \
+	RESTINIO_GEN( protocol_info,                Protocol-Info )               \
+	RESTINIO_GEN( protocol_query,               Protocol-Query )              \
+	RESTINIO_GEN( protocol_request,             Protocol-Request )            \
+	RESTINIO_GEN( proxy_authenticate,           Proxy-Authenticate )          \
+	RESTINIO_GEN( proxy_authentication_info,    Proxy-Authentication-Info )   \
+	RESTINIO_GEN( proxy_authorization,          Proxy-Authorization )         \
+	RESTINIO_GEN( proxy_features,               Proxy-Features )              \
+	RESTINIO_GEN( proxy_instruction,            Proxy-Instruction )           \
+	RESTINIO_GEN( public_,                      Public )                      \
+	RESTINIO_GEN( public_key_pins,              Public-Key-Pins )             \
+	RESTINIO_GEN( public_key_pins_report_only,  Public-Key-Pins-Report-Only ) \
+	RESTINIO_GEN( range,                        Range )                       \
+	RESTINIO_GEN( redirect_ref,                 Redirect-Ref )                \
+	RESTINIO_GEN( referer,                      Referer )                     \
+	RESTINIO_GEN( retry_after,                  Retry-After )                 \
+	RESTINIO_GEN( safe,                         Safe )                        \
+	RESTINIO_GEN( schedule_reply,               Schedule-Reply )              \
+	RESTINIO_GEN( schedule_tag,                 Schedule-Tag )                \
+	RESTINIO_GEN( sec_websocket_accept,         Sec-WebSocket-Accept )        \
+	RESTINIO_GEN( sec_websocket_extensions,     Sec-WebSocket-Extensions )    \
+	RESTINIO_GEN( sec_websocket_key,            Sec-WebSocket-Key )           \
+	RESTINIO_GEN( sec_websocket_protocol,       Sec-WebSocket-Protocol )      \
+	RESTINIO_GEN( sec_websocket_version,        Sec-WebSocket-Version )       \
+	RESTINIO_GEN( security_scheme,              Security-Scheme )             \
+	RESTINIO_GEN( server,                       Server )                      \
+	RESTINIO_GEN( set_cookie,                   Set-Cookie )                  \
+	RESTINIO_GEN( set_cookie2,                  Set-Cookie2 )                 \
+	RESTINIO_GEN( setprofile,                   SetProfile )                  \
+	RESTINIO_GEN( slug,                         SLUG )                        \
+	RESTINIO_GEN( soapaction,                   SoapAction )                  \
+	RESTINIO_GEN( status_uri,                   Status-URI )                  \
+	RESTINIO_GEN( strict_transport_security,    Strict-Transport-Security )   \
+	RESTINIO_GEN( surrogate_capability,         Surrogate-Capability )        \
+	RESTINIO_GEN( surrogate_control,            Surrogate-Control )           \
+	RESTINIO_GEN( tcn,                          TCN )                         \
+	RESTINIO_GEN( te,                           TE )                          \
+	RESTINIO_GEN( timeout,                      Timeout )                     \
+	RESTINIO_GEN( topic,                        Topic )                       \
+	RESTINIO_GEN( trailer,                      Trailer )                     \
+	RESTINIO_GEN( transfer_encoding,            Transfer-Encoding )           \
+	RESTINIO_GEN( ttl,                          TTL )                         \
+	RESTINIO_GEN( urgency,                      Urgency )                     \
+	RESTINIO_GEN( uri,                          URI )                         \
+	RESTINIO_GEN( upgrade,                      Upgrade )                     \
+	RESTINIO_GEN( user_agent,                   User-Agent )                  \
+	RESTINIO_GEN( variant_vary,                 Variant-Vary )                \
+	RESTINIO_GEN( vary,                         Vary )                        \
+	RESTINIO_GEN( via,                          Via )                         \
+	RESTINIO_GEN( www_authenticate,             WWW-Authenticate )            \
+	RESTINIO_GEN( want_digest,                  Want-Digest )                 \
+	RESTINIO_GEN( warning,                      Warning )                     \
+	RESTINIO_GEN( x_frame_options,              X-Frame-Options )
+
+//
+// http_method_t
+//
+
+//! C++ enum that repeats nodejs c-style enum.
+enum class http_field_t : std::uint8_t //By now 152 + 1 items fits to uint8_t
+{
+#define RESTINIO_HTTP_FIELD_GEN( name, ignored ) name,
+	RESTINIO_HTTP_FIELDS_MAP( RESTINIO_HTTP_FIELD_GEN )
+#undef RESTINIO_HTTP_FIELD_GEN
+	// Unspecified field.
+	field_unspecified
+};
+
+//
+// string_to_field()
+//
+
+//! Helper function to get method string name.
+//! \{
+inline http_field_t
+string_to_field( const char * field_name, std::size_t field_name_size )
+{
+	#define RESTINIO_HTTP_FIELD_TOENUM_GEN( name, string_name ) \
+		{                                                       \
+			const char field_str[] = #string_name ;             \
+			if( caseless_cmp(                                   \
+				field_name, field_name_size,                    \
+				field_str, sizeof( field_str ) - 1 ) )          \
+				return http_field_t:: name;                     \
+		}
+		RESTINIO_HTTP_FIELDS_MAP( RESTINIO_HTTP_FIELD_TOENUM_GEN )
+	#undef RESTINIO_HTTP_FIELD_TOENUM_GEN
+
+	return http_field_t::field_unspecified;
+}
+
+inline http_field_t
+string_to_field( const char * field_name )
+{
+	return string_to_field( field_name, std::strlen( field_name ) );
+}
+
+inline http_field_t
+string_to_field( const std::string & field_name )
+{
+	return string_to_field( field_name.data(), field_name.size() );
+}
+//! \}
+
+//
+// field_to_string()
+//
+
+//! Helper sunction to get method string name.
+constexpr inline const char *
+field_to_string( http_field_t m )
+{
+	const char * result = "";
+	switch( m )
+	{
+		#define RESTINIO_HTTP_FIELD_STR_GEN( name, string_name ) \
+			case http_field_t::name: result = #string_name; break;
+
+			RESTINIO_HTTP_FIELDS_MAP( RESTINIO_HTTP_FIELD_STR_GEN )
+		#undef RESTINIO_HTTP_FIELD_STR_GEN
+
+		case http_field_t::field_unspecified: break; // Ignore.
+	};
+
+	return result;
+}
 
 //
 // http_header_fields_t
