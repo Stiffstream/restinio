@@ -22,27 +22,6 @@ namespace restinio
 {
 
 //
-// http_header_field_t
-//
-
-//! A single header field.
-struct http_header_field_t
-{
-	http_header_field_t()
-	{}
-
-	http_header_field_t(
-		std::string name,
-		std::string value )
-		:	m_name{ std::move( name ) }
-		,	m_value{ std::move( value ) }
-	{}
-
-	std::string m_name;
-	std::string m_value;
-};
-
-//
 // caseless_cmp()
 //
 
@@ -289,10 +268,10 @@ string_to_field( const std::string & field_name )
 
 //! Helper sunction to get method string name.
 constexpr inline const char *
-field_to_string( http_field_t m )
+field_to_string( http_field_t f )
 {
 	const char * result = "";
-	switch( m )
+	switch( f )
 	{
 		#define RESTINIO_HTTP_FIELD_STR_GEN( name, string_name ) \
 			case http_field_t::name: result = #string_name; break;
@@ -305,6 +284,38 @@ field_to_string( http_field_t m )
 
 	return result;
 }
+
+//
+// http_header_field_t
+//
+
+//! A single header field.
+struct http_header_field_t
+{
+	http_header_field_t()
+		:	m_field_id{ http_field_t::field_unspecified }
+	{}
+
+	http_header_field_t(
+		std::string name,
+		std::string value )
+		:	m_name{ std::move( name ) }
+		,	m_value{ std::move( value ) }
+		,	m_field_id{ string_to_field( m_name ) }
+	{}
+
+	http_header_field_t(
+		http_field_t field_id,
+		std::string value )
+		:	m_name{ field_to_string( field_id ) }
+		,	m_value{ std::move( value ) }
+		,	m_field_id{ field_id }
+	{}
+
+	std::string m_name;
+	std::string m_value;
+	http_field_t m_field_id;
+};
 
 //
 // http_header_fields_t
@@ -324,12 +335,21 @@ class http_header_fields_t
 		http_header_fields_t & operator=(const http_header_fields_t &) = default;
 		http_header_fields_t & operator=(http_header_fields_t &&) = default;
 
+		//! Chack field by name.
 		bool
 		has_field( const std::string & field_name ) const
 		{
 			return m_fields.cend() != cfind( field_name );
 		}
 
+		//! Chack field by field-id.
+		bool
+		has_field( http_field_t field_id ) const
+		{
+			return m_fields.cend() != cfind( field_id );
+		}
+
+		//! Set field with string pair.
 		void
 		set_field(
 			std::string field_name,
@@ -346,6 +366,26 @@ class http_header_fields_t
 			{
 				m_fields.emplace_back(
 					std::move( field_name ),
+					std::move( field_value ) );
+			}
+		}
+
+		//! Set field with id-value pair.
+		void
+		set_field(
+			http_field_t field_id,
+			std::string field_value )
+		{
+			const auto it = find( field_id );
+
+			if( m_fields.end() != it )
+			{
+				it->m_value = std::move( field_value );
+			}
+			else
+			{
+				m_fields.emplace_back(
+					field_id,
 					std::move( field_value ) );
 			}
 		}
@@ -368,11 +408,29 @@ class http_header_fields_t
 		}
 
 		void
+		append_field(
+			http_field_t field_id,
+			const std::string & field_value )
+		{
+			const auto it = find( field_id );
+
+			if( m_fields.end() != it )
+			{
+				it->m_value.append( field_value );
+			}
+			else
+			{
+				m_fields.emplace_back( field_id, field_value );
+			}
+		}
+
+		void
 		append_last_field( const std::string & field_value )
 		{
 			m_fields.back().m_value.append( field_value );
 		}
 
+		//! Get field by name.
 		const std::string &
 		get_field(
 			const std::string & field_name ) const
@@ -386,6 +444,26 @@ class http_header_fields_t
 			return it->m_value;
 		}
 
+		//! Get field by id.
+		const std::string &
+		get_field(
+			http_field_t field_id ) const
+		{
+			const auto it = cfind( field_id );
+
+			if( m_fields.end() == it )
+				throw exception_t(
+					fmt::format(
+						"field '{}' doesn't exist",
+						field_to_string( field_id ) ) );
+
+			return it->m_value;
+		}
+
+		//! Get field by name.
+		/*!
+			If field exists return field value, otherwise return default_value.
+		*/
 		const std::string &
 		get_field(
 			const std::string & field_name,
@@ -399,10 +477,38 @@ class http_header_fields_t
 			return it->m_value;
 		}
 
+		//! Get field by id.
+		/*!
+			If field exists return field value, otherwise return default_value.
+		*/
+		const std::string &
+		get_field(
+			http_field_t field_id,
+			const std::string & default_value ) const
+		{
+			const auto it = cfind( field_id );
+
+			if( m_fields.end() == it )
+				return default_value;
+
+			return it->m_value;
+		}
+
+		//! Remove field by name.
 		void
 		remove_field( const std::string & field_name )
 		{
 			const auto it = find( field_name );
+
+			if( m_fields.end() != it )
+				m_fields.erase( it );
+		}
+
+		//! Remove field by id.
+		void
+		remove_field( http_field_t field_id )
+		{
+			const auto it = find( field_id );
 
 			if( m_fields.end() != it )
 				m_fields.erase( it );
@@ -446,6 +552,28 @@ class http_header_fields_t
 				m_fields.cend(),
 				[&]( const auto & f ){
 					return caseless_cmp( f.m_name, field_name );
+				} );
+		}
+
+		fields_container_t::iterator
+		find( http_field_t field_id )
+		{
+			return std::find_if(
+				m_fields.begin(),
+				m_fields.end(),
+				[&]( const auto & f ){
+					return f.m_field_id, field_id;
+				} );
+		}
+
+		fields_container_t::const_iterator
+		cfind( http_field_t field_id ) const
+		{
+			return std::find_if(
+				m_fields.cbegin(),
+				m_fields.cend(),
+				[&]( const auto & f ){
+					return f.m_field_id, field_id;
 				} );
 		}
 
