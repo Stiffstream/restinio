@@ -58,6 +58,7 @@ caseless_cmp( const std::string & a, const std::string & b )
 
 // Adopted header fields
 // (https://www.iana.org/assignments/message-headers/message-headers.xml#perm-headers).
+// Fields `Connection` and `Content-Length` are specieal cases, thus they are excluded from the list.
 #define RESTINIO_HTTP_FIELDS_MAP( RESTINIO_GEN ) \
 	RESTINIO_GEN( a_im,                         A-IM )                        \
 	RESTINIO_GEN( accept,                       Accept )                      \
@@ -88,13 +89,11 @@ caseless_cmp( const std::string & a, const std::string & b )
 	RESTINIO_GEN( cache_control,                Cache-Control )               \
 	RESTINIO_GEN( caldav_timezones,             CalDAV-Timezones )            \
 	RESTINIO_GEN( close,                        Close )                       \
-	RESTINIO_GEN( connection,                   Connection )                  \
 	RESTINIO_GEN( content_base,                 Content-Base )                \
 	RESTINIO_GEN( content_disposition,          Content-Disposition )         \
 	RESTINIO_GEN( content_encoding,             Content-Encoding )            \
 	RESTINIO_GEN( content_id,                   Content-ID )                  \
 	RESTINIO_GEN( content_language,             Content-Language )            \
-	RESTINIO_GEN( content_length,               Content-Length )              \
 	RESTINIO_GEN( content_location,             Content-Location )            \
 	RESTINIO_GEN( content_md5,                  Content-MD5 )                 \
 	RESTINIO_GEN( content_range,                Content-Range )               \
@@ -211,12 +210,19 @@ caseless_cmp( const std::string & a, const std::string & b )
 	RESTINIO_GEN( want_digest,                  Want-Digest )                 \
 	RESTINIO_GEN( warning,                      Warning )                     \
 	RESTINIO_GEN( x_frame_options,              X-Frame-Options )
+	// SPECIAL CASE: RESTINIO_GEN( connection,                   Connection )
+	// SPECIAL CASE: RESTINIO_GEN( content_length,               Content-Length )
+
 
 //
 // http_method_t
 //
 
 //! C++ enum that repeats nodejs c-style enum.
+/*!
+	\note Fields `Connection` and `Content-Length` are specieal cases,
+	thus they are not present in the list.
+*/
 enum class http_field_t : std::uint8_t //By now 152 + 1 items fits to uint8_t
 {
 #define RESTINIO_HTTP_FIELD_GEN( name, ignored ) name,
@@ -225,6 +231,9 @@ enum class http_field_t : std::uint8_t //By now 152 + 1 items fits to uint8_t
 	// Unspecified field.
 	field_unspecified
 };
+
+//! Helper alies to omitt `_t` suffix.
+using http_field = http_field_t;
 
 //
 // string_to_field()
@@ -290,6 +299,13 @@ field_to_string( http_field_t f )
 //
 
 //! A single header field.
+/*!
+	Fields m_name and m_field_id are kind of having the same meaning,
+	and m_name field seems like can be omitted, but
+	for the cases of custom header fields it is important to
+	rely on the name only. And as the names of almoust all speified fields
+	fits in SSO it doesn't involve much overhead on standard fields.
+*/
 struct http_header_field_t
 {
 	http_header_field_t()
@@ -317,13 +333,34 @@ struct http_header_field_t
 	http_field_t m_field_id;
 };
 
+// Make neccessary forward declarations.
+class http_header_fields_t;
+namespace impl
+{
+void
+append_last_field_accessor( http_header_fields_t &, const std::string & );
+} /* namespace impl */
+
 //
 // http_header_fields_t
 //
 
 //! Header fields map.
+/*!
+	This class holds a collection of header fields.
+
+	There are 2 special cases for fields: `Connection` and `Content-Length`
+	This cases are handled separetely from the rest of the fields.
+	And as the implementation of http_header_fields_t doesn't
+	have checks on each field manipulation checking whether
+	field name is `Connection` or `Content-Length` it is important
+	to use proper member functions in derived classes for manipulating them.
+*/
 class http_header_fields_t
 {
+		friend void
+		impl::append_last_field_accessor( http_header_fields_t &, const std::string & );
+
 	public:
 		using fields_container_t = std::vector< http_header_field_t >;
 
@@ -343,6 +380,11 @@ class http_header_fields_t
 		}
 
 		//! Chack field by field-id.
+		/*!
+			\note If `field_id=http_field_t::field_unspecified`
+			then function returns not more than just a fact
+			whether there is at least one unspecified field.
+		*/
 		bool
 		has_field( http_field_t field_id ) const
 		{
@@ -371,25 +413,33 @@ class http_header_fields_t
 		}
 
 		//! Set field with id-value pair.
+		/*!
+			If `field_id=http_field_t::field_unspecified`
+			then function does nothing.
+		*/
 		void
 		set_field(
 			http_field_t field_id,
 			std::string field_value )
 		{
-			const auto it = find( field_id );
+			if( http_field_t::field_unspecified != field_id )
+			{
+				const auto it = find( field_id );
 
-			if( m_fields.end() != it )
-			{
-				it->m_value = std::move( field_value );
-			}
-			else
-			{
-				m_fields.emplace_back(
-					field_id,
-					std::move( field_value ) );
+				if( m_fields.end() != it )
+				{
+					it->m_value = std::move( field_value );
+				}
+				else
+				{
+					m_fields.emplace_back(
+						field_id,
+						std::move( field_value ) );
+				}
 			}
 		}
 
+		//! Append field with name.
 		void
 		append_field(
 			const std::string & field_name,
@@ -407,27 +457,29 @@ class http_header_fields_t
 			}
 		}
 
+		//! Append field with id.
+		/*!
+			If `field_id=http_field_t::field_unspecified`
+			then function does nothing.
+		*/
 		void
 		append_field(
 			http_field_t field_id,
 			const std::string & field_value )
 		{
-			const auto it = find( field_id );
-
-			if( m_fields.end() != it )
+			if( http_field_t::field_unspecified != field_id )
 			{
-				it->m_value.append( field_value );
-			}
-			else
-			{
-				m_fields.emplace_back( field_id, field_value );
-			}
-		}
+				const auto it = find( field_id );
 
-		void
-		append_last_field( const std::string & field_value )
-		{
-			m_fields.back().m_value.append( field_value );
+				if( m_fields.end() != it )
+				{
+					it->m_value.append( field_value );
+				}
+				else
+				{
+					m_fields.emplace_back( field_id, field_value );
+				}
+			}
 		}
 
 		//! Get field by name.
@@ -438,8 +490,8 @@ class http_header_fields_t
 			const auto it = cfind( field_name );
 
 			if( m_fields.end() == it )
-				throw exception_t(
-					fmt::format( "field '{}' doesn't exist", field_name ) );
+				throw exception_t{
+					fmt::format( "field '{}' doesn't exist", field_name ) };
 
 			return it->m_value;
 		}
@@ -449,13 +501,18 @@ class http_header_fields_t
 		get_field(
 			http_field_t field_id ) const
 		{
+			if( http_field_t::field_unspecified == field_id )
+				throw exception_t{
+					fmt::format(
+						"unspecified fields cannot be searched by id" ) };
+
 			const auto it = cfind( field_id );
 
 			if( m_fields.end() == it )
-				throw exception_t(
+				throw exception_t{
 					fmt::format(
 						"field '{}' doesn't exist",
-						field_to_string( field_id ) ) );
+						field_to_string( field_id ) ) };
 
 			return it->m_value;
 		}
@@ -486,12 +543,15 @@ class http_header_fields_t
 			http_field_t field_id,
 			const std::string & default_value ) const
 		{
-			const auto it = cfind( field_id );
+			if( http_field_t::field_unspecified != field_id )
+			{
+				const auto it = cfind( field_id );
 
-			if( m_fields.end() == it )
-				return default_value;
+				if( m_fields.end() != it )
+					return it->m_value;
+			}
 
-			return it->m_value;
+			return default_value;
 		}
 
 		//! Remove field by name.
@@ -508,10 +568,13 @@ class http_header_fields_t
 		void
 		remove_field( http_field_t field_id )
 		{
-			const auto it = find( field_id );
+			if( http_field_t::field_unspecified != field_id )
+			{
+				const auto it = find( field_id );
 
-			if( m_fields.end() != it )
-				m_fields.erase( it );
+				if( m_fields.end() != it )
+					m_fields.erase( it );
+			}
 		}
 
 		auto
@@ -533,6 +596,21 @@ class http_header_fields_t
 		}
 
 	private:
+		//! Appends last added field.
+		/*!
+			This is function is used by http-parser when
+			field value is created by 2 separate
+			invocation of on-header-field-value callback
+
+			Function doesn't check if at least one field exists,
+			so it is not in the public interface.
+		*/
+		void
+		append_last_field( const std::string & field_value )
+		{
+			m_fields.back().m_value.append( field_value );
+		}
+
 		fields_container_t::iterator
 		find( const std::string & field_name )
 		{
@@ -562,7 +640,7 @@ class http_header_fields_t
 				m_fields.begin(),
 				m_fields.end(),
 				[&]( const auto & f ){
-					return f.m_field_id, field_id;
+					return f.m_field_id == field_id;
 				} );
 		}
 
@@ -573,7 +651,7 @@ class http_header_fields_t
 				m_fields.cbegin(),
 				m_fields.cend(),
 				[&]( const auto & f ){
-					return f.m_field_id, field_id;
+					return f.m_field_id == field_id;
 				} );
 		}
 
@@ -619,7 +697,9 @@ struct http_header_common_t
 
 		bool
 		should_keep_alive() const
-		{ return m_should_keep_alive; }
+		{
+			return m_should_keep_alive;
+		}
 
 		void
 		should_keep_alive( bool keep_alive )

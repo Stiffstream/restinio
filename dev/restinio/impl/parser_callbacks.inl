@@ -52,6 +52,12 @@ restinio_header_field_cb( http_parser * parser, const char *at, size_t length )
 	return 0;
 }
 
+inline void
+append_last_field_accessor( http_header_fields_t & fields, const std::string & value )
+{
+	fields.append_last_field( value );
+}
+
 inline int
 restinio_header_value_cb( http_parser * parser, const char *at, size_t length )
 {
@@ -70,7 +76,7 @@ restinio_header_value_cb( http_parser * parser, const char *at, size_t length )
 		}
 		else
 		{
-			ctx->m_header.append_last_field( std::string{ at, length } );
+			append_last_field_accessor( ctx->m_header, std::string{ at, length } );
 		}
 	}
 	catch( const std::exception & )
