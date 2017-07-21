@@ -12,7 +12,7 @@ restinio_url_cb( http_parser * parser, const char * at, size_t length )
 	try
 	{
 		auto * ctx =
-			reinterpret_cast< restinio::impl::parser_ctx_t * >(
+			reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
 				parser->data );
 
 		ctx->m_header.append_request_target( at, length );
@@ -31,7 +31,7 @@ restinio_header_field_cb( http_parser * parser, const char *at, size_t length )
 	try
 	{
 		auto * ctx =
-			reinterpret_cast< restinio::impl::parser_ctx_t * >(
+			reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
 				parser->data );
 
 		if( ctx->m_last_was_value )
@@ -64,7 +64,7 @@ restinio_header_value_cb( http_parser * parser, const char *at, size_t length )
 	try
 	{
 		auto * ctx =
-			reinterpret_cast< restinio::impl::parser_ctx_t * >( parser->data );
+			reinterpret_cast< restinio::impl::http_parser_ctx_t * >( parser->data );
 
 		if( !ctx->m_last_was_value )
 		{
@@ -96,7 +96,7 @@ restinio_headers_complete_cb( http_parser * parser )
 		try
 		{
 			auto * ctx =
-				reinterpret_cast< restinio::impl::parser_ctx_t * >(
+				reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
 					parser->data );
 
 			ctx->m_body.reserve( parser->content_length );
@@ -117,7 +117,7 @@ restinio_body_cb( http_parser * parser, const char *at, size_t length )
 	try
 	{
 		auto * ctx =
-			reinterpret_cast< restinio::impl::parser_ctx_t * >(
+			reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
 				parser->data );
 
 		ctx->m_body.append( at, length );
@@ -137,7 +137,7 @@ restinio_message_complete_cb( http_parser * parser )
 	http_parser_pause( parser, 1 );
 
 	auto * ctx =
-		reinterpret_cast< restinio::impl::parser_ctx_t * >(
+		reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
 			parser->data );
 
 	ctx->m_message_complete = true;

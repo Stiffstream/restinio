@@ -20,6 +20,8 @@
 #include <restinio/request_handler.hpp>
 #include <restinio/impl/header_helpers.hpp>
 #include <restinio/impl/response_coordinator.hpp>
+#include <restinio/impl/fixed_buffer.hpp>
+#include <restinio/impl/raw_resp_output_ctx.hpp>
 
 namespace restinio
 {
@@ -28,7 +30,7 @@ namespace impl
 {
 
 //
-// parser_ctx_t
+// http_parser_ctx_t
 //
 
 //! Parsing result context for using in parser callbacks.
@@ -36,7 +38,7 @@ namespace impl
 	All data is used as temps, and is usable only
 	after parsing completes new requests then it is moved out.
 */
-struct parser_ctx_t
+struct http_parser_ctx_t
 {
 	//! Request data.
 	//! \{
@@ -114,73 +116,6 @@ create_parser_settings()
 }
 
 //
-// input_buffer_t
-//
-
-//! Helper class for reading bytes and feeding them to parser.
-class input_buffer_t
-{
-	public:
-		explicit input_buffer_t( std::size_t size )
-		{
-			m_buf.resize( size );
-		}
-
-		//! Make asio buffer for reading bytes from socket.
-		auto
-		make_asio_buffer()
-		{
-			return asio::buffer( m_buf.data(), m_buf.size() );
-		}
-
-		//! Mark how many bytes were obtained.
-		void
-		obtained_bytes( std::size_t length )
-		{
-			m_ready_length = length; // Current bytes in buffer.
-			m_ready_pos = 0; // Reset current pos.
-		}
-
-		//! Mark how many bytes were obtained.
-		void
-		consumed_bytes( std::size_t length )
-		{
-			m_ready_length -= length; // decrement buffer length.
-			m_ready_pos += length; // Shift current pos.
-		}
-
-		//! How many unconsumed bytes are there in buffer.
-		std::size_t
-		length() const
-		{
-			return m_ready_length;
-		}
-
-		//! Get pointer to unconsumed bytes.
-		/*!
-			\note To check that buffer has unconsumed bytes use length().
-		*/
-		const char *
-		bytes() const
-		{
-			return m_buf.data() + m_ready_pos;
-		}
-
-	private:
-		//! Buffer for io operation.
-		std::vector< char > m_buf;
-
-		//! unconsumed data left in buffer:
-		//! \{
-		//! Start of data in buffer.
-		std::size_t m_ready_pos{0};
-
-		//! Data size.
-		std::size_t m_ready_length{0};
-		//! \}
-};
-
-//
 // connection_settings_t
 //
 
@@ -248,75 +183,6 @@ template < typename TRAITS >
 using connection_settings_shared_ptr_t =
 	std::shared_ptr< connection_settings_t< TRAITS > >;
 
-//
-// raw_resp_output_ctx_t
-//
-
-//! Helper class for writting response data.
-struct raw_resp_output_ctx_t
-{
-	static constexpr auto
-	max_iov_len()
-	{
-		using len_t = decltype( asio::detail::max_iov_len );
-		return std::min< len_t >( asio::detail::max_iov_len, 64 );
-	}
-
-	raw_resp_output_ctx_t()
-	{
-		m_asio_bufs.reserve( max_iov_len() );
-		m_bufs.reserve( max_iov_len() );
-	}
-
-	const std::vector< asio::const_buffer > &
-	create_bufs()
-	{
-		for( const auto & buf : m_bufs )
-		{
-			m_asio_bufs.emplace_back( buf.buf() );
-		}
-
-		m_transmitting = true;
-		return m_asio_bufs;
-	}
-
-	void
-	done()
-	{
-		m_asio_bufs.resize( 0 );
-		m_bufs.resize( 0 );
-		m_transmitting = false;
-	}
-
-	bool
-	transmitting() const
-	{
-		return m_transmitting;
-	}
-
-	//! Obtains ready buffers if any;
-	bool
-	obtain_bufs(
-		response_coordinator_t & resp_coordinator )
-	{
-		resp_coordinator.pop_ready_buffers(
-			max_iov_len(),
-			m_bufs );
-
-		return !m_bufs.empty();
-	}
-
-	private:
-		//! Is transmition running?
-		bool m_transmitting{ false };
-
-		//! Asio buffers.
-		std::vector< asio::const_buffer > m_asio_bufs;
-
-		//! Real buffers with data.
-		buffers_container_t m_bufs;
-};
-
 //! Data associated with connection read routine.
 struct connection_input_t
 {
@@ -327,11 +193,11 @@ struct connection_input_t
 	//! HTTP-parser.
 	//! \{
 	http_parser m_parser;
-	parser_ctx_t m_parser_ctx;
+	http_parser_ctx_t m_parser_ctx;
 	//! \}
 
 	//! Input buffer.
-	input_buffer_t m_buf;
+	fixed_buffer_t m_buf;
 
 	//! Prepare parser for reading new http-message.
 	void
@@ -357,7 +223,6 @@ prepare_connection_and_start_read(
 	// No preparation is needed, start
 	start_read_cb();
 }
-
 
 //
 // connection_t
