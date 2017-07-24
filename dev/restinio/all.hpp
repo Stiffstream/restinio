@@ -17,6 +17,9 @@
 #include <restinio/null_logger.hpp>
 #include <restinio/ostream_logger.hpp>
 #include <restinio/escape.hpp>
+#include <restinio/websocket.hpp>
 
 
 #include <restinio/router/express.hpp>
+
+
