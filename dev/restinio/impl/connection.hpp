@@ -521,9 +521,7 @@ class connection_t final
 							response_connection_attr_t::connection_close },
 						create_not_implemented_resp() );
 				}
-				else if(
-					!m_response_coordinator.closed() &&
-					!m_response_coordinator.is_full() )
+				else if( m_response_coordinator.is_able_to_get_more_messages() )
 				{
 					// Request was accepted,
 					// didn't create immediate response that closes connection after,
