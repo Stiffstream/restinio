@@ -185,7 +185,7 @@ template < typename TRAITS >
 using connection_settings_shared_ptr_t =
 	std::shared_ptr< connection_settings_t< TRAITS > >;
 
-enum class connection_upgrade_stage_t : std::uchar_t
+enum class connection_upgrade_stage_t : std::uint8_t
 {
 	//! No connection request in progress
 	none,
@@ -631,7 +631,7 @@ class connection_t final
 
 			const auto request_id = m_response_coordinator.register_new_request();
 
-			m_logger.debug( [&]{
+			m_logger.info( [&]{
 				return fmt::format(
 						"[connection:{}] handle upgrade request (#{}): {} {}",
 						connection_id(),
