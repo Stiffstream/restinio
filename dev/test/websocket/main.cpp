@@ -37,6 +37,28 @@ TEST_CASE( "Validate parser implementation details" , "[websocket][parser][impl]
 
 }
 
+TEST_CASE( "Validate mask and unmask operations" , "[websocket][parser][mask]" )
+{
+	raw_data_t unmasked_bin_data_etalon{
+		to_char(0x48), to_char(0x65), to_char(0x6C), to_char(0x6C), to_char(0x6F) };
+
+	raw_data_t bin_data = unmasked_bin_data_etalon;
+
+	uint32_t mask_key = 0x3D21FA37;
+
+	mask_unmask_payload( mask_key, bin_data );
+
+	raw_data_t masked_bin_data_etalon{
+		to_char(0x7F), to_char(0x9F), to_char(0x4D), to_char(0x51), to_char(0x58) };
+
+	REQUIRE( bin_data == masked_bin_data_etalon );
+
+	mask_unmask_payload( mask_key, bin_data );
+
+	REQUIRE( bin_data == unmasked_bin_data_etalon );
+
+}
+
 TEST_CASE( "Parse simple message" , "[websocket][parser]" )
 {
 	raw_data_t bin_data{ to_char(0x81), to_char(0x05), to_char(0x48), to_char(0x65), to_char(0x6C), to_char(0x6C), to_char(0x6F) };
@@ -46,7 +68,7 @@ TEST_CASE( "Parse simple message" , "[websocket][parser]" )
 	auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
 
 	REQUIRE( nparsed == 2 );
-	REQUIRE( parser.waiting_for_reset() == true );
+	REQUIRE( parser.header_parsed() == true );
 
 	auto ws_message = parser.current_message();
 	auto header = ws_message.m_header;
@@ -61,7 +83,7 @@ TEST_CASE( "Parse simple message" , "[websocket][parser]" )
 
 	parser.reset();
 
-	REQUIRE( parser.waiting_for_reset() == false );
+	REQUIRE( parser.header_parsed() == false );
 	REQUIRE( parser.current_message().payload_len() == 0 );
 }
 
@@ -75,7 +97,7 @@ TEST_CASE( "Parse simple message (chunked)" , "[websocket][parser]" )
 
 	for( ; shift < bin_data.size() - 1 ; ++shift  )
 	{
-		if( !parser.waiting_for_reset() )
+		if( !parser.header_parsed() )
 		{
 			auto nparsed = parser.parser_execute( bin_data.data() + shift, 1 );
 

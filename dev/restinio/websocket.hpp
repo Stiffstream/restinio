@@ -142,7 +142,7 @@ class ws_parser_t
 			size_t parsed_bytes = 0;
 
 			while( parsed_bytes < size &&
-				m_current_state != state_t::waiting_for_reset )
+				m_current_state != state_t::header_parsed )
 			{
 				byte_t byte = data[parsed_bytes];
 
@@ -155,15 +155,15 @@ class ws_parser_t
 		}
 
 		bool
-		waiting_for_reset() const
+		header_parsed() const
 		{
-			return m_current_state == state_t::waiting_for_reset;
+			return m_current_state == state_t::header_parsed;
 		}
 
 		void
 		reset()
 		{
-			m_current_state = state_t::waiting_for_header;
+			m_current_state = state_t::waiting_for_first_2_bytes;
 			m_current_msg = websocket_message_t();
 			m_expected_data.reset( WEBSOCKET_HEADER_SIZE );
 		}
@@ -182,13 +182,13 @@ class ws_parser_t
 
 		enum class state_t
 		{
-			waiting_for_header,
+			waiting_for_first_2_bytes,
 			waiting_for_ext_len,
 			waiting_for_mask_key,
-			waiting_for_reset
+			header_parsed
 		};
 
-		state_t m_current_state = state_t::waiting_for_header;
+		state_t m_current_state = state_t::waiting_for_first_2_bytes;
 
 		void
 		process_byte( byte_t byte )
@@ -198,7 +198,7 @@ class ws_parser_t
 				switch( m_current_state )
 				{
 
-				case state_t::waiting_for_header:
+				case state_t::waiting_for_first_2_bytes:
 
 					process_header();
 					break;
@@ -246,7 +246,7 @@ class ws_parser_t
 				size_t expected_data_size = payload_len;
 				m_expected_data.reset( expected_data_size );
 
-				m_current_state = state_t::waiting_for_reset;
+				m_current_state = state_t::header_parsed;
 			}
 		}
 
@@ -266,7 +266,7 @@ class ws_parser_t
 			}
 			else
 			{
-				m_current_state = state_t::waiting_for_reset;
+				m_current_state = state_t::header_parsed;
 			}
 		}
 
@@ -277,7 +277,7 @@ class ws_parser_t
 				m_current_msg.m_header,
 				m_expected_data.m_loaded_data );
 
-			m_current_state = state_t::waiting_for_reset;
+			m_current_state = state_t::header_parsed;
 		}
 
 		websocket_message_t::header_t
@@ -369,5 +369,20 @@ class ws_parser_t
 		}
 
 };
+
+inline void
+mask_unmask_payload( std::uint32_t masking_key, raw_data_t & payload )
+{
+	uint8_t mask[ 4 ] = { };
+	mask[ 0 ] = masking_key & 0xFF;
+	mask[ 1 ] = ( masking_key >>  8 ) & 0xFF;
+	mask[ 2 ] = ( masking_key >> 16 ) & 0xFF;
+	mask[ 3 ] = ( masking_key >> 24 ) & 0xFF;
+
+	for ( size_t index = 0; index < payload.size( ); index++ )
+	{
+		payload[ index ] ^= mask[ index % 4 ];
+	}
+}
 
 }
