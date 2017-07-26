@@ -50,8 +50,10 @@ struct http_parser_ctx_t
 	//! \{
 	std::string m_current_field_name;
 	bool m_last_was_value{ true };
-	bool m_message_complete{ false };
 	//! \}
+
+	//! Flag: is http message parsed completely.
+	bool m_message_complete{ false };
 
 	//! Prepare context to handle new request.
 	void
@@ -198,6 +200,9 @@ struct connection_input_t
 
 	//! Input buffer.
 	fixed_buffer_t m_buf;
+
+	//! Upgrade request is waiting for handling.
+	bool m_pending_upgrade_header{ false };
 
 	//! Prepare parser for reading new http-message.
 	void
@@ -486,49 +491,92 @@ class connection_t final
 			{
 				auto & parser = m_input.m_parser;
 				auto & parser_ctx = m_input.m_parser_ctx;
+				m_input.m_pending_upgrade_header = m_input.m_parser.upgrade;
 
-				const auto request_id = m_response_coordinator.register_new_request();
-
-				m_logger.trace( [&]{
-					return fmt::format(
-							"[connection:{}] request received (#{}): {} {}",
-							connection_id(),
-							request_id,
-							http_method_str(
-								static_cast<http_method>( parser.method ) ),
-							parser_ctx.m_header.request_target() );
-				} );
-
-				// TODO: mb there is a way to
-				// track if response was emmited immediately in handler
-				// or it was delegated
-				// so it is possible to omit this timer scheduling.
-				guard_request_handling_operation();
-
-				if( request_rejected() ==
-					m_request_handler(
-						std::make_shared< request_t >(
-							request_id,
-							std::move( parser_ctx.m_header ),
-							std::move( parser_ctx.m_body ),
-							shared_from_this() ) ) )
+				if( !m_input.m_pending_upgrade_header )
 				{
-					// If handler refused request, say not implemented.
-					write_response_parts_impl(
-						request_id,
-						response_output_flags_t{
-							response_parts_attr_t::final_parts,
-							response_connection_attr_t::connection_close },
-						create_not_implemented_resp() );
+					// Run ordinary HTTP logic.
+					const auto request_id = m_response_coordinator.register_new_request();
+
+					m_logger.trace( [&]{
+						return fmt::format(
+								"[connection:{}] request received (#{}): {} {}",
+								connection_id(),
+								request_id,
+								http_method_str(
+									static_cast<http_method>( parser.method ) ),
+								parser_ctx.m_header.request_target() );
+					} );
+
+					// TODO: mb there is a way to
+					// track if response was emmited immediately in handler
+					// or it was delegated
+					// so it is possible to omit this timer scheduling.
+					guard_request_handling_operation();
+
+					if( request_rejected() ==
+						m_request_handler(
+							std::make_shared< request_t >(
+								request_id,
+								std::move( parser_ctx.m_header ),
+								std::move( parser_ctx.m_body ),
+								shared_from_this() ) ) )
+					{
+						// If handler refused request, say not implemented.
+						write_response_parts_impl(
+							request_id,
+							response_output_flags_t{
+								response_parts_attr_t::final_parts,
+								response_connection_attr_t::connection_close },
+							create_not_implemented_resp() );
+					}
+					else if( m_response_coordinator.is_able_to_get_more_messages() )
+					{
+						// Request was accepted,
+						// didn't create immediate response that closes connection after,
+						// and it is possible to receive more requests
+						// then start consuming yet another request.
+						wait_for_http_message();
+					}
 				}
-				else if( m_response_coordinator.is_able_to_get_more_messages() )
+				else
 				{
-					// Request was accepted,
-					// didn't create immediate response that closes connection after,
-					// and it is possible to receive more requests
-					// then start consuming yet another request.
-					wait_for_http_message();
+					m_logger.trace( [&]{
+						const std::string default_value{};
+
+						return fmt::format(
+								"[connection:{}] upgrade request received: {} {}; "
+								"Upgrade: '{}';",
+								connection_id(),
+								http_method_str(
+									static_cast<http_method>( parser.method ) ),
+								parser_ctx.m_header.request_target(),
+								parser_ctx.m_header.get_field( http_field::upgrade, default_value ) );
+					} );
+
+					if( m_response_coordinator.empty() )
+					{
+						// There are no requests in handling
+						// So the current request with upgrade
+						// is the only one and can be handled directly.
+						// TODO: HANDLE UPGRADE_REQUEST.
+
+						// handle_upgrade_request();
+					}
+					else
+					{
+						// There are pipelined request
+						m_logger.trace( [&]{
+							return fmt::format(
+									"[connection:{}] upgrade request happened to be a pipelined one, "
+									"and will be handled after previous requests are handled",
+									connection_id() );
+						} );
+					}
+
+					// No further actions (like continue reading) in both cases are needed.
 				}
+
 			}
 			catch( const std::exception & ex )
 			{
@@ -668,14 +716,14 @@ class connection_t final
 							[ this,
 								ctx = shared_from_this(),
 								should_keep_alive = !m_response_coordinator.closed(),
-								init_read_after_this_write =
+								should_init_read_after_this_write =
 									full_before && !full_after ]
 								( auto ec, std::size_t written ){
 									this->after_write(
 										ec,
 										written,
 										should_keep_alive,
-										init_read_after_this_write );
+										should_init_read_after_this_write );
 							} ) );
 
 					guard_write_operation();
@@ -752,11 +800,11 @@ class connection_t final
 			const std::error_code & ec,
 			std::size_t /*written*/,
 			bool should_keep_alive,
-			bool init_read_after_this_write )
+			bool should_init_read_after_this_write )
 		{
 			if( !ec )
 			{
-				// Release allocated strings data.
+				// Release buffers.
 				m_resp_out_ctx.done();
 
 				m_logger.trace( [&]{
@@ -773,12 +821,32 @@ class connection_t final
 								this->connection_id() );
 					} );
 
-					if( init_read_after_this_write )
-						wait_for_http_message();
+					if( !m_input.m_pending_upgrade_header )
+					{
+						// Run ordinary HTTP logic.
+						if( should_init_read_after_this_write )
+							wait_for_http_message();
 
-					// Start another write opertion
-					// if there is something to send.
-					init_write_if_necessary();
+						// Start another write opertion
+						// if there is something to send.
+						init_write_if_necessary();
+					}
+					else
+					{
+						if( m_response_coordinator.empty() )
+						{
+							// Here upgrade req is the only request
+							// to by handled by this connection.
+							// TODO: HANDLE UPGRADE_REQUEST.
+						}
+						else
+						{
+							// Do not start reading in any case,
+							// but if there is at least one request preceding
+							// upgrade-req, logic must continue http interaction.
+							init_write_if_necessary();
+						}
+					}
 				}
 				else
 				{
