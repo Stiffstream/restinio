@@ -185,6 +185,21 @@ template < typename TRAITS >
 using connection_settings_shared_ptr_t =
 	std::shared_ptr< connection_settings_t< TRAITS > >;
 
+enum class connection_upgrade_stage_t : std::uchar_t
+{
+	//! No connection request in progress
+	none,
+	//! Request with connection-upgrade header came and waits for
+	//! request handler to be called in non pipelined fashion
+	//! (it must be the only request that is handled at the moment).
+	pending_upgrade_handling,
+	//! Handler for request with connection-upgrade header was called
+	//! so any response data comming is for that request.
+	//! If connection transforms to websocket connection
+	//! then no further operations are expected.
+	wait_for_upgrade_handling_result_or_nothing
+};
+
 //! Data associated with connection read routine.
 struct connection_input_t
 {
@@ -201,8 +216,9 @@ struct connection_input_t
 	//! Input buffer.
 	fixed_buffer_t m_buf;
 
-	//! Upgrade request is waiting for handling.
-	bool m_pending_upgrade_header{ false };
+	//! Connection upgrade request stage.
+	connection_upgrade_stage_t m_connection_upgrade_stage{
+		connection_upgrade_stage_t::none };
 
 	//! Prepare parser for reading new http-message.
 	void
@@ -491,9 +507,20 @@ class connection_t final
 			{
 				auto & parser = m_input.m_parser;
 				auto & parser_ctx = m_input.m_parser_ctx;
-				m_input.m_pending_upgrade_header = m_input.m_parser.upgrade;
 
-				if( !m_input.m_pending_upgrade_header )
+				if( m_input.m_parser.upgrade )
+				{
+					// Start upgrade connection operation.
+
+					// The first thing is to make sure
+					// that upgrade request will be handled in
+					// a non pipelined fashion.
+					m_input.m_connection_upgrade_stage =
+						connection_upgrade_stage_t::pending_upgrade_handling;
+				}
+
+				if( connection_upgrade_stage_t::none ==
+					m_input.m_connection_upgrade_stage )
 				{
 					// Run ordinary HTTP logic.
 					const auto request_id = m_response_coordinator.register_new_request();
@@ -559,9 +586,8 @@ class connection_t final
 						// There are no requests in handling
 						// So the current request with upgrade
 						// is the only one and can be handled directly.
-						// TODO: HANDLE UPGRADE_REQUEST.
-
-						// handle_upgrade_request();
+						// It is safe to call a handler for it.
+						handle_upgrade_request();
 					}
 					else
 					{
@@ -587,6 +613,82 @@ class connection_t final
 							ex.what() );
 				} );
 			}
+		}
+
+		//! Calls handler for upgrade request.
+		/*!
+			Request data must be in input context (m_input).
+		*/
+		void
+		handle_upgrade_request()
+		{
+			auto & parser = m_input.m_parser;
+			auto & parser_ctx = m_input.m_parser_ctx;
+
+			// If user responses with error
+			// then connection must be able to send
+			// (hence to receive) response.
+
+			const auto request_id = m_response_coordinator.register_new_request();
+
+			m_logger.debug( [&]{
+				return fmt::format(
+						"[connection:{}] handle upgrade request (#{}): {} {}",
+						connection_id(),
+						request_id,
+						http_method_str(
+							static_cast<http_method>( parser.method ) ),
+						parser_ctx.m_header.request_target() );
+			} );
+
+			guard_request_handling_operation();
+
+			// After calling handler we expect the results or
+			// no further operations with connection
+			m_input.m_connection_upgrade_stage =
+				connection_upgrade_stage_t::wait_for_upgrade_handling_result_or_nothing;
+
+			if( request_rejected() ==
+				m_request_handler(
+					std::make_shared< request_t >(
+						request_id,
+						std::move( parser_ctx.m_header ),
+						std::move( parser_ctx.m_body ),
+						shared_from_this() ) ) )
+			{
+				if( m_socket )
+				{
+					// Request is rejected, so our socket
+					// must not be moved out to websocket connection.
+
+					// If handler refused request, say not implemented.
+					write_response_parts_impl(
+						request_id,
+						response_output_flags_t{
+							response_parts_attr_t::final_parts,
+							response_connection_attr_t::connection_close },
+						create_not_implemented_resp() );
+				}
+				else
+				{
+					// Request is rejected, but the socket
+					// was moved out to somewhere else???
+
+					m_logger.error( [&]{
+						return fmt::format(
+								"[connection:{}] upgrade request handler rejects "
+								"request, but socket was moved out from connection",
+								connection_id() );
+					} );
+				}
+			}
+			// Else 2 cases:
+			// 1. request is handled asynchronously, so
+			// what happens next depends on handling.
+			// 2. handling was immediate, so further destiny
+			// of a connection was already determined.
+			//
+			// In both cases: here do nothing.
 		}
 
 		//! Write parts for specified request.
@@ -644,6 +746,8 @@ class connection_t final
 			//! parts of a response.
 			buffers_container_t bufs )
 		{
+			assert( m_socket );
+
 			if( !socket_lowest_layer().is_open() )
 			{
 				m_logger.warn( [&]{
@@ -653,6 +757,23 @@ class connection_t final
 							connection_id() );
 				} );
 				return;
+			}
+
+			if( connection_upgrade_stage_t::
+					wait_for_upgrade_handling_result_or_nothing ==
+				m_input.m_connection_upgrade_stage )
+			{
+				// It is response for a connection-upgrade request.
+				// If we receive it here then it is constructed via
+				// message builder and so connection was not transformed
+				// to websocket connection.
+				// So it is necessary to resume pipeline logic that was stopped
+				// for upgrade-request to be handled as the only request
+				// on the connection for that moment.
+				if( !m_response_coordinator.is_full() )
+				{
+					wait_for_http_message();
+				}
 			}
 
 			if( !m_response_coordinator.closed() )
@@ -821,7 +942,8 @@ class connection_t final
 								this->connection_id() );
 					} );
 
-					if( !m_input.m_pending_upgrade_header )
+					if( connection_upgrade_stage_t::none ==
+						m_input.m_connection_upgrade_stage )
 					{
 						// Run ordinary HTTP logic.
 						if( should_init_read_after_this_write )
@@ -837,7 +959,8 @@ class connection_t final
 						{
 							// Here upgrade req is the only request
 							// to by handled by this connection.
-							// TODO: HANDLE UPGRADE_REQUEST.
+							// So it is safe to call a handler for it.
+							handle_upgrade_request();
 						}
 						else
 						{
