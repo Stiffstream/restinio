@@ -71,13 +71,16 @@ struct websocket_message_t
 		std::uint32_t m_value = 0;
 	};
 
+	std::uint64_t
+	payload_len() const
+	{
+		return m_header.m_mask_flag? m_ext_payload.m_value: m_header.m_payload_len;
+	}
+
 	header_t m_header;
 	ext_payload_len_t m_ext_payload;
 	masking_key_t m_masking_key;
-	raw_data_t m_data = {};
 };
-
-using websocket_message_list_t = std::list<websocket_message_t>;
 
 namespace impl
 {
@@ -116,7 +119,6 @@ struct expected_data_t
 		m_expected_size = expected_size;
 		m_loaded_data.clear();
 		m_loaded_data.reserve( expected_size );
-
 	}
 };
 
@@ -139,7 +141,8 @@ class ws_parser_t
 		{
 			size_t parsed_bytes = 0;
 
-			while( parsed_bytes < size )
+			while( parsed_bytes < size &&
+				m_current_state != state_t::waiting_for_reset )
 			{
 				byte_t byte = data[parsed_bytes];
 
@@ -151,29 +154,11 @@ class ws_parser_t
 			return parsed_bytes;
 		}
 
-		websocket_message_list_t&
-		finished_messages()
+		bool
+		waiting_for_reset() const
 		{
-			return m_finished_messages;
+			return m_current_state == state_t::waiting_for_reset;
 		}
-
-	private:
-
-		impl::expected_data_t m_expected_data{ WEBSOCKET_HEADER_SIZE };
-
-		websocket_message_t m_current_msg;
-
-		websocket_message_list_t m_finished_messages;
-
-		enum class state_t
-		{
-			waiting_for_header,
-			waiting_for_ext_len,
-			waiting_for_mask_key,
-			waiting_for_payload
-		};
-
-		state_t m_current_state = state_t::waiting_for_header;
 
 		void
 		reset()
@@ -182,6 +167,28 @@ class ws_parser_t
 			m_current_msg = websocket_message_t();
 			m_expected_data.reset( WEBSOCKET_HEADER_SIZE );
 		}
+
+		const websocket_message_t &
+		current_message() const
+		{
+			return m_current_msg;
+		}
+
+	private:
+
+		impl::expected_data_t m_expected_data{ WEBSOCKET_HEADER_SIZE };
+
+		websocket_message_t m_current_msg;
+
+		enum class state_t
+		{
+			waiting_for_header,
+			waiting_for_ext_len,
+			waiting_for_mask_key,
+			waiting_for_reset
+		};
+
+		state_t m_current_state = state_t::waiting_for_header;
 
 		void
 		process_byte( byte_t byte )
@@ -192,60 +199,85 @@ class ws_parser_t
 				{
 
 				case state_t::waiting_for_header:
-				{
-					m_current_msg.m_header =
-						parse_header( m_expected_data.m_loaded_data );
 
-					size_t payload_len = m_current_msg.m_header.m_payload_len;
-
-					if( payload_len > WEBSOCKET_MAX_PAYLOAD_SIZE_WITHOUT_EXT )
-					{
-						size_t expected_data_size = payload_len == WEBSOCKET_SHORT_EXT_LEN_CODE?
-							WEBSOCKET_SHORT_EXT_PAYLOAD_LENGTH:
-							WEBSOCKET_LONG_EXT_PAYLOAD_LENGTH;
-							;
-						m_expected_data.reset( expected_data_size );
-
-						m_current_state = state_t::waiting_for_ext_len;
-					}
-					else if( m_current_msg.m_header.m_mask_flag )
-					{
-						size_t expected_data_size = WEBSOCKET_MASKING_KEY_SIZE;
-						m_expected_data.reset( expected_data_size );
-
-						m_current_state = state_t::waiting_for_mask_key;
-					}
-					else
-					{
-						size_t expected_data_size = payload_len;
-						m_expected_data.reset( expected_data_size );
-
-						m_current_state = state_t::waiting_for_payload;
-					}
-
+					process_header();
 					break;
-				}
+
 				case state_t::waiting_for_ext_len:
+
+					process_extended_length();
 					break;
+
 				case state_t::waiting_for_mask_key:
-					break;
-				case state_t::waiting_for_payload:
 
-					if( m_current_msg.m_header.m_mask_flag )
-					{
-
-					}
-					else
-					{
-						m_current_msg.m_data = std::move( m_expected_data.m_loaded_data );
-
-//TODO: this message have to be moved
-						m_finished_messages.push_back( m_current_msg );
-					}
-
+					process_masking_key();
 					break;
 				}
 			}
+		}
+
+		void
+		process_header()
+		{
+			m_current_msg.m_header = parse_header(
+				m_expected_data.m_loaded_data );
+
+			size_t payload_len = m_current_msg.m_header.m_payload_len;
+
+			if( payload_len > WEBSOCKET_MAX_PAYLOAD_SIZE_WITHOUT_EXT )
+			{
+				size_t expected_data_size = payload_len == WEBSOCKET_SHORT_EXT_LEN_CODE?
+					WEBSOCKET_SHORT_EXT_PAYLOAD_LENGTH:
+					WEBSOCKET_LONG_EXT_PAYLOAD_LENGTH;
+					;
+				m_expected_data.reset( expected_data_size );
+
+				m_current_state = state_t::waiting_for_ext_len;
+			}
+			else if( m_current_msg.m_header.m_mask_flag )
+			{
+				size_t expected_data_size = WEBSOCKET_MASKING_KEY_SIZE;
+				m_expected_data.reset( expected_data_size );
+
+				m_current_state = state_t::waiting_for_mask_key;
+			}
+			else
+			{
+				size_t expected_data_size = payload_len;
+				m_expected_data.reset( expected_data_size );
+
+				m_current_state = state_t::waiting_for_reset;
+			}
+		}
+
+		void
+		process_extended_length()
+		{
+			m_current_msg.m_ext_payload = parse_ext_payload_len(
+				m_current_msg.m_header,
+				m_expected_data.m_loaded_data );
+
+			if( m_current_msg.m_header.m_mask_flag )
+			{
+				size_t expected_data_size = WEBSOCKET_MASKING_KEY_SIZE;
+				m_expected_data.reset( expected_data_size );
+
+				m_current_state = state_t::waiting_for_mask_key;
+			}
+			else
+			{
+				m_current_state = state_t::waiting_for_reset;
+			}
+		}
+
+		void
+		process_masking_key()
+		{
+			m_current_msg.m_masking_key = parse_masking_key(
+				m_current_msg.m_header,
+				m_expected_data.m_loaded_data );
+
+			m_current_state = state_t::waiting_for_reset;
 		}
 
 		websocket_message_t::header_t

@@ -45,10 +45,10 @@ TEST_CASE( "Parse simple message" , "[websocket][parser]" )
 
 	auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
 
-	REQUIRE( nparsed == 7 );
-	REQUIRE( parser.finished_messages().size() == 1 );
+	REQUIRE( nparsed == 2 );
+	REQUIRE( parser.waiting_for_reset() == true );
 
-	auto ws_message = parser.finished_messages().front();
+	auto ws_message = parser.current_message();
 	auto header = ws_message.m_header;
 
 	REQUIRE( header.m_final_flag == true );
@@ -57,7 +57,12 @@ TEST_CASE( "Parse simple message" , "[websocket][parser]" )
 	REQUIRE( header.m_rsv3_flag == false );
 	REQUIRE( header.m_opcode == restinio::opcode_t::text_frame );
 
-	REQUIRE( ws_message.m_data == "Hello" );
+	REQUIRE( ws_message.payload_len() == 5 );
+
+	parser.reset();
+
+	REQUIRE( parser.waiting_for_reset() == false );
+	REQUIRE( parser.current_message().payload_len() == 0 );
 }
 
 TEST_CASE( "Parse simple message (chunked)" , "[websocket][parser]" )
@@ -66,20 +71,25 @@ TEST_CASE( "Parse simple message (chunked)" , "[websocket][parser]" )
 
 	ws_parser_t parser;
 
-	for( int i = 0 ; i < bin_data.size() - 1 ; ++i  )
-	{
-		auto nparsed = parser.parser_execute( bin_data.data() + i, 1 );
+	int shift = 0;
 
-		REQUIRE( nparsed == 1 );
-		REQUIRE( parser.finished_messages().size() == 0 );
+	for( ; shift < bin_data.size() - 1 ; ++shift  )
+	{
+		if( !parser.waiting_for_reset() )
+		{
+			auto nparsed = parser.parser_execute( bin_data.data() + shift, 1 );
+
+			REQUIRE( nparsed == 1 );
+		}
+		else
+		{
+			break;
+		}
 	}
 
-	auto nparsed = parser.parser_execute( bin_data.data() + bin_data.size() - 1, 1 );
+	REQUIRE( shift == 2 );
 
-	REQUIRE( nparsed == 1 );
-	REQUIRE( parser.finished_messages().size() == 1 );
-
-	auto ws_message = parser.finished_messages().front();
+	auto ws_message = parser.current_message();
 	auto header = ws_message.m_header;
 
 	REQUIRE( header.m_final_flag == true );
@@ -88,5 +98,5 @@ TEST_CASE( "Parse simple message (chunked)" , "[websocket][parser]" )
 	REQUIRE( header.m_rsv3_flag == false );
 	REQUIRE( header.m_opcode == restinio::opcode_t::text_frame );
 
-	REQUIRE( ws_message.m_data == "Hello" );
+	REQUIRE( ws_message.payload_len() == 5 );
 }
