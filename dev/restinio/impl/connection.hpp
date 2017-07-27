@@ -994,7 +994,7 @@ class connection_t final
 		//! Sync object for connection events.
 		strand_t m_strand;
 
-		//! Common paramaters for buffer.
+		//! Common paramaters of a connection.
 		connection_settings_shared_ptr_t< TRAITS > m_settings;
 
 		//! Input routine.

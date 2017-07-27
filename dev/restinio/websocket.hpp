@@ -60,18 +60,65 @@ class websocket_t
 		websocket_t(
 			ws_connection_handle_t ws_connection_handle )
 			:	m_ws_connection_handle{ std::move( ws_connection_handle ) }
-		{}
+		{
+			// TODO:
+			// On accepting upgrade request
+			// we must send http-response to finish with handshake
+			// So here must be initialized first write operation
+			// that carries response.
+		}
 
 		~websocket_t()
 		{
-			// TODO: init close connection.
+			try
+			{
+				close();
+			}
+			catch( ... )
+			{}
+		}
+
+		void
+		close()
+		{
+			if( m_ws_connection_handle )
+			{
+				auto con = std::move( m_ws_connection_handle );
+				con->close();
+			}
+		}
+
+		void
+		send_message(
+			/*TODO: parameters */
+			buffer_storage_t payload )
+		{
+			if( m_ws_connection_handle )
+			{
+				buffers_container_t bufs;
+				bufs.reserve( 2 );
+
+				// TODO:
+				// Create header serialize it and append to bufs .
+
+				bufs.emplace_back( std::move( payload ) );
+			}
+			else
+			{
+				throw exception_t{ "websocket is closed" };
+			}
 		}
 
 	private:
 		ws_connection_handle_t m_ws_connection_handle;
 };
 
+//! Alias for websocket_t unique_ptr.
 using websocket_unique_ptr_t = std::unique_ptr< websocket_t >;
+
+//
+// upgrade_to_websocket
+//
 
 template < typename TRAITS, typename WS_MESSAGE_HANDLER >
 websocket_unique_ptr_t

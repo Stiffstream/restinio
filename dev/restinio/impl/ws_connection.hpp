@@ -92,7 +92,49 @@ class ws_connection_t final
 			{}
 		}
 
+		virtual void
+		close() override
+		{
+			//! Run write message on io_service loop if possible.
+			asio::dispatch(
+				get_executor(),
+				[ this, ctx = shared_from_this() ](){
+					try
+					{
+						graceful_close();
+					}
+					catch( const std::exception & ex )
+					{
+						m_logger.error( [&]{
+							return fmt::format(
+								"[ws_connection:{}] close operation error: {}",
+								connection_id(),
+								ex.what() );
+						} );
+					}
+			} );
+		}
+
+		//! Write pieces of outgoing data.
+		virtual void
+		write_data(
+			// TODO: what parameter are needed?
+			buffers_container_t bufs ) = 0;
+
 	private:
+		//! Close WebSocket connection in a graceful manner
+		//! sending a close-message
+		void
+		graceful_close()
+		{
+			// TODO:
+			// Send close frame.
+
+			// That will close socket and ensure that outgoing data will be sent.
+			close_impl();
+		}
+
+
 		//! An executor for callbacks on async operations.
 		inline strand_t &
 		get_executor()
@@ -105,7 +147,7 @@ class ws_connection_t final
 
 		//! Standard close routine.
 		void
-		close()
+		close_impl()
 		{
 			m_logger.trace( [&]{
 				return fmt::format(
@@ -131,7 +173,7 @@ class ws_connection_t final
 		{
 			m_logger.error( std::move( msg_builder ) );
 
-			close();
+			close_impl();
 		}
 		//! \}
 
@@ -153,7 +195,7 @@ class ws_connection_t final
 		//! Sync object for connection events.
 		strand_t m_strand;
 
-		//! Common paramaters for buffer.
+		//! Common paramaters of a connection.
 		connection_settings_shared_ptr_t< TRAITS > m_settings;
 
 		message_handler_t m_msg_handler;

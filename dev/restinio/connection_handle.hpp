@@ -77,7 +77,11 @@ class ws_connection_base_t
 			return m_connection_id;
 		}
 
-		//! Write parts for specified request.
+		//! Close connection.
+		virtual void
+		close() = 0;
+
+		//! Write pieces of outgoing data.
 		virtual void
 		write_data(
 			// TODO: what parameter are needed?
