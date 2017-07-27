@@ -10,6 +10,7 @@
 #include <catch/catch.hpp>
 
 #include <restinio/all.hpp>
+#include <restinio/impl/websocket_parser.hpp>
 
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>

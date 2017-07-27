@@ -46,6 +46,19 @@ enum class opcode_t : std::uint8_t
 struct websocket_message_t
 {
 
+	websocket_message_t()
+	{
+	}
+
+	websocket_message_t( bool final, opcode_t opcode, size_t payload_len )
+	{
+		m_header.m_final_flag = final;
+		m_header.m_opcode = opcode;
+
+
+
+	}
+
 	struct header_t
 	{
 		bool m_final_flag = true;
@@ -384,5 +397,8 @@ mask_unmask_payload( std::uint32_t masking_key, raw_data_t & payload )
 		payload[ index ] ^= mask[ index % 4 ];
 	}
 }
+
+// raw_data_t
+// write_message()
 
 }
