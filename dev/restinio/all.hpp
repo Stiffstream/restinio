@@ -21,5 +21,3 @@
 
 #include <restinio/router/express.hpp>
 #include <restinio/websocket.hpp>
-
-

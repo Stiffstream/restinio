@@ -204,6 +204,13 @@ class response_coordinator_t
 			return m_context_table.is_full();
 		}
 
+		//! Check if it is possible to accept more requests.
+		bool
+		is_able_to_get_more_messages() const
+		{
+			return !closed() && !is_full();
+		}
+
 		//! Create a new request and reserve context for its response.
 		request_id_t
 		register_new_request()

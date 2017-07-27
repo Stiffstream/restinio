@@ -70,7 +70,9 @@ class http_server_t
 			:	m_io_service_wrapper{ std::move( io_service_wrapper ) }
 		{
 			auto conn_settings =
-				std::make_shared< connection_settings_t >( settings );
+				std::make_shared< connection_settings_t >(
+					settings,
+					impl::create_parser_settings() );
 
 			m_acceptor =
 				std::make_shared< acceptor_t >(
