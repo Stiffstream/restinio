@@ -3,7 +3,7 @@
 */
 
 /*!
-	HTTP-Connection handler routine.
+	HTTP-connection routine.
 */
 
 #pragma once
@@ -305,6 +305,20 @@ class connection_t final
 				// Next request (if any) must be obtained from socket.
 				consume_message();
 			}
+		}
+
+		//! Move socket out of connection.
+		auto
+		move_socket()
+		{
+			auto res = std::move( m_socket );
+		}
+
+		//! Пуее
+		auto
+		get_settings() const
+		{
+			return m_settings;
 		}
 
 	private:

@@ -18,6 +18,8 @@
 namespace restinio
 {
 
+class websocket_t;
+
 //
 // request_t
 //
@@ -30,6 +32,12 @@ namespace restinio
 class request_t final
 	:	public std::enable_shared_from_this< request_t >
 {
+	template < typename TRAITS, typename WS_MESSAGE_HANDLER >
+	friend std::unique_ptr< websocket_t >
+	upgrade_to_websocket(			/*TODO params*/
+		request_t & ,
+		WS_MESSAGE_HANDLER ws_message_handler );
+
 	public:
 		request_t(
 			request_id_t request_id,
@@ -77,10 +85,7 @@ class request_t final
 		{
 			if( !m_connection )
 			{
-				throw exception_t{
-					"cannot create response builder, "
-					"connection moved earlier"
-				};
+				throw exception_t{ "connection already moved" };
 			}
 		}
 
