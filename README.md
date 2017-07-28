@@ -91,9 +91,9 @@ See MxxRu::externals recipes for *RESTinio*
 ### Getting archive
 
 ```
-wget https://bitbucket.org/sobjectizerteam/restinio-0.2/downloads/restinio-0.2.1-full.tar.bz2
-tar xjvf restinio-0.2.1-full.tar.bz2
-cd restinio-0.2.1-full
+wget https://bitbucket.org/sobjectizerteam/restinio-0.2/downloads/restinio-0.2.2-full.tar.bz2
+tar xjvf restinio-0.2.2-full.tar.bz2
+cd restinio-0.2.2-full
 ```
 
 ## Build
@@ -117,9 +117,9 @@ make install
 
 Or, if getting sources from archive:
 ```
-wget https://bitbucket.org/sobjectizerteam/restinio-0.2/downloads/restinio-0.2.1-full.tar.bz2
-tar xjvf restinio-0.2.1-full.tar.bz2
-cd restinio-0.2.1-full/dev
+wget https://bitbucket.org/sobjectizerteam/restinio-0.2/downloads/restinio-0.2.2-full.tar.bz2
+tar xjvf restinio-0.2.2-full.tar.bz2
+cd restinio-0.2.2-full/dev
 mkdir cmake_build
 cd cmake_build
 cmake -DCMAKE_INSTALL_PREFIX=target -DCMAKE_BUILD_TYPE=Release ..
@@ -1058,7 +1058,6 @@ The list of features for next releases
 | Improve router | Improve router with type conversion of parameters | ? |
 | Compresion | Support compressed content | ? |
 | Improve API | Make easy cases easy by hiding template stuff | ? |
-| Improve header fields API | Type/enum support for known header fields and their values. | ? |
 | Raw response | Support raw response, when response message data is fully constructed in user domain. | ? |
 | Client disconnect detection | In case client disconnects before response is ready, clean up connection. | ? |
 | Full CMake support | Add missing cmake support for [SObjectizer](https://sourceforge.net/projects/sobjectizer/) samples | ? |
@@ -1067,6 +1066,7 @@ The list of features for next releases
 
 |       Feature        | description | release  |
 |----------------------|-------------|----------|
+| Improve header fields API | Type/enum support for known header fields and their values. | 0.2.2 |
 | TLS support | Sopport for HTTPS with OpenSSL | 0.2.2 |
 | External buffers | Support external (constant) buffers support for body and/or body parts. | 0.2.2 |
 | Benchmarks | Non trivial benchmarks. Comparison with other libraries with similar features on the range of various scenarios. | started independent [project](https://bitbucket.org/sobjectizerteam/restinio-benchmark-jun2017) |
