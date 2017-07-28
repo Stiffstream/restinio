@@ -57,7 +57,6 @@ start_request_handler_pool()
 				pause = std::chrono::milliseconds( 3 );
 			}
 
-
 			const auto & body = req->body();
 			std::string::size_type chunk_begin = 0;
 			std::string::size_type chunk_end = body.find( "\r\n", chunk_begin );
@@ -67,7 +66,7 @@ start_request_handler_pool()
 
 			while( std::string::npos != chunk_end )
 			{
-				resp.start_chunk( body.substr( chunk_begin, chunk_end - chunk_begin ) );
+				resp.append_chunk( body.substr( chunk_begin, chunk_end - chunk_begin ) );
 				if( next_flush_after_n_chunks == ++not_flushed_chunks )
 				{
 					resp.flush();
@@ -82,7 +81,7 @@ start_request_handler_pool()
 			}
 
 			if( chunk_begin < body.size() )
-				resp.start_chunk( body.substr( chunk_begin ) );
+				resp.append_chunk( body.substr( chunk_begin ) );
 
 			resp.done();
 		} );

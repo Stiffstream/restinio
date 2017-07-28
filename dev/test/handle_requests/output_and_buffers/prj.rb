@@ -6,13 +6,11 @@ MxxRu::Cpp::exe_target {
 	required_prj 'fmt_mxxru/prj.rb'
 	required_prj 'sample/platform_specific_libs.rb'
 
-	target( "_unit.test.router.express" )
+	target( "_unit.test.handle_requests.output_and_buffers" )
 
-	cpp_source( "part1.cpp" )
-	cpp_source( "part2.cpp" )
-	cpp_source( "part3.cpp" )
-	cpp_source( "part4.cpp" )
-	cpp_source( "part5.cpp" )
+	cpp_source( "const_buffer.cpp" )
+	cpp_source( "std_string.cpp" )
+	cpp_source( "shared_ptr_std_string.cpp" )
 	cpp_source( "main.cpp" )
 }
 

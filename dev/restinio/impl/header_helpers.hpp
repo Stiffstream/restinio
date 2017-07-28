@@ -10,6 +10,8 @@
 
 #include <array>
 
+#include <restinio/buffers.hpp>
+
 namespace restinio
 {
 
@@ -34,16 +36,47 @@ enum class content_length_field_presence_t : std::uint8_t
 	skip_content_length
 };
 
+//
+// calculate_approx_buffer_size_for_header()
+//
+
+//! Calculate buffer size that is enough for serializing the buffer.
+inline std::size_t
+calculate_approx_buffer_size_for_header( const http_response_header_t & h )
+{
+	std::size_t result = 13; // "HTTP/1.1 xxx "
+	result += h.reason_phrase().size() + 2; // 2 is for "\r\n".
+	result += 26; // "Connection: keep-alive\r\n" is also enough for "Connection: close\r\n" (21).
+	result += 20 + 18; // "Content-Length: %llu\r\n" assume size is size_t, and 18 is always ok.
+
+	for( const auto & f : h )
+	{
+		result += f.m_name.size() + 2 + f.m_value.size() + 2;
+	}
+
+	result += 2; // Final "\r\n\r\n".
+
+	return result;
+}
+
+//
+// create_header_string()
+//
+
 //! Creates a string for http response header.
 inline std::string
 create_header_string(
 	const http_response_header_t & h,
 	content_length_field_presence_t content_length_field_presence =
 		content_length_field_presence_t::add_content_length,
-	std::size_t buffer_size = 1024 )
+	std::size_t buffer_size = 0 )
 {
 	std::string result;
-	result.reserve( buffer_size );
+
+	if( 0 != buffer_size )
+		result.reserve( buffer_size );
+	else
+		result.reserve( calculate_approx_buffer_size_for_header( h ) );
 
 	constexpr const char header_part1[] = "HTTP/";
 	result.append( header_part1, ct_string_len( header_part1 ) );
@@ -93,7 +126,6 @@ create_header_string(
 		result.append( buf.data(), static_cast<std::string::size_type>(n) );
 	}
 
-
 	constexpr const char header_field_sep[] = ": ";
 	for( const auto & f : h )
 	{
@@ -121,13 +153,29 @@ create_error_resp( std::uint16_t status, std::string phrase )
 inline auto
 create_not_implemented_resp()
 {
-	return create_error_resp( 501, "Not Implemented" );
+	constexpr const char raw_501_response[] =
+		"HTTP/1.1 501 Not Implemented\r\n"
+		"Connection: close\r\n"
+		"Content-Length: 0\r\n"
+		"\r\n";
+
+	buffers_container_t result;
+	result.emplace_back( raw_501_response );
+	return result;
 }
 
 inline auto
 create_timeout_resp()
 {
-	return create_error_resp( 504, "Gateway Time-out" );
+	constexpr const char raw_504_response[] =
+		"HTTP/1.1 504 Gateway Time-out\r\n"
+		"Connection: close\r\n"
+		"Content-Length: 0\r\n"
+		"\r\n";
+
+	buffers_container_t result;
+	result.emplace_back( raw_504_response );
+	return result;
 }
 
 } /* namespace impl */

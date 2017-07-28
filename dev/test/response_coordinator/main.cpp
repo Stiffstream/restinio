@@ -28,6 +28,30 @@ connection_should_keep_alive() { return response_connection_attr_t::connection_k
 constexpr response_connection_attr_t
 connection_should_close() { return response_connection_attr_t::connection_close; }
 
+template < typename BUF >
+std::string
+make_string( const BUF & buf )
+{
+	return
+		std::string{
+			asio::buffer_cast< const char * >( buf.buf() ),
+			asio::buffer_size( buf.buf() ) };
+}
+
+buffers_container_t
+make_buffers(
+	std::vector< std::string > v )
+{
+	buffers_container_t result;
+	result.reserve( v.size() );
+
+	for( auto & s : v )
+	{
+		result.emplace_back( std::move( s ) );
+	}
+	return result;
+}
+
 TEST_CASE( "response_context_table" , "[response_context][response_context_table]" )
 {
 	SECTION( "empty" )
@@ -177,13 +201,13 @@ TEST_CASE( "response_context_table" , "[response_context][response_context_table
 
 TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 {
-	std::vector< std::string > out_bufs;
+	buffers_container_t out_bufs;
 	auto concat_bufs =
 		[ & ](){
 			std::string res;
-			for( const auto & s : out_bufs )
+			for( const auto & b : out_bufs )
 			{
-				res += s;
+				res.append( make_string( b ) );
 			}
 			return res;
 		};
@@ -217,7 +241,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_keep_alive() },
-			{ "a", "b", "c" } ) );
+			make_buffers( { "a", "b", "c" } ) ) );
 
 		// #0: "a", "b", "c"
 		// #1: <nothing>
@@ -226,16 +250,16 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		CHECK_NOTHROW(
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 3UL == out_bufs.size() );
-		REQUIRE( out_bufs[ 0UL ] == "a" );
-		REQUIRE( out_bufs[ 1UL ] == "b" );
-		REQUIRE( out_bufs[ 2UL ] == "c" );
+		REQUIRE( make_string( out_bufs[ 0UL ] ) == "a" );
+		REQUIRE( make_string( out_bufs[ 1UL ] ) == "b" );
+		REQUIRE( make_string( out_bufs[ 2UL ] ) == "c" );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 0 ],
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_keep_alive() },
-			{ "A", "B", "C" } ) );
+			make_buffers( { "A", "B", "C" } ) ) );
 		// #0: "A", "B", "C"
 		// #1: <nothing>
 
@@ -244,7 +268,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_keep_alive() },
-			{ "X", "Y", "Z" } ) );
+			make_buffers( { "X", "Y", "Z" } ) ) );
 		// #0: "A", "B", "C"
 		// #1: "X", "Y", "Z"
 
@@ -252,9 +276,9 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		CHECK_NOTHROW(
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 3UL == out_bufs.size() );
-		REQUIRE( out_bufs[ 0UL ] == "A" );
-		REQUIRE( out_bufs[ 1UL ] == "B" );
-		REQUIRE( out_bufs[ 2UL ] == "C" );
+		REQUIRE( make_string( out_bufs[ 0UL ] ) == "A" );
+		REQUIRE( make_string( out_bufs[ 1UL ] ) == "B" );
+		REQUIRE( make_string( out_bufs[ 2UL ] ) == "C" );
 
 		// #0: <nothing>
 		// #1: "X", "Y", "Z"
@@ -269,7 +293,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "LAST", "PARTS" } ) );
+			make_buffers( { "LAST", "PARTS" } ) ) );
 		// #0: <nothing>
 		// #1: "X", "Y", "Z", "LAST", "PARTS"
 
@@ -279,7 +303,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_keep_alive() },
-			{ "!LAST!", "!PARTS!" } ) );
+			make_buffers( { "!LAST!", "!PARTS!" } ) ) );
 
 
 		CHECK_NOTHROW( coordinator.append_response(
@@ -287,7 +311,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "LAST", "PARTS" } ) );
+			make_buffers( { "LAST", "PARTS" } ) ) );
 
 		// Append complete response error:
 		CHECK_THROWS( coordinator.append_response(
@@ -295,7 +319,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "!LAST!", "!PARTS!" } ) );
+			make_buffers( { "!LAST!", "!PARTS!" } ) ) );
 
 		// #0: "LAST", "PARTS"
 		// #1: "X", "Y", "Z", "LAST", "PARTS"
@@ -304,11 +328,11 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		CHECK_NOTHROW(
 			coordinator.pop_ready_buffers( 5UL, out_bufs ) );
 		REQUIRE( 5UL == out_bufs.size() );
-		REQUIRE( out_bufs[ 0UL ] == "LAST" );
-		REQUIRE( out_bufs[ 1UL ] == "PARTS" );
-		REQUIRE( out_bufs[ 2UL ] == "X" );
-		REQUIRE( out_bufs[ 3UL ] == "Y" );
-		REQUIRE( out_bufs[ 4UL ] == "Z" );
+		REQUIRE( make_string( out_bufs[ 0UL ] ) == "LAST" );
+		REQUIRE( make_string( out_bufs[ 1UL ] ) == "PARTS" );
+		REQUIRE( make_string( out_bufs[ 2UL ] ) == "X" );
+		REQUIRE( make_string( out_bufs[ 3UL ] ) == "Y" );
+		REQUIRE( make_string( out_bufs[ 4UL ] ) == "Z" );
 
 		// #1: "LAST", "PARTS"
 
@@ -318,7 +342,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "!NO!", "!WAY!" } ) );
+			make_buffers( { "!NO!", "!WAY!" } ) ) );
 
 		CHECK_NOTHROW( req_id[ 0 ] = coordinator.register_new_request() );
 		REQUIRE( req_id[ 0 ] == 2UL );
@@ -332,8 +356,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		CHECK_NOTHROW(
 			coordinator.pop_ready_buffers( 5UL, out_bufs ) );
 		REQUIRE( 2UL == out_bufs.size() );
-		REQUIRE( out_bufs[ 0UL ] == "LAST" );
-		REQUIRE( out_bufs[ 1UL ] == "PARTS" );
+		REQUIRE( make_string( out_bufs[ 0UL ] ) == "LAST" );
+		REQUIRE( make_string( out_bufs[ 1UL ] ) == "PARTS" );
 
 		// #2: <nothing>
 
@@ -386,40 +410,44 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_keep_alive() },
-			{ "0a", "0b", "0c", "0a", "0b", "0c",
-			  "0a", "0b", "0c", "0a", "0b", "0c",
-			  "0a", "0b", "0c", "0a", "0b", "0c",
-			  "0a", "0b", "0c", "0a", "0b", "0c" } ) );
+			make_buffers(
+				{ "0a", "0b", "0c", "0a", "0b", "0c",
+				  "0a", "0b", "0c", "0a", "0b", "0c",
+				  "0a", "0b", "0c", "0a", "0b", "0c",
+				  "0a", "0b", "0c", "0a", "0b", "0c" } ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 1 ],
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_keep_alive() },
-			{ "1a", "1b", "1c", "1a", "1b", "1c",
-			  "1a", "1b", "1c", "1a", "1b", "1c",
-			  "1a", "1b", "1c", "1a", "1b", "1c",
-			  "1a", "1b", "1c", "1a", "1b", "1c" } ) );
+			make_buffers(
+				{ "1a", "1b", "1c", "1a", "1b", "1c",
+				  "1a", "1b", "1c", "1a", "1b", "1c",
+				  "1a", "1b", "1c", "1a", "1b", "1c",
+				  "1a", "1b", "1c", "1a", "1b", "1c" } ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 2 ],
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_keep_alive() },
-			{ "2a", "2b", "2c", "2a", "2b", "2c",
-			  "2a", "2b", "2c", "2a", "2b", "2c",
-			  "2a", "2b", "2c", "2a", "2b", "2c",
-			  "2a", "2b", "2c", "2a", "2b", "2c" } ) );
+			make_buffers(
+				{ "2a", "2b", "2c", "2a", "2b", "2c",
+				  "2a", "2b", "2c", "2a", "2b", "2c",
+				  "2a", "2b", "2c", "2a", "2b", "2c",
+				  "2a", "2b", "2c", "2a", "2b", "2c" } ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 3 ],
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_keep_alive() },
-			{ "3a", "3b", "3c", "3a", "3b", "3c",
-			  "3a", "3b", "3c", "3a", "3b", "3c",
-			  "3a", "3b", "3c", "3a", "3b", "3c",
-			  "3a", "3b", "3c", "3a", "3b", "3c" } ) );
+			make_buffers(
+				{ "3a", "3b", "3c", "3a", "3b", "3c",
+				  "3a", "3b", "3c", "3a", "3b", "3c",
+				  "3a", "3b", "3c", "3a", "3b", "3c",
+				  "3a", "3b", "3c", "3a", "3b", "3c" } ) ) );
 
 		// #0: ["0a", "0b", "0c"] * 2*4
 		// #1: ["0a", "0b", "0c"] * 2*4
@@ -454,10 +482,11 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "LAST", "PARTS",
-			  "LAST", "PARTS",
-			  "LAST", "PARTS",
-			  "LAST", "PARTS"  } ) );
+			make_buffers(
+				{ "LAST", "PARTS",
+				  "LAST", "PARTS",
+				  "LAST", "PARTS",
+				  "LAST", "PARTS"  } ) ) );
 
 		// #0: ["LAST", "PARTS"] * 4
 		// #1: ["0a", "0b", "0c"] * 2*4
@@ -469,10 +498,11 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "LAST", "PARTS",
-			  "LAST", "PARTS",
-			  "LAST", "PARTS",
-			  "LAST", "PARTS"  } ) );
+			make_buffers(
+				{ "LAST", "PARTS",
+				  "LAST", "PARTS",
+				  "LAST", "PARTS",
+				  "LAST", "PARTS" } ) ) );
 
 		// #0: ["LAST", "PARTS"] * 4
 		// #1: ["0a", "0b", "0c"] * 2*4 + ["LAST", "PARTS"] * 4
@@ -507,10 +537,11 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "LAST", "PARTS",
-			  "LAST", "PARTS",
-			  "LAST", "PARTS",
-			  "LAST", "PARTS"  } ) );
+			make_buffers(
+				{ "LAST", "PARTS",
+				  "LAST", "PARTS",
+				  "LAST", "PARTS",
+				  "LAST", "PARTS"  } ) ) );
 
 		// #2: ["LAST", "PARTS"] * 4
 		// #3: ["3a", "3b", "3c"] * 2*4
@@ -562,40 +593,44 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "4a", "4b", "4c", "4a", "4b", "4c",
-			  "4a", "4b", "4c", "4a", "4b", "4c",
-			  "4a", "4b", "4c", "4a", "4b", "4c",
-			  "4a", "4b", "4c", "4a", "4b", "4c" } ) );
+			make_buffers(
+				{ "4a", "4b", "4c", "4a", "4b", "4c",
+				  "4a", "4b", "4c", "4a", "4b", "4c",
+				  "4a", "4b", "4c", "4a", "4b", "4c",
+				  "4a", "4b", "4c", "4a", "4b", "4c" } ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 1 ],
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_keep_alive() },
-			{ "5a", "5b", "5c", "5a", "5b", "5c",
-			  "5a", "5b", "5c", "5a", "5b", "5c",
-			  "5a", "5b", "5c", "5a", "5b", "5c",
-			  "5a", "5b", "5c", "5a", "5b", "5c" } ) );
+			make_buffers(
+				{ "5a", "5b", "5c", "5a", "5b", "5c",
+				  "5a", "5b", "5c", "5a", "5b", "5c",
+				  "5a", "5b", "5c", "5a", "5b", "5c",
+				  "5a", "5b", "5c", "5a", "5b", "5c" } ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 2 ],
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "6a", "6b", "6c", "6a", "6b", "6c",
-			  "6a", "6b", "6c", "6a", "6b", "6c",
-			  "6a", "6b", "6c", "6a", "6b", "6c",
-			  "6a", "6b", "6c", "6a", "6b", "6c" } ) );
+			make_buffers(
+				{ "6a", "6b", "6c", "6a", "6b", "6c",
+				  "6a", "6b", "6c", "6a", "6b", "6c",
+				  "6a", "6b", "6c", "6a", "6b", "6c",
+				  "6a", "6b", "6c", "6a", "6b", "6c" } ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 3 ],
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "LAST", "PARTS",
-			  "LAST", "PARTS",
-			  "LAST", "PARTS",
-			  "LAST", "PARTS" } ) );
+			make_buffers(
+				{ "LAST", "PARTS",
+				  "LAST", "PARTS",
+				  "LAST", "PARTS",
+				  "LAST", "PARTS" } ) ) );
 
 		// #3: ["3a", "3b", "3c"] 1 *4 + [ "LAST", "PARTS" ] * 4
 		// #4: ["4a", "4b", "4c"] * 2*4
@@ -627,7 +662,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "NO", "WAY" } ) );
+			make_buffers( { "NO", "WAY" } ) ) );
 
 		out_bufs.clear();
 		CHECK_NOTHROW(
@@ -647,10 +682,11 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "LAST", "PARTS",
-			  "LAST", "PARTS",
-			  "LAST", "PARTS",
-			  "LAST", "PARTS" } ) );
+			make_buffers(
+				{ "LAST", "PARTS",
+				  "LAST", "PARTS",
+				  "LAST", "PARTS",
+				  "LAST", "PARTS" } ) ) );
 
 		// #5: [ "LAST", "PARTS" ] * 4
 		// #6: ["6a", "6b", "6c"] * 2*4
@@ -679,28 +715,28 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "NO", "WAY" } ) );
+			make_buffers( { "NO", "WAY" } ) ) );
 
 		CHECK_THROWS( coordinator.append_response(
 			req_id[ 1 ],
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "NO", "WAY" } ) );
+			make_buffers( { "NO", "WAY" } ) ) );
 
 		CHECK_THROWS( coordinator.append_response(
 			req_id[ 2 ],
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "NO", "WAY" } ) );
+			make_buffers( { "NO", "WAY" } ) ) );
 
 		CHECK_THROWS( coordinator.append_response(
 			req_id[ 3 ],
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "NO", "WAY" } ) );
+			make_buffers( { "NO", "WAY" } ) ) );
 
 		REQUIRE_FALSE( coordinator.closed() );
 	}
@@ -708,14 +744,15 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connection_close]" )
 {
-	std::vector< std::string > out_bufs;
+	buffers_container_t out_bufs;
 	auto concat_bufs =
 		[ & ](){
 			std::string res;
-			for( const auto & s : out_bufs )
+			for( const auto & b : out_bufs )
 			{
-				res += s;
+				res.append( make_string( b ) );
 			}
+
 			return res;
 		};
 
@@ -738,30 +775,33 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_close() }, // CLOSE CONNECTION AT RESP #0
-			{ "0a", "0b", "0c", "0a", "0b", "0c",
-			  "0a", "0b", "0c", "0a", "0b", "0c",
-			  "0a", "0b", "0c", "0a", "0b", "0c",
-			  "0a", "0b", "0c", "0a", "0b", "0c" } ) );
+			make_buffers(
+				{ "0a", "0b", "0c", "0a", "0b", "0c",
+				  "0a", "0b", "0c", "0a", "0b", "0c",
+				  "0a", "0b", "0c", "0a", "0b", "0c",
+				  "0a", "0b", "0c", "0a", "0b", "0c" } ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 1 ],
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_keep_alive() },
-			{ "1a", "1b", "1c", "1a", "1b", "1c",
-			  "1a", "1b", "1c", "1a", "1b", "1c",
-			  "1a", "1b", "1c", "1a", "1b", "1c",
-			  "1a", "1b", "1c", "1a", "1b", "1c" } ) );
+			make_buffers(
+				{ "1a", "1b", "1c", "1a", "1b", "1c",
+				  "1a", "1b", "1c", "1a", "1b", "1c",
+				  "1a", "1b", "1c", "1a", "1b", "1c",
+				  "1a", "1b", "1c", "1a", "1b", "1c" } ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 2 ],
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_keep_alive() },
-			{ "2a", "2b", "2c", "2a", "2b", "2c",
-			  "2a", "2b", "2c", "2a", "2b", "2c",
-			  "2a", "2b", "2c", "2a", "2b", "2c",
-			  "2a", "2b", "2c", "2a", "2b", "2c" } ) );
+			make_buffers(
+				{ "2a", "2b", "2c", "2a", "2b", "2c",
+				  "2a", "2b", "2c", "2a", "2b", "2c",
+				  "2a", "2b", "2c", "2a", "2b", "2c",
+				  "2a", "2b", "2c", "2a", "2b", "2c" } ) ) );
 
 
 		// #0: ["0a", "0b", "0c"] * 2*4
@@ -786,7 +826,7 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_close() }, // CLOSE CONNECTION AT RESP #0
-			{ "LAST", " ", "PARTS" } ) );
+			make_buffers( { "LAST", " ", "PARTS" } ) ) );
 
 		out_bufs.clear();
 		CHECK_NOTHROW(
@@ -803,14 +843,14 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "LAST", " ", "PARTS" } ) );
+			make_buffers( { "LAST", " ", "PARTS" } ) ) );
 
 		CHECK_THROWS( coordinator.append_response(
 			req_id[ 2 ],
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "LAST", " ", "PARTS" } ) );
+			make_buffers( { "LAST", " ", "PARTS" } ) ) );
 
 
 		out_bufs.clear();
@@ -840,31 +880,33 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_keep_alive() },
-			{ "0a", "0b", "0c", "0a", "0b", "0c",
-			  "0a", "0b", "0c", "0a", "0b", "0c",
-			  "0a", "0b", "0c", "0a", "0b", "0c",
-			  "0a", "0b", "0c", "0a", "0b", "0c" } ) );
+			make_buffers(
+				{ "0a", "0b", "0c", "0a", "0b", "0c",
+				  "0a", "0b", "0c", "0a", "0b", "0c",
+				  "0a", "0b", "0c", "0a", "0b", "0c",
+				  "0a", "0b", "0c", "0a", "0b", "0c" } ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 1 ],
 			response_output_flags_t{
 				response_is_complete(), // Complete from beggining.
 				connection_should_close() },  // CLOSE CONNECTION AT RESP #1
-			{ "1a", "1b", "1c", "1a", "1b", "1c",
-			  "1a", "1b", "1c", "1a", "1b", "1c",
-			  "1a", "1b", "1c", "1a", "1b", "1c",
-			  "1a", "1b", "1c", "LAST", " ", "PARTS" } ) );
+			make_buffers(
+				{ "1a", "1b", "1c", "1a", "1b", "1c",
+				  "1a", "1b", "1c", "1a", "1b", "1c",
+				  "1a", "1b", "1c", "1a", "1b", "1c",
+				  "1a", "1b", "1c", "LAST", " ", "PARTS" } ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 2 ],
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_keep_alive() },
-			{ "2a", "2b", "2c", "2a", "2b", "2c",
-			  "2a", "2b", "2c", "2a", "2b", "2c",
-			  "2a", "2b", "2c", "2a", "2b", "2c",
-			  "2a", "2b", "2c", "2a", "2b", "2c" } ) );
-
+			make_buffers(
+				{ "2a", "2b", "2c", "2a", "2b", "2c",
+				  "2a", "2b", "2c", "2a", "2b", "2c",
+				  "2a", "2b", "2c", "2a", "2b", "2c",
+				  "2a", "2b", "2c", "2a", "2b", "2c" } ) ) );
 
 		// #0: ["0a", "0b", "0c"] * 2*4
 		// #1: ["0a", "0b", "0c"] * 2*4
@@ -888,7 +930,7 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "LAST", " ", "PARTS" } ) );
+			make_buffers( { "LAST", " ", "PARTS" } ) ) );
 
 		out_bufs.clear();
 		CHECK_NOTHROW(
@@ -918,15 +960,16 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "NO", " ", "WAY" } ) );
+			make_buffers( { "NO", " ", "WAY" } ) ) );
 
 		CHECK_THROWS( coordinator.append_response(
 			req_id[ 2 ],
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			{ "REQUEST", "IS", "ACTUAL",
-			  "BUT", "REQ #1", "SIGNALED", "CONNECTION-CLOSE" } ) );
+			make_buffers(
+				{ "REQUEST", "IS", "ACTUAL",
+				  "BUT", "REQ #1", "SIGNALED", "CONNECTION-CLOSE" } ) ) );
 
 		out_bufs.clear();
 		CHECK_THROWS(

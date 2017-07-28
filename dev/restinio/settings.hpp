@@ -26,14 +26,14 @@ namespace details
 
 //! Default instantiation for a specific type.
 template < typename OBJECT_TYPE >
-auto
+inline auto
 create_default_object_instance( std::false_type )
 {
 	return std::unique_ptr< OBJECT_TYPE >{};
 }
 
 template < typename OBJECT_TYPE >
-auto
+inline auto
 create_default_object_instance( std::true_type )
 {
 	return std::make_unique< OBJECT_TYPE >();
@@ -47,7 +47,7 @@ create_default_object_instance( std::true_type )
 
 //! Default instantiation for a specific type.
 template < typename OBJECT_TYPE>
-auto
+inline auto
 create_default_object_instance()
 {
 	typename std::is_default_constructible< OBJECT_TYPE >::type tag;
@@ -56,7 +56,7 @@ create_default_object_instance()
 
 //! Default instantiation for default_request_handler_t.
 template <>
-auto
+inline auto
 create_default_object_instance< default_request_handler_t >()
 {
 	return details::create_default_object_instance< default_request_handler_t >(
@@ -88,12 +88,26 @@ ensure_created(
 }
 
 //
+// extra_settings_t
+//
+
+//! Extra settings needed for working with socket.
+template < typename SETTINGS, typename SOCKET_TYPE >
+struct extra_settings_t
+{
+	virtual ~extra_settings_t() = default;
+
+	// No extra settings by default.
+};
+
+//
 // server_settings_t
 //
 
 //! A fluent style interface for setting http server params.
 template < typename TRAITS >
-class server_settings_t
+class server_settings_t final
+	:	public extra_settings_t< server_settings_t< TRAITS > , typename TRAITS::stream_socket_t >
 {
 	public:
 		server_settings_t(

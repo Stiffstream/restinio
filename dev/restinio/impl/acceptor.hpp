@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
@@ -20,6 +22,62 @@ namespace impl
 {
 
 //
+// socket_holder_t
+//
+
+/*
+	A helper base class that hides socket instance.
+
+	It prepares a socket for new connections.
+	And as it is template class over a socket type
+	it givies an oportunity to customize details for
+	other types of sockets (like `asio::ssl::stream< asio::ip::tcp::socket >`)
+	that can be used.
+*/
+template < typename STREAM_SOCKET >
+class socket_holder_t
+{
+	protected:
+		template < typename SETTINGS >
+		socket_holder_t(
+			SETTINGS & ,
+			asio::io_service & io_service )
+			:	m_io_service{ io_service }
+			,	m_socket{ std::make_unique< STREAM_SOCKET >( m_io_service ) }
+		{}
+
+		virtual ~socket_holder_t() = default;
+
+		//! Get the reference to socket.
+		STREAM_SOCKET &
+		socket()
+		{
+			return *m_socket;
+		}
+
+		//! Extract current socet via move.
+		std::unique_ptr< STREAM_SOCKET >
+		move_socket()
+		{
+			// As a socket must never be empty,
+			// first a new socket is created,
+			// and then it is swapped with m_socket
+			// and the result is returned.
+			auto res = std::make_unique< STREAM_SOCKET >( m_io_service );
+			std::swap( res, m_socket );
+			return res;
+		}
+
+	private:
+		//! io_service for sockets to run on.
+		asio::io_service & m_io_service;
+
+		//! A temporary socket for receiving new connections.
+		//! \note Must never be empty.
+		std::unique_ptr< STREAM_SOCKET > m_socket;
+};
+
+//
 // acceptor_t
 //
 
@@ -27,6 +85,7 @@ namespace impl
 template < typename TRAITS >
 class acceptor_t final
 	:	public std::enable_shared_from_this< acceptor_t< TRAITS > >
+	,	public socket_holder_t< typename TRAITS::stream_socket_t >
 {
 	public:
 		using connection_factory_t = impl::connection_factory_t< TRAITS >;
@@ -34,25 +93,29 @@ class acceptor_t final
 			std::shared_ptr< connection_factory_t >;
 		using logger_t = typename TRAITS::logger_t;
 		using strand_t = typename TRAITS::strand_t;
+		using stream_socket_t = typename TRAITS::stream_socket_t;
+		using socket_holder_base_t = socket_holder_t< stream_socket_t >;
 
+		template < typename SETTINGS >
 		acceptor_t(
-			//! Server port.
-			std::uint16_t port,
-			//! Server protocol.
-			asio::ip::tcp protocol,
-			//! Is only local connections allowed.
-			std::string address,
+			SETTINGS & settings,
+			// //! Server port.
+			// std::uint16_t port,
+			// //! Server protocol.
+			// asio::ip::tcp protocol,
+			// //! Is only local connections allowed.
+			// std::string address,
 			//! ASIO io_service to run on.
 			asio::io_service & io_service,
 			//! Connection factory.
 			connection_factory_shared_ptr_t connection_factory,
 			logger_t & logger )
-			:	m_port{ port }
-			,	m_protocol{ protocol }
-			,	m_address{ std::move( address ) }
+			:	socket_holder_base_t{ settings, io_service }
+			,	m_port{ settings.port() }
+			,	m_protocol{ settings.protocol() }
+			,	m_address{ settings.address() }
 			,	m_acceptor{ io_service }
-			,	m_socket{ io_service }
-			,	m_strand{ m_socket.get_executor() }
+			,	m_strand{ this->socket().lowest_layer().get_executor() }
 			,	m_connection_factory{ std::move( connection_factory ) }
 			,	m_logger{ logger }
 		{}
@@ -139,7 +202,7 @@ class acceptor_t final
 		accept_next()
 		{
 			m_acceptor.async_accept(
-				m_socket,
+				this->socket().lowest_layer(),
 				asio::wrap(
 					get_executor(),
 					[ ctx = this->shared_from_this() ]( auto ec ){
@@ -163,18 +226,18 @@ class acceptor_t final
 				m_logger.trace( [&]{
 					return fmt::format(
 							"accept connection from: {}",
-							m_socket.remote_endpoint() );
+							this->socket().lowest_layer().remote_endpoint() );
 				} );
 
 				// Create new connection handler.
 				auto conn =
 					m_connection_factory
-						->create_new_connection( std::move( m_socket ) );
+						->create_new_connection( this->move_socket() );
 
 				//! If connection handler was created,
 				// then start waiting for request message.
 				if( conn )
-					conn->wait_for_http_message();
+					conn->init();
 			}
 			else
 			{
@@ -200,7 +263,7 @@ class acceptor_t final
 		//! Server port listener and connection receiver routine.
 		//! \{
 		asio::ip::tcp::acceptor m_acceptor;
-		asio::ip::tcp::socket m_socket;
+		// stream_socket_t m_socket;
 		//! \}
 
 		//! Sync object for acceptor events.

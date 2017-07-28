@@ -152,28 +152,34 @@ template <>
 class response_builder_t< restinio_controlled_output_t > final
 	:	public base_response_builder_t< response_builder_t< restinio_controlled_output_t > >
 {
+	public:
 		using base_type_t =
 			base_response_builder_t< response_builder_t< restinio_controlled_output_t > >;
-	public:
+		using self_type_t =
+			response_builder_t< restinio_controlled_output_t >;
+
 		response_builder_t( response_builder_t && ) = default;
 
 		// Reuse construstors from base.
 		using base_type_t::base_type_t;
 
 		//! Set body.
-		auto &
-		set_body( std::string body )
+		self_type_t &
+		set_body( buffer_storage_t body )
 		{
-			m_body.assign( std::move( body ) );
-			return *this;
+			auto size = asio::buffer_size( body.buf() );
+			return set_body_impl( body, size );
 		}
+
 		//! Append body.
-		auto &
-		append_body( const std::string & body_part )
+		//! \{
+		self_type_t &
+		append_body( buffer_storage_t body_part )
 		{
-			m_body.append( body_part );
-			return *this;
+			auto size = asio::buffer_size( body_part.buf() );
+			return append_body_impl( body_part, size );
 		}
+		//! \}
 
 		//! Complete response.
 		request_handling_status_t
@@ -188,22 +194,63 @@ class response_builder_t< restinio_controlled_output_t > final
 						response_parts_attr_t::final_parts,
 						response_connection_attr( m_header.should_keep_alive() ) };
 
-				m_header.content_length( m_body.size() );
+				m_header.content_length( m_body_size );
+
+				if_neccessary_reserve_first_element_for_header();
+
+				m_response_parts[ 0 ] =
+					buffer_storage_t{ impl::create_header_string( m_header ) };
 
 				conn->write_response_parts(
 					m_request_id,
 					response_output_flags,
-					{
-						impl::create_header_string( m_header ),
-						std::move( m_body )
-					} );
+					std::move( m_response_parts ) );
 			}
 
 			return restinio::request_accepted();
 		}
 
 	private:
-		std::string m_body;
+		self_type_t &
+		set_body_impl( buffer_storage_t & body, std::size_t body_size )
+		{
+			if_neccessary_reserve_first_element_for_header();
+
+			// Leave only buf that is reserved for header,
+			// so forget all the previous data.
+			m_response_parts.resize( 1 );
+
+			if( 0 < body_size )
+			{
+				m_response_parts.emplace_back( std::move( body ) );
+			}
+
+			m_body_size = body_size;
+
+			return *this;
+		}
+
+		self_type_t &
+		append_body_impl( buffer_storage_t & body_part, std::size_t append_size )
+		{
+			if_neccessary_reserve_first_element_for_header();
+			m_response_parts.emplace_back( std::move( body_part ) );
+			m_body_size += append_size;
+			return *this;
+		}
+
+		void
+		if_neccessary_reserve_first_element_for_header()
+		{
+			if( 0 == m_response_parts.size() )
+			{
+				m_response_parts.reserve( 2 );
+				m_response_parts.emplace_back();
+			}
+		}
+
+		std::size_t m_body_size{ 0 };
+		buffers_container_t m_response_parts;
 };
 
 struct user_controlled_output_t {};
@@ -219,9 +266,12 @@ template <>
 class response_builder_t< user_controlled_output_t > final
 	:	public base_response_builder_t< response_builder_t< user_controlled_output_t > >
 {
+	public:
 		using base_type_t =
 			base_response_builder_t< response_builder_t< user_controlled_output_t > >;
-	public:
+		using self_type_t =
+			response_builder_t< user_controlled_output_t >;
+
 		// Reuse construstors from base.
 		using base_type_t::base_type_t;
 
@@ -234,19 +284,28 @@ class response_builder_t< user_controlled_output_t > final
 		}
 
 		//! Set body (part).
-		auto &
-		set_body( std::string body )
+		//! \{
+		self_type_t &
+		set_body( buffer_storage_t body )
 		{
-			m_body.assign( std::move( body ) );
-			return *this;
+			auto size = asio::buffer_size( body.buf() );
+			return set_body_impl( body, size );
 		}
-		//! Append body (part).
-		auto &
-		append_body( const std::string & body_part )
+		//! \}
+
+		//! Append body.
+		//! \{
+		self_type_t &
+		append_body( buffer_storage_t body_part )
 		{
-			m_body.append( body_part );
-			return *this;
+			auto size = asio::buffer_size( body_part.buf() );
+
+			if( 0 == size )
+				return *this;
+
+			return append_body_impl( body_part );
 		}
+		//! \}
 
 		//! Flush ready outgoing data.
 		/*!
@@ -292,25 +351,15 @@ class response_builder_t< user_controlled_output_t > final
 						response_parts_attr,
 						response_connection_attr( m_should_keep_alive_when_header_was_sent ) };
 
-				if( !m_body.empty() )
-				{
-					conn->write_response_parts(
-						m_request_id,
-						response_output_flags,
-						{
-							impl::create_header_string( m_header ),
-							std::move( m_body )
-						} );
-				}
-				else
-				{
-					conn->write_response_parts(
-						m_request_id,
-						response_output_flags,
-						{
-							impl::create_header_string( m_header )
-						} );
-				}
+				if_neccessary_reserve_first_element_for_header();
+
+				m_response_parts[ 0 ] =
+					buffer_storage_t{ impl::create_header_string( m_header ) };
+
+				conn->write_response_parts(
+					m_request_id,
+					response_output_flags,
+					std::move( m_response_parts ) );
 
 				m_header_was_sent = true;
 			}
@@ -321,27 +370,53 @@ class response_builder_t< user_controlled_output_t > final
 						response_parts_attr,
 						response_connection_attr( m_should_keep_alive_when_header_was_sent ) };
 
-				if( !m_body.empty() )
-				{
-					conn->write_response_parts(
-						m_request_id,
-						response_output_flags,
-						{
-							std::move( m_body )
-						} );
-				}
-				else
-					conn->write_response_parts(
-						m_request_id,
-						response_output_flags,
-						{
-							/*
-								Pass nothing
-								just to mark response as finished.
-							*/
-						} );
+				conn->write_response_parts(
+					m_request_id,
+					response_output_flags,
+					std::move( m_response_parts ) );
 			}
 		}
+
+		self_type_t &
+		set_body_impl( buffer_storage_t & body, std::size_t body_size )
+		{
+			if_neccessary_reserve_first_element_for_header();
+
+			// Leave only buf that is reserved for header,
+			// so forget all the previous data.
+			if( !m_header_was_sent )
+				m_response_parts.resize( 1 );
+			else
+				m_response_parts.resize( 0 );
+
+			if( 0 < body_size )
+			{
+				// if body is not empty:
+				m_response_parts.emplace_back( std::move( body ) );
+			}
+
+			return *this;
+		}
+
+		self_type_t &
+		append_body_impl( buffer_storage_t & body_part )
+		{
+			if_neccessary_reserve_first_element_for_header();
+
+			m_response_parts.emplace_back( std::move( body_part ) );
+			return *this;
+		}
+
+		void
+		if_neccessary_reserve_first_element_for_header()
+		{
+			if( !m_header_was_sent && 0 == m_response_parts.size() )
+			{
+				m_response_parts.reserve( 2 );
+				m_response_parts.emplace_back();
+			}
+		}
+
 
 		//! Flag used by flush() function.
 		bool m_header_was_sent{ false };
@@ -360,7 +435,7 @@ class response_builder_t< user_controlled_output_t > final
 			For this type of output it contains a part of a body.
 			On each flush it is cleared.
 		*/
-		std::string m_body;
+		buffers_container_t m_response_parts;
 };
 
 struct chunked_output_t {};
@@ -390,32 +465,23 @@ class response_builder_t< chunked_output_t > final
 					request_id,
 					should_keep_alive }
 		{
-			m_chunks.reserve( 16 );
+			m_chunks.reserve( 4 );
 		}
 
 		//! Append current chunk.
+		//! \{
 		auto &
-		start_chunk( std::string part )
+		append_chunk( buffer_storage_t chunk )
 		{
-			start_new_chunk( std::move( part ) );
+			auto size = asio::buffer_size( chunk.buf() );
+
+			if( 0 != size )
+				m_chunks.emplace_back( std::move( chunk ) );
+
 			return *this;
 		}
 
-		//! Append current chunk.
-		auto &
-		append_chunk( const std::string & part )
-		{
-			current_chunk().append( part );
-			return *this;
-		}
-
-		//! Resets the value of current chunk.
-		auto &
-		reset_chunk( std::string chunk )
-		{
-			current_chunk().assign( std::move( chunk ) );
-			return *this;
-		}
+		//! \}
 
 		//! Flush ready outgoing data.
 		/*!
@@ -507,12 +573,12 @@ class response_builder_t< chunked_output_t > final
 			}
 		}
 
-		std::vector< std::string >
+		buffers_container_t
 		create_bufs( bool add_zero_chunk )
 		{
-			std::vector< std::string > bufs;
+			buffers_container_t bufs;
 
-			std::size_t reserve_size = 2 * m_chunks.size();
+			std::size_t reserve_size = 2 * m_chunks.size() + 1;
 
 			if( !m_header_was_sent )
 			{
@@ -533,23 +599,32 @@ class response_builder_t< chunked_output_t > final
 						impl::content_length_field_presence_t::skip_content_length ) );
 			}
 
+			const char * format_string = "{:X}\r\n";
 			for( auto & chunk : m_chunks )
 			{
-				if( !chunk.empty() )
-				{
-					bufs.emplace_back( fmt::format( "{:X}\r\n", chunk.size() ) );
+				bufs.emplace_back(
+					fmt::format(
+						format_string,
+						asio::buffer_size( chunk.buf() ) ) );
 
-					chunk.append( "\r\n" );
-					bufs.emplace_back( std::move( chunk ) );
-				}
+				// Now include "\r\n"-ending for a previous chunk to format string.
+				format_string = "\r\n{:X}\r\n";
+
+				bufs.emplace_back( std::move( chunk ) );
+
+			}
+
+			if( !m_chunks.empty() )
+			{
+				// Add "\r\n"-ending for the last part (if any).
+				const char * rn_ending = "\r\n";
+				bufs.emplace_back( const_buffer( rn_ending, 2 ) );
 			}
 
 			if( add_zero_chunk )
 			{
-				constexpr const char zero_chunk[] = "0\r\n\r\n";
-				bufs.emplace_back(
-					zero_chunk,
-					impl::ct_string_len( zero_chunk ) );
+				const char * zero_chunk = "0\r\n\r\n";
+				bufs.emplace_back( const_buffer( zero_chunk, 5 ) );
 			}
 
 			m_chunks.clear();
@@ -569,35 +644,8 @@ class response_builder_t< chunked_output_t > final
 		*/
 		bool m_should_keep_alive_when_header_was_sent{ true };
 
-		//! Response parts accumulator.
-		std::vector< std::string > m_chunks;
-
-		std::string * m_current_chunk{ nullptr };
-
-		void
-		start_new_chunk()
-		{
-			m_chunks.resize( m_chunks.size() + 1 );
-			m_current_chunk = &m_chunks.back();
-		}
-
-		std::string &
-		current_chunk()
-		{
-			if( !m_current_chunk )
-			{
-				start_new_chunk();
-			}
-
-			return *m_current_chunk;
-		}
-
-		void
-		start_new_chunk( std::string value )
-		{
-			start_new_chunk();
-			current_chunk().assign( std::move( value ) );
-		}
+		//! Chunks accumulator.
+		buffers_container_t m_chunks;
 };
 
 } /* namespace restinio */

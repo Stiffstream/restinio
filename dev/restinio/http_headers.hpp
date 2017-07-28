@@ -22,37 +22,20 @@ namespace restinio
 {
 
 //
-// http_header_field_t
-//
-
-//! A single header field.
-struct http_header_field_t
-{
-	http_header_field_t()
-	{}
-
-	http_header_field_t(
-		std::string name,
-		std::string value )
-		:	m_name{ std::move( name ) }
-		,	m_value{ std::move( value ) }
-	{}
-
-	std::string m_name;
-	std::string m_value;
-};
-
-//
 // caseless_cmp()
 //
 
 //! Comparator for fields names.
 inline bool
-caseless_cmp( const std::string & a, const std::string & b )
+caseless_cmp(
+	const char * a,
+	std::size_t a_size,
+	const char * b,
+	std::size_t b_size )
 {
-	if( a.size() == b.size() )
+	if( a_size == b_size )
 	{
-		for( std::size_t i = 0; i < a.size(); ++i )
+		for( std::size_t i = 0; i < a_size; ++i )
 			if( std::tolower( a[ i ] ) != std::tolower( b[ i ] ) )
 				return false;
 
@@ -63,12 +46,321 @@ caseless_cmp( const std::string & a, const std::string & b )
 }
 
 //
+// caseless_cmp()
+//
+
+//! Comparator for fields names.
+inline bool
+caseless_cmp( const std::string & a, const std::string & b )
+{
+	return caseless_cmp( a.data(), a.size(), b.data(), b.size() );
+}
+
+// Adopted header fields
+// (https://www.iana.org/assignments/message-headers/message-headers.xml#perm-headers).
+// Fields `Connection` and `Content-Length` are specieal cases, thus they are excluded from the list.
+#define RESTINIO_HTTP_FIELDS_MAP( RESTINIO_GEN ) \
+	RESTINIO_GEN( a_im,                         A-IM )                        \
+	RESTINIO_GEN( accept,                       Accept )                      \
+	RESTINIO_GEN( accept_additions,             Accept-Additions )            \
+	RESTINIO_GEN( accept_charset,               Accept-Charset )              \
+	RESTINIO_GEN( accept_datetime,              Accept-Datetime )             \
+	RESTINIO_GEN( accept_encoding,              Accept-Encoding )             \
+	RESTINIO_GEN( accept_features,              Accept-Features )             \
+	RESTINIO_GEN( accept_language,              Accept-Language )             \
+	RESTINIO_GEN( accept_patch,                 Accept-Patch )                \
+	RESTINIO_GEN( accept_post,                  Accept-Post )                 \
+	RESTINIO_GEN( accept_ranges,                Accept-Ranges )               \
+	RESTINIO_GEN( age,                          Age )                         \
+	RESTINIO_GEN( allow,                        Allow )                       \
+	RESTINIO_GEN( alpn,                         ALPN )                        \
+	RESTINIO_GEN( alt_svc,                      Alt-Svc )                     \
+	RESTINIO_GEN( alt_used,                     Alt-Used )                    \
+	RESTINIO_GEN( alternates,                   Alternates )                  \
+	RESTINIO_GEN( apply_to_redirect_ref,        Apply-To-Redirect-Ref )       \
+	RESTINIO_GEN( authentication_control,       Authentication-Control )      \
+	RESTINIO_GEN( authentication_info,          Authentication-Info )         \
+	RESTINIO_GEN( authorization,                Authorization )               \
+	RESTINIO_GEN( c_ext,                        C-Ext )                       \
+	RESTINIO_GEN( c_man,                        C-Man )                       \
+	RESTINIO_GEN( c_opt,                        C-Opt )                       \
+	RESTINIO_GEN( c_pep,                        C-PEP )                       \
+	RESTINIO_GEN( c_pep_info,                   C-PEP-Info )                  \
+	RESTINIO_GEN( cache_control,                Cache-Control )               \
+	RESTINIO_GEN( caldav_timezones,             CalDAV-Timezones )            \
+	RESTINIO_GEN( close,                        Close )                       \
+	RESTINIO_GEN( content_base,                 Content-Base )                \
+	RESTINIO_GEN( content_disposition,          Content-Disposition )         \
+	RESTINIO_GEN( content_encoding,             Content-Encoding )            \
+	RESTINIO_GEN( content_id,                   Content-ID )                  \
+	RESTINIO_GEN( content_language,             Content-Language )            \
+	RESTINIO_GEN( content_location,             Content-Location )            \
+	RESTINIO_GEN( content_md5,                  Content-MD5 )                 \
+	RESTINIO_GEN( content_range,                Content-Range )               \
+	RESTINIO_GEN( content_script_type,          Content-Script-Type )         \
+	RESTINIO_GEN( content_style_type,           Content-Style-Type )          \
+	RESTINIO_GEN( content_type,                 Content-Type )                \
+	RESTINIO_GEN( content_version,              Content-Version )             \
+	RESTINIO_GEN( cookie,                       Cookie )                      \
+	RESTINIO_GEN( cookie2,                      Cookie2 )                     \
+	RESTINIO_GEN( dasl,                         DASL )                        \
+	RESTINIO_GEN( dav,                          DAV )                         \
+	RESTINIO_GEN( date,                         Date )                        \
+	RESTINIO_GEN( default_style,                Default-Style )               \
+	RESTINIO_GEN( delta_base,                   Delta-Base )                  \
+	RESTINIO_GEN( depth,                        Depth )                       \
+	RESTINIO_GEN( derived_from,                 Derived-From )                \
+	RESTINIO_GEN( destination,                  Destination )                 \
+	RESTINIO_GEN( differential_id,              Differential-ID )             \
+	RESTINIO_GEN( digest,                       Digest )                      \
+	RESTINIO_GEN( etag,                         ETag )                        \
+	RESTINIO_GEN( expect,                       Expect )                      \
+	RESTINIO_GEN( expires,                      Expires )                     \
+	RESTINIO_GEN( ext,                          Ext )                         \
+	RESTINIO_GEN( forwarded,                    Forwarded )                   \
+	RESTINIO_GEN( from,                         From )                        \
+	RESTINIO_GEN( getprofile,                   GetProfile )                  \
+	RESTINIO_GEN( hobareg,                      Hobareg )                     \
+	RESTINIO_GEN( host,                         Host )                        \
+	RESTINIO_GEN( http2_settings,               HTTP2-Settings )              \
+	RESTINIO_GEN( im,                           IM )                          \
+	RESTINIO_GEN( if_,                          If )                          \
+	RESTINIO_GEN( if_match,                     If-Match )                    \
+	RESTINIO_GEN( if_modified_since,            If-Modified-Since )           \
+	RESTINIO_GEN( if_none_match,                If-None-Match )               \
+	RESTINIO_GEN( if_range,                     If-Range )                    \
+	RESTINIO_GEN( if_schedule_tag_match,        If-Schedule-Tag-Match )       \
+	RESTINIO_GEN( if_unmodified_since,          If-Unmodified-Since )         \
+	RESTINIO_GEN( keep_alive,                   Keep-Alive )                  \
+	RESTINIO_GEN( label,                        Label )                       \
+	RESTINIO_GEN( last_modified,                Last-Modified )               \
+	RESTINIO_GEN( link,                         Link )                        \
+	RESTINIO_GEN( location,                     Location )                    \
+	RESTINIO_GEN( lock_token,                   Lock-Token )                  \
+	RESTINIO_GEN( man,                          Man )                         \
+	RESTINIO_GEN( max_forwards,                 Max-Forwards )                \
+	RESTINIO_GEN( memento_datetime,             Memento-Datetime )            \
+	RESTINIO_GEN( meter,                        Meter )                       \
+	RESTINIO_GEN( mime_version,                 MIME-Version )                \
+	RESTINIO_GEN( negotiate,                    Negotiate )                   \
+	RESTINIO_GEN( opt,                          Opt )                         \
+	RESTINIO_GEN( optional_www_authenticate,    Optional-WWW-Authenticate )   \
+	RESTINIO_GEN( ordering_type,                Ordering-Type )               \
+	RESTINIO_GEN( origin,                       Origin )                      \
+	RESTINIO_GEN( overwrite,                    Overwrite )                   \
+	RESTINIO_GEN( p3p,                          P3P )                         \
+	RESTINIO_GEN( pep,                          PEP )                         \
+	RESTINIO_GEN( pics_label,                   PICS-Label )                  \
+	RESTINIO_GEN( pep_info,                     Pep-Info )                    \
+	RESTINIO_GEN( position,                     Position )                    \
+	RESTINIO_GEN( pragma,                       Pragma )                      \
+	RESTINIO_GEN( prefer,                       Prefer )                      \
+	RESTINIO_GEN( preference_applied,           Preference-Applied )          \
+	RESTINIO_GEN( profileobject,                ProfileObject )               \
+	RESTINIO_GEN( protocol,                     Protocol )                    \
+	RESTINIO_GEN( protocol_info,                Protocol-Info )               \
+	RESTINIO_GEN( protocol_query,               Protocol-Query )              \
+	RESTINIO_GEN( protocol_request,             Protocol-Request )            \
+	RESTINIO_GEN( proxy_authenticate,           Proxy-Authenticate )          \
+	RESTINIO_GEN( proxy_authentication_info,    Proxy-Authentication-Info )   \
+	RESTINIO_GEN( proxy_authorization,          Proxy-Authorization )         \
+	RESTINIO_GEN( proxy_features,               Proxy-Features )              \
+	RESTINIO_GEN( proxy_instruction,            Proxy-Instruction )           \
+	RESTINIO_GEN( public_,                      Public )                      \
+	RESTINIO_GEN( public_key_pins,              Public-Key-Pins )             \
+	RESTINIO_GEN( public_key_pins_report_only,  Public-Key-Pins-Report-Only ) \
+	RESTINIO_GEN( range,                        Range )                       \
+	RESTINIO_GEN( redirect_ref,                 Redirect-Ref )                \
+	RESTINIO_GEN( referer,                      Referer )                     \
+	RESTINIO_GEN( retry_after,                  Retry-After )                 \
+	RESTINIO_GEN( safe,                         Safe )                        \
+	RESTINIO_GEN( schedule_reply,               Schedule-Reply )              \
+	RESTINIO_GEN( schedule_tag,                 Schedule-Tag )                \
+	RESTINIO_GEN( sec_websocket_accept,         Sec-WebSocket-Accept )        \
+	RESTINIO_GEN( sec_websocket_extensions,     Sec-WebSocket-Extensions )    \
+	RESTINIO_GEN( sec_websocket_key,            Sec-WebSocket-Key )           \
+	RESTINIO_GEN( sec_websocket_protocol,       Sec-WebSocket-Protocol )      \
+	RESTINIO_GEN( sec_websocket_version,        Sec-WebSocket-Version )       \
+	RESTINIO_GEN( security_scheme,              Security-Scheme )             \
+	RESTINIO_GEN( server,                       Server )                      \
+	RESTINIO_GEN( set_cookie,                   Set-Cookie )                  \
+	RESTINIO_GEN( set_cookie2,                  Set-Cookie2 )                 \
+	RESTINIO_GEN( setprofile,                   SetProfile )                  \
+	RESTINIO_GEN( slug,                         SLUG )                        \
+	RESTINIO_GEN( soapaction,                   SoapAction )                  \
+	RESTINIO_GEN( status_uri,                   Status-URI )                  \
+	RESTINIO_GEN( strict_transport_security,    Strict-Transport-Security )   \
+	RESTINIO_GEN( surrogate_capability,         Surrogate-Capability )        \
+	RESTINIO_GEN( surrogate_control,            Surrogate-Control )           \
+	RESTINIO_GEN( tcn,                          TCN )                         \
+	RESTINIO_GEN( te,                           TE )                          \
+	RESTINIO_GEN( timeout,                      Timeout )                     \
+	RESTINIO_GEN( topic,                        Topic )                       \
+	RESTINIO_GEN( trailer,                      Trailer )                     \
+	RESTINIO_GEN( transfer_encoding,            Transfer-Encoding )           \
+	RESTINIO_GEN( ttl,                          TTL )                         \
+	RESTINIO_GEN( urgency,                      Urgency )                     \
+	RESTINIO_GEN( uri,                          URI )                         \
+	RESTINIO_GEN( upgrade,                      Upgrade )                     \
+	RESTINIO_GEN( user_agent,                   User-Agent )                  \
+	RESTINIO_GEN( variant_vary,                 Variant-Vary )                \
+	RESTINIO_GEN( vary,                         Vary )                        \
+	RESTINIO_GEN( via,                          Via )                         \
+	RESTINIO_GEN( www_authenticate,             WWW-Authenticate )            \
+	RESTINIO_GEN( want_digest,                  Want-Digest )                 \
+	RESTINIO_GEN( warning,                      Warning )                     \
+	RESTINIO_GEN( x_frame_options,              X-Frame-Options )
+	// SPECIAL CASE: RESTINIO_GEN( connection,                   Connection )
+	// SPECIAL CASE: RESTINIO_GEN( content_length,               Content-Length )
+
+
+//
+// http_method_t
+//
+
+//! C++ enum that repeats nodejs c-style enum.
+/*!
+	\note Fields `Connection` and `Content-Length` are specieal cases,
+	thus they are not present in the list.
+*/
+enum class http_field_t : std::uint8_t //By now 152 + 1 items fits to uint8_t
+{
+#define RESTINIO_HTTP_FIELD_GEN( name, ignored ) name,
+	RESTINIO_HTTP_FIELDS_MAP( RESTINIO_HTTP_FIELD_GEN )
+#undef RESTINIO_HTTP_FIELD_GEN
+	// Unspecified field.
+	field_unspecified
+};
+
+//! Helper alies to omitt `_t` suffix.
+using http_field = http_field_t;
+
+//
+// string_to_field()
+//
+
+//! Helper function to get method string name.
+//! \{
+inline http_field_t
+string_to_field( const char * field_name, std::size_t field_name_size )
+{
+	#define RESTINIO_HTTP_FIELD_TOENUM_GEN( name, string_name ) \
+		{                                                       \
+			const char field_str[] = #string_name ;             \
+			if( caseless_cmp(                                   \
+				field_name, field_name_size,                    \
+				field_str, sizeof( field_str ) - 1 ) )          \
+				return http_field_t:: name;                     \
+		}
+		RESTINIO_HTTP_FIELDS_MAP( RESTINIO_HTTP_FIELD_TOENUM_GEN )
+	#undef RESTINIO_HTTP_FIELD_TOENUM_GEN
+
+	return http_field_t::field_unspecified;
+}
+
+inline http_field_t
+string_to_field( const char * field_name )
+{
+	return string_to_field( field_name, std::strlen( field_name ) );
+}
+
+inline http_field_t
+string_to_field( const std::string & field_name )
+{
+	return string_to_field( field_name.data(), field_name.size() );
+}
+//! \}
+
+//
+// field_to_string()
+//
+
+//! Helper sunction to get method string name.
+constexpr inline const char *
+field_to_string( http_field_t f )
+{
+	const char * result = "";
+	switch( f )
+	{
+		#define RESTINIO_HTTP_FIELD_STR_GEN( name, string_name ) \
+			case http_field_t::name: result = #string_name; break;
+
+			RESTINIO_HTTP_FIELDS_MAP( RESTINIO_HTTP_FIELD_STR_GEN )
+		#undef RESTINIO_HTTP_FIELD_STR_GEN
+
+		case http_field_t::field_unspecified: break; // Ignore.
+	};
+
+	return result;
+}
+
+//
+// http_header_field_t
+//
+
+//! A single header field.
+/*!
+	Fields m_name and m_field_id are kind of having the same meaning,
+	and m_name field seems like can be omitted, but
+	for the cases of custom header fields it is important to
+	rely on the name only. And as the names of almoust all speified fields
+	fits in SSO it doesn't involve much overhead on standard fields.
+*/
+struct http_header_field_t
+{
+	http_header_field_t()
+		:	m_field_id{ http_field_t::field_unspecified }
+	{}
+
+	http_header_field_t(
+		std::string name,
+		std::string value )
+		:	m_name{ std::move( name ) }
+		,	m_value{ std::move( value ) }
+		,	m_field_id{ string_to_field( m_name ) }
+	{}
+
+	http_header_field_t(
+		http_field_t field_id,
+		std::string value )
+		:	m_name{ field_to_string( field_id ) }
+		,	m_value{ std::move( value ) }
+		,	m_field_id{ field_id }
+	{}
+
+	std::string m_name;
+	std::string m_value;
+	http_field_t m_field_id;
+};
+
+// Make neccessary forward declarations.
+class http_header_fields_t;
+namespace impl
+{
+void
+append_last_field_accessor( http_header_fields_t &, const std::string & );
+} /* namespace impl */
+
+//
 // http_header_fields_t
 //
 
 //! Header fields map.
+/*!
+	This class holds a collection of header fields.
+
+	There are 2 special cases for fields: `Connection` and `Content-Length`
+	This cases are handled separetely from the rest of the fields.
+	And as the implementation of http_header_fields_t doesn't
+	have checks on each field manipulation checking whether
+	field name is `Connection` or `Content-Length` it is important
+	to use proper member functions in derived classes for manipulating them.
+*/
 class http_header_fields_t
 {
+		friend void
+		impl::append_last_field_accessor( http_header_fields_t &, const std::string & );
+
 	public:
 		using fields_container_t = std::vector< http_header_field_t >;
 
@@ -80,12 +372,26 @@ class http_header_fields_t
 		http_header_fields_t & operator=(const http_header_fields_t &) = default;
 		http_header_fields_t & operator=(http_header_fields_t &&) = default;
 
+		//! Chack field by name.
 		bool
 		has_field( const std::string & field_name ) const
 		{
 			return m_fields.cend() != cfind( field_name );
 		}
 
+		//! Chack field by field-id.
+		/*!
+			\note If `field_id=http_field_t::field_unspecified`
+			then function returns not more than just a fact
+			whether there is at least one unspecified field.
+		*/
+		bool
+		has_field( http_field_t field_id ) const
+		{
+			return m_fields.cend() != cfind( field_id );
+		}
+
+		//! Set field with string pair.
 		void
 		set_field(
 			std::string field_name,
@@ -106,6 +412,34 @@ class http_header_fields_t
 			}
 		}
 
+		//! Set field with id-value pair.
+		/*!
+			If `field_id=http_field_t::field_unspecified`
+			then function does nothing.
+		*/
+		void
+		set_field(
+			http_field_t field_id,
+			std::string field_value )
+		{
+			if( http_field_t::field_unspecified != field_id )
+			{
+				const auto it = find( field_id );
+
+				if( m_fields.end() != it )
+				{
+					it->m_value = std::move( field_value );
+				}
+				else
+				{
+					m_fields.emplace_back(
+						field_id,
+						std::move( field_value ) );
+				}
+			}
+		}
+
+		//! Append field with name.
 		void
 		append_field(
 			const std::string & field_name,
@@ -123,12 +457,32 @@ class http_header_fields_t
 			}
 		}
 
+		//! Append field with id.
+		/*!
+			If `field_id=http_field_t::field_unspecified`
+			then function does nothing.
+		*/
 		void
-		append_last_field( const std::string & field_value )
+		append_field(
+			http_field_t field_id,
+			const std::string & field_value )
 		{
-			m_fields.back().m_value.append( field_value );
+			if( http_field_t::field_unspecified != field_id )
+			{
+				const auto it = find( field_id );
+
+				if( m_fields.end() != it )
+				{
+					it->m_value.append( field_value );
+				}
+				else
+				{
+					m_fields.emplace_back( field_id, field_value );
+				}
+			}
 		}
 
+		//! Get field by name.
 		const std::string &
 		get_field(
 			const std::string & field_name ) const
@@ -136,12 +490,37 @@ class http_header_fields_t
 			const auto it = cfind( field_name );
 
 			if( m_fields.end() == it )
-				throw exception_t(
-					fmt::format( "field '{}' doesn't exist", field_name ) );
+				throw exception_t{
+					fmt::format( "field '{}' doesn't exist", field_name ) };
 
 			return it->m_value;
 		}
 
+		//! Get field by id.
+		const std::string &
+		get_field(
+			http_field_t field_id ) const
+		{
+			if( http_field_t::field_unspecified == field_id )
+				throw exception_t{
+					fmt::format(
+						"unspecified fields cannot be searched by id" ) };
+
+			const auto it = cfind( field_id );
+
+			if( m_fields.end() == it )
+				throw exception_t{
+					fmt::format(
+						"field '{}' doesn't exist",
+						field_to_string( field_id ) ) };
+
+			return it->m_value;
+		}
+
+		//! Get field by name.
+		/*!
+			If field exists return field value, otherwise return default_value.
+		*/
 		const std::string &
 		get_field(
 			const std::string & field_name,
@@ -155,6 +534,27 @@ class http_header_fields_t
 			return it->m_value;
 		}
 
+		//! Get field by id.
+		/*!
+			If field exists return field value, otherwise return default_value.
+		*/
+		const std::string &
+		get_field(
+			http_field_t field_id,
+			const std::string & default_value ) const
+		{
+			if( http_field_t::field_unspecified != field_id )
+			{
+				const auto it = cfind( field_id );
+
+				if( m_fields.end() != it )
+					return it->m_value;
+			}
+
+			return default_value;
+		}
+
+		//! Remove field by name.
 		void
 		remove_field( const std::string & field_name )
 		{
@@ -162,6 +562,19 @@ class http_header_fields_t
 
 			if( m_fields.end() != it )
 				m_fields.erase( it );
+		}
+
+		//! Remove field by id.
+		void
+		remove_field( http_field_t field_id )
+		{
+			if( http_field_t::field_unspecified != field_id )
+			{
+				const auto it = find( field_id );
+
+				if( m_fields.end() != it )
+					m_fields.erase( it );
+			}
 		}
 
 		auto
@@ -183,6 +596,21 @@ class http_header_fields_t
 		}
 
 	private:
+		//! Appends last added field.
+		/*!
+			This is function is used by http-parser when
+			field value is created by 2 separate
+			invocation of on-header-field-value callback
+
+			Function doesn't check if at least one field exists,
+			so it is not in the public interface.
+		*/
+		void
+		append_last_field( const std::string & field_value )
+		{
+			m_fields.back().m_value.append( field_value );
+		}
+
 		fields_container_t::iterator
 		find( const std::string & field_name )
 		{
@@ -202,6 +630,28 @@ class http_header_fields_t
 				m_fields.cend(),
 				[&]( const auto & f ){
 					return caseless_cmp( f.m_name, field_name );
+				} );
+		}
+
+		fields_container_t::iterator
+		find( http_field_t field_id )
+		{
+			return std::find_if(
+				m_fields.begin(),
+				m_fields.end(),
+				[&]( const auto & f ){
+					return f.m_field_id == field_id;
+				} );
+		}
+
+		fields_container_t::const_iterator
+		cfind( http_field_t field_id ) const
+		{
+			return std::find_if(
+				m_fields.cbegin(),
+				m_fields.cend(),
+				[&]( const auto & f ){
+					return f.m_field_id == field_id;
 				} );
 		}
 
@@ -247,7 +697,9 @@ struct http_header_common_t
 
 		bool
 		should_keep_alive() const
-		{ return m_should_keep_alive; }
+		{
+			return m_should_keep_alive;
+		}
 
 		void
 		should_keep_alive( bool keep_alive )

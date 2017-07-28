@@ -3,7 +3,7 @@
 */
 
 /*!
-	helpers for http communication.
+	Include all necessary header files in one.
 */
 
 #pragma once
@@ -17,5 +17,6 @@
 #include <restinio/null_logger.hpp>
 #include <restinio/ostream_logger.hpp>
 #include <restinio/escape.hpp>
+
 
 #include <restinio/router/express.hpp>

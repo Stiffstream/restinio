@@ -17,48 +17,10 @@
 #include <restinio/asio_timer_factory.hpp>
 #include <restinio/null_logger.hpp>
 #include <restinio/impl/acceptor.hpp>
+#include <restinio/traits.hpp>
 
 namespace restinio
 {
-
-//
-// traits_t
-//
-
-template <
-		typename TIMER_FACTORY,
-		typename LOGGER,
-		typename REQUEST_HANDLER = default_request_handler_t,
-		typename STRAND = asio::strand< asio::executor > >
-struct traits_t
-{
-	using timer_factory_t = TIMER_FACTORY;
-	using logger_t = LOGGER;
-	using request_handler_t = REQUEST_HANDLER;
-	using strand_t = STRAND;
-};
-
-using noop_strand_t = asio::executor;
-
-//
-// single_thread_traits_t
-//
-
-template <
-		typename TIMER_FACTORY,
-		typename LOGGER,
-		typename REQUEST_HANDLER = default_request_handler_t >
-using single_thread_traits_t =
-	traits_t< TIMER_FACTORY, LOGGER, REQUEST_HANDLER, noop_strand_t >;
-
-//
-// default_traits_t
-//
-
-using default_traits_t =
-		traits_t<
-			asio_timer_factory_t,
-			null_logger_t >;
 
 //
 // http_server_t
@@ -112,9 +74,10 @@ class http_server_t
 
 			m_acceptor =
 				std::make_shared< acceptor_t >(
-					settings.port(),
-					settings.protocol(),
-					settings.address(),
+					settings,
+					// settings.port(),
+					// settings.protocol(),
+					// settings.address(),
 					m_io_service_wrapper->io_service(),
 					std::make_shared< connection_factory_t >(
 						conn_settings,
