@@ -61,7 +61,7 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 				req_handler_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_service( 1 ),
+		restinio::create_child_io_context( 1 ),
 		[]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -73,7 +73,7 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 
 	http_server.open();
 
-	do_with_socket( [ & ]( auto & socket, auto & io_service ){
+	do_with_socket( [ & ]( auto & socket, auto & io_context ){
 		const std::string pipelinedrequests{
 			"GET / HTTP/1.1\r\n"
 			"Host: 127.0.0.1\r\n"
@@ -104,7 +104,7 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 				REQUIRE( ec );
 				REQUIRE( ec == asio::error::eof );
 			} );
-		io_service.run();
+		io_context.run();
 
 		const auto finished_at = std::chrono::steady_clock::now();
 

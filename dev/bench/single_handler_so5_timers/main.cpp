@@ -127,7 +127,7 @@ class a_http_server_t
 			server_settings_t settings )
 			:	so_base_type_t{ std::move( ctx ) }
 			,	m_server{
-					restinio::create_child_io_service( asio_pool_size ),
+					restinio::create_child_io_context( asio_pool_size ),
 					std::move( settings ) }
 		{}
 

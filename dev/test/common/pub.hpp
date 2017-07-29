@@ -17,17 +17,17 @@ do_with_socket(
 	const std::string & addr = "127.0.0.1",
 	std::uint16_t port = utest_default_port() )
 {
-	asio::io_service io_service;
-	asio::ip::tcp::socket socket{ io_service };
+	asio::io_context io_context;
+	asio::ip::tcp::socket socket{ io_context };
 
-	asio::ip::tcp::resolver resolver{ io_service };
+	asio::ip::tcp::resolver resolver{ io_context };
 	asio::ip::tcp::resolver::query
 		query{ asio::ip::tcp::v4(), addr, std::to_string( port ) };
 	asio::ip::tcp::resolver::iterator iterator = resolver.resolve( query );
 
 	asio::connect( socket, iterator );
 
-	lambda( socket, io_service );
+	lambda( socket, io_context );
 	socket.close();
 }
 
@@ -39,7 +39,7 @@ do_request(
 {
 	std::string result;
 	do_with_socket(
-		[ & ]( auto & socket, auto & /*io_service*/ ){
+		[ & ]( auto & socket, auto & /*io_context*/ ){
 
 			asio::streambuf b;
 			std::ostream req_stream(&b);

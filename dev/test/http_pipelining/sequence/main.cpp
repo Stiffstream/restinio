@@ -126,7 +126,7 @@ TEST_CASE( "Simple HTTP piplining " , "[reverse_handling]" )
 				req_handler_t< 3 > > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_service( 1 ),
+		restinio::create_child_io_context( 1 ),
 		[]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -224,7 +224,7 @@ TEST_CASE( "Long sequesnces HTTP piplining" , "[long_sequences]" )
 				req_handler_t< 128 > > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_service( 1 ),
+		restinio::create_child_io_context( 1 ),
 		[]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -306,7 +306,7 @@ TEST_CASE( "Interrupt sequesnces HTTP piplining" , "[long_sequences][interrupt]"
 				req_handler_t< 20 > > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_service( 1 ),
+		restinio::create_child_io_context( 1 ),
 		[]( auto & settings ){
 			settings
 				.port( utest_default_port() )
