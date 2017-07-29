@@ -103,7 +103,7 @@ run_app( const app_args_t args )
 	}
 
 	http_server_t http_server{
-		restinio::create_child_io_service( args.m_asio_pool_size ),
+		restinio::create_child_io_context( args.m_asio_pool_size ),
 		std::move( settings ) };
 
 	http_server.open();

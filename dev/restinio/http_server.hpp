@@ -12,7 +12,7 @@
 
 #include <restinio/exception.hpp>
 #include <restinio/settings.hpp>
-#include <restinio/io_service_wrapper.hpp>
+#include <restinio/io_context_wrapper.hpp>
 #include <restinio/request_handler.hpp>
 #include <restinio/asio_timer_factory.hpp>
 #include <restinio/null_logger.hpp>
@@ -36,7 +36,7 @@ namespace restinio
 	// Create and initialize object.
 	restinio::http_server_t< YOUR_TRAITS >
 		server{
-			restinio::create_child_io_service( N ),
+			restinio::create_child_io_context( N ),
 			[&]( auto & settings ){
 				//
 				settings
@@ -65,9 +65,9 @@ class http_server_t
 
 	public:
 		http_server_t(
-			io_service_wrapper_unique_ptr_t io_service_wrapper,
+			io_context_wrapper_unique_ptr_t io_context_wrapper,
 			server_settings_t< TRAITS > settings )
-			:	m_io_service_wrapper{ std::move( io_service_wrapper ) }
+			:	m_io_context_wrapper{ std::move( io_context_wrapper ) }
 		{
 			auto conn_settings =
 				std::make_shared< connection_settings_t >( settings );
@@ -78,48 +78,48 @@ class http_server_t
 					// settings.port(),
 					// settings.protocol(),
 					// settings.address(),
-					m_io_service_wrapper->io_service(),
+					m_io_context_wrapper->io_context(),
 					std::make_shared< connection_factory_t >(
 						conn_settings,
-						m_io_service_wrapper->io_service(),
+						m_io_context_wrapper->io_context(),
 						settings.timer_factory() ),
 					*( conn_settings->m_logger ) );
 		}
 
 		template < typename CONFIGURATOR >
 		http_server_t(
-			io_service_wrapper_unique_ptr_t io_service_wrapper,
+			io_context_wrapper_unique_ptr_t io_context_wrapper,
 			CONFIGURATOR && configurator )
 			:	http_server_t{
-					std::move( io_service_wrapper ),
+					std::move( io_context_wrapper ),
 					exec_configurator< TRAITS, CONFIGURATOR >(
 						std::forward< CONFIGURATOR >( configurator ) ) }
 		{}
 
-		//! Start/stop io_service.
+		//! Start/stop io_context.
 		/*!
 			Is usefull when using async_open() or async_close(),
 			because in case of async operation it is
-			up to user to guarantee that io_service runs.
+			up to user to guarantee that io_context runs.
 		*/
 		//! \{
 		void
-		start_io_service()
+		start_io_context()
 		{
-			m_io_service_wrapper->start();
+			m_io_context_wrapper->start();
 		}
 
 		void
-		stop_io_service()
+		stop_io_context()
 		{
-			m_io_service_wrapper->stop();
+			m_io_context_wrapper->stop();
 		}
 		//! \}
 
 		//! Starts server in async way.
 		/*!
 			\note It is necessary to be sure that ioservice is running
-			(\see start_io_service()).
+			(\see start_io_context()).
 		*/
 		template <
 				typename SRV_OPEN_OK_CALLBACK,
@@ -155,7 +155,7 @@ class http_server_t
 		open_sync()
 		{
 			// Make sure that we running ioservice.
-			start_io_service();
+			start_io_context();
 
 			// Sync object.
 			std::promise< void > open_result;
@@ -180,8 +180,8 @@ class http_server_t
 
 		//! Closes server in async way.
 		/*!
-			\note It doesn't call io_service to stop
-			(\see stop_io_service()).
+			\note It doesn't call io_context to stop
+			(\see stop_io_context()).
 		*/
 		template <
 				typename SRV_CLOSE_OK_CALLBACK,
@@ -230,7 +230,7 @@ class http_server_t
 			close_result.get_future().wait();
 
 			// Make sure that we stopped ioservice.
-			stop_io_service();
+			stop_io_context();
 		}
 
 		//! Shortcut for close_sync().
@@ -241,8 +241,8 @@ class http_server_t
 		}
 
 	private:
-		//! A wrapper for asio io_service where server is running.
-		io_service_wrapper_unique_ptr_t m_io_service_wrapper;
+		//! A wrapper for asio io_context where server is running.
+		io_context_wrapper_unique_ptr_t m_io_context_wrapper;
 
 		//! Acceptor for new connections.
 		std::shared_ptr< acceptor_t > m_acceptor;

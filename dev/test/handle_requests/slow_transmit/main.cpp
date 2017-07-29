@@ -31,7 +31,7 @@ TEST_CASE( "Slow transmit" , "[slow_trunsmit]" )
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_service( 1 ),
+		restinio::create_child_io_context( 1 ),
 		[]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -57,7 +57,7 @@ TEST_CASE( "Slow transmit" , "[slow_trunsmit]" )
 
 	http_server.open();
 
-	do_with_socket( [ & ]( auto & socket, auto & io_service ){
+	do_with_socket( [ & ]( auto & socket, auto & io_context ){
 
 		const std::string request{
 			"GET / HTTP/1.1\r\n"
@@ -89,7 +89,7 @@ TEST_CASE( "Slow transmit" , "[slow_trunsmit]" )
 				REQUIRE_THAT( response, Catch::Matchers::EndsWith( RESP_BODY ) );
 			} );
 
-		io_service.run();
+		io_context.run();
 	} );
 
 	http_server.close();
