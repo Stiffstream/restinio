@@ -508,7 +508,7 @@ class connection_t final
 
 			socket_ref().async_read_some(
 				m_input.m_buf.make_asio_buffer(),
-				asio::wrap(
+				asio::bind_executor(
 					get_executor(),
 					[ this, ctx = shared_from_this() ]( auto ec, std::size_t length ){
 						this->after_read( ec, length );
@@ -796,11 +796,36 @@ class connection_t final
 
 					auto & bufs = m_resp_out_ctx.create_bufs();
 
+					if( m_response_coordinator.closed() )
+					{
+						m_logger.trace( [&]{
+							return fmt::format(
+									"[connection:{}] sending resp data with "
+									"connection-close attribute "
+									"buf count: {}",
+									connection_id(),
+									bufs.size() );
+						} );
+
+						// Reading new requests is useless.
+						asio::error_code ignored_ec;
+						socket_lowest_layer().cancel();
+					}
+					else
+					{
+						m_logger.trace( [&]{
+							return fmt::format(
+								"[connection:{}] sending resp data, "
+								"buf count: {}",
+								connection_id(),
+								bufs.size() ); } );
+					}
+
 					// There is somethig to write.
 					asio::async_write(
 						socket_ref(),
 						bufs,
-						asio::wrap(
+						asio::bind_executor(
 							get_executor(),
 							[ this,
 								ctx = shared_from_this(),
@@ -817,32 +842,6 @@ class connection_t final
 
 					guard_write_operation();
 
-					if( m_response_coordinator.closed() )
-					{
-						m_logger.trace( [&]{
-							return fmt::format(
-									"[connection:{}] sending resp data with "
-									"connection-close attribute "
-									"buf count: {}",
-									connection_id(),
-									bufs.size() );
-						} );
-
-						// Reading new requests is useless.
-						asio::error_code ignored_ec;
-						socket_lowest_layer().shutdown(
-							asio::ip::tcp::socket::shutdown_receive,
-							ignored_ec );
-					}
-					else
-					{
-						m_logger.trace( [&]{
-							return fmt::format(
-								"[connection:{}] sending resp data, "
-								"buf count: {}",
-								connection_id(),
-								bufs.size() ); } );
-					}
 				}
 				else if( m_response_coordinator.closed() )
 				{
