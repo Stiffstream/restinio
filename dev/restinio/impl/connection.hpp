@@ -603,7 +603,7 @@ class connection_t final
 						std::move( parser_ctx.m_body ),
 						shared_from_this() ) ) )
 			{
-				if( m_socket )
+				if( m_socket.is_open() )
 				{
 					// Request is rejected, so our socket
 					// must not be moved out to websocket connection.
@@ -693,13 +693,8 @@ class connection_t final
 			//! parts of a response.
 			buffers_container_t bufs )
 		{
-<<<<<<< local
-			if( !m_socket.is_open() )
-=======
 			assert( m_socket );
-
-			if( !socket_lowest_layer().is_open() )
->>>>>>> other
+			if( !m_socket.is_open() )
 			{
 				m_logger.warn( [&]{
 					return fmt::format(
