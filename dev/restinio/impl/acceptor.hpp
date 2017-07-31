@@ -203,7 +203,7 @@ class acceptor_t final
 		{
 			m_acceptor.async_accept(
 				this->socket().lowest_layer(),
-				asio::wrap(
+				asio::bind_executor(
 					get_executor(),
 					[ ctx = this->shared_from_this() ]( auto ec ){
 						// Check if acceptor is running.

@@ -57,7 +57,7 @@ class a_http_server_t :	public so_5::agent_t
 			restinio::server_settings_t< TRAITS > settings )
 			:	so_5::agent_t{ std::move( ctx ) }
 			,	m_server{
-					restinio::create_child_io_service( 1 ),
+					restinio::create_child_io_context( 1 ),
 					std::move( settings ) }
 		{}
 

@@ -46,7 +46,7 @@ class asio_timer_factory_t
 					cancel();
 					m_operation_timer.expires_from_now( timeout );
 					m_operation_timer.async_wait(
-						asio::wrap(
+						asio::bind_executor(
 							executor,
 							[ this,
 								cb = std::move( f ),

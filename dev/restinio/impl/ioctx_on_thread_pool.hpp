@@ -13,19 +13,19 @@ namespace impl
 {
 
 /*
- * Helper class for creating asio::io_service and running it
- * (via `io_service::run()`) on a thread pool.
+ * Helper class for creating asio::io_context and running it
+ * (via `io_context::run()`) on a thread pool.
  *
- * \note class is not thread-safe (except `io_service()` methon).
+ * \note class is not thread-safe (except `io_context()` methon).
  * Expected usage scenario is to start and stop it on the same thread.
  */
-class iosvc_on_thread_pool_t
+class ioctx_on_thread_pool_t
 {
 	public:
-		iosvc_on_thread_pool_t( const iosvc_on_thread_pool_t & ) = delete;
-		iosvc_on_thread_pool_t( iosvc_on_thread_pool_t && ) = delete;
+		ioctx_on_thread_pool_t( const ioctx_on_thread_pool_t & ) = delete;
+		ioctx_on_thread_pool_t( ioctx_on_thread_pool_t && ) = delete;
 
-		iosvc_on_thread_pool_t(
+		ioctx_on_thread_pool_t(
 			// Pool size.
 			//FIXME: better to use not_null from gsl.
 			std::size_t pool_size )
@@ -34,7 +34,7 @@ class iosvc_on_thread_pool_t
 		{}
 
 		// Makes sure the pool is stopped.
-		~iosvc_on_thread_pool_t()
+		~ioctx_on_thread_pool_t()
 		{
 			if( started() )
 			{
@@ -49,15 +49,15 @@ class iosvc_on_thread_pool_t
 			if( started() )
 			{
 				throw exception_t{
-					"io_service_with_thread_pool is already started" };
+					"io_context_with_thread_pool is already started" };
 			}
 
 			try
 			{
 				for( auto & t : m_pool )
 					t = std::thread( [this] {
-						asio::io_service::work work( m_io_service );
-						m_io_service.run();
+						asio::io_context::work work( m_io_context );
+						m_io_context.run();
 					} );
 
 				// When all thread started successfully
@@ -66,7 +66,7 @@ class iosvc_on_thread_pool_t
 			}
 			catch( const std::exception & )
 			{
-				m_io_service.stop();
+				m_io_context.stop();
 				for( auto & t : m_pool )
 					if( t.joinable() )
 						t.join();
@@ -78,7 +78,7 @@ class iosvc_on_thread_pool_t
 		{
 			if( started() )
 			{
-				m_io_service.stop();
+				m_io_context.stop();
 			}
 		}
 
@@ -98,13 +98,13 @@ class iosvc_on_thread_pool_t
 		bool
 		started() const { return status_t::started == m_status; }
 
-		asio::io_service &
-		io_service() { return m_io_service; }
+		asio::io_context &
+		io_context() { return m_io_context; }
 
 	private:
 		enum class status_t : std::uint8_t { stopped, started };
 
-		asio::io_service m_io_service;
+		asio::io_context m_io_context;
 		std::vector< std::thread > m_pool;
 		status_t m_status;
 };

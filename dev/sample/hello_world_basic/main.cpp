@@ -30,7 +30,7 @@ int main()
 		using http_server_t = restinio::http_server_t<>;
 
 		http_server_t http_server{
-			restinio::create_child_io_service( 1 ),
+			restinio::create_child_io_context( 1 ),
 			[]( auto & settings ){
 				settings
 					.port( 8080 )
