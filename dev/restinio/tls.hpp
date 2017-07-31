@@ -11,11 +11,12 @@
 #include <asio/ssl.hpp>
 
 #include <restinio/traits.hpp>
+#include <restinio/impl/tls_socket.hpp>
 
 namespace restinio
 {
 
-using tls_socket_t = asio::ssl::stream< asio::ip::tcp::socket >;
+using tls_socket_t = impl::tls_socket_t;
 
 //
 // tls_traits_t
@@ -131,8 +132,7 @@ class socket_holder_t< tls_socket_t >
 			asio::io_service & io_service )
 			:	m_tls_context{ settings.tls_context() }
 			,	m_io_service{ io_service }
-			,	m_socket{
-					std::make_unique< tls_socket_t >( m_io_service, m_tls_context ) }
+			,	m_socket{ m_io_service, m_tls_context }
 		{}
 
 		virtual ~socket_holder_t() = default;
@@ -140,13 +140,13 @@ class socket_holder_t< tls_socket_t >
 		tls_socket_t &
 		socket()
 		{
-			return *m_socket;
+			return m_socket;
 		}
 
-		std::unique_ptr< tls_socket_t >
+		auto
 		move_socket()
 		{
-			auto res = std::make_unique< tls_socket_t >( m_io_service, m_tls_context );
+			tls_socket_t res{ m_io_service, m_tls_context };
 			std::swap( res, m_socket );
 			return res;
 		}
@@ -154,7 +154,7 @@ class socket_holder_t< tls_socket_t >
 	private:
 		asio::ssl::context m_tls_context;
 		asio::io_service & m_io_service;
-		std::unique_ptr< tls_socket_t > m_socket;
+		tls_socket_t m_socket;
 };
 
 } /* namespace impl */

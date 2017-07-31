@@ -259,14 +259,14 @@ class connection_t final
 			//! Connection id.
 			std::uint64_t conn_id,
 			//! Connection socket.
-			std::unique_ptr< stream_socket_t > socket,
+			stream_socket_t && socket,
 			//! Settings that are common for connections.
 			connection_settings_shared_ptr_t< TRAITS > settings,
 			//! Operation timeout guard.
 			timer_guard_instance_t timer_guard )
 			:	connection_base_t{ conn_id }
 			,	m_socket{ std::move( socket ) }
-			,	m_strand{ socket_lowest_layer().get_executor() }
+			,	m_strand{ m_socket.get_executor() }
 			,	m_settings{ std::move( settings ) }
 			,	m_input{ m_settings->m_buffer_size }
 			,	m_response_coordinator{ m_settings->m_max_pipelined_requests }
@@ -279,7 +279,7 @@ class connection_t final
 					return fmt::format(
 						"[connection:{}] start connection with {}",
 						connection_id(),
-						socket_lowest_layer().remote_endpoint() );
+						m_socket.remote_endpoint() );
 			} );
 		}
 
@@ -307,7 +307,7 @@ class connection_t final
 		init()
 		{
 			prepare_connection_and_start_read(
-				socket_ref(),
+				m_socket,
 				*this,
 				[ & ]{ wait_for_http_message(); },
 				[ & ]( const asio::error_code & ec ){
@@ -371,7 +371,7 @@ class connection_t final
 						connection_id() );
 			} );
 
-			socket_ref().async_read_some(
+			m_socket.async_read_some(
 				m_input.m_buf.make_asio_buffer(),
 				asio::bind_executor(
 					get_executor(),
@@ -598,7 +598,7 @@ class connection_t final
 			//! parts of a response.
 			buffers_container_t bufs )
 		{
-			if( !socket_lowest_layer().is_open() )
+			if( !m_socket.is_open() )
 			{
 				m_logger.warn( [&]{
 					return fmt::format(
@@ -674,7 +674,7 @@ class connection_t final
 
 						// Reading new requests is useless.
 						asio::error_code ignored_ec;
-						socket_lowest_layer().cancel();
+						m_socket.cancel( ignored_ec );
 					}
 					else
 					{
@@ -688,7 +688,7 @@ class connection_t final
 
 					// There is somethig to write.
 					asio::async_write(
-						socket_ref(),
+						m_socket,
 						bufs,
 						asio::bind_executor(
 							get_executor(),
@@ -818,10 +818,10 @@ class connection_t final
 			} );
 
 			asio::error_code ignored_ec;
-			socket_lowest_layer().shutdown(
+			m_socket.shutdown(
 				asio::ip::tcp::socket::shutdown_both,
 				ignored_ec );
-			socket_lowest_layer().close();
+			m_socket.close();
 		}
 
 		//! Trigger an error.
@@ -840,19 +840,7 @@ class connection_t final
 		//! \}
 
 		//! Connection
-		std::unique_ptr< stream_socket_t > m_socket;
-
-		stream_socket_t &
-		socket_ref()
-		{
-			return *m_socket;
-		}
-
-		auto &
-		socket_lowest_layer()
-		{
-			return m_socket->lowest_layer();
-		}
+		stream_socket_t m_socket;
 
 		//! Sync object for connection events.
 		strand_t m_strand;
@@ -996,7 +984,7 @@ class connection_factory_t
 
 		auto
 		create_new_connection(
-			std::unique_ptr< stream_socket_t > socket )
+			stream_socket_t && socket )
 		{
 			using connection_type_t = connection_t< TRAITS >;
 			return std::make_shared< connection_type_t >(

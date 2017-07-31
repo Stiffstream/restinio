@@ -43,7 +43,7 @@ class socket_holder_t
 			SETTINGS & ,
 			asio::io_service & io_service )
 			:	m_io_service{ io_service }
-			,	m_socket{ std::make_unique< STREAM_SOCKET >( m_io_service ) }
+			,	m_socket{ m_io_service }
 		{}
 
 		virtual ~socket_holder_t() = default;
@@ -52,19 +52,14 @@ class socket_holder_t
 		STREAM_SOCKET &
 		socket()
 		{
-			return *m_socket;
+			return m_socket;
 		}
 
 		//! Extract current socet via move.
-		std::unique_ptr< STREAM_SOCKET >
+		STREAM_SOCKET
 		move_socket()
 		{
-			// As a socket must never be empty,
-			// first a new socket is created,
-			// and then it is swapped with m_socket
-			// and the result is returned.
-			auto res = std::make_unique< STREAM_SOCKET >( m_io_service );
-			std::swap( res, m_socket );
+			auto res = std::move( m_socket );
 			return res;
 		}
 
@@ -74,7 +69,7 @@ class socket_holder_t
 
 		//! A temporary socket for receiving new connections.
 		//! \note Must never be empty.
-		std::unique_ptr< STREAM_SOCKET > m_socket;
+		STREAM_SOCKET m_socket;
 };
 
 //
