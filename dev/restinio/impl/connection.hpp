@@ -3,7 +3,7 @@
 */
 
 /*!
-	HTTP-Connection handler routine.
+	HTTP-connection routine.
 */
 
 #pragma once
@@ -20,6 +20,7 @@
 #include <restinio/request_handler.hpp>
 #include <restinio/impl/header_helpers.hpp>
 #include <restinio/impl/response_coordinator.hpp>
+#include <restinio/impl/connection_settings.hpp>
 #include <restinio/impl/fixed_buffer.hpp>
 #include <restinio/impl/raw_resp_output_ctx.hpp>
 
@@ -50,8 +51,10 @@ struct http_parser_ctx_t
 	//! \{
 	std::string m_current_field_name;
 	bool m_last_was_value{ true };
-	bool m_message_complete{ false };
 	//! \}
+
+	//! Flag: is http message parsed completely.
+	bool m_message_complete{ false };
 
 	//! Prepare context to handle new request.
 	void
@@ -115,73 +118,20 @@ create_parser_settings()
 	return parser_settings;
 }
 
-//
-// connection_settings_t
-//
-
-//! Parameters shared between connections.
-/*!
-	Each connection has access to common params and
-	server-agent throught this object.
-*/
-template < typename TRAITS >
-struct connection_settings_t final
-	:	public std::enable_shared_from_this< connection_settings_t< TRAITS > >
+enum class connection_upgrade_stage_t : std::uint8_t
 {
-	using request_handler_t = typename TRAITS::request_handler_t;
-	using logger_t = typename TRAITS::logger_t;
-
-	connection_settings_t( const connection_settings_t & ) = delete;
-	connection_settings_t( const connection_settings_t && ) = delete;
-	void operator = ( const connection_settings_t & ) = delete;
-	void operator = ( const connection_settings_t && ) = delete;
-
-	template < typename SETTINGS >
-	connection_settings_t(
-		SETTINGS & settings )
-		:	m_request_handler{ settings.request_handler() }
-		,	m_buffer_size{ settings.buffer_size() }
-		,	m_read_next_http_message_timelimit{
-				settings.read_next_http_message_timelimit() }
-		,	m_write_http_response_timelimit{
-				settings.write_http_response_timelimit() }
-		,	m_handle_request_timeout{
-				settings.handle_request_timeout() }
-		,	m_max_pipelined_requests{ settings.max_pipelined_requests() }
-		,	m_logger{ settings.logger() }
-	{}
-
-	//! Request handler factory.
-	std::unique_ptr< request_handler_t > m_request_handler;
-
-	//! Parser settings.
-	/*!
-		Parsing settings are common for each connection.
-	*/
-	const http_parser_settings m_parser_settings{ create_parser_settings() };
-
-	//! Params from server_settings_t.
-	//! \{
-	std::size_t m_buffer_size;
-
-	std::chrono::steady_clock::duration
-		m_read_next_http_message_timelimit{ std::chrono::seconds( 60 ) };
-
-	std::chrono::steady_clock::duration
-		m_write_http_response_timelimit{ std::chrono::seconds( 5 ) };
-
-	std::chrono::steady_clock::duration
-		m_handle_request_timeout{ std::chrono::seconds( 10 ) };
-
-	std::size_t m_max_pipelined_requests;
-
-	const std::unique_ptr< logger_t > m_logger;
-	//! \}
+	//! No connection request in progress
+	none,
+	//! Request with connection-upgrade header came and waits for
+	//! request handler to be called in non pipelined fashion
+	//! (it must be the only request that is handled at the moment).
+	pending_upgrade_handling,
+	//! Handler for request with connection-upgrade header was called
+	//! so any response data comming is for that request.
+	//! If connection transforms to websocket connection
+	//! then no further operations are expected.
+	wait_for_upgrade_handling_result_or_nothing
 };
-
-template < typename TRAITS >
-using connection_settings_shared_ptr_t =
-	std::shared_ptr< connection_settings_t< TRAITS > >;
 
 //! Data associated with connection read routine.
 struct connection_input_t
@@ -198,6 +148,10 @@ struct connection_input_t
 
 	//! Input buffer.
 	fixed_buffer_t m_buf;
+
+	//! Connection upgrade request stage.
+	connection_upgrade_stage_t m_connection_upgrade_stage{
+		connection_upgrade_stage_t::none };
 
 	//! Prepare parser for reading new http-message.
 	void
@@ -353,6 +307,20 @@ class connection_t final
 			}
 		}
 
+		//! Move socket out of connection.
+		auto
+		move_socket()
+		{
+			auto res = std::move( m_socket );
+		}
+
+		//! Пуее
+		auto
+		get_settings() const
+		{
+			return m_settings;
+		}
+
 	private:
 		//! An executor for callbacks on async operations.
 		inline strand_t &
@@ -487,50 +455,101 @@ class connection_t final
 				auto & parser = m_input.m_parser;
 				auto & parser_ctx = m_input.m_parser_ctx;
 
-				const auto request_id = m_response_coordinator.register_new_request();
-
-				m_logger.trace( [&]{
-					return fmt::format(
-							"[connection:{}] request received (#{}): {} {}",
-							connection_id(),
-							request_id,
-							http_method_str(
-								static_cast<http_method>( parser.method ) ),
-							parser_ctx.m_header.request_target() );
-				} );
-
-				// TODO: mb there is a way to
-				// track if response was emmited immediately in handler
-				// or it was delegated
-				// so it is possible to omit this timer scheduling.
-				guard_request_handling_operation();
-
-				if( request_rejected() ==
-					m_request_handler(
-						std::make_shared< request_t >(
-							request_id,
-							std::move( parser_ctx.m_header ),
-							std::move( parser_ctx.m_body ),
-							shared_from_this() ) ) )
+				if( m_input.m_parser.upgrade )
 				{
-					// If handler refused request, say not implemented.
-					write_response_parts_impl(
-						request_id,
-						response_output_flags_t{
-							response_parts_attr_t::final_parts,
-							response_connection_attr_t::connection_close },
-						create_not_implemented_resp() );
+					// Start upgrade connection operation.
+
+					// The first thing is to make sure
+					// that upgrade request will be handled in
+					// a non pipelined fashion.
+					m_input.m_connection_upgrade_stage =
+						connection_upgrade_stage_t::pending_upgrade_handling;
 				}
-				else if(
-					!m_response_coordinator.closed() &&
-					!m_response_coordinator.is_full() )
+
+				if( connection_upgrade_stage_t::none ==
+					m_input.m_connection_upgrade_stage )
 				{
-					// Request was accepted,
-					// didn't create immediate response that closes connection after,
-					// and it is possible to receive more requests
-					// then start consuming yet another request.
-					wait_for_http_message();
+					// Run ordinary HTTP logic.
+					const auto request_id = m_response_coordinator.register_new_request();
+
+					m_logger.trace( [&]{
+						return fmt::format(
+								"[connection:{}] request received (#{}): {} {}",
+								connection_id(),
+								request_id,
+								http_method_str(
+									static_cast<http_method>( parser.method ) ),
+								parser_ctx.m_header.request_target() );
+					} );
+
+					// TODO: mb there is a way to
+					// track if response was emmited immediately in handler
+					// or it was delegated
+					// so it is possible to omit this timer scheduling.
+					guard_request_handling_operation();
+
+					if( request_rejected() ==
+						m_request_handler(
+							std::make_shared< request_t >(
+								request_id,
+								std::move( parser_ctx.m_header ),
+								std::move( parser_ctx.m_body ),
+								shared_from_this() ) ) )
+					{
+						// If handler refused request, say not implemented.
+						write_response_parts_impl(
+							request_id,
+							response_output_flags_t{
+								response_parts_attr_t::final_parts,
+								response_connection_attr_t::connection_close },
+							create_not_implemented_resp() );
+					}
+					else if( m_response_coordinator.is_able_to_get_more_messages() )
+					{
+						// Request was accepted,
+						// didn't create immediate response that closes connection after,
+						// and it is possible to receive more requests
+						// then start consuming yet another request.
+						wait_for_http_message();
+					}
 				}
+				else
+				{
+					m_logger.trace( [&]{
+						const std::string default_value{};
+
+						return fmt::format(
+								"[connection:{}] upgrade request received: {} {}; "
+								"Upgrade: '{}';",
+								connection_id(),
+								http_method_str(
+									static_cast<http_method>( parser.method ) ),
+								parser_ctx.m_header.request_target(),
+								parser_ctx.m_header.get_field( http_field::upgrade, default_value ) );
+					} );
+
+					if( m_response_coordinator.empty() )
+					{
+						// There are no requests in handling
+						// So the current request with upgrade
+						// is the only one and can be handled directly.
+						// It is safe to call a handler for it.
+						handle_upgrade_request();
+					}
+					else
+					{
+						// There are pipelined request
+						m_logger.trace( [&]{
+							return fmt::format(
+									"[connection:{}] upgrade request happened to be a pipelined one, "
+									"and will be handled after previous requests are handled",
+									connection_id() );
+						} );
+					}
+
+					// No further actions (like continue reading) in both cases are needed.
+				}
+
 			}
 			catch( const std::exception & ex )
 			{
@@ -541,6 +560,82 @@ class connection_t final
 							ex.what() );
 				} );
 			}
+		}
+
+		//! Calls handler for upgrade request.
+		/*!
+			Request data must be in input context (m_input).
+		*/
+		void
+		handle_upgrade_request()
+		{
+			auto & parser = m_input.m_parser;
+			auto & parser_ctx = m_input.m_parser_ctx;
+
+			// If user responses with error
+			// then connection must be able to send
+			// (hence to receive) response.
+
+			const auto request_id = m_response_coordinator.register_new_request();
+
+			m_logger.info( [&]{
+				return fmt::format(
+						"[connection:{}] handle upgrade request (#{}): {} {}",
+						connection_id(),
+						request_id,
+						http_method_str(
+							static_cast<http_method>( parser.method ) ),
+						parser_ctx.m_header.request_target() );
+			} );
+
+			guard_request_handling_operation();
+
+			// After calling handler we expect the results or
+			// no further operations with connection
+			m_input.m_connection_upgrade_stage =
+				connection_upgrade_stage_t::wait_for_upgrade_handling_result_or_nothing;
+
+			if( request_rejected() ==
+				m_request_handler(
+					std::make_shared< request_t >(
+						request_id,
+						std::move( parser_ctx.m_header ),
+						std::move( parser_ctx.m_body ),
+						shared_from_this() ) ) )
+			{
+				if( m_socket )
+				{
+					// Request is rejected, so our socket
+					// must not be moved out to websocket connection.
+
+					// If handler refused request, say not implemented.
+					write_response_parts_impl(
+						request_id,
+						response_output_flags_t{
+							response_parts_attr_t::final_parts,
+							response_connection_attr_t::connection_close },
+						create_not_implemented_resp() );
+				}
+				else
+				{
+					// Request is rejected, but the socket
+					// was moved out to somewhere else???
+
+					m_logger.error( [&]{
+						return fmt::format(
+								"[connection:{}] upgrade request handler rejects "
+								"request, but socket was moved out from connection",
+								connection_id() );
+					} );
+				}
+			}
+			// Else 2 cases:
+			// 1. request is handled asynchronously, so
+			// what happens next depends on handling.
+			// 2. handling was immediate, so further destiny
+			// of a connection was already determined.
+			//
+			// In both cases: here do nothing.
 		}
 
 		//! Write parts for specified request.
@@ -598,7 +693,13 @@ class connection_t final
 			//! parts of a response.
 			buffers_container_t bufs )
 		{
+<<<<<<< local
 			if( !m_socket.is_open() )
+=======
+			assert( m_socket );
+
+			if( !socket_lowest_layer().is_open() )
+>>>>>>> other
 			{
 				m_logger.warn( [&]{
 					return fmt::format(
@@ -607,6 +708,23 @@ class connection_t final
 							connection_id() );
 				} );
 				return;
+			}
+
+			if( connection_upgrade_stage_t::
+					wait_for_upgrade_handling_result_or_nothing ==
+				m_input.m_connection_upgrade_stage )
+			{
+				// It is response for a connection-upgrade request.
+				// If we receive it here then it is constructed via
+				// message builder and so connection was not transformed
+				// to websocket connection.
+				// So it is necessary to resume pipeline logic that was stopped
+				// for upgrade-request to be handled as the only request
+				// on the connection for that moment.
+				if( !m_response_coordinator.is_full() )
+				{
+					wait_for_http_message();
+				}
 			}
 
 			if( !m_response_coordinator.closed() )
@@ -706,7 +824,6 @@ class connection_t final
 							} ) );
 
 					guard_write_operation();
-
 				}
 				else if( m_response_coordinator.closed() )
 				{
@@ -753,11 +870,11 @@ class connection_t final
 			const std::error_code & ec,
 			std::size_t /*written*/,
 			bool should_keep_alive,
-			bool init_read_after_this_write )
+			bool should_init_read_after_this_write )
 		{
 			if( !ec )
 			{
-				// Release allocated strings data.
+				// Release buffers.
 				m_resp_out_ctx.done();
 
 				m_logger.trace( [&]{
@@ -774,12 +891,34 @@ class connection_t final
 								this->connection_id() );
 					} );
 
-					if( init_read_after_this_write )
-						wait_for_http_message();
+					if( connection_upgrade_stage_t::none ==
+						m_input.m_connection_upgrade_stage )
+					{
+						// Run ordinary HTTP logic.
+						if( should_init_read_after_this_write )
+							wait_for_http_message();
 
-					// Start another write opertion
-					// if there is something to send.
-					init_write_if_necessary();
+						// Start another write opertion
+						// if there is something to send.
+						init_write_if_necessary();
+					}
+					else
+					{
+						if( m_response_coordinator.empty() )
+						{
+							// Here upgrade req is the only request
+							// to by handled by this connection.
+							// So it is safe to call a handler for it.
+							handle_upgrade_request();
+						}
+						else
+						{
+							// Do not start reading in any case,
+							// but if there is at least one request preceding
+							// upgrade-req, logic must continue http interaction.
+							init_write_if_necessary();
+						}
+					}
 				}
 				else
 				{
@@ -845,7 +984,7 @@ class connection_t final
 		//! Sync object for connection events.
 		strand_t m_strand;
 
-		//! Common paramaters for buffer.
+		//! Common paramaters of a connection.
 		connection_settings_shared_ptr_t< TRAITS > m_settings;
 
 		//! Input routine.

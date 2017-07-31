@@ -276,7 +276,7 @@ string_to_field( const std::string & field_name )
 //
 
 //! Helper sunction to get method string name.
-constexpr inline const char *
+inline const char *
 field_to_string( http_field_t f )
 {
 	const char * result = "";
@@ -822,7 +822,7 @@ http_method_from_nodejs( int m )
 //
 
 //! Helper sunction to get method string name.
-constexpr inline const char *
+inline const char *
 method_to_string( http_method_t m )
 {
 	const char * result = "<unknown>";
