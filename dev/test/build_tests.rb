@@ -1,3 +1,6 @@
+#!/usr/bin/ruby
+require 'mxx_ru/cpp'
+
 MxxRu::Cpp::composite_target {
 
 	required_prj( "test/header/prj.ut.rb" )
