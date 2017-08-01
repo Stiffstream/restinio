@@ -21,6 +21,19 @@
 namespace restinio
 {
 
+namespace impl
+{
+
+inline char
+tolower( char c )
+{
+	if( 'A' <= c && c <= 'Z' )
+		c |= 0x20;
+	return c;
+}
+
+} /* namespace impl */
+
 //
 // caseless_cmp()
 //
@@ -33,7 +46,8 @@ caseless_cmp(
 	std::size_t size )
 {
 	for( std::size_t i = 0; i < size; ++i )
-		if( std::tolower( a[ i ] ) != std::tolower( b[ i ] ) )
+		if( impl::tolower( (unsigned char)a[ i ] ) !=
+			impl::tolower( (unsigned char)b[ i ] ) )
 			return false;
 
 	return true;
