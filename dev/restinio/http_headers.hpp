@@ -258,16 +258,6 @@ using http_field = http_field_t;
 inline http_field_t
 string_to_field( const char * field_name, std::size_t field_name_size )
 {
-	// #define RESTINIO_HTTP_FIELD_TOENUM_GEN( name, string_name ) \
-	// 	{                                                       \
-	// 		const char field_str[] = #string_name ;             \
-	// 		if( caseless_cmp(                                   \
-	// 			field_name, field_name_size,                    \
-	// 			field_str, sizeof( field_str ) - 1 ) )          \
-	// 			return http_field_t:: name;                     \
-	// 	}
-	// 	RESTINIO_HTTP_FIELDS_MAP( RESTINIO_HTTP_FIELD_TOENUM_GEN )
-	// #undef RESTINIO_HTTP_FIELD_TOENUM_GEN
 
 #define RESTINIO_HTTP_CHECK_FOR_FIELD( field_id, candidate_field_name ) \
 	if( caseless_cmp(field_name, #candidate_field_name , field_name_size ) ) \
