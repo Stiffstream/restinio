@@ -8,14 +8,7 @@ MxxRu::Cpp::exe_target {
   required_prj 'nodejs/http_parser_mxxru/prj.rb'
   required_prj 'fmt_mxxru/prj.rb'
   required_prj 'sample/platform_specific_libs.rb'
-
-  if 'vc' == toolset.name
-    lib 'libeay32.lib'
-    lib 'ssleay32.lib'
-  else
-    lib 'ssl'
-    lib 'crypto'
-  end
+  required_prj 'mxx/open_ssl_libs.rb'
 
   cpp_source 'main.cpp'
 }
