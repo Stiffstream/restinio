@@ -1,54 +1,74 @@
 require 'mxx_ru/cpp'
 
-def find_first_openssl_libs
-	openssl_before_11 = [ 'libeay32.lib', 'ssleay32.lib' ]
-	openssl_after_11 = [ 'libssl.lib', 'libcrypto.lib' ]
+def file_exists( dir, f )
+	File.exist?( File.join( dir, f ) ) and File.file?( File.join( dir, f) )
+end
 
+def all_files_exist( dir, files )
+	not files.find{|f| !file_exists(dir, f ) }
+end
+
+def find_first_openssl_libs( openssl_before_11, openssl_after_11 )
 
 	lib_dirs = ENV[ "LIB" ]
 	if lib_dirs
-		dir_indx_before_11 = lib_dirs.split( ';' ).find_index{|d|
-			File.exist?(File.join(d, openssl_before_11[0])) and
-			File.file?(File.join(d, openssl_before_11[0])) and
-			File.exist?(File.join(d, openssl_before_11[1])) and
-			File.file?(File.join(d, openssl_before_11[1]))
-		}
-		dir_indx_after_11 = ENV[ "LIB" ].split( ';' ).find_index{|d|
-			File.exist?(File.join(d, openssl_after_11[0])) and
-			File.file?(File.join(d, openssl_after_11[0])) and
-			File.exist?(File.join(d, openssl_after_11[1])) and
-			File.file?(File.join(d, openssl_after_11[1]))
-		}
+
+		dirs_to_look = lib_dirs.split( ';' ).select{|p| p != "" }
+		puts dirs_to_look, ""
+
+		dir_indx_before_11 = dirs_to_look.find_index{|d| all_files_exist( d, openssl_before_11 ) }
+		dir_indx_after_11 = dirs_to_look.find_index{|d| all_files_exist( d, openssl_after_11 ) }
 	end
 
-	if dir_indx_before_11 and dir_indx_after_11 then
-		if dir_indx_after_11 < dir_indx_after_11 then
+	if dir_indx_before_11 and dir_indx_after_11 
+		if dir_indx_after_11 < dir_indx_after_11 
 			openssl_before_11
 		else
 			openssl_after_11
 		end
-	elsif dir_indx_before_11 then
+	elsif dir_indx_before_11 
 		openssl_before_11
-	elsif dir_indx_after_11 then
+	elsif dir_indx_after_11 
 		openssl_after_11
 	else
 		raise "OpenSSL libs not found; tried [#{openssl_before_11.join(', ')}] and [#{openssl_after_11.join(', ')}]"
 	end
 end
 
-MxxRu::Cpp::lib_collection_target {
+def get_libs_vc
+  find_first_openssl_libs( 
+    [ 'libeay32.lib', 'ssleay32.lib' ], 
+    [ 'libssl.lib', 'libcrypto.lib' ] )
+end
 
-  if 'vc' == toolset.name
-	find_first_openssl_libs.each{|l| lib(l)}
+def get_libs_linux
+  [ 'ssl', 'crypto' ]
+end
+
+def get_libs_mingw
+  get_libs_linux + [ 'gdi32' ]
+end
+
+
+def get_libs
+  if 'mswin' == toolset.tag( 'target_os' ) 
+    if 'vc' == toolset.name
+      get_libs_vc
+    elsif 'gcc' == toolset.name
+      get_libs_mingw
+    end
   else
-    lib 'ssl'
-    lib 'crypto'
+    get_libs_linux
   end
+end
+
+MxxRu::Cpp::lib_collection_target {
+  get_libs.each{|l| lib(l)}
 }
 
 if __FILE__ == $0
-	libs = find_first_openssl_libs
-	if libs then
+	libs = get_libs_mingw
+	if libs 
 		puts "Openssl libs: #{libs.join(', ')}"
 	else
 		puts "Openssl libs not found"
