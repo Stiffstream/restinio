@@ -56,7 +56,7 @@ end
 
 def get_libs
   if 'mswin' == toolset.tag( 'target_os' )
-    if 'vc' == toolset.name
+      if 'vc' == toolset.name
       get_libs_vc
     elsif 'gcc' == toolset.name
       get_libs_mingw
@@ -67,9 +67,8 @@ def get_libs
 end
 
 MxxRu::Cpp::lib_collection_target {
-  custom = file_exists?( "", "../local-openssl-dependency.rb" )
-  if custom
-    eval File.read( 'local-openssl-dependency.rb' )
+  if File.exist?( 'local-openssl-dependency.rb' )
+    required_prj 'local-openssl-dependency.rb'
   else
     get_libs.each{|l| lib(l)}
   end
