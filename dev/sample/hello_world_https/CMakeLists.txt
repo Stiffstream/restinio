@@ -5,14 +5,11 @@ find_package(OpenSSL)
 add_executable(${SAMPLE} main.cpp)
 target_link_libraries(${SAMPLE} nodejs_http_parser)
 
-
-
+target_link_libraries(${SAMPLE} ${OPENSSL_LIBRARIES})
 
 if(WIN32)
 	target_link_libraries(${SAMPLE} wsock32 ws2_32)
 endif()
-
-target_link_libraries(${SAMPLE} ${OPENSSL_LIBRARIES})
 
 # if (${MSVC})
 # else ()
