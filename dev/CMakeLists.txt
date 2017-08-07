@@ -17,7 +17,7 @@ else ()
 endif ()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/asio/include)
-add_definitions(-DASIO_STANDALONE -DASIO_HAS_STD_CHRONO)
+add_definitions(-DASIO_STANDALONE -DASIO_HAS_STD_CHRONO -DASIO_DISABLE_STD_STRING_VIEW)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/fmt)
 add_definitions(-DFMT_HEADER_ONLY)

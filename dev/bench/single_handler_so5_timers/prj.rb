@@ -10,7 +10,7 @@ MxxRu::Cpp::exe_target {
   required_prj 'rapidjson_mxxru/prj.rb'
   required_prj 'so_5/prj.rb'
 
-  required_prj 'sample/platform_specific_libs.rb'
+  required_prj 'restinio/platform_specific_libs.rb'
 
   cpp_source 'main.cpp'
 }
