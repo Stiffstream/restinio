@@ -67,8 +67,17 @@ def get_libs
 end
 
 MxxRu::Cpp::lib_collection_target {
-  if File.exist?( 'local-openssl-dependency.rb' )
-    required_prj 'local-openssl-dependency.rb'
+  custom_local_openssl_prj = ENV[ "OPENSSL_PRJ_FILE" ]
+  if custom_local_openssl_prj.nil? 
+    custom_local_openssl_prj = 'local-openssl.rb' 
+  else
+    if not File.exist?( custom_local_openssl_prj )
+      raise "unable to locate file #{custom_local_openssl_prj}"
+    end
+  end
+
+  if File.exist?( custom_local_openssl_prj )
+    required_prj custom_local_openssl_prj
   else
     get_libs.each{|l| lib(l)}
   end
