@@ -117,11 +117,141 @@ class ws_connection_t final
 
 		//! Write pieces of outgoing data.
 		virtual void
-		write_data(
-			// TODO: what parameter are needed?
-			buffers_container_t bufs ) = 0;
+		write_data( buffers_container_t bufs ) override
+		{
+			// NOTE: See connection_t::write_response_parts impl.
+			auto bufs_transmit_instance =
+				std::make_unique< buffers_container_t >( std::move( bufs ) );
+
+			//! Run write message on io_service loop if possible.
+			asio::dispatch(
+				get_executor(),
+				[ this,
+					bufs = std::move( bufs_transmit_instance ),
+					ctx = shared_from_this() ](){
+						try
+						{
+							write_data_impl( std::move( *bufs ) );
+						}
+						catch( const std::exception & ex )
+						{
+							trigger_error_and_close( [&]{
+								return fmt::format(
+									"[ws_connection:{}] unable to write data: {}",
+									connection_id(),
+									ex.what() );
+							} );
+						}
+				} );
+		}
 
 	private:
+		void
+		write_data_impl( buffers_container_t bufs )
+		{
+			assert( m_socket );
+
+			if( !m_socket.is_open() )
+			{
+				m_logger.warn( [&]{
+					return fmt::format(
+							"[ws_connection:{}] try to write response, "
+							"while socket is closed",
+							connection_id() );
+				} );
+				return;
+			}
+
+			if( m_awaiting_buffers.empty() )
+			{
+				m_awaiting_buffers = std::move( bufs );
+			}
+			else
+			{
+				m_awaiting_buffers.reserve( m_awaiting_buffers.size() + bufs.size() );
+				for( auto & buf : bufs )
+					m_awaiting_buffers.emplace_back( std::move( buf ) );
+			}
+
+			init_write_if_necessary();
+		}
+
+		// Check if there is something to write,
+		// and if so starts write operation.
+		void
+		init_write_if_necessary()
+		{
+			if( !m_resp_out_ctx.transmitting() )
+			{
+				if( m_resp_out_ctx.obtain_bufs( m_awaiting_buffers ) )
+				{
+					auto & bufs = m_resp_out_ctx.create_bufs();
+
+					m_logger.trace( [&]{
+						return fmt::format(
+							"[ws_connection:{}] sending resp data, "
+							"buf count: {}",
+							connection_id(),
+							bufs.size() ); } );
+
+					// There is somethig to write.
+					asio::async_write(
+						m_socket,
+						bufs,
+						asio::bind_executor(
+							get_executor(),
+							[ this,
+								ctx = shared_from_this() ]
+								( auto ec, std::size_t written ){
+									this->after_write(
+										ec,
+										written );
+							} ) );
+
+					// TODO: guard_write_operation();
+				}
+			}
+		}
+
+		//! Handle write response finished.
+		inline void
+		after_write(
+			const std::error_code & ec,
+			std::size_t written )
+		{
+			if( !ec )
+			{
+				// Release buffers.
+				m_resp_out_ctx.done();
+
+				m_logger.trace( [&]{
+					return fmt::format(
+							"[ws_connection:{}] outgoing data was sent: {}b",
+							connection_id() );
+				} );
+
+				if( m_socket.is_open() )
+				{
+					// Start another write opertion
+					// if there is something to send.
+					init_write_if_necessary();
+				}
+			}
+			else
+			{
+				if( ec != asio::error::operation_aborted )
+				{
+					trigger_error_and_close( [&]{
+						return fmt::format(
+							"[ws_connection:{}] unable to write: {}",
+							connection_id(),
+							ec.message() );
+					} );
+				}
+				// else: Operation aborted only in case of close was called.
+			}
+		}
+
 		//! Close WebSocket connection in a graceful manner
 		//! sending a close-message
 		void
@@ -205,6 +335,9 @@ class ws_connection_t final
 
 		//! Write to socket operation context.
 		raw_resp_output_ctx_t m_resp_out_ctx;
+
+		//! Output buffers queue.
+		buffers_container_t m_awaiting_buffers;
 
 		//! Logger for operation
 		logger_t & m_logger;

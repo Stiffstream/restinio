@@ -88,9 +88,10 @@ class websocket_t
 			}
 		}
 
+		//! Send_websocket message
 		void
 		send_message(
-			/*TODO: parameters */
+			/*TODO: Заголовок_или_то_из_чего_делается_заголовок */
 			buffer_storage_t payload )
 		{
 			if( m_ws_connection_handle )
@@ -101,7 +102,14 @@ class websocket_t
 				// TODO:
 				// Create header serialize it and append to bufs .
 
+				/*TODO:
+					bufs.emplace_back(
+						сериализовать_в_буфер( Заголовок_или_то_из_чего_делается_заголовок ) );
+				*/
+
 				bufs.emplace_back( std::move( payload ) );
+
+				m_ws_connection_handle->write_data( std::move( bufs ) );
 			}
 			else
 			{

@@ -863,7 +863,7 @@ class connection_t final
 		inline void
 		after_write(
 			const std::error_code & ec,
-			std::size_t /*written*/,
+			std::size_t written,
 			bool should_keep_alive,
 			bool should_init_read_after_this_write )
 		{
@@ -874,8 +874,9 @@ class connection_t final
 
 				m_logger.trace( [&]{
 					return fmt::format(
-							"[connection:{}] outgoing data was sent",
-							connection_id() );
+							"[connection:{}] outgoing data was sent: {}b",
+							connection_id(),
+							written );
 				} );
 
 				if( should_keep_alive )

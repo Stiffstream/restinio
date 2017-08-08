@@ -83,6 +83,29 @@ struct raw_resp_output_ctx_t
 		return !m_bufs.empty();
 	}
 
+	//! Obtains ready buffers if any.
+	/*!
+		\note READY_BUFFERS_SOURCE must have
+		pop_ready_buffers() member function.
+	*/
+	template < class READY_BUFFERS_SOURCE >
+	bool
+	obtain_bufs(
+		buffers_container_t & container )
+	{
+		if( max_iov_len() >= container.size() )
+			m_bufs = std::move( container );
+		else
+		{
+			const auto begin_of_bunch = container.begin();
+			const auto end_of_bunch = begin_of_bunch + max_iov_len();
+			m_bufs.assign( begin_of_bunch, end_of_bunch );
+			container.erase( begin_of_bunch, end_of_bunch );
+		}
+
+		return !m_bufs.empty();
+	}
+
 	private:
 		//! Is transmition running?
 		bool m_transmitting{ false };
