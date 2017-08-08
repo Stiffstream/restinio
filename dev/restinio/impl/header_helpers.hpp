@@ -101,15 +101,26 @@ create_header_string(
 	constexpr const char header_rn[] = "\r\n";
 	result.append( header_rn, ct_string_len( header_rn ) );
 
-	if( h.should_keep_alive() )
+	switch( h.connection() )
 	{
-		constexpr const char header_part2_1[] = "Connection: keep-alive\r\n";
-		result.append( header_part2_1, ct_string_len( header_part2_1 ) );
-	}
-	else
-	{
-		constexpr const char header_part2_2[] = "Connection: close\r\n";
-		result.append( header_part2_2, ct_string_len( header_part2_2 ) );
+		case http_connection_header_t::keep_alive:
+		{
+			constexpr const char header_part2_1[] = "Connection: keep-alive\r\n";
+			result.append( header_part2_1, ct_string_len( header_part2_1 ) );
+			break;
+		}
+
+		case http_connection_header_t::close:
+		{
+			constexpr const char header_part2_2[] = "Connection: close\r\n";
+			result.append( header_part2_2, ct_string_len( header_part2_2 ) );
+		}
+
+		case http_connection_header_t::upgrade:
+		{
+			constexpr const char header_part2_3[] = "Connection: Upgrade\r\n";
+			result.append( header_part2_3, ct_string_len( header_part2_3 ) );
+		}
 	}
 
 	if( content_length_field_presence_t::add_content_length ==

@@ -39,7 +39,7 @@ namespace impl
 */
 template < typename TRAITS, typename WS_MESSAGE_HANDLER >
 class ws_connection_t final
-	:	public connection_base_t
+	:	public ws_connection_base_t
 {
 	public:
 		using message_handler_t = WS_MESSAGE_HANDLER;
@@ -51,13 +51,13 @@ class ws_connection_t final
 			//! Connection id.
 			std::uint64_t conn_id,
 			//! Connection socket.
-			std::unique_ptr< stream_socket_t > socket,
+			stream_socket_t && socket,
 			//! Settings that are common for connections.
 			connection_settings_shared_ptr_t< TRAITS > settings,
 			message_handler_t msg_handler )
 			:	connection_base_t{ conn_id }
 			,	m_socket{ std::move( socket ) }
-			,	m_strand{ socket_lowest_layer().get_executor() }
+			,	m_strand{ m_socket.get_executor() }
 			,	m_settings{ std::move( settings ) }
 			,	m_input{ m_settings->m_buffer_size }
 			,	m_msg_handler{ msg_handler }
@@ -68,7 +68,7 @@ class ws_connection_t final
 					return fmt::format(
 						"[ws_connection:{}] start connection with {}",
 						connection_id(),
-						socket_lowest_layer().remote_endpoint() );
+						m_socket.remote_endpoint() );
 			} );
 		}
 
@@ -286,10 +286,10 @@ class ws_connection_t final
 			} );
 
 			asio::error_code ignored_ec;
-			socket_lowest_layer().shutdown(
+			m_socket.shutdown(
 				asio::ip::tcp::socket::shutdown_both,
 				ignored_ec );
-			socket_lowest_layer().close();
+			m_socket.close();
 		}
 
 		//! Trigger an error.
@@ -307,20 +307,8 @@ class ws_connection_t final
 		}
 		//! \}
 
-		//! Connection
-		std::unique_ptr< stream_socket_t > m_socket;
-
-		stream_socket_t &
-		socket_ref()
-		{
-			return *m_socket;
-		}
-
-		auto &
-		socket_lowest_layer()
-		{
-			return m_socket->lowest_layer();
-		}
+		//! Connection.
+		stream_socket_t m_socket;
 
 		//! Sync object for connection events.
 		strand_t m_strand;

@@ -974,7 +974,7 @@ class connection_t final
 		}
 		//! \}
 
-		//! Connection
+		//! Connection.
 		stream_socket_t m_socket;
 
 		//! Sync object for connection events.

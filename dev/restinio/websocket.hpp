@@ -131,24 +131,71 @@ using websocket_unique_ptr_t = std::unique_ptr< websocket_t >;
 template < typename TRAITS, typename WS_MESSAGE_HANDLER >
 websocket_unique_ptr_t
 upgrade_to_websocket(
-	/*TODO: params???*/
 	request_t & req,
+	http_header_fields_t upgrade_response_header_fields,
 	WS_MESSAGE_HANDLER ws_message_handler )
 {
 	req.check_connection();
 
 	// TODO: check if upgrade request.
 
+	//! Check if mandatory field is available.
+	if( upgrade_response_header_fields.has_field( http_field::sec_websocket_accept ) )
+	{
+		throw exception_t{
+			fmt::format( "{} field is mandatory for upgrade response",
+				field_to_string( http_field::sec_websocket_accept ) ) };
+	}
+
+	buffers_container_t upgrade_response_bufs;
+
 	using connection_t = impl::connection_t< TRAITS >;
 	auto conn_ptr = std::move( req.m_connection );
 	auto & con = dynamic_cast< connection_t & >( *conn_ptr );
 
-	return std::make_unique< websocket_t >(
+	auto ws_connection =
 		std::make_shared< impl::ws_connection_t >(
 			con.connection_id(),
 			con.move_socket(),
 			con.get_settings(),
-			std::move( ws_message_handler ) ) );
+			std::move( ws_message_handler ) );
+
+	{
+		http_response_header_t upgrade_response_header{ 101, "Switching Protocols" };
+		upgrade_response_header.swap_fields( upgrade_response_header_fields );
+
+		upgrade_response_bufs.emplace_back(
+			impl::create_header_string(
+				upgrade_response_header,
+				impl::content_length_field_presence_t::skip_content_length ) );
+	}
+
+	ws_connection.write_data( std::move( upgrade_response_bufs ) );
+
+	return std::make_unique< websocket_t >( std::move( ws_connection ) );
+}
+
+//
+// upgrade_to_websocket
+//
+
+template < typename TRAITS, typename WS_MESSAGE_HANDLER >
+websocket_unique_ptr_t
+upgrade_to_websocket(
+	request_t & req,
+	std::string sec_websocket_accept_field_value,
+	WS_MESSAGE_HANDLER ws_message_handler )
+{
+	http_header_fields_t upgrade_response_header_fields;
+	upgrade_response_header_fields.set_field(
+		http_field::sec_websocket_accept,
+		std::move( sec_websocket_accept_field_value ) );
+
+	return
+		upgrade_to_websocket(
+			req,
+			std::move( upgrade_response_header_fields ),
+			std::move( ws_message_handler ) );
 }
 
 } /* namespace restinio */

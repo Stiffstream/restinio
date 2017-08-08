@@ -622,6 +622,12 @@ class http_header_fields_t
 		http_header_fields_t & operator=(const http_header_fields_t &) = default;
 		http_header_fields_t & operator=(http_header_fields_t &&) = default;
 
+		void
+		swap_fields( http_header_fields_t & http_header_fields )
+		{
+			std::swap( m_fields, http_header_fields.m_fields );
+		}
+
 		//! Chack field by name.
 		bool
 		has_field( const std::string & field_name ) const
@@ -909,6 +915,18 @@ class http_header_fields_t
 };
 
 //
+// http_connection_header_t
+//
+
+//! Values for conection header field.
+enum class http_connection_header_t : std::uint8_t
+{
+	keep_alive,
+	close,
+	upgrade
+};
+
+//
 // http_header_common_t
 //
 
@@ -948,12 +966,30 @@ struct http_header_common_t
 		bool
 		should_keep_alive() const
 		{
-			return m_should_keep_alive;
+			return http_connection_header_t::keep_alive == m_http_connection_header_field_value;
 		}
 
 		void
 		should_keep_alive( bool keep_alive )
-		{ m_should_keep_alive = keep_alive; }
+		{
+			connection( keep_alive?
+				http_connection_header_t::keep_alive :
+				http_connection_header_t::close );
+		}
+
+		//! Get the value of 'connection' header field.
+		http_connection_header_t
+		connection() const
+		{
+			return m_http_connection_header_field_value;
+		}
+
+		//! Set the value of 'connection' header field.
+		void
+		connection( http_connection_header_t ch )
+		{
+			m_http_connection_header_field_value = ch;
+		}
 
 	private:
 		//! Http version.
@@ -965,7 +1001,7 @@ struct http_header_common_t
 		//! Length of body of an http-message.
 		std::uint64_t m_content_length{ 0 };
 
-		bool m_should_keep_alive{ false };
+		http_connection_header_t m_http_connection_header_field_value{ http_connection_header_t::close };
 };
 
 //! HTTP methods mapping with nodejs http methods
