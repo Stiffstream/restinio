@@ -38,12 +38,16 @@ namespace impl
 //! Context for handling websocket connections.
 /*
 */
-template < typename TRAITS, typename WS_MESSAGE_HANDLER >
+template <
+		typename TRAITS,
+		typename WS_MESSAGE_HANDLER,
+		typename WS_CLOSE_HANDLER >
 class ws_connection_t final
 	:	public ws_connection_base_t
 {
 	public:
 		using message_handler_t = WS_MESSAGE_HANDLER;
+		using close_handler_t = WS_CLOSE_HANDLER;
 		using logger_t = typename TRAITS::logger_t;
 		using strand_t = typename TRAITS::strand_t;
 		using stream_socket_t = typename TRAITS::stream_socket_t;
@@ -55,7 +59,8 @@ class ws_connection_t final
 			stream_socket_t && socket,
 			//! Settings that are common for connections.
 			connection_settings_shared_ptr_t< TRAITS > settings,
-			message_handler_t msg_handler )
+			message_handler_t msg_handler,
+			close_handler_t close_handler )
 			:	connection_base_t{ conn_id }
 			,	m_socket{ std::move( socket ) }
 			,	m_strand{ m_socket.get_executor() }
@@ -436,6 +441,16 @@ class ws_connection_t final
 		}
 		//! \}
 
+		void
+		call_close_handler( const std::string & reason )
+		{
+			if( m_close_handler )
+			{
+				m_close_handler( reason );
+				m_close_handler = close_handler_t{};
+			}
+		}
+
 		//! Connection.
 		stream_socket_t m_socket;
 
@@ -446,6 +461,7 @@ class ws_connection_t final
 		connection_settings_shared_ptr_t< TRAITS > m_settings;
 
 		message_handler_t m_msg_handler;
+		close_handler_t m_close_handler;
 
 		//! Input routine.
 		fixed_buffer_t m_input_header_buffer;

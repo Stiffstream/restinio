@@ -131,12 +131,16 @@ using websocket_unique_ptr_t = std::unique_ptr< websocket_t >;
 // upgrade_to_websocket
 //
 
-template < typename TRAITS, typename WS_MESSAGE_HANDLER >
+template <
+		typename TRAITS,
+		typename WS_MESSAGE_HANDLER,
+		typename WS_CLOSE_HANDLER >
 websocket_unique_ptr_t
 upgrade_to_websocket(
 	request_t & req,
 	http_header_fields_t upgrade_response_header_fields,
-	WS_MESSAGE_HANDLER ws_message_handler )
+	WS_MESSAGE_HANDLER ws_message_handler,
+	WS_CLOSE_HANDLER ws_close_handler )
 {
 	req.check_connection();
 
@@ -166,7 +170,8 @@ upgrade_to_websocket(
 			con.connection_id(),
 			con.move_socket(),
 			con.get_settings(),
-			std::move( ws_message_handler ) );
+			std::move( ws_message_handler ),
+			std::move( ws_close_handler ) );
 
 	{
 		http_response_header_t upgrade_response_header{ 101, "Switching Protocols" };
@@ -188,12 +193,16 @@ upgrade_to_websocket(
 // upgrade_to_websocket
 //
 
-template < typename TRAITS, typename WS_MESSAGE_HANDLER >
+template <
+		typename TRAITS,
+		typename WS_MESSAGE_HANDLER,
+		typename WS_CLOSE_HANDLER >
 websocket_unique_ptr_t
 upgrade_to_websocket(
 	request_t & req,
 	std::string sec_websocket_accept_field_value,
-	WS_MESSAGE_HANDLER ws_message_handler )
+	WS_MESSAGE_HANDLER ws_message_handler,
+	WS_CLOSE_HANDLER ws_close_handler )
 {
 	http_header_fields_t upgrade_response_header_fields;
 	upgrade_response_header_fields.set_field(
@@ -204,20 +213,25 @@ upgrade_to_websocket(
 		upgrade_to_websocket(
 			req,
 			std::move( upgrade_response_header_fields ),
-			std::move( ws_message_handler ) );
+			std::move( ws_message_handler ),
+			std::move( ws_close_handler ) );
 }
 
 //
 // upgrade_to_websocket
 //
 
-template < typename TRAITS, typename WS_MESSAGE_HANDLER >
+template <
+		typename TRAITS,
+		typename WS_MESSAGE_HANDLER,
+		typename WS_CLOSE_HANDLER >
 websocket_unique_ptr_t
 upgrade_to_websocket(
 	request_t & req,
 	std::string sec_websocket_accept_field_value,
 	std::string sec_websocket_protocol_field_value,
-	WS_MESSAGE_HANDLER ws_message_handler )
+	WS_MESSAGE_HANDLER ws_message_handler,
+	WS_CLOSE_HANDLER ws_close_handler )
 {
 	http_header_fields_t upgrade_response_header_fields;
 	upgrade_response_header_fields.set_field(
@@ -232,7 +246,8 @@ upgrade_to_websocket(
 		upgrade_to_websocket(
 			req,
 			std::move( upgrade_response_header_fields ),
-			std::move( ws_message_handler ) );
+			std::move( ws_message_handler ),
+			std::move( ws_close_handler ) );
 }
 
 } /* namespace restinio */
