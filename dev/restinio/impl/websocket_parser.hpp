@@ -18,6 +18,19 @@
 namespace restinio
 {
 
+using byte_t = char;
+using raw_data_t = std::string;
+
+enum class opcode_t : std::uint8_t
+{
+	continuation_frame = 0x00,
+	text_frame = 0x01,
+	binary_frame = 0x02,
+	connection_close_frame = 0x08,
+	ping_frame = 0x09,
+	pong_frame = 0x0A
+};
+
 namespace impl
 {
 
@@ -33,18 +46,9 @@ const size_t WEBSOCKET_MASKING_KEY_SIZE = 4;
 // using byte_t = std::uint8_t;
 // using raw_data_t = std::vector< byte_t >;
 
-using byte_t = char;
-using raw_data_t = std::string;
-
-enum class opcode_t : std::uint8_t
-{
-	continuation_frame     = 0x00,
-    text_frame             = 0x01,
-    binary_frame           = 0x02,
-    connection_close_frame = 0x08,
-    ping_frame             = 0x09,
-    pong_frame             = 0x0A
-};
+//
+// ws_message_details_t
+//
 
 struct ws_message_details_t
 {
@@ -144,6 +148,10 @@ struct expected_data_t
 		m_loaded_data.reserve( expected_size );
 	}
 };
+
+//
+// ws_parser_t
+//
 
 class ws_parser_t
 {
@@ -465,33 +473,24 @@ write_message_details(
 		result.push_back( ( ext_len >> 24 ) & 0xFF );
 		result.push_back( ( ext_len >> 16 ) & 0xFF );
 		result.push_back( ( ext_len >>  8 ) & 0xFF );
-		result.push_back(   ext_len         & 0xFF );
+		result.push_back( ext_len & 0xFF );
 	}
 
-	// if( message.m_header.m_mask_flag )
-	// {
-	// 	auto masking_key = message.m_masking_key.m_value;
+	if( message.m_header.m_mask_flag )
+	{
+		auto masking_key = message.m_masking_key.m_value;
 
-	// 	uint8_t mask[ 4 ] = { };
-	// 	mask[ 0 ] =   masking_key         & 0xFF;
-	// 	mask[ 1 ] = ( masking_key >>  8 ) & 0xFF;
-	// 	mask[ 2 ] = ( masking_key >> 16 ) & 0xFF;
-	// 	mask[ 3 ] = ( masking_key >> 24 ) & 0xFF;
+		uint8_t mask[ 4 ] = { };
+		mask[ 0 ] = masking_key & 0xFF;
+		mask[ 1 ] = ( masking_key >>  8 ) & 0xFF;
+		mask[ 2 ] = ( masking_key >> 16 ) & 0xFF;
+		mask[ 3 ] = ( masking_key >> 24 ) & 0xFF;
 
-	// 	// MASKED PAYLOAD
-	// 	const auto & data = message.m_data;
-
-	// 	for ( size_t index = 0; index < data.size( ); index++ )
-	// 	{
-	// 		auto datum = data.at( index );
-	// 		datum ^= mask[ index % 4 ];
-	// 		result.push_back( datum );
-	// 	}
-	// }
-	// else
-	// {
-	// 	result.insert( result.end(), message.m_data.begin(), message.m_data.end() );
-	// }
+		result.push_back( mask[ 3 ] );
+		result.push_back( mask[ 2 ] );
+		result.push_back( mask[ 1 ] );
+		result.push_back( mask[ 0 ] );
+	}
 
 	return result;
 }
