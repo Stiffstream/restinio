@@ -414,7 +414,7 @@ mask_unmask_payload( std::uint32_t masking_key, raw_data_t & payload )
 	}
 }
 
-raw_data_t
+inline raw_data_t
 write_message_details(
 	const ws_message_details_t & message )
 {
