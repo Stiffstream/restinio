@@ -18,6 +18,7 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+using namespace restinio;
 using namespace restinio::impl;
 
 char
