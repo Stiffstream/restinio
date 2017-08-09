@@ -432,3 +432,66 @@ TEST_CASE( "working with string_to_field()" , "[header][string_to_field]" )
 
 #undef RESTINIO_FIELD_FROM_STRIN_TEST
 }
+
+TEST_CASE( "Connection" , "[header][connection]" )
+{
+	using namespace Catch;
+
+	{
+		// Default.
+		http_response_header_t h;
+		const auto serialized =
+			impl::create_header_string( h,
+				impl::content_length_field_presence_t::skip_content_length );
+
+		REQUIRE_THAT(
+			serialized,
+			Contains( "Connection: close" ) ||
+			!Contains( "Content-Length" ) );
+	}
+	{
+		// Default.
+		http_response_header_t h;
+		const auto serialized =
+			impl::create_header_string( h );
+
+		REQUIRE_THAT(
+			serialized,
+			Contains( "Connection: close" ) ||
+			Contains( "Content-Length: 0" ) );
+	}
+
+	{
+		http_response_header_t h;
+		h.should_keep_alive( false );
+		const auto serialized =
+			impl::create_header_string( h );
+
+		REQUIRE_THAT(
+			serialized,
+			Contains( "Connection: close" ) );
+	}
+
+	{
+		http_response_header_t h;
+		h.should_keep_alive( true );
+		const auto serialized =
+			impl::create_header_string( h );
+
+		REQUIRE_THAT(
+			serialized,
+			Contains( "Connection: keep-alive" ) );
+	}
+
+	{
+		http_response_header_t h;
+		h.connection( http_connection_header_t::upgrade );
+		const auto serialized =
+			impl::create_header_string( h );
+
+		REQUIRE_THAT(
+			serialized,
+			Contains( "Connection: Upgrade" ) );
+	}
+}
+
