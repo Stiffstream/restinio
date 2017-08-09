@@ -154,6 +154,11 @@ upgrade_to_websocket(
 				field_to_string( http_field::sec_websocket_accept ) ) };
 	}
 
+	if( !upgrade_response_header_fields.has_field( http_field::upgrade ) )
+	{
+		upgrade_response_header_fields.set_field( http_field::upgrade, "websocket" );
+	}
+
 	buffers_container_t upgrade_response_bufs;
 
 	using connection_t = impl::connection_t< TRAITS >;
@@ -170,6 +175,7 @@ upgrade_to_websocket(
 	{
 		http_response_header_t upgrade_response_header{ 101, "Switching Protocols" };
 		upgrade_response_header.swap_fields( upgrade_response_header_fields );
+		upgrade_response_header.connection( http_connection_header_t::upgrade );
 
 		upgrade_response_bufs.emplace_back(
 			impl::create_header_string(
@@ -197,6 +203,34 @@ upgrade_to_websocket(
 	upgrade_response_header_fields.set_field(
 		http_field::sec_websocket_accept,
 		std::move( sec_websocket_accept_field_value ) );
+
+	return
+		upgrade_to_websocket(
+			req,
+			std::move( upgrade_response_header_fields ),
+			std::move( ws_message_handler ) );
+}
+
+//
+// upgrade_to_websocket
+//
+
+template < typename TRAITS, typename WS_MESSAGE_HANDLER >
+websocket_unique_ptr_t
+upgrade_to_websocket(
+	request_t & req,
+	std::string sec_websocket_accept_field_value,
+	std::string sec_websocket_protocol_field_value,
+	WS_MESSAGE_HANDLER ws_message_handler )
+{
+	http_header_fields_t upgrade_response_header_fields;
+	upgrade_response_header_fields.set_field(
+		http_field::sec_websocket_accept,
+		std::move( sec_websocket_accept_field_value ) );
+
+	upgrade_response_header_fields.set_field(
+		http_field::sec_websocket_protocol,
+		std::move( sec_websocket_protocol_field_value ) );
 
 	return
 		upgrade_to_websocket(
