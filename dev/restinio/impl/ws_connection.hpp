@@ -23,6 +23,7 @@
 #include <restinio/impl/connection_settings.hpp>
 #include <restinio/impl/fixed_buffer.hpp>
 #include <restinio/impl/raw_resp_output_ctx.hpp>
+#include <restinio/impl/websocket_parser.hpp>
 
 namespace restinio
 {

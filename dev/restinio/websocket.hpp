@@ -26,11 +26,15 @@ class ws_message_t final
 {
 	public:
 		ws_message_t(
+			bool final,
+			opcode_t opcode,
 			std::string payload )
-			:	m_payload{ std::move( payload ) }
+			:	m_details{ final, opcode, payload.size() }
+			,	m_payload{ std::move( payload ) }
 		{}
 
 	private:
+		impl::ws_message_details_t m_details;
 		std::string m_payload;
 };
 
@@ -91,21 +95,24 @@ class websocket_t
 		//! Send_websocket message
 		void
 		send_message(
-			/*TODO: Заголовок_или_то_из_чего_делается_заголовок */
+			bool final,
+			opcode_t opcode,
 			buffer_storage_t payload )
 		{
 			if( m_ws_connection_handle )
 			{
 				buffers_container_t bufs;
-				bufs.reserve( 2 );
+				bufs.reserve( 2 ); // ?
 
-				// TODO:
 				// Create header serialize it and append to bufs .
+				impl::ws_message_details_t details{
+					final, opcode, asio::buffer_size( payload.buf() ) };
 
-				/*TODO:
-					bufs.emplace_back(
-						сериализовать_в_буфер( Заголовок_или_то_из_чего_делается_заголовок ) );
-				*/
+				bufs.emplace_back(
+					impl::write_message_details( details ) );
+
+				// TODO: We have to check masking key is present
+				// and may be update payload.
 
 				bufs.emplace_back( std::move( payload ) );
 
