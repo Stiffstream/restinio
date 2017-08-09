@@ -65,11 +65,7 @@ class websocket_t
 			ws_connection_handle_t ws_connection_handle )
 			:	m_ws_connection_handle{ std::move( ws_connection_handle ) }
 		{
-			// TODO:
-			// On accepting upgrade request
-			// we must send http-response to finish with handshake
-			// So here must be initialized first write operation
-			// that carries response.
+			m_ws_connection_handle->init_read();
 		}
 
 		~websocket_t()

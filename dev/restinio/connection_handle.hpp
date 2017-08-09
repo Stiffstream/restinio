@@ -81,6 +81,10 @@ class ws_connection_base_t
 		virtual void
 		close() = 0;
 
+		//! Start reading ws-messages.
+		virtual void
+		init_read() = 0;
+
 		//! Write pieces of outgoing data.
 		virtual void
 		write_data(

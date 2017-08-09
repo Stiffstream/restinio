@@ -60,7 +60,7 @@ class ws_connection_t final
 			,	m_socket{ std::move( socket ) }
 			,	m_strand{ m_socket.get_executor() }
 			,	m_settings{ std::move( settings ) }
-			,	m_input{ m_settings->m_buffer_size }
+			,	m_input_header_buffer{ /*TODO: use constant */ 18 }
 			,	m_msg_handler{ msg_handler }
 			,	m_logger{ *( m_settings->m_logger ) }
 		{
@@ -116,6 +116,30 @@ class ws_connection_t final
 			} );
 		}
 
+		//! Start reading ws-messages.
+		void
+		init_read() override
+		{
+			//! Run write message on io_service loop if possible.
+			asio::dispatch(
+				get_executor(),
+				[ this, ctx = shared_from_this() ](){
+					try
+					{
+						start_read_header();
+					}
+					catch( const std::exception & ex )
+					{
+						trigger_error_and_close( [&]{
+							return fmt::format(
+								"[ws_connection:{}] unable to init read: {}",
+								connection_id(),
+								ex.what() );
+						} );
+					}
+			} );
+		}
+
 		//! Write pieces of outgoing data.
 		virtual void
 		write_data( buffers_container_t bufs ) override
@@ -147,6 +171,110 @@ class ws_connection_t final
 		}
 
 	private:
+		//! start the process of reading ws messages from socket.
+		void
+		start_read_header()
+		{
+			m_logger.trace( [&]{
+				 return fmt::format(
+						"[ws_connection:{}] start reading header",
+						connection_id() );
+			} );
+
+			m_socket.async_read_some(
+				m_input_header_buffer.make_asio_buffer(),
+				asio::bind_executor(
+					get_executor(),
+					[ this, ctx = shared_from_this() ](
+						const asio::error_code & ec ,
+						std::size_t length ){
+							this->after_read_header( ec, length );
+						} ) );
+		}
+
+		void
+		after_read_header(
+			const std::error_code & ec,
+			std::size_t length )
+		{
+			if( !ec )
+			{
+				// TODO: parse header
+				// and
+
+				// if header parsing is complete:
+				// m_current_message = new_message( header-smth, payload_length )
+				// m_current_message.m_payload
+				// if( 0 < m_input_header_buffer.length() )
+				// {
+				// 	const auto payload_part_size =
+				// 		std::min(
+				// 			m_input_header_buffer.length(),
+				// 			payload_length );
+
+				// 	std::memcpy(
+				// 		m_current_message.data(),
+				// 		m_input_header_buffer.bytes(),
+				// 		payload_part_size );
+
+				// 	m_input_header_buffer.consumed_bytes( payload_part_size );
+
+				// 	if( payload_part_size == payload_length )
+				// 	{
+				// 		// All message is obtained.
+				// 		call_handler_on_current_message();
+				// 	}
+				// 	else
+				// 	{
+				// 		// Read the rest of payload:
+				// 		start_read_payload(
+				// 			m_current_message.data() + payload_part_size,
+				// 			payload_length - payload_part_size );
+				// 	}
+				// }
+			}
+			else
+			{
+				// TODO: connection must be closed
+				// and user must be notified.
+			}
+		}
+
+		void
+		start_read_payload( const char * payload_data, std::size_t length_remaining )
+		{
+			m_socket.async_read_some(
+				asio::buffer( payload_data, length_remaining ),
+				asio::bind_executor(
+					get_executor(),
+					[ this,
+						ctx = shared_from_this(),
+						payload_data,
+						length_remaining ](
+						const asio::error_code & ec,
+						std::size_t length ){
+
+							if( ec )
+							{
+								// TODO: handle error.
+							}
+
+							if( length < length_remaining )
+							{
+								this->start_read_payload(
+									payload_data + length,
+									length_remaining - length );
+							}
+							else
+							{
+								assert( length == length_remaining );
+
+								// All message is obtained.
+								// call_handler_on_current_message();
+							}
+						} ) );
+		}
+
 		void
 		write_data_impl( buffers_container_t bufs )
 		{
@@ -203,7 +331,7 @@ class ws_connection_t final
 							get_executor(),
 							[ this,
 								ctx = shared_from_this() ]
-								( auto ec, std::size_t written ){
+								( const asio::error_code & ec, std::size_t written ){
 									this->after_write(
 										ec,
 										written );
@@ -320,7 +448,7 @@ class ws_connection_t final
 		message_handler_t m_msg_handler;
 
 		//! Input routine.
-		connection_input_t m_input;
+		fixed_buffer_t m_input_header_buffer;
 
 		//! Write to socket operation context.
 		raw_resp_output_ctx_t m_resp_out_ctx;
