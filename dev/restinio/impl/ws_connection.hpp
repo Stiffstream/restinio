@@ -266,9 +266,9 @@ class ws_connection_t final
 				asio::bind_executor(
 					get_executor(),
 					[ this, ctx = shared_from_this() ](
-						const asio::error_code & ec ,
+						const asio::error_code & ec,
 						std::size_t length ){
-							this->after_read_header( ec, length );
+							after_read_header( ec, length );
 						} ) );
 		}
 
@@ -372,6 +372,15 @@ class ws_connection_t final
 			}
 			else if( m_awaiting_buffers.close_when_done() )
 			{
+				// User closed ws-connection before.
+
+				//TODO: it might be the case to leave only an assert here
+				// because there should be no way to init write
+				// after websocket_t object is closed.
+				// Depends on whether it is considered to be used in parallel
+				// wnen `close()` call and `message_send()` call
+				// can happen in parallel threads.
+
 				m_logger.warn( [&]{
 					return fmt::format(
 							"[ws_connection:{}] try to write response "
