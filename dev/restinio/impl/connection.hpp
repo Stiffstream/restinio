@@ -343,8 +343,10 @@ class connection_t final
 				m_input.m_buf.make_asio_buffer(),
 				asio::bind_executor(
 					get_executor(),
-					[ this, ctx = shared_from_this() ]( auto ec, std::size_t length ){
-						this->after_read( ec, length );
+					[ this, ctx = shared_from_this() ](
+						const asio::error_code & ec,
+						std::size_t length ){
+						after_read( ec, length );
 					} ) );
 		}
 
@@ -810,8 +812,8 @@ class connection_t final
 								should_keep_alive = !m_response_coordinator.closed(),
 								init_read_after_this_write =
 									full_before && !full_after ]
-								( auto ec, std::size_t written ){
-									this->after_write(
+								( const asio::error_code & ec, std::size_t written ){
+									after_write(
 										ec,
 										written,
 										should_keep_alive,
