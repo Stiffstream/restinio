@@ -648,6 +648,7 @@ class connection_t final
 			//! parts of a response.
 			buffers_container_t bufs ) override
 		{
+#if 0
 			// TODO: Avoid heap allocation:
 
 			// Unfortunately ASIO tends to call a copy ctor for bufs
@@ -670,6 +671,32 @@ class connection_t final
 								request_id,
 								response_output_flags,
 								std::move( *bufs ) );
+						}
+						catch( const std::exception & ex )
+						{
+							trigger_error_and_close( [&]{
+								return fmt::format(
+									"[connection:{}] unable to handle response: {}",
+									connection_id(),
+									ex.what() );
+							} );
+						}
+				} );
+#endif
+			//! Run write message on io_service loop if possible.
+			asio::dispatch(
+				get_executor(),
+				[ this,
+					request_id,
+					response_output_flags,
+					actual_bufs = std::move( bufs ),
+					ctx = shared_from_this() ]() mutable {
+						try
+						{
+							write_response_parts_impl(
+								request_id,
+								response_output_flags,
+								std::move( actual_bufs ) );
 						}
 						catch( const std::exception & ex )
 						{
