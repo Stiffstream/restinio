@@ -247,7 +247,7 @@ class ws_connection_t final
 		}
 
 	private:
-		//! start the process of reading ws messages from socket.
+		//! Start the process of reading ws messages from socket.
 		void
 		start_read_header()
 		{
@@ -257,17 +257,54 @@ class ws_connection_t final
 						connection_id() );
 			} );
 
-			m_socket.async_read_some(
-				m_input_header_buffer.make_asio_buffer(),
-				asio::bind_executor(
-					get_executor(),
-					[ this, ctx = shared_from_this() ](
-						const asio::error_code & ec,
-						std::size_t length ){
-							after_read_header( ec, length );
-						} ) );
+			if( 0 == m_input_header_buffer.length() )
+			{
+				m_socket.async_read_some(
+					m_input_header_buffer.make_asio_buffer(),
+					asio::bind_executor(
+						get_executor(),
+						[ this, ctx = shared_from_this() ](
+							const asio::error_code & ec,
+							std::size_t length ){
+								try
+								{
+									after_read_header( ec, length );
+								}
+								catch( const std::exception & ex )
+								{
+									trigger_error_and_close(
+										ex.what(),
+										[&]{
+											return fmt::format(
+												"[ws_connection:{}] after read header callback error: {}",
+												connection_id(),
+												ex.what() );
+										} );
+								}
+							} ) );
+			}
+			else
+			{
+				// Has something to read from m_input_header_buffer.
+				consume_header_from_buffer();
+			}
 		}
 
+		//! Handle read error (reading header or payload)
+		void
+		handle_read_error( const std::error_code & ec )
+		{
+			trigger_error_and_close(
+				ec.message(),
+				[&]{
+					return fmt::format(
+						"[ws_connection:{}] read error: {}",
+						connection_id(),
+						ec.message() );
+				} );
+		}
+
+		//! Handle read operation result, when reading header.
 		void
 		after_read_header(
 			const std::error_code & ec,
@@ -275,49 +312,61 @@ class ws_connection_t final
 		{
 			if( !ec )
 			{
-				// TODO: parse header
-				// and
-
-				// if header parsing is complete:
-				// m_current_message = new_message( header-smth, payload_length )
-				// m_current_message.m_payload
-				// if( 0 < m_input_header_buffer.length() )
-				// {
-				// 	const auto payload_part_size =
-				// 		std::min(
-				// 			m_input_header_buffer.length(),
-				// 			payload_length );
-
-				// 	std::memcpy(
-				// 		m_current_message.data(),
-				// 		m_input_header_buffer.bytes(),
-				// 		payload_part_size );
-
-				// 	m_input_header_buffer.consumed_bytes( payload_part_size );
-
-				// 	if( payload_part_size == payload_length )
-				// 	{
-				// 		// All message is obtained.
-				// 		call_handler_on_current_message();
-				// 	}
-				// 	else
-				// 	{
-				// 		// Read the rest of payload:
-				// 		start_read_payload(
-				// 			m_current_message.data() + payload_part_size,
-				// 			payload_length - payload_part_size );
-				// 	}
-				// }
+				m_input_header_buffer.obtained_bytes( length );
+				consume_header_from_buffer();
 			}
 			else
 			{
-				// TODO: connection must be closed
-				// and user must be notified.
+				handle_read_error( ec );
 			}
 		}
 
+		//! Parse header from internal buffer.
 		void
-		start_read_payload( const char * payload_data, std::size_t length_remaining )
+		consume_header_from_buffer()
+		{
+			// TODO: parse header
+			// and
+
+			// if header parsing is complete:
+			// m_current_message = new_message( header-smth, payload_length )
+			// m_current_message.m_payload
+			// if( 0 < m_input_header_buffer.length() )
+			// {
+			// 	const auto payload_part_size =
+			// 		std::min(
+			// 			m_input_header_buffer.length(),
+			// 			payload_length );
+
+			// 	std::memcpy(
+			// 		m_current_message.data(),
+			// 		m_input_header_buffer.bytes(),
+			// 		payload_part_size );
+
+			// 	m_input_header_buffer.consumed_bytes( payload_part_size );
+
+			// 	if( payload_part_size == payload_length )
+			// 	{
+			// 		// All message is obtained.
+			// 		call_handler_on_current_message();
+			// 	}
+			// 	else
+			// 	{
+			// 		// Read the rest of payload:
+			// 		start_read_payload(
+			// 			m_current_message.data() + payload_part_size,
+			// 			payload_length - payload_part_size );
+			// 	}
+			// }
+		}
+
+		//! Start reading message payload.
+		void
+		start_read_payload(
+			//! A pointer to the remainder of unfetched payload.
+			const char * payload_data,
+			//! The size of the remainder of unfetched payload.
+			std::size_t length_remaining )
 		{
 			m_socket.async_read_some(
 				asio::buffer( payload_data, length_remaining ),
@@ -330,32 +379,65 @@ class ws_connection_t final
 						const asio::error_code & ec,
 						std::size_t length ){
 
-							if( ec )
+							try
 							{
-								// TODO: handle error.
+								after_read_payload(
+									payload_data,
+									length_remaining,
+									ec,
+									length );
 							}
-
-							if( length < length_remaining )
+							catch( const std::exception & ex )
 							{
-								this->start_read_payload(
-									payload_data + length,
-									length_remaining - length );
-							}
-							else
-							{
-								assert( length == length_remaining );
-
-								// All message is obtained.
-								// call_handler_on_current_message();
+								trigger_error_and_close(
+									ex.what(),
+									[&]{
+										return fmt::format(
+											"[ws_connection:{}] after read payload callback error: {}",
+											connection_id(),
+											ex.what() );
+									} );
 							}
 						} ) );
 		}
 
+		//! Handle read operation result, when reading payload.
+		void
+		after_read_payload(
+			const char * payload_data,
+			std::size_t length_remaining,
+			const std::error_code & ec,
+			std::size_t length )
+		{
+			if( !ec )
+			{
+				if( length < length_remaining )
+				{
+					//Here: not all payload is obtained,
+					// so inintiate read once again:
+					this->start_read_payload(
+						payload_data + length,
+						length_remaining - length );
+				}
+				else
+				{
+					// Here: all the payload is ready.
+					assert( length == length_remaining );
+
+					// All message is obtained.
+					// call_handler_on_current_message();
+				}
+			}
+			else
+			{
+				handle_read_error( ec );
+			}
+		}
+
+		//! Implementation of writing data performed on the asio io context.
 		void
 		write_data_impl( buffers_container_t bufs )
 		{
-			assert( m_socket );
-
 			if( !m_socket.is_open() )
 			{
 				m_logger.warn( [&]{
@@ -386,20 +468,26 @@ class ws_connection_t final
 				return;
 			}
 
+			// Push buffers to queue.
 			m_awaiting_buffers.append( std::move( bufs ) );
 
 			init_write_if_necessary();
 		}
 
-		// Check if there is something to write,
-		// and if so starts write operation.
+		//! Checks if there is something to write,
+		//! and if so starts write operation.
 		void
 		init_write_if_necessary()
 		{
 			if( !m_resp_out_ctx.transmitting() )
 			{
+				// Here: not writing anything to socket, so
+				// write operation can be initiated.
 				if( m_resp_out_ctx.obtain_bufs( m_awaiting_buffers ) )
 				{
+					// Here: and there is smth to write.
+
+					// Asio buffers (param for async write):
 					auto & bufs = m_resp_out_ctx.create_bufs();
 
 					m_logger.trace( [&]{
@@ -420,9 +508,7 @@ class ws_connection_t final
 								( const asio::error_code & ec, std::size_t written ){
 									try
 									{
-										this->after_write(
-											ec,
-											written );
+										after_write( ec, written );
 									}
 									catch( const std::exception & ex )
 									{
@@ -473,18 +559,14 @@ class ws_connection_t final
 			}
 			else
 			{
-				if( ec != asio::error::operation_aborted )
-				{
-					trigger_error_and_close(
-						ec.message(),
-						[&]{
-							return fmt::format(
-								"[ws_connection:{}] unable to write: {}",
-								connection_id(),
-								ec.message() );
-						} );
-				}
-				// else: Operation aborted only in case of close was called.
+				trigger_error_and_close(
+					ec.message(),
+					[&]{
+						return fmt::format(
+							"[ws_connection:{}] unable to write: {}",
+							connection_id(),
+							ec.message() );
+					} );
 			}
 		}
 
@@ -498,6 +580,7 @@ class ws_connection_t final
 				// TODO:
 				// Send close frame.
 				// m_awaiting_buffers.append( ??? );
+
 				m_awaiting_buffers.set_close_when_done();
 				init_write_if_necessary();
 			}

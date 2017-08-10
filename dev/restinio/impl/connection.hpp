@@ -761,11 +761,17 @@ class connection_t final
 
 			if( !m_resp_out_ctx.transmitting() )
 			{
+				// Here: not writing anything to socket, so
+				// write operation can be initiated.
+
 				if( m_resp_out_ctx.obtain_bufs( m_response_coordinator ) )
 				{
-					// Remember if all response cells were busy.
+					// Here: and there is smth to write.
+
+					// Remember if all response cells were busy:
 					const auto full_after = m_response_coordinator.is_full();
 
+					// Asio buffers (param for async write):
 					auto & bufs = m_resp_out_ctx.create_bufs();
 
 					if( m_response_coordinator.closed() )
