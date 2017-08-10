@@ -32,6 +32,77 @@ namespace impl
 {
 
 //
+// ws_outgoing_data_t
+//
+
+//! A queue for outgoing buffers.
+class ws_outgoing_data_t
+{
+	public:
+		//! Add buffers to queue.
+		void
+		append( buffers_container_t bufs )
+		{
+			assert( !m_close_when_done );
+
+			if( m_awaiting_buffers.empty() )
+			{
+				m_awaiting_buffers = std::move( bufs );
+			}
+			else
+			{
+				m_awaiting_buffers.reserve( m_awaiting_buffers.size() + bufs.size() );
+				for( auto & buf : bufs )
+					m_awaiting_buffers.emplace_back( std::move( buf ) );
+			}
+		}
+
+		void
+		pop_ready_buffers(
+			std::size_t max_buf_count,
+			buffers_container_t & bufs )
+		{
+			if( max_buf_count >= m_awaiting_buffers.size() )
+				bufs = std::move( m_awaiting_buffers );
+			else
+			{
+				const auto begin_of_bunch = m_awaiting_buffers.begin();
+				const auto end_of_bunch = begin_of_bunch + max_buf_count;
+				bufs.reserve( max_buf_count );
+				for( auto it = begin_of_bunch; it != end_of_bunch; ++it )
+				{
+					bufs.emplace_back( std::move( *it ) );
+				}
+
+				m_awaiting_buffers.erase( begin_of_bunch, end_of_bunch );
+			}
+		}
+
+		bool
+		close_when_done() const
+		{
+			return m_close_when_done;
+		}
+
+		void
+		set_close_when_done()
+		{
+			m_close_when_done = true;
+		}
+
+	private:
+		//! Flag is set when user initiates close.
+		/*!
+			If flag is switched on, then after sending all the buffers
+			the socket mus be closed.
+		*/
+		bool m_close_when_done{ false };
+
+		//! A queue of buffers.
+		buffers_container_t m_awaiting_buffers;
+};
+
+//
 // ws_connection_t
 //
 
@@ -135,12 +206,14 @@ class ws_connection_t final
 					}
 					catch( const std::exception & ex )
 					{
-						trigger_error_and_close( [&]{
-							return fmt::format(
-								"[ws_connection:{}] unable to init read: {}",
-								connection_id(),
-								ex.what() );
-						} );
+						trigger_error_and_close(
+							ex.what(),
+							[&]{
+								return fmt::format(
+									"[ws_connection:{}] unable to init read: {}",
+									connection_id(),
+									ex.what() );
+							} );
 					}
 			} );
 		}
@@ -165,12 +238,14 @@ class ws_connection_t final
 						}
 						catch( const std::exception & ex )
 						{
-							trigger_error_and_close( [&]{
-								return fmt::format(
-									"[ws_connection:{}] unable to write data: {}",
-									connection_id(),
-									ex.what() );
-							} );
+							trigger_error_and_close(
+								ex.what(),
+								[&]{
+									return fmt::format(
+										"[ws_connection:{}] unable to write data: {}",
+										connection_id(),
+										ex.what() );
+								} );
 						}
 				} );
 		}
@@ -295,17 +370,18 @@ class ws_connection_t final
 				} );
 				return;
 			}
+			else if( m_awaiting_buffers.close_when_done() )
+			{
+				m_logger.warn( [&]{
+					return fmt::format(
+							"[ws_connection:{}] try to write response "
+							"after sebsocket was closed",
+							connection_id() );
+				} );
+				return;
+			}
 
-			if( m_awaiting_buffers.empty() )
-			{
-				m_awaiting_buffers = std::move( bufs );
-			}
-			else
-			{
-				m_awaiting_buffers.reserve( m_awaiting_buffers.size() + bufs.size() );
-				for( auto & buf : bufs )
-					m_awaiting_buffers.emplace_back( std::move( buf ) );
-			}
+			m_awaiting_buffers.append( std::move( bufs ) );
 
 			init_write_if_necessary();
 		}
@@ -337,12 +413,31 @@ class ws_connection_t final
 							[ this,
 								ctx = shared_from_this() ]
 								( const asio::error_code & ec, std::size_t written ){
-									this->after_write(
-										ec,
-										written );
+									try
+									{
+										this->after_write(
+											ec,
+											written );
+									}
+									catch( const std::exception & ex )
+									{
+										trigger_error_and_close(
+											ex.what(),
+											[&]{
+												return fmt::format(
+													"[ws_connection:{}] after write callback error: {}",
+													connection_id(),
+													ex.what() );
+											} );
+									}
 							} ) );
 
 					// TODO: guard_write_operation();
+				}
+				else if ( m_awaiting_buffers.close_when_done() )
+				{
+					call_close_handler( "user initiated" );
+					close_impl();
 				}
 			}
 		}
@@ -375,12 +470,14 @@ class ws_connection_t final
 			{
 				if( ec != asio::error::operation_aborted )
 				{
-					trigger_error_and_close( [&]{
-						return fmt::format(
-							"[ws_connection:{}] unable to write: {}",
-							connection_id(),
-							ec.message() );
-					} );
+					trigger_error_and_close(
+						ec.message(),
+						[&]{
+							return fmt::format(
+								"[ws_connection:{}] unable to write: {}",
+								connection_id(),
+								ec.message() );
+						} );
 				}
 				// else: Operation aborted only in case of close was called.
 			}
@@ -391,11 +488,14 @@ class ws_connection_t final
 		void
 		graceful_close()
 		{
-			// TODO:
-			// Send close frame.
-
-			// That will close socket and ensure that outgoing data will be sent.
-			close_impl();
+			if( !m_awaiting_buffers.close_when_done() )
+			{
+				// TODO:
+				// Send close frame.
+				// m_awaiting_buffers.append( ??? );
+				m_awaiting_buffers.set_close_when_done();
+				init_write_if_necessary();
+			}
 		}
 
 
@@ -433,11 +533,12 @@ class ws_connection_t final
 		*/
 		template< typename MSG_BUILDER >
 		void
-		trigger_error_and_close( MSG_BUILDER && msg_builder )
+		trigger_error_and_close(
+			const std::string & reason,
+			MSG_BUILDER && msg_builder )
 		{
 			m_logger.error( std::move( msg_builder ) );
-
-			close_impl();
+			call_close_handler( reason );
 		}
 		//! \}
 
@@ -470,7 +571,7 @@ class ws_connection_t final
 		raw_resp_output_ctx_t m_resp_out_ctx;
 
 		//! Output buffers queue.
-		buffers_container_t m_awaiting_buffers;
+		ws_outgoing_data_t m_awaiting_buffers;
 
 		//! Logger for operation
 		logger_t & m_logger;
