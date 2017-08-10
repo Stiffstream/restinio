@@ -41,6 +41,17 @@ to_char_each( std::vector< int > source )
 	return result;
 }
 
+void
+print_as_hex( const raw_data_t & data )
+{
+	for( const auto & byte : data )
+	{
+		std::cout << std::hex << static_cast<std::int16_t>(byte) << " ";
+	}
+
+	std::cout << std::endl;
+}
+
 
 TEST_CASE( "Validate parser implementation details" , "[websocket][parser][impl]" )
 {
@@ -105,24 +116,124 @@ TEST_CASE( "Validate websocket message constructing" , "[websocket][parser][mess
 
 TEST_CASE( "Validate mask and unmask operations" , "[websocket][parser][mask]" )
 {
-	raw_data_t unmasked_bin_data_etalon{
-		to_char(0x48), to_char(0x65), to_char(0x6C), to_char(0x6C), to_char(0x6F) };
-
+	raw_data_t unmasked_bin_data_etalon = "Hello";
 	raw_data_t bin_data = unmasked_bin_data_etalon;
-
 	uint32_t mask_key = 0x3D21FA37;
-
 	mask_unmask_payload( mask_key, bin_data );
-
 	raw_data_t masked_bin_data_etalon{
 		to_char(0x7F), to_char(0x9F), to_char(0x4D), to_char(0x51), to_char(0x58) };
 
 	REQUIRE( bin_data == masked_bin_data_etalon );
-
 	mask_unmask_payload( mask_key, bin_data );
-
 	REQUIRE( bin_data == unmasked_bin_data_etalon );
+}
 
+TEST_CASE( "Reset parser" , "[websocket][parser][reset]" )
+{
+	raw_data_t bin_data{ to_char_each({0x81, 0x05}) };
+	ws_parser_t parser;
+	auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+
+	REQUIRE( nparsed == 2 );
+	REQUIRE( parser.header_parsed() == true );
+	auto ws_message_details = parser.current_message();
+	auto header = ws_message_details.m_header;
+	REQUIRE( ws_message_details.payload_len() == 5 );
+	parser.reset();
+	REQUIRE( parser.header_parsed() == false );
+	REQUIRE( parser.current_message().payload_len() == 0 );
+}
+
+TEST_CASE( "Parse header (2 bytes only)" , "[websocket][parser][read]" )
+{
+	{
+		raw_data_t bin_data{ to_char_each({0x81, 0x05}) };
+		ws_parser_t parser;
+		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+
+		REQUIRE( nparsed == 2 );
+		REQUIRE( parser.header_parsed() == true );
+
+		auto ws_message_details = parser.current_message();
+		auto header = ws_message_details.m_header;
+
+		REQUIRE( header.m_final_flag == true );
+		REQUIRE( header.m_rsv1_flag == false );
+		REQUIRE( header.m_rsv2_flag == false );
+		REQUIRE( header.m_rsv3_flag == false );
+		REQUIRE( header.m_opcode == opcode_t::text_frame );
+		REQUIRE( ws_message_details.payload_len() == 5 );
+	}
+}
+
+TEST_CASE( "Parse header (2 bytes + 2 bytes ext length)" , "[websocket][parser][read]" )
+{
+	{
+		// 127
+		raw_data_t bin_data{ to_char_each({0x82, 0x7E, 0x00, 0x7F}) };
+		ws_parser_t parser;
+		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+
+		REQUIRE( parser.current_message().payload_len() == 127 );
+	}
+	{
+		// 128
+		raw_data_t bin_data{ to_char_each({0x82, 0x7E, 0x00, 0x80}) };
+		ws_parser_t parser;
+		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+
+		REQUIRE( parser.current_message().payload_len() == 128 );
+	}
+	{
+		// 1000
+		raw_data_t bin_data{ to_char_each({0x82, 0x7E, 0x03, 0xE8}) };
+		ws_parser_t parser;
+		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+		REQUIRE( parser.current_message().payload_len() == 1000 );
+	}
+	{
+		// 32783
+		raw_data_t bin_data{ to_char_each({0x82, 0x7E, 0x80, 0x0F}) };
+		ws_parser_t parser;
+		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+		REQUIRE( parser.current_message().payload_len() == 32783 );
+	}
+}
+
+TEST_CASE( "Parse header (2 bytes + 8 bytes ext length)" , "[websocket][parser][read]" )
+{
+	{
+		raw_data_t bin_data{ to_char_each(
+			{0x82, 0x7F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7F}) };
+		ws_parser_t parser;
+		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+
+		REQUIRE( parser.current_message().payload_len() == 0x7F );
+	}
+	{
+		raw_data_t bin_data{ to_char_each(
+			{0x82, 0x7F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80}) };
+		ws_parser_t parser;
+		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+
+		REQUIRE( parser.current_message().payload_len() == 0x80 );
+	}
+	{
+		raw_data_t bin_data{ to_char_each(
+			{0x82, 0x7F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7F, 0x7F}) };
+		ws_parser_t parser;
+		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+
+		REQUIRE( parser.current_message().payload_len() == 0x7F7F );
+	}
+	{
+		raw_data_t bin_data{ to_char_each(
+			{0x82, 0x7F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x11}) };
+		ws_parser_t parser;
+		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+
+		REQUIRE( parser.current_message().payload_len() == 0x8011 );
+	}
 }
 
 TEST_CASE( "Parse simple message" , "[websocket][parser][read]" )
@@ -146,11 +257,6 @@ TEST_CASE( "Parse simple message" , "[websocket][parser][read]" )
 	REQUIRE( header.m_opcode == opcode_t::text_frame );
 
 	REQUIRE( ws_message_details.payload_len() == 5 );
-
-	parser.reset();
-
-	REQUIRE( parser.header_parsed() == false );
-	REQUIRE( parser.current_message().payload_len() == 0 );
 }
 
 TEST_CASE( "Parse simple message (chunked)" , "[websocket][parser][read]" )
@@ -214,6 +320,24 @@ TEST_CASE( "Write simple message" , "[websocket][parser][write]" )
 
 		raw_data_t etalon{
 			to_char_each({0x81, 0x05, 0x48, 0x65, 0x6C, 0x6C, 0x6F}) };
+
+		REQUIRE( bin_data == etalon );
+	}
+	{
+		std::string payload = "Hello";
+		ws_message_details_t m{true, opcode_t::text_frame, payload.size()};
+
+		std::uint32_t masking_key = 0x3D21FA37;
+		m.set_masking_key(masking_key);
+
+		mask_unmask_payload(masking_key, payload);
+
+		raw_data_t bin_data = write_message_details( m );
+		bin_data.append( payload );
+
+		raw_data_t etalon{
+			to_char_each(
+				{0x81, 0x85, 0x37, 0xFA, 0x21, 0x3D, 0x7F, 0x9F, 0x4D, 0x51, 0x58}) };
 
 		REQUIRE( bin_data == etalon );
 	}

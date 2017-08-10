@@ -104,7 +104,14 @@ struct ws_message_details_t
 	std::uint64_t
 	payload_len() const
 	{
-		return m_header.m_mask_flag? m_ext_payload.m_value: m_header.m_payload_len;
+		return m_header.m_payload_len > 125? m_ext_payload.m_value: m_header.m_payload_len;
+	}
+
+	void
+	set_masking_key( std::uint32_t value )
+	{
+		m_masking_key.m_value = value;
+		m_header.m_mask_flag = true;
 	}
 
 	header_t m_header;
@@ -330,6 +337,19 @@ class ws_parser_t
 			return header;
 		}
 
+		template <typename T>
+		void read_number_from_big_endian_bytes( T & number, const raw_data_t & data )
+		{
+			if( data.empty() )
+				return;
+
+			for( size_t i = 0 ; i < data.size() ; ++i )
+			{
+				auto shift_value = (data.size() - i - 1) * 8;
+				number |= ( static_cast<T>(data[i]) & 0xFF ) << shift_value;
+			}
+		}
+
 		ws_message_details_t::ext_payload_len_t
 		parse_ext_payload_len(
 			const ws_message_details_t::header_t & header,
@@ -343,8 +363,10 @@ class ws_parser_t
 					throw exception_t(
 						"Incorrect size of raw data: 2 bytes expected." );
 
-				ext_payload_len.m_value = data[0] << 8;
-				ext_payload_len.m_value |= data[1];
+				// ext_payload_len.m_value |= (data[0] & 0xFF) << 8;
+				// ext_payload_len.m_value |= (data[1] & 0xFF);
+
+				read_number_from_big_endian_bytes( ext_payload_len.m_value, data );
 			}
 			else if( header.m_payload_len == 127 )
 			{
@@ -357,14 +379,16 @@ class ws_parser_t
 					return static_cast<std::uint64_t>(byte) << shift_count;
 				};
 
-				ext_payload_len.m_value = left_shift_bytes( data[0], 56);
-				ext_payload_len.m_value |= left_shift_bytes( data[1], 48);
-				ext_payload_len.m_value |= left_shift_bytes( data[2], 40);
-				ext_payload_len.m_value |= left_shift_bytes( data[3], 32);
-				ext_payload_len.m_value |= left_shift_bytes( data[4], 24);
-				ext_payload_len.m_value |= left_shift_bytes( data[5], 16);
-				ext_payload_len.m_value |= left_shift_bytes( data[6], 8);
-				ext_payload_len.m_value |= data[7];
+				// ext_payload_len.m_value |= left_shift_bytes( data[0], 56);
+				// ext_payload_len.m_value |= left_shift_bytes( data[1], 48);
+				// ext_payload_len.m_value |= left_shift_bytes( data[2], 40);
+				// ext_payload_len.m_value |= left_shift_bytes( data[3], 32);
+				// ext_payload_len.m_value |= left_shift_bytes( data[4], 24);
+				// ext_payload_len.m_value |= left_shift_bytes( data[5], 16);
+				// ext_payload_len.m_value |= left_shift_bytes( data[6], 8);
+				// ext_payload_len.m_value |= data[7];
+
+				read_number_from_big_endian_bytes( ext_payload_len.m_value, data );
 			}
 
 			return ext_payload_len;
@@ -388,10 +412,12 @@ class ws_parser_t
 					return static_cast<std::uint32_t>(byte) << shift_count;
 				};
 
-				masking_key.m_value |= left_shift_bytes( data[0], 24);
-				masking_key.m_value |= left_shift_bytes( data[1], 16);
-				masking_key.m_value |= left_shift_bytes( data[2], 8);
-				masking_key.m_value |= data[3];
+				// masking_key.m_value |= left_shift_bytes( data[0], 24);
+				// masking_key.m_value |= left_shift_bytes( data[1], 16);
+				// masking_key.m_value |= left_shift_bytes( data[2], 8);
+				// masking_key.m_value |= data[3];
+
+				read_number_from_big_endian_bytes( masking_key.m_value, data );
 			}
 
 			return masking_key;
@@ -486,10 +512,10 @@ write_message_details(
 		mask[ 2 ] = ( masking_key >> 16 ) & 0xFF;
 		mask[ 3 ] = ( masking_key >> 24 ) & 0xFF;
 
-		result.push_back( mask[ 3 ] );
-		result.push_back( mask[ 2 ] );
-		result.push_back( mask[ 1 ] );
 		result.push_back( mask[ 0 ] );
+		result.push_back( mask[ 1 ] );
+		result.push_back( mask[ 2 ] );
+		result.push_back( mask[ 3 ] );
 	}
 
 	return result;
