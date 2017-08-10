@@ -307,11 +307,30 @@ class connection_t final
 			}
 		}
 
-		//! Move socket out of connection.
-		auto
-		move_socket()
+		struct upgrade_internals_t
 		{
-			auto res = std::move( m_socket );
+			upgrade_internals_t(
+				upgrade_internals_t && ) = default;
+
+			upgrade_internals_t(
+				stream_socket_t && socket,
+				timer_guard_instance_t && timer_guard )
+				:	m_socket{ std::move( socket ) }
+				,	m_timer_guard{ std::move( timer_guard ) }
+			{}
+
+			stream_socket_t m_socket;
+			timer_guard_instance_t m_timer_guard;
+		};
+
+		//! Move socket out of connection.
+		upgrade_internals_t
+		move_upgrade_internals()
+		{
+			// TODO: fix data race issue.
+			return upgrade_internals_t{
+				std::move( m_socket ),
+				std::move( m_timer_guard ) };
 		}
 
 		//! Пуее

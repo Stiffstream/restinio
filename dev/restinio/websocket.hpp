@@ -165,10 +165,11 @@ upgrade_to_websocket(
 	auto conn_ptr = std::move( req.m_connection );
 	auto & con = dynamic_cast< connection_t & >( *conn_ptr );
 
+	auto upgrade_internals = con.move_upgrade_internals();
 	auto ws_connection =
 		std::make_shared< impl::ws_connection_t >(
 			con.connection_id(),
-			con.move_socket(),
+			std::move( upgrade_internals.m_socket ),
 			con.get_settings(),
 			std::move( ws_message_handler ),
 			std::move( ws_close_handler ) );

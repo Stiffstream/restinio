@@ -119,6 +119,9 @@ class ws_connection_t final
 	public:
 		using message_handler_t = WS_MESSAGE_HANDLER;
 		using close_handler_t = WS_CLOSE_HANDLER;
+
+		using timer_factory_t = typename TRAITS::timer_factory_t;
+		using timer_guard_instance_t = typename timer_factory_t::timer_guard_instance_t;
 		using logger_t = typename TRAITS::logger_t;
 		using strand_t = typename TRAITS::strand_t;
 		using stream_socket_t = typename TRAITS::stream_socket_t;
@@ -130,6 +133,7 @@ class ws_connection_t final
 			stream_socket_t && socket,
 			//! Settings that are common for connections.
 			connection_settings_shared_ptr_t< TRAITS > settings,
+			timer_guard_instance_t timer_guard,
 			message_handler_t msg_handler,
 			close_handler_t close_handler )
 			:	connection_base_t{ conn_id }
@@ -137,7 +141,9 @@ class ws_connection_t final
 			,	m_strand{ m_socket.get_executor() }
 			,	m_settings{ std::move( settings ) }
 			,	m_input_header_buffer{ /*TODO: use constant */ 18 }
-			,	m_msg_handler{ msg_handler }
+			,	m_timer_guard{ std::move( timer_guard ) }
+			,	m_msg_handler{ std::move( msg_handler ) }
+			,	m_close_handler{ std::move( close_handler ) }
 			,	m_logger{ *( m_settings->m_logger ) }
 		{
 			// Notify of a new connection instance.
@@ -648,6 +654,9 @@ class ws_connection_t final
 
 		//! Common paramaters of a connection.
 		connection_settings_shared_ptr_t< TRAITS > m_settings;
+
+		//! Operation timeout guard.
+		timer_guard_instance_t m_timer_guard;
 
 		message_handler_t m_msg_handler;
 		close_handler_t m_close_handler;
