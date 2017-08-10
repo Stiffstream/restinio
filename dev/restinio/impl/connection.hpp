@@ -650,28 +650,20 @@ class connection_t final
 			//! parts of a response.
 			buffers_container_t bufs ) override
 		{
-			// TODO: Avoid heap allocation:
-
-			// Unfortunately ASIO tends to call a copy ctor for bufs
-			// If pass it to lambda as `bufs = std::move( bufs ),`
-			// so bufs_transmit_instance workaround is used.
-			auto bufs_transmit_instance =
-				std::make_unique< buffers_container_t >( std::move( bufs ) );
-
 			//! Run write message on io_service loop if possible.
 			asio::dispatch(
 				get_executor(),
 				[ this,
 					request_id,
 					response_output_flags,
-					bufs = std::move( bufs_transmit_instance ),
-					ctx = shared_from_this() ](){
+					actual_bufs = std::move( bufs ),
+					ctx = shared_from_this() ]() mutable {
 						try
 						{
 							write_response_parts_impl(
 								request_id,
 								response_output_flags,
-								std::move( *bufs ) );
+								std::move( actual_bufs ) );
 						}
 						catch( const std::exception & ex )
 						{

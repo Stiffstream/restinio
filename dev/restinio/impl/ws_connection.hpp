@@ -222,19 +222,15 @@ class ws_connection_t final
 		virtual void
 		write_data( buffers_container_t bufs ) override
 		{
-			// NOTE: See connection_t::write_response_parts impl.
-			auto bufs_transmit_instance =
-				std::make_unique< buffers_container_t >( std::move( bufs ) );
-
 			//! Run write message on io_service loop if possible.
 			asio::dispatch(
 				get_executor(),
 				[ this,
-					bufs = std::move( bufs_transmit_instance ),
-					ctx = shared_from_this() ](){
+					actual_bufs = std::move( bufs ),
+					ctx = shared_from_this() ]() mutable {
 						try
 						{
-							write_data_impl( std::move( *bufs ) );
+							write_data_impl( std::move( actual_bufs ) );
 						}
 						catch( const std::exception & ex )
 						{
