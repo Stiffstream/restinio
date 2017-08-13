@@ -80,6 +80,18 @@ class base_response_builder_t
 			return upcast_reference();
 		}
 
+		//! Add header field.
+		RESPONSE_BUILDER &
+		append_header(
+			http_field_t field_id,
+			std::string field_value )
+		{
+			m_header.set_field(
+				field_id,
+				std::move( field_value ) );
+			return upcast_reference();
+		}
+
 		//! Add header `Date` field.
 		RESPONSE_BUILDER &
 		append_header_date_field(
