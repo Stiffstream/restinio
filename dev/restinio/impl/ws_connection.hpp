@@ -23,6 +23,7 @@
 #include <restinio/impl/connection_settings.hpp>
 #include <restinio/impl/fixed_buffer.hpp>
 #include <restinio/impl/raw_resp_output_ctx.hpp>
+#include <restinio/ws_message.hpp>
 #include <restinio/impl/ws_parser.hpp>
 
 namespace restinio

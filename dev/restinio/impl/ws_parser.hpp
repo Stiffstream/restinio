@@ -14,22 +14,13 @@
 #include <stdexcept>
 
 #include <restinio/exception.hpp>
+#include <restinio/ws_message.hpp>
 
 namespace restinio
 {
 
 using byte_t = char;
 using raw_data_t = std::string;
-
-enum class opcode_t : std::uint8_t
-{
-	continuation_frame = 0x00,
-	text_frame = 0x01,
-	binary_frame = 0x02,
-	connection_close_frame = 0x08,
-	ping_frame = 0x09,
-	pong_frame = 0x0A
-};
 
 namespace impl
 {
@@ -41,10 +32,6 @@ const size_t WEBSOCKET_LONG_EXT_PAYLOAD_LENGTH = 8;
 const size_t WEBSOCKET_SHORT_EXT_LEN_CODE = 126;
 const size_t WEBSOCKET_LONG_EXT_LEN_CODE = 127;
 const size_t WEBSOCKET_MASKING_KEY_SIZE = 4;
-
-
-// using byte_t = std::uint8_t;
-// using raw_data_t = std::vector< byte_t >;
 
 //
 // ws_message_details_t
@@ -172,7 +159,7 @@ class ws_parser_t
 			while( parsed_bytes < size &&
 				m_current_state != state_t::header_parsed )
 			{
-				byte_t byte = data[parsed_bytes];
+				byte_t byte = static_cast< byte_t >( data[parsed_bytes] );
 
 				process_byte( byte );
 

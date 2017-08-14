@@ -11,42 +11,11 @@
 #include <functional>
 
 #include <restinio/connection_handle.hpp>
+#include <restinio/ws_message.hpp>
 #include <restinio/impl/ws_connection.hpp>
 
 namespace restinio
 {
-
-//
-// ws_message_t
-//
-
-//! WebSocket message.
-class ws_message_t final
-	:	public std::enable_shared_from_this< ws_message_t >
-{
-	public:
-		ws_message_t(
-			bool final,
-			opcode_t opcode,
-			std::string payload )
-			:	m_details{ final, opcode, payload.size() }
-			,	m_payload{ std::move( payload ) }
-		{}
-
-	private:
-		impl::ws_message_details_t m_details;
-		std::string m_payload;
-};
-
-//! Request handler, that is the type for calling request handlers.
-using ws_message_handle_t = std::shared_ptr< ws_message_t >;
-
-//
-// default_request_handler_t
-//
-
-using default_ws_message_handler_t =
-		std::function< void ( ws_message_handle_t ) >;
 
 //
 // websocket_t
