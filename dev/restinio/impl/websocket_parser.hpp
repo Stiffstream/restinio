@@ -164,14 +164,6 @@ class ws_parser_t
 {
 	public:
 
-		ws_parser_t()
-		{
-		}
-
-		~ws_parser_t()
-		{
-		}
-
 		size_t
 		parser_execute( const char * data, size_t size )
 		{
@@ -345,8 +337,9 @@ class ws_parser_t
 
 			for( size_t i = 0 ; i < data.size() ; ++i )
 			{
+				std::uint8_t byte = data[i];
 				auto shift_value = (data.size() - i - 1) * 8;
-				number |= ( static_cast<T>(data[i]) & 0xFF ) << shift_value;
+				number |= ( static_cast<T>(byte) ) << shift_value;
 			}
 		}
 
@@ -363,9 +356,6 @@ class ws_parser_t
 					throw exception_t(
 						"Incorrect size of raw data: 2 bytes expected." );
 
-				// ext_payload_len.m_value |= (data[0] & 0xFF) << 8;
-				// ext_payload_len.m_value |= (data[1] & 0xFF);
-
 				read_number_from_big_endian_bytes( ext_payload_len.m_value, data );
 			}
 			else if( header.m_payload_len == 127 )
@@ -378,15 +368,6 @@ class ws_parser_t
 				{
 					return static_cast<std::uint64_t>(byte) << shift_count;
 				};
-
-				// ext_payload_len.m_value |= left_shift_bytes( data[0], 56);
-				// ext_payload_len.m_value |= left_shift_bytes( data[1], 48);
-				// ext_payload_len.m_value |= left_shift_bytes( data[2], 40);
-				// ext_payload_len.m_value |= left_shift_bytes( data[3], 32);
-				// ext_payload_len.m_value |= left_shift_bytes( data[4], 24);
-				// ext_payload_len.m_value |= left_shift_bytes( data[5], 16);
-				// ext_payload_len.m_value |= left_shift_bytes( data[6], 8);
-				// ext_payload_len.m_value |= data[7];
 
 				read_number_from_big_endian_bytes( ext_payload_len.m_value, data );
 			}
@@ -411,11 +392,6 @@ class ws_parser_t
 				{
 					return static_cast<std::uint32_t>(byte) << shift_count;
 				};
-
-				// masking_key.m_value |= left_shift_bytes( data[0], 24);
-				// masking_key.m_value |= left_shift_bytes( data[1], 16);
-				// masking_key.m_value |= left_shift_bytes( data[2], 8);
-				// masking_key.m_value |= data[3];
 
 				read_number_from_big_endian_bytes( masking_key.m_value, data );
 			}
