@@ -142,6 +142,11 @@ restinio_message_complete_cb( http_parser * parser )
 
 	ctx->m_message_complete = true;
 	ctx->m_header.method( restinio::http_method_from_nodejs( parser->method ) );
-	ctx->m_header.should_keep_alive( 0 != http_should_keep_alive( parser ) );
+
+	if( 0 == parser->upgrade )
+		ctx->m_header.should_keep_alive( 0 != http_should_keep_alive( parser ) );
+	else
+		ctx->m_header.connection( http_connection_header_t::upgrade );
+
 	return 0;
 }

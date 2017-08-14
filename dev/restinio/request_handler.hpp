@@ -32,11 +32,16 @@ class websocket_t;
 class request_t final
 	:	public std::enable_shared_from_this< request_t >
 {
-	template < typename TRAITS, typename WS_MESSAGE_HANDLER >
+	template <
+			typename TRAITS,
+			typename WS_MESSAGE_HANDLER,
+			typename WS_CLOSE_HANDLER >
 	friend std::unique_ptr< websocket_t >
-	upgrade_to_websocket(			/*TODO params*/
-		request_t & ,
-		WS_MESSAGE_HANDLER ws_message_handler );
+	upgrade_to_websocket(
+		request_t & req,
+		http_header_fields_t upgrade_response_header_fields,
+		WS_MESSAGE_HANDLER ws_message_handler,
+		WS_CLOSE_HANDLER ws_close_handler );
 
 	public:
 		request_t(

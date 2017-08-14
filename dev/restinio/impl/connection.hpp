@@ -313,13 +313,16 @@ class connection_t final
 				upgrade_internals_t && ) = default;
 
 			upgrade_internals_t(
-				stream_socket_t && socket,
-				timer_guard_instance_t && timer_guard )
+				stream_socket_t socket,
+				strand_t strand,
+				timer_guard_instance_t timer_guard )
 				:	m_socket{ std::move( socket ) }
+				,	m_strand{ std::move( strand ) }
 				,	m_timer_guard{ std::move( timer_guard ) }
 			{}
 
 			stream_socket_t m_socket;
+			strand_t m_strand;
 			timer_guard_instance_t m_timer_guard;
 		};
 
@@ -330,6 +333,7 @@ class connection_t final
 			// TODO: fix data race issue.
 			return upgrade_internals_t{
 				std::move( m_socket ),
+				get_executor(),
 				std::move( m_timer_guard ) };
 		}
 

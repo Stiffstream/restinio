@@ -130,18 +130,19 @@ class ws_connection_t final
 			//! Connection id.
 			std::uint64_t conn_id,
 			//! Connection socket.
-			stream_socket_t && socket,
+			stream_socket_t socket,
+			strand_t strand,
+			timer_guard_instance_t timer_guard,
 			//! Settings that are common for connections.
 			connection_settings_shared_ptr_t< TRAITS > settings,
-			timer_guard_instance_t && timer_guard,
 			message_handler_t msg_handler,
 			close_handler_t close_handler )
-			:	connection_base_t{ conn_id }
+			:	ws_connection_base_t{ conn_id }
 			,	m_socket{ std::move( socket ) }
-			,	m_strand{ m_socket.get_executor() }
+			,	m_strand{ std::move( strand ) }
+			,	m_timer_guard{ std::move( timer_guard ) }
 			,	m_settings{ std::move( settings ) }
 			,	m_input_header_buffer{ /*TODO: use constant */ 18 }
-			,	m_timer_guard{ std::move( timer_guard ) }
 			,	m_msg_handler{ std::move( msg_handler ) }
 			,	m_close_handler{ std::move( close_handler ) }
 			,	m_logger{ *( m_settings->m_logger ) }
@@ -639,10 +640,10 @@ class ws_connection_t final
 		void
 		call_close_handler( const std::string & reason )
 		{
-			if( m_close_handler )
+			if( !m_close_handler_was_called )
 			{
 				m_close_handler( reason );
-				m_close_handler = close_handler_t{};
+				m_close_handler_was_called = true;
 			}
 		}
 
@@ -659,6 +660,8 @@ class ws_connection_t final
 		timer_guard_instance_t m_timer_guard;
 
 		message_handler_t m_msg_handler;
+
+		bool m_close_handler_was_called{ false };
 		close_handler_t m_close_handler;
 
 		//! Input routine.

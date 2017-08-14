@@ -165,13 +165,16 @@ upgrade_to_websocket(
 	auto conn_ptr = std::move( req.m_connection );
 	auto & con = dynamic_cast< connection_t & >( *conn_ptr );
 
+	using ws_connection_t = impl::ws_connection_t< TRAITS, WS_MESSAGE_HANDLER, WS_CLOSE_HANDLER >;
+
 	auto upgrade_internals = con.move_upgrade_internals();
 	auto ws_connection =
-		std::make_shared< impl::ws_connection_t >(
+		std::make_shared< ws_connection_t >(
 			con.connection_id(),
 			std::move( upgrade_internals.m_socket ),
-			con.get_settings(),
+			std::move( upgrade_internals.m_strand ),
 			std::move( upgrade_internals.m_timer_guard ),
+			con.get_settings(),
 			std::move( ws_message_handler ),
 			std::move( ws_close_handler ) );
 
@@ -186,7 +189,7 @@ upgrade_to_websocket(
 				impl::content_length_field_presence_t::skip_content_length ) );
 	}
 
-	ws_connection.write_data( std::move( upgrade_response_bufs ) );
+	ws_connection->write_data( std::move( upgrade_response_bufs ) );
 
 	return std::make_unique< websocket_t >( std::move( ws_connection ) );
 }
@@ -212,7 +215,7 @@ upgrade_to_websocket(
 		std::move( sec_websocket_accept_field_value ) );
 
 	return
-		upgrade_to_websocket(
+		upgrade_to_websocket< TRAITS, WS_MESSAGE_HANDLER, WS_CLOSE_HANDLER >(
 			req,
 			std::move( upgrade_response_header_fields ),
 			std::move( ws_message_handler ),
@@ -245,7 +248,7 @@ upgrade_to_websocket(
 		std::move( sec_websocket_protocol_field_value ) );
 
 	return
-		upgrade_to_websocket(
+		upgrade_to_websocket< TRAITS, WS_MESSAGE_HANDLER, WS_CLOSE_HANDLER >(
 			req,
 			std::move( upgrade_response_header_fields ),
 			std::move( ws_message_handler ),

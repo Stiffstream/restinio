@@ -587,8 +587,10 @@ struct http_header_field_t
 class http_header_fields_t;
 namespace impl
 {
+
 void
 append_last_field_accessor( http_header_fields_t &, const std::string & );
+
 } /* namespace impl */
 
 //
