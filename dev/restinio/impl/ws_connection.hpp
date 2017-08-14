@@ -23,7 +23,7 @@
 #include <restinio/impl/connection_settings.hpp>
 #include <restinio/impl/fixed_buffer.hpp>
 #include <restinio/impl/raw_resp_output_ctx.hpp>
-#include <restinio/impl/websocket_parser.hpp>
+#include <restinio/impl/ws_parser.hpp>
 
 namespace restinio
 {
@@ -263,6 +263,8 @@ class ws_connection_t final
 						"[ws_connection:{}] start reading header",
 						connection_id() );
 			} );
+
+			std::cout << "START READ HEADER\n" << std::endl;
 
 			if( 0 == m_input_header_buffer.length() )
 			{
