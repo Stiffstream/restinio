@@ -57,7 +57,7 @@ do_request(
 			while( asio::read( socket, response_stream, asio::transfer_at_least(1), error) )
 				sout << &response_stream;
 
-			if (error != asio::error::eof)
+			if ( error != asio::error::eof )
 				throw asio::system_error(error);
 
 			result = sout.str();

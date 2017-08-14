@@ -39,7 +39,8 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 							auto ws =
 								restinio::upgrade_to_websocket< traits_t >(
 									*req,
-									std::string{ "sec_websocket_accept_field_value" }, // TODO: make sec_websocket_accept_field_value
+									// TODO: make sec_websocket_accept_field_value
+									std::string{ "sec_websocket_accept_field_value" },
 									[]( restinio::ws_message_handle_t m ){},
 									[]( std::string reason ){} );
 
@@ -68,7 +69,10 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 
 	REQUIRE_NOTHROW( response = do_request( request_str ) );
 
-	std::cout << "response:\n" << response << std::endl;
+	REQUIRE_THAT( response, Catch::StartsWith( "HTTP/1.1 101 Switching Protocols" ) );
+	REQUIRE_THAT( response, Catch::Contains( "Connection: Upgrade" ) );
+	REQUIRE_THAT( response, Catch::Contains( "Sec-WebSocket-Accept:" ) );
+	REQUIRE_THAT( response, Catch::Contains( "Upgrade: websocket" ) );
 
 	http_server.close();
 }
