@@ -107,9 +107,6 @@ class websocket_t
 				bufs.emplace_back(
 					impl::write_message_details( details ) );
 
-				// TODO: We have to check masking key is present
-				// and may be update payload.
-
 				bufs.emplace_back( std::move( payload ) );
 
 				m_ws_connection_handle->write_data( std::move( bufs ) );

@@ -14,6 +14,7 @@
 
 #include <restinio/all.hpp>
 #include <restinio/impl/websocket_parser.hpp>
+#include <restinio/websocket.hpp>
 
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
