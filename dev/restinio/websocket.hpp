@@ -171,6 +171,7 @@ upgrade_to_websocket(
 			con.connection_id(),
 			std::move( upgrade_internals.m_socket ),
 			con.get_settings(),
+			std::move( upgrade_internals.m_timer_guard ),
 			std::move( ws_message_handler ),
 			std::move( ws_close_handler ) );
 

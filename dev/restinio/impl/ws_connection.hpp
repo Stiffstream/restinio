@@ -133,7 +133,7 @@ class ws_connection_t final
 			stream_socket_t && socket,
 			//! Settings that are common for connections.
 			connection_settings_shared_ptr_t< TRAITS > settings,
-			timer_guard_instance_t timer_guard,
+			timer_guard_instance_t && timer_guard,
 			message_handler_t msg_handler,
 			close_handler_t close_handler )
 			:	connection_base_t{ conn_id }
