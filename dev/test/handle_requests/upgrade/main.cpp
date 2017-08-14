@@ -17,7 +17,7 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
-TEST_CASE( "upgrade" , "[upgrade]" )
+TEST_CASE( "Upgrade" , "[upgrade]" )
 {
 	using traits_t =
 		restinio::traits_t<
@@ -54,24 +54,21 @@ TEST_CASE( "upgrade" , "[upgrade]" )
 
 	http_server.open();
 
-	SECTION( "GET" )
-	{
-		std::string response;
-		const char * request_str =
-			"GET /chat HTTP/1.1\r\n"
-			"Host: 127.0.0.1\r\n"
-			"Upgrade: websocket\r\n"
-			"Connection: Upgrade\r\n"
-			"Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==\r\n"
-			"Sec-WebSocket-Protocol: chat\r\n"
-			"Sec-WebSocket-Version: 1\r\n"
-			"User-Agent: unit-test\r\n"
-			"\r\n";
+	std::string response;
+	const char * request_str =
+		"GET /chat HTTP/1.1\r\n"
+		"Host: 127.0.0.1\r\n"
+		"Upgrade: websocket\r\n"
+		"Connection: Upgrade\r\n"
+		"Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==\r\n"
+		"Sec-WebSocket-Protocol: chat\r\n"
+		"Sec-WebSocket-Version: 1\r\n"
+		"User-Agent: unit-test\r\n"
+		"\r\n";
 
-		REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request( request_str ) );
 
-		std::cout << "response:\n" << response << std::endl;
-	}
+	std::cout << "response:\n" << response << std::endl;
 
 	http_server.close();
 }

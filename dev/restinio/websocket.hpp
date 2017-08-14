@@ -147,7 +147,7 @@ upgrade_to_websocket(
 	// TODO: check if upgrade request.
 
 	//! Check if mandatory field is available.
-	if( upgrade_response_header_fields.has_field( http_field::sec_websocket_accept ) )
+	if( !upgrade_response_header_fields.has_field( http_field::sec_websocket_accept ) )
 	{
 		throw exception_t{
 			fmt::format( "{} field is mandatory for upgrade response",
@@ -159,7 +159,6 @@ upgrade_to_websocket(
 		upgrade_response_header_fields.set_field( http_field::upgrade, "websocket" );
 	}
 
-	buffers_container_t upgrade_response_bufs;
 
 	using connection_t = impl::connection_t< TRAITS >;
 	auto conn_ptr = std::move( req.m_connection );
@@ -178,6 +177,7 @@ upgrade_to_websocket(
 			std::move( ws_message_handler ),
 			std::move( ws_close_handler ) );
 
+	buffers_container_t upgrade_response_bufs;
 	{
 		http_response_header_t upgrade_response_header{ 101, "Switching Protocols" };
 		upgrade_response_header.swap_fields( upgrade_response_header_fields );

@@ -554,7 +554,8 @@ class ws_connection_t final
 				m_logger.trace( [&]{
 					return fmt::format(
 							"[ws_connection:{}] outgoing data was sent: {}b",
-							connection_id() );
+							connection_id(),
+							written );
 				} );
 
 				if( m_socket.is_open() )
