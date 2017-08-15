@@ -25,13 +25,13 @@ using raw_data_t = std::string;
 namespace impl
 {
 
-const size_t WEBSOCKET_HEADER_SIZE = 2;
-const size_t WEBSOCKET_MAX_PAYLOAD_SIZE_WITHOUT_EXT = 125;
-const size_t WEBSOCKET_SHORT_EXT_PAYLOAD_LENGTH = 2;
-const size_t WEBSOCKET_LONG_EXT_PAYLOAD_LENGTH = 8;
-const size_t WEBSOCKET_SHORT_EXT_LEN_CODE = 126;
-const size_t WEBSOCKET_LONG_EXT_LEN_CODE = 127;
-const size_t WEBSOCKET_MASKING_KEY_SIZE = 4;
+constexpr size_t WEBSOCKET_FIRST_TWO_BYTES_SIZE = 2;
+constexpr size_t WEBSOCKET_MAX_PAYLOAD_SIZE_WITHOUT_EXT = 125;
+constexpr size_t WEBSOCKET_SHORT_EXT_PAYLOAD_LENGTH = 2;
+constexpr size_t WEBSOCKET_LONG_EXT_PAYLOAD_LENGTH = 8;
+constexpr size_t WEBSOCKET_SHORT_EXT_LEN_CODE = 126;
+constexpr size_t WEBSOCKET_LONG_EXT_LEN_CODE = 127;
+constexpr size_t WEBSOCKET_MASKING_KEY_SIZE = 4;
 
 //
 // ws_message_details_t
@@ -46,36 +46,26 @@ struct ws_message_details_t
 
 	ws_message_details_t( bool final, opcode_t opcode, size_t payload_len )
 	{
-		m_header.m_final_flag = final;
-		m_header.m_opcode = opcode;
+		m_final_flag = final;
+		m_opcode = opcode;
 
 		if( payload_len > WEBSOCKET_MAX_PAYLOAD_SIZE_WITHOUT_EXT )
 		{
-			m_header.m_payload_len = payload_len > 0xFFFF ?
+			m_payload_len = payload_len > 0xFFFF ?
 				WEBSOCKET_LONG_EXT_LEN_CODE:
 				WEBSOCKET_SHORT_EXT_LEN_CODE;
 
-			m_ext_payload.m_value = payload_len;
+			m_ext_payload_len = payload_len;
 		}
 		else
 		{
-			m_header.m_payload_len = payload_len;
+			m_payload_len = payload_len;
 		}
 	}
 
 	struct header_t
 	{
-		bool m_final_flag = true;
 
-		bool m_rsv1_flag = false;
-		bool m_rsv2_flag = false;
-		bool m_rsv3_flag = false;
-
-		opcode_t m_opcode = opcode_t::continuation_frame;
-
-		bool m_mask_flag = false;
-
-		std::uint8_t m_payload_len = 0;
 	};
 
 	struct ext_payload_len_t
@@ -91,19 +81,31 @@ struct ws_message_details_t
 	std::uint64_t
 	payload_len() const
 	{
-		return m_header.m_payload_len > 125? m_ext_payload.m_value: m_header.m_payload_len;
+		return m_payload_len > 125? m_ext_payload_len: m_payload_len;
 	}
 
 	void
 	set_masking_key( std::uint32_t value )
 	{
-		m_masking_key.m_value = value;
-		m_header.m_mask_flag = true;
+		m_masking_key = value;
+		m_mask_flag = true;
 	}
 
-	header_t m_header;
-	ext_payload_len_t m_ext_payload;
-	masking_key_t m_masking_key;
+	bool m_final_flag = true;
+
+	bool m_rsv1_flag = false;
+	bool m_rsv2_flag = false;
+	bool m_rsv3_flag = false;
+
+	opcode_t m_opcode = opcode_t::continuation_frame;
+
+	bool m_mask_flag = false;
+
+	std::uint8_t m_payload_len = 0;
+
+	std::uint64_t m_ext_payload_len = 0;
+
+	std::uint32_t m_masking_key = 0;
 };
 
 //! Data with expected size.
@@ -180,7 +182,7 @@ class ws_parser_t
 		{
 			m_current_state = state_t::waiting_for_first_2_bytes;
 			m_current_msg = ws_message_details_t();
-			m_expected_data.reset( WEBSOCKET_HEADER_SIZE );
+			m_expected_data.reset( WEBSOCKET_FIRST_TWO_BYTES_SIZE );
 		}
 
 		const ws_message_details_t &
@@ -191,7 +193,7 @@ class ws_parser_t
 
 	private:
 
-		impl::expected_data_t m_expected_data{ WEBSOCKET_HEADER_SIZE };
+		impl::expected_data_t m_expected_data{ WEBSOCKET_FIRST_TWO_BYTES_SIZE };
 
 		ws_message_details_t m_current_msg;
 
@@ -215,7 +217,7 @@ class ws_parser_t
 
 				case state_t::waiting_for_first_2_bytes:
 
-					process_header();
+					process_first_2_bytes();
 					break;
 
 				case state_t::waiting_for_ext_len:
@@ -232,12 +234,12 @@ class ws_parser_t
 		}
 
 		void
-		process_header()
+		process_first_2_bytes()
 		{
-			m_current_msg.m_header = parse_header(
+			parse_first_2_bytes(
 				m_expected_data.m_loaded_data );
 
-			size_t payload_len = m_current_msg.m_header.m_payload_len;
+			size_t payload_len = m_current_msg.m_payload_len;
 
 			if( payload_len > WEBSOCKET_MAX_PAYLOAD_SIZE_WITHOUT_EXT )
 			{
@@ -249,7 +251,7 @@ class ws_parser_t
 
 				m_current_state = state_t::waiting_for_ext_len;
 			}
-			else if( m_current_msg.m_header.m_mask_flag )
+			else if( m_current_msg.m_mask_flag )
 			{
 				size_t expected_data_size = WEBSOCKET_MASKING_KEY_SIZE;
 				m_expected_data.reset( expected_data_size );
@@ -268,11 +270,11 @@ class ws_parser_t
 		void
 		process_extended_length()
 		{
-			m_current_msg.m_ext_payload = parse_ext_payload_len(
-				m_current_msg.m_header,
+			parse_ext_payload_len(
+				m_current_msg.m_payload_len,
 				m_expected_data.m_loaded_data );
 
-			if( m_current_msg.m_header.m_mask_flag )
+			if( m_current_msg.m_mask_flag )
 			{
 				size_t expected_data_size = WEBSOCKET_MASKING_KEY_SIZE;
 				m_expected_data.reset( expected_data_size );
@@ -288,32 +290,29 @@ class ws_parser_t
 		void
 		process_masking_key()
 		{
-			m_current_msg.m_masking_key = parse_masking_key(
-				m_current_msg.m_header,
+			parse_masking_key(
+				m_current_msg.m_mask_flag,
 				m_expected_data.m_loaded_data );
 
 			m_current_state = state_t::header_parsed;
 		}
 
 		ws_message_details_t::header_t
-		parse_header( const raw_data_t & data )
+		parse_first_2_bytes(
+			const raw_data_t & data )
 		{
 			if( data.size() != 2 )
 				throw exception_t( "Incorrect size of raw data: 2 bytes expected." );
 
-			ws_message_details_t::header_t header;
+			m_current_msg.m_final_flag = data[0] & 0x80;
+			m_current_msg.m_rsv1_flag = data[0] & 0x40;
+			m_current_msg.m_rsv2_flag = data[0] & 0x20;
+			m_current_msg.m_rsv3_flag = data[0] & 0x10;
 
-			header.m_final_flag = data[0] & 0x80;
-			header.m_rsv1_flag = data[0] & 0x40;
-			header.m_rsv2_flag = data[0] & 0x20;
-			header.m_rsv3_flag = data[0] & 0x10;
+			m_current_msg.m_opcode = static_cast< opcode_t >( data[0] & 0x0F );
 
-			header.m_opcode = static_cast< opcode_t >( data[0] & 0x0F );
-
-			header.m_mask_flag = data[1] & 0x80;
-			header.m_payload_len = data[1] & 0x7F;
-
-			return header;
+			m_current_msg.m_mask_flag = data[1] & 0x80;
+			m_current_msg.m_payload_len = data[1] & 0x7F;
 		}
 
 		template <typename T>
@@ -330,22 +329,21 @@ class ws_parser_t
 			}
 		}
 
-		ws_message_details_t::ext_payload_len_t
+		void
 		parse_ext_payload_len(
-			const ws_message_details_t::header_t & header,
+			std::uint8_t payload_len,
 			const raw_data_t & data )
 		{
-			ws_message_details_t::ext_payload_len_t ext_payload_len;
-
-			if( header.m_payload_len == 126 )
+			if( payload_len == 126 )
 			{
 				if( data.size() != 2 )
 					throw exception_t(
 						"Incorrect size of raw data: 2 bytes expected." );
 
-				read_number_from_big_endian_bytes( ext_payload_len.m_value, data );
+				read_number_from_big_endian_bytes(
+					m_current_msg.m_ext_payload_len, data );
 			}
-			else if( header.m_payload_len == 127 )
+			else if( payload_len == 127 )
 			{
 				if( data.size() != 8 )
 					throw exception_t(
@@ -356,20 +354,17 @@ class ws_parser_t
 					return static_cast<std::uint64_t>(byte) << shift_count;
 				};
 
-				read_number_from_big_endian_bytes( ext_payload_len.m_value, data );
+				read_number_from_big_endian_bytes(
+					m_current_msg.m_ext_payload_len, data );
 			}
-
-			return ext_payload_len;
 		}
 
-		ws_message_details_t::masking_key_t
+		void
 		parse_masking_key(
-			const ws_message_details_t::header_t & header,
+			bool mask_flag,
 			const raw_data_t & data )
 		{
-			ws_message_details_t::masking_key_t masking_key;
-
-			if( header.m_mask_flag )
+			if( mask_flag )
 			{
 				if( data.size() != 4 )
 					throw exception_t(
@@ -380,10 +375,9 @@ class ws_parser_t
 					return static_cast<std::uint32_t>(byte) << shift_count;
 				};
 
-				read_number_from_big_endian_bytes( masking_key.m_value, data );
+				read_number_from_big_endian_bytes(
+					m_current_msg.m_masking_key, data );
 			}
-
-			return masking_key;
 		}
 
 };
@@ -411,25 +405,25 @@ write_message_details(
 
 	byte_t byte = 0x00;
 
-	if( message.m_header.m_final_flag )
+	if( message.m_final_flag )
 		byte |= 0x80;
-	if( message.m_header.m_rsv1_flag )
+	if( message.m_rsv1_flag )
 		byte |= 0x40;
-	if( message.m_header.m_rsv2_flag )
+	if( message.m_rsv2_flag )
 		byte |= 0x20;
-	if( message.m_header.m_rsv3_flag )
+	if( message.m_rsv3_flag )
 		byte |= 0x10;
 
-	byte |= static_cast< std::uint8_t> (message.m_header.m_opcode) & 0x0F;
+	byte |= static_cast< std::uint8_t> (message.m_opcode) & 0x0F;
 
 	result.push_back( byte );
 
 	byte = 0x00;
 
-	if( message.m_header.m_mask_flag )
+	if( message.m_mask_flag )
 		byte |= 0x80;
 
-	auto length = message.m_header.m_payload_len;
+	auto length = message.m_payload_len;
 
 	if( length < 126 )
 	{
@@ -442,7 +436,7 @@ write_message_details(
 
 		result.push_back( byte );
 
-		auto ext_len = message.m_ext_payload.m_value;
+		auto ext_len = message.m_ext_payload_len;
 
         result.push_back( ( ext_len >>  8 ) & 0xFF );
         result.push_back(   ext_len         & 0xFF );
@@ -453,7 +447,7 @@ write_message_details(
 
 		result.push_back( byte );
 
-		auto ext_len = message.m_ext_payload.m_value;
+		auto ext_len = message.m_ext_payload_len;
 
 		result.push_back( ( ext_len >> 56 ) & 0xFF );
 		result.push_back( ( ext_len >> 48 ) & 0xFF );
@@ -465,9 +459,9 @@ write_message_details(
 		result.push_back( ext_len & 0xFF );
 	}
 
-	if( message.m_header.m_mask_flag )
+	if( message.m_mask_flag )
 	{
-		auto masking_key = message.m_masking_key.m_value;
+		auto masking_key = message.m_masking_key;
 
 		uint8_t mask[ 4 ] = { };
 		mask[ 0 ] = masking_key & 0xFF;
