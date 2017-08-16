@@ -367,7 +367,6 @@ class ws_connection_t final
 			const std::error_code & ec,
 			std::size_t length )
 		{
-			std::cout << "AFTER READ HEADER: " << length << "bytes\n";
 			if( !ec )
 			{
 				m_input.m_buf.obtained_bytes( length );
@@ -385,8 +384,6 @@ class ws_connection_t final
 		{
 			// TODO: parse header
 			// and
-
-			std::cout << "CONSUME HEADER FROM BUFFER\n";
 
 			m_input.m_parser.parser_execute( data, length );
 
@@ -708,7 +705,6 @@ class ws_connection_t final
 		void
 		call_handler_on_current_message()
 		{
-			std::cout << "CALL HANDLER\n";
 			auto & current_header = m_input.m_parser.current_message();
 			auto & current_payload = m_input.m_payload;
 
