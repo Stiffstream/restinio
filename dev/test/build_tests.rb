@@ -28,7 +28,7 @@ MxxRu::Cpp::composite_target {
 	# ================================================================
 	# Websocket tests
 
-	required_prj( "test/handle_requests/upgrade/prj.ut.rb" )
-	required_prj( "test/websocket/parser/prj.ut.rb" )
+	# required_prj( "test/handle_requests/upgrade/prj.ut.rb" )
+	# required_prj( "test/websocket/parser/prj.ut.rb" )
 	required_prj( "test/websocket/ws_connection/prj.ut.rb" )
 }

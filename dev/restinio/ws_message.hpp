@@ -54,6 +54,10 @@ class ws_message_t final
 	:	public std::enable_shared_from_this< ws_message_t >
 {
 	public:
+
+		ws_message_t()
+		{}
+
 		ws_message_t(
 			ws_message_header_t header,
 			std::string payload )
