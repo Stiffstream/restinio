@@ -114,12 +114,14 @@ create_header_string(
 		{
 			constexpr const char header_part2_2[] = "Connection: close\r\n";
 			result.append( header_part2_2, ct_string_len( header_part2_2 ) );
+			break;
 		}
 
 		case http_connection_header_t::upgrade:
 		{
 			constexpr const char header_part2_3[] = "Connection: Upgrade\r\n";
 			result.append( header_part2_3, ct_string_len( header_part2_3 ) );
+			break;
 		}
 	}
 
