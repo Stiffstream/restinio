@@ -32,6 +32,21 @@ enum class opcode_t : std::uint8_t
 //! Websocket message payload.
 struct ws_message_header_t
 {
+
+	ws_message_header_t() = default;
+
+	ws_message_header_t(
+		bool is_final,
+		opcode_t opcode,
+		std::uint64_t payload_len,
+		std::uint32_t masking_key = 0 )
+	:	m_is_final{ is_final }
+	,	m_opcode{ opcode }
+	,	m_payload_len{ payload_len }
+	,	m_masking_key{ masking_key }
+	{
+	}
+
 	//! Final flag.
 	bool m_is_final = true;
 
@@ -54,12 +69,27 @@ class ws_message_t final
 	:	public std::enable_shared_from_this< ws_message_t >
 {
 	public:
+
+		ws_message_t() = default;
+
 		ws_message_t(
 			ws_message_header_t header,
 			std::string payload )
 			:	m_header{ std::move( header ) }
 			,	m_payload{ std::move( payload ) }
 		{}
+
+		const ws_message_header_t&
+		header() const
+		{
+			return m_header;
+		}
+
+		const std::string&
+		payload() const
+		{
+			return m_payload;
+		}
 
 	private:
 

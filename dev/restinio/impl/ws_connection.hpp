@@ -104,6 +104,34 @@ class ws_outgoing_data_t
 };
 
 //
+// ws_connection_input_t
+//
+
+struct ws_connection_input_t
+{
+	ws_connection_input_t( std::size_t buffer_size )
+		:	m_buf{ buffer_size }
+	{}
+
+	//! websocket parser.
+	impl::ws_parser_t m_parser;
+
+	//! Input buffer.
+	fixed_buffer_t m_buf;
+
+	//! Current payload.
+	std::string m_payload;
+
+	//! Prepare parser for reading new http-message.
+	void
+	reset_parser_and_payload()
+	{
+		m_parser.reset();
+		m_payload.clear();
+	}
+};
+
+//
 // ws_connection_t
 //
 
@@ -143,7 +171,7 @@ class ws_connection_t final
 			,	m_strand{ std::move( strand ) }
 			,	m_timer_guard{ std::move( timer_guard ) }
 			,	m_settings{ std::move( settings ) }
-			,	m_input_header_buffer{ /*TODO: use constant */ 18 }
+			,	m_input{ /*TODO: use constant */ 18 }
 			,	m_msg_handler{ std::move( msg_handler ) }
 			,	m_close_handler{ std::move( close_handler ) }
 			,	m_logger{ *( m_settings->m_logger ) }
@@ -186,6 +214,11 @@ class ws_connection_t final
 				[ this, ctx = shared_from_this() ](){
 					try
 					{
+						m_logger.trace( [&]{
+							return fmt::format(
+								"[ws_connection:{}] close",
+								connection_id() );
+						} );
 						graceful_close();
 					}
 					catch( const std::exception & ex )
@@ -265,39 +298,53 @@ class ws_connection_t final
 						connection_id() );
 			} );
 
-			std::cout << "START READ HEADER\n" << std::endl;
+			// Prepare parser for consuming new message.
+			m_input.reset_parser_and_payload();
 
-			if( 0 == m_input_header_buffer.length() )
+			if( 0 == m_input.m_buf.length() )
 			{
-				m_socket.async_read_some(
-					m_input_header_buffer.make_asio_buffer(),
-					asio::bind_executor(
-						get_executor(),
-						[ this, ctx = shared_from_this() ](
-							const asio::error_code & ec,
-							std::size_t length ){
-								try
-								{
-									after_read_header( ec, length );
-								}
-								catch( const std::exception & ex )
-								{
-									trigger_error_and_close(
-										ex.what(),
-										[&]{
-											return fmt::format(
-												"[ws_connection:{}] after read header callback error: {}",
-												connection_id(),
-												ex.what() );
-										} );
-								}
-							} ) );
+				consume_message();
 			}
 			else
 			{
-				// Has something to read from m_input_header_buffer.
-				consume_header_from_buffer();
+				// Has something to read from m_input.m_buf.
+				consume_header_from_buffer(
+					m_input.m_buf.bytes(), m_input.m_buf.length() );
 			}
+		}
+
+		inline void
+		consume_message()
+		{
+			m_logger.trace( [&]{
+				return fmt::format(
+						"[ws_connection:{}] continue reading message",
+						connection_id() );
+			} );
+
+			m_socket.async_read_some(
+				m_input.m_buf.make_asio_buffer(),
+				asio::bind_executor(
+					get_executor(),
+					[ this, ctx = shared_from_this() ](
+						const asio::error_code & ec,
+						std::size_t length ){
+							try
+							{
+								after_read_header( ec, length );
+							}
+							catch( const std::exception & ex )
+							{
+								trigger_error_and_close(
+									ex.what(),
+									[&]{
+										return fmt::format(
+											"[ws_connection:{}] after read header callback error: {}",
+											connection_id(),
+											ex.what() );
+									} );
+							}
+						} ) );
 		}
 
 		//! Handle read error (reading header or payload)
@@ -322,8 +369,8 @@ class ws_connection_t final
 		{
 			if( !ec )
 			{
-				m_input_header_buffer.obtained_bytes( length );
-				consume_header_from_buffer();
+				m_input.m_buf.obtained_bytes( length );
+				consume_header_from_buffer( m_input.m_buf.bytes(), length );
 			}
 			else
 			{
@@ -333,48 +380,63 @@ class ws_connection_t final
 
 		//! Parse header from internal buffer.
 		void
-		consume_header_from_buffer()
+		consume_header_from_buffer( const char * data, std::size_t length )
 		{
 			// TODO: parse header
 			// and
 
-			// if header parsing is complete:
-			// m_current_message = new_message( header-smth, payload_length )
-			// m_current_message.m_payload
-			// if( 0 < m_input_header_buffer.length() )
-			// {
-			// 	const auto payload_part_size =
-			// 		std::min(
-			// 			m_input_header_buffer.length(),
-			// 			payload_length );
+			const auto nparsed = m_input.m_parser.parser_execute( data, length );
 
-			// 	std::memcpy(
-			// 		m_current_message.data(),
-			// 		m_input_header_buffer.bytes(),
-			// 		payload_part_size );
+			m_input.m_buf.consumed_bytes( nparsed );
 
-			// 	m_input_header_buffer.consumed_bytes( payload_part_size );
+			if( m_input.m_parser.header_parsed() )
+			{
+			// 	// if header parsing is complete:
+			// 	// m_current_message = new_message( header-smth, payload_length )
+			// 	// m_current_message.m_payload
 
-			// 	if( payload_part_size == payload_length )
-			// 	{
-			// 		// All message is obtained.
-			// 		call_handler_on_current_message();
-			// 	}
-			// 	else
-			// 	{
-			// 		// Read the rest of payload:
-			// 		start_read_payload(
-			// 			m_current_message.data() + payload_part_size,
-			// 			payload_length - payload_part_size );
-			// 	}
-			// }
+				auto payload_length = m_input.m_parser.current_message().payload_len();
+				m_input.m_payload.resize( payload_length );
+
+				if( 0 < m_input.m_buf.length() )
+				{
+					const auto payload_part_size =
+						std::min(
+							m_input.m_buf.length(),
+							payload_length );
+
+					std::memcpy(
+						&m_input.m_payload.front(),
+						m_input.m_buf.bytes(),
+						payload_part_size );
+
+					m_input.m_buf.consumed_bytes( payload_part_size );
+
+					if( payload_part_size == payload_length )
+					{
+						// All message is obtained.
+						call_handler_on_current_message();
+					}
+					else
+					{
+						// Read the rest of payload:
+						start_read_payload(
+							&m_input.m_payload.front() + payload_part_size,
+							payload_length - payload_part_size );
+					}
+				}
+			}
+			else
+			{
+				consume_message();
+			}
 		}
 
 		//! Start reading message payload.
 		void
 		start_read_payload(
 			//! A pointer to the remainder of unfetched payload.
-			const char * payload_data,
+			char * payload_data,
 			//! The size of the remainder of unfetched payload.
 			std::size_t length_remaining )
 		{
@@ -414,7 +476,7 @@ class ws_connection_t final
 		//! Handle read operation result, when reading payload.
 		void
 		after_read_payload(
-			const char * payload_data,
+			char * payload_data,
 			std::size_t length_remaining,
 			const std::error_code & ec,
 			std::size_t length )
@@ -435,7 +497,7 @@ class ws_connection_t final
 					assert( length == length_remaining );
 
 					// All message is obtained.
-					// call_handler_on_current_message();
+					call_handler_on_current_message();
 				}
 			}
 			else
@@ -642,6 +704,23 @@ class ws_connection_t final
 		//! \}
 
 		void
+		call_handler_on_current_message()
+		{
+			auto & current_header = m_input.m_parser.current_message();
+			auto & current_payload = m_input.m_payload;
+
+			std::cout << "CURRENT PAYLOAD: " << current_payload << "\n";
+
+			m_msg_handler(
+				ws_message_handle_t( new ws_message_t(
+					ws_message_header_t{
+						current_header.m_final_flag,
+						current_header.m_opcode,
+						current_payload.size() },
+					current_payload ) ) );
+		}
+
+		void
 		call_close_handler( const std::string & reason )
 		{
 			if( !m_close_handler_was_called )
@@ -669,7 +748,7 @@ class ws_connection_t final
 		close_handler_t m_close_handler;
 
 		//! Input routine.
-		fixed_buffer_t m_input_header_buffer;
+		ws_connection_input_t m_input;
 
 		//! Write to socket operation context.
 		raw_resp_output_ctx_t m_resp_out_ctx;
