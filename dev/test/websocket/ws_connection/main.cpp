@@ -42,6 +42,56 @@ to_char_each( std::vector< int > source )
 	return result;
 }
 
+bool
+operator==(
+	const restinio::ws_message_header_t & lhs,
+	const restinio::ws_message_header_t & rhs )
+{
+	return
+		lhs.m_is_final == rhs.m_is_final &&
+		lhs.m_opcode == rhs.m_opcode &&
+		lhs.m_payload_len == rhs.m_payload_len &&
+		lhs.m_masking_key == rhs.m_masking_key;
+}
+
+bool
+operator==(
+	const restinio::ws_message_t & lhs,
+	const restinio::ws_message_t & rhs )
+{
+	return
+		lhs.header() == rhs.header() &&
+		lhs.payload() == rhs.payload();
+}
+
+void
+print_ws_header( const restinio::ws_message_header_t & header )
+{
+	std::cout <<
+		"final: " << header.m_is_final <<
+		", opcode: " << static_cast<int>(header.m_opcode) <<
+		", payload_len: " << header.m_payload_len <<
+		", masking_key: " << header.m_masking_key
+		<< std::endl;
+}
+
+void
+print_ws_message( const restinio::ws_message_t & msg )
+{
+	std::cout << "header: {";
+
+	print_ws_header(msg.header());
+
+	std::cout << "}, payload: '" << msg.payload() << "' (";
+
+	for( const auto ch : msg.payload() )
+	{
+		std::cout << std::hex << static_cast< int >(ch) << " ";
+	}
+
+	std::cout << ")" << std::endl;
+}
+
 using traits_t =
 	restinio::traits_t<
 		restinio::asio_timer_factory_t,
@@ -236,8 +286,19 @@ class a_client_t
 		{
 			std::cout << "WS MESSAGE\n";
 
+			// REQUIRE( *(msg.m_msg) == m_etalon_request );
+
+			print_ws_message( *(msg.m_msg) );
+
 			so_environment().stop();
 		}
+
+		const restinio::ws_message_t m_etalon_request{
+			restinio::ws_message_header_t{
+				true,
+				restinio::opcode_t::text_frame,
+				5 },
+			"Hello" } ;
 };
 
 TEST_CASE( "Websocket" , "[ws_connection]" )

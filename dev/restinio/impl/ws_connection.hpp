@@ -385,8 +385,9 @@ class ws_connection_t final
 			// TODO: parse header
 			// and
 
-			m_input.m_parser.parser_execute( data, length );
+			const auto nparsed = m_input.m_parser.parser_execute( data, length );
 
+			m_input.m_buf.consumed_bytes( nparsed );
 
 			if( m_input.m_parser.header_parsed() )
 			{
@@ -708,8 +709,15 @@ class ws_connection_t final
 			auto & current_header = m_input.m_parser.current_message();
 			auto & current_payload = m_input.m_payload;
 
-			// TODO: call handler with current header and payload.
-			m_msg_handler( ws_message_handle_t( new ws_message_t ) );
+			std::cout << "CURRENT PAYLOAD: " << current_payload << "\n";
+
+			m_msg_handler(
+				ws_message_handle_t( new ws_message_t(
+					ws_message_header_t{
+						current_header.m_final_flag,
+						current_header.m_opcode,
+						current_payload.size() },
+					current_payload ) ) );
 		}
 
 		void
