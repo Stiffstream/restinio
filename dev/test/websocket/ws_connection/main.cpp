@@ -139,7 +139,7 @@ class a_server_t
 												std::string{ "sec_websocket_accept_field_value" },
 												[this]( restinio::ws_message_handle_t m ){
 														so_5::send<msg_ws_message>(
-															m_client_mbox, m );
+															this->so_direct_mbox(), m );
 													},
 												[]( std::string reason ){} );
 
@@ -154,6 +154,8 @@ class a_server_t
 		virtual void
 		so_define_agent() override
 		{
+			so_subscribe_self()
+				.event( &a_server_t::evt_ws_message );
 		}
 
 		virtual void
@@ -166,6 +168,28 @@ class a_server_t
 		}
 
 	private:
+
+		void
+		evt_ws_message( const msg_ws_message & msg )
+		{
+			std::cout << "WS MESSAGE\n";
+
+			// REQUIRE( *(msg.m_msg) == m_etalon_request );
+
+			print_ws_message( *(msg.m_msg) );
+
+			m_ws->send_message(
+				true, restinio::opcode_t::text_frame, restinio::buffer_storage_t("Hi"));
+
+			// so_environment().stop();
+		}
+
+		const restinio::ws_message_t m_etalon_request{
+			restinio::ws_message_header_t{
+				true,
+				restinio::opcode_t::text_frame,
+				5 },
+			"Hello" } ;
 
 		so_5::mbox_t m_client_mbox;
 
@@ -189,8 +213,7 @@ class a_client_t
 		so_define_agent() override
 		{
 			so_subscribe_self()
-				.event< srv_started >( &a_client_t::evt_srv_started )
-				.event( &a_client_t::evt_ws_message );
+				.event< srv_started >( &a_client_t::evt_srv_started );
 		}
 
 		virtual void
@@ -254,6 +277,8 @@ class a_client_t
 
 						const std::string response{ data.data(), length };
 
+						std::cout << "RESPONSE: " << response << std::endl;
+
 					} );
 
 				io_context.run();
@@ -276,29 +301,13 @@ class a_client_t
 
 						const std::string response{ data1.data(), length };
 
+						std::cout << "RESPONSE: " << response << std::endl;
+
 					} );
 
+				io_context.run();
 			} );
 		}
-
-		void
-		evt_ws_message( const msg_ws_message & msg )
-		{
-			std::cout << "WS MESSAGE\n";
-
-			// REQUIRE( *(msg.m_msg) == m_etalon_request );
-
-			print_ws_message( *(msg.m_msg) );
-
-			so_environment().stop();
-		}
-
-		const restinio::ws_message_t m_etalon_request{
-			restinio::ws_message_header_t{
-				true,
-				restinio::opcode_t::text_frame,
-				5 },
-			"Hello" } ;
 };
 
 TEST_CASE( "Websocket" , "[ws_connection]" )
