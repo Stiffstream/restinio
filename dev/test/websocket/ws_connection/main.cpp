@@ -261,51 +261,67 @@ class a_client_t
 					"\r\n" };
 
 
-					REQUIRE_NOTHROW(
-						asio::write(
-							socket, asio::buffer( &request.front(), request.size() ) )
-						);
+				REQUIRE_NOTHROW(
+					asio::write(
+						socket, asio::buffer( &request.front(), request.size() ) )
+					);
 
 				std::array< char, 1024 > data;
 
-				socket.async_read_some(
-					asio::buffer( data.data(), data.size() ),
-					[ & ]( auto ec, std::size_t length ){
+				std::size_t len{ 0 };
+				REQUIRE_NOTHROW(
+					len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+					);
 
-						REQUIRE( 0 != length );
-						REQUIRE_FALSE( ec );
+				std::string response{ data.data(), len };
+				std::cout << "RESPONSE: " << response << std::endl;
 
-						const std::string response{ data.data(), length };
+				// socket.async_read_some(
+				// 	asio::buffer( data.data(), data.size() ),
+				// 	[ & ]( auto ec, std::size_t length ){
 
-						std::cout << "RESPONSE: " << response << std::endl;
+				// 		REQUIRE( 0 != length );
+				// 		REQUIRE_FALSE( ec );
 
-					} );
+				// 		const std::string response{ data.data(), length };
 
-				io_context.run();
+				// 		std::cout << "RESPONSE: " << response << std::endl;
 
-				restinio::raw_data_t bin_data{ to_char(0x81), to_char(0x05), to_char(0x48), to_char(0x65), to_char(0x6C), to_char(0x6C), to_char(0x6F) };
+				// 	} );
+
+				// io_context.run();
+
+				unsigned char msg1[] = { 0x81, 0x05, 'H', 'e', 'l', 'l', 'o' };
+
+				// restinio::raw_data_t bin_data{ to_char(0x81), to_char(0x05), to_char(0x48), to_char(0x65), to_char(0x6C), to_char(0x6C), to_char(0x6F) };
 
 				REQUIRE_NOTHROW(
 						asio::write(
-							socket, asio::buffer( &bin_data.front(), bin_data.size() ) )
+							socket, asio::buffer( msg1, sizeof( msg1 ) ) )
 						);
 
-				std::array< char, 1024 > data1;
+				REQUIRE_NOTHROW(
+					len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+					);
 
-				socket.async_read_some(
-					asio::buffer( data1.data(), data1.size() ),
-					[ & ]( auto ec, std::size_t length ){
+				response = std::string{ data.data(), len };
+				std::cout << "RESPONSE: " << response << std::endl;
 
-						REQUIRE( 0 != length );
-						REQUIRE_FALSE( ec );
+				// std::array< char, 1024 > data1;
+				// socket.async_read_some(
+				// 	asio::buffer( data1.data(), data1.size() ),
+				// 	[ & ]( auto ec, std::size_t length ){
 
-						const std::string response{ data1.data(), length };
+				// 		REQUIRE_FALSE( ec );
+				// 		REQUIRE( 0 != length );
 
-						std::cout << "RESPONSE: " << response << std::endl;
+				// 		const std::string response{ data1.data(), length };
 
-					} );
+				// 		std::cout << "RESPONSE: " << response << std::endl;
 
-				io_context.run();
+				// 	} );
+
+				// REQUIRE_NOTHROW( io_context.run() );
 			} );
 		}
 };
