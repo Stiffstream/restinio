@@ -713,10 +713,7 @@ class ws_connection_t final
 
 			m_msg_handler(
 				ws_message_handle_t( new ws_message_t(
-					ws_message_header_t{
-						current_header.m_final_flag,
-						current_header.m_opcode,
-						current_payload.size() },
+					current_header.transform_to_header(),
 					current_payload ) ) );
 		}
 

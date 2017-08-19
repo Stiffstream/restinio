@@ -44,62 +44,89 @@ constexpr byte_t PAYLOAD_LEN_MASK = 0x7F;
 // ws_message_details_t
 //
 
-struct ws_message_details_t
+class ws_message_details_t
 {
 
-	ws_message_details_t()
-	{
-	}
+	public:
 
-	ws_message_details_t( bool final, opcode_t opcode, size_t payload_len )
-	{
-		m_final_flag = final;
-		m_opcode = opcode;
-
-		if( payload_len > WEBSOCKET_MAX_PAYLOAD_SIZE_WITHOUT_EXT )
+		ws_message_details_t()
 		{
-			// if payload greater than 2bytes-number
-			m_payload_len = payload_len > 0xFFFF ?
-				WEBSOCKET_LONG_EXT_LEN_CODE:
-				WEBSOCKET_SHORT_EXT_LEN_CODE;
-
-			m_ext_payload_len = payload_len;
 		}
-		else
+
+		ws_message_details_t( bool final, opcode_t opcode, size_t payload_len )
+		:	m_final_flag{ final }
+		,	m_opcode{ opcode }
 		{
-			m_payload_len = payload_len;
+			init_payload_len( payload_len );
 		}
-	}
 
-	std::uint64_t
-	payload_len() const
-	{
-		// 126 and 127 are codes of ext payload. 125 and lower are real payload len.
-		return m_payload_len > 125? m_ext_payload_len: m_payload_len;
-	}
+		ws_message_details_t(
+			bool final, opcode_t opcode, size_t payload_len, size_t masking_key )
+		:	m_final_flag{ final }
+		,	m_opcode{ opcode }
+		,	m_mask_flag( true )
+		,	m_masking_key( masking_key )
+		{
+			init_payload_len( payload_len );
+		}
 
-	void
-	set_masking_key( std::uint32_t value )
-	{
-		m_masking_key = value;
-		m_mask_flag = true;
-	}
+		std::uint64_t
+		payload_len() const
+		{
+			// 126 and 127 are codes of ext payload. 125 and lower are real payload len.
+			return m_payload_len > 125? m_ext_payload_len: m_payload_len;
+		}
 
-	bool m_final_flag = true;
+		void
+		set_masking_key( std::uint32_t value )
+		{
+			m_masking_key = value;
+			m_mask_flag = true;
+		}
 
-	bool m_rsv1_flag = false;
-	bool m_rsv2_flag = false;
-	bool m_rsv3_flag = false;
+		ws_message_header_t
+		transform_to_header() const
+		{
+			return ws_message_header_t{
+				m_final_flag, m_opcode, payload_len(), m_masking_key };
+		}
 
-	opcode_t m_opcode = opcode_t::continuation_frame;
+		bool m_final_flag = true;
 
-	bool m_mask_flag = false;
+		bool m_rsv1_flag = false;
+		bool m_rsv2_flag = false;
+		bool m_rsv3_flag = false;
 
-	std::uint8_t m_payload_len = 0;
+		opcode_t m_opcode = opcode_t::continuation_frame;
 
-	std::uint64_t m_ext_payload_len = 0;
+		bool m_mask_flag = false;
 
-	std::uint32_t m_masking_key = 0;
+		std::uint8_t m_payload_len = 0;
+
+		std::uint64_t m_ext_payload_len = 0;
+
+		std::uint32_t m_masking_key = 0;
+
+	private:
+
+		void
+		init_payload_len( size_t payload_len )
+		{
+			if( payload_len > WEBSOCKET_MAX_PAYLOAD_SIZE_WITHOUT_EXT )
+			{
+				// if payload greater than 2bytes-number
+				m_payload_len = payload_len > 0xFFFF ?
+					WEBSOCKET_LONG_EXT_LEN_CODE:
+					WEBSOCKET_SHORT_EXT_LEN_CODE;
+
+				m_ext_payload_len = payload_len;
+			}
+			else
+			{
+				m_payload_len = payload_len;
+			}
+		}
+
 };
 
 //! Data with expected size.
@@ -454,8 +481,8 @@ write_message_details(
 
         // result.push_back( ( ext_len >>  8 ) & 0xFF );
         // result.push_back(   ext_len         & 0xFF );
-        write_number_to_big_endian_bytes< WEBSOCKET_SHORT_EXT_PAYLOAD_LENGTH>(
-        	ext_len, result );
+		write_number_to_big_endian_bytes< WEBSOCKET_SHORT_EXT_PAYLOAD_LENGTH>(
+			ext_len, result );
 	}
 	else if ( length == WEBSOCKET_LONG_EXT_LEN_CODE )
 	{
@@ -465,7 +492,7 @@ write_message_details(
 
 		auto ext_len = message.m_ext_payload_len;
 
-		write_number_to_big_endian_bytes<WEBSOCKET_LONG_EXT_PAYLOAD_LENGTH>(
+		write_number_to_big_endian_bytes< WEBSOCKET_LONG_EXT_PAYLOAD_LENGTH >(
 			ext_len, result );
 	}
 

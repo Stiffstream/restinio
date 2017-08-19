@@ -161,7 +161,6 @@ class a_server_t
 		virtual void
 		so_evt_start() override
 		{
-			std::cout << "SERVER\n";
 			http_server.open();
 
 			so_5::send<srv_started>(m_client_mbox);
@@ -172,16 +171,12 @@ class a_server_t
 		void
 		evt_ws_message( const msg_ws_message & msg )
 		{
-			std::cout << "WS MESSAGE\n";
-
-			// REQUIRE( *(msg.m_msg) == m_etalon_request );
-
 			print_ws_message( *(msg.m_msg) );
 
-			m_ws->send_message(
-				true, restinio::opcode_t::text_frame, restinio::buffer_storage_t("Hi"));
+			restinio::ws_message_t resp(
+				true, restinio::opcode_t::text_frame, "Hi" );
 
-			// so_environment().stop();
+			m_ws->send_message( *(msg.m_msg) );
 		}
 
 		const restinio::ws_message_t m_etalon_request{
@@ -271,6 +266,8 @@ class a_client_t
 				response = std::string{ data.data(), len };
 				std::cout << "RESPONSE: " << response << std::endl;
 			} );
+
+			so_environment().stop();
 		}
 };
 

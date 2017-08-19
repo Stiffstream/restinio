@@ -77,7 +77,18 @@ class ws_message_t final
 			std::string payload )
 			:	m_header{ std::move( header ) }
 			,	m_payload{ std::move( payload ) }
-		{}
+		{
+		}
+
+		ws_message_t(
+			bool is_final,
+			opcode_t opcode,
+			std::string payload )
+			:	m_header{ is_final, opcode, payload.size() }
+			,	m_payload{ std::move( payload ) }
+		{
+		}
+
 
 		const ws_message_header_t&
 		header() const
@@ -90,6 +101,13 @@ class ws_message_t final
 		{
 			return m_payload;
 		}
+
+		std::string&
+		payload()
+		{
+			return m_payload;
+		}
+
 
 	private:
 
