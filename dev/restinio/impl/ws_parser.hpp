@@ -39,6 +39,7 @@ constexpr byte_t BIT_FLAG_5 = 0x20;
 constexpr byte_t BIT_FLAG_4 = 0x10;
 constexpr byte_t OPCODE_MASK = 0x0F;
 constexpr byte_t PAYLOAD_LEN_MASK = 0x7F;
+
 //
 // ws_message_details_t
 //
@@ -137,6 +138,41 @@ struct expected_data_t
 		m_loaded_data.reserve( expected_size );
 	}
 };
+
+//
+// read_number_from_big_endian_bytes
+//
+
+template <typename T>
+inline void
+read_number_from_big_endian_bytes( T & number, const raw_data_t & data )
+{
+	if( data.empty() )
+		return;
+
+	for( size_t i = 0 ; i < data.size() ; ++i )
+	{
+		std::uint8_t byte = data[i];
+		auto shift_value = (data.size() - i - 1) * 8;
+		number |= ( static_cast<T>(byte) ) << shift_value;
+	}
+}
+
+//
+// write_number_to_big_endian_bytes
+//
+
+template <int BYTES>
+inline void
+write_number_to_big_endian_bytes( std::uint64_t& number, raw_data_t & data )
+{
+	for( auto i = 0 ; i < BYTES ; ++i )
+	{
+		std::uint8_t byte = data[i];
+		auto shift_value = (BYTES - i - 1) * 8;
+		data.push_back( (number >> shift_value) & 0xFF );
+	}
+}
 
 //
 // ws_parser_t
@@ -308,20 +344,6 @@ class ws_parser_t
 			m_current_msg.m_payload_len = data[1] & PAYLOAD_LEN_MASK;
 		}
 
-		template <typename T>
-		void read_number_from_big_endian_bytes( T & number, const raw_data_t & data )
-		{
-			if( data.empty() )
-				return;
-
-			for( size_t i = 0 ; i < data.size() ; ++i )
-			{
-				std::uint8_t byte = data[i];
-				auto shift_value = (data.size() - i - 1) * 8;
-				number |= ( static_cast<T>(byte) ) << shift_value;
-			}
-		}
-
 		void
 		parse_ext_payload_len(
 			std::uint8_t payload_len,
@@ -378,15 +400,18 @@ class ws_parser_t
 inline void
 mask_unmask_payload( std::uint32_t masking_key, raw_data_t & payload )
 {
-	uint8_t mask[ 4 ] = { };
-	mask[ 0 ] = masking_key & 0xFF;
-	mask[ 1 ] = ( masking_key >>  8 ) & 0xFF;
-	mask[ 2 ] = ( masking_key >> 16 ) & 0xFF;
-	mask[ 3 ] = ( masking_key >> 24 ) & 0xFF;
+	const auto MASK_SIZE = 4;
+	uint8_t mask[ MASK_SIZE ] = { };
+
+	for( auto i = 0; i < MASK_SIZE; ++i )
+	{
+		auto shift_value = i * 8;
+		mask[i] = ( masking_key >>  shift_value ) & 0xFF;
+	}
 
 	for ( size_t index = 0; index < payload.size( ); index++ )
 	{
-		payload[ index ] ^= mask[ index % 4 ];
+		payload[ index ] ^= mask[ index % MASK_SIZE ];
 	}
 }
 
@@ -398,14 +423,10 @@ write_message_details(
 
 	byte_t byte = 0x00;
 
-	if( message.m_final_flag )
-		byte |= BIT_FLAG_7;
-	if( message.m_rsv1_flag )
-		byte |= BIT_FLAG_6;
-	if( message.m_rsv2_flag )
-		byte |= BIT_FLAG_5;
-	if( message.m_rsv3_flag )
-		byte |= BIT_FLAG_4;
+	if( message.m_final_flag ) byte |= BIT_FLAG_7;
+	if( message.m_rsv1_flag ) byte |= BIT_FLAG_6;
+	if( message.m_rsv2_flag ) byte |= BIT_FLAG_5;
+	if( message.m_rsv3_flag ) byte |= BIT_FLAG_4;
 
 	byte |= static_cast< std::uint8_t> (message.m_opcode) & OPCODE_MASK;
 
@@ -431,8 +452,10 @@ write_message_details(
 
 		auto ext_len = message.m_ext_payload_len;
 
-        result.push_back( ( ext_len >>  8 ) & 0xFF );
-        result.push_back(   ext_len         & 0xFF );
+        // result.push_back( ( ext_len >>  8 ) & 0xFF );
+        // result.push_back(   ext_len         & 0xFF );
+        write_number_to_big_endian_bytes< WEBSOCKET_SHORT_EXT_PAYLOAD_LENGTH>(
+        	ext_len, result );
 	}
 	else if ( length == WEBSOCKET_LONG_EXT_LEN_CODE )
 	{
@@ -442,30 +465,26 @@ write_message_details(
 
 		auto ext_len = message.m_ext_payload_len;
 
-		result.push_back( ( ext_len >> 56 ) & 0xFF );
-		result.push_back( ( ext_len >> 48 ) & 0xFF );
-		result.push_back( ( ext_len >> 40 ) & 0xFF );
-		result.push_back( ( ext_len >> 32 ) & 0xFF );
-		result.push_back( ( ext_len >> 24 ) & 0xFF );
-		result.push_back( ( ext_len >> 16 ) & 0xFF );
-		result.push_back( ( ext_len >>  8 ) & 0xFF );
-		result.push_back( ext_len & 0xFF );
+		write_number_to_big_endian_bytes<WEBSOCKET_LONG_EXT_PAYLOAD_LENGTH>(
+			ext_len, result );
 	}
 
 	if( message.m_mask_flag )
 	{
 		auto masking_key = message.m_masking_key;
+		const auto MASK_SIZE = 4;
+		uint8_t mask[ MASK_SIZE ] = { };
 
-		uint8_t mask[ 4 ] = { };
-		mask[ 0 ] = masking_key & 0xFF;
-		mask[ 1 ] = ( masking_key >>  8 ) & 0xFF;
-		mask[ 2 ] = ( masking_key >> 16 ) & 0xFF;
-		mask[ 3 ] = ( masking_key >> 24 ) & 0xFF;
+		for( auto i = 0; i < MASK_SIZE; ++i )
+		{
+			auto shift_value = i * 8;
+			mask[i] = ( masking_key >>  shift_value ) & 0xFF;
+		}
 
-		result.push_back( mask[ 0 ] );
-		result.push_back( mask[ 1 ] );
-		result.push_back( mask[ 2 ] );
 		result.push_back( mask[ 3 ] );
+		result.push_back( mask[ 2 ] );
+		result.push_back( mask[ 1 ] );
+		result.push_back( mask[ 0 ] );
 	}
 
 	return result;
