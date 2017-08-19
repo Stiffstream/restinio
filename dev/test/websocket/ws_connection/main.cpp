@@ -228,25 +228,6 @@ class a_client_t
 		{
 			std::cout << "SRV STARTED\n";
 
-			// std::string response;
-			// const char * request_str =
-			// 	"GET /chat HTTP/1.1\r\n"
-			// 	"Host: 127.0.0.1\r\n"
-			// 	"Upgrade: websocket\r\n"
-			// 	"Connection: Upgrade\r\n"
-			// 	"Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==\r\n"
-			// 	"Sec-WebSocket-Protocol: chat\r\n"
-			// 	"Sec-WebSocket-Version: 1\r\n"
-			// 	"User-Agent: unit-test\r\n"
-			// 	"\r\n";
-
-			// REQUIRE_NOTHROW( response = do_request( request_str ) );
-
-			// REQUIRE_THAT( response, Catch::StartsWith( "HTTP/1.1 101 Switching Protocols" ) );
-			// REQUIRE_THAT( response, Catch::Contains( "Connection: Upgrade" ) );
-			// REQUIRE_THAT( response, Catch::Contains( "Sec-WebSocket-Accept:" ) );
-			// REQUIRE_THAT( response, Catch::Contains( "Upgrade: websocket" ) );
-
 			do_with_socket( [ & ]( auto & socket, auto & io_context ){
 
 				const std::string request{
@@ -276,24 +257,7 @@ class a_client_t
 				std::string response{ data.data(), len };
 				std::cout << "RESPONSE: " << response << std::endl;
 
-				// socket.async_read_some(
-				// 	asio::buffer( data.data(), data.size() ),
-				// 	[ & ]( auto ec, std::size_t length ){
-
-				// 		REQUIRE( 0 != length );
-				// 		REQUIRE_FALSE( ec );
-
-				// 		const std::string response{ data.data(), length };
-
-				// 		std::cout << "RESPONSE: " << response << std::endl;
-
-				// 	} );
-
-				// io_context.run();
-
 				unsigned char msg1[] = { 0x81, 0x05, 'H', 'e', 'l', 'l', 'o' };
-
-				// restinio::raw_data_t bin_data{ to_char(0x81), to_char(0x05), to_char(0x48), to_char(0x65), to_char(0x6C), to_char(0x6C), to_char(0x6F) };
 
 				REQUIRE_NOTHROW(
 						asio::write(
@@ -306,22 +270,6 @@ class a_client_t
 
 				response = std::string{ data.data(), len };
 				std::cout << "RESPONSE: " << response << std::endl;
-
-				// std::array< char, 1024 > data1;
-				// socket.async_read_some(
-				// 	asio::buffer( data1.data(), data1.size() ),
-				// 	[ & ]( auto ec, std::size_t length ){
-
-				// 		REQUIRE_FALSE( ec );
-				// 		REQUIRE( 0 != length );
-
-				// 		const std::string response{ data1.data(), length };
-
-				// 		std::cout << "RESPONSE: " << response << std::endl;
-
-				// 	} );
-
-				// REQUIRE_NOTHROW( io_context.run() );
 			} );
 		}
 };

@@ -33,6 +33,12 @@ constexpr size_t WEBSOCKET_SHORT_EXT_LEN_CODE = 126;
 constexpr size_t WEBSOCKET_LONG_EXT_LEN_CODE = 127;
 constexpr size_t WEBSOCKET_MASKING_KEY_SIZE = 4;
 
+constexpr byte_t BIT_FLAG_7 = 0x80;
+constexpr byte_t BIT_FLAG_6 = 0x40;
+constexpr byte_t BIT_FLAG_5 = 0x20;
+constexpr byte_t BIT_FLAG_4 = 0x10;
+constexpr byte_t OPCODE_MASK = 0x0F;
+constexpr byte_t PAYLOAD_LEN_MASK = 0x7F;
 //
 // ws_message_details_t
 //
@@ -51,6 +57,7 @@ struct ws_message_details_t
 
 		if( payload_len > WEBSOCKET_MAX_PAYLOAD_SIZE_WITHOUT_EXT )
 		{
+			// if payload greater than 2bytes-number
 			m_payload_len = payload_len > 0xFFFF ?
 				WEBSOCKET_LONG_EXT_LEN_CODE:
 				WEBSOCKET_SHORT_EXT_LEN_CODE;
@@ -63,24 +70,10 @@ struct ws_message_details_t
 		}
 	}
 
-	struct header_t
-	{
-
-	};
-
-	struct ext_payload_len_t
-	{
-		std::uint64_t m_value = 0;
-	};
-
-	struct masking_key_t
-	{
-		std::uint32_t m_value = 0;
-	};
-
 	std::uint64_t
 	payload_len() const
 	{
+		// 126 and 127 are codes of ext payload. 125 and lower are real payload len.
 		return m_payload_len > 125? m_ext_payload_len: m_payload_len;
 	}
 
@@ -297,22 +290,22 @@ class ws_parser_t
 			m_current_state = state_t::header_parsed;
 		}
 
-		ws_message_details_t::header_t
+		void
 		parse_first_2_bytes(
 			const raw_data_t & data )
 		{
 			if( data.size() != 2 )
 				throw exception_t( "Incorrect size of raw data: 2 bytes expected." );
 
-			m_current_msg.m_final_flag = data[0] & 0x80;
-			m_current_msg.m_rsv1_flag = data[0] & 0x40;
-			m_current_msg.m_rsv2_flag = data[0] & 0x20;
-			m_current_msg.m_rsv3_flag = data[0] & 0x10;
+			m_current_msg.m_final_flag = data[0] & BIT_FLAG_7;
+			m_current_msg.m_rsv1_flag = data[0] & BIT_FLAG_6;
+			m_current_msg.m_rsv2_flag = data[0] & BIT_FLAG_5;
+			m_current_msg.m_rsv3_flag = data[0] & BIT_FLAG_4;
 
-			m_current_msg.m_opcode = static_cast< opcode_t >( data[0] & 0x0F );
+			m_current_msg.m_opcode = static_cast< opcode_t >( data[0] & OPCODE_MASK );
 
-			m_current_msg.m_mask_flag = data[1] & 0x80;
-			m_current_msg.m_payload_len = data[1] & 0x7F;
+			m_current_msg.m_mask_flag = data[1] & BIT_FLAG_7;
+			m_current_msg.m_payload_len = data[1] & PAYLOAD_LEN_MASK;
 		}
 
 		template <typename T>
@@ -334,7 +327,7 @@ class ws_parser_t
 			std::uint8_t payload_len,
 			const raw_data_t & data )
 		{
-			if( payload_len == 126 )
+			if( payload_len == WEBSOCKET_SHORT_EXT_LEN_CODE )
 			{
 				if( data.size() != 2 )
 					throw exception_t(
@@ -343,7 +336,7 @@ class ws_parser_t
 				read_number_from_big_endian_bytes(
 					m_current_msg.m_ext_payload_len, data );
 			}
-			else if( payload_len == 127 )
+			else if( payload_len == WEBSOCKET_LONG_EXT_LEN_CODE )
 			{
 				if( data.size() != 8 )
 					throw exception_t(
@@ -406,33 +399,33 @@ write_message_details(
 	byte_t byte = 0x00;
 
 	if( message.m_final_flag )
-		byte |= 0x80;
+		byte |= BIT_FLAG_7;
 	if( message.m_rsv1_flag )
-		byte |= 0x40;
+		byte |= BIT_FLAG_6;
 	if( message.m_rsv2_flag )
-		byte |= 0x20;
+		byte |= BIT_FLAG_5;
 	if( message.m_rsv3_flag )
-		byte |= 0x10;
+		byte |= BIT_FLAG_4;
 
-	byte |= static_cast< std::uint8_t> (message.m_opcode) & 0x0F;
+	byte |= static_cast< std::uint8_t> (message.m_opcode) & OPCODE_MASK;
 
 	result.push_back( byte );
 
 	byte = 0x00;
 
 	if( message.m_mask_flag )
-		byte |= 0x80;
+		byte |= BIT_FLAG_7;
 
 	auto length = message.m_payload_len;
 
-	if( length < 126 )
+	if( length < WEBSOCKET_SHORT_EXT_LEN_CODE )
 	{
 		byte |= length;
 		result.push_back( byte );
 	}
-	else if ( length == 126 )
+	else if ( length == WEBSOCKET_SHORT_EXT_LEN_CODE )
 	{
-		byte |= 126;
+		byte |= WEBSOCKET_SHORT_EXT_LEN_CODE;
 
 		result.push_back( byte );
 
@@ -441,9 +434,9 @@ write_message_details(
         result.push_back( ( ext_len >>  8 ) & 0xFF );
         result.push_back(   ext_len         & 0xFF );
 	}
-	else if ( length == 127 )
+	else if ( length == WEBSOCKET_LONG_EXT_LEN_CODE )
 	{
-		byte |= 127;
+		byte |= WEBSOCKET_LONG_EXT_LEN_CODE;
 
 		result.push_back( byte );
 

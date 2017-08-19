@@ -68,7 +68,7 @@ TEST_CASE( "Validate parser implementation details" , "[websocket][parser][impl]
 	REQUIRE_THROWS( exp_data.add_byte_and_check_size(0x05) );
 }
 
-TEST_CASE( "Validate websocket message constructing" , "[websocket][parser][message]" )
+TEST_CASE( "Validate websocket message details constructing" , "[websocket][parser][message]" )
 {
 	ws_message_details_t m0;
 	REQUIRE( m0.m_final_flag == true );
@@ -236,6 +236,20 @@ TEST_CASE( "Parse header (2 bytes + 8 bytes ext length)" , "[websocket][parser][
 	}
 }
 
+TEST_CASE( "Parse header (2 bytes + 4 bytes masking key )" ,
+	"[websocket][parser][read]" )
+{
+	{
+		raw_data_t bin_data{ to_char_each({
+			0x81, 0x85, 0x37, 0xFA, 0x21, 0x3D}) };
+		ws_parser_t parser;
+		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+
+		REQUIRE( parser.current_message().m_mask_flag == true );
+		REQUIRE( parser.current_message().m_masking_key == 0x37FA213D );
+	}
+}
+
 TEST_CASE( "Parse simple message" , "[websocket][parser][read]" )
 {
 	raw_data_t bin_data{ to_char(0x81), to_char(0x05), to_char(0x48), to_char(0x65), to_char(0x6C), to_char(0x6C), to_char(0x6F) };
@@ -302,12 +316,6 @@ TEST_CASE( "Write simple message" , "[websocket][parser][write]" )
 		raw_data_t etalon{ to_char(0x80), to_char(0x00) };
 
 		REQUIRE( bin_data == etalon );
-
-		// std::cout << std::bitset<8>(bin_data[0]) << std::endl;
-		// std::cout << std::bitset<8>(bin_data[1]) << std::endl;
-
-		// std::cout << std::bitset<8>(etalon[0]) << std::endl;
-		// std::cout << std::bitset<8>(etalon[1]) << std::endl;
 	}
 	{
 		std::string payload = "Hello";
