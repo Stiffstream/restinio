@@ -7,6 +7,7 @@
 */
 
 #include <string>
+#include <unordered_map>
 
 #include <fmt/format.h>
 #include <restinio/exception.hpp>
@@ -67,8 +68,10 @@ extract_escaped_char( char c1,  char c2 )
 
 } /* namespace impl */
 
+//! Percent encoding.
+//! \{
 inline std::string
-escape( const std::string & data )
+escape_percent_encoding( const std::string & data )
 {
 	std::string result;
 	result.reserve( data.size() );
@@ -86,7 +89,7 @@ escape( const std::string & data )
 }
 
 inline std::string
-unescape( const std::string & data )
+unescape_percent_encoding( const std::string & data )
 {
 	std::string result;
 	result.reserve( data.size() );
@@ -111,7 +114,7 @@ unescape( const std::string & data )
 					c,
 					data.data() - d ) };
 		}
-		else if( chars_to_handle > 3 &&
+		else if( chars_to_handle >= 3 &&
 			impl::is_hexdigit( d[ 1 ] ) &&
 			impl::is_hexdigit( d[ 2 ] ) )
 		{
@@ -123,10 +126,42 @@ unescape( const std::string & data )
 		{
 			throw exception_t{
 				fmt::format(
-					"invalid escape sequence at pos {}", data.data() - d ) };
+					"invalid escape sequence at pos {}", d - data.data() ) };
 		}
 	}
 	return result;
+}
+
+//! \}
+
+template < typename TABLE = std::unordered_map< std::string, std::string > >
+TABLE
+parse_get_params( const std::string & request_target )
+{
+	TABLE param_table;
+
+	std::istringstream pstream{ request_target };
+
+	std::string parameter_str;
+	std::getline( pstream, parameter_str, '?' );
+
+	while( std::getline( pstream, parameter_str, '&' ) )
+	{
+		auto eq_symbol_pos =parameter_str.find( '=' );
+
+		if( eq_symbol_pos == std::string::npos )
+			throw exception_t{ fmt::format( "bad params in uri: {}", request_target ) };
+
+		const auto parameter_name =
+			unescape_percent_encoding( parameter_str.substr( 0, eq_symbol_pos ) );
+
+		const auto parameter_value =
+			unescape_percent_encoding( parameter_str.substr( eq_symbol_pos + 1 ) );
+
+		param_table[ parameter_name ] = parameter_value;
+	}
+
+	return param_table;
 }
 
 } /* namespace restinio */

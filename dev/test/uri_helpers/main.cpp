@@ -9,15 +9,11 @@
 #define CATCH_CONFIG_MAIN
 #include <catch/catch.hpp>
 
-#include <restinio/escape.hpp>
+#include <restinio/uri_helpers.hpp>
 
 using namespace restinio;
 
-#define RESTINIO_REQHANDLER_UTEST_INTERNALS \
-auto operator () ( request_handle_t ) const \
-{	return restinio::request_rejected(); }
-
-TEST_CASE( "Escape" , "[escape]" )
+TEST_CASE( "Escape percent encoding" , "[escape][percent_encoding]" )
 {
 	{
 		const std::string input_data{
@@ -29,7 +25,7 @@ TEST_CASE( "Escape" , "[escape]" )
 
 		std::string result;
 
-		REQUIRE_NOTHROW( result = restinio::escape( input_data ) );
+		REQUIRE_NOTHROW( result = restinio::escape_percent_encoding( input_data ) );
 
 		REQUIRE( expected_result == result );
 	}
@@ -47,13 +43,13 @@ TEST_CASE( "Escape" , "[escape]" )
 
 		std::string result;
 
-		REQUIRE_NOTHROW( result = restinio::escape( input_data ) );
+		REQUIRE_NOTHROW( result = restinio::escape_percent_encoding( input_data ) );
 
 		REQUIRE( expected_result == result );
 	}
 }
 
-TEST_CASE( "Unescape" , "[unescape]" )
+TEST_CASE( "Unescape percent encoding" , "[unescape][percent_encoding]" )
 {
 	{
 		const std::string input_data{
@@ -65,7 +61,7 @@ TEST_CASE( "Unescape" , "[unescape]" )
 
 		std::string result;
 
-		REQUIRE_NOTHROW( result = restinio::unescape( input_data ) );
+		REQUIRE_NOTHROW( result = restinio::unescape_percent_encoding( input_data ) );
 
 		REQUIRE( expected_result == result );
 	}
@@ -83,7 +79,7 @@ TEST_CASE( "Unescape" , "[unescape]" )
 
 		std::string result;
 
-		REQUIRE_NOTHROW( result = restinio::unescape( input_data ) );
+		REQUIRE_NOTHROW( result = restinio::unescape_percent_encoding( input_data ) );
 
 		REQUIRE( expected_result == result );
 	}
@@ -102,7 +98,7 @@ TEST_CASE( "Unescape" , "[unescape]" )
 
 		std::string result;
 
-		REQUIRE_NOTHROW( result = restinio::unescape( input_data ) );
+		REQUIRE_NOTHROW( result = restinio::unescape_percent_encoding( input_data ) );
 
 		REQUIRE( expected_result == result );
 	}
@@ -116,7 +112,7 @@ TEST_CASE( "Unescape" , "[unescape]" )
 
 		std::string result;
 
-		REQUIRE_THROWS( result = restinio::unescape( input_data ) );
+		REQUIRE_THROWS( result = restinio::unescape_percent_encoding( input_data ) );
 	}
 
 	{
@@ -126,7 +122,7 @@ TEST_CASE( "Unescape" , "[unescape]" )
 
 		std::string result;
 
-		REQUIRE_THROWS( result = restinio::unescape( input_data ) );
+		REQUIRE_THROWS( result = restinio::unescape_percent_encoding( input_data ) );
 	}
 	{
 		const std::string input_data{
@@ -135,6 +131,55 @@ TEST_CASE( "Unescape" , "[unescape]" )
 
 		std::string result;
 
-		REQUIRE_THROWS( result = restinio::unescape( input_data ) );
+		REQUIRE_THROWS( result = restinio::unescape_percent_encoding( input_data ) );
+	}
+}
+
+
+
+TEST_CASE( "Parse get params" , "[parse_get_params]" )
+{
+	{
+		const std::string
+			uri{ "/locations/25/avg?"
+				"toDate=815875200&"
+				"fromDate=1133136000&"
+				"toAge=38&"
+				"gender=f" };
+
+		auto params = restinio::parse_get_params< std::map< std::string, std::string > >( uri );
+
+		REQUIRE( 4 == params.size() );
+
+		REQUIRE( 1 == params.count( "toDate" ) );
+		REQUIRE( params[ "toDate" ] == "815875200" );
+		REQUIRE( params[ "fromDate" ] == "1133136000" );
+		REQUIRE( params[ "toAge" ] == "38" );
+		REQUIRE( params[ "gender" ] == "f" );
+	}
+	{
+		const std::string
+			uri{ "/users/36/visits?"
+				"country=%D0%9C%D0%B0%D0%BB%D1%8C%D1%82%D0%B0" };
+
+		auto params = restinio::parse_get_params( uri );
+
+		REQUIRE( 1 == params.size() );
+
+		REQUIRE( 1 == params.count( "country" ) );
+		REQUIRE( params[ "country" ] == "\xD0\x9C\xD0\xB0\xD0\xBB\xD1\x8C\xD1\x82\xD0\xB0" );
+	}
+
+	{
+		const std::string
+			uri{ "/users/36/visits?"
+				"my%20name=my%20value" };
+
+		auto params = restinio::parse_get_params( uri );
+
+		REQUIRE( 1 == params.size() );
+
+		REQUIRE( 1 == params.count( "my name" ) );
+		REQUIRE( params[ "my name" ] == "my value" );
 	}
 }

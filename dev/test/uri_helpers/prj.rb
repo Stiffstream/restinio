@@ -6,7 +6,7 @@ MxxRu::Cpp::exe_target {
 	required_prj 'fmt_mxxru/prj.rb'
 	required_prj 'restinio/platform_specific_libs.rb'
 
-	target( "_unit.test.escape" )
+	target( "_unit.test.uri_helpers" )
 
 	cpp_source( "main.cpp" )
 }
