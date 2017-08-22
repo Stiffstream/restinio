@@ -106,6 +106,12 @@ unescape_percent_encoding( const std::string & data )
 			--chars_to_handle;
 			++d;
 		}
+		else if( '+' == c )
+		{
+			result += ' ';
+			--chars_to_handle;
+			++d;
+		}
 		else if( '%' != c )
 		{
 			throw exception_t{

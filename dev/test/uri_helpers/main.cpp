@@ -133,6 +133,16 @@ TEST_CASE( "Unescape percent encoding" , "[unescape][percent_encoding]" )
 
 		REQUIRE_THROWS( result = restinio::unescape_percent_encoding( input_data ) );
 	}
+
+	{
+		const std::string input_data{ "+%20+" };
+		const std::string expected_result{ "   "};
+
+		std::string result;
+
+		REQUIRE_NOTHROW( result = restinio::unescape_percent_encoding( input_data ) );
+		REQUIRE( expected_result == result );
+	}
 }
 
 
