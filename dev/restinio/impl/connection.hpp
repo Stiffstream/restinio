@@ -822,24 +822,51 @@ class connection_t final
 								bufs.size() ); } );
 					}
 
-					// There is somethig to write.
-					asio::async_write(
-						m_socket,
-						bufs,
-						asio::bind_executor(
-							get_executor(),
-							[ this,
-								ctx = shared_from_this(),
-								should_keep_alive = !m_response_coordinator.closed(),
-								init_read_after_this_write =
-									full_before && !full_after ]
-								( const asio::error_code & ec, std::size_t written ){
-									after_write(
-										ec,
-										written,
-										should_keep_alive,
-										init_read_after_this_write );
-							} ) );
+					auto write_complete_cb =
+						[ this,
+							ctx = shared_from_this(),
+							should_keep_alive = !m_response_coordinator.closed(),
+							init_read_after_this_write =
+								full_before && !full_after ]
+							( const asio::error_code & ec, std::size_t written ){
+								after_write(
+									ec,
+									written,
+									should_keep_alive,
+									init_read_after_this_write );
+						};
+
+					// Do quick write:
+					const auto immediate_write_len =
+						m_socket.write_some( bufs );
+
+					if( 0 != immediate_write_len )
+					{
+						m_resp_out_ctx.done( immediate_write_len );
+
+						m_logger.trace( [&]{
+							return fmt::format(
+									"[connection:{}] outgoing data was sent (sync): {}b",
+									connection_id(),
+									immediate_write_len );
+						} );
+					}
+
+					if( m_resp_out_ctx.transmitting() )
+					{
+						// Something left to write.
+						// There is somethig to write.
+						asio::async_write(
+							m_socket,
+							m_resp_out_ctx.asio_bufs(),
+							asio::bind_executor(
+								get_executor(),
+								std::move( write_complete_cb ) ) );
+					}
+					else
+					{
+						write_complete_cb( asio::error_code{}, 0 );
+					}
 
 					guard_write_operation();
 				}
@@ -893,11 +920,11 @@ class connection_t final
 			if( !ec )
 			{
 				// Release buffers.
-				m_resp_out_ctx.done();
+				m_resp_out_ctx.done( written );
 
 				m_logger.trace( [&]{
 					return fmt::format(
-							"[connection:{}] outgoing data was sent: {}b",
+							"[connection:{}] outgoing data was sent (async): {}b",
 							connection_id(),
 							written );
 				} );
