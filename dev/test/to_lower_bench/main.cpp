@@ -62,18 +62,6 @@ tolower_array( char * c )
 
 	if( 'A' <= c[ 3 ] && c[ 3 ] <= 'Z' )
 		c[ 3 ] |= 0x20;
-
-	// if( 'A' <= c[ 4 ] && c[ 4 ] <= 'Z' )
-	// 	c[ 4 ] |= 0x20;
-
-	// if( 'A' <= c[ 5 ] && c[ 5 ] <= 'Z' )
-	// 	c[ 5 ] |= 0x20;
-
-	// if( 'A' <= c[ 6 ] && c[ 6 ] <= 'Z' )
-	// 	c[ 6 ] |= 0x20;
-
-	// if( 'A' <= c[ 7 ] && c[ 7 ] <= 'Z' )
-	// 	c[ 7 ] |= 0x20;
 }
 
 inline bool
@@ -85,7 +73,7 @@ by_4char_caseless_cmp(
 	auto n = size & (0xFFFFFFFF - 0x1 );
 
 	std::size_t i = 0;
-	for( ; i < n; i+=4 )
+	for( ; i < n; i+=2 )
 	{
 		alignas( 16 )
 		char c[] = { a[ i ], a[ i+1 ], b[ i ], b[ i+1 ] };
@@ -118,8 +106,8 @@ by_char_group_2x_caseless_cmp(
 	{
 		char c1,c2;
 
-		c1 = a[0]; c2 = b[0]; if( tolower( c1 ) != tolower( c2 ) ) return false;
-		c1 = a[1]; c2 = b[1]; if( tolower( c1 ) != tolower( c2 ) ) return false;
+		c1 = a[i]; c2 = b[i]; if( tolower( c1 ) != tolower( c2 ) ) return false;
+		c1 = a[i + 1]; c2 = b[i + 1]; if( tolower( c1 ) != tolower( c2 ) ) return false;
 		i+=2;
 	}
 
@@ -145,10 +133,10 @@ by_char_group_4x_caseless_cmp(
 	{
 		char c1,c2;
 
-		c1 = a[0]; c2 = b[0]; if( tolower( c1 ) != tolower( c2 ) ) return false;
-		c1 = a[1]; c2 = b[1]; if( tolower( c1 ) != tolower( c2 ) ) return false;
-		c1 = a[2]; c2 = b[2]; if( tolower( c1 ) != tolower( c2 ) ) return false;
-		c1 = a[3]; c2 = b[3]; if( tolower( c1 ) != tolower( c2 ) ) return false;
+		c1 = a[i + 0]; c2 = b[ i + 0]; if( tolower( c1 ) != tolower( c2 ) ) return false;
+		c1 = a[i + 1]; c2 = b[ i + 1]; if( tolower( c1 ) != tolower( c2 ) ) return false;
+		c1 = a[i + 2]; c2 = b[ i + 2]; if( tolower( c1 ) != tolower( c2 ) ) return false;
+		c1 = a[i + 3]; c2 = b[ i + 3]; if( tolower( c1 ) != tolower( c2 ) ) return false;
 		i+=4;
 	}
 
@@ -174,14 +162,14 @@ by_char_group_8x_caseless_cmp(
 	{
 		char c1,c2;
 
-		c1 = a[0]; c2 = b[0]; if( tolower( c1 ) != tolower( c2 ) ) return false;
-		c1 = a[1]; c2 = b[1]; if( tolower( c1 ) != tolower( c2 ) ) return false;
-		c1 = a[2]; c2 = b[2]; if( tolower( c1 ) != tolower( c2 ) ) return false;
-		c1 = a[3]; c2 = b[3]; if( tolower( c1 ) != tolower( c2 ) ) return false;
-		c1 = a[4]; c2 = b[4]; if( tolower( c1 ) != tolower( c2 ) ) return false;
-		c1 = a[5]; c2 = b[5]; if( tolower( c1 ) != tolower( c2 ) ) return false;
-		c1 = a[6]; c2 = b[6]; if( tolower( c1 ) != tolower( c2 ) ) return false;
-		c1 = a[7]; c2 = b[7]; if( tolower( c1 ) != tolower( c2 ) ) return false;
+		c1 = a[ i + 0 ]; c2 = b[ i + 0]; if( tolower( c1 ) != tolower( c2 ) ) return false;
+		c1 = a[ i + 1 ]; c2 = b[ i + 1]; if( tolower( c1 ) != tolower( c2 ) ) return false;
+		c1 = a[ i + 2 ]; c2 = b[ i + 2]; if( tolower( c1 ) != tolower( c2 ) ) return false;
+		c1 = a[ i + 3 ]; c2 = b[ i + 3]; if( tolower( c1 ) != tolower( c2 ) ) return false;
+		c1 = a[ i + 4 ]; c2 = b[ i + 4]; if( tolower( c1 ) != tolower( c2 ) ) return false;
+		c1 = a[ i + 5 ]; c2 = b[ i + 5]; if( tolower( c1 ) != tolower( c2 ) ) return false;
+		c1 = a[ i + 6 ]; c2 = b[ i + 6]; if( tolower( c1 ) != tolower( c2 ) ) return false;
+		c1 = a[ i + 7 ]; c2 = b[ i + 7]; if( tolower( c1 ) != tolower( c2 ) ) return false;
 		i+=8;
 	}
 
