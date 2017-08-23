@@ -142,6 +142,68 @@ unescape_percent_encoding( const std::string & data )
 
 template < typename TABLE = std::unordered_map< std::string, std::string > >
 TABLE
+parse_get_params( const std::string & query_string )
+{
+	using it_t = std::string::const_iterator;
+
+	TABLE result;
+
+	static const auto find_char =
+		[]( std::string::value_type ch, it_t from, it_t to ) -> it_t {
+			for(; from != to; ++from)
+				if( ch == *from ) return from;
+			return to;
+		};
+
+	const it_t very_first_pos = query_string.begin();
+	it_t e = query_string.end();
+	it_t b = find_char( '?', very_first_pos, e );
+	if( b != e )
+	{
+		// Skip '?'.
+		++b;
+
+		// If query_string contains #something at the end then
+		// search must be stopped at '#' char.
+		e = find_char( '#', b, e );
+
+		while( b != e )
+		{
+			const it_t separator = find_char( '&', b, e );
+
+			// Handle next pair of parameters found.
+			const it_t eq = find_char( '=', b, separator );
+			if( eq == separator )
+				throw exception_t{ fmt::format(
+						"invalid format of key-value pairs in query_string: {}, "
+						"positions: [{}, {}]",
+						query_string,
+						std::distance(very_first_pos, b),
+						std::distance(very_first_pos, eq) ) };
+
+			std::string key = unescape_percent_encoding(
+					query_string.substr(
+							std::distance(very_first_pos, b),
+							std::distance(b, eq) ) );
+			std::string value = unescape_percent_encoding(
+					query_string.substr(
+							std::distance(very_first_pos, eq + 1),
+							std::distance(eq, separator) - 1 ) );
+
+			result.emplace( std::move(key), std::move(value) );
+
+			b = separator;
+			if( b != e )
+				++b;
+		}
+	}
+
+	return result;
+}
+
+#if 0
+template < typename TABLE = std::unordered_map< std::string, std::string > >
+TABLE
 parse_get_params( const std::string & request_target )
 {
 	TABLE param_table;
@@ -169,5 +231,6 @@ parse_get_params( const std::string & request_target )
 
 	return param_table;
 }
+#endif
 
 } /* namespace restinio */
