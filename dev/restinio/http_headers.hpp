@@ -46,8 +46,8 @@ caseless_cmp(
 	std::size_t size )
 {
 	for( std::size_t i = 0; i < size; ++i )
-		if( impl::tolower( (unsigned char)a[ i ] ) !=
-			impl::tolower( (unsigned char)b[ i ] ) )
+		if( impl::tolower( a[ i ] ) !=
+			impl::tolower( b[ i ] ) )
 			return false;
 
 	return true;
