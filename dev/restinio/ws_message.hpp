@@ -96,6 +96,12 @@ class ws_message_t final
 			return m_header;
 		}
 
+		ws_message_header_t&
+		header()
+		{
+			return m_header;
+		}
+
 		const std::string&
 		payload() const
 		{

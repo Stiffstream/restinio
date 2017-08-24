@@ -432,7 +432,7 @@ mask_unmask_payload( std::uint32_t masking_key, raw_data_t & payload )
 
 	for( auto i = 0; i < MASK_SIZE; ++i )
 	{
-		auto shift_value = i * 8;
+		auto shift_value = ( MASK_SIZE - i - 1 )* 8;
 		mask[i] = ( masking_key >>  shift_value ) & 0xFF;
 	}
 
@@ -479,8 +479,6 @@ write_message_details(
 
 		auto ext_len = message.m_ext_payload_len;
 
-        // result.push_back( ( ext_len >>  8 ) & 0xFF );
-        // result.push_back(   ext_len         & 0xFF );
 		write_number_to_big_endian_bytes< WEBSOCKET_SHORT_EXT_PAYLOAD_LENGTH>(
 			ext_len, result );
 	}

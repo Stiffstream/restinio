@@ -119,7 +119,7 @@ TEST_CASE( "Validate mask and unmask operations" , "[websocket][parser][mask]" )
 {
 	raw_data_t unmasked_bin_data_etalon = "Hello";
 	raw_data_t bin_data = unmasked_bin_data_etalon;
-	uint32_t mask_key = 0x3D21FA37;
+	uint32_t mask_key = 0x37FA213D;
 	mask_unmask_payload( mask_key, bin_data );
 	raw_data_t masked_bin_data_etalon{
 		to_char(0x7F), to_char(0x9F), to_char(0x4D), to_char(0x51), to_char(0x58) };
@@ -333,7 +333,7 @@ TEST_CASE( "Write simple message" , "[websocket][parser][write]" )
 		std::string payload = "Hello";
 		ws_message_details_t m{true, opcode_t::text_frame, payload.size()};
 
-		std::uint32_t masking_key = 0x3D21FA37;
+		std::uint32_t masking_key = 0x37FA213D;
 		m.set_masking_key(masking_key);
 
 		mask_unmask_payload(masking_key, payload);
@@ -343,7 +343,7 @@ TEST_CASE( "Write simple message" , "[websocket][parser][write]" )
 
 		raw_data_t etalon{
 			to_char_each(
-				{0x81, 0x85, 0x3D, 0x21, 0xFA, 0x37, 0x7F, 0x9F, 0x4D, 0x51, 0x58}) };
+				{0x81, 0x85, 0x37, 0xFA, 0x21, 0x3D, 0x7F, 0x9F, 0x4D, 0x51, 0x58}) };
 
 		REQUIRE( bin_data == etalon );
 	}
