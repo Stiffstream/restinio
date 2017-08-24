@@ -217,7 +217,7 @@ by_lut1_caseless_cmp(
 }
 
 template< typename C >
-C to_lower_lut_item( std::size_t at )
+const C * to_lower_lut_items()
 {
 	static constexpr C table[] = {
 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
@@ -238,7 +238,7 @@ C to_lower_lut_item( std::size_t at )
 0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7, 0xD8, 0xD9, 0xDA, 0xDB, 0xDC, 0xDD, 0xDE, 0xDF,
 0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9, 0xEA, 0xEB, 0xEC, 0xED, 0xEE, 0xEF,
 0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF };
-	return table[ at ];
+	return table;
 }
 
 bool
@@ -247,15 +247,15 @@ by_lut1_caseless_cmp2(
 	const char * b,
 	std::size_t size )
 {
-	constexpr auto translated_char = [](
+	const unsigned char * const table = to_lower_lut_items< unsigned char >();
+	constexpr auto uchar_at = [](
 			const char * const from, const std::size_t at )
 	{
-		return to_lower_lut_item< unsigned char >(
-				static_cast< unsigned char >( from[at] ) );
+		return static_cast< unsigned char >( from[at] );
 	};
 
 	for( std::size_t i = 0; i < size; ++i )
-		if( translated_char( a, i ) != translated_char( b, i ) )
+		if( table[uchar_at( a, i )] != table[uchar_at( b, i )] )
 			return false;
 
 	return true;
