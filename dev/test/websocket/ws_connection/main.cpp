@@ -204,7 +204,6 @@ using traits_t =
 
 using http_server_t = restinio::http_server_t< traits_t >;
 
-struct srv_started : public so_5::signal_t {};
 
 struct msg_ws_message : public so_5::message_t
 {
@@ -240,51 +239,17 @@ class a_server_t
 						settings
 							.port( utest_default_port() )
 							.address( "127.0.0.1" )
-							.request_handler(
-								[this]( auto req ){
-									if( restinio::http_connection_header_t::upgrade == req->header().connection() )
-									{
-										auto ws_key = req->header().get_field("Sec-WebSocket-Key");
-
-
-										ws_key.append( "258EAFA5-E914-47DA-95CA-C5AB0DC85B11" );
-
-										unsigned char hash[ SHA_DIGEST_LENGTH ];
-    SHA1( reinterpret_cast< const unsigned char* >( ws_key.data( ) ), ws_key.length( ), hash );
-
-										m_ws =
-											restinio::upgrade_to_websocket< traits_t >(
-												*req,
-												// TODO: make sec_websocket_accept_field_value
-												base64_encode( hash, SHA_DIGEST_LENGTH ),
-												// std::string{ "chat, superchat" },
-												[this]( restinio::ws_message_handle_t m ){
-														so_5::send<msg_ws_message>(
-															this->so_direct_mbox(), m );
-													},
-												[]( std::string reason ){} );
-
-										return restinio::request_accepted();
-									}
-
-									return restinio::request_rejected();
-								} );
+							.request_handler( m_req_handler );
 					} }
-		{}
+		{
+			http_server.open();
+		}
 
 		virtual void
 		so_define_agent() override
 		{
 			so_subscribe_self()
 				.event( &a_server_t::evt_ws_message );
-		}
-
-		virtual void
-		so_evt_start() override
-		{
-			http_server.open();
-
-			so_5::send<srv_started>(m_client_mbox);
 		}
 
 	private:
@@ -300,6 +265,35 @@ class a_server_t
 
 			m_ws->send_message( resp );
 		}
+
+		restinio::default_request_handler_t m_req_handler =
+			[this]( auto req )
+			{
+				if( restinio::http_connection_header_t::upgrade == req->header().connection() )
+				{
+					auto ws_key = req->header().get_field("Sec-WebSocket-Key");
+
+					ws_key.append( "258EAFA5-E914-47DA-95CA-C5AB0DC85B11" );
+
+					unsigned char hash[ SHA_DIGEST_LENGTH ];
+					SHA1( reinterpret_cast< const unsigned char* >(
+						ws_key.data( ) ), ws_key.length( ), hash );
+
+					m_ws =
+						restinio::upgrade_to_websocket< traits_t >(
+							*req,
+							base64_encode( hash, SHA_DIGEST_LENGTH ),
+							[this]( restinio::ws_message_handle_t m ){
+									so_5::send<msg_ws_message>(
+										this->so_direct_mbox(), m );
+								},
+							[]( std::string reason ){} );
+
+					return restinio::request_accepted();
+				}
+
+				return restinio::request_rejected();
+			};
 
 		so_5::mbox_t m_client_mbox;
 
@@ -322,24 +316,15 @@ class a_client_t
 		{}
 
 		virtual void
-		so_define_agent() override
-		{
-			so_subscribe_self()
-				.event< srv_started >( &a_client_t::evt_srv_started );
-		}
-
-		virtual void
 		so_evt_start() override
 		{
-			std::cout << "CLIENT\n";
+			init_connection_with_srv();
 		}
 
 	private:
 
-		void evt_srv_started()
+		void init_connection_with_srv()
 		{
-			std::cout << "SRV STARTED\n";
-
 			do_with_socket( [ & ]( auto & socket, auto & io_context ){
 
 				const std::string request{
@@ -367,7 +352,7 @@ class a_client_t
 					);
 
 				std::string response{ data.data(), len };
-				std::cout << "RESPONSE: " << response << std::endl;
+				// std::cout << "RESPONSE: " << response << std::endl;
 
 				// unsigned char msg1[] = { 0x81, 0x05, 'H', 'e', 'l', 'l', 'o' };
 				unsigned char msg1[] = {
@@ -414,7 +399,7 @@ class a_client_t
 				}
 			} );
 
-			// so_environment().stop();
+			so_environment().stop();
 		}
 
 		request_response_context_t & m_result;
@@ -460,7 +445,7 @@ client_server_ws_connection()
 	return res;
 }
 
-TEST_CASE( "Websocket" , "[ws_connection]" )
+TEST_CASE( "Request/Response comparision" , "[ws_connection]" )
 {
 	auto ctx = client_server_ws_connection();
 
