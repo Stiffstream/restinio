@@ -24,13 +24,7 @@ namespace restinio
 namespace impl
 {
 
-inline char
-tolower( char c )
-{
-	if( 'A' <= c && c <= 'Z' )
-		c |= 0x20;
-	return c;
-}
+#include "impl/to_lower_lut.inl"
 
 } /* namespace impl */
 
@@ -45,9 +39,15 @@ caseless_cmp(
 	const char * b,
 	std::size_t size )
 {
+	const unsigned char * const table = impl::to_lower_lut< unsigned char >();
+	constexpr auto uchar_at = [](
+			const char * const from, const std::size_t at )
+	{
+		return static_cast< unsigned char >( from[ at ] );
+	};
+
 	for( std::size_t i = 0; i < size; ++i )
-		if( impl::tolower( a[ i ] ) !=
-			impl::tolower( b[ i ] ) )
+		if( table[ uchar_at( a, i ) ] != table[ uchar_at( b, i ) ] )
 			return false;
 
 	return true;
