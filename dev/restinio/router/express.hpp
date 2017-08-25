@@ -218,23 +218,23 @@ class express_route_entry_t
 			const std::string & route_path,
 			const path2regex::options_t & options,
 			express_request_handler_t handler )
-			:	express_route_entry_t(
+			:	express_route_entry_t{
 					method,
 					path2regex::path2regex< route_params_t >(
 						route_path,
 						options ),
-					std::move( handler ) )
+					std::move( handler ) }
 		{}
 
 		express_route_entry_t(
 			http_method_t method,
 			const std::string & route_path,
 			express_request_handler_t handler )
-			:	express_route_entry_t(
+			:	express_route_entry_t{
 					method,
 					route_path,
 					path2regex::options_t{},
-					std::move( handler ) )
+					std::move( handler ) }
 		{}
 
 		//! Checks if request header matches entry,
