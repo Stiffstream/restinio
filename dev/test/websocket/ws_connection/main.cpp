@@ -16,6 +16,7 @@
 #include <so_5/all.hpp>
 #include <restinio/all.hpp>
 #include <restinio/websocket.hpp>
+#include <restinio/impl/base64.hpp>
 
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
@@ -275,14 +276,17 @@ class a_server_t
 
 					ws_key.append( "258EAFA5-E914-47DA-95CA-C5AB0DC85B11" );
 
-					unsigned char hash[ SHA_DIGEST_LENGTH ];
-					SHA1( reinterpret_cast< const unsigned char* >(
-						ws_key.data( ) ), ws_key.length( ), hash );
+					char hash[ SHA_DIGEST_LENGTH ];
+					SHA1(
+						reinterpret_cast< const unsigned char* >(ws_key.data( ) ),
+						ws_key.length( ),
+						reinterpret_cast< unsigned char* >( hash ) );
 
 					m_ws =
 						restinio::upgrade_to_websocket< traits_t >(
 							*req,
-							base64_encode( hash, SHA_DIGEST_LENGTH ),
+							restinio::base64_encode(
+								std::string(hash, SHA_DIGEST_LENGTH) ),
 							[this]( restinio::ws_message_handle_t m ){
 									so_5::send<msg_ws_message>(
 										this->so_direct_mbox(), m );
