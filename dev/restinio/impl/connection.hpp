@@ -710,7 +710,6 @@ class connection_t final
 			//! parts of a response.
 			buffers_container_t bufs )
 		{
-			assert( m_socket );
 			if( !m_socket.is_open() )
 			{
 				m_logger.warn( [&]{

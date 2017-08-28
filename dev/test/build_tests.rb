@@ -25,6 +25,11 @@ MxxRu::Cpp::composite_target {
 	required_prj( "test/router/express/prj.ut.rb" )
 	required_prj( "test/router/express_router/prj.ut.rb" )
 
+	required_prj( "test/encoders/prj.ut.rb" )
+
+	# ================================================================
+	# Benches for implementation tuning.
+	required_prj( "test/to_lower_bench/prj.rb" )
 	# ================================================================
 	# Websocket tests
 

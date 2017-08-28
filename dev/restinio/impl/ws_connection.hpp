@@ -709,15 +709,18 @@ class ws_connection_t final
 			auto & current_header = m_input.m_parser.current_message();
 			auto & current_payload = m_input.m_payload;
 
-			std::cout << "CURRENT PAYLOAD: " << current_payload << "\n";
-
+			if( current_header.m_masking_key )
+			{
+				impl::mask_unmask_payload(
+					current_header.m_masking_key, current_payload );
+			}
 			m_msg_handler(
 				ws_message_handle_t( new ws_message_t(
-					ws_message_header_t{
-						current_header.m_final_flag,
-						current_header.m_opcode,
-						current_payload.size() },
+					current_header.transform_to_header(),
 					current_payload ) ) );
+
+			start_read_header();
+			// init_read();
 		}
 
 		void

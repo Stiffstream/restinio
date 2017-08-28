@@ -142,32 +142,63 @@ unescape_percent_encoding( const std::string & data )
 
 template < typename TABLE = std::unordered_map< std::string, std::string > >
 TABLE
-parse_get_params( const std::string & request_target )
+parse_get_params( const std::string & query_string )
 {
-	TABLE param_table;
+	using it_t = std::string::const_iterator;
 
-	std::istringstream pstream{ request_target };
+	TABLE result;
 
-	std::string parameter_str;
-	std::getline( pstream, parameter_str, '?' );
+	static const auto find_char =
+		[]( std::string::value_type ch, it_t from, it_t to ) -> it_t {
+			for(; from != to; ++from)
+				if( ch == *from ) return from;
+			return to;
+		};
 
-	while( std::getline( pstream, parameter_str, '&' ) )
+	const it_t very_first_pos = query_string.begin();
+	it_t e = query_string.end();
+	it_t b = find_char( '?', very_first_pos, e );
+	if( b != e )
 	{
-		auto eq_symbol_pos =parameter_str.find( '=' );
+		// Skip '?'.
+		++b;
 
-		if( eq_symbol_pos == std::string::npos )
-			throw exception_t{ fmt::format( "bad params in uri: {}", request_target ) };
+		// If query_string contains #something at the end then
+		// search must be stopped at '#' char.
+		e = find_char( '#', b, e );
 
-		const auto parameter_name =
-			unescape_percent_encoding( parameter_str.substr( 0, eq_symbol_pos ) );
+		while( b != e )
+		{
+			const it_t separator = find_char( '&', b, e );
 
-		const auto parameter_value =
-			unescape_percent_encoding( parameter_str.substr( eq_symbol_pos + 1 ) );
+			// Handle next pair of parameters found.
+			const it_t eq = find_char( '=', b, separator );
+			if( eq == separator )
+				throw exception_t{ fmt::format(
+						"invalid format of key-value pairs in query_string: {}, "
+						"positions: [{}, {}]",
+						query_string,
+						std::distance(very_first_pos, b),
+						std::distance(very_first_pos, eq) ) };
 
-		param_table[ parameter_name ] = parameter_value;
+			std::string key = unescape_percent_encoding(
+					query_string.substr(
+							std::distance(very_first_pos, b),
+							std::distance(b, eq) ) );
+			std::string value = unescape_percent_encoding(
+					query_string.substr(
+							std::distance(very_first_pos, eq + 1),
+							std::distance(eq, separator) - 1 ) );
+
+			result.emplace( std::move(key), std::move(value) );
+
+			b = separator;
+			if( b != e )
+				++b;
+		}
 	}
 
-	return param_table;
+	return result;
 }
 
 } /* namespace restinio */
