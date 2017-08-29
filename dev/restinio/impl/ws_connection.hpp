@@ -169,8 +169,8 @@ class ws_connection_t final
 			:	ws_connection_base_t{ conn_id }
 			,	m_socket{ std::move( socket ) }
 			,	m_strand{ std::move( strand ) }
-			,	m_timer_guard{ std::move( timer_guard ) }
 			,	m_settings{ std::move( settings ) }
+			,	m_timer_guard{ std::move( timer_guard ) }
 			,	m_input{ /*TODO: use constant */ 18 }
 			,	m_msg_handler{ std::move( msg_handler ) }
 			,	m_close_handler{ std::move( close_handler ) }
@@ -747,13 +747,13 @@ class ws_connection_t final
 		//! Operation timeout guard.
 		timer_guard_instance_t m_timer_guard;
 
+		//! Input routine.
+		ws_connection_input_t m_input;
+
 		message_handler_t m_msg_handler;
 
 		bool m_close_handler_was_called{ false };
 		close_handler_t m_close_handler;
-
-		//! Input routine.
-		ws_connection_input_t m_input;
 
 		//! Write to socket operation context.
 		raw_resp_output_ctx_t m_resp_out_ctx;
