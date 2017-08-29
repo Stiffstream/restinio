@@ -654,6 +654,8 @@ class ws_connection_t final
 				// Send close frame.
 				// m_awaiting_buffers.append( ??? );
 
+
+
 				m_awaiting_buffers.set_close_when_done();
 				init_write_if_necessary();
 			}
@@ -714,13 +716,13 @@ class ws_connection_t final
 				impl::mask_unmask_payload(
 					current_header.m_masking_key, current_payload );
 			}
+
 			m_msg_handler(
 				ws_message_handle_t( new ws_message_t(
 					current_header.transform_to_header(),
 					current_payload ) ) );
 
 			start_read_header();
-			// init_read();
 		}
 
 		void

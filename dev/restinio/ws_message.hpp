@@ -15,6 +15,10 @@
 namespace restinio
 {
 
+//
+// opcode_t
+//
+
 enum class opcode_t : std::uint8_t
 {
 	continuation_frame = 0x00,
@@ -23,6 +27,19 @@ enum class opcode_t : std::uint8_t
 	connection_close_frame = 0x08,
 	ping_frame = 0x09,
 	pong_frame = 0x0A
+};
+
+//
+//  status_code_t
+//
+
+enum class status_code_t : std::uint16_t
+{
+	normal_closue = 1000,
+	going_away = 1001,
+	protocol_error = 1002,
+	cant_understand_data = 1003
+
 };
 
 //

@@ -35,6 +35,8 @@ is_base64_char( unsigned char c )
 inline void
 check_string_is_base64( const std::string & str )
 {
+	// TODO: check string size >= 4.
+
 	for( const auto & ch : str )
 	{
 		if( !is_base64_char( ch ) && ch != '=' )
@@ -48,7 +50,7 @@ base64_encode( const std::string & str )
 {
 	std::string result;
 
-	for( auto i = 0 ; i < str.size() - str.size()%3 ; i += 3)
+	for( size_t i = 0 ; i < str.size() - str.size()%3 ; i += 3)
 	{
 		bitset24_t bs;
 
@@ -106,7 +108,7 @@ base64_decode( const std::string & str )
 
 	check_string_is_base64( str );
 
-	for( auto i = 0 ; i < str.size()  ; i += 4)
+	for( size_t i = 0 ; i < str.size()  ; i += 4)
 	{
 		bitset24_t bs;
 
