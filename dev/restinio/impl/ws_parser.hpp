@@ -195,7 +195,6 @@ write_number_to_big_endian_bytes( std::uint64_t& number, raw_data_t & data )
 {
 	for( auto i = 0 ; i < BYTES ; ++i )
 	{
-		std::uint8_t byte = data[i];
 		auto shift_value = (BYTES - i - 1) * 8;
 		data.push_back( (number >> shift_value) & 0xFF );
 	}
@@ -284,6 +283,10 @@ class ws_parser_t
 				case state_t::waiting_for_mask_key:
 
 					process_masking_key();
+					break;
+
+				case state_t::header_parsed:
+
 					break;
 				}
 			}
@@ -391,11 +394,6 @@ class ws_parser_t
 					throw exception_t(
 						"Incorrect size of raw data: 8 bytes expected." );
 
-				auto left_shift_bytes = []( byte_t byte, size_t shift_count )
-				{
-					return static_cast<std::uint64_t>(byte) << shift_count;
-				};
-
 				read_number_from_big_endian_bytes(
 					m_current_msg.m_ext_payload_len, data );
 			}
@@ -411,11 +409,6 @@ class ws_parser_t
 				if( data.size() != 4 )
 					throw exception_t(
 						"Incorrect size of raw data: 4 bytes expected." );
-
-				auto left_shift_bytes = []( byte_t byte, size_t shift_count )
-				{
-					return static_cast<std::uint32_t>(byte) << shift_count;
-				};
 
 				read_number_from_big_endian_bytes(
 					m_current_msg.m_masking_key, data );

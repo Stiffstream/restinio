@@ -278,7 +278,7 @@ TEST_CASE( "Parse simple message (chunked)" , "[websocket][parser][read]" )
 
 	ws_parser_t parser;
 
-	int shift = 0;
+	size_t shift = 0;
 
 	for( ; shift < bin_data.size() - 1 ; ++shift  )
 	{

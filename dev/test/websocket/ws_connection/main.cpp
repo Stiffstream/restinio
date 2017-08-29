@@ -21,103 +21,6 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
-
-// using namespace restinio;
-// using namespace restinio::impl;
-
-static const std::string base64_chars =
-             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-             "abcdefghijklmnopqrstuvwxyz"
-             "0123456789+/";
-
-
-static inline bool is_base64(unsigned char c) {
-  return (isalnum(c) || (c == '+') || (c == '/'));
-}
-
-std::string base64_encode(unsigned char const* bytes_to_encode, unsigned int in_len) {
-  std::string ret;
-  int i = 0;
-  int j = 0;
-  unsigned char char_array_3[3];
-  unsigned char char_array_4[4];
-
-  while (in_len--) {
-    char_array_3[i++] = *(bytes_to_encode++);
-    if (i == 3) {
-      char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-      char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-      char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-      char_array_4[3] = char_array_3[2] & 0x3f;
-
-      for(i = 0; (i <4) ; i++)
-        ret += base64_chars[char_array_4[i]];
-      i = 0;
-    }
-  }
-
-  if (i)
-  {
-    for(j = i; j < 3; j++)
-      char_array_3[j] = '\0';
-
-    char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-    char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-    char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-    char_array_4[3] = char_array_3[2] & 0x3f;
-
-    for (j = 0; (j < i + 1); j++)
-      ret += base64_chars[char_array_4[j]];
-
-    while((i++ < 3))
-      ret += '=';
-
-  }
-
-  return ret;
-
-}
-std::string base64_decode(std::string const& encoded_string) {
-  int in_len = encoded_string.size();
-  int i = 0;
-  int j = 0;
-  int in_ = 0;
-  unsigned char char_array_4[4], char_array_3[3];
-  std::string ret;
-
-  while (in_len-- && ( encoded_string[in_] != '=') && is_base64(encoded_string[in_])) {
-    char_array_4[i++] = encoded_string[in_]; in_++;
-    if (i ==4) {
-      for (i = 0; i <4; i++)
-        char_array_4[i] = base64_chars.find(char_array_4[i]);
-
-      char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
-      char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
-      char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
-
-      for (i = 0; (i < 3); i++)
-        ret += char_array_3[i];
-      i = 0;
-    }
-  }
-
-  if (i) {
-    for (j = i; j <4; j++)
-      char_array_4[j] = 0;
-
-    for (j = 0; j <4; j++)
-      char_array_4[j] = base64_chars.find(char_array_4[j]);
-
-    char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
-    char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
-    char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
-
-    for (j = 0; (j < i - 1); j++) ret += char_array_3[j];
-  }
-
-  return ret;
-}
-
 char
 to_char( int val )
 {
@@ -198,6 +101,59 @@ print_ws_message( const restinio::ws_message_t & msg )
 	std::cout << ")" << std::endl;
 }
 
+restinio::ws_message_t
+parse_bin_data( const char* data, size_t len )
+{
+	restinio::impl::ws_parser_t parser;
+
+	auto parsed = parser.parser_execute( data, len );
+
+	if( parser.header_parsed() )
+	{
+		restinio::ws_message_t result{
+			parser.current_message().transform_to_header(),
+			std::string(
+				data + (
+					len - parser.current_message().payload_len()),
+				parser.current_message().payload_len() )
+		};
+
+		print_ws_message( result );
+
+		return result;
+
+	}
+	else
+	{
+		throw std::runtime_error("Invalid bin data");
+	}
+}
+
+restinio::raw_data_t
+status_code_to_bin( restinio::status_code_t code )
+{
+	return restinio::raw_data_t{
+		to_char_each(
+			{
+				(static_cast<std::uint16_t>(code) >> 8) & 0xFF ,
+				static_cast<std::uint16_t>(code) % 0xFF
+			}
+		) };
+}
+
+restinio::ws_message_t
+create_close_msg(
+	restinio::status_code_t code,
+	const std::string & desc = std::string() )
+{
+	restinio::raw_data_t payload{status_code_to_bin( code ) + desc };
+
+	restinio::ws_message_t close_msg(
+		true, restinio::opcode_t::connection_close_frame, payload );
+
+	return close_msg;
+}
+
 using traits_t =
 	restinio::traits_t<
 		restinio::asio_timer_factory_t,
@@ -221,6 +177,11 @@ request_response_context_t
 {
 	restinio::ws_message_t m_request;
 	restinio::ws_message_t m_response;
+	std::string m_request_bin;
+	std::string m_response_bin;
+
+	int close_code = 0;
+	std::string m_close_description;
 };
 
 class a_server_t
@@ -230,10 +191,8 @@ class a_server_t
 
 	public:
 		a_server_t(
-			context_t ctx,
-			so_5::mbox_t client_mbox )
+			context_t ctx )
 			:	so_base_type_t{ ctx }
-			,	m_client_mbox{ std::move(client_mbox) }
 			,	http_server{
 					restinio::create_child_io_context( 1 ),
 					[this]( auto & settings ){
@@ -258,13 +217,29 @@ class a_server_t
 		void
 		evt_ws_message( const msg_ws_message & msg )
 		{
-			print_ws_message( *(msg.m_msg) );
+			auto req = *(msg.m_msg);
 
-			auto resp = *(msg.m_msg);
+			std::cout << "REQUEST\n";
 
-			resp.header().m_masking_key = 0;
+			print_ws_message( req );
 
-			m_ws->send_message( resp );
+			if( req.header().m_masking_key )
+			{
+				auto resp = req;
+
+				resp.header().m_masking_key = 0;
+
+				m_ws->send_message( resp );
+			}
+			else
+			{
+				std::cout << "CLOSE CONNECTION\n";
+
+				m_ws->send_message( create_close_msg(
+					restinio::status_code_t::protocol_error ) );
+
+				m_ws->close();
+			}
 		}
 
 		restinio::default_request_handler_t m_req_handler =
@@ -299,12 +274,11 @@ class a_server_t
 				return restinio::request_rejected();
 			};
 
-		so_5::mbox_t m_client_mbox;
-
 		http_server_t http_server;
 
 		restinio::websocket_unique_ptr_t m_ws;
 };
+
 
 class a_client_t
 	:	public so_5::agent_t
@@ -362,45 +336,32 @@ class a_client_t
 				unsigned char msg1[] = {
 					0x81, 0x85, 0x37, 0xfa, 0x21, 0x3d, 0x7f, 0x9f, 0x4d, 0x51, 0x58 };
 
-				auto raw_data = restinio::impl::write_message_details(
-					to_ws_message_details(m_etalon_request) );
+				// auto raw_data = restinio::impl::write_message_details(
+				// 	to_ws_message_details(m_etalon_request) );
 
-				std::string masked_payload = m_etalon_request.payload();
+				// std::string masked_payload = m_etalon_request.payload();
 
-				restinio::impl::mask_unmask_payload(
-					m_etalon_request.header().m_masking_key,
-					masked_payload );
+				// restinio::impl::mask_unmask_payload(
+				// 	m_etalon_request.header().m_masking_key,
+				// 	masked_payload );
 
-				raw_data.append( masked_payload );
+				// raw_data.append( masked_payload );
 
 				REQUIRE_NOTHROW(
 						asio::write(
-							socket, asio::buffer( msg1, sizeof( msg1 ) ) )
+							// socket, asio::buffer( msg1, sizeof( msg1 ) ) )
 							// socket, asio::buffer( raw_data, raw_data.size() ) )
+							socket, asio::buffer(
+								m_result.m_request_bin.data(),
+								m_result.m_request_bin.size() ) )
 						);
 
 				REQUIRE_NOTHROW(
 					len = socket.read_some( asio::buffer( data.data(), data.size() ) )
 					);
 
-				response = std::string{ data.data(), len };
-
-				restinio::impl::ws_parser_t parser;
-
-				auto parsed = parser.parser_execute( data.data(), len );
-
-				if( parser.header_parsed() )
-				{
-					restinio::ws_message_t resp{
-						parser.current_message().transform_to_header(),
-						std::string(
-							data.data() + (
-								len - parser.current_message().payload_len()),
-							parser.current_message().payload_len() )
-					};
-
-					print_ws_message( resp );
-				}
+				m_result.m_response = parse_bin_data( data.data(), len );
+				m_result.m_response_bin = std::string( data.data(), len ) ;
 			} );
 
 			so_environment().stop();
@@ -418,9 +379,13 @@ class a_client_t
 
 
 request_response_context_t
-client_server_ws_connection()
+client_server_ws_connection( const std::string & req_bin )
+// client_server_ws_connection( const restinio::ws_message_t & req )
 {
-	request_response_context_t res;
+	request_response_context_t rr_ctx;
+
+	rr_ctx.m_request_bin = req_bin;
+	rr_ctx.m_request = parse_bin_data(req_bin.data(), req_bin.size());
 
 	try
 	{
@@ -431,10 +396,8 @@ client_server_ws_connection()
 				env.introduce_coop(
 					so_5::disp::active_obj::create_private_disp( env )->binder(),
 					[ & ]( so_5::coop_t & coop ) {
-
-						auto client_mbox =
-							coop.make_agent< a_client_t >( res )->so_direct_mbox();
-						coop.make_agent< a_server_t >( client_mbox );
+						coop.make_agent< a_client_t >( rr_ctx );
+						coop.make_agent< a_server_t >( );
 					} );
 			},
 			[]( so_5::environment_params_t & params )
@@ -446,12 +409,32 @@ client_server_ws_connection()
 		std::cerr << "Error: " << ex.what() << std::endl;
 	}
 
-	return res;
+	return rr_ctx;
 }
 
-TEST_CASE( "Request/Response comparision" , "[ws_connection]" )
+TEST_CASE( "Request/Response echo" , "[ws_connection]" )
 {
-	auto ctx = client_server_ws_connection();
+	restinio::raw_data_t bin_data{ to_char_each(
+			{0x81, 0x85, 0x37, 0xfa, 0x21, 0x3d, 0x7f, 0x9f, 0x4d, 0x51, 0x58}) };
 
-	REQUIRE( ctx.m_request == ctx.m_response );
+	auto ctx = client_server_ws_connection( bin_data );
+
+	// REQUIRE( ctx.m_request == ctx.m_response );
+	// REQUIRE( ctx.m_request_bin == ctx.m_response_bin );
+	std::cout << "RESULT:\n";
+	print_ws_message( ctx.m_request );
+	print_ws_message( ctx.m_response );
+}
+
+TEST_CASE( "Request/Response close without masking key" , "[ws_connection]" )
+{
+	restinio::raw_data_t bin_data{ to_char_each(
+			{0x81, 0x05, 'H', 'e', 'l', 'l', 'o'}) };
+
+	auto ctx = client_server_ws_connection( bin_data );
+
+	REQUIRE( ctx.m_response.header().m_opcode ==
+		restinio::opcode_t::connection_close_frame );
+
+
 }
