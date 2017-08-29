@@ -29,7 +29,7 @@ struct null_timer_factory_t
 		template <
 				typename EXECUTOR,
 				typename CALLBACK_FUNC >
-		void
+		constexpr void
 		schedule_operation_timeout_callback(
 			const EXECUTOR & ,
 			std::chrono::steady_clock::duration ,
@@ -37,18 +37,25 @@ struct null_timer_factory_t
 		{}
 
 		// Cancel timeout guard if any.
-		void
+		constexpr void
 		cancel() const
 		{}
 	};
 
-	using timer_guard_instance_t = std::shared_ptr< timer_guard_t >;
+	struct timer_guard_instance_t
+	{
+		constexpr const timer_guard_t *
+		operator ->() const noexcept
+		{
+			return static_cast< timer_guard_t * >( nullptr );
+		}
+	};
 
 	// Create guard for connection.
 	timer_guard_instance_t
 	create_timer_guard( asio::io_service & )
 	{
-		return std::make_shared< timer_guard_t >();
+		return timer_guard_instance_t{};
 	}
 };
 
