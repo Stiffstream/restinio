@@ -101,13 +101,70 @@ struct extra_settings_t
 };
 
 //
+// acceptor_options_t
+//
+
+//! An adapter for setting acceptor options before running server.
+class acceptor_options_t
+{
+	public:
+		acceptor_options_t( asio::ip::tcp::acceptor & acceptor )
+			:	m_acceptor{ acceptor }
+		{}
+
+		template< typename OPTION >
+		void
+		set_option( const OPTION & option )
+		{
+			m_acceptor.set_option( option );
+		}
+
+		template< typename OPTION >
+		void
+		set_option( const OPTION & option, asio::error_code & ec )
+		{
+			m_acceptor.set_option( option, ec );
+		}
+
+		template< typename OPTION >
+		void
+		get_option( OPTION & option )
+		{
+			m_acceptor.get_option( option );
+		}
+
+		template< typename OPTION >
+		void
+		get_option( OPTION & option, asio::error_code & ec )
+		{
+			m_acceptor.get_option( option, ec );
+		}
+
+	private:
+		asio::ip::tcp::acceptor & m_acceptor;
+};
+
+using acceptor_options_setter_t = std::function< void ( acceptor_options_t & ) >;
+
+template <>
+inline auto
+create_default_object_instance< acceptor_options_setter_t >()
+{
+	return std::make_unique< acceptor_options_setter_t >(
+		[]( acceptor_options_t & acceptor_options ){
+			acceptor_options.set_option( asio::ip::tcp::acceptor::reuse_address( true ) );
+		} );
+}
+
+
+//
 // server_settings_t
 //
 
 //! A fluent style interface for setting http server params.
 template < typename TRAITS >
 class server_settings_t final
-	:	public extra_settings_t< server_settings_t< TRAITS > , typename TRAITS::stream_socket_t >
+	:	public extra_settings_t< server_settings_t< TRAITS >, typename TRAITS::stream_socket_t >
 {
 	public:
 		server_settings_t(
@@ -364,7 +421,6 @@ class server_settings_t final
 		}
 		//! \}
 
-
 		//! Logger.
 		//! \{
 		using logger_t = typename TRAITS::logger_t;
@@ -391,6 +447,34 @@ class server_settings_t final
 			return ensure_created(
 				std::move( m_logger ),
 				"logger must be set" );
+		}
+		//! \}
+
+		//! Acceptor options setter.
+		//! \{
+		server_settings_t &
+		acceptor_options_setter( acceptor_options_setter_t aos ) &
+		{
+			if( m_acceptor_options_setter )
+				throw exception_t{ "acceptor options setter cannot be empty" };
+
+			return set_instance(
+					m_acceptor_options_setter,
+					std::move( aos ) );
+		}
+
+		server_settings_t &&
+		acceptor_options_setter( acceptor_options_setter_t aos ) &&
+		{
+			return std::move( this->acceptor_options_setter( std::move( aos ) ) );
+		}
+
+		std::unique_ptr< acceptor_options_setter_t >
+		acceptor_options_setter()
+		{
+			return ensure_created(
+				std::move( m_acceptor_options_setter ),
+				"acceptor_options_setter must be set" );
 		}
 		//! \}
 
@@ -439,6 +523,9 @@ class server_settings_t final
 
 		//! Logger.
 		std::unique_ptr< logger_t > m_logger;
+
+		//! Acceptor options setter.
+		std::unique_ptr< acceptor_options_setter_t > m_acceptor_options_setter;
 };
 
 template < typename TRAITS, typename CONFIGURATOR >

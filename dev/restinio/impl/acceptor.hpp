@@ -94,12 +94,6 @@ class acceptor_t final
 		template < typename SETTINGS >
 		acceptor_t(
 			SETTINGS & settings,
-			// //! Server port.
-			// std::uint16_t port,
-			// //! Server protocol.
-			// asio::ip::tcp protocol,
-			// //! Is only local connections allowed.
-			// std::string address,
 			//! ASIO io_service to run on.
 			asio::io_service & io_service,
 			//! Connection factory.
@@ -109,6 +103,7 @@ class acceptor_t final
 			,	m_port{ settings.port() }
 			,	m_protocol{ settings.protocol() }
 			,	m_address{ settings.address() }
+			,	m_acceptor_options_setter{ settings.acceptor_options_setter() }
 			,	m_acceptor{ io_service }
 			,	m_strand{ this->socket().lowest_layer().get_executor() }
 			,	m_connection_factory{ std::move( connection_factory ) }
@@ -140,8 +135,12 @@ class acceptor_t final
 
 				m_acceptor.open( ep.protocol() );
 
-				m_acceptor.set_option(
-					asio::ip::tcp::acceptor::reuse_address( true ) );
+				{
+					// Set acceptor options.
+					acceptor_options_t options{ m_acceptor };
+
+					(*m_acceptor_options_setter)( options );
+				}
 
 				m_acceptor.bind( ep );
 				m_acceptor.listen( asio::socket_base::max_connections );
@@ -257,8 +256,8 @@ class acceptor_t final
 
 		//! Server port listener and connection receiver routine.
 		//! \{
+		std::unique_ptr< acceptor_options_setter_t > m_acceptor_options_setter;
 		asio::ip::tcp::acceptor m_acceptor;
-		// stream_socket_t m_socket;
 		//! \}
 
 		//! Sync object for acceptor events.
@@ -268,6 +267,7 @@ class acceptor_t final
 		connection_factory_shared_ptr_t m_connection_factory;
 
 		logger_t & m_logger;
+
 };
 
 } /* namespace impl */
