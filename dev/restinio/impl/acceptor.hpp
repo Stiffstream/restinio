@@ -126,6 +126,7 @@ class acceptor_t final
 			,	m_acceptor_options_setter{ settings.acceptor_options_setter() }
 			,	m_acceptor{ io_context }
 			,	m_executor{ io_context.get_executor() }
+			,	m_separate_accept_and_create_connect{ settings.separate_accept_and_create_connect() }
 			,	m_connection_factory{ std::move( connection_factory ) }
 			,	m_logger{ logger }
 		{}
@@ -253,15 +254,27 @@ class acceptor_t final
 							this->socket( i ).lowest_layer().remote_endpoint(), i );
 				} );
 
-				// Create new connection handler.
-				auto conn =
-					m_connection_factory
-						->create_new_connection( this->move_socket( i ) );
+				auto create_and_init_connection =
+					[ sock = this->move_socket( i ), factory = m_connection_factory ]() mutable {
+						// Create new connection handler.
+						auto conn = factory->create_new_connection( std::move( sock ) );
 
-				//! If connection handler was created,
-				// then start waiting for request message.
-				if( conn )
-					conn->init();
+						//! If connection handler was created,
+						// then start waiting for request message.
+						if( conn )
+							conn->init();
+					};
+
+				if( m_separate_accept_and_create_connect )
+				{
+					asio::post(
+						get_executor(),
+						std::move( create_and_init_connection ) );
+				}
+				else
+				{
+					create_and_init_connection();
+				}
 			}
 			else
 			{
@@ -290,6 +303,9 @@ class acceptor_t final
 		std::unique_ptr< acceptor_options_setter_t > m_acceptor_options_setter;
 		asio::ip::tcp::acceptor m_acceptor;
 		//! \}
+
+		//! Do separate an accept operation and connection instantiation.
+		const bool m_separate_accept_and_create_connect;
 
 		//! Asio executor.
 		asio::executor m_executor;

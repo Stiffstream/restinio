@@ -506,6 +506,36 @@ class server_settings_t final
 		}
 		//! \}
 
+		//! Do separate an accept operation and connection instantiation.
+		/*!
+			For the cases when a lot of connection can be fired by clients
+			in a short time interval, it is vital to accept connections
+			and initiate new accept operations as quick as possible.
+			So creating connection instance that involves allocations
+			and initialization can be done in a context that
+			is independent to acceptors one.
+		*/
+		//! \{
+		server_settings_t &
+		separate_accept_and_create_connect( bool do_separate ) &
+		{
+			m_separate_accept_and_create_connect = do_separate;
+			return *this;
+		}
+
+		server_settings_t &&
+		separate_accept_and_create_connect( bool do_separate ) &&
+		{
+			return std::move( this->separate_accept_and_create_connect( do_separate ) );
+		}
+
+		bool
+		separate_accept_and_create_connect() const
+		{
+			return m_separate_accept_and_create_connect;
+		}
+		//! \}
+
 	private:
 		template< typename TARGET, typename... PARAMS >
 		server_settings_t &
@@ -556,6 +586,9 @@ class server_settings_t final
 		std::unique_ptr< acceptor_options_setter_t > m_acceptor_options_setter;
 
 		std::size_t m_concurrent_accepts_count{ 1 };
+
+		//! Do separate an accept operation and connection instantiation.
+		bool m_separate_accept_and_create_connect{ false };
 };
 
 template < typename TRAITS, typename CONFIGURATOR >

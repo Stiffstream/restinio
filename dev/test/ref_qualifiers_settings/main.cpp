@@ -139,6 +139,8 @@ TEST_CASE( "Ref-qualifiers" , "[settings][ref_qualifiers]" )
 			(*acceptor_option_setter)( acceptor_options );
 
 			REQUIRE( acceptor_options_lambda_was_called );
+
+			REQUIRE( settings.separate_accept_and_create_connect() );
 		};
 
 	check_params(
@@ -158,5 +160,6 @@ TEST_CASE( "Ref-qualifiers" , "[settings][ref_qualifiers]" )
 			.acceptor_options_setter(
 				[&]( auto & ){
 					acceptor_options_lambda_was_called = true;
-				} ) );
+				} )
+			.separate_accept_and_create_connect( true ) );
 }
