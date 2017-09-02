@@ -302,13 +302,15 @@ string_to_field( const char * field_name, std::size_t field_name_size )
 			break;
 
 		case 4:
+			// Known to be more used first:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( host,                         Host )
+
 			RESTINIO_HTTP_CHECK_FOR_FIELD( a_im,                         A-IM )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( alpn,                         ALPN )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( dasl,                         DASL )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( date,                         Date )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( etag,                         ETag )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( from,                         From )
-			RESTINIO_HTTP_CHECK_FOR_FIELD( host,                         Host )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( link,                         Link )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( safe,                         Safe )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( slug,                         SLUG )
@@ -329,15 +331,17 @@ string_to_field( const char * field_name, std::size_t field_name_size )
 			break;
 
 		case 6:
+			// Known to be more used first:
 			RESTINIO_HTTP_CHECK_FOR_FIELD( accept,                       Accept )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( cookie,                       Cookie )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( server,                       Server )
+
 			RESTINIO_HTTP_CHECK_FOR_FIELD( digest,                       Digest )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( expect,                       Expect )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( origin,                       Origin )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( pragma,                       Pragma )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( prefer,                       Prefer )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( public_,                      Public )
-			RESTINIO_HTTP_CHECK_FOR_FIELD( server,                       Server )
 			break;
 
 		case 7:
@@ -395,9 +399,11 @@ string_to_field( const char * field_name, std::size_t field_name_size )
 			break;
 
 		case 12:
+			// Known to be more used first:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( content_type,                 Content-Type )
+
 			RESTINIO_HTTP_CHECK_FOR_FIELD( accept_patch,                 Accept-Patch )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( content_base,                 Content-Base )
-			RESTINIO_HTTP_CHECK_FOR_FIELD( content_type,                 Content-Type )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( derived_from,                 Derived-From )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( max_forwards,                 Max-Forwards )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( mime_version,                 MIME-Version )
@@ -593,6 +599,10 @@ append_last_field_accessor( http_header_fields_t &, const std::string & );
 
 } /* namespace impl */
 
+#if !defined( RESTINIO_HEADER_FIELDS_DEFAULT_RESERVE_COUNT )
+	#define RESTINIO_HEADER_FIELDS_DEFAULT_RESERVE_COUNT 4
+#endif
+
 //
 // http_header_fields_t
 //
@@ -616,7 +626,10 @@ class http_header_fields_t
 	public:
 		using fields_container_t = std::vector< http_header_field_t >;
 
-		http_header_fields_t() = default;
+		http_header_fields_t()
+		{
+			m_fields.reserve( RESTINIO_HEADER_FIELDS_DEFAULT_RESERVE_COUNT );
+		}
 		http_header_fields_t(const http_header_fields_t &) = default;
 		http_header_fields_t(http_header_fields_t &&) = default;
 		virtual ~http_header_fields_t() {}
