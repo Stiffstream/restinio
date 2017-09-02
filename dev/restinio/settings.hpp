@@ -156,6 +156,58 @@ create_default_object_instance< acceptor_options_setter_t >()
 		} );
 }
 
+//
+// socket_options_t
+//
+
+//! An adapter for setting acceptor options before running server.
+class socket_options_t
+{
+	public:
+		socket_options_t( asio::ip::tcp::socket & socket )
+			:	m_socket{ socket }
+		{}
+
+		template< typename OPTION >
+		void
+		set_option( const OPTION & option )
+		{
+			m_socket.set_option( option );
+		}
+
+		template< typename OPTION >
+		void
+		set_option( const OPTION & option, asio::error_code & ec )
+		{
+			m_socket.set_option( option, ec );
+		}
+
+		template< typename OPTION >
+		void
+		get_option( OPTION & option )
+		{
+			m_socket.get_option( option );
+		}
+
+		template< typename OPTION >
+		void
+		get_option( OPTION & option, asio::error_code & ec )
+		{
+			m_socket.get_option( option, ec );
+		}
+
+	private:
+		asio::ip::tcp::socket & m_socket;
+};
+
+using socket_options_setter_t = std::function< void ( socket_options_t & ) >;
+
+template <>
+inline auto
+create_default_object_instance< socket_options_setter_t >()
+{
+	return std::make_unique< socket_options_setter_t >( []( socket_options_t & ){} );
+}
 
 //
 // server_settings_t
@@ -474,7 +526,35 @@ class server_settings_t final
 		{
 			return ensure_created(
 				std::move( m_acceptor_options_setter ),
-				"acceptor_options_setter must be set" );
+				"acceptor options setter must be set" );
+		}
+		//! \}
+
+		//! Socket options setter.
+		//! \{
+		server_settings_t &
+		socket_options_setter( socket_options_setter_t sos ) &
+		{
+			if( m_socket_options_setter )
+				throw exception_t{ "socket options setter cannot be empty" };
+
+			return set_instance(
+					m_socket_options_setter,
+					std::move( sos ) );
+		}
+
+		server_settings_t &&
+		socket_options_setter( socket_options_setter_t sos ) &&
+		{
+			return std::move( this->socket_options_setter( std::move( sos ) ) );
+		}
+
+		std::unique_ptr< socket_options_setter_t >
+		socket_options_setter()
+		{
+			return ensure_created(
+				std::move( m_socket_options_setter ),
+				"socket options setter must be set" );
 		}
 		//! \}
 
@@ -584,6 +664,9 @@ class server_settings_t final
 
 		//! Acceptor options setter.
 		std::unique_ptr< acceptor_options_setter_t > m_acceptor_options_setter;
+
+		//! Socket options setter.
+		std::unique_ptr< socket_options_setter_t > m_socket_options_setter;
 
 		std::size_t m_concurrent_accepts_count{ 1 };
 
