@@ -115,25 +115,30 @@ using server_settings_t = restinio::server_settings_t< traits_t >;
 
 TEST_CASE( "Ref-qualifiers" , "[settings][ref_qualifiers]" )
 {
+	bool acceptor_options_lambda_was_called = false;
+
 	auto check_params =
 		[ & ]( server_settings_t settings ){
 			REQUIRE( 4242 == settings.port() );
 			REQUIRE( asio::ip::tcp::v6() == settings.protocol() );
 			REQUIRE( std::string{ "127.0.0.1" } == settings.address() );
 			REQUIRE( 2017 == settings.buffer_size() );
-			REQUIRE( std::chrono::seconds( 120 ) ==
-				settings.read_next_http_message_timelimit() );
-			REQUIRE( std::chrono::seconds( 121 ) ==
-				settings.write_http_response_timelimit() );
-			REQUIRE( std::chrono::seconds( 122 ) ==
-				settings.handle_request_timeout() );
+			REQUIRE( std::chrono::seconds( 120 ) == settings.read_next_http_message_timelimit() );
+			REQUIRE( std::chrono::seconds( 121 ) == settings.write_http_response_timelimit() );
+			REQUIRE( std::chrono::seconds( 122 ) == settings.handle_request_timeout() );
 			REQUIRE( 42 == settings.max_pipelined_requests() );
-			REQUIRE( std::string{ "REQUESTHANDLER" } ==
-				settings.request_handler()->tag() );
-			REQUIRE( std::string{ "TIMERFACTORY" } ==
-				settings.timer_factory()->tag() );
-			REQUIRE( std::string{ "LOGGER" } ==
-				settings.logger()->tag() );
+			REQUIRE( std::string{ "REQUESTHANDLER" } == settings.request_handler()->tag() );
+			REQUIRE( std::string{ "TIMERFACTORY" } == settings.timer_factory()->tag() );
+			REQUIRE( std::string{ "LOGGER" } == settings.logger()->tag() );
+			REQUIRE( 4 == settings.concurrent_accepts_count() );
+
+			auto acceptor_option_setter = settings.acceptor_options_setter();
+			restinio::acceptor_options_t
+				acceptor_options{ *static_cast< asio::ip::tcp::acceptor * >( nullptr ) };
+
+			(*acceptor_option_setter)( acceptor_options );
+
+			REQUIRE( acceptor_options_lambda_was_called );
 		};
 
 	check_params(
@@ -148,5 +153,10 @@ TEST_CASE( "Ref-qualifiers" , "[settings][ref_qualifiers]" )
 			.max_pipelined_requests( 42 )
 			.request_handler( "REQUESTHANDLER" )
 			.timer_factory( "TIMERFACTORY" )
-			.logger( "LOGGER" ) );
+			.logger( "LOGGER" )
+			.concurrent_accepts_count( 4 )
+			.acceptor_options_setter(
+				[&]( auto & ){
+					acceptor_options_lambda_was_called = true;
+				} ) );
 }

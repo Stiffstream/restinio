@@ -478,6 +478,34 @@ class server_settings_t final
 		}
 		//! \}
 
+		//! Max number of running concurrent accepts.
+		//! \{
+		server_settings_t &
+		concurrent_accepts_count( std::size_t n ) &
+		{
+			if( 0 == n || 1024 < n )
+				throw exception_t{
+					fmt::format(
+						"invalid value for number of cuncurrent connects: {}",
+						n ) };
+
+			m_concurrent_accepts_count = n;
+			return *this;
+		}
+
+		server_settings_t &&
+		concurrent_accepts_count( std::size_t n ) &&
+		{
+			return std::move( this->concurrent_accepts_count( n ) );
+		}
+
+		std::size_t
+		concurrent_accepts_count() const
+		{
+			return m_concurrent_accepts_count;
+		}
+		//! \}
+
 	private:
 		template< typename TARGET, typename... PARAMS >
 		server_settings_t &
@@ -526,6 +554,8 @@ class server_settings_t final
 
 		//! Acceptor options setter.
 		std::unique_ptr< acceptor_options_setter_t > m_acceptor_options_setter;
+
+		std::size_t m_concurrent_accepts_count{ 1 };
 };
 
 template < typename TRAITS, typename CONFIGURATOR >

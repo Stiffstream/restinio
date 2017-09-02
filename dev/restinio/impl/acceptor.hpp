@@ -22,11 +22,11 @@ namespace impl
 {
 
 //
-// socket_holder_t
+// socket_supplier_t
 //
 
 /*
-	A helper base class that hides socket instance.
+	A helper base class that hides a pool of socket instances.
 
 	It prepares a socket for new connections.
 	And as it is template class over a socket type
@@ -35,41 +35,61 @@ namespace impl
 	that can be used.
 */
 template < typename STREAM_SOCKET >
-class socket_holder_t
+class socket_supplier_t
 {
 	protected:
 		template < typename SETTINGS >
-		socket_holder_t(
-			SETTINGS & ,
-			asio::io_service & io_service )
-			:	m_io_service{ io_service }
-			,	m_socket{ m_io_service }
-		{}
+		socket_supplier_t(
+			//! Server settings.
+			SETTINGS & settings,
+			//! A context the server runs on.
+			asio::io_context & io_context )
+			:	m_io_context{ io_context }
+		{
+			m_sockets.reserve( settings.concurrent_accepts_count() );
 
-		virtual ~socket_holder_t() = default;
+			while( m_sockets.size() < settings.concurrent_accepts_count() )
+			{
+				m_sockets.emplace_back( m_io_context );
+			}
+		}
+
+		virtual ~socket_supplier_t() = default;
 
 		//! Get the reference to socket.
 		STREAM_SOCKET &
-		socket()
+		socket(
+			//! Index of a socket in the pool.
+			std::size_t idx )
 		{
-			return m_socket;
+			return m_sockets.at( idx );
 		}
 
 		//! Extract current socet via move.
 		STREAM_SOCKET
-		move_socket()
+		move_socket(
+			//! Index of a socket in the pool.
+			std::size_t idx )
 		{
-			auto res = std::move( m_socket );
+			auto res = std::move( m_sockets.at( idx ) );
 			return res;
 		}
 
+		//! The number of sockets that can be used for
+		//! cuncurrent accept operations.
+		auto
+		cuncurrent_accept_sockets_count() const
+		{
+			return m_sockets.size();
+		}
+
 	private:
-		//! io_service for sockets to run on.
-		asio::io_service & m_io_service;
+		//! io_context for sockets to run on.
+		asio::io_context & m_io_context;
 
 		//! A temporary socket for receiving new connections.
 		//! \note Must never be empty.
-		STREAM_SOCKET m_socket;
+		std::vector< STREAM_SOCKET > m_sockets;
 };
 
 //
@@ -80,32 +100,32 @@ class socket_holder_t
 template < typename TRAITS >
 class acceptor_t final
 	:	public std::enable_shared_from_this< acceptor_t< TRAITS > >
-	,	public socket_holder_t< typename TRAITS::stream_socket_t >
+	,	public socket_supplier_t< typename TRAITS::stream_socket_t >
 {
 	public:
 		using connection_factory_t = impl::connection_factory_t< TRAITS >;
 		using connection_factory_shared_ptr_t =
 			std::shared_ptr< connection_factory_t >;
 		using logger_t = typename TRAITS::logger_t;
-		using strand_t = typename TRAITS::strand_t;
 		using stream_socket_t = typename TRAITS::stream_socket_t;
-		using socket_holder_base_t = socket_holder_t< stream_socket_t >;
+		using socket_holder_base_t = socket_supplier_t< stream_socket_t >;
 
 		template < typename SETTINGS >
 		acceptor_t(
 			SETTINGS & settings,
-			//! ASIO io_service to run on.
-			asio::io_service & io_service,
+			//! ASIO io_context to run on.
+			asio::io_context & io_context,
 			//! Connection factory.
 			connection_factory_shared_ptr_t connection_factory,
+			//! Logger.
 			logger_t & logger )
-			:	socket_holder_base_t{ settings, io_service }
+			:	socket_holder_base_t{ settings, io_context }
 			,	m_port{ settings.port() }
 			,	m_protocol{ settings.protocol() }
 			,	m_address{ settings.address() }
 			,	m_acceptor_options_setter{ settings.acceptor_options_setter() }
-			,	m_acceptor{ io_service }
-			,	m_strand{ this->socket().lowest_layer().get_executor() }
+			,	m_acceptor{ io_context }
+			,	m_executor{ io_context.get_executor() }
 			,	m_connection_factory{ std::move( connection_factory ) }
 			,	m_logger{ logger }
 		{}
@@ -146,10 +166,17 @@ class acceptor_t final
 				m_acceptor.listen( asio::socket_base::max_connections );
 
 				// Call accept connections routine.
-				accept_next();
+				for( std::size_t i = 0; i< this->cuncurrent_accept_sockets_count(); ++i )
+				{
+					m_logger.info( [&]{
+						return fmt::format( "init accept #{}", i );
+					} );
+
+					accept_next( i );
+				}
 
 				m_logger.info( [&]{
-					return fmt::format( "server started  on {}", ep );
+					return fmt::format( "server started on {}", ep );
 				} );
 			}
 			catch( const std::exception & ex )
@@ -184,49 +211,52 @@ class acceptor_t final
 			} );
 		}
 
-		strand_t &
+		auto &
 		get_executor()
 		{
-			return m_strand;
+			return m_executor;
 		}
 
 	private:
 		// Set a callback for a new connection.
 		void
-		accept_next()
+		accept_next( std::size_t i )
 		{
 			m_acceptor.async_accept(
-				this->socket().lowest_layer(),
+				this->socket( i ).lowest_layer(),
 				asio::bind_executor(
 					get_executor(),
-					[ ctx = this->shared_from_this() ]( auto ec ){
+					[ i, ctx = this->shared_from_this() ]( auto ec ){
 						// Check if acceptor is running.
 						// Also it cover
 						// `asio::error:operation_aborted == ec`
 						// case.
 						if( ctx->m_acceptor.is_open() )
 						{
-							ctx->accept_current_connection( ec );
+							ctx->accept_current_connection( i, ec );
 						}
 					} ) );
 		}
 
 		//! Accept current connection.
 		void
-		accept_current_connection( const std::error_code & ec )
+		accept_current_connection(
+			//! socket index in the pool of sockets.
+			std::size_t i,
+			const std::error_code & ec )
 		{
 			if( !ec )
 			{
 				m_logger.trace( [&]{
 					return fmt::format(
-							"accept connection from: {}",
-							this->socket().lowest_layer().remote_endpoint() );
+							"accept connection from {} on socket #{}",
+							this->socket( i ).lowest_layer().remote_endpoint(), i );
 				} );
 
 				// Create new connection handler.
 				auto conn =
 					m_connection_factory
-						->create_new_connection( this->move_socket() );
+						->create_new_connection( this->move_socket( i ) );
 
 				//! If connection handler was created,
 				// then start waiting for request message.
@@ -238,13 +268,14 @@ class acceptor_t final
 				// Something goes wrong with connection.
 				m_logger.error( [&]{
 					return fmt::format(
-						"failed to accept connection: {}",
-						ec );
+						"failed to accept connection on socket #{}: {}",
+						i,
+						ec.message() );
 				} );
 			}
 
 			// Continue accepting.
-			accept_next();
+			accept_next( i );
 		}
 
 		//! Server endpoint.
@@ -260,8 +291,8 @@ class acceptor_t final
 		asio::ip::tcp::acceptor m_acceptor;
 		//! \}
 
-		//! Sync object for acceptor events.
-		strand_t m_strand;
+		//! Asio executor.
+		asio::executor m_executor;
 
 		//! Factory for creating connections.
 		connection_factory_shared_ptr_t m_connection_factory;

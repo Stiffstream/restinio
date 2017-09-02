@@ -118,43 +118,61 @@ namespace impl
 {
 
 //
-// socket_holder_t
+// socket_supplier_t
 //
 
 //! A custom socket storage for tls_socket_t.
 template <>
-class socket_holder_t< tls_socket_t >
+class socket_supplier_t< tls_socket_t >
 {
 	protected:
 		template < typename SETTINGS >
-		socket_holder_t(
+		socket_supplier_t(
 			SETTINGS & settings,
 			asio::io_service & io_service )
 			:	m_tls_context{ settings.tls_context() }
 			,	m_io_service{ io_service }
-			,	m_socket{ m_io_service, m_tls_context }
-		{}
+		{
+			m_sockets.reserve( settings.concurrent_accepts_count() );
 
-		virtual ~socket_holder_t() = default;
+			while( m_sockets.size() < settings.concurrent_accepts_count() )
+			{
+				m_sockets.emplace_back( m_io_service, m_tls_context );
+			}
+		}
+
+		virtual ~socket_supplier_t() = default;
 
 		tls_socket_t &
-		socket()
+		socket(
+			//! Index of a socket in the pool.
+			std::size_t idx )
 		{
-			return m_socket;
+			return m_sockets.at( idx );
 		}
 
 		auto
-		move_socket()
+		move_socket(
+			//! Index of a socket in the pool.
+			std::size_t idx )
 		{
 			tls_socket_t res{ m_io_service, m_tls_context };
-			std::swap( res, m_socket );
+			std::swap( res, m_sockets.at( idx ) );
 			return res;
+		}
+
+		//! The number of sockets that can be used for
+		//! cuncurrent accept operations.
+		auto
+		cuncurrent_accept_sockets_count() const
+		{
+			return m_sockets.size();
 		}
 
 	private:
 		asio::ssl::context m_tls_context;
 		asio::io_service & m_io_service;
-		tls_socket_t m_socket;
+		std::vector< tls_socket_t > m_sockets;
 };
 
 } /* namespace impl */
