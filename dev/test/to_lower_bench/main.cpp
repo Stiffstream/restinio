@@ -241,6 +241,12 @@ const C * to_lower_lut_items()
 	return table;
 }
 
+constexpr auto
+uchar_at( const char * const from, const std::size_t at )
+{
+	return static_cast< unsigned char >( from[at] );
+};
+
 bool
 by_lut1_caseless_cmp2(
 	const char * a,
@@ -248,11 +254,6 @@ by_lut1_caseless_cmp2(
 	std::size_t size )
 {
 	const unsigned char * const table = to_lower_lut_items< unsigned char >();
-	constexpr auto uchar_at = [](
-			const char * const from, const std::size_t at )
-	{
-		return static_cast< unsigned char >( from[at] );
-	};
 
 	for( std::size_t i = 0; i < size; ++i )
 		if( table[uchar_at( a, i )] != table[uchar_at( b, i )] )

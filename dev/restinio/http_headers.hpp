@@ -26,6 +26,13 @@ namespace impl
 
 #include "impl/to_lower_lut.inl"
 
+constexpr auto
+uchar_at( const char * const from, const std::size_t at )
+{
+	return static_cast< unsigned char >( from[ at ] );
+};
+
+
 } /* namespace impl */
 
 //
@@ -40,14 +47,9 @@ caseless_cmp(
 	std::size_t size )
 {
 	const unsigned char * const table = impl::to_lower_lut< unsigned char >();
-	constexpr auto uchar_at = [](
-			const char * const from, const std::size_t at )
-	{
-		return static_cast< unsigned char >( from[ at ] );
-	};
 
 	for( std::size_t i = 0; i < size; ++i )
-		if( table[ uchar_at( a, i ) ] != table[ uchar_at( b, i ) ] )
+		if( table[ impl::uchar_at( a, i ) ] != table[ impl::uchar_at( b, i ) ] )
 			return false;
 
 	return true;
