@@ -114,6 +114,13 @@ class extra_settings_t< SETTINGS, tls_socket_t >
 		asio::ssl::context m_tls_context{ asio::ssl::context::sslv23 };
 };
 
+template <>
+inline auto
+create_default_object_instance< socket_options_setter_t< tls_socket_t > >()
+{
+	return std::make_unique< socket_options_setter_t< tls_socket_t > >( []( auto & ){} );
+}
+
 namespace impl
 {
 

@@ -161,10 +161,11 @@ create_default_object_instance< acceptor_options_setter_t >()
 //
 
 //! An adapter for setting acceptor options before running server.
+template < typename STREAM_SOCKET >
 class socket_options_t
 {
 	public:
-		socket_options_t( asio::ip::tcp::socket & socket )
+		socket_options_t( STREAM_SOCKET & socket )
 			:	m_socket{ socket }
 		{}
 
@@ -197,16 +198,17 @@ class socket_options_t
 		}
 
 	private:
-		asio::ip::tcp::socket & m_socket;
+		STREAM_SOCKET & m_socket;
 };
 
-using socket_options_setter_t = std::function< void ( socket_options_t & ) >;
+template < typename STREAM_SOCKET >
+using socket_options_setter_t = std::function< void ( socket_options_t< STREAM_SOCKET > & ) >;
 
 template <>
 inline auto
-create_default_object_instance< socket_options_setter_t >()
+create_default_object_instance< socket_options_setter_t< asio::ip::tcp::socket > >()
 {
-	return std::make_unique< socket_options_setter_t >( []( socket_options_t & ){} );
+	return std::make_unique< socket_options_setter_t< asio::ip::tcp::socket > >( []( auto & ){} );
 }
 
 //
@@ -532,8 +534,9 @@ class server_settings_t final
 
 		//! Socket options setter.
 		//! \{
+		using sock_opts_setter_t = socket_options_setter_t< typename TRAITS::stream_socket_t >;
 		server_settings_t &
-		socket_options_setter( socket_options_setter_t sos ) &
+		socket_options_setter( sock_opts_setter_t sos ) &
 		{
 			if( m_socket_options_setter )
 				throw exception_t{ "socket options setter cannot be empty" };
@@ -544,12 +547,12 @@ class server_settings_t final
 		}
 
 		server_settings_t &&
-		socket_options_setter( socket_options_setter_t sos ) &&
+		socket_options_setter( sock_opts_setter_t sos ) &&
 		{
 			return std::move( this->socket_options_setter( std::move( sos ) ) );
 		}
 
-		std::unique_ptr< socket_options_setter_t >
+		std::unique_ptr< sock_opts_setter_t >
 		socket_options_setter()
 		{
 			return ensure_created(
@@ -666,7 +669,7 @@ class server_settings_t final
 		std::unique_ptr< acceptor_options_setter_t > m_acceptor_options_setter;
 
 		//! Socket options setter.
-		std::unique_ptr< socket_options_setter_t > m_socket_options_setter;
+		std::unique_ptr< sock_opts_setter_t > m_socket_options_setter;
 
 		std::size_t m_concurrent_accepts_count{ 1 };
 
