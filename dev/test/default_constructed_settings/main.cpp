@@ -273,3 +273,27 @@ TEST_CASE( "Acceptor options" , "[settings][acceptor_options]" )
 
 	REQUIRE( lambda_was_called );
 }
+
+TEST_CASE( "Socket options" , "[settings][socket_options]" )
+{
+	using settings_t = server_settings_t< restinio::default_traits_t >;
+
+	settings_t s{};
+
+	auto socket_option_setter = s.socket_options_setter();
+	REQUIRE( socket_option_setter );
+
+	bool lambda_was_called = false;
+	s.socket_options_setter(
+		[&]( auto & ){
+			lambda_was_called = true;
+		} );
+
+	socket_option_setter = s.socket_options_setter();
+	restinio::socket_options_t< asio::ip::tcp::socket >
+		socket_options{ *static_cast< asio::ip::tcp::socket * >( nullptr ) };
+
+	(*socket_option_setter)( socket_options );
+
+	REQUIRE( lambda_was_called );
+}

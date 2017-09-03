@@ -116,6 +116,7 @@ using server_settings_t = restinio::server_settings_t< traits_t >;
 TEST_CASE( "Ref-qualifiers" , "[settings][ref_qualifiers]" )
 {
 	bool acceptor_options_lambda_was_called = false;
+	bool socket_options_lambda_was_called = false;
 
 	auto check_params =
 		[ & ]( server_settings_t settings ){
@@ -132,13 +133,26 @@ TEST_CASE( "Ref-qualifiers" , "[settings][ref_qualifiers]" )
 			REQUIRE( std::string{ "LOGGER" } == settings.logger()->tag() );
 			REQUIRE( 4 == settings.concurrent_accepts_count() );
 
-			auto acceptor_option_setter = settings.acceptor_options_setter();
-			restinio::acceptor_options_t
-				acceptor_options{ *static_cast< asio::ip::tcp::acceptor * >( nullptr ) };
+			{
+				auto acceptor_option_setter = settings.acceptor_options_setter();
+				restinio::acceptor_options_t
+					acceptor_options{ *static_cast< asio::ip::tcp::acceptor * >( nullptr ) };
 
-			(*acceptor_option_setter)( acceptor_options );
+				(*acceptor_option_setter)( acceptor_options );
+			}
 
 			REQUIRE( acceptor_options_lambda_was_called );
+
+			{
+				auto socket_option_setter = settings.socket_options_setter();
+				restinio::socket_options_t< asio::ip::tcp::socket >
+					socket_options{ *static_cast< asio::ip::tcp::socket * >( nullptr ) };
+
+				(*socket_option_setter)( socket_options );
+			}
+
+			REQUIRE( socket_options_lambda_was_called );
+
 
 			REQUIRE( settings.separate_accept_and_create_connect() );
 		};
@@ -160,6 +174,10 @@ TEST_CASE( "Ref-qualifiers" , "[settings][ref_qualifiers]" )
 			.acceptor_options_setter(
 				[&]( auto & ){
 					acceptor_options_lambda_was_called = true;
+				} )
+			.socket_options_setter(
+				[&]( auto & ){
+					socket_options_lambda_was_called = true;
 				} )
 			.separate_accept_and_create_connect( true ) );
 }
