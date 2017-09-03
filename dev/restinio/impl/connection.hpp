@@ -1125,11 +1125,10 @@ class connection_factory_t
 		using timer_factory_t = typename TRAITS::timer_factory_t;
 		using logger_t = typename TRAITS::logger_t;
 		using stream_socket_t = typename TRAITS::stream_socket_t;
-		using sock_opts_setter_t = socket_options_setter_t< stream_socket_t >;
 
 		connection_factory_t(
 			connection_settings_shared_ptr_t< TRAITS > connection_settings,
-			std::unique_ptr< sock_opts_setter_t > socket_options_setter,
+			std::unique_ptr< socket_options_setter_t > socket_options_setter,
 			asio::io_service & io_service,
 			std::unique_ptr< timer_factory_t > timer_factory )
 			:	m_connection_settings{ std::move( connection_settings ) }
@@ -1151,7 +1150,7 @@ class connection_factory_t
 			try
 			{
 				{
-					socket_options_t< stream_socket_t > options{ socket };
+					socket_options_t options{ socket.lowest_layer() };
 					(*m_socket_options_setter)( options );
 				}
 
@@ -1178,7 +1177,7 @@ class connection_factory_t
 
 		connection_settings_shared_ptr_t< TRAITS > m_connection_settings;
 
-		std::unique_ptr< sock_opts_setter_t > m_socket_options_setter;
+		std::unique_ptr< socket_options_setter_t > m_socket_options_setter;
 
 		asio::io_service & m_io_service;
 

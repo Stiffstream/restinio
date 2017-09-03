@@ -25,8 +25,8 @@ using tls_socket_t = impl::tls_socket_t;
 template <
 		typename TIMER_FACTORY,
 		typename LOGGER,
-		typename REQUEST_HANDLER,
-		typename STRAND >
+		typename REQUEST_HANDLER = default_request_handler_t,
+		typename STRAND = asio::strand< asio::executor > >
 using tls_traits_t = traits_t< TIMER_FACTORY, LOGGER, REQUEST_HANDLER, STRAND, tls_socket_t >;
 
 //
@@ -113,13 +113,6 @@ class extra_settings_t< SETTINGS, tls_socket_t >
 
 		asio::ssl::context m_tls_context{ asio::ssl::context::sslv23 };
 };
-
-template <>
-inline auto
-create_default_object_instance< socket_options_setter_t< tls_socket_t > >()
-{
-	return std::make_unique< socket_options_setter_t< tls_socket_t > >( []( auto & ){} );
-}
 
 namespace impl
 {

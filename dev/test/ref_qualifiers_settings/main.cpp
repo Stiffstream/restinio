@@ -145,7 +145,7 @@ TEST_CASE( "Ref-qualifiers" , "[settings][ref_qualifiers]" )
 
 			{
 				auto socket_option_setter = settings.socket_options_setter();
-				restinio::socket_options_t< asio::ip::tcp::socket >
+				restinio::socket_options_t
 					socket_options{ *static_cast< asio::ip::tcp::socket * >( nullptr ) };
 
 				(*socket_option_setter)( socket_options );

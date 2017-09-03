@@ -290,7 +290,7 @@ TEST_CASE( "Socket options" , "[settings][socket_options]" )
 		} );
 
 	socket_option_setter = s.socket_options_setter();
-	restinio::socket_options_t< asio::ip::tcp::socket >
+	restinio::socket_options_t
 		socket_options{ *static_cast< asio::ip::tcp::socket * >( nullptr ) };
 
 	(*socket_option_setter)( socket_options );
