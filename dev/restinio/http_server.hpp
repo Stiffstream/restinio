@@ -83,6 +83,7 @@ class http_server_t
 					m_io_context_wrapper->io_context(),
 					std::make_shared< connection_factory_t >(
 						conn_settings,
+						settings.socket_options_setter(),
 						m_io_context_wrapper->io_context(),
 						settings.timer_factory() ),
 					*( conn_settings->m_logger ) );

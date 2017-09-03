@@ -1125,12 +1125,15 @@ class connection_factory_t
 		using timer_factory_t = typename TRAITS::timer_factory_t;
 		using logger_t = typename TRAITS::logger_t;
 		using stream_socket_t = typename TRAITS::stream_socket_t;
+		using sock_opts_setter_t = socket_options_setter_t< stream_socket_t >;
 
 		connection_factory_t(
 			connection_settings_shared_ptr_t< TRAITS > connection_settings,
+			std::unique_ptr< sock_opts_setter_t > socket_options_setter,
 			asio::io_service & io_service,
 			std::unique_ptr< timer_factory_t > timer_factory )
 			:	m_connection_settings{ std::move( connection_settings ) }
+			,	m_socket_options_setter{ std::move( socket_options_setter ) }
 			,	m_io_service{ io_service }
 			,	m_timer_factory{ std::move( timer_factory ) }
 			,	m_logger{ *(m_connection_settings->m_logger ) }
@@ -1141,20 +1144,41 @@ class connection_factory_t
 
 		auto
 		create_new_connection(
-			stream_socket_t && socket )
+			stream_socket_t socket )
 		{
 			using connection_type_t = connection_t< TRAITS >;
-			return std::make_shared< connection_type_t >(
-				m_connection_id_counter++,
-				std::move( socket ),
-				m_connection_settings,
-				m_timer_factory->create_timer_guard( m_io_service ) );
+			std::shared_ptr< connection_type_t > result;
+			try
+			{
+				{
+					socket_options_t< stream_socket_t > options{ socket };
+					(*m_socket_options_setter)( options );
+				}
+
+				result = std::make_shared< connection_type_t >(
+					m_connection_id_counter++,
+					std::move( socket ),
+					m_connection_settings,
+					m_timer_factory->create_timer_guard( m_io_service ) );
+			}
+			catch( const std::exception & ex )
+			{
+				m_logger.error( [&]{
+					return fmt::format(
+						"failed to create connection: {}",
+						ex.what() );
+				} );
+			}
+
+			return result;
 		}
 
 	private:
 		std::uint64_t m_connection_id_counter{ 1 };
 
 		connection_settings_shared_ptr_t< TRAITS > m_connection_settings;
+
+		std::unique_ptr< sock_opts_setter_t > m_socket_options_setter;
 
 		asio::io_service & m_io_service;
 
