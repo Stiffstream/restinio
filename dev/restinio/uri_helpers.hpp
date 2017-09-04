@@ -66,6 +66,18 @@ extract_escaped_char( char c1,  char c2 )
 	return result;
 };
 
+inline const char *
+modified_memchr( int chr , const char * from, const char * to )
+{
+	const char * result =
+		static_cast< const char * >( std::memchr( from, chr, to - from ) );
+
+	if( nullptr == result )
+		result = to;
+
+	return result;
+}
+
 } /* namespace impl */
 
 //! Percent encoding.
@@ -140,61 +152,57 @@ unescape_percent_encoding( const std::string & data )
 
 //! \}
 
+
 template < typename TABLE = std::unordered_map< std::string, std::string > >
 TABLE
-parse_get_params( const std::string & query_string )
+parse_query_string( const std::string & query_string )
 {
-	using it_t = std::string::const_iterator;
+	const char * const very_first_pos = query_string.data();
+	const char * query_remainder = very_first_pos;
+	const char * query_end = query_remainder + query_string.size();
 
 	TABLE result;
 
-	static const auto find_char =
-		[]( std::string::value_type ch, it_t from, it_t to ) -> it_t {
-			for(; from != to; ++from)
-				if( ch == *from ) return from;
-			return to;
-		};
+	query_remainder = impl::modified_memchr( '?', query_remainder, query_end );
 
-	const it_t very_first_pos = query_string.begin();
-	it_t e = query_string.end();
-	it_t b = find_char( '?', very_first_pos, e );
-	if( b != e )
+	if( query_end > query_remainder )
 	{
 		// Skip '?'.
-		++b;
+		++query_remainder;
 
-		// If query_string contains #something at the end then
-		// search must be stopped at '#' char.
-		e = find_char( '#', b, e );
+		query_end = impl::modified_memchr( '#', query_remainder, query_end );
 
-		while( b != e )
+		while( query_end > query_remainder )
 		{
-			const it_t separator = find_char( '&', b, e );
+			const char * const eq_symbol =
+				impl::modified_memchr( '=', query_remainder, query_end );
+
+			if( query_end == eq_symbol )
+			{
+				throw exception_t{
+					fmt::format(
+						"invalid format of key-value pairs in query_string: {}, "
+						"no '=' symbol starting from position {}",
+						query_string,
+						std::distance(very_first_pos, query_remainder) ) };
+			}
+
+			const char * const amp_symbol_or_end =
+				impl::modified_memchr( '&', eq_symbol + 1, query_end );
 
 			// Handle next pair of parameters found.
-			const it_t eq = find_char( '=', b, separator );
-			if( eq == separator )
-				throw exception_t{ fmt::format(
-						"invalid format of key-value pairs in query_string: {}, "
-						"positions: [{}, {}]",
-						query_string,
-						std::distance(very_first_pos, b),
-						std::distance(very_first_pos, eq) ) };
-
 			std::string key = unescape_percent_encoding(
 					query_string.substr(
-							std::distance(very_first_pos, b),
-							std::distance(b, eq) ) );
+							std::distance(very_first_pos, query_remainder ),
+							std::distance( query_remainder, eq_symbol ) ) );
 			std::string value = unescape_percent_encoding(
 					query_string.substr(
-							std::distance(very_first_pos, eq + 1),
-							std::distance(eq, separator) - 1 ) );
+							std::distance(very_first_pos, eq_symbol + 1),
+							std::distance(eq_symbol + 1, amp_symbol_or_end ) ) );
 
 			result.emplace( std::move(key), std::move(value) );
 
-			b = separator;
-			if( b != e )
-				++b;
+			query_remainder = amp_symbol_or_end + 1;
 		}
 	}
 

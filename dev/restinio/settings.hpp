@@ -105,6 +105,11 @@ struct extra_settings_t
 //
 
 //! An adapter for setting acceptor options before running server.
+/*!
+	Class hides an acceptor object and opens only set/get options API.
+	It is used as an argument for a user defined function-object
+	that can set custom options for acceptor.
+*/
 class acceptor_options_t
 {
 	public:
@@ -161,13 +166,22 @@ create_default_object_instance< acceptor_options_setter_t >()
 //
 
 //! An adapter for setting acceptor options before running server.
+/*!
+	Class hides a socket object and opens only set/get options API.
+	It is used as an argument for a user defined function-object
+	that can set custom options for socket.
+*/
 class socket_options_t
 {
 	public:
-		socket_options_t( asio::basic_socket< asio::ip::tcp > & socket )
+		socket_options_t(
+			//! A reference on the most base class with interface of setting options.
+			asio::basic_socket< asio::ip::tcp > & socket )
 			:	m_socket{ socket }
 		{}
 
+		//! API for setting/getting options.
+		//! \{
 		template< typename OPTION >
 		void
 		set_option( const OPTION & option )
@@ -195,8 +209,10 @@ class socket_options_t
 		{
 			m_socket.get_option( option, ec );
 		}
+		//! \}
 
 	private:
+		//! A reference on the most base class with interface of setting options.
 		asio::basic_socket< asio::ip::tcp > & m_socket;
 };
 

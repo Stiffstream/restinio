@@ -145,9 +145,7 @@ TEST_CASE( "Unescape percent encoding" , "[unescape][percent_encoding]" )
 	}
 }
 
-
-
-TEST_CASE( "Parse get params" , "[parse_get_params]" )
+TEST_CASE( "Parse query params" , "[parse_query_string]" )
 {
 	{
 		const std::string
@@ -157,7 +155,7 @@ TEST_CASE( "Parse get params" , "[parse_get_params]" )
 				"toAge=38&"
 				"gender=f" };
 
-		auto params = restinio::parse_get_params< std::map< std::string, std::string > >( uri );
+		auto params = restinio::parse_query_string< std::map< std::string, std::string > >( uri );
 
 		REQUIRE( 4 == params.size() );
 
@@ -172,7 +170,7 @@ TEST_CASE( "Parse get params" , "[parse_get_params]" )
 			uri{ "/users/36/visits?"
 				"country=%D0%9C%D0%B0%D0%BB%D1%8C%D1%82%D0%B0" };
 
-		auto params = restinio::parse_get_params( uri );
+		auto params = restinio::parse_query_string( uri );
 
 		REQUIRE( 1 == params.size() );
 
@@ -185,7 +183,7 @@ TEST_CASE( "Parse get params" , "[parse_get_params]" )
 			uri{ "/users/36/visits?"
 				"my%20name=my%20value" };
 
-		auto params = restinio::parse_get_params( uri );
+		auto params = restinio::parse_query_string( uri );
 
 		REQUIRE( 1 == params.size() );
 
@@ -196,9 +194,9 @@ TEST_CASE( "Parse get params" , "[parse_get_params]" )
 	{
 		const std::string
 			uri{ "/users/36/visits?"
-				"k1=v1&k2=v2#fragment" };
+				"k1=v1&k2=v2#fragment=value" };
 
-		auto params = restinio::parse_get_params( uri );
+		auto params = restinio::parse_query_string( uri );
 
 		REQUIRE( 2 == params.size() );
 
@@ -207,7 +205,7 @@ TEST_CASE( "Parse get params" , "[parse_get_params]" )
 	}
 }
 
-TEST_CASE( "Parse get params to std::multi_map" , "[parse_get_params_multi_map]" )
+TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_string_multi_map]" )
 {
 	using multimap_t = std::multimap< std::string, std::string >;
 
@@ -219,7 +217,7 @@ TEST_CASE( "Parse get params to std::multi_map" , "[parse_get_params_multi_map]"
 				"toAge=38&"
 				"gender=f" };
 
-		auto params = restinio::parse_get_params< multimap_t >( uri );
+		auto params = restinio::parse_query_string< multimap_t >( uri );
 
 		REQUIRE( 4 == params.size() );
 
@@ -237,7 +235,7 @@ TEST_CASE( "Parse get params to std::multi_map" , "[parse_get_params_multi_map]"
 			uri{ "/users/36/visits?"
 				"country=%D0%9C%D0%B0%D0%BB%D1%8C%D1%82%D0%B0" };
 
-		auto params = restinio::parse_get_params< multimap_t >( uri );
+		auto params = restinio::parse_query_string< multimap_t >( uri );
 
 		REQUIRE( 1 == params.size() );
 
@@ -250,7 +248,7 @@ TEST_CASE( "Parse get params to std::multi_map" , "[parse_get_params_multi_map]"
 			uri{ "/users/36/visits?"
 				"my%20name=my%20value" };
 
-		auto params = restinio::parse_get_params< multimap_t >( uri );
+		auto params = restinio::parse_query_string< multimap_t >( uri );
 
 		REQUIRE( 1 == params.size() );
 
@@ -261,9 +259,9 @@ TEST_CASE( "Parse get params to std::multi_map" , "[parse_get_params_multi_map]"
 	{
 		const std::string
 			uri{ "/users/36/visits?"
-				"k1=v1&k2=v2#fragment" };
+				"k1=v1&k2=v2#fragment=value" };
 
-		auto params = restinio::parse_get_params< multimap_t >( uri );
+		auto params = restinio::parse_query_string< multimap_t >( uri );
 
 		REQUIRE( 2 == params.size() );
 
@@ -278,7 +276,7 @@ TEST_CASE( "Parse get params to std::multi_map" , "[parse_get_params_multi_map]"
 			uri{ "/users/36/visits?"
 				"k1=v1&k1=v2#fragment" };
 
-		auto params = restinio::parse_get_params< multimap_t >( uri );
+		auto params = restinio::parse_query_string< multimap_t >( uri );
 
 		REQUIRE( 2 == params.size() );
 
