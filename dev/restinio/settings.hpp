@@ -117,6 +117,8 @@ class acceptor_options_t
 			:	m_acceptor{ acceptor }
 		{}
 
+		//! API for setting/getting options.
+		//! \{
 		template< typename OPTION >
 		void
 		set_option( const OPTION & option )
@@ -144,6 +146,7 @@ class acceptor_options_t
 		{
 			m_acceptor.get_option( option, ec );
 		}
+		//! \}
 
 	private:
 		asio::ip::tcp::acceptor & m_acceptor;
