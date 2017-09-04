@@ -5,7 +5,6 @@
 #pragma once
 
 #include <string>
-#include <bitset>
 #include <array>
 #include <exception>
 #include <iostream> // std::cout, debug
@@ -36,6 +35,8 @@ const std::uint8_t DIGEST_SIZE = 20;
 // Number of words in digest.
 const std::size_t DIGEST_ARRAY_SIZE = DIGEST_SIZE / WORD_SIZE ;
 
+using byte_block_t = std::array< std::uint8_t, BLOCK_SIZE >;
+using int_block_t = std::array< std::uint32_t, BLOCK_INTS >;
 using digest_t = std::array< std::uint32_t, DIGEST_ARRAY_SIZE >;
 
 // const uint64_t h0 = 0x67452301;
@@ -71,7 +72,7 @@ rotate_left( const std::uint32_t x, size_t n )
 	return (x << n) | (x >> (32-n));
 }
 
-static uint32_t blk(const uint32_t block[BLOCK_INTS], const size_t i)
+static uint32_t blk(const int_block_t & block, const size_t i)
 {
     return rotate_left(
     	block[(i+13)&15] ^ block[(i+8)&15] ^ block[(i+2)&15] ^ block[i], 1);
@@ -101,7 +102,7 @@ to_hex_string( const digest_t & what )
 }
 
 inline void
-R0(const uint32_t block[BLOCK_INTS], const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
+R0(const int_block_t & block, const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
 {
 	z += ((w&(x^y))^y) + block[i] + 0x5a827999 + rotate_left(v, 5);
 	w = rotate_left(w, 30);
@@ -109,7 +110,7 @@ R0(const uint32_t block[BLOCK_INTS], const uint32_t v, uint32_t &w, const uint32
 
 
 inline void
-R1(uint32_t block[BLOCK_INTS], const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
+R1(int_block_t & block, const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
 {
 	block[i] = blk(block, i);
 	z += ((w&(x^y))^y) + block[i] + 0x5a827999 + rotate_left(v, 5);
@@ -118,7 +119,7 @@ R1(uint32_t block[BLOCK_INTS], const uint32_t v, uint32_t &w, const uint32_t x, 
 
 
 inline void
-R2(uint32_t block[BLOCK_INTS], const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
+R2(int_block_t & block, const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
 {
 	block[i] = blk(block, i);
 	z += (w^x^y) + block[i] + 0x6ed9eba1 + rotate_left(v, 5);
@@ -127,7 +128,7 @@ R2(uint32_t block[BLOCK_INTS], const uint32_t v, uint32_t &w, const uint32_t x, 
 
 
 inline void
-R3(uint32_t block[BLOCK_INTS], const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
+R3(int_block_t & block, const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
 {
 	block[i] = blk(block, i);
 	z += (((w|x)&y)|(w&x)) + block[i] + 0x8f1bbcdc + rotate_left(v, 5);
@@ -136,7 +137,7 @@ R3(uint32_t block[BLOCK_INTS], const uint32_t v, uint32_t &w, const uint32_t x, 
 
 
 inline void
-R4(uint32_t block[BLOCK_INTS], const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
+R4(int_block_t & block, const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
 {
 	block[i] = blk(block, i);
 	z += (w^x^y) + block[i] + 0xca62c1d6 + rotate_left(v, 5);
@@ -144,9 +145,9 @@ R4(uint32_t block[BLOCK_INTS], const uint32_t v, uint32_t &w, const uint32_t x, 
 }
 
 inline void
-transform( digest_t & digest, const std::uint8_t buf[ BLOCK_SIZE ] )
+transform( digest_t & digest, const byte_block_t & buf )
 {
-	std::uint32_t block[ BLOCK_INTS ];
+	int_block_t block;
 
 	for (size_t i = 0; i < BLOCK_INTS; i++)
 	{
@@ -273,7 +274,7 @@ struct builder_t
 			{
 				auto part_len = std::min( length, BLOCK_SIZE - m_buffer_len );
 
-				std::copy( what, what + part_len, m_buffer + m_buffer_len );
+				std::copy( what, what + part_len, m_buffer.begin() + m_buffer_len );
 				m_buffer_len += part_len;
 
 				if( m_buffer_len != BLOCK_SIZE )
@@ -343,9 +344,7 @@ struct builder_t
 		size_t m_buffer_len;
 		size_t m_transforms_count;
 
-		std::uint8_t m_buffer[BLOCK_SIZE];
-
-
+		byte_block_t m_buffer;
 };
 
 inline digest_t
