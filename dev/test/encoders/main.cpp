@@ -10,6 +10,7 @@
 #include <catch/catch.hpp>
 
 #include <restinio/impl/base64.hpp>
+#include <restinio/impl/sha1.hpp>
 
 using namespace restinio;
 
@@ -63,4 +64,14 @@ TEST_CASE(
 		std::string str{"TW9uZXk="};
 		REQUIRE( base64_decode( str ) == "Money" );
 	}
+}
+
+TEST_CASE(
+	"SHA-1 encode" ,
+	"[encoders][sha-1]" )
+{
+	auto digest = restinio::impl::sha1::make_digest("sha", 3);
+
+	std::cout << restinio::impl::sha1::to_hex_string( digest ) << std::endl;
+
 }
