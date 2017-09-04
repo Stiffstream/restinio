@@ -304,11 +304,11 @@ class acceptor_t final
 		asio::ip::tcp::acceptor m_acceptor;
 		//! \}
 
-		//! Do separate an accept operation and connection instantiation.
-		const bool m_separate_accept_and_create_connect;
-
 		//! Asio executor.
 		asio::executor m_executor;
+
+		//! Do separate an accept operation and connection instantiation.
+		const bool m_separate_accept_and_create_connect;
 
 		//! Factory for creating connections.
 		connection_factory_shared_ptr_t m_connection_factory;
