@@ -81,7 +81,7 @@ static uint32_t blk(const int_block_t & block, const size_t i)
 inline std::string
 to_hex_string( const digest_t & what )
 {
-	static const char digits[] = "0123456789ABCDEF";
+	static const char digits[] = "0123456789abcdef";
 
 	std::string result;
 	result.reserve( DIGEST_ARRAY_SIZE * 8);
@@ -303,6 +303,14 @@ struct builder_t
 			while(m_buffer_len < 64)
 				m_buffer[m_buffer_len++] = 0x00;
 
+			if( total_bits > (BLOCK_SIZE - 8) * 8 )
+			{
+				transform( m_digest, m_buffer );
+
+				for( size_t i = 0 ; i < BLOCK_SIZE ; ++ i )
+					m_buffer[i] = 0;
+			}
+
 			std::uint32_t total_bits_part = ( total_bits >> 32 ) & 0xFFFFFFFF;
 
 			m_buffer[ BLOCK_SIZE - 8 ] =  ( total_bits_part >> 24 ) & 0xFF;
@@ -374,9 +382,7 @@ make_digest( const char * what, std::size_t length )
 inline digest_t
 make_digest( const std::string & str )
 {
-	digest_t result;
-
-	return result;
+	return make_digest( str.data(), str.size() );
 }
 
 } /* namespace sha1 */
