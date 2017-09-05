@@ -28,6 +28,5 @@ MxxRu::Cpp::composite_target( MxxRu::BUILD_ROOT ) {
 
 	required_prj 'test/build_tests.rb'
 	required_prj 'sample/build_samples.rb'
-	required_prj 'bench/build_benches.rb'
 }
 

@@ -11,14 +11,6 @@ if(WIN32)
 	target_link_libraries(${SAMPLE} wsock32 ws2_32)
 endif()
 
-# if (${MSVC})
-# else ()
-# 	target_link_libraries(${SAMPLE} ssl crypto)
-# 	if( MINGW )
-# 		target_link_libraries(${SAMPLE} gdi32)
-# 	endif()
-# endif ()
-
 install(TARGETS ${SAMPLE} DESTINATION bin)
 
 # Put pem files in bin dir:
