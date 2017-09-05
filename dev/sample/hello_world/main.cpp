@@ -15,7 +15,7 @@ template < typename RESP >
 RESP
 init_resp( RESP resp )
 {
-	resp.append_header( "Server", "RESTinio sample server /v.0.2" );
+	resp.append_header( restinio::http_field::server, "RESTinio sample server /v.0.2" );
 	resp.append_header_date_field();
 
 	return resp;
@@ -32,7 +32,7 @@ auto server_handler()
 		"/",
 		[]( auto req, auto ){
 				init_resp( req->create_response() )
-					.append_header( "Content-Type", "text/plain; charset=utf-8" )
+					.append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
 					.set_body( "Hello world!")
 					.done();
 
@@ -43,7 +43,7 @@ auto server_handler()
 		"/json",
 		[]( auto req, auto ){
 				init_resp( req->create_response() )
-					.append_header( "Content-Type", "text/json; charset=utf-8" )
+					.append_header( restinio::http_field::content_type, "text/json; charset=utf-8" )
 					.set_body( R"-({"message" : "Hello world!"})-")
 					.done();
 
@@ -54,7 +54,7 @@ auto server_handler()
 		"/html",
 		[]( auto req, auto ){
 				init_resp( req->create_response() )
-						.append_header( "Content-Type", "text/html; charset=utf-8" )
+						.append_header( restinio::http_field::content_type, "text/html; charset=utf-8" )
 						.set_body(
 R"-(<html>
 <head><title>Hello from RESTinio!</title></head>

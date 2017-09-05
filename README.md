@@ -45,19 +45,19 @@ So we have come up with *RESTinio*...
 
 To use *RESTinio* it is necessary to have:
 
-* Reasonably modern C++14 compiler (VC++14.0, GCC 5.2 or above, clang 3.6 or above);
-* [asio](http://think-async.com/Asio) 1.11.0;
-* [nodejs/http-parser](https://github.com/nodejs/http-parser) 2.7.1 or above;
-* [fmtlib](http://fmtlib.net/latest/index.html) 3.0.1 or above.
-* Optional: [SObjectizer](https://sourceforge.net/projects/sobjectizer/) 5.5.18 and above;
+* Reasonably modern C++14 compiler (VC++14.0, GCC 5.3 or above, clang 3.8 or above);
+* [asio](http://think-async.com/Asio) from [git repo](https://github.com/chriskohlhoff/asio.git), commit `f5c570826d2ebf50eb38c44039181946a473148b`;
+* [nodejs/http-parser](https://github.com/nodejs/http-parser) 2.7.1;
+* [fmtlib](http://fmtlib.net/latest/index.html) 4.0.0.
+* Optional: [SObjectizer](https://sourceforge.net/projects/sobjectizer/) 5.5.19.3;
 
 For building samples, benchmarks and tests:
 
-* [Mxx_ru](https://sourceforge.net/projects/mxxru/) 1.6.11 or above;
+* [Mxx_ru](https://sourceforge.net/projects/mxxru/) 1.6.13 or above;
 * [rapidjson](https://github.com/miloyip/rapidjson) 1.1.0;
 * [json_dto](https://bitbucket.org/sobjectizerteam/json_dto-0.1) 0.1.2.1 or above;
 * [args](https://github.com/Taywee/args) 6.0.4;
-* [CATCH](https://github.com/philsquared/Catch) 1.8.2 or above.
+* [CATCH](https://github.com/philsquared/Catch) 1.9.6.
 
 ## Obtaining
 
@@ -153,11 +153,15 @@ see Mxx_ru documentation for further details.
 External libraries used by *RESTinio* have the following default settings:
 
 * A standalone version of *asio* is used and a chrono library is used,
-so `ASIO_STANDALONE` and `ASIO_HAS_STD_CHRONO` defines are necessary;
+so `ASIO_STANDALONE` and `ASIO_HAS_STD_CHRONO` defines are necessary. Also
+`ASIO_DISABLE_STD_STRING_VIEW` is defined, btcause it is a C++17 feature and
+not all compilers support it yet;
 * a less strict version of *nodejs/http-parser* is used, so the following
 definition `HTTP_PARSER_STRICT=0` is applied;
 * *fmtlib* is used as a header-only library, hence a `FMT_HEADER_ONLY`
 define is necessary;
+* for *RapidJSON* two definitions are necessary: `RAPIDJSON_HAS_STDSTRING` and
+`RAPIDJSON_HAS_CXX11_RVALUE_REFS`.
 
 # How To Use It?
 
@@ -179,7 +183,7 @@ Here is a hello world application
 using http_server_t = restinio::http_server_t<>;
 
 http_server_t http_server{
-  restinio::create_child_io_service( 1 ),
+  restinio::create_child_io_context( 1 ),
   []( auto & settings ){
     settings.port( 8080 ).request_handler( request_handler() );
   }
@@ -196,42 +200,42 @@ http_server.close();
 
 Template class `restinio::http_server_t<TRAITS>` encapsulates server
 logic. It has two parameters: the first one is a wrapper for
-`asio::ioservice` instance passed as
-`io_service_wrapper_unique_ptr_t`, and the second one is a
-`server_settings_t<TRAITS>` object that defines
-server port, protocol (ipv4/ipv6), timeouts etc.
+`asio::io_context` instance passed as `io_context`,
+and the second one is a `server_settings_t<TRAITS>`
+object that defines server port, protocol (ipv4/ipv6), timeouts etc.
 
 *RESTinio* does its networking stuff with
 [asio](http://think-async.com/Asio) library, so to run server
-it must have an `asio::io_service` instance to run on.
+it must have an `asio::io_context` instance to run on.
 Internal logic of *RESTinio* is separated from
-maintaining `asio::ioservice` directly by a wrapper class.
-In most cases it would be enough to use one of standard
-wrappers. The first one is provided by
-`use_existing_io_service( asio::io_service & )`
-and is a proxy for user managed `asio::io_service` instance.
+maintaining `asio::io_context` directly by a wrapper class.
+In most cases it would be enough to use one of standard wrappers.
+The first one is provided by
+`use_existing_io_context( asio::io_context & )`
+and is a proxy for user managed `asio::io_context` instance.
 And the second is the one provided by
-`create_child_io_service( unsigned int thread_pool_size )`
-that creates an object with `asio::io_service` inside
+`create_child_io_context( unsigned int thread_pool_size )`
+that creates an object with `asio::io_context` inside
 that runs on a thread pool and is managed by server object.
-Child io_service running on a single thread is used in example.
+Child io_context running on a single thread is used in example.
 
 Server settings are set with lambda.
 It is more convenient to use generic lambda to omit
-naming the concrete type of `server_settings_t<TRAITS>`.
+naming the concrete type of `server_settings_t<TRAITS>`,
+but of course passing settings parameter by value is also possible.
 View `server_settings_t` class to see all available params
 ([settings.hpp](./dev/restinio/settings.hpp)).
 
 To run the server `open()` and `close()` methods are used.
 When open method is called server posts a callback on
-`asio::ioservice` to bind on a server port and listen for new connections.
+`asio::io_context` to bind on a server port and listen for new connections.
 If callback executes without errors, open returns, in case of error
 it throws. Note that in general open and close operations are executed
 asynchronously so to make them sync a future-promise is used.
 
 To make server complete we must set request handler.
 Request handler as defined by default `TRATS` is a
-`default_request_handler_t`:
+`restinio::default_request_handler_t`:
 ~~~~~
 ::c++
 using default_request_handler_t =
@@ -248,9 +252,9 @@ auto request_handler()
         req->header().request_target() == "/" )
       {
         req->create_response()
-          .append_header( "Server", "RESTinio hello world server" )
+          .append_header( restinio::http_field::server, "RESTinio hello world server" )
           .append_header_date_field()
-          .append_header( "Content-Type", "text/plain; charset=utf-8" )
+          .append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
           .set_body( "Hello world!")
           .done();
 
@@ -271,12 +275,14 @@ meaning that request was not accepted for handling and *RESTinio* must take care
 
 ## Basic idea
 
-In general *RESTinio* runs its logic on `asio::io_service`.
+In general *RESTinio* runs its logic on `asio::io_context`.
 There are two major object types running:
 
 * acceptor -- receives new connections and creates connection objects that
 performs session logic;
 * connection -- does tcp io-operations, http-parsing and calls handler.
+
+### Acceptor
 
 There is a single instance of acceptor and as much connections as needed.
 
@@ -288,6 +294,49 @@ Acceptors life cycle is trivial and is the following:
 4. Back to step 1'.
 
 When the server is closed cycle breaks up.
+
+To set custom options for acceptor use `server_settings_t::acceptor_options_setter()`.
+
+By default *RESTinio* accepts connections one-by-one,
+so a big number of clients initiating simultaneous connections might be a problem
+even when running `asio::io_context` on a pool of threads.
+There are a number of options to tune *RESTinio* for such cases.
+
+* Increase the number of concurrent accepts. By default *RESTinio*
+initiates only one accept operation, but when running server on
+N threads then up to N accepts can be handled concurrently.
+See `server_settings_t::concurrent_accepts_count()`.
+* After accepting new connection on socket *RESTinio* creates
+internal connection wrapper object. The creation of such object can
+be done separately (in another callback posted on asio).
+So creating connection instance that involves allocations
+and initialization can be done in a context that is independent to acceptors one.
+It makes on-accept callback to run faster, thus more connections can be
+accepted in the same time interval.
+See `server_settings_t::separate_accept_and_create_connect()`
+
+Example of using acceptor options:
+~~~~~
+::c++
+// using traits_t = ...
+restinio::http_server_t< traits_t >
+  server{
+    restinio::create_child_io_context( 4 ),
+    restinio::server_settings_t< traits_t >{}
+      .port( port )
+      .buffer_size( 1024 )
+      .max_pipelined_requests( 4 )
+      .request_handler( db )
+      // Using acceptor options:
+      .acceptor_options_setter(
+        []( auto & options ){
+          options.set_option( asio::ip::tcp::acceptor::reuse_address( true ) );
+        } )
+      .concurrent_accepts_count( 4 )
+      .separate_accept_and_create_connect( true ) };
+~~~~~
+
+### Connection
 
 Connections life cycle is more complicated and cannot be expressed lineary.
 Simultaneously connection runs two logical objectives. The first one is
@@ -351,9 +400,28 @@ so they can be moved to other context.
 So it is possible to create handlers that can interact with async API.
 When response data is ready response can be built and sent using request handle.
 After response building is complete connection handle
-will post the necessary job to run on host `asio::io_service`.
+will post the necessary job to run on host `asio::io_context`.
 So one can perform asynchronous request handling and
 not to block worker threads.
+
+To set custom options for acceptor use `server_settings_t::socket_options_setter()`:
+~~~~~
+::c++
+// using traits_t = ...
+restinio::http_server_t< traits_t >
+  server{
+    restinio::create_child_io_context( 4 ),
+    restinio::server_settings_t< traits_t >{}
+      .port( port )
+      .buffer_size( 1024 )
+      .max_pipelined_requests( 4 )
+      .request_handler( db )
+      // Using custom socket options:
+      .socket_options_setter(
+        []( auto & options ){
+          options.set_option( asio::ip::tcp::no_delay{ true } );
+        } ) };
+~~~~~
 
 ## Class *http_server_t*
 
@@ -390,7 +458,7 @@ its inner logic;
 * `request_handler_t` defines a function-like type to be used as
 request handler;
 * `strand_t` - defines a class that is used by connection as a wrapper
-for its callback-handlers running on `asio::io_service` thread(s)
+for its callback-handlers running on `asio::io_context` thread(s)
 in order to guarantee serialized callbacks invocation
 (see [asio doc](http://think-async.com/Asio/asio-1.11.0/doc/asio/reference/strand.html)).
 Actually there are two options for the strand type:
@@ -408,23 +476,23 @@ Class `http_server_t<TRAITS>` has two constructors:
 ~~~~~
 ::c++
 http_server_t(
-  io_service_wrapper_unique_ptr_t io_service_wrapper,
+  io_context io_context,
   server_settings_t<TRAITS> settings );
 
 template < typename CONFIGURATOR >
 http_server_t(
-  io_service_wrapper_unique_ptr_t io_service_wrapper,
+  io_context io_context,
   CONFIGURATOR && configurator )
 ~~~~~
 
-The first is the main one. It obtains `io_service_wrapper` as an
-`asio::io_service` back-end and server settings with the bunch of params.
+The first is the main one. It obtains `io_context` as an
+`asio::io_context` back-end and server settings with the bunch of params.
 
 The second constructor simplifies setting of parameters via generic lambda:
 ~~~~~
 ::c++
 http_server_t http_server{
-  restinio::create_child_io_service( 1 ),
+  restinio::create_child_io_context( 1 ),
   []( auto & settings ){ // Omit concrete name of settings type.
     settings
       .port( 8080 )
@@ -471,7 +539,7 @@ void
 close();
 ~~~~~
 
-Async versions post callback on `asio::io_service` thread
+Async versions post callback on `asio::io_context` thread
 and once executed one of specified callbacks is called.
 The first one in case of success, and the second - in case of error.
 
@@ -479,18 +547,18 @@ Sync version work through async version getting synchronized by
 future-promise.
 
 `http_server_t<TRAITS>` also has methods to start/stop running
-`asio::io_service`:
+`asio::io_context`:
 ~~~~~
 ::c++
 void
-start_io_service();
+start_io_context();
 
 void
-stop_io_service();
+stop_io_context();
 ~~~~~
 
 They are helpful when using async versions of open()/close() methods,
-when running `asio::io_service` and running server must be managed separately.
+when running `asio::io_context` and running server must be managed separately.
 
 ## Settings of *http_server_t*
 
@@ -500,7 +568,7 @@ It is defined in [restinio/settings.hpp](./dev/restinio/settings.hpp);
 For each parameter a setter/getter pair is provided.
 While setting most of parameters is pretty straightforward,
 there are some parameters with a bit tricky setter/getter semantics.
-They are request_handler, timer_factory, logger.
+They are request_handler, timer_factory, logger, acceptor_options_setter and socket_options_setter.
 
 For example setter for request_handler looks like this:
 ~~~~~
@@ -555,7 +623,7 @@ class timer_guard_t
 
 The first method starts guarding timeout of a specified duration,
 and if it occurs some how the specified callback must be posted on
-`asio::io_service` executor.
+`asio::io_context` executor.
 
 The second method must cancel execution of the previously scheduled timer.
 
@@ -574,7 +642,7 @@ class timer_factory_t
 
     // Create guard for connection.
     timer_guard_instance_t
-    create_timer_guard( asio::io_service & );
+    create_timer_guard( asio::io_context & );
     // ...
 };
 ~~~~~
@@ -649,7 +717,7 @@ There are two option for `strand_t`:
 
 By default `asio::strand< asio::executor >` is used,
 it guarantees serialized chain of callback invocation.
-But if `asio::ioservice` runs on a single thread there is no need
+But if `asio::io_context` runs on a single thread there is no need
 to use `asio::strand` because there is no way to run callbacks
 in parallel. So in such cases it is enough to use `asio::executor`
 directly and eliminate overhead of `asio::strand`.
@@ -669,9 +737,9 @@ Basic example of response builder with default response builder:
 auto resp = req->create_response(); // 200 OK
 
 // Set header fields:
-resp.append_header( "Server", "RESTinio server" );
+resp.append_header( restinio::http_field::server, "RESTinio server" );
 resp.append_header_date_field();
-resp.append_header( "Content-Type", "text/plain; charset=utf-8" );
+resp.append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" );
 
 // Set body:
 resp.set_body( "Hello world!" );
@@ -703,9 +771,9 @@ and the resulting response is scheduled for sending.
       req->header().request_target() == "/" )
     {
       req->create_response()
-        .append_header( "Server", "RESTinio hello world server" )
+        .append_header( restinio::http_field::server, "RESTinio hello world server" )
         .append_header_date_field()
-        .append_header( "Content-Type", "text/plain; charset=utf-8" )
+        .append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
         .set_body( "Hello world!")
         .done();
 
@@ -730,9 +798,9 @@ Content-Length field.
     using output_type_t = restinio::user_controlled_output_t;
     auto resp = req->create_response< output_type_t >();
 
-    resp.append_header( "Server", "RESTinio" )
+    resp.append_header( restinio::http_field::server, "RESTinio" )
       .append_header_date_field()
-      .append_header( "Content-Type", "text/plain; charset=utf-8" )
+      .append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
       .set_content_length( req->body().size() );
 
     resp.flush(); // Send only header
@@ -762,9 +830,9 @@ and expects user to set body using chunks of data.
     using output_type_t = restinio::chunked_output_t;
     auto resp = req->create_response< output_type_t >();
 
-    resp.append_header( "Server", "RESTinio" )
+    resp.append_header( restinio::http_field::server, "RESTinio" )
       .append_header_date_field()
-      .append_header( "Content-Type", "text/plain; charset=utf-8" );
+      .append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" );
 
     resp.flush(); // Send only header
 
@@ -1015,7 +1083,7 @@ using http_server_t = restinio::http_server_t< traits_t >;
 const std::string certs_dir{ "." }; // Or another path.
 
 http_server_t http_server{
-  restinio::create_child_io_service( 1 ),
+  restinio::create_child_io_context( 1 ),
   [ & ]( auto & settings ){
     // Set TLS context.
     asio::ssl::context tls_context{ asio::ssl::context::sslv23 };
@@ -1066,6 +1134,10 @@ The list of features for next releases
 
 |       Feature        | description | release  |
 |----------------------|-------------|----------|
+| Acceptor options | Custom options for socket can be set in settings. | 0.2.3 |
+| Separate accept and create connection | creating connection instance that involves allocations and initialization can be done in a context that is independent to acceptors context. | 0.2.3 |
+| Concurrent accept | Server can accept several client connections concurrently. | 0.2.3 |
+| Add uri helpers | A number of functions to work with query string see [uri_helpers.hpp](./dev/restinio/uri_helpers.hpp). | 0.2.3 |
 | Improve header fields API | Type/enum support for known header fields and their values. | 0.2.2 |
 | TLS support | Sopport for HTTPS with OpenSSL | 0.2.2 |
 | External buffers | Support external (constant) buffers support for body and/or body parts. | 0.2.2 |

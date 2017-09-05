@@ -578,6 +578,10 @@ class server_settings_t final
 		//! \}
 
 		//! Max number of running concurrent accepts.
+		/*!
+			When running server on N threads
+			then up to N accepts can be handled concurrently.
+		*/
 		//! \{
 		server_settings_t &
 		concurrent_accepts_count( std::size_t n ) &

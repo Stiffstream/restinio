@@ -10,9 +10,9 @@ auto request_handler()
 				req->header().request_target() == "/" )
 			{
 				req->create_response()
-					.append_header( "Server", "RESTinio hello world server" )
+					.append_header( restinio::http_field::server, "RESTinio hello world server" )
 					.append_header_date_field()
-					.append_header( "Content-Type", "text/plain; charset=utf-8" )
+					.append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
 					.set_body( "Hello world!")
 					.done();
 
