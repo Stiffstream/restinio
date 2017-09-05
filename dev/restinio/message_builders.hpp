@@ -100,10 +100,11 @@ class base_response_builder_t
 			const auto tpoint = make_gmtime( t );
 
 			std::array< char, 64 > buf;
+			// TODO: is there a faster way to get time string?
 			strftime(
 				buf.data(),
 				buf.size(),
-				"%a, %d %b %Y %T GMT",
+				"%a, %d %b %Y %H:%M:%S GMT",
 				&tpoint );
 
 			m_header.set_field(
