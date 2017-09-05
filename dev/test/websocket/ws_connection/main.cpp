@@ -17,6 +17,7 @@
 #include <restinio/all.hpp>
 #include <restinio/websocket.hpp>
 #include <restinio/impl/base64.hpp>
+#include <restinio/impl/sha1.hpp>
 
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
@@ -162,6 +163,15 @@ using traits_t =
 using http_server_t = restinio::http_server_t< traits_t >;
 
 
+struct upgrade_request_t : public so_5::message_t
+{
+    upgrade_request_t( restinio::request_handle_t req )
+        :    m_req{ std::move( req ) }
+    {}
+
+    restinio::request_handle_t m_req;
+};
+
 struct msg_ws_message : public so_5::message_t
 {
 	msg_ws_message( restinio::ws_message_handle_t msg )
@@ -183,6 +193,24 @@ request_response_context_t
 	int close_code = 0;
 	std::string m_close_description;
 };
+
+std::array< char, 20>
+digest_to_char_array( const restinio::impl::sha1::digest_t & digest )
+{
+	std::array< char, 20> result;
+
+	size_t i = 0;
+
+	for( const auto c : digest )
+	{
+		result[i++] = ( (c >>  24) & 0xFF );
+		result[i++] = ( (c >>  16) & 0xFF );
+		result[i++] = ( (c >>  8) & 0xFF );
+		result[i++] = ( (c) & 0xFF );
+	}
+
+	return result;
+}
 
 class a_server_t
 	:	public so_5::agent_t
@@ -209,10 +237,37 @@ class a_server_t
 		so_define_agent() override
 		{
 			so_subscribe_self()
+				.event( &a_server_t::evt_upgrade_request )
 				.event( &a_server_t::evt_ws_message );
 		}
 
 	private:
+
+		void
+        evt_upgrade_request( const upgrade_request_t & msg )
+        {
+            auto req = msg.m_req;
+            auto ws_key = req->header().get_field("Sec-WebSocket-Key");
+
+			std::cout << "WS_KEY: " << ws_key << std::endl;
+
+			ws_key.append( "258EAFA5-E914-47DA-95CA-C5AB0DC85B11" );
+
+			auto digest = restinio::impl::sha1::make_digest( ws_key );
+
+			m_ws =
+				restinio::upgrade_to_websocket< traits_t >(
+					*req,
+					restinio::impl::base64::encode(
+						std::string{
+							digest_to_char_array(digest).data(), 20
+						} ),
+					[this]( restinio::ws_message_handle_t m ){
+							so_5::send<msg_ws_message>(
+								this->so_direct_mbox(), m );
+						},
+					[]( std::string reason ){} );
+        }
 
 		void
 		evt_ws_message( const msg_ws_message & msg )
@@ -243,30 +298,11 @@ class a_server_t
 		}
 
 		restinio::default_request_handler_t m_req_handler =
-			[this]( auto req )
+			[this]( restinio::request_handle_t req )
 			{
 				if( restinio::http_connection_header_t::upgrade == req->header().connection() )
 				{
-					auto ws_key = req->header().get_field("Sec-WebSocket-Key");
-
-					ws_key.append( "258EAFA5-E914-47DA-95CA-C5AB0DC85B11" );
-
-					char hash[ SHA_DIGEST_LENGTH ];
-					SHA1(
-						reinterpret_cast< const unsigned char* >(ws_key.data( ) ),
-						ws_key.length( ),
-						reinterpret_cast< unsigned char* >( hash ) );
-
-					m_ws =
-						restinio::upgrade_to_websocket< traits_t >(
-							*req,
-							restinio::base64_encode(
-								std::string(hash, SHA_DIGEST_LENGTH) ),
-							[this]( restinio::ws_message_handle_t m ){
-									so_5::send<msg_ws_message>(
-										this->so_direct_mbox(), m );
-								},
-							[]( std::string reason ){} );
+					so_5::send< upgrade_request_t >( this->so_direct_mbox(), req );
 
 					return restinio::request_accepted();
 				}

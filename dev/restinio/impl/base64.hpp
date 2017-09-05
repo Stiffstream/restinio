@@ -17,6 +17,12 @@
 namespace restinio
 {
 
+namespace impl
+{
+
+namespace base64
+{
+
 using bitset8_t = std::bitset<8>;
 using bitset6_t = std::bitset<6>;
 using bitset24_t = std::bitset<24>;
@@ -35,7 +41,8 @@ is_base64_char( unsigned char c )
 inline void
 check_string_is_base64( const std::string & str )
 {
-	// TODO: check string size >= 4.
+	if( str.size() < 4 )
+		throw std::runtime_error("Invalid base64 string '" + str + "'.");
 
 	for( const auto & ch : str )
 	{
@@ -44,9 +51,9 @@ check_string_is_base64( const std::string & str )
 	}
 }
 
-// TODO: refactoring.
+
 inline std::string
-base64_encode( const std::string & str )
+encode( const std::string & str )
 {
 	std::string result;
 
@@ -54,11 +61,11 @@ base64_encode( const std::string & str )
 	{
 		bitset24_t bs;
 
-		bs |= str[i];
+		bs |= str[i] & 0xFF;
 		bs <<= 8;
-		bs |= str[i+1];
+		bs |= str[i+1] & 0xFF;
 		bs <<= 8;
-		bs |= str[i+2];
+		bs |= str[i+2] & 0xFF;
 
 		result.push_back( base64_alphabet[ (bs >> 18).to_ulong() & 0x3F ] );
 		result.push_back( base64_alphabet[ (bs >> 12).to_ulong() & 0x3F ] );
@@ -77,7 +84,7 @@ base64_encode( const std::string & str )
 		{
 			if(i)
 			{
-				bs |= str[ str.size() - i];
+				bs |= str[ str.size() - i] & 0xFF;
 				--i;
 			}
 
@@ -102,7 +109,7 @@ base64_encode( const std::string & str )
 }
 
 inline std::string
-base64_decode( const std::string & str )
+decode( const std::string & str )
 {
 	std::string result;
 
@@ -129,5 +136,9 @@ base64_decode( const std::string & str )
 
 	return result;
 }
+
+} /* namespace base64 */
+
+} /* namespace impl */
 
 } /* namespace restinio */
