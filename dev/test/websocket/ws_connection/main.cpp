@@ -18,6 +18,7 @@
 #include <restinio/websocket.hpp>
 #include <restinio/impl/base64.hpp>
 #include <restinio/impl/sha1.hpp>
+#include <restinio/impl/utf8.hpp>
 
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
@@ -277,6 +278,15 @@ class a_server_t
 			std::cout << "REQUEST\n";
 
 			print_ws_message( req );
+
+			if( restinio::impl::check_utf8_is_correct( req.payload() ) )
+			{
+				std::cout << "CORRECT UTF-8" << std::endl;
+			}
+			else
+			{
+				std::cout << "INCORRECT UTF-8" << std::endl;
+			}
 
 			if( req.header().m_masking_key )
 			{

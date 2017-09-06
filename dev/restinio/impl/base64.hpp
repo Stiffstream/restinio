@@ -27,7 +27,7 @@ using bitset8_t = std::bitset<8>;
 using bitset6_t = std::bitset<6>;
 using bitset24_t = std::bitset<24>;
 
-const std::string base64_alphabet =
+const std::string BASE64_ALPHABET =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	"abcdefghijklmnopqrstuvwxyz"
 	"0123456789+/";
@@ -67,10 +67,10 @@ encode( const std::string & str )
 		bs <<= 8;
 		bs |= str[i+2] & 0xFF;
 
-		result.push_back( base64_alphabet[ (bs >> 18).to_ulong() & 0x3F ] );
-		result.push_back( base64_alphabet[ (bs >> 12).to_ulong() & 0x3F ] );
-		result.push_back( base64_alphabet[ (bs >> 6).to_ulong() & 0x3F ] );
-		result.push_back( base64_alphabet[ (bs).to_ulong() & 0x3F ] );
+		result.push_back( BASE64_ALPHABET[ (bs >> 18).to_ulong() & 0x3F ] );
+		result.push_back( BASE64_ALPHABET[ (bs >> 12).to_ulong() & 0x3F ] );
+		result.push_back( BASE64_ALPHABET[ (bs >> 6).to_ulong() & 0x3F ] );
+		result.push_back( BASE64_ALPHABET[ (bs).to_ulong() & 0x3F ] );
 	}
 
 
@@ -91,16 +91,16 @@ encode( const std::string & str )
 			bs <<= 8;
 		}
 
-		result.push_back( base64_alphabet[ (bs >> 18).to_ulong() & 0x3F ] );
-		result.push_back( base64_alphabet[ (bs >> 12).to_ulong() & 0x3F ] );
+		result.push_back( BASE64_ALPHABET[ (bs >> 18).to_ulong() & 0x3F ] );
+		result.push_back( BASE64_ALPHABET[ (bs >> 12).to_ulong() & 0x3F ] );
 
 		if( (bs >> 8).to_ulong() & 0xFF )
-			result.push_back( base64_alphabet[ (bs >> 6).to_ulong() & 0x3F ] );
+			result.push_back( BASE64_ALPHABET[ (bs >> 6).to_ulong() & 0x3F ] );
 		else
 			result.push_back('=');
 
 		if( (bs).to_ulong() & 0xFF )
-			result.push_back( base64_alphabet[ (bs).to_ulong() & 0x3F ] );
+			result.push_back( BASE64_ALPHABET[ (bs).to_ulong() & 0x3F ] );
 		else
 			result.push_back('=');
 	}
@@ -119,13 +119,13 @@ decode( const std::string & str )
 	{
 		bitset24_t bs;
 
-		bs |= base64_alphabet.find_first_of(str[i]);
+		bs |= BASE64_ALPHABET.find_first_of(str[i]);
 		bs <<= 6;
-		bs |= base64_alphabet.find_first_of(str[i+1]);
+		bs |= BASE64_ALPHABET.find_first_of(str[i+1]);
 		bs <<= 6;
-		bs |= str[i+2] != '=' ? base64_alphabet.find_first_of(str[i+2]) : 0;
+		bs |= str[i+2] != '=' ? BASE64_ALPHABET.find_first_of(str[i+2]) : 0;
 		bs <<= 6;
-		bs |= str[i+3] != '=' ? base64_alphabet.find_first_of(str[i+3]) : 0;
+		bs |= str[i+3] != '=' ? BASE64_ALPHABET.find_first_of(str[i+3]) : 0;
 
 		result.push_back( (bs >> 16).to_ulong() & 0xFF );
 		if( (bs >> 8).to_ulong() & 0xFF )
