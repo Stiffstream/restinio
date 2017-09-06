@@ -12,18 +12,36 @@
 #include <restinio/impl/base64.hpp>
 #include <restinio/impl/sha1.hpp>
 
-using namespace restinio;
+char
+to_char( int val )
+{
+	return static_cast<char>(val);
+};
+
+std::string
+to_char_each( std::vector< int > source )
+{
+	std::string result;
+	result.reserve( source.size() );
+
+	for( const auto & val : source )
+	{
+		result.push_back( to_char(val) );
+	}
+
+	return result;
+}
 
 TEST_CASE(
 	"Is base64 char" ,
 	"[encoders][base64]" )
 {
-	REQUIRE( is_base64_char('A') );
-	REQUIRE( is_base64_char('a') );
-	REQUIRE( is_base64_char('+') );
-	REQUIRE( is_base64_char('/') );
+	REQUIRE( restinio::impl::base64::is_base64_char('A') );
+	REQUIRE( restinio::impl::base64::is_base64_char('a') );
+	REQUIRE( restinio::impl::base64::is_base64_char('+') );
+	REQUIRE( restinio::impl::base64::is_base64_char('/') );
 
-	REQUIRE_FALSE( is_base64_char('\n') );
+	REQUIRE_FALSE( restinio::impl::base64::is_base64_char('\n') );
 }
 
 TEST_CASE(
@@ -32,15 +50,26 @@ TEST_CASE(
 {
 	{
 		std::string str{"Man"};
-		REQUIRE( base64_encode( str ) == "TWFu" );
+		REQUIRE( restinio::impl::base64::encode( str ) == "TWFu" );
 	}
 	{
 		std::string str{"Many"};
-		REQUIRE( base64_encode( str ) == "TWFueQ==" );
+		REQUIRE( restinio::impl::base64::encode( str ) == "TWFueQ==" );
 	}
 	{
 		std::string str{"Money"};
-		REQUIRE( base64_encode( str ) == "TW9uZXk=" );
+		REQUIRE( restinio::impl::base64::encode( str ) == "TW9uZXk=" );
+	}
+	{
+		std::string str( to_char_each( {
+			0xb3, 0x7a, 0x4f, 0x2c,
+			0xc0, 0x62, 0x4f, 0x16,
+			0x90, 0xf6, 0x46, 0x06,
+			0xcf, 0x38, 0x59, 0x45,
+			0xb2, 0xbe, 0xc4, 0xea } ) );
+		REQUIRE(
+			restinio::impl::base64::encode( str ) ==
+			"s3pPLMBiTxaQ9kYGzzhZRbK+xOo=" );
 	}
 }
 
@@ -50,19 +79,19 @@ TEST_CASE(
 {
 	{
 		std::string str{ "\r\n" };
-		REQUIRE_THROWS( base64_decode( str ) );
+		REQUIRE_THROWS( restinio::impl::base64::decode( str ) );
 	}
 	{
 		std::string str{"TWFu"};
-		REQUIRE( base64_decode( str ) == "Man" );
+		REQUIRE( restinio::impl::base64::decode( str ) == "Man" );
 	}
 	{
 		std::string str{"TWFueQ=="};
-		REQUIRE( base64_decode( str ) == "Many" );
+		REQUIRE( restinio::impl::base64::decode( str ) == "Many" );
 	}
 	{
 		std::string str{"TW9uZXk="};
-		REQUIRE( base64_decode( str ) == "Money" );
+		REQUIRE( restinio::impl::base64::decode( str ) == "Money" );
 	}
 }
 
@@ -142,4 +171,9 @@ TEST_CASE(
 				std::string{
 					"The quick brown fox jumps over the lazy dog"} ) ) ==
 		"2fd4e1c67a2d28fced849ee1bb76e7391b93eb12" );
+
+	REQUIRE( restinio::impl::sha1::to_hex_string( restinio::impl::sha1::make_digest(
+		std::string{
+			"dGhlIHNhbXBsZSBub25jZQ==258EAFA5-E914-47DA-95CA-C5AB0DC85B11"} ) ) ==
+		"b37a4f2cc0624f1690f64606cf385945b2bec4ea" );
 }

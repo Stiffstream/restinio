@@ -39,12 +39,6 @@ using byte_block_t = std::array< std::uint8_t, BLOCK_SIZE >;
 using int_block_t = std::array< std::uint32_t, BLOCK_INTS >;
 using digest_t = std::array< std::uint32_t, DIGEST_ARRAY_SIZE >;
 
-// const uint64_t h0 = 0x67452301;
-// const uint64_t h1 = 0xEFCDAB89;
-// const uint64_t h2 = 0x98BADCFE;
-// const uint64_t h3 = 0x10325476;
-// const uint64_t h4 = 0xC3D2E1F0;
-
 template< class T >
 inline std::uint8_t
 as_uint8( T what )
@@ -76,29 +70,6 @@ static uint32_t blk(const int_block_t & block, const size_t i)
 {
     return rotate_left(
     	block[(i+13)&15] ^ block[(i+8)&15] ^ block[(i+2)&15] ^ block[i], 1);
-}
-
-inline std::string
-to_hex_string( const digest_t & what )
-{
-	static const char digits[] = "0123456789abcdef";
-
-	std::string result;
-	result.reserve( DIGEST_ARRAY_SIZE * 8);
-
-	for( const auto c : what )
-	{
-		result += digits[(c >> 28) & 0xF];
-		result += digits[(c >> 24) & 0xF];
-		result += digits[(c >> 20) & 0xF];
-		result += digits[(c >> 16) & 0xF];
-		result += digits[(c >> 12) & 0xF];
-		result += digits[(c >> 8) & 0xF];
-		result += digits[(c >> 4) & 0xF];
-		result += digits[c & 0xF];
-	}
-
-	return result;
 }
 
 inline void
@@ -354,6 +325,31 @@ struct builder_t
 
 		byte_block_t m_buffer;
 };
+
+inline std::string
+to_hex_string( const digest_t & what )
+{
+	static const char digits[] = "0123456789abcdef";
+
+	std::string result;
+	result.reserve( DIGEST_ARRAY_SIZE * 8);
+
+	for( const auto c : what )
+	{
+		result += digits[(c >> 28) & 0xF];
+		result += digits[(c >> 24) & 0xF];
+		result += digits[(c >> 20) & 0xF];
+		result += digits[(c >> 16) & 0xF];
+		result += digits[(c >> 12) & 0xF];
+		result += digits[(c >> 8) & 0xF];
+		result += digits[(c >> 4) & 0xF];
+		result += digits[c & 0xF];
+	}
+
+	return result;
+}
+
+
 
 inline digest_t
 make_digest( const std::uint8_t * what, std::size_t length )
