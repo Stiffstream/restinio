@@ -267,14 +267,16 @@ struct builder_t
 		digest_t
 		finish()
 		{
-			std::uint64_t total_bits = (m_transforms_count * 64 + m_buffer_len) * 8;
+			std::uint64_t total_bits = calculate_total_bits_count();
+
+			auto original_buf_len = m_buffer_len;
 
 			m_buffer[ m_buffer_len ++ ] = 0x80;
 
-			while(m_buffer_len < 64)
+			while( m_buffer_len < BLOCK_SIZE )
 				m_buffer[m_buffer_len++] = 0x00;
 
-			if( total_bits > (BLOCK_SIZE - 8) * 8 )
+			if( original_buf_len > BLOCK_SIZE - 8 )
 			{
 				transform( m_digest, m_buffer );
 
@@ -282,19 +284,17 @@ struct builder_t
 					m_buffer[i] = 0;
 			}
 
-			std::uint32_t total_bits_part = ( total_bits >> 32 ) & 0xFFFFFFFF;
+			// Fill total bits count in last 8 bytes of buffer as big-endian.
+			for (int i = 0; i < 2; ++i)
+			{
+				std::uint32_t total_bits_part = ( total_bits >> i*32 ) & 0xFFFFFFFF;
 
-			m_buffer[ BLOCK_SIZE - 8 ] =  ( total_bits_part >> 24 ) & 0xFF;
-			m_buffer[ BLOCK_SIZE - 7 ] =  ( total_bits_part >> 16 ) & 0xFF;
-			m_buffer[ BLOCK_SIZE - 6 ] =  ( total_bits_part >> 8 ) & 0xFF;
-			m_buffer[ BLOCK_SIZE - 5 ] =  ( total_bits_part ) & 0xFF;
-
-			total_bits_part = total_bits & 0xFFFFFFFF;
-
-			m_buffer[ BLOCK_SIZE - 4 ] =  ( total_bits_part >> 24 ) & 0xFF;
-			m_buffer[ BLOCK_SIZE - 3 ] =  ( total_bits_part >> 16 ) & 0xFF;
-			m_buffer[ BLOCK_SIZE - 2 ] =  ( total_bits_part >> 8 ) & 0xFF;
-			m_buffer[ BLOCK_SIZE - 1 ] =  ( total_bits_part ) & 0xFF;
+				for (int j = 0; j < 4; ++j)
+				{
+					m_buffer[ BLOCK_SIZE - (i*4 + j + 1) ] =
+						( total_bits_part >> j*8 ) & 0xFF;
+				}
+			}
 
 			transform( m_digest, m_buffer );
 
@@ -302,6 +302,12 @@ struct builder_t
 		}
 
 	private:
+
+		std::uint64_t
+		calculate_total_bits_count() const
+		{
+			return (m_transforms_count * BLOCK_SIZE + m_buffer_len) * 8;
+		}
 
 		void
 		reset()
