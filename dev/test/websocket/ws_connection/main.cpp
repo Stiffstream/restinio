@@ -11,8 +11,6 @@
 
 #include <asio.hpp>
 
-#include <openssl/sha.h>
-
 #include <so_5/all.hpp>
 #include <restinio/all.hpp>
 #include <restinio/websocket.hpp>
