@@ -23,8 +23,8 @@ namespace impl
 namespace base64
 {
 
-using bitset8_t = std::bitset<8>;
-using bitset6_t = std::bitset<6>;
+using uint_type_t = std::uint_fast32_t;
+
 using bitset24_t = std::bitset<24>;
 
 const std::string BASE64_ALPHABET =
@@ -51,56 +51,63 @@ check_string_is_base64( const std::string & str )
 	}
 }
 
+constexpr uint_type_t last_six_bits_mask = 0x3f;
+
+inline uint_type_t
+uch( char ch )
+{
+	return static_cast<uint_type_t>(static_cast<unsigned char>(ch));
+}
+
+template<unsigned int SHIFT>
+char
+rshift_then_extract( uint_type_t bs )
+{
+	return static_cast<char>((bs >> SHIFT) & last_six_bits_mask);
+}
 
 inline std::string
 encode( const std::string & str )
 {
 	std::string result;
 
-	for( size_t i = 0 ; i < str.size() - str.size()%3 ; i += 3)
+	const auto at = [&str](auto index) { return uch(str[index]); };
+
+	const std::size_t group_size = 3u;
+	const auto remaining = str.size() % group_size;
+
+	result.reserve( (str.size()/group_size + (remaining ? 1:0)) * 4 );
+
+	std::size_t i = 0;
+	for(; i < str.size() - remaining; i += group_size )
 	{
-		bitset24_t bs;
+		uint_type_t bs = (at(i) << 16) | (at(i+1) << 8) | at(i+2);
 
-		bs |= str[i] & 0xFF;
-		bs <<= 8;
-		bs |= str[i+1] & 0xFF;
-		bs <<= 8;
-		bs |= str[i+2] & 0xFF;
-
-		result.push_back( BASE64_ALPHABET[ (bs >> 18).to_ulong() & 0x3F ] );
-		result.push_back( BASE64_ALPHABET[ (bs >> 12).to_ulong() & 0x3F ] );
-		result.push_back( BASE64_ALPHABET[ (bs >> 6).to_ulong() & 0x3F ] );
-		result.push_back( BASE64_ALPHABET[ (bs).to_ulong() & 0x3F ] );
+		result.push_back( BASE64_ALPHABET[ rshift_then_extract<18>(bs) ] );
+		result.push_back( BASE64_ALPHABET[ rshift_then_extract<12>(bs) ] );
+		result.push_back( BASE64_ALPHABET[ rshift_then_extract<6>(bs) ] );
+		result.push_back( BASE64_ALPHABET[ rshift_then_extract<0>(bs) ] );
 	}
 
-
-	if( str.size()%3 )
+	if( remaining )
 	{
-		bitset24_t bs;
+		uint_type_t bs = 
+				1u == remaining ?
+				 	// only one char left.
+				 	(at(i) << 16) :
+					// two chars left.
+					((at(i) << 16) | (at(i+1) << 8));
 
-		for( unsigned int i = str.size()%3,  shifts_needed = 2;
-			shifts_needed;
-			--shifts_needed )
-		{
-			if(i)
-			{
-				bs |= str[ str.size() - i] & 0xFF;
-				--i;
-			}
+		result.push_back( BASE64_ALPHABET[ rshift_then_extract<18>(bs) ] );
+		result.push_back( BASE64_ALPHABET[ rshift_then_extract<12>(bs) ] );
 
-			bs <<= 8;
-		}
-
-		result.push_back( BASE64_ALPHABET[ (bs >> 18).to_ulong() & 0x3F ] );
-		result.push_back( BASE64_ALPHABET[ (bs >> 12).to_ulong() & 0x3F ] );
-
-		if( (bs >> 8).to_ulong() & 0xFF )
-			result.push_back( BASE64_ALPHABET[ (bs >> 6).to_ulong() & 0x3F ] );
+		if( (bs >> 8) & 0xFFu )
+			result.push_back( BASE64_ALPHABET[ rshift_then_extract<6>(bs) ] );
 		else
 			result.push_back('=');
 
-		if( (bs).to_ulong() & 0xFF )
-			result.push_back( BASE64_ALPHABET[ (bs).to_ulong() & 0x3F ] );
+		if( bs & 0xFFu )
+			result.push_back( BASE64_ALPHABET[ rshift_then_extract<0>(bs) ] );
 		else
 			result.push_back('=');
 	}
