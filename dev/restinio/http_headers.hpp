@@ -317,6 +317,7 @@ string_to_field( const char * field_name, std::size_t field_name_size )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( safe,                         Safe )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( slug,                         SLUG )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( vary,                         Vary )
+			break;
 
 		case 5:
 			RESTINIO_HTTP_CHECK_FOR_FIELD( allow,                        Allow )
