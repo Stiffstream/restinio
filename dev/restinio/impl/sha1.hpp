@@ -66,6 +66,13 @@ rotate_left( const std::uint32_t x, size_t n )
 	return (x << n) | (x >> (32-n));
 }
 
+template< unsigned int SHIFT >
+inline std::uint8_t
+rshift_then_extract( std::uint32_t x )
+{
+	return static_cast<std::uint8_t>( (x >> SHIFT) & 0xffu );
+}
+
 static uint32_t blk(const int_block_t & block, const size_t i)
 {
     return rotate_left(
@@ -267,9 +274,9 @@ struct builder_t
 		digest_t
 		finish()
 		{
-			std::uint64_t total_bits = calculate_total_bits_count();
+			const auto total_bits = calculate_total_bits_count();
 
-			auto original_buf_len = m_buffer_len;
+			const auto original_buf_len = m_buffer_len;
 
 			m_buffer[ m_buffer_len ++ ] = 0x80;
 
@@ -285,16 +292,16 @@ struct builder_t
 			}
 
 			// Fill total bits count in last 8 bytes of buffer as big-endian.
-			for (int i = 0; i < 2; ++i)
-			{
-				std::uint32_t total_bits_part = ( total_bits >> i*32 ) & 0xFFFFFFFF;
-
-				for (int j = 0; j < 4; ++j)
-				{
-					m_buffer[ BLOCK_SIZE - (i*4 + j + 1) ] =
-						( total_bits_part >> j*8 ) & 0xFF;
-				}
-			}
+			std::size_t i = BLOCK_SIZE - 8u;
+			const auto push_uint_to_buffer = [&]( auto big_value ) {
+				const auto v = static_cast<std::uint32_t>(big_value);
+				m_buffer[ i++ ] = rshift_then_extract<24>(v);
+				m_buffer[ i++ ] = rshift_then_extract<16>(v);
+				m_buffer[ i++ ] = rshift_then_extract<8>(v);
+				m_buffer[ i++ ] = rshift_then_extract<0>(v);
+			};
+			push_uint_to_buffer( total_bits >> 32 );
+			push_uint_to_buffer( total_bits & 0xffffffffu );
 
 			transform( m_digest, m_buffer );
 
@@ -303,10 +310,16 @@ struct builder_t
 
 	private:
 
-		std::uint64_t
+		std::uint_fast64_t
 		calculate_total_bits_count() const
 		{
-			return (m_transforms_count * BLOCK_SIZE + m_buffer_len) * 8;
+			return (static_cast<std::uint_fast64_t>(m_transforms_count)
+					* BLOCK_SIZE + m_buffer_len) * 8;
+		}
+
+		void
+		store_total_bits_to_buffer()
+		{
 		}
 
 		void
