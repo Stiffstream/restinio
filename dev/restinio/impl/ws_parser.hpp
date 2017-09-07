@@ -248,7 +248,7 @@ class ws_parser_t
 
 	private:
 
-		impl::expected_data_t m_expected_data{ WEBSOCKET_FIRST_TWO_BYTES_SIZE };
+		expected_data_t m_expected_data{ WEBSOCKET_FIRST_TWO_BYTES_SIZE };
 
 		ws_message_details_t m_current_msg;
 
