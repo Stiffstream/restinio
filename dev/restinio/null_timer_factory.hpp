@@ -53,7 +53,7 @@ struct null_timer_factory_t
 
 	// Create guard for connection.
 	timer_guard_instance_t
-	create_timer_guard( asio::io_service & )
+	create_timer_guard( asio::io_context & )
 	{
 		return timer_guard_instance_t{};
 	}

@@ -140,7 +140,7 @@ class so_timer_factory_t
 
 		// Create guard for connection.
 		timer_guard_instance_t
-		create_timer_guard( asio::io_service & )
+		create_timer_guard( asio::io_context & )
 		{
 			return std::make_shared< timer_guard_t >( m_env, m_mbox );
 		}

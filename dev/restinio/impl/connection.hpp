@@ -673,7 +673,7 @@ class connection_t final
 			//! parts of a response.
 			buffers_container_t bufs ) override
 		{
-			//! Run write message on io_service loop if possible.
+			//! Run write message on io_context loop if possible.
 			asio::dispatch(
 				get_executor(),
 				[ this,
@@ -1129,11 +1129,11 @@ class connection_factory_t
 		connection_factory_t(
 			connection_settings_shared_ptr_t< TRAITS > connection_settings,
 			std::unique_ptr< socket_options_setter_t > socket_options_setter,
-			asio::io_service & io_service,
+			asio::io_context & io_context,
 			std::unique_ptr< timer_factory_t > timer_factory )
 			:	m_connection_settings{ std::move( connection_settings ) }
 			,	m_socket_options_setter{ std::move( socket_options_setter ) }
-			,	m_io_service{ io_service }
+			,	m_io_context{ io_context }
 			,	m_timer_factory{ std::move( timer_factory ) }
 			,	m_logger{ *(m_connection_settings->m_logger ) }
 		{
@@ -1158,7 +1158,7 @@ class connection_factory_t
 					m_connection_id_counter++,
 					std::move( socket ),
 					m_connection_settings,
-					m_timer_factory->create_timer_guard( m_io_service ) );
+					m_timer_factory->create_timer_guard( m_io_context ) );
 			}
 			catch( const std::exception & ex )
 			{
@@ -1179,7 +1179,7 @@ class connection_factory_t
 
 		std::unique_ptr< socket_options_setter_t > m_socket_options_setter;
 
-		asio::io_service & m_io_service;
+		asio::io_context & m_io_context;
 
 		std::unique_ptr< timer_factory_t > m_timer_factory;
 

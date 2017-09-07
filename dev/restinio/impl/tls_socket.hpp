@@ -31,9 +31,9 @@ class tls_socket_t
 		const tls_socket_t & operator = ( const tls_socket_t & ) = delete;
 
 		tls_socket_t(
-			asio::io_service & io_service,
+			asio::io_context & io_context,
 			asio::ssl::context & tls_context )
-			:	m_socket{ std::make_unique< socket_t >( io_service, tls_context ) }
+			:	m_socket{ std::make_unique< socket_t >( io_context, tls_context ) }
 		{}
 
 		tls_socket_t( tls_socket_t && ) = default;

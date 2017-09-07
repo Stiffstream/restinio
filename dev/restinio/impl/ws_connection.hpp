@@ -208,7 +208,7 @@ class ws_connection_t final
 		virtual void
 		close() override
 		{
-			//! Run write message on io_service loop if possible.
+			//! Run write message on io_context loop if possible.
 			asio::dispatch(
 				get_executor(),
 				[ this, ctx = shared_from_this() ](){
@@ -237,7 +237,7 @@ class ws_connection_t final
 		void
 		init_read() override
 		{
-			//! Run write message on io_service loop if possible.
+			//! Run write message on io_context loop if possible.
 			asio::dispatch(
 				get_executor(),
 				[ this, ctx = shared_from_this() ](){
@@ -263,7 +263,7 @@ class ws_connection_t final
 		virtual void
 		write_data( buffers_container_t bufs ) override
 		{
-			//! Run write message on io_service loop if possible.
+			//! Run write message on io_context loop if possible.
 			asio::dispatch(
 				get_executor(),
 				[ this,

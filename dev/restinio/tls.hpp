@@ -129,15 +129,15 @@ class socket_supplier_t< tls_socket_t >
 		template < typename SETTINGS >
 		socket_supplier_t(
 			SETTINGS & settings,
-			asio::io_service & io_service )
+			asio::io_context & io_context )
 			:	m_tls_context{ settings.tls_context() }
-			,	m_io_service{ io_service }
+			,	m_io_context{ io_context }
 		{
 			m_sockets.reserve( settings.concurrent_accepts_count() );
 
 			while( m_sockets.size() < settings.concurrent_accepts_count() )
 			{
-				m_sockets.emplace_back( m_io_service, m_tls_context );
+				m_sockets.emplace_back( m_io_context, m_tls_context );
 			}
 		}
 
@@ -156,7 +156,7 @@ class socket_supplier_t< tls_socket_t >
 			//! Index of a socket in the pool.
 			std::size_t idx )
 		{
-			tls_socket_t res{ m_io_service, m_tls_context };
+			tls_socket_t res{ m_io_context, m_tls_context };
 			std::swap( res, m_sockets.at( idx ) );
 			return res;
 		}
@@ -171,7 +171,7 @@ class socket_supplier_t< tls_socket_t >
 
 	private:
 		asio::ssl::context m_tls_context;
-		asio::io_service & m_io_service;
+		asio::io_context & m_io_context;
 		std::vector< tls_socket_t > m_sockets;
 };
 

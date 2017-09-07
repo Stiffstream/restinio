@@ -29,7 +29,7 @@ class asio_timer_factory_t
 			:	public std::enable_shared_from_this< timer_guard_t >
 		{
 			public:
-				timer_guard_t( asio::io_service & iosvc )
+				timer_guard_t( asio::io_context & iosvc )
 					:	m_operation_timer{ iosvc }
 				{}
 
@@ -75,7 +75,7 @@ class asio_timer_factory_t
 
 		// Create guard for connection.
 		timer_guard_instance_t
-		create_timer_guard( asio::io_service & iosvc )
+		create_timer_guard( asio::io_context & iosvc )
 		{
 			return std::make_shared< timer_guard_t >( iosvc );
 		}
