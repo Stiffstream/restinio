@@ -8,13 +8,15 @@
 
 #pragma once
 
+#include <restinio/exception.hpp>
+#include <restinio/ws_message.hpp>
+
+#include <restinio/impl/bitops.hpp>
+
 #include <cstdint>
 #include <vector>
 #include <list>
 #include <stdexcept>
-
-#include <restinio/exception.hpp>
-#include <restinio/ws_message.hpp>
 
 namespace restinio
 {
@@ -420,18 +422,23 @@ class ws_parser_t
 inline void
 mask_unmask_payload( std::uint32_t masking_key, raw_data_t & payload )
 {
-	const auto MASK_SIZE = 4;
-	uint8_t mask[ MASK_SIZE ] = { };
+	using namespace ::restinio::impl::bitops;
 
-	for( auto i = 0; i < MASK_SIZE; ++i )
-	{
-		auto shift_value = ( MASK_SIZE - i - 1 )* 8;
-		mask[i] = ( masking_key >> shift_value ) & 0xFF;
-	}
+	const std::size_t MASK_SIZE = 4;
+	const uint8_t mask[ MASK_SIZE ] = {
+		n_bits_from< std::uint8_t, 8, 24 >(masking_key),
+		n_bits_from< std::uint8_t, 8, 16 >(masking_key),
+		n_bits_from< std::uint8_t, 8, 8 >(masking_key),
+		n_bits_from< std::uint8_t, 8, 0 >(masking_key),
+	};
 
-	for ( size_t index = 0; index < payload.size( ); index++ )
+	const auto payload_size = payload.size();
+	for( std::size_t i = 0; i < payload_size; )
 	{
-		payload[ index ] ^= mask[ index % MASK_SIZE ];
+		for( std::size_t j = 0; j < MASK_SIZE && i < payload_size; ++j, ++i )
+		{
+			payload[ i ] ^= mask[ j ];
+		}
 	}
 }
 
