@@ -263,7 +263,7 @@ class a_server_t
 							so_5::send<msg_ws_message>(
 								this->so_direct_mbox(), m );
 						},
-					[]( std::string reason ){} );
+					[]( std::string /*reason*/ ){} );
 		}
 
 		void
@@ -336,7 +336,7 @@ class a_client_t
 
 		void init_connection_with_srv()
 		{
-			do_with_socket( [ & ]( auto & socket, auto & io_context ){
+			do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
 
 				const std::string request{
 					"GET /chat HTTP/1.1\r\n"
@@ -405,7 +405,7 @@ client_server_ws_connection( const std::string & req_bin )
 						coop.make_agent< a_server_t >( );
 					} );
 			},
-			[]( so_5::environment_params_t & params )
+			[]( so_5::environment_params_t & /*params*/ )
 			{
 			} );
 	}

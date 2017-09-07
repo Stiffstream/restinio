@@ -8,15 +8,17 @@
 
 #pragma once
 
+#include <restinio/exception.hpp>
+
+#include <restinio/impl/bitops.hpp>
+
+#include <fmt/format.h>
+
 #include <string>
 #include <bitset>
 #include <array>
 #include <exception>
 #include <iostream> // std::cout, debug
-
-#include <fmt/format.h>
-
-#include <restinio/exception.hpp>
 
 namespace restinio
 {
@@ -60,8 +62,6 @@ check_string_is_base64( const std::string & str )
 	}
 }
 
-constexpr uint_type_t last_six_bits_mask = 0x3f;
-
 inline uint_type_t
 uch( char ch )
 {
@@ -70,9 +70,9 @@ uch( char ch )
 
 template<unsigned int SHIFT>
 char
-rshift_then_extract( uint_type_t bs )
+sixbits_char( uint_type_t bs )
 {
-	return static_cast<char>((bs >> SHIFT) & last_six_bits_mask);
+	return ::restinio::impl::bitops::n_bits_from< char, SHIFT, 6 >(bs);
 }
 
 inline std::string
@@ -92,10 +92,10 @@ encode( const std::string & str )
 	{
 		uint_type_t bs = (at(i) << 16) | (at(i+1) << 8) | at(i+2);
 
-		result.push_back( BASE64_ALPHABET[ rshift_then_extract<18>(bs) ] );
-		result.push_back( BASE64_ALPHABET[ rshift_then_extract<12>(bs) ] );
-		result.push_back( BASE64_ALPHABET[ rshift_then_extract<6>(bs) ] );
-		result.push_back( BASE64_ALPHABET[ rshift_then_extract<0>(bs) ] );
+		result.push_back( BASE64_ALPHABET[ sixbits_char<18>(bs) ] );
+		result.push_back( BASE64_ALPHABET[ sixbits_char<12>(bs) ] );
+		result.push_back( BASE64_ALPHABET[ sixbits_char<6>(bs) ] );
+		result.push_back( BASE64_ALPHABET[ sixbits_char<0>(bs) ] );
 	}
 
 	if( remaining )
@@ -107,16 +107,16 @@ encode( const std::string & str )
 					// two chars left.
 					((at(i) << 16) | (at(i+1) << 8));
 
-		result.push_back( BASE64_ALPHABET[ rshift_then_extract<18>(bs) ] );
-		result.push_back( BASE64_ALPHABET[ rshift_then_extract<12>(bs) ] );
+		result.push_back( BASE64_ALPHABET[ sixbits_char<18>(bs) ] );
+		result.push_back( BASE64_ALPHABET[ sixbits_char<12>(bs) ] );
 
 		if( (bs >> 8) & 0xFFu )
-			result.push_back( BASE64_ALPHABET[ rshift_then_extract<6>(bs) ] );
+			result.push_back( BASE64_ALPHABET[ sixbits_char<6>(bs) ] );
 		else
 			result.push_back('=');
 
 		if( bs & 0xFFu )
-			result.push_back( BASE64_ALPHABET[ rshift_then_extract<0>(bs) ] );
+			result.push_back( BASE64_ALPHABET[ sixbits_char<0>(bs) ] );
 		else
 			result.push_back('=');
 	}

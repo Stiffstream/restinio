@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <restinio/impl/bitops.hpp>
+
 #include <string>
 #include <array>
 #include <exception>
@@ -72,9 +74,9 @@ rotate_left( const std::uint32_t x )
 
 template< unsigned int SHIFT >
 inline std::uint8_t
-rshift_then_extract( std::uint32_t x )
+octet_from( std::uint32_t x )
 {
-	return static_cast<std::uint8_t>( (x >> SHIFT) & 0xffu );
+	return ::restinio::impl::bitops::n_bits_from< std::uint8_t, SHIFT >(x);
 }
 
 static uint32_t blk(const int_block_t & block, const size_t i)
@@ -298,10 +300,10 @@ struct builder_t
 			std::size_t i = BLOCK_SIZE - 8u;
 			const auto push_uint_to_buffer = [&]( auto big_value ) {
 				const auto v = static_cast<std::uint32_t>(big_value);
-				m_buffer[ i++ ] = rshift_then_extract<24>(v);
-				m_buffer[ i++ ] = rshift_then_extract<16>(v);
-				m_buffer[ i++ ] = rshift_then_extract<8>(v);
-				m_buffer[ i++ ] = rshift_then_extract<0>(v);
+				m_buffer[ i++ ] = octet_from<24>(v);
+				m_buffer[ i++ ] = octet_from<16>(v);
+				m_buffer[ i++ ] = octet_from<8>(v);
+				m_buffer[ i++ ] = octet_from<0>(v);
 			};
 			push_uint_to_buffer( total_bits >> 32 );
 			push_uint_to_buffer( total_bits & 0xffffffffu );
@@ -348,9 +350,23 @@ struct builder_t
 		byte_block_t m_buffer;
 };
 
+namespace details
+{
+
+template< unsigned int SHIFT >
+unsigned int
+halfbyte( digest_t::value_type v )
+{
+	return ::restinio::impl::bitops::n_bits_from< unsigned int, SHIFT, 4 >(v);
+}
+
+} /* namespace details */
+
 inline std::string
 to_hex_string( const digest_t & what )
 {
+	using namespace details;
+
 	static const char digits[] = "0123456789abcdef";
 
 	std::string result;
@@ -358,20 +374,18 @@ to_hex_string( const digest_t & what )
 
 	for( const auto c : what )
 	{
-		result += digits[(c >> 28) & 0xF];
-		result += digits[(c >> 24) & 0xF];
-		result += digits[(c >> 20) & 0xF];
-		result += digits[(c >> 16) & 0xF];
-		result += digits[(c >> 12) & 0xF];
-		result += digits[(c >> 8) & 0xF];
-		result += digits[(c >> 4) & 0xF];
-		result += digits[c & 0xF];
+		result += digits[halfbyte<28>(c)];
+		result += digits[halfbyte<24>(c)];
+		result += digits[halfbyte<20>(c)];
+		result += digits[halfbyte<16>(c)];
+		result += digits[halfbyte<12>(c)];
+		result += digits[halfbyte<8>(c)];
+		result += digits[halfbyte<4>(c)];
+		result += digits[halfbyte<0>(c)];
 	}
 
 	return result;
 }
-
-
 
 inline digest_t
 make_digest( const std::uint8_t * what, std::size_t length )
