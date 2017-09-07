@@ -588,7 +588,7 @@ class ws_connection_t final
 									}
 							} ) );
 
-					// TODO: guard_write_operation();
+					guard_write_operation();
 				}
 				else if ( m_awaiting_buffers.close_when_done() )
 				{
@@ -726,6 +726,31 @@ class ws_connection_t final
 				m_close_handler( reason );
 				m_close_handler_was_called = true;
 			}
+		}
+
+		//! Start guard write operation if necessary.
+		void
+		guard_write_operation()
+		{
+			std::weak_ptr< ws_connection_base_t > weak_ctx = shared_from_this();
+
+			m_timer_guard
+				->schedule_operation_timeout_callback(
+					get_executor(),
+					m_settings->m_write_http_response_timelimit,
+					[ this, weak_ctx = std::move( weak_ctx ) ](){
+						if( auto ctx = weak_ctx.lock() )
+						{
+							[ this ](){
+								m_logger.trace( [&]{
+									return fmt::format(
+											"[wd_connection:{}] write operation timed out",
+											this->connection_id() );
+								} );
+								close();
+							};
+						}
+					} );
 		}
 
 		//! Connection.
