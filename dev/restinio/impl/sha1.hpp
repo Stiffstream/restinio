@@ -1,5 +1,9 @@
+/*
+	restinio
+*/
+
 /*!
-	Base64 implementation.
+	SHA1 implementation.
 */
 
 #pragma once
