@@ -88,7 +88,6 @@ class ws_connection_base_t
 		//! Write pieces of outgoing data.
 		virtual void
 		write_data(
-			// TODO: what parameter are needed?
 			buffers_container_t bufs ) = 0;
 
 	private:

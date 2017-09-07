@@ -67,7 +67,7 @@ class websocket_t
 			if( m_ws_connection_handle )
 			{
 				buffers_container_t bufs;
-				bufs.reserve( 2 ); // ?
+				bufs.reserve( 2 );
 
 				// Create header serialize it and append to bufs .
 				impl::ws_message_details_t details{
