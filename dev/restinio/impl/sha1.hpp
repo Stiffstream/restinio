@@ -19,7 +19,6 @@ namespace impl
 namespace sha1
 {
 
-
 // Block size in bytes.
 const std::uint8_t BLOCK_SIZE = 64;
 
@@ -60,10 +59,11 @@ as_uint8_ptr( const T * what )
 	return reinterpret_cast< const std::uint8_t * >( what );
 }
 
-inline std::uint32_t
-rotate_left( const std::uint32_t x, size_t n )
+template< unsigned int SHIFT >
+std::uint32_t
+rotate_left( const std::uint32_t x )
 {
-	return (x << n) | (x >> (32-n));
+	return (x << SHIFT) | (x >> (32 - SHIFT));
 }
 
 template< unsigned int SHIFT >
@@ -75,15 +75,15 @@ rshift_then_extract( std::uint32_t x )
 
 static uint32_t blk(const int_block_t & block, const size_t i)
 {
-	return rotate_left(
-		block[(i+13)&15] ^ block[(i+8)&15] ^ block[(i+2)&15] ^ block[i], 1);
+	return rotate_left<1>(
+		block[(i+13)&15] ^ block[(i+8)&15] ^ block[(i+2)&15] ^ block[i] );
 }
 
 inline void
 R0(const int_block_t & block, const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
 {
-	z += ((w&(x^y))^y) + block[i] + 0x5a827999 + rotate_left(v, 5);
-	w = rotate_left(w, 30);
+	z += ((w&(x^y))^y) + block[i] + 0x5a827999 + rotate_left<5>( v );
+	w = rotate_left<30>( w );
 }
 
 
@@ -91,8 +91,8 @@ inline void
 R1(int_block_t & block, const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
 {
 	block[i] = blk(block, i);
-	z += ((w&(x^y))^y) + block[i] + 0x5a827999 + rotate_left(v, 5);
-	w = rotate_left(w, 30);
+	z += ((w&(x^y))^y) + block[i] + 0x5a827999 + rotate_left<5>(v);
+	w = rotate_left<30>(w);
 }
 
 
@@ -100,17 +100,16 @@ inline void
 R2(int_block_t & block, const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
 {
 	block[i] = blk(block, i);
-	z += (w^x^y) + block[i] + 0x6ed9eba1 + rotate_left(v, 5);
-	w = rotate_left(w, 30);
+	z += (w^x^y) + block[i] + 0x6ed9eba1 + rotate_left<5>(v);
+	w = rotate_left<30>(w);
 }
-
 
 inline void
 R3(int_block_t & block, const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
 {
 	block[i] = blk(block, i);
-	z += (((w|x)&y)|(w&x)) + block[i] + 0x8f1bbcdc + rotate_left(v, 5);
-	w = rotate_left(w, 30);
+	z += (((w|x)&y)|(w&x)) + block[i] + 0x8f1bbcdc + rotate_left<5>(v);
+	w = rotate_left<30>(w);
 }
 
 
@@ -118,8 +117,8 @@ inline void
 R4(int_block_t & block, const uint32_t v, uint32_t &w, const uint32_t x, const uint32_t y, uint32_t &z, const size_t i)
 {
 	block[i] = blk(block, i);
-	z += (w^x^y) + block[i] + 0xca62c1d6 + rotate_left(v, 5);
-	w = rotate_left(w, 30);
+	z += (w^x^y) + block[i] + 0xca62c1d6 + rotate_left<5>(v);
+	w = rotate_left<30>(w);
 }
 
 inline void
