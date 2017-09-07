@@ -14,6 +14,10 @@
 #include <exception>
 #include <iostream> // std::cout, debug
 
+#include <fmt/format.h>
+
+#include <restinio/exception.hpp>
+
 namespace restinio
 {
 
@@ -41,13 +45,18 @@ is_base64_char( unsigned char c )
 inline void
 check_string_is_base64( const std::string & str )
 {
+	auto throw_invalid_string = [&]{
+			throw exception_t{
+				fmt::format( "invalid base64 string '{}'", str ) };
+		};
+
 	if( str.size() < 4 )
-		throw std::runtime_error("Invalid base64 string '" + str + "'.");
+		throw_invalid_string();
 
 	for( const auto & ch : str )
 	{
 		if( !is_base64_char( ch ) && ch != '=' )
-			throw std::runtime_error("Invalid base64 string '" + str + "'.");
+			throw_invalid_string();
 	}
 }
 
@@ -91,7 +100,7 @@ encode( const std::string & str )
 
 	if( remaining )
 	{
-		uint_type_t bs = 
+		uint_type_t bs =
 				1u == remaining ?
 				 	// only one char left.
 				 	(at(i) << 16) :
