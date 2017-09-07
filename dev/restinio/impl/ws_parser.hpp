@@ -426,7 +426,7 @@ mask_unmask_payload( std::uint32_t masking_key, raw_data_t & payload )
 	for( auto i = 0; i < MASK_SIZE; ++i )
 	{
 		auto shift_value = ( MASK_SIZE - i - 1 )* 8;
-		mask[i] = ( masking_key >>  shift_value ) & 0xFF;
+		mask[i] = ( masking_key >> shift_value ) & 0xFF;
 	}
 
 	for ( size_t index = 0; index < payload.size( ); index++ )

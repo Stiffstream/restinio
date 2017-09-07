@@ -38,8 +38,12 @@ enum class status_code_t : std::uint16_t
 	normal_closue = 1000,
 	going_away = 1001,
 	protocol_error = 1002,
-	cant_understand_data = 1003
-
+	cant_accept_data = 1003,
+	invalid_message_data = 1007,
+	policy_violation = 1008,
+	too_big_message = 1009,
+	more_extensions_expected = 1010,
+	unexpected_condition = 1011
 };
 
 //
