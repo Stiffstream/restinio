@@ -187,8 +187,8 @@ class ws_connection_t final
 
 		ws_connection_t( const ws_connection_t & ) = delete;
 		ws_connection_t( ws_connection_t && ) = delete;
-		void operator = ( const ws_connection_t & ) = delete;
-		void operator = ( ws_connection_t && ) = delete;
+		const ws_connection_t & operator = ( const ws_connection_t & ) = delete;
+		ws_connection_t & operator = ( ws_connection_t && ) = delete;
 
 		~ws_connection_t()
 		{
