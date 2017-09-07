@@ -75,8 +75,8 @@ rshift_then_extract( std::uint32_t x )
 
 static uint32_t blk(const int_block_t & block, const size_t i)
 {
-    return rotate_left(
-    	block[(i+13)&15] ^ block[(i+8)&15] ^ block[(i+2)&15] ^ block[i], 1);
+	return rotate_left(
+		block[(i+13)&15] ^ block[(i+8)&15] ^ block[(i+2)&15] ^ block[i], 1);
 }
 
 inline void
