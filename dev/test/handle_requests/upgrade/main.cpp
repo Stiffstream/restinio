@@ -41,8 +41,8 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 									*req,
 									// TODO: make sec_websocket_accept_field_value
 									std::string{ "sec_websocket_accept_field_value" },
-									[]( restinio::ws_message_handle_t m ){},
-									[]( std::string reason ){} );
+									[]( restinio::ws_message_handle_t ){},
+									[]( std::string ){} );
 
 							ws->close();
 

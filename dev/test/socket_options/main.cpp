@@ -130,7 +130,7 @@ TEST_CASE( "Socket_options TLS" , "[socket][options][tls]" )
 
 	// TODO: when tls client will be available use it instead of the following code:
 	do_with_socket(
-		[]( auto & socket, auto & io_context ){
+		[]( auto & socket, auto &  ){
 			// Ensure we get connected:
 			std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 			socket.close(); // Close without doing anything.
