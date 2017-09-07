@@ -426,10 +426,10 @@ mask_unmask_payload( std::uint32_t masking_key, raw_data_t & payload )
 
 	const std::size_t MASK_SIZE = 4;
 	const uint8_t mask[ MASK_SIZE ] = {
-		n_bits_from< std::uint8_t, 8, 24 >(masking_key),
-		n_bits_from< std::uint8_t, 8, 16 >(masking_key),
-		n_bits_from< std::uint8_t, 8, 8 >(masking_key),
-		n_bits_from< std::uint8_t, 8, 0 >(masking_key),
+		n_bits_from< std::uint8_t, 24 >(masking_key),
+		n_bits_from< std::uint8_t, 16 >(masking_key),
+		n_bits_from< std::uint8_t, 8 >(masking_key),
+		n_bits_from< std::uint8_t, 0 >(masking_key),
 	};
 
 	const auto payload_size = payload.size();
@@ -496,20 +496,15 @@ write_message_details(
 
 	if( message.m_mask_flag )
 	{
-		auto masking_key = message.m_masking_key;
-		const auto MASK_SIZE = 4;
-		uint8_t mask[ MASK_SIZE ] = { };
+		using namespace ::restinio::impl::bitops;
 
-		for( auto i = 0; i < MASK_SIZE; ++i )
-		{
-			auto shift_value = i * 8;
-			mask[i] = ( masking_key >>  shift_value ) & 0xFF;
-		}
+		using ch_type = raw_data_t::value_type;
 
-		result.push_back( mask[ 3 ] );
-		result.push_back( mask[ 2 ] );
-		result.push_back( mask[ 1 ] );
-		result.push_back( mask[ 0 ] );
+		const auto key = message.m_masking_key;
+		result.push_back( n_bits_from< ch_type, 24 >(key) );
+		result.push_back( n_bits_from< ch_type, 16 >(key) );
+		result.push_back( n_bits_from< ch_type, 8 >(key) );
+		result.push_back( n_bits_from< ch_type, 0 >(key) );
 	}
 
 	return result;

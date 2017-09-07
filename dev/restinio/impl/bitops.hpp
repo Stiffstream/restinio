@@ -31,9 +31,22 @@ struct mask_bits< 8, T >
 	static constexpr T mask() { return static_cast<T>(0xFFu); }
 };
 
+template< typename T >
+struct bits_count;
+
+template<>
+struct bits_count<unsigned char> { static constexpr unsigned count = 8u; };
+
+template<>
+struct bits_count<char> { static constexpr unsigned count = 8u; };
+
 } /* namespace details */
 
-template< typename T, unsigned BITS_TO_EXTRACT, unsigned SHIFT, typename F >
+template<
+	typename T,
+	unsigned SHIFT,
+	unsigned BITS_TO_EXTRACT = details::bits_count<T>::count,
+	typename F = unsigned int >
 T
 n_bits_from( F value )
 {
