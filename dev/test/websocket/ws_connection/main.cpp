@@ -138,7 +138,7 @@ status_code_to_bin( restinio::status_code_t code )
 		to_char_each(
 			{
 				(static_cast<std::uint16_t>(code) >> 8) & 0xFF ,
-				static_cast<std::uint16_t>(code) % 0xFF
+				static_cast<std::uint16_t>(code) & 0xFF
 			}
 		) };
 }
@@ -275,6 +275,12 @@ class a_server_t
 
 			if( req.header().m_masking_key )
 			{
+				if( !restinio::impl::check_utf8_is_correct( req.payload() ) )
+				{
+					m_ws->send_message( create_close_msg(
+						restinio::status_code_t::invalid_message_data ) );
+				}
+
 				auto resp = req;
 
 				resp.header().m_masking_key = 0;
@@ -431,6 +437,19 @@ TEST_CASE( "Request/Response close without masking key" , "[ws_connection]" )
 {
 	restinio::raw_data_t bin_data{ to_char_each(
 			{0x81, 0x05, 'H', 'e', 'l', 'l', 'o'}) };
+
+	auto ctx = client_server_ws_connection( bin_data );
+
+	REQUIRE( ctx.m_response.header().m_opcode ==
+		restinio::opcode_t::connection_close_frame );
+
+
+}
+
+TEST_CASE( "Request/Response close with non utf-8 payload" , "[ws_connection]" )
+{
+	restinio::raw_data_t bin_data{ to_char_each(
+			{0x81, 0x85, 0x37, 0xfa, 0x21, 0x3d, 'H', 'e', 'l', 'l', 'o'} ) };
 
 	auto ctx = client_server_ws_connection( bin_data );
 
