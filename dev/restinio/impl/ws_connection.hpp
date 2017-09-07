@@ -382,19 +382,12 @@ class ws_connection_t final
 		void
 		consume_header_from_buffer( const char * data, std::size_t length )
 		{
-			// TODO: parse header
-			// and
-
 			const auto nparsed = m_input.m_parser.parser_execute( data, length );
 
 			m_input.m_buf.consumed_bytes( nparsed );
 
 			if( m_input.m_parser.header_parsed() )
 			{
-			// 	// if header parsing is complete:
-			// 	// m_current_message = new_message( header-smth, payload_length )
-			// 	// m_current_message.m_payload
-
 				auto payload_length = m_input.m_parser.current_message().payload_len();
 				m_input.m_payload.resize( payload_length );
 

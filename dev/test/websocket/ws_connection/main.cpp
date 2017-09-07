@@ -245,12 +245,10 @@ class a_server_t
 	private:
 
 		void
-        evt_upgrade_request( const upgrade_request_t & msg )
-        {
-            auto req = msg.m_req;
-            auto ws_key = req->header().get_field("Sec-WebSocket-Key");
-
-			std::cout << "WS_KEY: " << ws_key << std::endl;
+		evt_upgrade_request( const upgrade_request_t & msg )
+		{
+			auto req = msg.m_req;
+			auto ws_key = req->header().get_field("Sec-WebSocket-Key");
 
 			ws_key.append( "258EAFA5-E914-47DA-95CA-C5AB0DC85B11" );
 
@@ -268,25 +266,12 @@ class a_server_t
 								this->so_direct_mbox(), m );
 						},
 					[]( std::string reason ){} );
-        }
+		}
 
 		void
 		evt_ws_message( const msg_ws_message & msg )
 		{
 			auto req = *(msg.m_msg);
-
-			std::cout << "REQUEST\n";
-
-			print_ws_message( req );
-
-			if( restinio::impl::check_utf8_is_correct( req.payload() ) )
-			{
-				std::cout << "CORRECT UTF-8" << std::endl;
-			}
-			else
-			{
-				std::cout << "INCORRECT UTF-8" << std::endl;
-			}
 
 			if( req.header().m_masking_key )
 			{
@@ -298,8 +283,6 @@ class a_server_t
 			}
 			else
 			{
-				std::cout << "CLOSE CONNECTION\n";
-
 				m_ws->send_message( create_close_msg(
 					restinio::status_code_t::protocol_error ) );
 
@@ -375,28 +358,8 @@ class a_client_t
 					len = socket.read_some( asio::buffer( data.data(), data.size() ) )
 					);
 
-				std::string response{ data.data(), len };
-				// std::cout << "RESPONSE: " << response << std::endl;
-
-				// unsigned char msg1[] = { 0x81, 0x05, 'H', 'e', 'l', 'l', 'o' };
-				unsigned char msg1[] = {
-					0x81, 0x85, 0x37, 0xfa, 0x21, 0x3d, 0x7f, 0x9f, 0x4d, 0x51, 0x58 };
-
-				// auto raw_data = restinio::impl::write_message_details(
-				// 	to_ws_message_details(m_etalon_request) );
-
-				// std::string masked_payload = m_etalon_request.payload();
-
-				// restinio::impl::mask_unmask_payload(
-				// 	m_etalon_request.header().m_masking_key,
-				// 	masked_payload );
-
-				// raw_data.append( masked_payload );
-
 				REQUIRE_NOTHROW(
 						asio::write(
-							// socket, asio::buffer( msg1, sizeof( msg1 ) ) )
-							// socket, asio::buffer( raw_data, raw_data.size() ) )
 							socket, asio::buffer(
 								m_result.m_request_bin.data(),
 								m_result.m_request_bin.size() ) )
@@ -414,19 +377,11 @@ class a_client_t
 		}
 
 		request_response_context_t & m_result;
-
-		const restinio::ws_message_t m_etalon_request{
-			restinio::ws_message_header_t{
-				true,
-				restinio::opcode_t::text_frame,
-				5, 128 },
-			"Hello" } ;
 };
 
 
 request_response_context_t
 client_server_ws_connection( const std::string & req_bin )
-// client_server_ws_connection( const restinio::ws_message_t & req )
 {
 	request_response_context_t rr_ctx;
 
@@ -465,11 +420,11 @@ TEST_CASE( "Request/Response echo" , "[ws_connection]" )
 
 	auto ctx = client_server_ws_connection( bin_data );
 
-	// REQUIRE( ctx.m_request == ctx.m_response );
-	// REQUIRE( ctx.m_request_bin == ctx.m_response_bin );
-	std::cout << "RESULT:\n";
-	print_ws_message( ctx.m_request );
-	print_ws_message( ctx.m_response );
+	auto request_payload = ctx.m_request.payload();
+	restinio::impl::mask_unmask_payload(
+			ctx.m_request.header().m_masking_key, request_payload );
+
+	REQUIRE( request_payload == ctx.m_response.payload() );
 }
 
 TEST_CASE( "Request/Response close without masking key" , "[ws_connection]" )
