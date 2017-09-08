@@ -29,19 +29,16 @@ namespace impl
 namespace base64
 {
 
+#include "base64_lut.inl"
+
 using uint_type_t = std::uint_fast32_t;
 
 using bitset24_t = std::bitset<24>;
 
-const std::string BASE64_ALPHABET =
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	"abcdefghijklmnopqrstuvwxyz"
-	"0123456789+/";
-
 inline bool
 is_base64_char( unsigned char c )
 {
-	return std::isalnum(c) || c == '+' || c == '/';
+	return 1 == is_base64_char_lut< unsigned char >()[ c ];
 }
 
 inline void
@@ -131,17 +128,19 @@ decode( const std::string & str )
 
 	check_string_is_base64( str );
 
-	for( size_t i = 0 ; i < str.size()  ; i += 4)
+	const unsigned char * const decode_table = base64_decode_lut< unsigned char >();
+
+	for( size_t i = 0 ; i < str.size(); i += 4)
 	{
 		bitset24_t bs;
 
-		bs |= BASE64_ALPHABET.find_first_of(str[i]);
+		bs |= decode_table[ str[i] ];
 		bs <<= 6;
-		bs |= BASE64_ALPHABET.find_first_of(str[i+1]);
+		bs |= decode_table[ str[i+1] ];
 		bs <<= 6;
-		bs |= str[i+2] != '=' ? BASE64_ALPHABET.find_first_of(str[i+2]) : 0;
+		bs |= str[i+2] != '=' ? decode_table[ str[i+2] ] : 0;
 		bs <<= 6;
-		bs |= str[i+3] != '=' ? BASE64_ALPHABET.find_first_of(str[i+3]) : 0;
+		bs |= str[i+3] != '=' ? decode_table[ str[i+3] ] : 0;
 
 		result.push_back( (bs >> 16).to_ulong() & 0xFF );
 		if( (bs >> 8).to_ulong() & 0xFF )

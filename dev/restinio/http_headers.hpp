@@ -32,7 +32,6 @@ uchar_at( const char * const from, const std::size_t at )
 	return static_cast< unsigned char >( from[ at ] );
 };
 
-
 } /* namespace impl */
 
 //
