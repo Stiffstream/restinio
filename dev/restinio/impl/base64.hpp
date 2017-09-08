@@ -130,17 +130,21 @@ decode( const std::string & str )
 
 	const unsigned char * const decode_table = base64_decode_lut< unsigned char >();
 
+	const auto at = [&str](auto index) {
+		return static_cast<unsigned char>(str[index]);
+	};
+
 	for( size_t i = 0 ; i < str.size(); i += 4)
 	{
 		bitset24_t bs;
 
-		bs |= decode_table[ str[i] ];
+		bs |= decode_table[ at(i) ];
 		bs <<= 6;
-		bs |= decode_table[ str[i+1] ];
+		bs |= decode_table[ at(i+1) ];
 		bs <<= 6;
-		bs |= str[i+2] != '=' ? decode_table[ str[i+2] ] : 0;
+		bs |= str[i+2] != '=' ? decode_table[ at(i+2) ] : 0;
 		bs <<= 6;
-		bs |= str[i+3] != '=' ? decode_table[ str[i+3] ] : 0;
+		bs |= str[i+3] != '=' ? decode_table[ at(i+3) ] : 0;
 
 		result.push_back( (bs >> 16).to_ulong() & 0xFF );
 		if( (bs >> 8).to_ulong() & 0xFF )

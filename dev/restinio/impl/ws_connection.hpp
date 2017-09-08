@@ -114,7 +114,7 @@ struct ws_connection_input_t
 	{}
 
 	//! websocket parser.
-	impl::ws_parser_t m_parser;
+	ws_parser_t m_parser;
 
 	//! Input buffer.
 	fixed_buffer_t m_buf;
@@ -711,9 +711,9 @@ class ws_connection_t final
 			}
 
 			m_msg_handler(
-				ws_message_handle_t( new ws_message_t(
+				std::make_shared< ws_message_t >(
 					current_header.transform_to_header(),
-					current_payload ) ) );
+					current_payload ) );
 
 			start_read_header();
 		}
