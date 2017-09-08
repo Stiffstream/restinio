@@ -142,7 +142,7 @@ decode( const std::string & str )
 		return static_cast<unsigned char>(str[index]);
 	};
 
-	for( size_t i = 0 ; i < str.size(); i += 4)
+	for( size_t i = 0 ; i < str.size(); i += group_size)
 	{
 
 		uint_type_t bs{};
