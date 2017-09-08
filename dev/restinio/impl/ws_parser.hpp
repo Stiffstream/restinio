@@ -76,7 +76,7 @@ class ws_message_details_t
 		payload_len() const
 		{
 			// 126 and 127 are codes of ext payload. 125 and lower are real payload len.
-			return m_payload_len > 125? m_ext_payload_len: m_payload_len;
+			return m_payload_len > WEBSOCKET_MAX_PAYLOAD_SIZE_WITHOUT_EXT? m_ext_payload_len: m_payload_len;
 		}
 
 		void
@@ -176,14 +176,11 @@ template <typename T>
 inline void
 read_number_from_big_endian_bytes( T & number, const raw_data_t & data )
 {
-	if( data.empty() )
-		return;
-
-	for( size_t i = 0 ; i < data.size() ; ++i )
+	number = T{};
+	for( const auto byte: data )
 	{
-		std::uint8_t byte = data[i];
-		auto shift_value = (data.size() - i - 1) * 8;
-		number |= ( static_cast<T>(byte) ) << shift_value;
+		number <<= 8;
+		number |= static_cast<std::uint8_t>( byte );
 	}
 }
 
@@ -362,9 +359,6 @@ class ws_parser_t
 		parse_first_2_bytes(
 			const raw_data_t & data )
 		{
-			if( data.size() != 2 )
-				throw exception_t( "Incorrect size of raw data: 2 bytes expected." );
-
 			m_current_msg.m_final_flag = data[0] & BIT_FLAG_7;
 			m_current_msg.m_rsv1_flag = data[0] & BIT_FLAG_6;
 			m_current_msg.m_rsv2_flag = data[0] & BIT_FLAG_5;
@@ -383,19 +377,11 @@ class ws_parser_t
 		{
 			if( payload_len == WEBSOCKET_SHORT_EXT_LEN_CODE )
 			{
-				if( data.size() != 2 )
-					throw exception_t(
-						"Incorrect size of raw data: 2 bytes expected." );
-
 				read_number_from_big_endian_bytes(
 					m_current_msg.m_ext_payload_len, data );
 			}
 			else if( payload_len == WEBSOCKET_LONG_EXT_LEN_CODE )
 			{
-				if( data.size() != 8 )
-					throw exception_t(
-						"Incorrect size of raw data: 8 bytes expected." );
-
 				read_number_from_big_endian_bytes(
 					m_current_msg.m_ext_payload_len, data );
 			}
@@ -408,10 +394,6 @@ class ws_parser_t
 		{
 			if( mask_flag )
 			{
-				if( data.size() != 4 )
-					throw exception_t(
-						"Incorrect size of raw data: 4 bytes expected." );
-
 				read_number_from_big_endian_bytes(
 					m_current_msg.m_masking_key, data );
 			}
