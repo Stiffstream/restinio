@@ -79,6 +79,11 @@ encode( const std::string & str )
 
 	const auto at = [&str](auto index) { return uch(str[index]); };
 
+	const auto alphabet_char = [](auto ch) {
+		return base64_alphabet< unsigned char >()[
+				static_cast<unsigned char>(ch) ];
+	};
+
 	const std::size_t group_size = 3u;
 	const auto remaining = str.size() % group_size;
 
@@ -89,10 +94,10 @@ encode( const std::string & str )
 	{
 		uint_type_t bs = (at(i) << 16) | (at(i+1) << 8) | at(i+2);
 
-		result.push_back( base64_alphabet< unsigned char >()[ sixbits_char<18>(bs) ] );
-		result.push_back( base64_alphabet< unsigned char >()[ sixbits_char<12>(bs) ] );
-		result.push_back( base64_alphabet< unsigned char >()[ sixbits_char<6>(bs) ] );
-		result.push_back( base64_alphabet< unsigned char >()[ sixbits_char<0>(bs) ] );
+		result.push_back( alphabet_char( sixbits_char<18>(bs) ) );
+		result.push_back( alphabet_char( sixbits_char<12>(bs) ) );
+		result.push_back( alphabet_char( sixbits_char<6>(bs) ) );
+		result.push_back( alphabet_char( sixbits_char<0>(bs) ) );
 	}
 
 	if( remaining )
@@ -104,18 +109,16 @@ encode( const std::string & str )
 					// two chars left.
 					((at(i) << 16) | (at(i+1) << 8));
 
-		result.push_back( base64_alphabet< unsigned char >()[ sixbits_char<18>(bs) ] );
-		result.push_back( base64_alphabet< unsigned char >()[ sixbits_char<12>(bs) ] );
+		result.push_back( alphabet_char( sixbits_char<18>(bs) ) );
+		result.push_back( alphabet_char( sixbits_char<12>(bs) ) );
 
 		if( (bs >> 8) & 0xFFu )
-			result.push_back(
-				base64_alphabet< unsigned char >()[ sixbits_char<6>(bs) ] );
+			result.push_back( alphabet_char( sixbits_char<6>(bs) ) );
 		else
 			result.push_back('=');
 
 		if( bs & 0xFFu )
-			result.push_back(
-				base64_alphabet< unsigned char >()[ sixbits_char<0>(bs) ] );
+			result.push_back( alphabet_char( sixbits_char<0>(bs) ) );
 		else
 			result.push_back('=');
 	}
@@ -139,7 +142,7 @@ decode( const std::string & str )
 	for( size_t i = 0 ; i < str.size(); i += 4)
 	{
 
-		uint_type_t bs;
+		uint_type_t bs{};
 
 		bs |= decode_table[ at(i) ];
 		bs <<= 6;
@@ -150,11 +153,15 @@ decode( const std::string & str )
 		bs |= str[i+3] != '=' ? decode_table[ at(i+3) ] : 0;
 
 
-		result.push_back( (bs >> 16) & 0xFF );
-		if( (bs >> 8) & 0xFF )
-			result.push_back( (bs >> 8) & 0xFF );
-		if( (bs) & 0xFF )
-			result.push_back( (bs) & 0xFF );
+		using ::restinio::impl::bitops::n_bits_from;
+
+		result.push_back( n_bits_from< char, 16 >(bs) );
+		const auto c2 = n_bits_from< char, 8 >(bs);
+		if( c2 )
+			result.push_back( c2 );
+		const auto c3 = n_bits_from< char, 0 >(bs);
+		if( c3 )
+			result.push_back( c3 );
 	}
 
 	return result;
