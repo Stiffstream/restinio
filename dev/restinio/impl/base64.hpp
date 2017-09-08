@@ -129,9 +129,12 @@ encode( const std::string & str )
 inline std::string
 decode( const std::string & str )
 {
+	constexpr std::size_t group_size = 4;
+
 	std::string result;
 
 	check_string_is_base64( str );
+	result.reserve( (str.size() / group_size) * 3 );
 
 	const unsigned char * const decode_table = base64_decode_lut< unsigned char >();
 
