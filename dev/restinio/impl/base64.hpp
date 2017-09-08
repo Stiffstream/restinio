@@ -89,10 +89,10 @@ encode( const std::string & str )
 	{
 		uint_type_t bs = (at(i) << 16) | (at(i+1) << 8) | at(i+2);
 
-		result.push_back( BASE64_ALPHABET[ sixbits_char<18>(bs) ] );
-		result.push_back( BASE64_ALPHABET[ sixbits_char<12>(bs) ] );
-		result.push_back( BASE64_ALPHABET[ sixbits_char<6>(bs) ] );
-		result.push_back( BASE64_ALPHABET[ sixbits_char<0>(bs) ] );
+		result.push_back( base64_alphabet< unsigned char >()[ sixbits_char<18>(bs) ] );
+		result.push_back( base64_alphabet< unsigned char >()[ sixbits_char<12>(bs) ] );
+		result.push_back( base64_alphabet< unsigned char >()[ sixbits_char<6>(bs) ] );
+		result.push_back( base64_alphabet< unsigned char >()[ sixbits_char<0>(bs) ] );
 	}
 
 	if( remaining )
@@ -104,16 +104,18 @@ encode( const std::string & str )
 					// two chars left.
 					((at(i) << 16) | (at(i+1) << 8));
 
-		result.push_back( BASE64_ALPHABET[ sixbits_char<18>(bs) ] );
-		result.push_back( BASE64_ALPHABET[ sixbits_char<12>(bs) ] );
+		result.push_back( base64_alphabet< unsigned char >()[ sixbits_char<18>(bs) ] );
+		result.push_back( base64_alphabet< unsigned char >()[ sixbits_char<12>(bs) ] );
 
 		if( (bs >> 8) & 0xFFu )
-			result.push_back( BASE64_ALPHABET[ sixbits_char<6>(bs) ] );
+			result.push_back(
+				base64_alphabet< unsigned char >()[ sixbits_char<6>(bs) ] );
 		else
 			result.push_back('=');
 
 		if( bs & 0xFFu )
-			result.push_back( BASE64_ALPHABET[ sixbits_char<0>(bs) ] );
+			result.push_back(
+				base64_alphabet< unsigned char >()[ sixbits_char<0>(bs) ] );
 		else
 			result.push_back('=');
 	}
@@ -136,7 +138,8 @@ decode( const std::string & str )
 
 	for( size_t i = 0 ; i < str.size(); i += 4)
 	{
-		bitset24_t bs;
+
+		uint_type_t bs;
 
 		bs |= decode_table[ at(i) ];
 		bs <<= 6;
@@ -146,11 +149,12 @@ decode( const std::string & str )
 		bs <<= 6;
 		bs |= str[i+3] != '=' ? decode_table[ at(i+3) ] : 0;
 
-		result.push_back( (bs >> 16).to_ulong() & 0xFF );
-		if( (bs >> 8).to_ulong() & 0xFF )
-			result.push_back( (bs >> 8).to_ulong() & 0xFF );
-		if( (bs).to_ulong() & 0xFF )
-		result.push_back( (bs).to_ulong() & 0xFF );
+
+		result.push_back( (bs >> 16) & 0xFF );
+		if( (bs >> 8) & 0xFF )
+			result.push_back( (bs >> 8) & 0xFF );
+		if( (bs) & 0xFF )
+			result.push_back( (bs) & 0xFF );
 	}
 
 	return result;
