@@ -32,6 +32,8 @@ namespace restinio
 namespace impl
 {
 
+constexpr size_t WEBSOCKET_HEADER_MAX_SIZE = 14;
+
 //
 // ws_outgoing_data_t
 //
@@ -171,7 +173,7 @@ class ws_connection_t final
 			,	m_strand{ std::move( strand ) }
 			,	m_settings{ std::move( settings ) }
 			,	m_timer_guard{ std::move( timer_guard ) }
-			,	m_input{ /*TODO: use constant */ 18 }
+			,	m_input{ WEBSOCKET_HEADER_MAX_SIZE }
 			,	m_msg_handler{ std::move( msg_handler ) }
 			,	m_close_handler{ std::move( close_handler ) }
 			,	m_logger{ *( m_settings->m_logger ) }
