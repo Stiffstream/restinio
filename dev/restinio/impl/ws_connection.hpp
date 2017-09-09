@@ -609,7 +609,7 @@ class ws_connection_t final
 			if( !ec )
 			{
 				// Release buffers.
-				m_resp_out_ctx.done();
+				m_resp_out_ctx.done( written );
 
 				m_logger.trace( [&]{
 					return fmt::format(
