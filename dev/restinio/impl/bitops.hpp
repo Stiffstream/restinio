@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace restinio {
 
 namespace impl {
@@ -16,35 +18,42 @@ namespace bitops {
 
 namespace details {
 
-template< unsigned BITS_TO_EXTRACT, typename T >
-struct mask_bits;
-
 template< typename T >
-struct mask_bits< 4, T >
+constexpr T mask( unsigned bits_to_extract )
 {
-	static constexpr T mask() { return static_cast<T>(0xFu); }
-};
-
-template< typename T >
-struct mask_bits< 6, T >
-{
-	static constexpr T mask() { return static_cast<T>(0x3Fu); }
-};
-
-template< typename T >
-struct mask_bits< 8, T >
-{
-	static constexpr T mask() { return static_cast<T>(0xFFu); }
-};
+	return bits_to_extract <= 1u ? T{1} :
+		((mask<T>(bits_to_extract-1) << 1) | T{1});
+}
 
 template< typename T >
 struct bits_count;
 
 template<>
-struct bits_count<unsigned char> { static constexpr unsigned count = 8u; };
+struct bits_count<std::uint8_t> { static constexpr unsigned count = 8u; };
+
+template<>
+struct bits_count<std::int8_t> { static constexpr unsigned count = 8u; };
 
 template<>
 struct bits_count<char> { static constexpr unsigned count = 8u; };
+
+template<>
+struct bits_count<std::uint16_t> { static constexpr unsigned count = 16u; };
+
+template<>
+struct bits_count<std::int16_t> { static constexpr unsigned count = 16u; };
+
+template<>
+struct bits_count<std::uint32_t> { static constexpr unsigned count = 32u; };
+
+template<>
+struct bits_count<std::int32_t> { static constexpr unsigned count = 32u; };
+
+template<>
+struct bits_count<std::uint64_t> { static constexpr unsigned count = 64u; };
+
+template<>
+struct bits_count<std::int64_t> { static constexpr unsigned count = 64u; };
 
 } /* namespace details */
 
@@ -74,8 +83,7 @@ template<
 T
 n_bits_from( F value )
 {
-	return static_cast<T>(value >> SHIFT)
-			& details::mask_bits<BITS_TO_EXTRACT, T>::mask();
+	return static_cast<T>(value >> SHIFT) & details::mask<T>(BITS_TO_EXTRACT);
 }
 
 } /* namespace bitops */
