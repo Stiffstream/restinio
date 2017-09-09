@@ -7,4 +7,5 @@ MxxRu::Cpp::composite_target {
 	required_prj 'sample/async_handling_with_sobjectizer/prj.rb'
 	required_prj 'sample/express_router/prj.rb'
 	required_prj 'sample/express_router_tutorial/prj.rb'
+	required_prj 'sample/websocket/prj.rb'
 }
