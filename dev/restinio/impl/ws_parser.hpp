@@ -63,7 +63,7 @@ class ws_message_details_t
 		}
 
 		ws_message_details_t(
-			bool final, opcode_t opcode, size_t payload_len, size_t masking_key )
+			bool final, opcode_t opcode, size_t payload_len, std::uint32_t masking_key )
 		:	m_final_flag{ final }
 		,	m_opcode{ opcode }
 		,	m_mask_flag( true )
@@ -125,7 +125,7 @@ class ws_message_details_t
 			}
 			else
 			{
-				m_payload_len = payload_len;
+				m_payload_len = static_cast<std::uint8_t>(payload_len);
 			}
 		}
 
@@ -359,14 +359,14 @@ class ws_parser_t
 		parse_first_2_bytes(
 			const raw_data_t & data )
 		{
-			m_current_msg.m_final_flag = data[0] & BIT_FLAG_7;
-			m_current_msg.m_rsv1_flag = data[0] & BIT_FLAG_6;
-			m_current_msg.m_rsv2_flag = data[0] & BIT_FLAG_5;
-			m_current_msg.m_rsv3_flag = data[0] & BIT_FLAG_4;
+			m_current_msg.m_final_flag = (data[0] & BIT_FLAG_7) != 0;
+			m_current_msg.m_rsv1_flag = (data[0] & BIT_FLAG_6) != 0;
+			m_current_msg.m_rsv2_flag = (data[0] & BIT_FLAG_5) != 0;
+			m_current_msg.m_rsv3_flag = (data[0] & BIT_FLAG_4) != 0;
 
 			m_current_msg.m_opcode = static_cast< opcode_t >( data[0] & OPCODE_MASK );
 
-			m_current_msg.m_mask_flag = data[1] & BIT_FLAG_7;
+			m_current_msg.m_mask_flag = (data[1] & BIT_FLAG_7) != 0;
 			m_current_msg.m_payload_len = data[1] & PAYLOAD_LEN_MASK;
 		}
 
