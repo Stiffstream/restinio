@@ -135,16 +135,6 @@ auto server_handler( restinio::websocket_unique_ptr_t & websocket )
 {
 	auto router = std::make_unique< router_t >();
 
-	auto ws_message_handler = [&]( restinio::ws_message_handle_t m ){
-
-		auto req = *m;
-		auto resp = req;
-
-		resp.header().m_masking_key = 0;
-		websocket->send_message( resp );
-
-	};
-
 	router->http_get(
 		"/chat",
 		[&]( auto req, auto ){
@@ -164,7 +154,6 @@ auto server_handler( restinio::websocket_unique_ptr_t & websocket )
 								std::string{
 									digest_to_char_array(digest).data(), 20
 								} ),
-							// ws_message_handler,
 							[&]( restinio::ws_message_handle_t m ){
 
 								ws_msg_handler( websocket, m );
