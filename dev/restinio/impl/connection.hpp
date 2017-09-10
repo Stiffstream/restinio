@@ -892,11 +892,11 @@ class connection_t final
 			if( !ec )
 			{
 				// Release buffers.
-				m_resp_out_ctx.done( /*written*/ ); // merge 368. parents: 367, 296.
+				m_resp_out_ctx.done();
 
 				m_logger.trace( [&]{
 					return fmt::format(
-							"[connection:{}] outgoing data was sent (async): {}b",
+							"[connection:{}] outgoing data was sent: {}b",
 							connection_id(),
 							written );
 				} );
