@@ -43,11 +43,11 @@ struct raw_resp_output_ctx_t
 	const std::vector< asio::const_buffer > &
 	create_bufs()
 	{
-		m_bufs_data_size = 0;
+		// m_bufs_data_size = 0;
 		for( const auto & buf : m_bufs )
 		{
 			m_asio_bufs.emplace_back( buf.buf() );
-			m_bufs_data_size += asio::buffer_size( m_asio_bufs.back() );
+			// m_bufs_data_size += asio::buffer_size( m_asio_bufs.back() );
 		}
 
 		m_transmitting = true;
@@ -55,59 +55,66 @@ struct raw_resp_output_ctx_t
 	}
 
 	void
-	done( std::size_t written_data_size )
+	done( /*std::size_t written_data_size*/ )
 	{
-		m_bufs_data_size -= written_data_size;
 
-		if( 0 == m_bufs_data_size )
-		{
-			m_asio_bufs.resize( 0 );
-			m_bufs.resize( 0 );
+		m_asio_bufs.resize( 0 );
+		m_bufs.resize( 0 );
+		m_transmitting = false;
 
-			m_transmitting = false;
-			m_bufs_data_size = 0;
-		}
-		else
-		{
-			auto it = m_asio_bufs.begin();
+		// merge 368. parents: 367, 296.
 
-			while( 0 < written_data_size )
-			{
-				const auto buf_size = asio::buffer_size( *it );
+		// m_bufs_data_size -= written_data_size;
 
-				if( buf_size < written_data_size )
-				{
-					++it;
-					written_data_size -= buf_size;
-				}
-				else if( buf_size == written_data_size )
-				{
-					m_asio_bufs.erase( m_asio_bufs.begin(), it );
-					break;
-				}
-				else
-				{
-					*it =
-						asio::buffer(
-							asio::buffer_cast< const char * >( *it ) + written_data_size,
-							buf_size - written_data_size );
+		// if( 0 == m_bufs_data_size )
+		// {
+		// 	m_asio_bufs.resize( 0 );
+		// 	m_bufs.resize( 0 );
 
-					if( m_asio_bufs.begin() != it )
-					{
-						m_asio_bufs.erase( m_asio_bufs.begin(), it-1 );
-					}
+		// 	m_transmitting = false;
+		// 	m_bufs_data_size = 0;
+		// }
+		// else
+		// {
+		// 	auto it = m_asio_bufs.begin();
 
-					break;
-				}
-			}
-		}
+		// 	while( 0 < written_data_size )
+		// 	{
+		// 		const auto buf_size = asio::buffer_size( *it );
+
+		// 		if( buf_size < written_data_size )
+		// 		{
+		// 			++it;
+		// 			written_data_size -= buf_size;
+		// 		}
+		// 		else if( buf_size == written_data_size )
+		// 		{
+		// 			m_asio_bufs.erase( m_asio_bufs.begin(), it );
+		// 			break;
+		// 		}
+		// 		else
+		// 		{
+		// 			*it =
+		// 				asio::buffer(
+		// 					asio::buffer_cast< const char * >( *it ) + written_data_size,
+		// 					buf_size - written_data_size );
+
+		// 			if( m_asio_bufs.begin() != it )
+		// 			{
+		// 				m_asio_bufs.erase( m_asio_bufs.begin(), it-1 );
+		// 			}
+
+		// 			break;
+		// 		}
+		// 	}
+		// }
 	}
 
-	const std::vector< asio::const_buffer > &
-	asio_bufs() const
-	{
-		return m_asio_bufs;
-	}
+	// const std::vector< asio::const_buffer > &
+	// asio_bufs() const
+	// {
+	// 	return m_asio_bufs;
+	// }
 
 	bool
 	transmitting() const
@@ -138,7 +145,7 @@ struct raw_resp_output_ctx_t
 
 		//! Asio buffers.
 		std::vector< asio::const_buffer > m_asio_bufs;
-		std::size_t m_bufs_data_size{ 0 };
+		// std::size_t m_bufs_data_size{ 0 }; // merge 368. parents: 367, 296.
 
 		//! Real buffers with data.
 		buffers_container_t m_bufs;
