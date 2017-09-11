@@ -19,40 +19,10 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+#include <test/websocket/common/pub.hpp>
+
 using namespace restinio;
 using namespace restinio::impl;
-
-char
-to_char( int val )
-{
-	return static_cast<char>(val);
-};
-
-raw_data_t
-to_char_each( std::vector< int > source )
-{
-	raw_data_t result;
-	result.reserve( source.size() );
-
-	for( const auto & val : source )
-	{
-		result.push_back( to_char(val) );
-	}
-
-	return result;
-}
-
-void
-print_as_hex( const raw_data_t & data )
-{
-	for( const auto & byte : data )
-	{
-		std::cout << std::hex << static_cast<std::int16_t>(byte) << " ";
-	}
-
-	std::cout << std::endl;
-}
-
 
 TEST_CASE( "Validate parser implementation details" , "[websocket][parser][impl]" )
 {
@@ -122,7 +92,7 @@ TEST_CASE( "Validate mask and unmask operations" , "[websocket][parser][mask]" )
 	uint32_t mask_key = 0x37FA213D;
 	mask_unmask_payload( mask_key, bin_data );
 	raw_data_t masked_bin_data_etalon{
-		to_char(0x7F), to_char(0x9F), to_char(0x4D), to_char(0x51), to_char(0x58) };
+		to_char_each({0x7F, 0x9F, 0x4D, 0x51, 0x58}) };
 
 	REQUIRE( bin_data == masked_bin_data_etalon );
 	mask_unmask_payload( mask_key, bin_data );
@@ -252,7 +222,7 @@ TEST_CASE( "Parse header (2 bytes + 4 bytes masking key )" ,
 
 TEST_CASE( "Parse simple message" , "[websocket][parser][read]" )
 {
-	raw_data_t bin_data{ to_char(0x81), to_char(0x05), to_char(0x48), to_char(0x65), to_char(0x6C), to_char(0x6C), to_char(0x6F) };
+	raw_data_t bin_data{ to_char_each({0x81, 0x05, 0x48, 0x65, 0x6C, 0x6C, 0x6F}) };
 
 	ws_parser_t parser;
 
@@ -274,7 +244,7 @@ TEST_CASE( "Parse simple message" , "[websocket][parser][read]" )
 
 TEST_CASE( "Parse simple message (chunked)" , "[websocket][parser][read]" )
 {
-	raw_data_t bin_data{ to_char(0x81), to_char(0x05), to_char(0x48), to_char(0x65), to_char(0x6C), to_char(0x6C), to_char(0x6F) };
+	raw_data_t bin_data{ to_char_each({0x81, 0x05, 0x48, 0x65, 0x6C, 0x6C, 0x6F}) };
 
 	ws_parser_t parser;
 
@@ -313,7 +283,7 @@ TEST_CASE( "Write simple message" , "[websocket][parser][write]" )
 		ws_message_details_t m;
 
 		raw_data_t bin_data = write_message_details( m );
-		raw_data_t etalon{ to_char(0x80), to_char(0x00) };
+		raw_data_t etalon{ to_char_each({0x80, 0x00}) };
 
 		REQUIRE( bin_data == etalon );
 	}

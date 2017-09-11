@@ -12,13 +12,7 @@
 #include <restinio/impl/base64.hpp>
 #include <restinio/impl/sha1.hpp>
 
-char
-to_char( int val )
-{
-	return static_cast<char>(val);
-};
-
-std::string
+inline std::string
 to_char_each( std::vector< int > source )
 {
 	std::string result;
@@ -26,7 +20,7 @@ to_char_each( std::vector< int > source )
 
 	for( const auto & val : source )
 	{
-		result.push_back( to_char(val) );
+		result.push_back( static_cast<char>(val) );
 	}
 
 	return result;
@@ -93,6 +87,21 @@ TEST_CASE(
 		std::string str{"TW9uZXk="};
 		REQUIRE( restinio::impl::base64::decode( str ) == "Money" );
 	}
+}
+
+TEST_CASE(
+	"SHA-1 helper functions" ,
+	"[encoders][sha-1][helper functions]" )
+{
+	REQUIRE( restinio::impl::sha1::to_string(
+		restinio::impl::sha1::digest_t{
+			0xa49b2446, 0xa02c645b, 0xf419f995, 0xb6709125, 0x3a04a259 }) ==
+		std::string{ to_char_each({
+			0xa4, 0x9b, 0x24, 0x46,
+			0xa0, 0x2c, 0x64, 0x5b,
+			0xf4, 0x19, 0xf9, 0x95,
+			0xb6, 0x70, 0x91, 0x25,
+			0x3a, 0x04, 0xa2, 0x59}) } );
 }
 
 TEST_CASE(

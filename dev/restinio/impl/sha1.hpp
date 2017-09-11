@@ -360,6 +360,13 @@ halfbyte( digest_t::value_type v )
 	return ::restinio::impl::bitops::n_bits_from< unsigned int, SHIFT, 4 >(v);
 }
 
+template< unsigned int SHIFT >
+unsigned int
+byte( digest_t::value_type v )
+{
+	return ::restinio::impl::bitops::n_bits_from< unsigned int, SHIFT, 8 >(v);
+}
+
 } /* namespace details */
 
 inline std::string
@@ -382,6 +389,25 @@ to_hex_string( const digest_t & what )
 		result += digits[halfbyte<8>(c)];
 		result += digits[halfbyte<4>(c)];
 		result += digits[halfbyte<0>(c)];
+	}
+
+	return result;
+}
+
+inline std::string
+to_string( const digest_t & what )
+{
+	using namespace details;
+
+	std::string result;
+	result.reserve( DIGEST_SIZE );
+
+	for( const auto c : what )
+	{
+		result.push_back( byte<24>(c) );
+		result.push_back( byte<16>(c) );
+		result.push_back( byte<8>(c) );
+		result.push_back( byte<0>(c) );
 	}
 
 	return result;

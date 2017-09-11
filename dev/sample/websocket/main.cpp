@@ -27,12 +27,6 @@ using traits_t =
 
 using http_server_t = restinio::http_server_t< traits_t >;
 
-char
-to_char( int val )
-{
-	return static_cast<char>(val);
-};
-
 restinio::raw_data_t
 to_char_each( std::vector< int > source )
 {
@@ -41,7 +35,7 @@ to_char_each( std::vector< int > source )
 
 	for( const auto & val : source )
 	{
-		result.push_back( to_char(val) );
+		result.push_back( static_cast<char>(val) );
 	}
 
 	return result;

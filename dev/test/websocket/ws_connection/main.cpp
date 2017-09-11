@@ -20,26 +20,7 @@
 
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
-
-char
-to_char( int val )
-{
-	return static_cast<char>(val);
-};
-
-restinio::raw_data_t
-to_char_each( std::vector< int > source )
-{
-	restinio::raw_data_t result;
-	result.reserve( source.size() );
-
-	for( const auto & val : source )
-	{
-		result.push_back( to_char(val) );
-	}
-
-	return result;
-}
+#include <test/websocket/common/pub.hpp>
 
 restinio::impl::ws_message_details_t
 to_ws_message_details( const restinio::ws_message_t & msg )
