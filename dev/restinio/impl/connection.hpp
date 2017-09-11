@@ -614,7 +614,7 @@ class connection_t final
 			} );
 
 			// Do not guard upgrade request.
-			m_timer_guard.cancel();
+			m_timer_guard->cancel();
 
 			// After calling handler we expect the results or
 			// no further operations with connection
