@@ -613,7 +613,8 @@ class connection_t final
 						parser_ctx.m_header.request_target() );
 			} );
 
-			guard_request_handling_operation();
+			// Do not guard upgrade request.
+			m_timer_guard.cancel();
 
 			// After calling handler we expect the results or
 			// no further operations with connection
