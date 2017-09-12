@@ -53,30 +53,13 @@ status_code_to_bin( restinio::status_code_t code )
 		) };
 }
 
-std::array< char, 20>
-digest_to_char_array( const restinio::impl::sha1::digest_t & digest )
-{
-	std::array< char, 20> result;
-
-	size_t i = 0;
-
-	for( const auto c : digest )
-	{
-		result[i++] = ( (c >>  24) & 0xFF );
-		result[i++] = ( (c >>  16) & 0xFF );
-		result[i++] = ( (c >>  8) & 0xFF );
-		result[i++] = ( (c) & 0xFF );
-	}
-
-	return result;
-}
-
 restinio::ws_message_t
 create_close_msg(
 	restinio::status_code_t code,
 	const std::string & desc = std::string() )
 {
-	restinio::raw_data_t payload{status_code_to_bin( code ) + desc };
+	restinio::raw_data_t payload{
+		restinio::impl::status_code_to_bin( code ) + desc };
 
 	restinio::ws_message_t close_msg(
 		true, restinio::opcode_t::connection_close_frame, payload );
@@ -135,21 +118,10 @@ auto server_handler( restinio::websocket_unique_ptr_t & websocket )
 
 				if( restinio::http_connection_header_t::upgrade == req->header().connection() )
 				{
-					auto ws_key =
-						req->header().get_field(
-							restinio::http_field::sec_websocket_key );
-
-					ws_key.append( "258EAFA5-E914-47DA-95CA-C5AB0DC85B11" );
-
-					auto digest = restinio::impl::sha1::make_digest( ws_key );
 
 					websocket =
 						restinio::upgrade_to_websocket< traits_t >(
 							*req,
-							restinio::impl::base64::encode(
-								std::string{
-									digest_to_char_array(digest).data(), 20
-								} ),
 							[&]( restinio::ws_message_handle_t m ){
 
 								ws_msg_handler( websocket, m );

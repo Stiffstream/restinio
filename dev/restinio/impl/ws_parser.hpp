@@ -492,6 +492,19 @@ write_message_details(
 	return result;
 }
 
+inline raw_data_t
+status_code_to_bin( status_code_t code )
+{
+	using namespace ::restinio::impl::bitops;
+
+	raw_data_t result;
+	result.push_back( n_bits_from< std::uint16_t, 8 >(
+		static_cast<std::uint16_t>(code) ) );
+	result.push_back( n_bits_from< std::uint16_t, 0 >(
+		static_cast<std::uint16_t>(code) ) );
+	return result;
+}
+
 } /* namespace impl */
 
 } /* namespace restinio */

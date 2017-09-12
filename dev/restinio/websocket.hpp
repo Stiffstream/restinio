@@ -13,9 +13,14 @@
 #include <restinio/connection_handle.hpp>
 #include <restinio/ws_message.hpp>
 #include <restinio/impl/ws_connection.hpp>
+#include <restinio/impl/base64.hpp>
+#include <restinio/impl/sha1.hpp>
 
 namespace restinio
 {
+
+const std::string websocket_accept_field_suffix{
+	"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"};
 
 //
 // websocket_t
@@ -221,6 +226,42 @@ upgrade_to_websocket(
 	upgrade_response_header_fields.set_field(
 		http_field::sec_websocket_protocol,
 		std::move( sec_websocket_protocol_field_value ) );
+
+	return
+		upgrade_to_websocket< TRAITS, WS_MESSAGE_HANDLER, WS_CLOSE_HANDLER >(
+			req,
+			std::move( upgrade_response_header_fields ),
+			std::move( ws_message_handler ),
+			std::move( ws_close_handler ) );
+}
+
+//
+// upgrade_to_websocket
+//
+
+template <
+		typename TRAITS,
+		typename WS_MESSAGE_HANDLER,
+		typename WS_CLOSE_HANDLER >
+websocket_unique_ptr_t
+upgrade_to_websocket(
+	request_t & req,
+	WS_MESSAGE_HANDLER ws_message_handler,
+	WS_CLOSE_HANDLER ws_close_handler )
+{
+	auto ws_key = req.header().get_field( restinio::http_field::sec_websocket_key );
+
+	ws_key.append( websocket_accept_field_suffix );
+
+	auto digest = restinio::impl::sha1::make_digest( ws_key );
+
+	std::string sec_websocket_accept_field_value = impl::base64::encode(
+		impl::sha1::to_string( digest ) );
+
+	http_header_fields_t upgrade_response_header_fields;
+	upgrade_response_header_fields.set_field(
+		http_field::sec_websocket_accept,
+		std::move( sec_websocket_accept_field_value ) );
 
 	return
 		upgrade_to_websocket< TRAITS, WS_MESSAGE_HANDLER, WS_CLOSE_HANDLER >(

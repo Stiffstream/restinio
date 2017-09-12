@@ -39,8 +39,6 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 							auto ws =
 								restinio::upgrade_to_websocket< traits_t >(
 									*req,
-									// TODO: make sec_websocket_accept_field_value
-									std::string{ "sec_websocket_accept_field_value" },
 									[]( restinio::ws_message_handle_t ){},
 									[]( std::string ){} );
 
