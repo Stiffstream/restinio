@@ -612,7 +612,7 @@ class ws_connection_t final
 									}
 							} ) );
 
-					guard_write_operation();
+					//guard_write_operation();
 				}
 				else if ( m_awaiting_buffers.close_when_done() )
 				{
