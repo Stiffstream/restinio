@@ -703,7 +703,7 @@ class ws_connection_t final
 		{
 			m_logger.trace( [&]{
 				return fmt::format(
-						"[ws_connection:{}] close",
+						"[ws_connection:{}] close socket",
 						connection_id() );
 			} );
 
@@ -775,14 +775,12 @@ class ws_connection_t final
 					[ this, weak_ctx = std::move( weak_ctx ) ](){
 						if( auto ctx = weak_ctx.lock() )
 						{
-							[ this ](){
-								m_logger.trace( [&]{
-									return fmt::format(
-											"[wd_connection:{}] write operation timed out",
-											this->connection_id() );
+							m_logger.trace( [&]{
+								return fmt::format(
+										"[wd_connection:{}] write operation timed out",
+										this->connection_id() );
 								} );
-								close();
-							};
+							close();
 						}
 					} );
 		}
