@@ -220,16 +220,27 @@ class a_server_t
 		a_server_t(
 			context_t ctx )
 			:	so_base_type_t{ ctx }
-			,	http_server{
+			,	m_http_server{
 					restinio::create_child_io_context( 1 ),
 					[this]( auto & settings ){
 						settings
 							.port( utest_default_port() )
 							.address( "127.0.0.1" )
-							.request_handler( m_req_handler );
+							.request_handler( [ mbox = this->so_direct_mbox() ]( auto req )
+								{
+									if( restinio::http_connection_header_t::upgrade ==
+										req->header().connection() )
+									{
+										so_5::send< upgrade_request_t >( mbox, req );
+
+										return restinio::request_accepted();
+									}
+
+									return restinio::request_rejected();
+								} );
 					} }
 		{
-			http_server.open();
+			m_http_server.open();
 		}
 
 		virtual void
@@ -240,8 +251,14 @@ class a_server_t
 				.event( &a_server_t::evt_ws_message );
 		}
 
-	private:
+		virtual void
+		so_evt_finish() override
+		{
+			m_ws.reset();
+			m_http_server.close();
+		}
 
+	private:
 		void
 		evt_upgrade_request( const upgrade_request_t & msg )
 		{
@@ -294,21 +311,7 @@ class a_server_t
 			}
 		}
 
-		restinio::default_request_handler_t m_req_handler =
-			[this]( restinio::request_handle_t req )
-			{
-				if( restinio::http_connection_header_t::upgrade == req->header().connection() )
-				{
-					so_5::send< upgrade_request_t >( this->so_direct_mbox(), req );
-
-					return restinio::request_accepted();
-				}
-
-				return restinio::request_rejected();
-			};
-
-		http_server_t http_server;
-
+		http_server_t m_http_server;
 		restinio::websocket_unique_ptr_t m_ws;
 };
 
@@ -401,8 +404,8 @@ client_server_ws_connection( const std::string & req_bin )
 				env.introduce_coop(
 					so_5::disp::active_obj::create_private_disp( env )->binder(),
 					[ & ]( so_5::coop_t & coop ) {
+						coop.make_agent< a_server_t >();
 						coop.make_agent< a_client_t >( rr_ctx );
-						coop.make_agent< a_server_t >( );
 					} );
 			},
 			[]( so_5::environment_params_t & /*params*/ )
