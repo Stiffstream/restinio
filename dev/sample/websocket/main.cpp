@@ -27,87 +27,6 @@ using traits_t =
 
 using http_server_t = restinio::http_server_t< traits_t >;
 
-restinio::raw_data_t
-to_char_each( std::vector< int > source )
-{
-	restinio::raw_data_t result;
-	result.reserve( source.size() );
-
-	for( const auto & val : source )
-	{
-		result.push_back( static_cast<char>(val) );
-	}
-
-	return result;
-}
-
-restinio::raw_data_t
-status_code_to_bin( restinio::status_code_t code )
-{
-	return restinio::raw_data_t{
-		to_char_each(
-			{
-				(static_cast<std::uint16_t>(code) >> 8) & 0xFF ,
-				static_cast<std::uint16_t>(code) & 0xFF
-			}
-		) };
-}
-
-restinio::ws_message_t
-create_close_msg(
-	restinio::status_code_t code,
-	const std::string & desc = std::string() )
-{
-	restinio::raw_data_t payload{
-		restinio::impl::status_code_to_bin( code ) + desc };
-
-	restinio::ws_message_t close_msg(
-		true, restinio::opcode_t::connection_close_frame, payload );
-
-	return close_msg;
-}
-
-void
-ws_msg_handler(
-	restinio::websocket_unique_ptr_t & websocket,
-	restinio::ws_message_handle_t m )
-{
-	auto req = *m;
-		auto opcode = req.header().m_opcode;
-
-	if( opcode ==
-		restinio::opcode_t::connection_close_frame )
-	{
-		websocket->close();
-	}
-	else if( opcode ==
-		restinio::opcode_t::text_frame )
-	{
-		if( req.header().m_masking_key )
-		{
-			if( !restinio::impl::check_utf8_is_correct(
-				req.payload() ) )
-			{
-				websocket->send_message( create_close_msg(
-					restinio::status_code_t::invalid_message_data ) );
-			}
-
-			auto resp = req;
-
-			resp.header().m_masking_key = 0;
-
-			websocket->send_message( resp );
-		}
-		else
-		{
-			websocket->send_message( create_close_msg(
-				restinio::status_code_t::protocol_error ) );
-
-			websocket->close();
-		}
-	}
-}
-
 auto server_handler( restinio::websocket_unique_ptr_t & websocket )
 {
 	auto router = std::make_unique< router_t >();
@@ -116,22 +35,20 @@ auto server_handler( restinio::websocket_unique_ptr_t & websocket )
 		"/chat",
 		[&]( auto req, auto ){
 
-				if( restinio::http_connection_header_t::upgrade == req->header().connection() )
-				{
+			if( restinio::http_connection_header_t::upgrade == req->header().connection() )
+			{
+				websocket =
+					restinio::upgrade_to_websocket< traits_t >(
+						*req,
+						[&]( restinio::ws_message_handle_t m ){
+							websocket->send_message( *m );
+						},
+						[]( std::string reason ){
+							std::cout << "Close websocket: " << reason << std::endl;
+						} );
+			}
 
-					websocket =
-						restinio::upgrade_to_websocket< traits_t >(
-							*req,
-							[&]( restinio::ws_message_handle_t m ){
-
-								ws_msg_handler( websocket, m );
-							},
-							[]( std::string reason ){
-								std::cout << "Close websocket: " << reason << std::endl;
-							} );
-				}
-
-				return restinio::request_rejected();
+			return restinio::request_rejected();
 		} );
 
 	return router;

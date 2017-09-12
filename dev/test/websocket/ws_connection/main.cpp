@@ -99,7 +99,7 @@ parse_bin_data( const char* data, size_t len )
 				parser.current_message().payload_len() )
 		};
 
-		print_ws_message( result );
+		//print_ws_message( result );
 
 		return result;
 
@@ -252,27 +252,11 @@ class a_server_t
 		{
 			auto req = *(msg.m_msg);
 
-			if( req.header().m_masking_key )
-			{
-				if( !restinio::impl::check_utf8_is_correct( req.payload() ) )
-				{
-					m_ws->send_message( create_close_msg(
-						restinio::status_code_t::invalid_message_data ) );
-				}
+			auto resp = req;
 
-				auto resp = req;
+			resp.header().m_masking_key = 0;
 
-				resp.header().m_masking_key = 0;
-
-				m_ws->send_message( resp );
-			}
-			else
-			{
-				m_ws->send_message( create_close_msg(
-					restinio::status_code_t::protocol_error ) );
-
-				m_ws->close();
-			}
+			m_ws->send_message( resp );
 		}
 
 		restinio::default_request_handler_t m_req_handler =
@@ -410,6 +394,7 @@ TEST_CASE( "Request/Response echo" , "[ws_connection]" )
 			ctx.m_request.header().m_masking_key, request_payload );
 
 	REQUIRE( request_payload == ctx.m_response.payload() );
+	REQUIRE( ctx.m_response.header().m_masking_key == 0 );
 }
 
 TEST_CASE( "Request/Response close without masking key" , "[ws_connection]" )

@@ -35,7 +35,7 @@ enum class opcode_t : std::uint8_t
 
 enum class status_code_t : std::uint16_t
 {
-	normal_closue = 1000,
+	normal_closure = 1000,
 	going_away = 1001,
 	protocol_error = 1002,
 	cant_accept_data = 1003,

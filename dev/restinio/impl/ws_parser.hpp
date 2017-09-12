@@ -72,6 +72,14 @@ class ws_message_details_t
 			init_payload_len( payload_len );
 		}
 
+		ws_message_details_t( const ws_message_t & ws_message )
+		:	ws_message_details_t(
+				ws_message.header().m_is_final,
+				ws_message.header().m_opcode,
+				ws_message.header().m_payload_len )
+		{
+		}
+
 		std::uint64_t
 		payload_len() const
 		{

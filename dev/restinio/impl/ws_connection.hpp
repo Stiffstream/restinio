@@ -25,6 +25,7 @@
 #include <restinio/impl/raw_resp_output_ctx.hpp>
 #include <restinio/ws_message.hpp>
 #include <restinio/impl/ws_parser.hpp>
+#include <restinio/impl/utf8.hpp>
 
 namespace restinio
 {
@@ -133,6 +134,18 @@ struct ws_connection_input_t
 	}
 };
 
+inline ws_message_t
+create_close_msg(
+	status_code_t code,
+	const std::string & desc )
+{
+	raw_data_t payload{
+		restinio::impl::status_code_to_bin( code ) + desc };
+
+	return restinio::ws_message_t(
+		true, restinio::opcode_t::connection_close_frame, payload );
+}
+
 //
 // ws_connection_t
 //
@@ -221,7 +234,8 @@ class ws_connection_t final
 								"[ws_connection:{}] close",
 								connection_id() );
 						} );
-						graceful_close();
+						graceful_close(
+							status_code_t::normal_closure, std::string{} );
 					}
 					catch( const std::exception & ex )
 					{
@@ -390,6 +404,14 @@ class ws_connection_t final
 
 			if( m_input.m_parser.header_parsed() )
 			{
+				if( !validate_current_ws_message_header() )
+				{
+					graceful_close(
+						restinio::status_code_t::protocol_error );
+
+					return;
+				}
+
 				auto payload_length = m_input.m_parser.current_message().payload_len();
 				m_input.m_payload.resize( payload_length );
 
@@ -641,15 +663,23 @@ class ws_connection_t final
 		//! Close WebSocket connection in a graceful manner
 		//! sending a close-message
 		void
-		graceful_close()
+		graceful_close(
+			status_code_t code,
+			std::string desc = std::string{} )
 		{
 			if( !m_awaiting_buffers.close_when_done() )
 			{
-				// TODO:
-				// Send close frame.
-				// m_awaiting_buffers.append( ??? );
+				auto close_msg = create_close_msg( code, desc );
 
+				buffers_container_t bufs;
+				bufs.reserve( 2 );
 
+				bufs.emplace_back(
+					impl::write_message_details(
+						ws_message_details_t{ close_msg } ) );
+
+				bufs.emplace_back( std::move( close_msg.payload() ) );
+				m_awaiting_buffers.append( std::move( bufs ) );
 
 				m_awaiting_buffers.set_close_when_done();
 				init_write_if_necessary();
@@ -703,14 +733,16 @@ class ws_connection_t final
 		void
 		call_handler_on_current_message()
 		{
-			auto & current_header = m_input.m_parser.current_message();
-			auto & current_payload = m_input.m_payload;
-
-			if( current_header.m_masking_key )
+			if( !validate_current_ws_message_body() )
 			{
-				impl::mask_unmask_payload(
-					current_header.m_masking_key, current_payload );
+				graceful_close(
+					restinio::status_code_t::invalid_message_data );
+
+				return;
 			}
+
+			const auto & current_header = m_input.m_parser.current_message();
+			const auto & current_payload = m_input.m_payload;
 
 			m_msg_handler(
 				std::make_shared< ws_message_t >(
@@ -753,6 +785,33 @@ class ws_connection_t final
 							};
 						}
 					} );
+		}
+
+		//! Check current websocket message header has correct flags and fields.
+		bool
+		validate_current_ws_message_header() const
+		{
+			const auto & current_header = m_input.m_parser.current_message();
+
+			return current_header.m_masking_key != 0;
+		}
+
+		//! Check current websocket message body is correct.
+		bool
+		validate_current_ws_message_body()
+		{
+			const auto & current_header = m_input.m_parser.current_message();
+			auto & current_payload = m_input.m_payload;
+
+			if( current_header.m_opcode == opcode_t::text_frame)
+			{
+				impl::mask_unmask_payload(
+					current_header.m_masking_key, current_payload );
+
+				return check_utf8_is_correct( current_payload );
+			}
+
+			return true;
 		}
 
 		//! Connection.
