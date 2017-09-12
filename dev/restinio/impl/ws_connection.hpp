@@ -564,6 +564,8 @@ class ws_connection_t final
 							connection_id(),
 							bufs.size() ); } );
 
+					guard_write_operation();
+
 					// There is somethig to write.
 					asio::async_write(
 						m_socket,
@@ -590,10 +592,15 @@ class ws_connection_t final
 									}
 							} ) );
 
-					guard_write_operation();
 				}
 				else if ( m_awaiting_buffers.close_when_done() )
 				{
+					m_logger.trace( [&]{
+						return fmt::format(
+							"[ws_connection:{}] close initiated by user",
+							connection_id() );
+					} );
+
 					call_close_handler( "user initiated" );
 					close_impl();
 				}
@@ -649,8 +656,6 @@ class ws_connection_t final
 				// Send close frame.
 				// m_awaiting_buffers.append( ??? );
 
-
-
 				m_awaiting_buffers.set_close_when_done();
 				init_write_if_necessary();
 			}
@@ -673,7 +678,7 @@ class ws_connection_t final
 		{
 			m_logger.trace( [&]{
 				return fmt::format(
-						"[ws_connection:{}] close",
+						"[ws_connection:{}] close socket",
 						connection_id() );
 			} );
 
