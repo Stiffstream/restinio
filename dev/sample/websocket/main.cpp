@@ -10,10 +10,7 @@
 #include <fmt/ostream.h>
 
 #include <restinio/all.hpp>
-#include <restinio/websocket.hpp>
-#include <restinio/impl/base64.hpp>
-#include <restinio/impl/sha1.hpp>
-#include <restinio/impl/utf8.hpp>
+#include <restinio/websocket/websocket.hpp>
 
 
 namespace rr = restinio::router;
@@ -27,7 +24,7 @@ using traits_t =
 
 using http_server_t = restinio::http_server_t< traits_t >;
 
-auto server_handler( restinio::websocket_unique_ptr_t & websocket )
+auto server_handler( restinio::websocket::websocket_unique_ptr_t & websocket )
 {
 	auto router = std::make_unique< router_t >();
 
@@ -38,9 +35,9 @@ auto server_handler( restinio::websocket_unique_ptr_t & websocket )
 			if( restinio::http_connection_header_t::upgrade == req->header().connection() )
 			{
 				websocket =
-					restinio::upgrade_to_websocket< traits_t >(
+					restinio::websocket::upgrade_to_websocket< traits_t >(
 						*req,
-						[&]( restinio::ws_message_handle_t m ){
+						[&]( restinio::websocket::ws_message_handle_t m ){
 							websocket->send_message( *m );
 						},
 						[]( std::string reason ){
@@ -60,7 +57,7 @@ int main()
 
 	try
 	{
-		restinio::websocket_unique_ptr_t websocket;
+		restinio::websocket::websocket_unique_ptr_t websocket;
 
 		http_server_t http_server{
 			restinio::create_child_io_context( 1 ),

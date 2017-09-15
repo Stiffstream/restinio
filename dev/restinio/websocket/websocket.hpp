@@ -11,12 +11,15 @@
 #include <functional>
 
 #include <restinio/connection_handle.hpp>
-#include <restinio/ws_message.hpp>
-#include <restinio/impl/ws_connection.hpp>
-#include <restinio/impl/base64.hpp>
-#include <restinio/impl/sha1.hpp>
+#include <restinio/websocket/ws_message.hpp>
+#include <restinio/websocket/impl/ws_connection.hpp>
+#include <restinio/utils/base64.hpp>
+#include <restinio/utils/sha1.hpp>
 
 namespace restinio
+{
+
+namespace websocket
 {
 
 const std::string websocket_accept_field_suffix{
@@ -140,11 +143,11 @@ upgrade_to_websocket(
 	}
 
 
-	using connection_t = impl::connection_t< TRAITS >;
+	using connection_t = restinio::impl::connection_t< TRAITS >;
 	auto conn_ptr = std::move( req.m_connection );
 	auto & con = dynamic_cast< connection_t & >( *conn_ptr );
 
-	using ws_connection_t = impl::ws_connection_t< TRAITS, WS_MESSAGE_HANDLER, WS_CLOSE_HANDLER >;
+	using ws_connection_t = restinio::websocket::impl::ws_connection_t< TRAITS, WS_MESSAGE_HANDLER, WS_CLOSE_HANDLER >;
 
 	auto upgrade_internals = con.move_upgrade_internals();
 	auto ws_connection =
@@ -164,9 +167,9 @@ upgrade_to_websocket(
 		upgrade_response_header.connection( http_connection_header_t::upgrade );
 
 		upgrade_response_bufs.emplace_back(
-			impl::create_header_string(
+			restinio::impl::create_header_string(
 				upgrade_response_header,
-				impl::content_length_field_presence_t::skip_content_length ) );
+				restinio::impl::content_length_field_presence_t::skip_content_length ) );
 	}
 
 	ws_connection->write_data( std::move( upgrade_response_bufs ) );
@@ -253,10 +256,10 @@ upgrade_to_websocket(
 
 	ws_key.append( websocket_accept_field_suffix );
 
-	auto digest = restinio::impl::sha1::make_digest( ws_key );
+	auto digest = restinio::utils::sha1::make_digest( ws_key );
 
-	std::string sec_websocket_accept_field_value = impl::base64::encode(
-		impl::sha1::to_string( digest ) );
+	std::string sec_websocket_accept_field_value = utils::base64::encode(
+		utils::sha1::to_string( digest ) );
 
 	http_header_fields_t upgrade_response_header_fields;
 	upgrade_response_header_fields.set_field(
@@ -270,5 +273,7 @@ upgrade_to_websocket(
 			std::move( ws_message_handler ),
 			std::move( ws_close_handler ) );
 }
+
+} /* namespace websocket */
 
 } /* namespace restinio */

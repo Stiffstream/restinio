@@ -13,19 +13,19 @@
 
 #include <so_5/all.hpp>
 #include <restinio/all.hpp>
-#include <restinio/websocket.hpp>
-#include <restinio/impl/base64.hpp>
-#include <restinio/impl/sha1.hpp>
-#include <restinio/impl/utf8.hpp>
+#include <restinio/websocket/websocket.hpp>
+#include <restinio/utils/base64.hpp>
+#include <restinio/utils/sha1.hpp>
+#include <restinio/websocket/impl/utf8.hpp>
 
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 #include <test/websocket/common/pub.hpp>
 
-restinio::impl::ws_message_details_t
-to_ws_message_details( const restinio::ws_message_t & msg )
+restinio::websocket::impl::ws_message_details_t
+to_ws_message_details( const restinio::websocket::ws_message_t & msg )
 {
-	return restinio::impl::ws_message_details_t{
+	return restinio::websocket::impl::ws_message_details_t{
 		msg.header().m_is_final,
 		msg.header().m_opcode,
 		msg.payload().size(),
@@ -34,8 +34,8 @@ to_ws_message_details( const restinio::ws_message_t & msg )
 
 bool
 operator==(
-	const restinio::ws_message_header_t & lhs,
-	const restinio::ws_message_header_t & rhs )
+	const restinio::websocket::ws_message_header_t & lhs,
+	const restinio::websocket::ws_message_header_t & rhs )
 {
 	return
 		lhs.m_is_final == rhs.m_is_final &&
@@ -46,8 +46,8 @@ operator==(
 
 bool
 operator==(
-	const restinio::ws_message_t & lhs,
-	const restinio::ws_message_t & rhs )
+	const restinio::websocket::ws_message_t & lhs,
+	const restinio::websocket::ws_message_t & rhs )
 {
 	return
 		lhs.header() == rhs.header() &&
@@ -55,7 +55,7 @@ operator==(
 }
 
 void
-print_ws_header( const restinio::ws_message_header_t & header )
+print_ws_header( const restinio::websocket::ws_message_header_t & header )
 {
 	std::cout <<
 		"final: " << header.m_is_final <<
@@ -66,7 +66,7 @@ print_ws_header( const restinio::ws_message_header_t & header )
 }
 
 void
-print_ws_message( const restinio::ws_message_t & msg )
+print_ws_message( const restinio::websocket::ws_message_t & msg )
 {
 	std::cout << "header: {";
 
@@ -82,16 +82,16 @@ print_ws_message( const restinio::ws_message_t & msg )
 	std::cout << ")" << std::endl;
 }
 
-restinio::ws_message_t
+restinio::websocket::ws_message_t
 parse_bin_data( const char* data, size_t len )
 {
-	restinio::impl::ws_parser_t parser;
+	restinio::websocket::impl::ws_parser_t parser;
 
 	auto parsed = parser.parser_execute( data, len );
 
 	if( parser.header_parsed() )
 	{
-		restinio::ws_message_t result{
+		restinio::websocket::ws_message_t result{
 			parser.current_message().transform_to_header(),
 			std::string(
 				data + (
@@ -111,7 +111,7 @@ parse_bin_data( const char* data, size_t len )
 }
 
 restinio::raw_data_t
-status_code_to_bin( restinio::status_code_t code )
+status_code_to_bin( restinio::websocket::status_code_t code )
 {
 	return restinio::raw_data_t{
 		to_char_each(
@@ -122,15 +122,15 @@ status_code_to_bin( restinio::status_code_t code )
 		) };
 }
 
-restinio::ws_message_t
+restinio::websocket::ws_message_t
 create_close_msg(
-	restinio::status_code_t code,
+	restinio::websocket::status_code_t code,
 	const std::string & desc = std::string() )
 {
 	restinio::raw_data_t payload{status_code_to_bin( code ) + desc };
 
-	restinio::ws_message_t close_msg(
-		true, restinio::opcode_t::connection_close_frame, payload );
+	restinio::websocket::ws_message_t close_msg(
+		true, restinio::websocket::opcode_t::connection_close_frame, payload );
 
 	return close_msg;
 }
@@ -154,19 +154,19 @@ struct upgrade_request_t : public so_5::message_t
 
 struct msg_ws_message : public so_5::message_t
 {
-	msg_ws_message( restinio::ws_message_handle_t msg )
+	msg_ws_message( restinio::websocket::ws_message_handle_t msg )
 	:	m_msg{ msg }
 	{
 	}
 
-	restinio::ws_message_handle_t m_msg;
+	restinio::websocket::ws_message_handle_t m_msg;
 };
 
 struct
 request_response_context_t
 {
-	restinio::ws_message_t m_request;
-	restinio::ws_message_t m_response;
+	restinio::websocket::ws_message_t m_request;
+	restinio::websocket::ws_message_t m_response;
 	std::string m_request_bin;
 	std::string m_response_bin;
 
@@ -175,7 +175,7 @@ request_response_context_t
 };
 
 std::array< char, 20>
-digest_to_char_array( const restinio::impl::sha1::digest_t & digest )
+digest_to_char_array( const restinio::utils::sha1::digest_t & digest )
 {
 	std::array< char, 20> result;
 
@@ -248,16 +248,16 @@ class a_server_t
 
 			ws_key.append( "258EAFA5-E914-47DA-95CA-C5AB0DC85B11" );
 
-			auto digest = restinio::impl::sha1::make_digest( ws_key );
+			auto digest = restinio::utils::sha1::make_digest( ws_key );
 
 			m_ws =
-				restinio::upgrade_to_websocket< traits_t >(
+				restinio::websocket::upgrade_to_websocket< traits_t >(
 					*req,
-					restinio::impl::base64::encode(
+					restinio::utils::base64::encode(
 						std::string{
 							digest_to_char_array(digest).data(), 20
 						} ),
-					[this]( restinio::ws_message_handle_t m ){
+					[this]( restinio::websocket::ws_message_handle_t m ){
 							so_5::send<msg_ws_message>(
 								this->so_direct_mbox(), m );
 						},
@@ -277,7 +277,7 @@ class a_server_t
 		}
 
 		http_server_t m_http_server;
-		restinio::websocket_unique_ptr_t m_ws;
+		restinio::websocket::websocket_unique_ptr_t m_ws;
 };
 
 
@@ -393,7 +393,7 @@ TEST_CASE( "Request/Response echo" , "[ws_connection]" )
 	auto ctx = client_server_ws_connection( bin_data );
 
 	auto request_payload = ctx.m_request.payload();
-	restinio::impl::mask_unmask_payload(
+	restinio::websocket::impl::mask_unmask_payload(
 			ctx.m_request.header().m_masking_key, request_payload );
 
 	REQUIRE( request_payload == ctx.m_response.payload() );
@@ -408,7 +408,7 @@ TEST_CASE( "Request/Response close without masking key" , "[ws_connection]" )
 	auto ctx = client_server_ws_connection( bin_data );
 
 	REQUIRE( ctx.m_response.header().m_opcode ==
-		restinio::opcode_t::connection_close_frame );
+		restinio::websocket::opcode_t::connection_close_frame );
 
 
 }
@@ -421,7 +421,7 @@ TEST_CASE( "Request/Response close with non utf-8 payload" , "[ws_connection]" )
 	auto ctx = client_server_ws_connection( bin_data );
 
 	REQUIRE( ctx.m_response.header().m_opcode ==
-		restinio::opcode_t::connection_close_frame );
+		restinio::websocket::opcode_t::connection_close_frame );
 
 
 }

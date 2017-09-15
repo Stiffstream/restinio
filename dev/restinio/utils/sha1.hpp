@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <restinio/impl/bitops.hpp>
+#include <restinio/utils/impl/bitops.hpp>
 
 #include <string>
 #include <array>
@@ -19,7 +19,7 @@
 namespace restinio
 {
 
-namespace impl
+namespace utils
 {
 
 namespace sha1
@@ -76,7 +76,7 @@ template< unsigned int SHIFT >
 inline std::uint8_t
 octet_from( std::uint32_t x )
 {
-	return ::restinio::impl::bitops::n_bits_from< std::uint8_t, SHIFT >(x);
+	return ::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, SHIFT >(x);
 }
 
 static uint32_t blk(const int_block_t & block, const size_t i)
@@ -357,14 +357,14 @@ template< unsigned int SHIFT >
 unsigned int
 halfbyte( digest_t::value_type v )
 {
-	return ::restinio::impl::bitops::n_bits_from< unsigned int, SHIFT, 4 >(v);
+	return ::restinio::utils::impl::bitops::n_bits_from< unsigned int, SHIFT, 4 >(v);
 }
 
 template< unsigned int SHIFT >
 unsigned int
 byte( digest_t::value_type v )
 {
-	return ::restinio::impl::bitops::n_bits_from< unsigned int, SHIFT, 8 >(v);
+	return ::restinio::utils::impl::bitops::n_bits_from< unsigned int, SHIFT, 8 >(v);
 }
 
 } /* namespace details */
@@ -445,6 +445,6 @@ make_digest( const std::string & str )
 
 } /* namespace sha1 */
 
-} /* namespace impl */
+} /* namespace utils */
 
 } /* namespace restinio */

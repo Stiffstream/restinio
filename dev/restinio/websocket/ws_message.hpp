@@ -15,6 +15,9 @@
 namespace restinio
 {
 
+namespace websocket
+{
+
 //
 // opcode_t
 //
@@ -155,5 +158,7 @@ using ws_message_handle_t = std::shared_ptr< ws_message_t >;
 using default_ws_message_handler_t =
 		std::function< void ( ws_message_handle_t ) >;
 
+
+} /* namespace websocket */
 
 } /* namespace restinio */

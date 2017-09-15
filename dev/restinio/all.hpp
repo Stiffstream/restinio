@@ -19,4 +19,3 @@
 #include <restinio/uri_helpers.hpp>
 
 #include <restinio/router/express.hpp>
-#include <restinio/websocket.hpp>

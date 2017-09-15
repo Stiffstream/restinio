@@ -12,7 +12,7 @@
 #include <asio.hpp>
 
 #include <restinio/all.hpp>
-#include <restinio/websocket.hpp>
+#include <restinio/websocket/websocket.hpp>
 
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
@@ -37,9 +37,9 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 						if( restinio::http_connection_header_t::upgrade == req->header().connection() )
 						{
 							auto ws =
-								restinio::upgrade_to_websocket< traits_t >(
+								restinio::websocket::upgrade_to_websocket< traits_t >(
 									*req,
-									[]( restinio::ws_message_handle_t ){},
+									[]( restinio::websocket::ws_message_handle_t ){},
 									[]( std::string ){} );
 
 							ws->close();

@@ -13,8 +13,8 @@
 #include <catch/catch.hpp>
 
 #include <restinio/all.hpp>
-#include <restinio/impl/ws_parser.hpp>
-#include <restinio/websocket.hpp>
+#include <restinio/websocket/impl/ws_parser.hpp>
+#include <restinio/websocket/websocket.hpp>
 
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
@@ -22,7 +22,8 @@
 #include <test/websocket/common/pub.hpp>
 
 using namespace restinio;
-using namespace restinio::impl;
+using namespace restinio::websocket;
+using namespace restinio::websocket::impl;
 
 TEST_CASE( "Validate parser implementation details" , "[websocket][parser][impl]" )
 {

@@ -23,11 +23,14 @@
 #include <restinio/impl/connection_settings.hpp>
 #include <restinio/impl/fixed_buffer.hpp>
 #include <restinio/impl/raw_resp_output_ctx.hpp>
-#include <restinio/ws_message.hpp>
-#include <restinio/impl/ws_parser.hpp>
-#include <restinio/impl/utf8.hpp>
+#include <restinio/websocket/ws_message.hpp>
+#include <restinio/websocket/impl/ws_parser.hpp>
+#include <restinio/websocket/impl/utf8.hpp>
 
 namespace restinio
+{
+
+namespace websocket
 {
 
 namespace impl
@@ -120,7 +123,7 @@ struct ws_connection_input_t
 	ws_parser_t m_parser;
 
 	//! Input buffer.
-	fixed_buffer_t m_buf;
+	restinio::impl::fixed_buffer_t m_buf;
 
 	//! Current payload.
 	std::string m_payload;
@@ -140,10 +143,10 @@ create_close_msg(
 	const std::string & desc )
 {
 	raw_data_t payload{
-		restinio::impl::status_code_to_bin( code ) + desc };
+		restinio::websocket::impl::status_code_to_bin( code ) + desc };
 
-	return restinio::ws_message_t(
-		true, restinio::opcode_t::connection_close_frame, payload );
+	return restinio::websocket::ws_message_t(
+		true, restinio::websocket::opcode_t::connection_close_frame, payload );
 }
 
 //
@@ -178,7 +181,7 @@ class ws_connection_t final
 			strand_t strand,
 			timer_guard_instance_t timer_guard,
 			//! Settings that are common for connections.
-			connection_settings_shared_ptr_t< TRAITS > settings,
+			restinio::impl::connection_settings_shared_ptr_t< TRAITS > settings,
 			message_handler_t msg_handler,
 			close_handler_t close_handler )
 			:	ws_connection_base_t{ conn_id }
@@ -407,7 +410,7 @@ class ws_connection_t final
 				if( !validate_current_ws_message_header() )
 				{
 					graceful_close(
-						restinio::status_code_t::protocol_error );
+						restinio::websocket::status_code_t::protocol_error );
 
 					return;
 				}
@@ -736,7 +739,7 @@ class ws_connection_t final
 			if( !validate_current_ws_message_body() )
 			{
 				graceful_close(
-					restinio::status_code_t::invalid_message_data );
+					restinio::websocket::status_code_t::invalid_message_data );
 
 				return;
 			}
@@ -819,7 +822,7 @@ class ws_connection_t final
 		strand_t m_strand;
 
 		//! Common paramaters of a connection.
-		connection_settings_shared_ptr_t< TRAITS > m_settings;
+		restinio::impl::connection_settings_shared_ptr_t< TRAITS > m_settings;
 
 		//! Operation timeout guard.
 		timer_guard_instance_t m_timer_guard;
@@ -833,7 +836,7 @@ class ws_connection_t final
 		close_handler_t m_close_handler;
 
 		//! Write to socket operation context.
-		raw_resp_output_ctx_t m_resp_out_ctx;
+		restinio::impl::raw_resp_output_ctx_t m_resp_out_ctx;
 
 		//! Output buffers queue.
 		ws_outgoing_data_t m_awaiting_buffers;
@@ -843,5 +846,7 @@ class ws_connection_t final
 };
 
 } /* namespace impl */
+
+} /* namespace websocket */
 
 } /* namespace restinio */

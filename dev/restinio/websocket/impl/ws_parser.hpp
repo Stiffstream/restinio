@@ -9,9 +9,9 @@
 #pragma once
 
 #include <restinio/exception.hpp>
-#include <restinio/ws_message.hpp>
+#include <restinio/websocket/ws_message.hpp>
 
-#include <restinio/impl/bitops.hpp>
+#include <restinio/utils/impl/bitops.hpp>
 
 #include <cstdint>
 #include <vector>
@@ -23,6 +23,9 @@ namespace restinio
 
 using byte_t = char;
 using raw_data_t = std::string;
+
+namespace websocket
+{
 
 namespace impl
 {
@@ -412,7 +415,7 @@ class ws_parser_t
 inline void
 mask_unmask_payload( std::uint32_t masking_key, raw_data_t & payload )
 {
-	using namespace ::restinio::impl::bitops;
+	using namespace ::restinio::utils::impl::bitops;
 
 	const std::size_t MASK_SIZE = 4;
 	const uint8_t mask[ MASK_SIZE ] = {
@@ -486,7 +489,7 @@ write_message_details(
 
 	if( message.m_mask_flag )
 	{
-		using namespace ::restinio::impl::bitops;
+		using namespace ::restinio::utils::impl::bitops;
 
 		using ch_type = raw_data_t::value_type;
 
@@ -503,7 +506,7 @@ write_message_details(
 inline raw_data_t
 status_code_to_bin( status_code_t code )
 {
-	using namespace ::restinio::impl::bitops;
+	using namespace ::restinio::utils::impl::bitops;
 
 	raw_data_t result;
 	result.push_back( n_bits_from< std::uint16_t, 8 >(
@@ -514,5 +517,7 @@ status_code_to_bin( status_code_t code )
 }
 
 } /* namespace impl */
+
+} /* namespace websocket */
 
 } /* namespace restinio */

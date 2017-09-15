@@ -10,7 +10,7 @@
 
 #include <restinio/exception.hpp>
 
-#include <restinio/impl/bitops.hpp>
+#include <restinio/utils/impl/bitops.hpp>
 
 #include <fmt/format.h>
 
@@ -23,7 +23,7 @@
 namespace restinio
 {
 
-namespace impl
+namespace utils
 {
 
 namespace base64
@@ -69,7 +69,7 @@ template<unsigned int SHIFT>
 char
 sixbits_char( uint_type_t bs )
 {
-	return ::restinio::impl::bitops::n_bits_from< char, SHIFT, 6 >(bs);
+	return ::restinio::utils::impl::bitops::n_bits_from< char, SHIFT, 6 >(bs);
 }
 
 inline std::string
@@ -156,7 +156,7 @@ decode( const std::string & str )
 		bs |= str[i+3] != '=' ? decode_table[ at(i+3) ] : 0;
 
 
-		using ::restinio::impl::bitops::n_bits_from;
+		using ::restinio::utils::impl::bitops::n_bits_from;
 
 		result.push_back( n_bits_from< char, 16 >(bs) );
 		const auto c2 = n_bits_from< char, 8 >(bs);
@@ -172,6 +172,6 @@ decode( const std::string & str )
 
 } /* namespace base64 */
 
-} /* namespace impl */
+} /* namespace utils */
 
 } /* namespace restinio */

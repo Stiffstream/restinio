@@ -18,7 +18,25 @@
 namespace restinio
 {
 
+class request_t;
+
+namespace websocket
+{
+
 class websocket_t;
+
+template <
+		typename TRAITS,
+		typename WS_MESSAGE_HANDLER,
+		typename WS_CLOSE_HANDLER >
+std::unique_ptr< websocket::websocket_t >
+upgrade_to_websocket(
+	request_t & req,
+	http_header_fields_t upgrade_response_header_fields,
+	WS_MESSAGE_HANDLER ws_message_handler,
+	WS_CLOSE_HANDLER ws_close_handler );
+
+} /* namespace websocket */
 
 //
 // request_t
@@ -36,8 +54,8 @@ class request_t final
 			typename TRAITS,
 			typename WS_MESSAGE_HANDLER,
 			typename WS_CLOSE_HANDLER >
-	friend std::unique_ptr< websocket_t >
-	upgrade_to_websocket(
+	friend std::unique_ptr< websocket::websocket_t >
+	websocket::upgrade_to_websocket(
 		request_t & req,
 		http_header_fields_t upgrade_response_header_fields,
 		WS_MESSAGE_HANDLER ws_message_handler,

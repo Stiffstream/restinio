@@ -12,6 +12,8 @@
 
 namespace restinio {
 
+namespace utils{
+
 namespace impl {
 
 namespace bitops {
@@ -73,7 +75,7 @@ struct bits_count<std::int64_t> { static constexpr unsigned count = 64u; };
  * const std::uint64_t v2 = some_uint64_value();
  * const auto ui = n_bits_from<unsigned int, 32, 4>(v2);
  * \endcode
- * 
+ *
  */
 template<
 	typename T,
@@ -90,5 +92,6 @@ n_bits_from( F value )
 
 } /* namespace impl */
 
-} /* namespace restinio */
+} /* namespace utils */
 
+} /* namespace restinio */
