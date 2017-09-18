@@ -40,7 +40,7 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 							try
 							{
 								auto ws =
-									rws::upgrade_to_websocket< traits_t >(
+									rws::upgrade< traits_t >(
 										*req,
 										[]( rws::ws_weak_handle_t,
 											rws::ws_message_handle_t ){},

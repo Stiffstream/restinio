@@ -37,7 +37,7 @@ auto server_handler( rws::ws_handle_t & websocket )
 			if( restinio::http_connection_header_t::upgrade == req->header().connection() )
 			{
 				websocket =
-					rws::upgrade_to_websocket< traits_t >(
+					rws::upgrade< traits_t >(
 						*req,
 						[]( rws::ws_weak_handle_t wh, rws::ws_message_handle_t m ){
 							if( auto h = wh.lock() )

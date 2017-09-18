@@ -110,7 +110,7 @@ using ws_handle_t = std::shared_ptr< ws_t >;
 using ws_weak_handle_t = std::weak_ptr< ws_t >;
 
 //
-// upgrade_to_websocket
+// upgrade
 //
 
 template <
@@ -118,7 +118,7 @@ template <
 		typename WS_MESSAGE_HANDLER,
 		typename WS_CLOSE_HANDLER >
 ws_handle_t
-upgrade_to_websocket(
+upgrade(
 	request_t & req,
 	http_header_fields_t upgrade_response_header_fields,
 	WS_MESSAGE_HANDLER ws_message_handler,
@@ -188,7 +188,7 @@ upgrade_to_websocket(
 }
 
 //
-// upgrade_to_websocket
+// upgrade
 //
 
 template <
@@ -196,7 +196,7 @@ template <
 		typename WS_MESSAGE_HANDLER,
 		typename WS_CLOSE_HANDLER >
 auto
-upgrade_to_websocket(
+upgrade(
 	request_t & req,
 	std::string sec_websocket_accept_field_value,
 	WS_MESSAGE_HANDLER ws_message_handler,
@@ -208,7 +208,7 @@ upgrade_to_websocket(
 		std::move( sec_websocket_accept_field_value ) );
 
 	return
-		upgrade_to_websocket< TRAITS, WS_MESSAGE_HANDLER, WS_CLOSE_HANDLER >(
+		upgrade< TRAITS, WS_MESSAGE_HANDLER, WS_CLOSE_HANDLER >(
 			req,
 			std::move( upgrade_response_header_fields ),
 			std::move( ws_message_handler ),
@@ -216,7 +216,7 @@ upgrade_to_websocket(
 }
 
 //
-// upgrade_to_websocket
+// upgrade
 //
 
 template <
@@ -224,7 +224,7 @@ template <
 		typename WS_MESSAGE_HANDLER,
 		typename WS_CLOSE_HANDLER >
 auto
-upgrade_to_websocket(
+upgrade(
 	request_t & req,
 	std::string sec_websocket_accept_field_value,
 	std::string sec_websocket_protocol_field_value,
@@ -241,7 +241,7 @@ upgrade_to_websocket(
 		std::move( sec_websocket_protocol_field_value ) );
 
 	return
-		upgrade_to_websocket< TRAITS, WS_MESSAGE_HANDLER, WS_CLOSE_HANDLER >(
+		upgrade< TRAITS, WS_MESSAGE_HANDLER, WS_CLOSE_HANDLER >(
 			req,
 			std::move( upgrade_response_header_fields ),
 			std::move( ws_message_handler ),
@@ -249,7 +249,7 @@ upgrade_to_websocket(
 }
 
 //
-// upgrade_to_websocket
+// upgrade
 //
 
 template <
@@ -257,7 +257,7 @@ template <
 		typename WS_MESSAGE_HANDLER,
 		typename WS_CLOSE_HANDLER >
 auto
-upgrade_to_websocket(
+upgrade(
 	request_t & req,
 	WS_MESSAGE_HANDLER ws_message_handler,
 	WS_CLOSE_HANDLER ws_close_handler )
@@ -277,7 +277,7 @@ upgrade_to_websocket(
 		std::move( sec_websocket_accept_field_value ) );
 
 	return
-		upgrade_to_websocket< TRAITS, WS_MESSAGE_HANDLER, WS_CLOSE_HANDLER >(
+		upgrade< TRAITS, WS_MESSAGE_HANDLER, WS_CLOSE_HANDLER >(
 			req,
 			std::move( upgrade_response_header_fields ),
 			std::move( ws_message_handler ),

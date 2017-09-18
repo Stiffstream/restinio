@@ -252,7 +252,7 @@ class a_server_t
 			auto digest = restinio::utils::sha1::make_digest( ws_key );
 
 			m_ws =
-				rws::upgrade_to_websocket< traits_t >(
+				rws::upgrade< traits_t >(
 					*req,
 					restinio::utils::base64::encode(
 						std::string{
