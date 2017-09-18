@@ -39,7 +39,7 @@ auto server_handler( rws::websocket_handle_t & websocket )
 				websocket =
 					rws::upgrade_to_websocket< traits_t >(
 						*req,
-						[&]( rws::websocket_weak_handle_t wh, rws::ws_message_handle_t m ){
+						[]( rws::websocket_weak_handle_t wh, rws::ws_message_handle_t m ){
 							if( auto h = wh.lock() )
 								h->send_message( *m );
 						},
