@@ -14,15 +14,7 @@
 
 #include <fmt/format.h>
 
-#include <restinio/exception.hpp>
-#include <restinio/http_headers.hpp>
-#include <restinio/connection_handle.hpp>
-#include <restinio/request_handler.hpp>
-#include <restinio/impl/header_helpers.hpp>
-#include <restinio/impl/response_coordinator.hpp>
-#include <restinio/impl/connection_settings.hpp>
-#include <restinio/impl/fixed_buffer.hpp>
-#include <restinio/impl/raw_resp_output_ctx.hpp>
+#include <restinio/all.hpp>
 #include <restinio/websocket/ws_message.hpp>
 #include <restinio/websocket/impl/ws_parser.hpp>
 #include <restinio/websocket/impl/utf8.hpp>
@@ -254,14 +246,16 @@ class ws_connection_t final
 
 		//! Start reading ws-messages.
 		void
-		init_read() override
+		init_read(
+			websocket_weak_handle_t ws_wh ) override
 		{
 			//! Run write message on io_context loop if possible.
 			asio::dispatch(
 				get_executor(),
-				[ this, ctx = shared_from_this() ](){
+				[ this, ctx = shared_from_this(), ws_wh = std::move( ws_wh ) ](){
 					try
 					{
+						m_websocket_weak_handle = std::move( ws_wh );
 						start_read_header();
 					}
 					catch( const std::exception & ex )
@@ -748,6 +742,7 @@ class ws_connection_t final
 			const auto & current_payload = m_input.m_payload;
 
 			m_msg_handler(
+				m_websocket_weak_handle,
 				std::make_shared< ws_message_t >(
 					current_header.transform_to_header(),
 					current_payload ) );
@@ -835,6 +830,7 @@ class ws_connection_t final
 		bool m_close_handler_was_called{ false };
 		close_handler_t m_close_handler;
 
+		websocket_weak_handle_t m_websocket_weak_handle;
 		//! Write to socket operation context.
 		restinio::impl::raw_resp_output_ctx_t m_resp_out_ctx;
 

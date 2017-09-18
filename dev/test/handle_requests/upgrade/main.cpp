@@ -25,6 +25,7 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 			utest_logger_t >;
 
 	using http_server_t = restinio::http_server_t< traits_t >;
+	namespace rws = restinio::websocket;
 
 	http_server_t http_server{
 		restinio::create_child_io_context( 1 ),
@@ -36,17 +37,24 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 					[]( auto req ){
 						if( restinio::http_connection_header_t::upgrade == req->header().connection() )
 						{
-							auto ws =
-								restinio::websocket::upgrade_to_websocket< traits_t >(
-									*req,
-									[]( restinio::websocket::ws_message_handle_t ){},
-									[]( std::string ){} );
+							try
+							{
+								auto ws =
+									rws::upgrade_to_websocket< traits_t >(
+										*req,
+										[]( rws::websocket_weak_handle_t,
+											rws::ws_message_handle_t ){},
+										[]( std::string ){} );
 
-							ws->close();
-
-							return restinio::request_accepted();
+								ws->close();
+								return restinio::request_accepted();
+							}
+							catch( const std::exception & ex )
+							{
+								std::cout << "UPGRADE FAILED: "
+									<< ex.what() << std::endl;
+							}
 						}
-
 						return restinio::request_rejected();
 					} );
 		} };

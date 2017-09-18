@@ -41,9 +41,7 @@ class websocket_t
 		websocket_t(
 			ws_connection_handle_t ws_connection_handle )
 			:	m_ws_connection_handle{ std::move( ws_connection_handle ) }
-		{
-			m_ws_connection_handle->init_read();
-		}
+		{}
 
 		~websocket_t()
 		{
@@ -107,8 +105,9 @@ class websocket_t
 		ws_connection_handle_t m_ws_connection_handle;
 };
 
-//! Alias for websocket_t unique_ptr.
-using websocket_unique_ptr_t = std::unique_ptr< websocket_t >;
+//! Alias for websocket_t handle.
+using websocket_handle_t = std::shared_ptr< websocket_t >;
+using websocket_weak_handle_t = std::weak_ptr< websocket_t >;
 
 //
 // upgrade_to_websocket
@@ -118,14 +117,13 @@ template <
 		typename TRAITS,
 		typename WS_MESSAGE_HANDLER,
 		typename WS_CLOSE_HANDLER >
-websocket_unique_ptr_t
+websocket_handle_t
 upgrade_to_websocket(
 	request_t & req,
 	http_header_fields_t upgrade_response_header_fields,
 	WS_MESSAGE_HANDLER ws_message_handler,
 	WS_CLOSE_HANDLER ws_close_handler )
 {
-
 	// TODO: check if upgrade request.
 
 	//! Check if mandatory field is available.
@@ -140,7 +138,6 @@ upgrade_to_websocket(
 	{
 		upgrade_response_header_fields.set_field( http_field::upgrade, "websocket" );
 	}
-
 
 	using connection_t = restinio::impl::connection_t< TRAITS >;
 	auto conn_ptr = std::move( restinio::impl::access_req_connection( req ) );
@@ -169,15 +166,25 @@ upgrade_to_websocket(
 		upgrade_response_header.swap_fields( upgrade_response_header_fields );
 		upgrade_response_header.connection( http_connection_header_t::upgrade );
 
+		const auto content_length_flag =
+			restinio::impl::content_length_field_presence_t::skip_content_length;
+
 		upgrade_response_bufs.emplace_back(
 			restinio::impl::create_header_string(
 				upgrade_response_header,
-				restinio::impl::content_length_field_presence_t::skip_content_length ) );
+				content_length_flag ) );
 	}
-
 	ws_connection->write_data( std::move( upgrade_response_bufs ) );
 
-	return std::make_unique< websocket_t >( std::move( ws_connection ) );
+	auto result = std::make_shared< websocket_t >( ws_connection );
+
+	// Now we a ready to receive messages.
+	ws_connection->init_read(
+		// Makes a weak handle, and stores it in ws_connection.
+		result );
+
+	// Returns strong handle on websocket, thus giving an ownership.
+	return result;
 }
 
 //
@@ -188,7 +195,7 @@ template <
 		typename TRAITS,
 		typename WS_MESSAGE_HANDLER,
 		typename WS_CLOSE_HANDLER >
-websocket_unique_ptr_t
+auto
 upgrade_to_websocket(
 	request_t & req,
 	std::string sec_websocket_accept_field_value,
@@ -216,7 +223,7 @@ template <
 		typename TRAITS,
 		typename WS_MESSAGE_HANDLER,
 		typename WS_CLOSE_HANDLER >
-websocket_unique_ptr_t
+auto
 upgrade_to_websocket(
 	request_t & req,
 	std::string sec_websocket_accept_field_value,
@@ -249,7 +256,7 @@ template <
 		typename TRAITS,
 		typename WS_MESSAGE_HANDLER,
 		typename WS_CLOSE_HANDLER >
-websocket_unique_ptr_t
+auto
 upgrade_to_websocket(
 	request_t & req,
 	WS_MESSAGE_HANDLER ws_message_handler,

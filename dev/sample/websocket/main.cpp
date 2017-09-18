@@ -16,6 +16,8 @@
 namespace rr = restinio::router;
 using router_t = rr::express_router_t;
 
+namespace rws = restinio::websocket;
+
 using traits_t =
 	restinio::traits_t<
 		restinio::asio_timer_factory_t,
@@ -24,7 +26,7 @@ using traits_t =
 
 using http_server_t = restinio::http_server_t< traits_t >;
 
-auto server_handler( restinio::websocket::websocket_unique_ptr_t & websocket )
+auto server_handler( rws::websocket_handle_t & websocket )
 {
 	auto router = std::make_unique< router_t >();
 
@@ -35,10 +37,11 @@ auto server_handler( restinio::websocket::websocket_unique_ptr_t & websocket )
 			if( restinio::http_connection_header_t::upgrade == req->header().connection() )
 			{
 				websocket =
-					restinio::websocket::upgrade_to_websocket< traits_t >(
+					rws::upgrade_to_websocket< traits_t >(
 						*req,
-						[&]( restinio::websocket::ws_message_handle_t m ){
-							websocket->send_message( *m );
+						[&]( rws::websocket_weak_handle_t wh, rws::ws_message_handle_t m ){
+							if( auto h = wh.lock() )
+								h->send_message( *m );
 						},
 						[]( std::string reason ){
 							std::cout << "Close websocket: " << reason << std::endl;
@@ -57,7 +60,7 @@ int main()
 
 	try
 	{
-		restinio::websocket::websocket_unique_ptr_t websocket;
+		rws::websocket_handle_t websocket;
 
 		http_server_t http_server{
 			restinio::create_child_io_context( 1 ),
