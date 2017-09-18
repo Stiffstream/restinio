@@ -28,24 +28,6 @@ access_req_connection( request_t & );
 
 } /* namespace impl */
 
-// namespace websocket
-// {
-
-// class websocket_t;
-
-// template <
-// 		typename TRAITS,
-// 		typename WS_MESSAGE_HANDLER,
-// 		typename WS_CLOSE_HANDLER >
-// std::unique_ptr< websocket::websocket_t >
-// upgrade_to_websocket(
-// 	request_t & req,
-// 	http_header_fields_t upgrade_response_header_fields,
-// 	WS_MESSAGE_HANDLER ws_message_handler,
-// 	WS_CLOSE_HANDLER ws_close_handler );
-
-// } /* namespace websocket */
-
 //
 // request_t
 //
@@ -58,17 +40,6 @@ access_req_connection( request_t & );
 class request_t final
 	:	public std::enable_shared_from_this< request_t >
 {
-	// template <
-	// 		typename TRAITS,
-	// 		typename WS_MESSAGE_HANDLER,
-	// 		typename WS_CLOSE_HANDLER >
-	// friend std::unique_ptr< websocket::websocket_t >
-	// websocket::upgrade_to_websocket(
-	// 	request_t & req,
-	// 	http_header_fields_t upgrade_response_header_fields,
-	// 	WS_MESSAGE_HANDLER ws_message_handler,
-	// 	WS_CLOSE_HANDLER ws_close_handler );
-
 	friend connection_handle_t &
 	impl::access_req_connection( request_t & );
 
