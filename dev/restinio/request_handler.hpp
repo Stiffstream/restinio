@@ -20,23 +20,31 @@ namespace restinio
 
 class request_t;
 
-namespace websocket
+namespace impl
 {
 
-class websocket_t;
+connection_handle_t &
+access_req_connection( request_t & );
 
-template <
-		typename TRAITS,
-		typename WS_MESSAGE_HANDLER,
-		typename WS_CLOSE_HANDLER >
-std::unique_ptr< websocket::websocket_t >
-upgrade_to_websocket(
-	request_t & req,
-	http_header_fields_t upgrade_response_header_fields,
-	WS_MESSAGE_HANDLER ws_message_handler,
-	WS_CLOSE_HANDLER ws_close_handler );
+} /* namespace impl */
 
-} /* namespace websocket */
+// namespace websocket
+// {
+
+// class websocket_t;
+
+// template <
+// 		typename TRAITS,
+// 		typename WS_MESSAGE_HANDLER,
+// 		typename WS_CLOSE_HANDLER >
+// std::unique_ptr< websocket::websocket_t >
+// upgrade_to_websocket(
+// 	request_t & req,
+// 	http_header_fields_t upgrade_response_header_fields,
+// 	WS_MESSAGE_HANDLER ws_message_handler,
+// 	WS_CLOSE_HANDLER ws_close_handler );
+
+// } /* namespace websocket */
 
 //
 // request_t
@@ -50,16 +58,19 @@ upgrade_to_websocket(
 class request_t final
 	:	public std::enable_shared_from_this< request_t >
 {
-	template <
-			typename TRAITS,
-			typename WS_MESSAGE_HANDLER,
-			typename WS_CLOSE_HANDLER >
-	friend std::unique_ptr< websocket::websocket_t >
-	websocket::upgrade_to_websocket(
-		request_t & req,
-		http_header_fields_t upgrade_response_header_fields,
-		WS_MESSAGE_HANDLER ws_message_handler,
-		WS_CLOSE_HANDLER ws_close_handler );
+	// template <
+	// 		typename TRAITS,
+	// 		typename WS_MESSAGE_HANDLER,
+	// 		typename WS_CLOSE_HANDLER >
+	// friend std::unique_ptr< websocket::websocket_t >
+	// websocket::upgrade_to_websocket(
+	// 	request_t & req,
+	// 	http_header_fields_t upgrade_response_header_fields,
+	// 	WS_MESSAGE_HANDLER ws_message_handler,
+	// 	WS_CLOSE_HANDLER ws_close_handler );
+
+	friend connection_handle_t &
+	impl::access_req_connection( request_t & );
 
 	public:
 		request_t(
@@ -128,5 +139,18 @@ using request_handle_t = std::shared_ptr< request_t >;
 
 using default_request_handler_t =
 		std::function< request_handling_status_t ( request_handle_t ) >;
+
+
+namespace impl
+{
+
+inline connection_handle_t &
+access_req_connection( request_t & req )
+{
+	return req.m_connection;
+}
+
+} /* namespace impl */
+
 
 } /* namespace restinio */

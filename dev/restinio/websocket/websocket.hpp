@@ -10,7 +10,7 @@
 
 #include <functional>
 
-#include <restinio/connection_handle.hpp>
+#include <restinio/websocket/ws_connection_handle.hpp>
 #include <restinio/websocket/ws_message.hpp>
 #include <restinio/websocket/impl/ws_connection.hpp>
 #include <restinio/utils/base64.hpp>
@@ -125,7 +125,6 @@ upgrade_to_websocket(
 	WS_MESSAGE_HANDLER ws_message_handler,
 	WS_CLOSE_HANDLER ws_close_handler )
 {
-	req.check_connection();
 
 	// TODO: check if upgrade request.
 
@@ -144,7 +143,11 @@ upgrade_to_websocket(
 
 
 	using connection_t = restinio::impl::connection_t< TRAITS >;
-	auto conn_ptr = std::move( req.m_connection );
+	auto conn_ptr = std::move( restinio::impl::access_req_connection( req ) );
+	if( !conn_ptr )
+	{
+		throw exception_t{ "no connection for upgrade: already moved" };
+	}
 	auto & con = dynamic_cast< connection_t & >( *conn_ptr );
 
 	using ws_connection_t = restinio::websocket::impl::ws_connection_t< TRAITS, WS_MESSAGE_HANDLER, WS_CLOSE_HANDLER >;
