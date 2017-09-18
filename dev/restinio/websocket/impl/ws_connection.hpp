@@ -247,7 +247,7 @@ class ws_connection_t final
 		//! Start reading ws-messages.
 		void
 		init_read(
-			websocket_weak_handle_t ws_wh ) override
+			ws_weak_handle_t ws_wh ) override
 		{
 			//! Run write message on io_context loop if possible.
 			asio::dispatch(
@@ -830,7 +830,7 @@ class ws_connection_t final
 		bool m_close_handler_was_called{ false };
 		close_handler_t m_close_handler;
 
-		websocket_weak_handle_t m_websocket_weak_handle;
+		ws_weak_handle_t m_websocket_weak_handle;
 		//! Write to socket operation context.
 		restinio::impl::raw_resp_output_ctx_t m_resp_out_ctx;
 

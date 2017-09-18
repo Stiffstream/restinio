@@ -19,8 +19,8 @@ namespace restinio
 namespace websocket
 {
 
-class websocket_t;
-using websocket_weak_handle_t = std::weak_ptr< websocket_t >;
+class ws_t;
+using ws_weak_handle_t = std::weak_ptr< ws_t >;
 
 //
 // ws_connection_base_t
@@ -49,7 +49,7 @@ class ws_connection_base_t
 
 		//! Start reading ws-messages.
 		virtual void
-		init_read( websocket_weak_handle_t ws_wh ) = 0;
+		init_read( ws_weak_handle_t ws_wh ) = 0;
 
 		//! Write pieces of outgoing data.
 		virtual void

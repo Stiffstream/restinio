@@ -26,24 +26,24 @@ const std::string websocket_accept_field_suffix{
 	"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"};
 
 //
-// websocket_t
+// ws_t
 //
 
 //! A WebSocket bind.
-class websocket_t
+class ws_t
 {
 	public:
-		websocket_t( const websocket_t & ) = delete;
-		websocket_t( websocket_t && ) = delete;
-		void operator = ( const websocket_t & ) = delete;
-		void operator = ( websocket_t && ) = delete;
+		ws_t( const ws_t & ) = delete;
+		ws_t( ws_t && ) = delete;
+		void operator = ( const ws_t & ) = delete;
+		void operator = ( ws_t && ) = delete;
 
-		websocket_t(
+		ws_t(
 			ws_connection_handle_t ws_connection_handle )
 			:	m_ws_connection_handle{ std::move( ws_connection_handle ) }
 		{}
 
-		~websocket_t()
+		~ws_t()
 		{
 			try
 			{
@@ -105,9 +105,9 @@ class websocket_t
 		ws_connection_handle_t m_ws_connection_handle;
 };
 
-//! Alias for websocket_t handle.
-using websocket_handle_t = std::shared_ptr< websocket_t >;
-using websocket_weak_handle_t = std::weak_ptr< websocket_t >;
+//! Alias for ws_t handle.
+using ws_handle_t = std::shared_ptr< ws_t >;
+using ws_weak_handle_t = std::weak_ptr< ws_t >;
 
 //
 // upgrade_to_websocket
@@ -117,7 +117,7 @@ template <
 		typename TRAITS,
 		typename WS_MESSAGE_HANDLER,
 		typename WS_CLOSE_HANDLER >
-websocket_handle_t
+ws_handle_t
 upgrade_to_websocket(
 	request_t & req,
 	http_header_fields_t upgrade_response_header_fields,
@@ -176,7 +176,7 @@ upgrade_to_websocket(
 	}
 	ws_connection->write_data( std::move( upgrade_response_bufs ) );
 
-	auto result = std::make_shared< websocket_t >( ws_connection );
+	auto result = std::make_shared< ws_t >( ws_connection );
 
 	// Now we a ready to receive messages.
 	ws_connection->init_read(

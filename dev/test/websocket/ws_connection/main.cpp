@@ -259,7 +259,7 @@ class a_server_t
 							digest_to_char_array(digest).data(), 20
 						} ),
 					[this]( auto /* ws_weak_handle*/, rws::ws_message_handle_t m ){
-						so_5::send<msg_ws_message>(
+						so_5::send< msg_ws_message >(
 							this->so_direct_mbox(), m );
 					},
 					[]( std::string /*reason*/ ){} );
@@ -278,7 +278,7 @@ class a_server_t
 		}
 
 		http_server_t m_http_server;
-		rws::websocket_handle_t m_ws;
+		rws::ws_handle_t m_ws;
 };
 
 

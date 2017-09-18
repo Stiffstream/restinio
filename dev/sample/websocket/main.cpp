@@ -26,7 +26,7 @@ using traits_t =
 
 using http_server_t = restinio::http_server_t< traits_t >;
 
-auto server_handler( rws::websocket_handle_t & websocket )
+auto server_handler( rws::ws_handle_t & websocket )
 {
 	auto router = std::make_unique< router_t >();
 
@@ -39,7 +39,7 @@ auto server_handler( rws::websocket_handle_t & websocket )
 				websocket =
 					rws::upgrade_to_websocket< traits_t >(
 						*req,
-						[]( rws::websocket_weak_handle_t wh, rws::ws_message_handle_t m ){
+						[]( rws::ws_weak_handle_t wh, rws::ws_message_handle_t m ){
 							if( auto h = wh.lock() )
 								h->send_message( *m );
 						},
@@ -60,7 +60,7 @@ int main()
 
 	try
 	{
-		rws::websocket_handle_t websocket;
+		rws::ws_handle_t websocket;
 
 		http_server_t http_server{
 			restinio::create_child_io_context( 1 ),
