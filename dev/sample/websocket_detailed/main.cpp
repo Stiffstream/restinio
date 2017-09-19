@@ -71,8 +71,6 @@ auto server_handler( rws::ws_handle_t & websocket )
 							{
 								// print_ws_message( *m );
 
-								if( m->header().)
-
 								if( m->header().m_opcode == rws::opcode_t::ping_frame )
 								{
 									if( m->header().m_payload_len > 125)
