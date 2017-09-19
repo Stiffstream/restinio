@@ -439,6 +439,11 @@ class ws_connection_t final
 							payload_length - payload_part_size );
 					}
 				}
+				else
+				{
+					// callback for message with 0-size payload.
+					call_handler_on_current_message();
+				}
 			}
 			else
 			{
@@ -799,10 +804,14 @@ class ws_connection_t final
 			const auto & current_header = m_input.m_parser.current_message();
 			auto & current_payload = m_input.m_payload;
 
-			if( current_header.m_opcode == opcode_t::text_frame)
+			if( current_header.m_mask_flag == true )
 			{
 				impl::mask_unmask_payload(
 					current_header.m_masking_key, current_payload );
+			}
+
+			if( current_header.m_opcode == opcode_t::text_frame)
+			{
 
 				return check_utf8_is_correct( current_payload );
 			}
