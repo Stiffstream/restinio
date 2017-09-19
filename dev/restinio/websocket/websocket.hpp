@@ -31,6 +31,7 @@ const std::string websocket_accept_field_suffix{
 
 //! A WebSocket bind.
 class ws_t
+	:	public std::enable_shared_from_this< ws_t >
 {
 	public:
 		ws_t( const ws_t & ) = delete;
@@ -107,7 +108,6 @@ class ws_t
 
 //! Alias for ws_t handle.
 using ws_handle_t = std::shared_ptr< ws_t >;
-using ws_weak_handle_t = std::weak_ptr< ws_t >;
 
 //
 // upgrade

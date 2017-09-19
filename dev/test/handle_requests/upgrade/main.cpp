@@ -42,7 +42,7 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 								auto ws =
 									rws::upgrade< traits_t >(
 										*req,
-										[]( rws::ws_weak_handle_t,
+										[]( rws::ws_handle_t,
 											rws::ws_message_handle_t ){},
 										[]( std::string ){} );
 

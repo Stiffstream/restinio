@@ -39,9 +39,8 @@ auto server_handler( rws::ws_handle_t & websocket )
 				websocket =
 					rws::upgrade< traits_t >(
 						*req,
-						[]( rws::ws_weak_handle_t wh, rws::ws_message_handle_t m ){
-							if( auto h = wh.lock() )
-								h->send_message( *m );
+						[]( auto wsh, auto m ){
+							wsh->send_message( *m );
 						},
 						[]( std::string reason ){
 							std::cout << "Close websocket: " << reason << std::endl;

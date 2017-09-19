@@ -28,6 +28,8 @@ namespace websocket
 namespace impl
 {
 
+using ws_weak_handle_t = std::weak_ptr< ws_t >;
+
 constexpr size_t WEBSOCKET_HEADER_MAX_SIZE = 14;
 
 //
@@ -246,16 +248,16 @@ class ws_connection_t final
 
 		//! Start reading ws-messages.
 		void
-		init_read(
-			ws_weak_handle_t ws_wh ) override
+		init_read( ws_handle_t wsh ) override
 		{
+			ws_weak_handle_t wswh{ wsh };
 			//! Run write message on io_context loop if possible.
 			asio::dispatch(
 				get_executor(),
-				[ this, ctx = shared_from_this(), ws_wh = std::move( ws_wh ) ](){
+				[ this, ctx = shared_from_this(), wswh = std::move( wswh ) ](){
 					try
 					{
-						m_websocket_weak_handle = std::move( ws_wh );
+						m_websocket_weak_handle = std::move( wswh );
 						start_read_header();
 					}
 					catch( const std::exception & ex )
@@ -745,11 +747,14 @@ class ws_connection_t final
 			const auto & current_header = m_input.m_parser.current_message();
 			const auto & current_payload = m_input.m_payload;
 
-			m_msg_handler(
-				m_websocket_weak_handle,
-				std::make_shared< ws_message_t >(
-					current_header.transform_to_header(),
-					current_payload ) );
+			if( auto wsh = m_websocket_weak_handle.lock() )
+			{
+				m_msg_handler(
+					std::move( wsh ),
+					std::make_shared< ws_message_t >(
+						current_header.transform_to_header(),
+						current_payload ) );
+			}
 
 			start_read_header();
 		}

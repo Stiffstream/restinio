@@ -20,7 +20,7 @@ namespace websocket
 {
 
 class ws_t;
-using ws_weak_handle_t = std::weak_ptr< ws_t >;
+using ws_handle_t = std::shared_ptr< ws_t >;
 
 //
 // ws_connection_base_t
@@ -49,7 +49,7 @@ class ws_connection_base_t
 
 		//! Start reading ws-messages.
 		virtual void
-		init_read( ws_weak_handle_t ws_wh ) = 0;
+		init_read( ws_handle_t wsh ) = 0;
 
 		//! Write pieces of outgoing data.
 		virtual void
