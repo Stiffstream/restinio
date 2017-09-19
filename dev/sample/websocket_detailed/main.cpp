@@ -69,9 +69,37 @@ auto server_handler( rws::ws_handle_t & websocket )
 						[]( rws::ws_weak_handle_t wh, rws::ws_message_handle_t m ){
 							if( auto h = wh.lock() )
 							{
-								print_ws_message( *m );
+								// print_ws_message( *m );
 
-								h->send_message( *m );
+								if( m->header().)
+
+								if( m->header().m_opcode == rws::opcode_t::ping_frame )
+								{
+									if( m->header().m_payload_len > 125)
+									{
+										h->send_message(
+											true,
+											rws::opcode_t::ping_frame,
+											rws::impl::status_code_to_bin(
+												rws::status_code_t::protocol_error ) );
+										h->close();
+									}
+
+									auto pong = *m;
+									pong.header().m_opcode = rws::opcode_t::pong_frame;
+									h->send_message( pong );
+								}
+								else if( m->header().m_opcode == rws::opcode_t::pong_frame )
+								{
+								}
+								else if( m->header().m_opcode == rws::opcode_t::connection_close_frame )
+								{
+									h->close();
+								}
+								else
+								{
+									h->send_message( *m );
+								}
 							}
 						},
 						[]( std::string reason ){
