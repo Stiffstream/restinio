@@ -5,6 +5,7 @@ add_subdirectory(hello_world)
 add_subdirectory(express_router)
 add_subdirectory(express_router_tutorial)
 add_subdirectory(websocket)
+add_subdirectory(websocket_detailed)
 
 find_package(OpenSSL)
 
