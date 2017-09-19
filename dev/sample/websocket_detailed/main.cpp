@@ -66,38 +66,35 @@ auto server_handler( rws::ws_handle_t & websocket )
 				websocket =
 					rws::upgrade< traits_t >(
 						*req,
-						[]( rws::ws_weak_handle_t wh, rws::ws_message_handle_t m ){
-							if( auto h = wh.lock() )
+						[]( auto wsh, auto m ){
+							// print_ws_message( *m );
+
+							if( m->header().m_opcode == rws::opcode_t::ping_frame )
+ 							{
+								if( m->header().m_payload_len > 125)
+								{
+									wsh->send_message(
+										true,
+										rws::opcode_t::ping_frame,
+										rws::impl::status_code_to_bin(
+											rws::status_code_t::protocol_error ) );
+									wsh->close();
+								}
+
+								auto pong = *m;
+								pong.header().m_opcode = rws::opcode_t::pong_frame;
+								wsh->send_message( pong );
+							}
+							else if( m->header().m_opcode == rws::opcode_t::pong_frame )
 							{
-								// print_ws_message( *m );
-
-								if( m->header().m_opcode == rws::opcode_t::ping_frame )
-								{
-									if( m->header().m_payload_len > 125)
-									{
-										h->send_message(
-											true,
-											rws::opcode_t::ping_frame,
-											rws::impl::status_code_to_bin(
-												rws::status_code_t::protocol_error ) );
-										h->close();
-									}
-
-									auto pong = *m;
-									pong.header().m_opcode = rws::opcode_t::pong_frame;
-									h->send_message( pong );
-								}
-								else if( m->header().m_opcode == rws::opcode_t::pong_frame )
-								{
-								}
-								else if( m->header().m_opcode == rws::opcode_t::connection_close_frame )
-								{
-									h->close();
-								}
-								else
-								{
-									h->send_message( *m );
-								}
+							}
+							else if( m->header().m_opcode == rws::opcode_t::connection_close_frame )
+							{
+								wsh->close();
+							}
+							else
+							{
+								wsh->send_message( *m );
 							}
 						},
 						[]( std::string reason ){
