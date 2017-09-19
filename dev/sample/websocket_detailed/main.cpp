@@ -77,6 +77,8 @@ auto server_handler( rws::ws_handle_t & websocket )
 						[]( std::string reason ){
 							std::cout << "Close websocket: " << reason << std::endl;
 						} );
+
+				return restinio::request_accepted();
 			}
 
 			return restinio::request_rejected();

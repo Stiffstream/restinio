@@ -412,37 +412,36 @@ class ws_connection_t final
 				auto payload_length = m_input.m_parser.current_message().payload_len();
 				m_input.m_payload.resize( payload_length );
 
-				if( 0 < m_input.m_buf.length() )
+				if( payload_length == 0 )
 				{
-					const auto payload_part_size =
-						std::min(
-							m_input.m_buf.length(),
-							payload_length );
+					// Callback for message with 0-size payload.
+					call_handler_on_current_message();
+					return;
+				}
 
-					std::memcpy(
-						&m_input.m_payload.front(),
-						m_input.m_buf.bytes(),
-						payload_part_size );
+				const auto payload_part_size =
+					std::min(
+						m_input.m_buf.length(),
+						payload_length );
 
-					m_input.m_buf.consumed_bytes( payload_part_size );
+				std::memcpy(
+					&m_input.m_payload.front(),
+					m_input.m_buf.bytes(),
+					payload_part_size );
 
-					if( payload_part_size == payload_length )
-					{
-						// All message is obtained.
-						call_handler_on_current_message();
-					}
-					else
-					{
-						// Read the rest of payload:
-						start_read_payload(
-							&m_input.m_payload.front() + payload_part_size,
-							payload_length - payload_part_size );
-					}
+				m_input.m_buf.consumed_bytes( payload_part_size );
+
+				if( payload_part_size == payload_length )
+				{
+					// All message is obtained.
+					call_handler_on_current_message();
 				}
 				else
 				{
-					// callback for message with 0-size payload.
-					call_handler_on_current_message();
+					// Read the rest of payload:
+					start_read_payload(
+						&m_input.m_payload.front() + payload_part_size,
+						payload_length - payload_part_size );
 				}
 			}
 			else
@@ -812,7 +811,6 @@ class ws_connection_t final
 
 			if( current_header.m_opcode == opcode_t::text_frame)
 			{
-
 				return check_utf8_is_correct( current_payload );
 			}
 
