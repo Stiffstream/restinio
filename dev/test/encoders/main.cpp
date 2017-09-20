@@ -11,6 +11,7 @@
 
 #include <restinio/utils/base64.hpp>
 #include <restinio/utils/sha1.hpp>
+#include <restinio/websocket/impl/utf8.hpp>
 
 inline std::string
 to_char_each( std::vector< int > source )
@@ -246,4 +247,52 @@ TEST_CASE(
 		REQUIRE( restinio::utils::sha1::to_hex_string( sha1_builder.finish() ) ==
 			"6afc512e5413a02921e949912c8b5d42f1ebdd80" );
 	}
+}
+
+#include <bitset>
+
+TEST_CASE(
+	"UTF-8 check" ,
+	"[encoders][utf-8]" )
+{
+	// Hello-µ@ßöäüàá-UTF-8!!
+	std::string str{ to_char_each({
+			0x48,
+			0x65,
+			0x6c,
+			0x6c,
+			0x6f,
+			0x2d,
+			0xc2,
+			0xb5,
+			0x40,
+			0xc3,
+			0x9f,
+			0xc3,
+			0xb6,
+			0xc3,
+			0xa4,
+			0xc3,
+			0xbc,
+			0xc3,
+			0xa0,
+			0xc3,
+			0xa1,
+			0x2d,
+			0x55,
+			0x54,
+			0x46,
+			0x2d,
+			0x38,
+			0x21,
+			0x21
+		}) };
+
+	for( auto ch: str )
+	{
+		std::cout << std::bitset<8>(ch) << std::endl;
+	}
+
+	std::cout << "utf-8 check: " <<
+		restinio::websocket::impl::check_utf8_is_correct( str );
 }
