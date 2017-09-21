@@ -25,33 +25,33 @@ using traits_t =
 
 using http_server_t = restinio::http_server_t< traits_t >;
 
-void
-print_ws_header( const rws::ws_message_header_t & header )
-{
-	std::cout <<
-		"final: " << header.m_is_final <<
-		", opcode: " << static_cast<int>(header.m_opcode) <<
-		", payload_len: " << header.m_payload_len <<
-		", masking_key: " << header.m_masking_key
-		<< std::endl;
-}
+// void
+// print_ws_header( const rws::ws_message_header_t & header )
+// {
+// 	std::cout <<
+// 		"final: " << header.m_is_final <<
+// 		", opcode: " << static_cast<int>(header.m_opcode) <<
+// 		", payload_len: " << header.m_payload_len <<
+// 		", masking_key: " << header.m_masking_key
+// 		<< std::endl;
+// }
 
-void
-print_ws_message( const rws::ws_message_t & msg )
-{
-	std::cout << "header: {";
+// void
+// print_ws_message( const rws::message_t & msg )
+// {
+// 	std::cout << "header: {";
 
-	print_ws_header(msg.header());
+// 	print_ws_header(msg.header());
 
-	std::cout << "}, payload: '" << msg.payload() << "' (";
+// 	std::cout << "}, payload: '" << msg.payload() << "' (";
 
-	for( const auto ch : msg.payload() )
-	{
-		std::cout << std::hex << (static_cast< int >(ch) & 0xFF) << " ";
-	}
+// 	for( const auto ch : msg.payload() )
+// 	{
+// 		std::cout << std::hex << (static_cast< int >(ch) & 0xFF) << " ";
+// 	}
 
-	std::cout << ")" << std::endl;
-}
+// 	std::cout << ")" << std::endl;
+// }
 
 auto server_handler( rws::ws_handle_t & websocket )
 {
@@ -69,29 +69,22 @@ auto server_handler( rws::ws_handle_t & websocket )
 						[]( auto wsh, auto m ){
 							// print_ws_message( *m );
 
-							if( m->header().m_opcode == rws::opcode_t::ping_frame )
+							if( m->opcode() == rws::opcode_t::ping_frame )
  							{
-								if( m->header().m_payload_len > 125)
+								if( m->payload().size() > 125)
 								{
 									// TODO: if this is error so why send anything?
 									wsh->kill();
-
-									// wsh->send_message(
-									// 	true,
-									// 	rws::opcode_t::ping_frame,
-									// 	rws::impl::status_code_to_bin(
-									// 		rws::status_code_t::protocol_error ) );
-									// wsh->close();
 								}
 
 								auto pong = *m;
-								pong.header().m_opcode = rws::opcode_t::pong_frame;
+								pong.set_opcode( rws::opcode_t::pong_frame );
 								wsh->send_message( pong );
 							}
-							else if( m->header().m_opcode == rws::opcode_t::pong_frame )
+							else if( m->opcode() == rws::opcode_t::pong_frame )
 							{
 							}
-							else if( m->header().m_opcode == rws::opcode_t::connection_close_frame )
+							else if( m->opcode() == rws::opcode_t::connection_close_frame )
 							{
 								// TODO: send response if code not 1006.
 								wsh->shutdown();

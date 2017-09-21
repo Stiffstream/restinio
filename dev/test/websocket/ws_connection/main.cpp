@@ -25,119 +25,24 @@
 namespace rws = restinio::websocket;
 
 rws::impl::ws_message_details_t
-to_ws_message_details( const rws::ws_message_t & msg )
+to_ws_message_details( const rws::message_t & msg )
 {
 	return rws::impl::ws_message_details_t{
-		msg.header().m_is_final,
-		msg.header().m_opcode,
-		msg.payload().size(),
-		msg.header().m_masking_key };
+		msg.is_final(),
+		msg.opcode(),
+		msg.payload().size() };
 }
 
 bool
 operator==(
-	const rws::ws_message_header_t & lhs,
-	const rws::ws_message_header_t & rhs )
+	const rws::message_t & lhs,
+	const rws::message_t & rhs )
 {
 	return
-		lhs.m_is_final == rhs.m_is_final &&
-		lhs.m_opcode == rhs.m_opcode &&
-		lhs.m_payload_len == rhs.m_payload_len &&
-		lhs.m_masking_key == rhs.m_masking_key;
-}
-
-bool
-operator==(
-	const rws::ws_message_t & lhs,
-	const rws::ws_message_t & rhs )
-{
-	return
-		lhs.header() == rhs.header() &&
+		lhs.is_final() == rhs.is_final() &&
+		lhs.opcode() == rhs.opcode() &&
 		lhs.payload() == rhs.payload();
 }
-
-void
-print_ws_header( const rws::ws_message_header_t & header )
-{
-	std::cout <<
-		"final: " << header.m_is_final <<
-		", opcode: " << static_cast<int>(header.m_opcode) <<
-		", payload_len: " << header.m_payload_len <<
-		", masking_key: " << header.m_masking_key
-		<< std::endl;
-}
-
-void
-print_ws_message( const rws::ws_message_t & msg )
-{
-	std::cout << "header: {";
-
-	print_ws_header(msg.header());
-
-	std::cout << "}, payload: '" << msg.payload() << "' (";
-
-	for( const auto ch : msg.payload() )
-	{
-		std::cout << std::hex << static_cast< int >(ch) << " ";
-	}
-
-	std::cout << ")" << std::endl;
-}
-
-rws::ws_message_t
-parse_bin_data( const char* data, size_t len )
-{
-	rws::impl::ws_parser_t parser;
-
-	auto parsed = parser.parser_execute( data, len );
-
-	if( parser.header_parsed() )
-	{
-		rws::ws_message_t result{
-			parser.current_message().transform_to_header(),
-			std::string(
-				data + (
-					len - parser.current_message().payload_len()),
-				parser.current_message().payload_len() )
-		};
-
-		//print_ws_message( result );
-
-		return result;
-
-	}
-	else
-	{
-		throw std::runtime_error("Invalid bin data");
-	}
-}
-
-// TODO: delete unused??
-
-// restinio::raw_data_t
-// status_code_to_bin( rws::status_code_t code )
-// {
-// 	return restinio::raw_data_t{
-// 		to_char_each(
-// 			{
-// 				(static_cast<std::uint16_t>(code) >> 8) & 0xFF ,
-// 				static_cast<std::uint16_t>(code) & 0xFF
-// 			}
-// 		) };
-// }
-
-// rws::ws_message_t
-// create_close_msg(
-// 	rws::status_code_t code,
-// 	const std::string & desc = std::string() )
-// {
-// 	restinio::raw_data_t payload{status_code_to_bin( code ) + desc };
-
-// 	rws::ws_message_t close_msg(
-// 		true, rws::opcode_t::connection_close_frame, payload );
-
-// 	return close_msg;
-// }
 
 using traits_t =
 	restinio::traits_t<
@@ -158,18 +63,18 @@ struct upgrade_request_t : public so_5::message_t
 
 struct msg_ws_message : public so_5::message_t
 {
-	msg_ws_message( rws::ws_message_handle_t msg )
+	msg_ws_message( rws::message_handle_t msg )
 		:	m_msg{ msg }
 	{}
 
-	rws::ws_message_handle_t m_msg;
+	rws::message_handle_t m_msg;
 };
 
 struct
 request_response_context_t
 {
-	rws::ws_message_t m_request;
-	rws::ws_message_t m_response;
+	rws::message_t m_request;
+	rws::message_t m_response;
 	std::string m_request_bin;
 	std::string m_response_bin;
 
@@ -265,7 +170,7 @@ class a_server_t
 						std::string{
 							digest_to_char_array(digest).data(), 20
 						} ),
-					[this]( auto /* ws_weak_handle*/, rws::ws_message_handle_t m ){
+					[this]( auto /* ws_weak_handle*/, rws::message_handle_t m ){
 						so_5::send< msg_ws_message >(
 							this->so_direct_mbox(), m );
 					},
@@ -280,8 +185,6 @@ class a_server_t
 			auto req = *(msg.m_msg);
 
 			auto resp = req;
-
-			resp.header().m_masking_key = 0;
 
 			m_ws->send_message( resp );
 		}

@@ -190,6 +190,12 @@ class message_t final
 			return m_opcode;
 		}
 
+		void
+		set_opcode( opcode_t opcode )
+		{
+			m_opcode = opcode;
+		}
+
 		const std::string&
 		payload() const
 		{
