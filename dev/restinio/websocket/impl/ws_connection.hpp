@@ -131,7 +131,7 @@ struct ws_connection_input_t
 	}
 };
 
-inline ws_message_t
+inline message_t
 create_close_msg(
 	status_code_t code,
 	const std::string & desc )
@@ -139,7 +139,7 @@ create_close_msg(
 	raw_data_t payload{
 		restinio::websocket::impl::status_code_to_bin( code ) + desc };
 
-	return restinio::websocket::ws_message_t(
+	return restinio::websocket::message_t(
 		true, restinio::websocket::opcode_t::connection_close_frame, payload );
 }
 
@@ -794,11 +794,13 @@ class ws_connection_t final
 
 			if( auto wsh = m_websocket_weak_handle.lock() )
 			{
+				auto ws_message = current_header.transform_to_message();
+				ws_message.set_payload( std::move(current_payload) );
+
 				m_msg_handler(
 					std::move( wsh ),
-					std::make_shared< ws_message_t >(
-						current_header.transform_to_header(),
-						current_payload ) );
+					std::make_shared< message_t >(
+						ws_message ) );
 			}
 
 			start_read_header();
