@@ -293,5 +293,5 @@ TEST_CASE(
 	// 	std::cout << std::bitset<8>(ch) << std::endl;
 	// }
 
-	REQUIRE( restinio::websocket::impl::check_utf8_is_correct( str ) == true )
+	REQUIRE( restinio::websocket::impl::check_utf8_is_correct( str ) == true );
 }
