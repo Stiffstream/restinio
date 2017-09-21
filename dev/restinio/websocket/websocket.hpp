@@ -94,12 +94,12 @@ class ws_t
 		}
 
 		void
-		send_message( const ws_message_t & msg )
+		send_message( message_t msg )
 		{
 			send_message(
-				msg.header().m_is_final,
-				msg.header().m_opcode,
-				buffer_storage_t( msg.payload() ) );
+				msg.is_final(),
+				msg.opcode(),
+				buffer_storage_t{ std::move(msg.payload()) } );
 		}
 
 	private:

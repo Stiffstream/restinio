@@ -43,7 +43,7 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 									rws::upgrade< traits_t >(
 										*req,
 										[]( rws::ws_handle_t,
-											rws::ws_message_handle_t ){},
+											rws::message_handle_t ){},
 										[]( std::string ){} );
 
 								ws->close();

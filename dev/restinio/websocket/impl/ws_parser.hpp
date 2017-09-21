@@ -75,11 +75,11 @@ class ws_message_details_t
 			init_payload_len( payload_len );
 		}
 
-		ws_message_details_t( const ws_message_t & ws_message )
+		ws_message_details_t( const message_t & ws_message )
 		:	ws_message_details_t(
-				ws_message.header().m_is_final,
-				ws_message.header().m_opcode,
-				ws_message.header().m_payload_len )
+				ws_message.is_final(),
+				ws_message.opcode(),
+				ws_message.payload().size() )
 		{
 		}
 
@@ -97,11 +97,11 @@ class ws_message_details_t
 			m_mask_flag = true;
 		}
 
-		ws_message_header_t
-		transform_to_header() const
+		message_t
+		transform_to_message() const
 		{
-			return ws_message_header_t{
-				m_final_flag, m_opcode, payload_len(), m_masking_key };
+			return message_t{
+				m_final_flag, m_opcode };
 		}
 
 		bool m_final_flag = true;
