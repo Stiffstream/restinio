@@ -217,10 +217,10 @@ class ws_connection_t final
 			{}
 		}
 
+		//! Shutdown websocket.
 		virtual void
-		close() override
+		shutdown() override
 		{
-			//! Run write message on io_context loop if possible.
 			asio::dispatch(
 				get_executor(),
 				[ this, ctx = shared_from_this() ](){
@@ -228,23 +228,83 @@ class ws_connection_t final
 					{
 						m_logger.trace( [&]{
 							return fmt::format(
-								"[ws_connection:{}] close",
+								"[ws_connection:{}] shutdown",
 								connection_id() );
 						} );
-						graceful_close(
-							status_code_t::normal_closure, std::string{} );
+						graceful_close();
 					}
 					catch( const std::exception & ex )
 					{
 						m_logger.error( [&]{
 							return fmt::format(
-								"[ws_connection:{}] close operation error: {}",
+								"[ws_connection:{}] shutdown operation error: {}",
 								connection_id(),
 								ex.what() );
 						} );
 					}
 			} );
 		}
+
+		//! Kill websocket.
+		virtual void
+		kill() override
+		{
+			asio::dispatch(
+				get_executor(),
+				[ this, ctx = shared_from_this() ](){
+					try
+					{
+						m_logger.trace( [&]{
+							return fmt::format(
+								"[ws_connection:{}] kill",
+								connection_id() );
+						} );
+
+						close_impl();
+						call_close_handler( "user initiated kill" );
+					}
+					catch( const std::exception & ex )
+					{
+						m_logger.error( [&]{
+							return fmt::format(
+								"[ws_connection:{}] shutdown operation error: {}",
+								connection_id(),
+								ex.what() );
+						} );
+					}
+			} );
+
+		}
+
+
+		// virtual void
+		// close() override
+		// {
+		// 	//! Run write message on io_context loop if possible.
+		// 	asio::dispatch(
+		// 		get_executor(),
+		// 		[ this, ctx = shared_from_this() ](){
+		// 			try
+		// 			{
+		// 				m_logger.trace( [&]{
+		// 					return fmt::format(
+		// 						"[ws_connection:{}] close",
+		// 						connection_id() );
+		// 				} );
+		// 				graceful_close(
+		// 					status_code_t::normal_closure, std::string{} );
+		// 			}
+		// 			catch( const std::exception & ex )
+		// 			{
+		// 				m_logger.error( [&]{
+		// 					return fmt::format(
+		// 						"[ws_connection:{}] close operation error: {}",
+		// 						connection_id(),
+		// 						ex.what() );
+		// 				} );
+		// 			}
+		// 	} );
+		// }
 
 		//! Start reading ws-messages.
 		void
@@ -405,8 +465,8 @@ class ws_connection_t final
 			{
 				if( !validate_current_ws_message_header() )
 				{
-					graceful_close(
-						restinio::websocket::status_code_t::protocol_error );
+					close_impl();
+					call_close_handler( "message validation failed" );
 
 					return;
 				}
@@ -619,8 +679,8 @@ class ws_connection_t final
 				}
 				else if ( m_awaiting_buffers.close_when_done() )
 				{
-					call_close_handler( "user initiated" );
 					close_impl();
+					call_close_handler( "user initiated shutdown" );
 				}
 			}
 		}
@@ -663,27 +723,12 @@ class ws_connection_t final
 			}
 		}
 
-		//! Close WebSocket connection in a graceful manner
-		//! sending a close-message
+		//! Close WebSocket connection in a graceful manner.
 		void
-		graceful_close(
-			status_code_t code,
-			std::string desc = std::string{} )
+		graceful_close()
 		{
 			if( !m_awaiting_buffers.close_when_done() )
 			{
-				auto close_msg = create_close_msg( code, desc );
-
-				buffers_container_t bufs;
-				bufs.reserve( 2 );
-
-				bufs.emplace_back(
-					impl::write_message_details(
-						ws_message_details_t{ close_msg } ) );
-
-				bufs.emplace_back( std::move( close_msg.payload() ) );
-				m_awaiting_buffers.append( std::move( bufs ) );
-
 				m_awaiting_buffers.set_close_when_done();
 				init_write_if_necessary();
 			}
@@ -738,8 +783,8 @@ class ws_connection_t final
 		{
 			if( !validate_current_ws_message_body() )
 			{
-				graceful_close(
-					restinio::websocket::status_code_t::invalid_message_data );
+				close_impl();
+				call_close_handler( "invalid payload" );
 
 				return;
 			}
@@ -787,7 +832,8 @@ class ws_connection_t final
 										"[wd_connection:{}] write operation timed out",
 										this->connection_id() );
 								} );
-							close();
+							close_impl();
+							call_close_handler( "write timeout" );
 						}
 					} );
 		}

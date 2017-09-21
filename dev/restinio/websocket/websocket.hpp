@@ -48,19 +48,33 @@ class ws_t
 		{
 			try
 			{
-				close();
+				shutdown();
 			}
 			catch( ... )
 			{}
 		}
 
+		//! Shutdown websocket: wait for all outgoing data to be sent,
+		//! and close connection.
 		void
-		close()
+		shutdown()
 		{
 			if( m_ws_connection_handle )
 			{
 				auto con = std::move( m_ws_connection_handle );
-				con->close();
+				con->shutdown();
+			}
+		}
+
+		//! Kill websocket: close underlying tcp socket.
+		//! Do not tolerate unsent outgoing data.
+		void
+		kill()
+		{
+			if( m_ws_connection_handle )
+			{
+				auto con = std::move( m_ws_connection_handle );
+				con->kill();
 			}
 		}
 

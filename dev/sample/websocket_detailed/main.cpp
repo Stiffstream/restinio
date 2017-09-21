@@ -73,12 +73,15 @@ auto server_handler( rws::ws_handle_t & websocket )
  							{
 								if( m->header().m_payload_len > 125)
 								{
-									wsh->send_message(
-										true,
-										rws::opcode_t::ping_frame,
-										rws::impl::status_code_to_bin(
-											rws::status_code_t::protocol_error ) );
-									wsh->close();
+									// TODO: if this is error so why send anything?
+									wsh->kill();
+
+									// wsh->send_message(
+									// 	true,
+									// 	rws::opcode_t::ping_frame,
+									// 	rws::impl::status_code_to_bin(
+									// 		rws::status_code_t::protocol_error ) );
+									// wsh->close();
 								}
 
 								auto pong = *m;
@@ -90,7 +93,8 @@ auto server_handler( rws::ws_handle_t & websocket )
 							}
 							else if( m->header().m_opcode == rws::opcode_t::connection_close_frame )
 							{
-								wsh->close();
+								// TODO: send response if code not 1006.
+								wsh->shutdown();
 							}
 							else
 							{
@@ -141,7 +145,11 @@ int main()
 			std::cin >> cmd;
 		} while( cmd != "quit" && cmd != "q" );
 
-		websocket->close();
+		if( websocket ){
+			// TODO: send close-frame and shutdown.
+			websocket->kill();
+		};
+
 		http_server.close();
 	}
 	catch( const std::exception & ex )

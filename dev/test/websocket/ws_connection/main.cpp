@@ -112,30 +112,32 @@ parse_bin_data( const char* data, size_t len )
 	}
 }
 
-restinio::raw_data_t
-status_code_to_bin( rws::status_code_t code )
-{
-	return restinio::raw_data_t{
-		to_char_each(
-			{
-				(static_cast<std::uint16_t>(code) >> 8) & 0xFF ,
-				static_cast<std::uint16_t>(code) & 0xFF
-			}
-		) };
-}
+// TODO: delete unused??
 
-rws::ws_message_t
-create_close_msg(
-	rws::status_code_t code,
-	const std::string & desc = std::string() )
-{
-	restinio::raw_data_t payload{status_code_to_bin( code ) + desc };
+// restinio::raw_data_t
+// status_code_to_bin( rws::status_code_t code )
+// {
+// 	return restinio::raw_data_t{
+// 		to_char_each(
+// 			{
+// 				(static_cast<std::uint16_t>(code) >> 8) & 0xFF ,
+// 				static_cast<std::uint16_t>(code) & 0xFF
+// 			}
+// 		) };
+// }
 
-	rws::ws_message_t close_msg(
-		true, rws::opcode_t::connection_close_frame, payload );
+// rws::ws_message_t
+// create_close_msg(
+// 	rws::status_code_t code,
+// 	const std::string & desc = std::string() )
+// {
+// 	restinio::raw_data_t payload{status_code_to_bin( code ) + desc };
 
-	return close_msg;
-}
+// 	rws::ws_message_t close_msg(
+// 		true, rws::opcode_t::connection_close_frame, payload );
+
+// 	return close_msg;
+// }
 
 using traits_t =
 	restinio::traits_t<
@@ -236,7 +238,12 @@ class a_server_t
 		virtual void
 		so_evt_finish() override
 		{
-			m_ws.reset();
+			if( m_ws )
+			{
+				m_ws->send_message( true, rws::opcode_t::connection_close_frame, "" );
+				m_ws->shutdown();
+				m_ws.reset();
+			}
 			m_http_server.close();
 		}
 
@@ -262,7 +269,9 @@ class a_server_t
 						so_5::send< msg_ws_message >(
 							this->so_direct_mbox(), m );
 					},
-					[]( std::string /*reason*/ ){} );
+					[]( std::string reason ){
+						std::cout << "Close ws reason: " << reason << std::endl;
+					} );
 		}
 
 		void
@@ -281,148 +290,175 @@ class a_server_t
 		rws::ws_handle_t m_ws;
 };
 
+const std::string upgrade_request{
+	"GET /chat HTTP/1.1\r\n"
+	"Host: 127.0.0.1\r\n"
+	"Upgrade: websocket\r\n"
+	"Connection: Upgrade\r\n"
+	"Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+	"Sec-WebSocket-Protocol: chat\r\n"
+	"Sec-WebSocket-Version: 1\r\n"
+	"User-Agent: unit-test\r\n"
+	"\r\n" };
 
-class a_client_t
-	:	public so_5::agent_t
+class soenv_t : public so_5::environment_t
 {
-		using so_base_type_t = so_5::agent_t;
-
 	public:
-		a_client_t(
-			context_t ctx,
-			request_response_context_t & result )
-			:	so_base_type_t{ ctx }
-			,	m_result{ result }
-		{}
+	using base_type_t = so_5::environment_t;
 
-		virtual void
-		so_evt_start() override
-		{
-			init_connection_with_srv();
-		}
+	using base_type_t::base_type_t;
 
 	private:
-
-		void init_connection_with_srv()
+		virtual void
+		init() override
 		{
-			do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
-
-				const std::string request{
-					"GET /chat HTTP/1.1\r\n"
-					"Host: 127.0.0.1\r\n"
-					"Upgrade: websocket\r\n"
-					"Connection: Upgrade\r\n"
-					"Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
-					"Sec-WebSocket-Protocol: chat\r\n"
-					"Sec-WebSocket-Version: 1\r\n"
-					"User-Agent: unit-test\r\n"
-					"\r\n" };
-
-
-				REQUIRE_NOTHROW(
-					asio::write(
-						socket, asio::buffer( &request.front(), request.size() ) )
-					);
-
-				std::array< char, 1024 > data;
-
-				std::size_t len{ 0 };
-				REQUIRE_NOTHROW(
-					len = socket.read_some( asio::buffer( data.data(), data.size() ) )
-					);
-
-				REQUIRE_NOTHROW(
-						asio::write(
-							socket, asio::buffer(
-								m_result.m_request_bin.data(),
-								m_result.m_request_bin.size() ) )
-						);
-
-				REQUIRE_NOTHROW(
-					len = socket.read_some( asio::buffer( data.data(), data.size() ) )
-					);
-
-				m_result.m_response = parse_bin_data( data.data(), len );
-				m_result.m_response_bin = std::string( data.data(), len ) ;
-			} );
-
-			so_environment().stop();
+			introduce_coop(
+				so_5::disp::active_obj::create_private_disp( *this )->binder(),
+				[ & ]( so_5::coop_t & coop ) {
+					coop.make_agent< a_server_t >();
+				} );
 		}
-
-		request_response_context_t & m_result;
 };
 
-
-request_response_context_t
-client_server_ws_connection( const std::string & req_bin )
+std::thread
+start_soenv_in_separate_thread( so_5::environment_t & env )
 {
-	request_response_context_t rr_ctx;
+	std::thread soenv_thread{ [&](){
+		try
+		{
+			env.run();
+		}
+		catch( const std::exception & ex )
+		{
+			std::cerr << "Error running sobjectizer: " << ex.what() << std::endl;
+		}
+	} };
 
-	rr_ctx.m_request_bin = req_bin;
-	rr_ctx.m_request = parse_bin_data(req_bin.data(), req_bin.size());
+	// Give some time for server to start.
+	std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
-	try
-	{
-
-		so_5::launch(
-			[&]( auto & env )
-			{
-				env.introduce_coop(
-					so_5::disp::active_obj::create_private_disp( env )->binder(),
-					[ & ]( so_5::coop_t & coop ) {
-						coop.make_agent< a_server_t >();
-						coop.make_agent< a_client_t >( rr_ctx );
-					} );
-			},
-			[]( so_5::environment_params_t & /*params*/ )
-			{
-			} );
-	}
-	catch( const std::exception & ex )
-	{
-		std::cerr << "Error: " << ex.what() << std::endl;
-	}
-
-	return rr_ctx;
+	return soenv_thread;
 }
+
 
 TEST_CASE( "Request/Response echo" , "[ws_connection]" )
 {
-	restinio::raw_data_t bin_data{ to_char_each(
+	restinio::raw_data_t bin_ws_msg_data{ to_char_each(
 			{0x81, 0x85, 0x37, 0xfa, 0x21, 0x3d, 0x7f, 0x9f, 0x4d, 0x51, 0x58}) };
 
-	auto ctx = client_server_ws_connection( bin_data );
+	soenv_t soenv{ so_5::environment_params_t{} };
+	auto soenv_thread = start_soenv_in_separate_thread( soenv );
 
-	auto request_payload = ctx.m_request.payload();
-	rws::impl::mask_unmask_payload(
-			ctx.m_request.header().m_masking_key, request_payload );
+	do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
 
-	REQUIRE( request_payload == ctx.m_response.payload() );
-	REQUIRE( ctx.m_response.header().m_masking_key == 0 );
+		REQUIRE_NOTHROW(
+				asio::write(
+					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+			);
+
+		std::array< char, 1024 > data;
+
+		std::size_t len{ 0 };
+		REQUIRE_NOTHROW(
+				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+			);
+
+		REQUIRE_NOTHROW(
+				asio::write( socket, asio::buffer( bin_ws_msg_data.data(), bin_ws_msg_data.size() ) )
+			);
+
+		REQUIRE_NOTHROW(
+				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+			);
+
+		auto response_bin = std::string( data.data(), len );
+		// TODO: check response
+		// auto request_payload = ctx.m_request.payload();
+		// rws::impl::mask_unmask_payload(
+		// 		ctx.m_request.header().m_masking_key, request_payload );
+
+		// REQUIRE( request_payload == ctx.m_response.payload() );
+		// REQUIRE( ctx.m_response.header().m_masking_key == 0 );
+
+	} );
+
+	soenv.stop();
+	soenv_thread.join();
 }
 
 TEST_CASE( "Request/Response close without masking key" , "[ws_connection]" )
 {
-	restinio::raw_data_t bin_data{ to_char_each(
+	restinio::raw_data_t bin_ws_msg_data{ to_char_each(
 			{0x81, 0x05, 'H', 'e', 'l', 'l', 'o'}) };
 
-	auto ctx = client_server_ws_connection( bin_data );
+	soenv_t soenv{ so_5::environment_params_t{} };
+	auto soenv_thread = start_soenv_in_separate_thread( soenv );
 
-	REQUIRE( ctx.m_response.header().m_opcode ==
-		rws::opcode_t::connection_close_frame );
+	do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
 
+		REQUIRE_NOTHROW(
+				asio::write(
+					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+			);
+
+		std::array< char, 1024 > data;
+
+		std::size_t len{ 0 };
+		REQUIRE_NOTHROW(
+				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+			);
+
+		REQUIRE_NOTHROW(
+				asio::write( socket, asio::buffer( bin_ws_msg_data.data(), bin_ws_msg_data.size() ) )
+			);
+
+		// Validation would fail, so no data in return.
+		asio::error_code ec;
+		len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+		REQUIRE( 0 == len );
+		REQUIRE( ec );
+		REQUIRE( asio::error::eof == ec.value() );
+	} );
+
+	soenv.stop();
+	soenv_thread.join();
 
 }
 
 TEST_CASE( "Request/Response close with non utf-8 payload" , "[ws_connection]" )
 {
-	restinio::raw_data_t bin_data{ to_char_each(
+	restinio::raw_data_t bin_ws_msg_data{ to_char_each(
 			{0x81, 0x85, 0x37, 0xfa, 0x21, 0x3d, 'H', 'e', 'l', 'l', 'o'} ) };
 
-	auto ctx = client_server_ws_connection( bin_data );
+	soenv_t soenv{ so_5::environment_params_t{} };
+	auto soenv_thread = start_soenv_in_separate_thread( soenv );
 
-	REQUIRE( ctx.m_response.header().m_opcode ==
-		rws::opcode_t::connection_close_frame );
+	do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
 
+		REQUIRE_NOTHROW(
+				asio::write(
+					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+			);
 
+		std::array< char, 1024 > data;
+
+		std::size_t len{ 0 };
+		REQUIRE_NOTHROW(
+				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+			);
+
+		REQUIRE_NOTHROW(
+				asio::write( socket, asio::buffer( bin_ws_msg_data.data(), bin_ws_msg_data.size() ) )
+			);
+
+		// Validation would fail, so no data in return.
+		asio::error_code ec;
+		len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+		REQUIRE( 0 == len );
+		REQUIRE( ec );
+		REQUIRE( asio::error::eof == ec.value() );
+	} );
+
+	soenv.stop();
+	soenv_thread.join();
 }

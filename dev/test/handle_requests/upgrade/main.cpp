@@ -46,7 +46,8 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 											rws::ws_message_handle_t ){},
 										[]( std::string ){} );
 
-								ws->close();
+								// TODO: write close-message.
+								ws->shutdown();
 								return restinio::request_accepted();
 							}
 							catch( const std::exception & ex )

@@ -83,7 +83,11 @@ int main()
 			std::cin >> cmd;
 		} while( cmd != "quit" && cmd != "q" );
 
-		websocket->close();
+		if( websocket ){
+			// TODO: send close-frame and shutdown.
+			websocket->kill();
+		};
+
 		http_server.close();
 	}
 	catch( const std::exception & ex )

@@ -43,9 +43,17 @@ class ws_connection_base_t
 			return m_connection_id;
 		}
 
-		//! Close connection.
+		// //! Close connection.
+		// virtual void
+		// close() = 0;
+
+		//! Shutdown websocket.
 		virtual void
-		close() = 0;
+		shutdown() = 0;
+
+		//! Kill websocket.
+		virtual void
+		kill() = 0;
 
 		//! Start reading ws-messages.
 		virtual void
