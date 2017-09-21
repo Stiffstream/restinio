@@ -7,6 +7,8 @@
 */
 
 #define CATCH_CONFIG_MAIN
+#include <bitset>
+
 #include <catch/catch.hpp>
 
 #include <restinio/utils/base64.hpp>
@@ -249,8 +251,6 @@ TEST_CASE(
 	}
 }
 
-#include <bitset>
-
 TEST_CASE(
 	"UTF-8 check" ,
 	"[encoders][utf-8]" )
@@ -288,11 +288,10 @@ TEST_CASE(
 			0x21
 		}) };
 
-	for( auto ch: str )
-	{
-		std::cout << std::bitset<8>(ch) << std::endl;
-	}
+	// for( auto ch: str )
+	// {
+	// 	std::cout << std::bitset<8>(ch) << std::endl;
+	// }
 
-	std::cout << "utf-8 check: " <<
-		restinio::websocket::impl::check_utf8_is_correct( str );
+	REQUIRE( restinio::websocket::impl::check_utf8_is_correct( str ) == true )
 }
