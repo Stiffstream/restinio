@@ -465,9 +465,10 @@ class ws_connection_t final
 			{
 				if( !validate_current_ws_message_header() )
 				{
-					close_impl();
-					call_close_handler( "message validation failed" );
+					// close_impl();
+					// call_close_handler( "message validation failed" );
 
+					init_close_handshake( status_code_t::protocol_error );
 					return;
 				}
 
@@ -783,8 +784,9 @@ class ws_connection_t final
 		{
 			if( !validate_current_ws_message_body() )
 			{
-				close_impl();
-				call_close_handler( "invalid payload" );
+				//close_impl();
+				//call_close_handler( "invalid payload" );
+				init_close_handshake( status_code_t::invalid_message_data );
 
 				return;
 			}
@@ -870,6 +872,32 @@ class ws_connection_t final
 			return true;
 		}
 
+		void
+		init_close_handshake(
+			status_code_t code,
+			std::string desc = std::string{} )
+		{
+			if( !m_awaiting_buffers.close_when_done() )
+			{
+				auto close_msg = create_close_msg( code, desc );
+
+				buffers_container_t bufs;
+				bufs.reserve( 2 );
+
+				bufs.emplace_back(
+					impl::write_message_details(
+						ws_message_details_t{ close_msg } ) );
+
+				bufs.emplace_back( std::move( close_msg.payload() ) );
+				m_awaiting_buffers.append( std::move( bufs ) );
+
+				// m_awaiting_buffers.set_close_when_done();
+				init_write_if_necessary();
+ 			}
+
+ 			m_state = state_t::closing;
+		}
+
 		//! Connection.
 		stream_socket_t m_socket;
 
@@ -899,6 +927,14 @@ class ws_connection_t final
 
 		//! Logger for operation
 		logger_t & m_logger;
+
+		enum class state_t
+		{
+			working,
+			closing
+		};
+
+		state_t m_state = state_t::working;
 };
 
 } /* namespace impl */
