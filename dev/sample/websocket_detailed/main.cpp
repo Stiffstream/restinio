@@ -87,6 +87,7 @@ auto server_handler( rws::ws_handle_t & websocket )
 							else if( m->opcode() == rws::opcode_t::connection_close_frame )
 							{
 								// TODO: send response if code not 1006.
+								wsh->send_message( *m );
 								wsh->shutdown();
 							}
 							else

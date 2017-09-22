@@ -848,7 +848,19 @@ class ws_connection_t final
 		{
 			const auto & current_header = m_input.m_parser.current_message();
 
-			return current_header.m_masking_key != 0;
+			if( current_header.m_masking_key == 0 )
+			{
+				return false;
+			}
+
+			if( current_header.m_rsv1_flag != 0 ||
+				current_header.m_rsv2_flag != 0 ||
+				current_header.m_rsv3_flag != 0 )
+			{
+				return false;
+			}
+
+			return true;
 		}
 
 		//! Check current websocket message body is correct.
