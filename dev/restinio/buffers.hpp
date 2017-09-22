@@ -150,7 +150,7 @@ class alignas( std::max_align_t ) buffer_storage_t
 		template < typename T >
 		buffer_storage_t( std::shared_ptr< T > sp )
 			:	m_accessor{ make_templated_buffer_accessor<T>() }
-			,	m_move{ make_tempated_buffer_move<T>() }
+			,	m_move{ make_templated_buffer_move<T>() }
 			,	m_destructor{ make_templated_buffer_destructor<T>() }
 		{
 			static_assert(
@@ -230,7 +230,7 @@ class alignas( std::max_align_t ) buffer_storage_t
 		// A workaround for compiler from VS2015.
 		template<typename T>
 		static buffer_move_func_t
-		make_tempated_buffer_move()
+		make_templated_buffer_move()
 		{
 			return []( const void * src, void * dest ){
 				auto & v = impl::buf_access< std::shared_ptr< T > >( src );
