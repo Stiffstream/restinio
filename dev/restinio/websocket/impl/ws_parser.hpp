@@ -9,7 +9,7 @@
 #pragma once
 
 #include <restinio/exception.hpp>
-#include <restinio/websocket/ws_message.hpp>
+#include <restinio/websocket/message.hpp>
 
 #include <restinio/utils/impl/bitops.hpp>
 

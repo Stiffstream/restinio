@@ -15,7 +15,7 @@
 #include <fmt/format.h>
 
 #include <restinio/all.hpp>
-#include <restinio/websocket/ws_message.hpp>
+#include <restinio/websocket/message.hpp>
 #include <restinio/websocket/impl/ws_parser.hpp>
 #include <restinio/websocket/impl/utf8.hpp>
 
