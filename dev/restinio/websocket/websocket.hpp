@@ -99,11 +99,17 @@ class ws_t
 
 				bufs.emplace_back( std::move( payload ) );
 
-				m_ws_connection_handle->write_data( std::move( bufs ) );
+				// TODO: set flag.
+				const bool is_close_frame =
+					opcode_t::connection_close_frame == opcode;
+
+				m_ws_connection_handle->write_data(
+					std::move( bufs ),
+					is_close_frame );
 			}
 			else
 			{
-				throw exception_t{ "websocket is closed" };
+				throw exception_t{ "websocket is not available" };
 			}
 		}
 

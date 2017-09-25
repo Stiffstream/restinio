@@ -79,18 +79,6 @@ class ws_outgoing_data_t
 			}
 		}
 
-		bool
-		close_when_done() const
-		{
-			return m_close_when_done;
-		}
-
-		void
-		set_close_when_done()
-		{
-			m_close_when_done = true;
-		}
-
 	private:
 		//! Flag is set when user initiates close.
 		/*!
@@ -336,17 +324,32 @@ class ws_connection_t final
 
 		//! Write pieces of outgoing data.
 		virtual void
-		write_data( buffers_container_t bufs ) override
+		write_data(
+			buffers_container_t bufs,
+			bool is_close_frame ) override
 		{
 			//! Run write message on io_context loop if possible.
 			asio::dispatch(
 				get_executor(),
 				[ this,
 					actual_bufs = std::move( bufs ),
-					ctx = shared_from_this() ]() mutable {
+					ctx = shared_from_this(),
+					is_close_frame ]() mutable {
 						try
 						{
-							write_data_impl( std::move( actual_bufs ) );
+							if( write_state_t::write_enabled == m_write_state )
+								write_data_impl(
+									std::move( actual_bufs ),
+									is_close_frame );
+							else
+							{
+								m_logger.warn( [&]{
+									 return fmt::format(
+											"[ws_connection:{}] cannot write to websocket: "
+											"write operations disabled",
+											connection_id() );
+								} );
+							}
 						}
 						catch( const std::exception & ex )
 						{
@@ -587,9 +590,9 @@ class ws_connection_t final
 			}
 		}
 
-		//! Implementation of writing data performed on the asio io context.
+		//! Implementation of writing data performed on the asio::io_context.
 		void
-		write_data_impl( buffers_container_t bufs )
+		write_data_impl( buffers_container_t bufs, bool is_close_frame )
 		{
 			if( !m_socket.is_open() )
 			{
@@ -601,28 +604,18 @@ class ws_connection_t final
 				} );
 				return;
 			}
-			else if( m_awaiting_buffers.close_when_done() )
-			{
-				// User closed ws-connection before.
-
-				//TODO: it might be the case to leave only an assert here
-				// because there should be no way to init write
-				// after websocket_t object is closed.
-				// Depends on whether it is considered to be used in parallel
-				// wnen `close()` call and `message_send()` call
-				// can happen in parallel threads.
-
-				m_logger.warn( [&]{
-					return fmt::format(
-							"[ws_connection:{}] try to write response "
-							"after sebsocket was closed",
-							connection_id() );
-				} );
-				return;
-			}
 
 			// Push buffers to queue.
 			m_awaiting_buffers.append( std::move( bufs ) );
+
+			if( is_close_frame )
+			{
+				// No more writes.
+				m_write_state = write_state_t::write_disabled;
+
+				//TODO start waiting only close-frame.
+				start_waiting_close_frame_only();
+			}
 
 			init_write_if_necessary();
 		}
@@ -645,10 +638,12 @@ class ws_connection_t final
 
 					m_logger.trace( [&]{
 						return fmt::format(
-							"[ws_connection:{}] sending resp data, "
+							"[ws_connection:{}] sending data, "
 							"buf count: {}",
 							connection_id(),
 							bufs.size() ); } );
+
+					guard_write_operation();
 
 					// There is somethig to write.
 					asio::async_write(
@@ -675,14 +670,12 @@ class ws_connection_t final
 											} );
 									}
 							} ) );
-
-					//guard_write_operation();
 				}
-				else if ( m_awaiting_buffers.close_when_done() )
-				{
-					close_impl();
-					call_close_handler( "user initiated shutdown" );
-				}
+				// else if ( m_awaiting_buffers.close_when_done() )
+				// {
+				// 	close_impl();
+				// 	call_close_handler( "user initiated shutdown" );
+				// }
 			}
 		}
 
@@ -695,7 +688,7 @@ class ws_connection_t final
 			if( !ec )
 			{
 				// Release buffers.
-				m_resp_out_ctx.done( );
+				m_resp_out_ctx.done();
 
 				m_logger.trace( [&]{
 					return fmt::format(
@@ -724,17 +717,25 @@ class ws_connection_t final
 			}
 		}
 
+		//! Start waiting for close-frame.
+		void
+		start_waiting_close_frame_only()
+		{
+			m_read_state = read_state_t::read_only_close_frame;
+
+			// TODO: controll timeout.
+		}
+
 		//! Close WebSocket connection in a graceful manner.
 		void
 		graceful_close()
 		{
-			if( !m_awaiting_buffers.close_when_done() )
+			if( write_state_t::write_enabled == m_write_state )
 			{
-				m_awaiting_buffers.set_close_when_done();
-				init_write_if_necessary();
+				init_close_handshake( status_code_t::normal_closure );
+				start_waiting_close_frame_only();
 			}
 		}
-
 
 		//! An executor for callbacks on async operations.
 		inline strand_t &
@@ -905,9 +906,9 @@ class ws_connection_t final
 
 				// m_awaiting_buffers.set_close_when_done();
 				init_write_if_necessary();
- 			}
+			}
 
- 			m_state = state_t::closing;
+			m_write_state = write_disabled;
 		}
 
 		//! Connection.
@@ -940,13 +941,31 @@ class ws_connection_t final
 		//! Logger for operation
 		logger_t & m_logger;
 
-		enum class state_t
+		//! Websocket output states.
+		enum class write_state_t
 		{
-			working,
-			closing
+			//! Able to append outgoing data.
+			write_enabled,
+			//! No more outgoing data can be added (e.g. close-frame was sent).
+			write_disabled
 		};
 
-		state_t m_state = state_t::working;
+		//! A state of a websocket output.
+		write_state_t m_write_state = write_state_t::write_enabled;
+
+		//! Websocket input states.
+		enum class read_state_t
+		{
+			//! Reads any type of frame and serve it to user.
+			read_any_frame,
+			//! Reads only close frame: skip all frames until close-frame.
+			read_only_close_frame,
+			//! Do not read anything (before activation).
+			read_nothing
+		};
+
+		//! A state of a websocket input.
+		read_state_t m_read_state = read_state_t::read_nothing;
 };
 
 } /* namespace impl */

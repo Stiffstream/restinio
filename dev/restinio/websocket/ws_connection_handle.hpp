@@ -43,10 +43,6 @@ class ws_connection_base_t
 			return m_connection_id;
 		}
 
-		// //! Close connection.
-		// virtual void
-		// close() = 0;
-
 		//! Shutdown websocket.
 		virtual void
 		shutdown() = 0;
@@ -62,7 +58,8 @@ class ws_connection_base_t
 		//! Write pieces of outgoing data.
 		virtual void
 		write_data(
-			buffers_container_t bufs ) = 0;
+			buffers_container_t bufs,
+			bool is_close_frame ) = 0;
 
 	private:
 		//! Id of a connection.
