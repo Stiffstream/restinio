@@ -395,7 +395,7 @@ TEST_CASE( "Request/Response close without masking key" , "[ws_connection]" )
 					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
-		std::array< char, 1024 > data;
+		std::array< std::uint8_t, 1024 > data;
 
 		std::size_t len{ 0 };
 		REQUIRE_NOTHROW(
@@ -412,10 +412,10 @@ TEST_CASE( "Request/Response close without masking key" , "[ws_connection]" )
 		REQUIRE( 4 == len );
 
 		// TODO: какие должны быть байты?
-		REQUIRE( 0x81 == data[ 0 ] );
+		REQUIRE( 0x88 == data[ 0 ] );
 		REQUIRE( 0x02 == data[ 1 ] );
-		REQUIRE( (1007 >> 8) == data[ 2 ] );
-		REQUIRE( (1007 & 0xFF) == data[ 3 ] );
+		REQUIRE( (1002 >> 8) == data[ 2 ] );
+		REQUIRE( (1002 & 0xFF) == data[ 3 ] );
 
 		len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
 		REQUIRE( ec );
@@ -442,7 +442,7 @@ TEST_CASE( "Request/Response close with non utf-8 payload" , "[ws_connection]" )
 					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
-		std::array< char, 1024 > data;
+		std::array< unsigned char, 1024 > data;
 
 		std::size_t len{ 0 };
 		REQUIRE_NOTHROW(
@@ -455,6 +455,20 @@ TEST_CASE( "Request/Response close with non utf-8 payload" , "[ws_connection]" )
 
 		// Validation would fail, so no data in return.
 		asio::error_code ec;
+		len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+		REQUIRE( 4 == len );
+
+		// TODO: какие должны быть байты?
+		REQUIRE( 0x88 == (unsigned)data[ 0 ] );
+		REQUIRE( 0x02 == data[ 1 ] );
+		REQUIRE( (1007 >> 8) == data[ 2 ] );
+		REQUIRE( (1007 & 0xFF) == data[ 3 ] );
+
+
+		REQUIRE_NOTHROW(
+				asio::write( socket, asio::buffer( data.data(), len ) )
+			);
+
 		len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
 		REQUIRE( 0 == len );
 		REQUIRE( ec );
