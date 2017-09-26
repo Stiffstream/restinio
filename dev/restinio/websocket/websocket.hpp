@@ -91,7 +91,7 @@ class ws_t
 				bufs.reserve( 2 );
 
 				// Create header serialize it and append to bufs .
-				impl::ws_message_details_t details{
+				impl::message_details_t details{
 					final, opcode, asio::buffer_size( payload.buf() ) };
 
 				bufs.emplace_back(
@@ -134,15 +134,13 @@ using ws_handle_t = std::shared_ptr< ws_t >;
 //
 
 template <
-		typename TRAITS,
-		typename WS_MESSAGE_HANDLER,
-		typename WS_CLOSE_HANDLER >
+		typename Traits,
+		typename WS_Message_Handler >
 ws_handle_t
 upgrade(
 	request_t & req,
 	http_header_fields_t upgrade_response_header_fields,
-	WS_MESSAGE_HANDLER ws_message_handler,
-	WS_CLOSE_HANDLER ws_close_handler )
+	WS_Message_Handler ws_message_handler )
 {
 	// TODO: check if upgrade request.
 
@@ -159,7 +157,7 @@ upgrade(
 		upgrade_response_header_fields.set_field( http_field::upgrade, "websocket" );
 	}
 
-	using connection_t = restinio::impl::connection_t< TRAITS >;
+	using connection_t = restinio::impl::connection_t< Traits >;
 	auto conn_ptr = std::move( restinio::impl::access_req_connection( req ) );
 	if( !conn_ptr )
 	{
@@ -167,7 +165,7 @@ upgrade(
 	}
 	auto & con = dynamic_cast< connection_t & >( *conn_ptr );
 
-	using ws_connection_t = restinio::websocket::impl::ws_connection_t< TRAITS, WS_MESSAGE_HANDLER, WS_CLOSE_HANDLER >;
+	using ws_connection_t = websocket::impl::ws_connection_t< Traits, WS_Message_Handler >;
 
 	auto upgrade_internals = con.move_upgrade_internals();
 	auto ws_connection =
@@ -177,8 +175,7 @@ upgrade(
 			std::move( upgrade_internals.m_strand ),
 			std::move( upgrade_internals.m_timer_guard ),
 			con.get_settings(),
-			std::move( ws_message_handler ),
-			std::move( ws_close_handler ) );
+			std::move( ws_message_handler ) );
 
 	buffers_container_t upgrade_response_bufs;
 	{
@@ -194,7 +191,7 @@ upgrade(
 				upgrade_response_header,
 				content_length_flag ) );
 	}
-	ws_connection->write_data( std::move( upgrade_response_bufs ) );
+	ws_connection->write_data( std::move( upgrade_response_bufs ), false );
 
 	auto result = std::make_shared< ws_t >( ws_connection );
 
@@ -212,15 +209,13 @@ upgrade(
 //
 
 template <
-		typename TRAITS,
-		typename WS_MESSAGE_HANDLER,
-		typename WS_CLOSE_HANDLER >
+		typename Traits,
+		typename WS_Message_Handler >
 auto
 upgrade(
 	request_t & req,
 	std::string sec_websocket_accept_field_value,
-	WS_MESSAGE_HANDLER ws_message_handler,
-	WS_CLOSE_HANDLER ws_close_handler )
+	WS_Message_Handler ws_message_handler )
 {
 	http_header_fields_t upgrade_response_header_fields;
 	upgrade_response_header_fields.set_field(
@@ -228,11 +223,10 @@ upgrade(
 		std::move( sec_websocket_accept_field_value ) );
 
 	return
-		upgrade< TRAITS, WS_MESSAGE_HANDLER, WS_CLOSE_HANDLER >(
+		upgrade< Traits, WS_Message_Handler >(
 			req,
 			std::move( upgrade_response_header_fields ),
-			std::move( ws_message_handler ),
-			std::move( ws_close_handler ) );
+			std::move( ws_message_handler ) );
 }
 
 //
@@ -240,16 +234,14 @@ upgrade(
 //
 
 template <
-		typename TRAITS,
-		typename WS_MESSAGE_HANDLER,
-		typename WS_CLOSE_HANDLER >
+		typename Traits,
+		typename WS_Message_Handler >
 auto
 upgrade(
 	request_t & req,
 	std::string sec_websocket_accept_field_value,
 	std::string sec_websocket_protocol_field_value,
-	WS_MESSAGE_HANDLER ws_message_handler,
-	WS_CLOSE_HANDLER ws_close_handler )
+	WS_Message_Handler ws_message_handler )
 {
 	http_header_fields_t upgrade_response_header_fields;
 	upgrade_response_header_fields.set_field(
@@ -261,11 +253,10 @@ upgrade(
 		std::move( sec_websocket_protocol_field_value ) );
 
 	return
-		upgrade< TRAITS, WS_MESSAGE_HANDLER, WS_CLOSE_HANDLER >(
+		upgrade< Traits, WS_Message_Handler >(
 			req,
 			std::move( upgrade_response_header_fields ),
-			std::move( ws_message_handler ),
-			std::move( ws_close_handler ) );
+			std::move( ws_message_handler ) );
 }
 
 //
@@ -273,14 +264,12 @@ upgrade(
 //
 
 template <
-		typename TRAITS,
-		typename WS_MESSAGE_HANDLER,
-		typename WS_CLOSE_HANDLER >
+		typename Traits,
+		typename WS_Message_Handler >
 auto
 upgrade(
 	request_t & req,
-	WS_MESSAGE_HANDLER ws_message_handler,
-	WS_CLOSE_HANDLER ws_close_handler )
+	WS_Message_Handler ws_message_handler )
 {
 	auto ws_key = req.header().get_field( restinio::http_field::sec_websocket_key );
 
@@ -297,11 +286,10 @@ upgrade(
 		std::move( sec_websocket_accept_field_value ) );
 
 	return
-		upgrade< TRAITS, WS_MESSAGE_HANDLER, WS_CLOSE_HANDLER >(
+		upgrade< Traits, WS_Message_Handler >(
 			req,
 			std::move( upgrade_response_header_fields ),
-			std::move( ws_message_handler ),
-			std::move( ws_close_handler ) );
+			std::move( ws_message_handler ) );
 }
 
 } /* namespace websocket */

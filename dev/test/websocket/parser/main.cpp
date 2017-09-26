@@ -41,7 +41,7 @@ TEST_CASE( "Validate parser implementation details" , "[websocket][parser][impl]
 
 TEST_CASE( "Validate websocket message details constructing" , "[websocket][parser][message]" )
 {
-	ws_message_details_t m0;
+	message_details_t m0;
 	REQUIRE( m0.m_final_flag == true );
 	REQUIRE( m0.m_rsv1_flag == false );
 	REQUIRE( m0.m_rsv2_flag == false );
@@ -52,7 +52,7 @@ TEST_CASE( "Validate websocket message details constructing" , "[websocket][pars
 	REQUIRE( m0.m_ext_payload_len == 0 );
 	REQUIRE( m0.m_masking_key == 0 );
 
-	ws_message_details_t m1{false, opcode_t::text_frame, 125};
+	message_details_t m1{false, opcode_t::text_frame, 125};
 	REQUIRE( m1.m_final_flag == false );
 	REQUIRE( m1.m_rsv1_flag == false );
 	REQUIRE( m1.m_rsv2_flag == false );
@@ -63,7 +63,7 @@ TEST_CASE( "Validate websocket message details constructing" , "[websocket][pars
 	REQUIRE( m1.m_ext_payload_len == 0 );
 	REQUIRE( m1.m_masking_key == 0 );
 
-	ws_message_details_t m2{true, opcode_t::binary_frame, 126};
+	message_details_t m2{true, opcode_t::binary_frame, 126};
 	REQUIRE( m2.m_final_flag == true );
 	REQUIRE( m2.m_rsv1_flag == false );
 	REQUIRE( m2.m_rsv2_flag == false );
@@ -74,7 +74,7 @@ TEST_CASE( "Validate websocket message details constructing" , "[websocket][pars
 	REQUIRE( m2.m_ext_payload_len == 126 );
 	REQUIRE( m2.m_masking_key == 0 );
 
-	ws_message_details_t m3{true, opcode_t::binary_frame, 65536};
+	message_details_t m3{true, opcode_t::binary_frame, 65536};
 	REQUIRE( m3.m_final_flag == true );
 	REQUIRE( m3.m_rsv1_flag == false );
 	REQUIRE( m3.m_rsv2_flag == false );
@@ -281,7 +281,7 @@ TEST_CASE( "Parse simple message (chunked)" , "[websocket][parser][read]" )
 TEST_CASE( "Write simple message" , "[websocket][parser][write]" )
 {
 	{
-		ws_message_details_t m;
+		message_details_t m;
 
 		raw_data_t bin_data = write_message_details( m );
 		raw_data_t etalon{ to_char_each({0x80, 0x00}) };
@@ -290,7 +290,7 @@ TEST_CASE( "Write simple message" , "[websocket][parser][write]" )
 	}
 	{
 		std::string payload = "Hello";
-		ws_message_details_t m{true, opcode_t::text_frame, payload.size()};
+		message_details_t m{true, opcode_t::text_frame, payload.size()};
 
 		raw_data_t bin_data = write_message_details( m );
 		bin_data.append( payload );
@@ -302,7 +302,7 @@ TEST_CASE( "Write simple message" , "[websocket][parser][write]" )
 	}
 	{
 		std::string payload = "Hello";
-		ws_message_details_t m{true, opcode_t::text_frame, payload.size()};
+		message_details_t m{true, opcode_t::text_frame, payload.size()};
 
 		std::uint32_t masking_key = 0x37FA213D;
 		m.set_masking_key(masking_key);

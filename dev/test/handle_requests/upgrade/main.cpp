@@ -43,11 +43,10 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 									rws::upgrade< traits_t >(
 										*req,
 										[]( rws::ws_handle_t,
-											rws::message_handle_t ){},
-										[]( std::string ){} );
+											rws::message_handle_t ){} );
 
 								// TODO: write close-message.
-								ws->shutdown();
+								ws->kill();
 								return restinio::request_accepted();
 							}
 							catch( const std::exception & ex )

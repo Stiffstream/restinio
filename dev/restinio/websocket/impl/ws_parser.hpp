@@ -21,11 +21,11 @@
 namespace restinio
 {
 
-using byte_t = char;
-using raw_data_t = std::string;
-
 namespace websocket
 {
+
+using byte_t = char;
+using raw_data_t = std::string;
 
 namespace impl
 {
@@ -38,7 +38,7 @@ constexpr size_t WEBSOCKET_SHORT_EXT_LEN_CODE = 126;
 constexpr size_t WEBSOCKET_LONG_EXT_LEN_CODE = 127;
 constexpr size_t WEBSOCKET_MASKING_KEY_SIZE = 4;
 
-constexpr byte_t BIT_FLAG_7 = 0x80;
+constexpr byte_t BIT_FLAG_0 = 0x80;
 constexpr byte_t BIT_FLAG_6 = 0x40;
 constexpr byte_t BIT_FLAG_5 = 0x20;
 constexpr byte_t BIT_FLAG_4 = 0x10;
@@ -46,42 +46,41 @@ constexpr byte_t OPCODE_MASK = 0x0F;
 constexpr byte_t PAYLOAD_LEN_MASK = 0x7F;
 
 //
-// ws_message_details_t
+// message_details_t
 //
 
-class ws_message_details_t
+//! TODO!
+class message_details_t
 {
-
 	public:
+		message_details_t()
+		{}
 
-		ws_message_details_t()
-		{
-		}
-
-		ws_message_details_t( bool final, opcode_t opcode, size_t payload_len )
-		:	m_final_flag{ final }
-		,	m_opcode{ opcode }
+		message_details_t( bool final, opcode_t opcode, size_t payload_len )
+			:	m_final_flag{ final }
+			,	m_opcode{ opcode }
 		{
 			init_payload_len( payload_len );
 		}
 
-		ws_message_details_t(
-			bool final, opcode_t opcode, size_t payload_len, std::uint32_t masking_key )
-		:	m_final_flag{ final }
-		,	m_opcode{ opcode }
-		,	m_mask_flag( true )
-		,	m_masking_key( masking_key )
+		message_details_t(
+			bool final,
+			opcode_t opcode,
+			size_t payload_len,
+			std::uint32_t masking_key )
+			:	m_final_flag{ final }
+			,	m_opcode{ opcode }
+			,	m_mask_flag( true )
+			,	m_masking_key( masking_key )
 		{
 			init_payload_len( payload_len );
 		}
 
-		ws_message_details_t( const message_t & ws_message )
-		:	ws_message_details_t(
-				ws_message.is_final(),
-				ws_message.opcode(),
-				ws_message.payload().size() )
-		{
-		}
+		message_details_t( const message_details_t & ) = default;
+		// const message_details_t & operator= ( const message_details_t & ) = default;
+
+		// message_details_t( message_details_t && ) = delete;
+		// message_details_t & operator= ( message_details_t && ) = delete;
 
 		std::uint64_t
 		payload_len() const
@@ -97,12 +96,7 @@ class ws_message_details_t
 			m_mask_flag = true;
 		}
 
-		message_t
-		transform_to_message() const
-		{
-			return message_t{
-				m_final_flag, m_opcode };
-		}
+		//
 
 		bool m_final_flag = true;
 
@@ -115,19 +109,16 @@ class ws_message_details_t
 		bool m_mask_flag = false;
 
 		std::uint8_t m_payload_len = 0;
-
 		std::uint64_t m_ext_payload_len = 0;
-
 		std::uint32_t m_masking_key = 0;
 
 	private:
-
 		void
 		init_payload_len( size_t payload_len )
 		{
 			if( payload_len > WEBSOCKET_MAX_PAYLOAD_SIZE_WITHOUT_EXT )
 			{
-				// if payload greater than 2bytes-number
+				// if payload greater than 2bytes-number.
 				m_payload_len = payload_len > 0xFFFF ?
 					WEBSOCKET_LONG_EXT_LEN_CODE:
 					WEBSOCKET_SHORT_EXT_LEN_CODE;
@@ -136,17 +127,20 @@ class ws_message_details_t
 			}
 			else
 			{
-				m_payload_len = static_cast<std::uint8_t>(payload_len);
+				m_payload_len = static_cast< std::uint8_t >( payload_len );
 			}
 		}
-
 };
+
+//
+// expected_data_t
+//
 
 //! Data with expected size.
 struct expected_data_t
 {
 	expected_data_t( size_t expected_size )
-		: m_expected_size{ expected_size }
+		:	m_expected_size{ expected_size }
 	{
 		m_loaded_data.reserve( m_expected_size );
 	}
@@ -214,10 +208,10 @@ write_number_to_big_endian_bytes( std::uint64_t& number, raw_data_t & data )
 // ws_parser_t
 //
 
+//! TODO!
 class ws_parser_t
 {
 	public:
-
 		size_t
 		parser_execute( const char * data, size_t size )
 		{
@@ -246,21 +240,20 @@ class ws_parser_t
 		reset()
 		{
 			m_current_state = state_t::waiting_for_first_2_bytes;
-			m_current_msg = ws_message_details_t();
+			m_current_msg = message_details_t();
 			m_expected_data.reset( WEBSOCKET_FIRST_TWO_BYTES_SIZE );
 		}
 
-		const ws_message_details_t &
+		const message_details_t &
 		current_message() const
 		{
 			return m_current_msg;
 		}
 
 	private:
-
 		expected_data_t m_expected_data{ WEBSOCKET_FIRST_TWO_BYTES_SIZE };
 
-		ws_message_details_t m_current_msg;
+		message_details_t m_current_msg;
 
 		enum class state_t
 		{
@@ -437,13 +430,32 @@ mask_unmask_payload( std::uint32_t masking_key, raw_data_t & payload )
 
 inline raw_data_t
 write_message_details(
-	const ws_message_details_t & message )
+	const message_details_t & message )
 {
+     //  0                   1                   2                   3
+     //  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+     // +-+-+-+-+-------+-+-------------+-------------------------------+
+     // |F|R|R|R| opcode|M| Payload len |    Extended payload length    |
+     // |I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
+     // |N|V|V|V|       |S|             |   (if payload len==126/127)   |
+     // | |1|2|3|       |K|             |                               |
+     // +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
+     // |     Extended payload length continued, if payload len == 127  |
+     // + - - - - - - - - - - - - - - - +-------------------------------+
+     // |                               |Masking-key, if MASK set to 1  |
+     // +-------------------------------+-------------------------------+
+     // | Masking-key (continued)       |          Payload Data         |
+     // +-------------------------------- - - - - - - - - - - - - - - - +
+     // :                     Payload Data continued ...                :
+     // + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
+     // |                     Payload Data continued ...                |
+     // +---------------------------------------------------------------+
+
 	raw_data_t result;
 
 	byte_t byte = 0x00;
 
-	if( message.m_final_flag ) byte |= BIT_FLAG_7;
+	if( message.m_final_flag ) byte |= BIT_FLAG_0;
 	if( message.m_rsv1_flag ) byte |= BIT_FLAG_6;
 	if( message.m_rsv2_flag ) byte |= BIT_FLAG_5;
 	if( message.m_rsv3_flag ) byte |= BIT_FLAG_4;
@@ -514,6 +526,23 @@ status_code_to_bin( status_code_t code )
 	result.push_back( n_bits_from< std::uint16_t, 0 >(
 		static_cast<std::uint16_t>(code) ) );
 	return result;
+}
+
+inline status_code_t
+status_code_from_bin( raw_data_t data )
+{
+	using namespace ::restinio::utils::impl::bitops;
+
+	std::uint16_t result{ 0 };
+	if( 2 <= data.size() )
+	{
+		result |= data[ 0 ];
+		result <<= 8;
+		result |= data[ 1 ];
+	}
+
+	// TODO: make it ok.
+	return (status_code_t)result;
 }
 
 } /* namespace impl */

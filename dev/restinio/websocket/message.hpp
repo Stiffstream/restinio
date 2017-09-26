@@ -42,6 +42,8 @@ enum class status_code_t : std::uint16_t
 	going_away = 1001,
 	protocol_error = 1002,
 	cant_accept_data = 1003,
+	no_status_provided = 1005,
+	connection_lost = 1006,
 	invalid_message_data = 1007,
 	policy_violation = 1008,
 	too_big_message = 1009,
