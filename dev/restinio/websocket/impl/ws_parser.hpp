@@ -38,7 +38,7 @@ constexpr size_t WEBSOCKET_SHORT_EXT_LEN_CODE = 126;
 constexpr size_t WEBSOCKET_LONG_EXT_LEN_CODE = 127;
 constexpr size_t WEBSOCKET_MASKING_KEY_SIZE = 4;
 
-constexpr byte_t BIT_FLAG_0 = 0x80;
+constexpr byte_t BIT_FLAG_7 = 0x80;
 constexpr byte_t BIT_FLAG_6 = 0x40;
 constexpr byte_t BIT_FLAG_5 = 0x20;
 constexpr byte_t BIT_FLAG_4 = 0x10;
@@ -432,30 +432,11 @@ inline raw_data_t
 write_message_details(
 	const message_details_t & message )
 {
-     //  0                   1                   2                   3
-     //  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-     // +-+-+-+-+-------+-+-------------+-------------------------------+
-     // |F|R|R|R| opcode|M| Payload len |    Extended payload length    |
-     // |I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
-     // |N|V|V|V|       |S|             |   (if payload len==126/127)   |
-     // | |1|2|3|       |K|             |                               |
-     // +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
-     // |     Extended payload length continued, if payload len == 127  |
-     // + - - - - - - - - - - - - - - - +-------------------------------+
-     // |                               |Masking-key, if MASK set to 1  |
-     // +-------------------------------+-------------------------------+
-     // | Masking-key (continued)       |          Payload Data         |
-     // +-------------------------------- - - - - - - - - - - - - - - - +
-     // :                     Payload Data continued ...                :
-     // + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
-     // |                     Payload Data continued ...                |
-     // +---------------------------------------------------------------+
-
 	raw_data_t result;
 
 	byte_t byte = 0x00;
 
-	if( message.m_final_flag ) byte |= BIT_FLAG_0;
+	if( message.m_final_flag ) byte |= BIT_FLAG_7;
 	if( message.m_rsv1_flag ) byte |= BIT_FLAG_6;
 	if( message.m_rsv2_flag ) byte |= BIT_FLAG_5;
 	if( message.m_rsv3_flag ) byte |= BIT_FLAG_4;
