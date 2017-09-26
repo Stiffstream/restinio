@@ -273,11 +273,31 @@ class a_server_t
 		void
 		evt_ws_message( const msg_ws_message_t & msg )
 		{
-			auto req = *(msg.m_msg);
+			if( m_ws )
+			{
+				auto & req = *(msg.m_msg);
 
-			auto resp = req;
-
-			m_ws->send_message( resp );
+				if( rws::opcode_t::text_frame == req.opcode() ||
+					rws::opcode_t::binary_frame == req.opcode() ||
+					rws::opcode_t::continuation_frame == req.opcode() )
+				{
+					auto resp = req;
+					m_ws->send_message( resp );
+				}
+				// else if( ping_frame )
+				// {
+				// 	// TODO
+				// }
+				// else if( pong_frame )
+				// {
+				// 	// TODO
+				// }
+				else if( rws::opcode_t::connection_close_frame == req.opcode() )
+				{
+					// TODO: print status code.
+					m_ws.reset();
+				}
+			}
 		}
 
 		http_server_t m_http_server;
@@ -350,7 +370,7 @@ TEST_CASE( "Request/Response echo" , "[ws_connection]" )
 					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
-		std::array< char, 1024 > data;
+		std::array< std::uint8_t, 1024 > data;
 
 		std::size_t len{ 0 };
 		REQUIRE_NOTHROW(
@@ -365,7 +385,7 @@ TEST_CASE( "Request/Response echo" , "[ws_connection]" )
 				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
 			);
 
-		auto response_bin = std::string( data.data(), len );
+		// auto response_bin = std::string( data.data(), len );
 		// TODO: check response
 		// auto request_payload = ctx.m_request.payload();
 		// rws::impl::mask_unmask_payload(
@@ -374,6 +394,27 @@ TEST_CASE( "Request/Response echo" , "[ws_connection]" )
 		// REQUIRE( request_payload == ctx.m_response.payload() );
 		// REQUIRE( ctx.m_response.header().m_masking_key == 0 );
 
+		rws::raw_data_t close_frame{ to_char_each(
+			{0x88, 0x02, 0x03, 0xe8 } ) };
+
+		REQUIRE_NOTHROW(
+				asio::write(
+					socket, asio::buffer( close_frame.data(), close_frame.size() ) )
+			);
+
+		REQUIRE_NOTHROW(
+				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+			);
+		REQUIRE( 4 == len );
+		REQUIRE( 0x88 == data[ 0 ] );
+		REQUIRE( 0x02 == data[ 1 ] );
+		REQUIRE( 0x03 == data[ 2 ] );
+		REQUIRE( 0xe8 == (unsigned)data[ 3 ] );
+
+		asio::error_code ec;
+		len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+		REQUIRE( ec );
+		REQUIRE( asio::error::eof == ec.value() );
 	} );
 
 	soenv.stop();
@@ -407,16 +448,16 @@ TEST_CASE( "Request/Response close without masking key" , "[ws_connection]" )
 			);
 
 		// Validation would fail, so no data in return.
-		asio::error_code ec;
-		len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+		REQUIRE_NOTHROW(
+				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+			);
 		REQUIRE( 4 == len );
-
-		// TODO: какие должны быть байты?
 		REQUIRE( 0x88 == data[ 0 ] );
 		REQUIRE( 0x02 == data[ 1 ] );
 		REQUIRE( (1002 >> 8) == data[ 2 ] );
 		REQUIRE( (1002 & 0xFF) == data[ 3 ] );
 
+		asio::error_code ec;
 		len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
 		REQUIRE( ec );
 		REQUIRE( asio::error::eof == ec.value() );
@@ -442,7 +483,7 @@ TEST_CASE( "Request/Response close with non utf-8 payload" , "[ws_connection]" )
 					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
-		std::array< unsigned char, 1024 > data;
+		std::array< std::uint8_t, 1024 > data;
 
 		std::size_t len{ 0 };
 		REQUIRE_NOTHROW(
@@ -454,8 +495,9 @@ TEST_CASE( "Request/Response close with non utf-8 payload" , "[ws_connection]" )
 			);
 
 		// Validation would fail, so no data in return.
-		asio::error_code ec;
-		len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+		REQUIRE_NOTHROW(
+				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+			);
 		REQUIRE( 4 == len );
 
 		// TODO: какие должны быть байты?
@@ -469,9 +511,11 @@ TEST_CASE( "Request/Response close with non utf-8 payload" , "[ws_connection]" )
 				asio::write( socket, asio::buffer( data.data(), len ) )
 			);
 
+		asio::error_code ec;
 		len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
 		REQUIRE( 0 == len );
 		REQUIRE( ec );
+		REQUIRE( "" == ec.message() );
 		REQUIRE( asio::error::eof == ec.value() );
 	} );
 

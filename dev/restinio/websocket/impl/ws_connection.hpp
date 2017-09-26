@@ -540,6 +540,13 @@ class ws_connection_t final
 		{
 			if( !ec )
 			{
+				m_logger.trace( [&]{
+					return fmt::format(
+							"[ws_connection:{}] received {} bytes",
+							this->connection_id(),
+							length );
+				} );
+
 				m_input.m_buf.obtained_bytes( length );
 				consume_header_from_buffer( m_input.m_buf.bytes(), length );
 			}
@@ -563,6 +570,12 @@ class ws_connection_t final
 
 				if( !validate_current_ws_message_header( md ) )
 				{
+					m_logger.error( [&]{
+						return fmt::format(
+								"[ws_connection:{}] invalid header",
+								connection_id() );
+					} );
+
 					if( read_state_t::read_any_frame == m_read_state )
 					{
 						m_close_frame_to_peer.run_if_first(
@@ -576,6 +589,7 @@ class ws_connection_t final
 							[&]{
 								call_close_handler( status_code_t::protocol_error );
 							} );
+
 					}
 					else if( read_state_t::read_only_close_frame == m_read_state )
 					{
@@ -680,6 +694,13 @@ class ws_connection_t final
 		{
 			if( !ec )
 			{
+				m_logger.trace( [&]{
+					return fmt::format(
+							"[ws_connection:{}] received {} bytes",
+							this->connection_id(),
+							length );
+				} );
+
 				if( length < length_remaining )
 				{
 					//Here: not all payload is obtained,
@@ -734,6 +755,12 @@ class ws_connection_t final
 			auto & md = m_input.m_parser.current_message();
 			if( !validate_current_ws_message_body( md, m_input.m_payload ) )
 			{
+				m_logger.error( [&]{
+					return fmt::format(
+							"[ws_connection:{}] invalid paload",
+							connection_id() );
+				} );
+
 				if( read_state_t::read_any_frame == m_read_state )
 				{
 					m_close_frame_to_peer.run_if_first(
