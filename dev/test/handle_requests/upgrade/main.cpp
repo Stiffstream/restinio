@@ -42,6 +42,7 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 								auto ws =
 									rws::upgrade< traits_t >(
 										*req,
+										rws::activation_t::immediate,
 										[]( rws::ws_handle_t,
 											rws::message_handle_t ){} );
 

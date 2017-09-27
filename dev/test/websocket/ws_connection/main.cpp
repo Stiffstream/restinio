@@ -261,10 +261,7 @@ class a_server_t
 			m_ws =
 				rws::upgrade< traits_t >(
 					*req,
-					restinio::utils::base64::encode(
-						std::string{
-							digest_to_char_array(digest).data(), 20
-						} ),
+					rws::activation_t::immediate,
 					[mbox = so_direct_mbox()]( auto /* ws_handle*/, rws::message_handle_t m ){
 						so_5::send< msg_ws_message_t >( mbox, m );
 					} );

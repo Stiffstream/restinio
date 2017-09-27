@@ -25,6 +25,11 @@ namespace websocket
 const std::string websocket_accept_field_suffix{
 	"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"};
 
+class ws_t;
+
+void
+activate( ws_t & ws );
+
 //
 // ws_t
 //
@@ -33,6 +38,8 @@ const std::string websocket_accept_field_suffix{
 class ws_t
 	:	public std::enable_shared_from_this< ws_t >
 {
+	friend void activate( ws_t & ws );
+
 	public:
 		ws_t( const ws_t & ) = delete;
 		ws_t( ws_t && ) = delete;
@@ -130,19 +137,49 @@ class ws_t
 using ws_handle_t = std::shared_ptr< ws_t >;
 
 //
-// upgrade
+// activate()
 //
 
+//! Activate websocket: start receiving messages.
+void
+activate( ws_t & ws )
+{
+	ws.m_ws_connection_handle->init_read( ws.shared_from_this() );
+}
+
+//
+// activation_t
+//
+
+//! Flags for websocket activation policies.
+enum class activation_t
+{
+	//! Activate immediately after upgrade operation.
+	immediate,
+	//! User will initiate activation later.
+	delayed
+};
+
+//
+// upgrade()
+//
+
+//! Upgrade http-connection of a current request to a websocket connection.
 template <
 		typename Traits,
 		typename WS_Message_Handler >
 ws_handle_t
 upgrade(
+	//! Upgrade request.
 	request_t & req,
+	//! Activation policy.
+	activation_t activation_flag,
+	//! Response header fields.
 	http_header_fields_t upgrade_response_header_fields,
+	//! Message handler.
 	WS_Message_Handler ws_message_handler )
 {
-	// TODO: check if upgrade request.
+	// TODO: check if upgrade request?
 
 	//! Check if mandatory field is available.
 	if( !upgrade_response_header_fields.has_field( http_field::sec_websocket_accept ) )
@@ -193,12 +230,12 @@ upgrade(
 	}
 	ws_connection->write_data( std::move( upgrade_response_bufs ), false );
 
-	auto result = std::make_shared< ws_t >( ws_connection );
+	auto result = std::make_shared< ws_t >( std::move( ws_connection ) );
 
-	// Now we a ready to receive messages.
-	ws_connection->init_read(
-		// Makes a weak handle, and stores it in ws_connection.
-		result );
+	if( activation_t::immediate == activation_flag )
+	{
+		activate( *result );
+	}
 
 	// Returns strong handle on websocket, thus giving an ownership.
 	return result;
@@ -214,6 +251,7 @@ template <
 auto
 upgrade(
 	request_t & req,
+	activation_t activation_flag,
 	std::string sec_websocket_accept_field_value,
 	WS_Message_Handler ws_message_handler )
 {
@@ -225,6 +263,7 @@ upgrade(
 	return
 		upgrade< Traits, WS_Message_Handler >(
 			req,
+			activation_flag,
 			std::move( upgrade_response_header_fields ),
 			std::move( ws_message_handler ) );
 }
@@ -239,6 +278,7 @@ template <
 auto
 upgrade(
 	request_t & req,
+	activation_t activation_flag,
 	std::string sec_websocket_accept_field_value,
 	std::string sec_websocket_protocol_field_value,
 	WS_Message_Handler ws_message_handler )
@@ -255,6 +295,7 @@ upgrade(
 	return
 		upgrade< Traits, WS_Message_Handler >(
 			req,
+			activation_flag,
 			std::move( upgrade_response_header_fields ),
 			std::move( ws_message_handler ) );
 }
@@ -269,6 +310,7 @@ template <
 auto
 upgrade(
 	request_t & req,
+	activation_t activation_flag,
 	WS_Message_Handler ws_message_handler )
 {
 	auto ws_key = req.header().get_field( restinio::http_field::sec_websocket_key );
@@ -288,6 +330,7 @@ upgrade(
 	return
 		upgrade< Traits, WS_Message_Handler >(
 			req,
+			activation_flag,
 			std::move( upgrade_response_header_fields ),
 			std::move( ws_message_handler ) );
 }
