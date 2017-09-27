@@ -774,7 +774,8 @@ class ws_connection_t final
 							call_close_handler( status_code_t::invalid_message_data );
 						} );
 				}
-				else if( read_state_t::read_only_close_frame == m_read_state )
+
+				if( read_state_t::read_only_close_frame == m_read_state )
 				{
 					// Wait for next frame.
 					start_read_header();

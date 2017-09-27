@@ -517,9 +517,9 @@ status_code_from_bin( raw_data_t data )
 	std::uint16_t result{ 0 };
 	if( 2 <= data.size() )
 	{
-		result |= data[ 0 ];
+		result |= static_cast< std::uint8_t >( data[ 0 ] );
 		result <<= 8;
-		result |= data[ 1 ];
+		result |= static_cast< std::uint8_t >( data[ 1 ] );
 	}
 
 	// TODO: make it ok.

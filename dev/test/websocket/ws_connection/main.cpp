@@ -395,7 +395,7 @@ TEST_CASE( "Request/Response echo" , "[ws_connection]" )
 		// REQUIRE( ctx.m_response.header().m_masking_key == 0 );
 
 		rws::raw_data_t close_frame{ to_char_each(
-			{0x88, 0x02, 0x03, 0xe8 } ) };
+			{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xe8 } ) };
 
 		REQUIRE_NOTHROW(
 				asio::write(
@@ -409,7 +409,7 @@ TEST_CASE( "Request/Response echo" , "[ws_connection]" )
 		REQUIRE( 0x88 == data[ 0 ] );
 		REQUIRE( 0x02 == data[ 1 ] );
 		REQUIRE( 0x03 == data[ 2 ] );
-		REQUIRE( 0xe8 == (unsigned)data[ 3 ] );
+		REQUIRE( 0xe8 == data[ 3 ] );
 
 		asio::error_code ec;
 		len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
@@ -506,16 +506,17 @@ TEST_CASE( "Request/Response close with non utf-8 payload" , "[ws_connection]" )
 		REQUIRE( (1007 >> 8) == data[ 2 ] );
 		REQUIRE( (1007 & 0xFF) == data[ 3 ] );
 
+		rws::raw_data_t close_frame{ to_char_each(
+			{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xef } ) };
 
 		REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( data.data(), len ) )
+				asio::write( socket, asio::buffer( close_frame.data(), close_frame.size() ) )
 			);
 
 		asio::error_code ec;
 		len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
 		REQUIRE( 0 == len );
 		REQUIRE( ec );
-		REQUIRE( "" == ec.message() );
 		REQUIRE( asio::error::eof == ec.value() );
 	} );
 
