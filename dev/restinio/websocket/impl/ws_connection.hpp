@@ -28,9 +28,12 @@ namespace websocket
 namespace impl
 {
 
-using ws_weak_handle_t = std::weak_ptr< ws_t >;
-
-constexpr size_t WEBSOCKET_HEADER_MAX_SIZE = 14;
+//! Max possible size of websocket frame header (a part before payload).
+constexpr size_t
+websocket_header_max_size()
+{
+	return 14;
+}
 
 //
 // ws_outgoing_data_t
@@ -157,7 +160,6 @@ validate_current_ws_message_body( const message_details_t & md, std::string & pa
 	return true;
 }
 
-
 //
 // ws_connection_t
 //
@@ -167,12 +169,12 @@ validate_current_ws_message_body( const message_details_t & md, std::string & pa
 */
 template <
 		typename Traits,
-		typename WS_MESSAGE_HANDLER >
+		typename WS_Message_Handler >
 class ws_connection_t final
 	:	public ws_connection_base_t
 {
 	public:
-		using message_handler_t = WS_MESSAGE_HANDLER;
+		using message_handler_t = WS_Message_Handler;
 
 		using timer_factory_t = typename Traits::timer_factory_t;
 		using timer_factory_handle_t = std::shared_ptr< timer_factory_t >;
@@ -180,6 +182,8 @@ class ws_connection_t final
 		using logger_t = typename Traits::logger_t;
 		using strand_t = typename Traits::strand_t;
 		using stream_socket_t = typename Traits::stream_socket_t;
+
+		using ws_weak_handle_t = std::weak_ptr< ws_t >;
 
 		ws_connection_t(
 			//! Connection id.
@@ -197,7 +201,7 @@ class ws_connection_t final
 			,	m_strand{ std::move( strand ) }
 			,	m_write_timer_guard{ m_settings->create_timer_guard() }
 			,	m_close_frame_from_peer_timer_guard{ m_settings->create_timer_guard() }
-			,	m_input{ WEBSOCKET_HEADER_MAX_SIZE }
+			,	m_input{ websocket_header_max_size() }
 			,	m_msg_handler{ std::move( msg_handler ) }
 			,	m_logger{ *( m_settings->m_logger ) }
 		{

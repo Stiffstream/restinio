@@ -240,10 +240,6 @@ upgrade(
 	return result;
 }
 
-//
-// upgrade
-//
-
 template <
 		typename Traits,
 		typename WS_Message_Handler >
@@ -266,10 +262,6 @@ upgrade(
 			std::move( upgrade_response_header_fields ),
 			std::move( ws_message_handler ) );
 }
-
-//
-// upgrade
-//
 
 template <
 		typename Traits,
@@ -298,10 +290,6 @@ upgrade(
 			std::move( upgrade_response_header_fields ),
 			std::move( ws_message_handler ) );
 }
-
-//
-// upgrade
-//
 
 template <
 		typename Traits,
