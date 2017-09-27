@@ -43,7 +43,8 @@ struct connection_settings_t final
 	template < typename SETTINGS >
 	connection_settings_t(
 		SETTINGS & settings,
-		http_parser_settings parser_settings )
+		http_parser_settings parser_settings,
+		asio::io_context & io_context )
 		:	m_request_handler{ settings.request_handler() }
 		,	m_parser_settings{ parser_settings }
 		,	m_buffer_size{ settings.buffer_size() }
@@ -55,6 +56,7 @@ struct connection_settings_t final
 				settings.handle_request_timeout() }
 		,	m_max_pipelined_requests{ settings.max_pipelined_requests() }
 		,	m_logger{ settings.logger() }
+		,	m_io_context{ io_context }
 	{}
 
 	//! Request handler factory.
@@ -83,6 +85,8 @@ struct connection_settings_t final
 
 	const std::unique_ptr< logger_t > m_logger;
 	//! \}
+
+	asio::io_context & m_io_context;
 };
 
 template < typename TRAITS >

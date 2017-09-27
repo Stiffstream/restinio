@@ -203,6 +203,7 @@ class connection_t final
 {
 	public:
 		using timer_factory_t = typename TRAITS::timer_factory_t;
+		using timer_factory_handle_t = std::shared_ptr< timer_factory_t >;
 		using timer_guard_instance_t = typename timer_factory_t::timer_guard_instance_t;
 		using request_handler_t = typename TRAITS::request_handler_t;
 		using logger_t = typename TRAITS::logger_t;
@@ -216,15 +217,16 @@ class connection_t final
 			stream_socket_t && socket,
 			//! Settings that are common for connections.
 			connection_settings_shared_ptr_t< TRAITS > settings,
-			//! Operation timeout guard.
-			timer_guard_instance_t timer_guard )
+			//! Timeout guard factory.
+			timer_factory_handle_t timer_factory )
 			:	connection_base_t{ conn_id }
 			,	m_socket{ std::move( socket ) }
 			,	m_strand{ m_socket.get_executor() }
 			,	m_settings{ std::move( settings ) }
 			,	m_input{ m_settings->m_buffer_size }
 			,	m_response_coordinator{ m_settings->m_max_pipelined_requests }
-			,	m_timer_guard{ std::move( timer_guard ) }
+			,	m_timer_factory{ std::move( timer_factory ) }
+			,	m_timer_guard{ m_timer_factory->create_timer_guard( m_settings->m_io_context ) }
 			,	m_request_handler{ *( m_settings->m_request_handler ) }
 			,	m_logger{ *( m_settings->m_logger ) }
 		{
@@ -313,17 +315,20 @@ class connection_t final
 				upgrade_internals_t && ) = default;
 
 			upgrade_internals_t(
+				connection_settings_shared_ptr_t< TRAITS > settings,
 				stream_socket_t socket,
 				strand_t strand,
-				timer_guard_instance_t timer_guard )
-				:	m_socket{ std::move( socket ) }
+				timer_factory_handle_t timer_factory )
+				:	m_settings{ std::move( settings ) }
+				,	m_socket{ std::move( socket ) }
 				,	m_strand{ std::move( strand ) }
-				,	m_timer_guard{ std::move( timer_guard ) }
+				,	m_timer_factory{ std::move( timer_factory ) }
 			{}
 
+			connection_settings_shared_ptr_t< TRAITS > m_settings;
 			stream_socket_t m_socket;
 			strand_t m_strand;
-			timer_guard_instance_t m_timer_guard;
+			timer_factory_handle_t m_timer_factory;
 		};
 
 		//! Move socket out of connection.
@@ -332,16 +337,10 @@ class connection_t final
 		{
 			// TODO: fix data race issue.
 			return upgrade_internals_t{
+				m_settings,
 				std::move( m_socket ),
 				get_executor(),
-				std::move( m_timer_guard ) };
-		}
-
-		//! Пуее
-		auto
-		get_settings() const
-		{
-			return m_settings;
+				std::move( m_timer_factory ) };
 		}
 
 	private:
@@ -1103,6 +1102,9 @@ class connection_t final
 				} );
 		}
 
+		//! Timer_guard_factory.
+		timer_factory_handle_t m_timer_factory;
+
 		//! Operation timeout guard.
 		timer_guard_instance_t m_timer_guard;
 		//! \}
@@ -1124,17 +1126,16 @@ class connection_factory_t
 {
 	public:
 		using timer_factory_t = typename TRAITS::timer_factory_t;
+		using timer_factory_handle_t = std::shared_ptr< timer_factory_t >;
 		using logger_t = typename TRAITS::logger_t;
 		using stream_socket_t = typename TRAITS::stream_socket_t;
 
 		connection_factory_t(
 			connection_settings_shared_ptr_t< TRAITS > connection_settings,
 			std::unique_ptr< socket_options_setter_t > socket_options_setter,
-			asio::io_context & io_context,
-			std::unique_ptr< timer_factory_t > timer_factory )
+			timer_factory_handle_t timer_factory )
 			:	m_connection_settings{ std::move( connection_settings ) }
 			,	m_socket_options_setter{ std::move( socket_options_setter ) }
-			,	m_io_context{ io_context }
 			,	m_timer_factory{ std::move( timer_factory ) }
 			,	m_logger{ *(m_connection_settings->m_logger ) }
 		{
@@ -1159,7 +1160,7 @@ class connection_factory_t
 					m_connection_id_counter++,
 					std::move( socket ),
 					m_connection_settings,
-					m_timer_factory->create_timer_guard( m_io_context ) );
+					m_timer_factory );
 			}
 			catch( const std::exception & ex )
 			{
@@ -1180,9 +1181,7 @@ class connection_factory_t
 
 		std::unique_ptr< socket_options_setter_t > m_socket_options_setter;
 
-		asio::io_context & m_io_context;
-
-		std::unique_ptr< timer_factory_t > m_timer_factory;
+		timer_factory_handle_t m_timer_factory;
 
 		logger_t & m_logger;
 };

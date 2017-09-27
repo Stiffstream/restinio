@@ -175,6 +175,7 @@ class ws_connection_t final
 		using message_handler_t = WS_MESSAGE_HANDLER;
 
 		using timer_factory_t = typename TRAITS::timer_factory_t;
+		using timer_factory_handle_t = std::shared_ptr< timer_factory_t >;
 		using timer_guard_instance_t = typename timer_factory_t::timer_guard_instance_t;
 		using logger_t = typename TRAITS::logger_t;
 		using strand_t = typename TRAITS::strand_t;
@@ -185,17 +186,18 @@ class ws_connection_t final
 			std::uint64_t conn_id,
 			//! Data inherited from http-connection.
 			//! \{
+			restinio::impl::connection_settings_shared_ptr_t< TRAITS > settings,
 			stream_socket_t socket,
 			strand_t strand,
-			timer_guard_instance_t timer_guard,
-			restinio::impl::connection_settings_shared_ptr_t< TRAITS > settings,
+			timer_factory_handle_t timer_factory,
 			//! \}
 			message_handler_t msg_handler )
 			:	ws_connection_base_t{ conn_id }
+			,	m_settings{ std::move( settings ) }
 			,	m_socket{ std::move( socket ) }
 			,	m_strand{ std::move( strand ) }
-			,	m_timer_guard{ std::move( timer_guard ) }
-			,	m_settings{ std::move( settings ) }
+			,	m_write_timer_guard{ timer_factory->create_timer_guard( m_settings->m_io_context ) }
+			,	m_close_frame_from_peer_timer_guard{ timer_factory->create_timer_guard( m_settings->m_io_context ) }
 			,	m_input{ WEBSOCKET_HEADER_MAX_SIZE }
 			,	m_msg_handler{ std::move( msg_handler ) }
 			,	m_logger{ *( m_settings->m_logger ) }
@@ -392,8 +394,7 @@ class ws_connection_t final
 		start_waiting_close_frame_only()
 		{
 			m_read_state = read_state_t::read_only_close_frame;
-
-			// TODO: controll timeout.
+			guard_close_frame_from_peer_operation();
 		}
 
 		//! Close WebSocket connection in a graceful manner.
@@ -819,6 +820,8 @@ class ws_connection_t final
 					if( opcode_t::connection_close_frame == md.m_opcode )
 					{
 						// Got it!
+						m_close_frame_from_peer_timer_guard->cancel();
+
 						close_impl();
 
 						m_logger.trace( [&]{
@@ -937,6 +940,7 @@ class ws_connection_t final
 			const std::error_code & ec,
 			std::size_t written )
 		{
+			m_write_timer_guard->cancel();
 			if( !ec )
 			{
 				// Release buffers.
@@ -969,14 +973,20 @@ class ws_connection_t final
 			}
 		}
 
+		//! Common paramaters of a connection.
+		restinio::impl::connection_settings_shared_ptr_t< TRAITS > m_settings;
+
 		//! Connection.
 		stream_socket_t m_socket;
 
 		//! Sync object for connection events.
 		strand_t m_strand;
 
-		//! Operation timeout guard.
-		timer_guard_instance_t m_timer_guard;
+		//! Timers.
+		//! \{
+
+		//! Write operation timeout guard.
+		timer_guard_instance_t m_write_timer_guard;
 
 		//! Start guard write operation if necessary.
 		void
@@ -984,7 +994,7 @@ class ws_connection_t final
 		{
 			std::weak_ptr< ws_connection_base_t > weak_ctx = shared_from_this();
 
-			m_timer_guard
+			m_write_timer_guard
 				->schedule_operation_timeout_callback(
 					get_executor(),
 					m_settings->m_write_http_response_timelimit,
@@ -1006,8 +1016,32 @@ class ws_connection_t final
 					} );
 		}
 
-		//! Common paramaters of a connection.
-		restinio::impl::connection_settings_shared_ptr_t< TRAITS > m_settings;
+		//! Waiting for close frame from peer timeout guard.
+		timer_guard_instance_t m_close_frame_from_peer_timer_guard;
+
+		void
+		guard_close_frame_from_peer_operation()
+		{
+			std::weak_ptr< ws_connection_base_t > weak_ctx = shared_from_this();
+
+			m_close_frame_from_peer_timer_guard
+				->schedule_operation_timeout_callback(
+					get_executor(),
+					m_settings->m_read_next_http_message_timelimit,
+					[ this, weak_ctx = std::move( weak_ctx ) ](){
+						if( auto ctx = weak_ctx.lock() )
+						{
+							m_logger.trace( [&]{
+								return fmt::format(
+										"[wd_connection:{}] waiting for close-frame from peer timed out",
+										this->connection_id() );
+								} );
+							close_impl();
+						}
+					} );
+		}
+
+		//! \}
 
 		//! Logger for operation
 		logger_t & m_logger;

@@ -25,41 +25,78 @@ namespace details
 {
 
 //! Default instantiation for a specific type.
-template < typename OBJECT_TYPE >
+template < typename Object >
 inline auto
-create_default_object_instance( std::false_type )
+create_default_unique_object_instance( std::false_type )
 {
-	return std::unique_ptr< OBJECT_TYPE >{};
+	return std::unique_ptr< Object >{};
 }
 
-template < typename OBJECT_TYPE >
+template < typename Object >
 inline auto
-create_default_object_instance( std::true_type )
+create_default_unique_object_instance( std::true_type )
 {
-	return std::make_unique< OBJECT_TYPE >();
+	return std::make_unique< Object >();
+}
+
+//! Default instantiation for a specific type.
+template < typename Object >
+inline auto
+create_default_shared_object_instance( std::false_type )
+{
+	return std::unique_ptr< Object >{};
+}
+
+template < typename Object >
+inline auto
+create_default_shared_object_instance( std::true_type )
+{
+	return std::make_unique< Object >();
 }
 
 } /* namespace details */
 
 //
-// create_default_object_instance
+// create_default_unique_object_instance
 //
 
 //! Default instantiation for a specific type.
-template < typename OBJECT_TYPE>
+template < typename Object>
 inline auto
-create_default_object_instance()
+create_default_unique_object_instance()
 {
-	typename std::is_default_constructible< OBJECT_TYPE >::type tag;
-	return details::create_default_object_instance< OBJECT_TYPE >( tag );
+	typename std::is_default_constructible< Object >::type tag;
+	return details::create_default_unique_object_instance< Object >( tag );
 }
 
 //! Default instantiation for default_request_handler_t.
 template <>
 inline auto
-create_default_object_instance< default_request_handler_t >()
+create_default_unique_object_instance< default_request_handler_t >()
 {
-	return details::create_default_object_instance< default_request_handler_t >(
+	return details::create_default_unique_object_instance< default_request_handler_t >(
+			std::false_type{} );
+}
+
+//
+// create_default_shared_object_instance
+//
+
+//! Default instantiation for a specific type.
+template < typename Object>
+inline auto
+create_default_shared_object_instance()
+{
+	typename std::is_default_constructible< Object >::type tag;
+	return details::create_default_shared_object_instance< Object >( tag );
+}
+
+//! Default instantiation for default_request_handler_t.
+template <>
+inline auto
+create_default_shared_object_instance< default_request_handler_t >()
+{
+	return details::create_default_shared_object_instance< default_request_handler_t >(
 			std::false_type{} );
 }
 
@@ -68,24 +105,45 @@ create_default_object_instance< default_request_handler_t >()
 //
 
 //! Ensure that object was created.
-/*!
-*/
-template < typename OBJECT_TYPE >
+template < typename Object >
 auto
 ensure_created(
-	std::unique_ptr< OBJECT_TYPE > mb_created_one,
+	std::unique_ptr< Object > mb_created_one,
 	const std::string & fail_description )
 {
 	auto result{ std::move( mb_created_one ) };
 
 	if( !result )
-		result = create_default_object_instance< OBJECT_TYPE >();
+		result = create_default_unique_object_instance< Object >();
 
 	if( !result )
 		throw exception_t{ fail_description };
 
 	return result;
 }
+
+//
+// unsure_created()
+//
+
+//! Ensure that object was created.
+template < typename Object >
+auto
+ensure_created(
+	std::shared_ptr< Object > mb_created_one,
+	const std::string & fail_description )
+{
+	auto result{ std::move( mb_created_one ) };
+
+	if( !result )
+		result = create_default_shared_object_instance< Object >();
+
+	if( !result )
+		throw exception_t{ fail_description };
+
+	return result;
+}
+
 
 //
 // extra_settings_t
@@ -156,7 +214,7 @@ using acceptor_options_setter_t = std::function< void ( acceptor_options_t & ) >
 
 template <>
 inline auto
-create_default_object_instance< acceptor_options_setter_t >()
+create_default_unique_object_instance< acceptor_options_setter_t >()
 {
 	return std::make_unique< acceptor_options_setter_t >(
 		[]( acceptor_options_t & options ){
@@ -223,7 +281,7 @@ using socket_options_setter_t = std::function< void ( socket_options_t & ) >;
 
 template <>
 inline auto
-create_default_object_instance< socket_options_setter_t >()
+create_default_unique_object_instance< socket_options_setter_t >()
 {
 	return std::make_unique< socket_options_setter_t >( []( auto & ){} );
 }
@@ -233,9 +291,9 @@ create_default_object_instance< socket_options_setter_t >()
 //
 
 //! A fluent style interface for setting http server params.
-template < typename TRAITS >
+template < typename Traits >
 class server_settings_t final
-	:	public extra_settings_t< server_settings_t< TRAITS >, typename TRAITS::stream_socket_t >
+	:	public extra_settings_t< server_settings_t< Traits >, typename Traits::stream_socket_t >
 {
 	public:
 		server_settings_t(
@@ -427,7 +485,7 @@ class server_settings_t final
 
 		//! Request handler.
 		//! \{
-		using request_handler_t = typename TRAITS::request_handler_t;
+		using request_handler_t = typename Traits::request_handler_t;
 
 		server_settings_t &
 		request_handler( std::unique_ptr< request_handler_t > handler ) &
@@ -436,21 +494,21 @@ class server_settings_t final
 			return *this;
 		}
 
-		template< typename... PARAMS >
+		template< typename... Params >
 		server_settings_t &
-		request_handler( PARAMS &&... params ) &
+		request_handler( Params &&... params ) &
 		{
-			return set_instance(
+			return set_unique_instance(
 					m_request_handler,
-					std::forward< PARAMS >( params )... );
+					std::forward< Params >( params )... );
 		}
 
 
-		template< typename... PARAMS >
+		template< typename... Params >
 		server_settings_t &&
-		request_handler( PARAMS &&... params ) &&
+		request_handler( Params &&... params ) &&
 		{
-			return std::move( this->request_handler( std::forward< PARAMS >( params )... ) );
+			return std::move( this->request_handler( std::forward< Params >( params )... ) );
 		}
 
 		std::unique_ptr< request_handler_t >
@@ -465,25 +523,25 @@ class server_settings_t final
 
 		//! Timers factory.
 		//! \{
-		using timer_factory_t = typename TRAITS::timer_factory_t;
+		using timer_factory_t = typename Traits::timer_factory_t;
 
-		template< typename... PARAMS >
+		template< typename... Params >
 		server_settings_t &
-		timer_factory( PARAMS &&... params ) &
+		timer_factory( Params &&... params ) &
 		{
-			return set_instance(
+			return set_shared_instance(
 					m_timer_factory,
-					std::forward< PARAMS >( params )... );
+					std::forward< Params >( params )... );
 		}
 
-		template< typename... PARAMS >
+		template< typename... Params >
 		server_settings_t &&
-		timer_factory( PARAMS &&... params ) &&
+		timer_factory( Params &&... params ) &&
 		{
-			return std::move( this->timer_factory( std::forward< PARAMS >( params )... ) );
+			return std::move( this->timer_factory( std::forward< Params >( params )... ) );
 		}
 
-		std::unique_ptr< timer_factory_t >
+		std::shared_ptr< timer_factory_t >
 		timer_factory()
 		{
 			return ensure_created(
@@ -494,22 +552,22 @@ class server_settings_t final
 
 		//! Logger.
 		//! \{
-		using logger_t = typename TRAITS::logger_t;
+		using logger_t = typename Traits::logger_t;
 
-		template< typename... PARAMS >
+		template< typename... Params >
 		server_settings_t &
-		logger( PARAMS &&... params ) &
+		logger( Params &&... params ) &
 		{
-			return set_instance(
+			return set_unique_instance(
 					m_logger,
-					std::forward< PARAMS >( params )... );
+					std::forward< Params >( params )... );
 		}
 
-		template< typename... PARAMS >
+		template< typename... Params >
 		server_settings_t &&
-		logger( PARAMS &&... params ) &&
+		logger( Params &&... params ) &&
 		{
-			return std::move( this->logger( std::forward< PARAMS >( params )... ) );
+			return std::move( this->logger( std::forward< Params >( params )... ) );
 		}
 
 		std::unique_ptr< logger_t >
@@ -529,7 +587,7 @@ class server_settings_t final
 			if( m_acceptor_options_setter )
 				throw exception_t{ "acceptor options setter cannot be empty" };
 
-			return set_instance(
+			return set_unique_instance(
 					m_acceptor_options_setter,
 					std::move( aos ) );
 		}
@@ -557,7 +615,7 @@ class server_settings_t final
 			if( m_socket_options_setter )
 				throw exception_t{ "socket options setter cannot be empty" };
 
-			return set_instance(
+			return set_unique_instance(
 					m_socket_options_setter,
 					std::move( sos ) );
 		}
@@ -640,13 +698,24 @@ class server_settings_t final
 		//! \}
 
 	private:
-		template< typename TARGET, typename... PARAMS >
+		template< typename Target, typename... Params >
 		server_settings_t &
-		set_instance( std::unique_ptr< TARGET > & t, PARAMS &&... params )
+		set_unique_instance( std::unique_ptr< Target > & t, Params &&... params )
 		{
 			t =
-				std::make_unique< TARGET >(
-					std::forward< PARAMS >( params )... );
+				std::make_unique< Target >(
+					std::forward< Params >( params )... );
+
+			return *this;
+		}
+
+		template< typename Target, typename... Params >
+		server_settings_t &
+		set_shared_instance( std::shared_ptr< Target > & t, Params &&... params )
+		{
+			t =
+				std::make_shared< Target >(
+					std::forward< Params >( params )... );
 
 			return *this;
 		}
@@ -680,7 +749,7 @@ class server_settings_t final
 		std::unique_ptr< request_handler_t > m_request_handler;
 
 		//! Timers factory.
-		std::unique_ptr< timer_factory_t > m_timer_factory;
+		std::shared_ptr< timer_factory_t > m_timer_factory;
 
 		//! Logger.
 		std::unique_ptr< logger_t > m_logger;
@@ -697,11 +766,11 @@ class server_settings_t final
 		bool m_separate_accept_and_create_connect{ false };
 };
 
-template < typename TRAITS, typename CONFIGURATOR >
+template < typename Traits, typename Configurator >
 auto
-exec_configurator( CONFIGURATOR && configurator )
+exec_configurator( Configurator && configurator )
 {
-	server_settings_t< TRAITS > result;
+	server_settings_t< Traits > result;
 
 	configurator( result );
 
