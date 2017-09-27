@@ -67,8 +67,7 @@ class request_t final
 			return m_body;
 		}
 
-		template < typename RESPONSE_BUILDER_OUTPUT_TYPE =
-					restinio_controlled_output_t >
+		template < typename Response_Builder = restinio_controlled_output_t >
 		auto
 		create_response(
 			std::uint16_t status_code = 200,
@@ -76,7 +75,7 @@ class request_t final
 		{
 			check_connection();
 
-			return response_builder_t< RESPONSE_BUILDER_OUTPUT_TYPE >{
+			return response_builder_t< Response_Builder >{
 				status_code,
 				reason_phrase,
 				std::move( m_connection ),

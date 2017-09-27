@@ -56,17 +56,17 @@ namespace restinio
 
 	\endcode
 */
-template < typename TRAITS = default_traits_t >
+template < typename Traits = default_traits_t >
 class http_server_t
 {
-		using connection_settings_t = impl::connection_settings_t< TRAITS >;
-		using connection_factory_t = impl::connection_factory_t< TRAITS >;
-		using acceptor_t = impl::acceptor_t< TRAITS >;
+		using connection_settings_t = impl::connection_settings_t< Traits >;
+		using connection_factory_t = impl::connection_factory_t< Traits >;
+		using acceptor_t = impl::acceptor_t< Traits >;
 
 	public:
 		http_server_t(
 			io_context_wrapper_unique_ptr_t io_context_wrapper,
-			server_settings_t< TRAITS > settings )
+			server_settings_t< Traits > settings )
 			:	m_io_context_wrapper{ std::move( io_context_wrapper ) }
 		{
 			auto conn_settings =
@@ -86,14 +86,14 @@ class http_server_t
 					*( conn_settings->m_logger ) );
 		}
 
-		template < typename CONFIGURATOR >
+		template < typename Configurator >
 		http_server_t(
 			io_context_wrapper_unique_ptr_t io_context_wrapper,
-			CONFIGURATOR && configurator )
+			Configurator && configurator )
 			:	http_server_t{
 					std::move( io_context_wrapper ),
-					exec_configurator< TRAITS, CONFIGURATOR >(
-						std::forward< CONFIGURATOR >( configurator ) ) }
+					exec_configurator< Traits, Configurator >(
+						std::forward< Configurator >( configurator ) ) }
 		{}
 
 		//! Start/stop io_context.
@@ -122,12 +122,12 @@ class http_server_t
 			(\see start_io_context()).
 		*/
 		template <
-				typename SRV_OPEN_OK_CALLBACK,
-				typename SRV_OPEN_ERR_CALLBACK >
+				typename Server_Open_Ok_CB,
+				typename Server_Open_Error_CB >
 		void
 		open_async(
-			SRV_OPEN_OK_CALLBACK && open_ok_cb,
-			SRV_OPEN_ERR_CALLBACK && open_err_cb )
+			Server_Open_Ok_CB && open_ok_cb,
+			Server_Open_Error_CB && open_err_cb )
 		{
 			asio::dispatch(
 				m_acceptor->get_executor(),
@@ -184,12 +184,12 @@ class http_server_t
 			(\see stop_io_context()).
 		*/
 		template <
-				typename SRV_CLOSE_OK_CALLBACK,
-				typename SRV_CLOSE_ERR_CALLBACK >
+				typename Server_Close_Ok_CB,
+				typename Server_Close_Error_CB >
 		void
 		close_async(
-			SRV_CLOSE_OK_CALLBACK && close_ok_cb,
-			SRV_CLOSE_ERR_CALLBACK && close_err_cb )
+			Server_Close_Ok_CB && close_ok_cb,
+			Server_Close_Error_CB && close_err_cb )
 		{
 			asio::dispatch(
 				m_acceptor->get_executor(),

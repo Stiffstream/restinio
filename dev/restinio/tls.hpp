@@ -23,22 +23,22 @@ using tls_socket_t = impl::tls_socket_t;
 //
 
 template <
-		typename TIMER_FACTORY,
-		typename LOGGER,
-		typename REQUEST_HANDLER = default_request_handler_t,
-		typename STRAND = asio::strand< asio::executor > >
-using tls_traits_t = traits_t< TIMER_FACTORY, LOGGER, REQUEST_HANDLER, STRAND, tls_socket_t >;
+		typename Timer_Factory,
+		typename Logger,
+		typename Request_Handler = default_request_handler_t,
+		typename Strand = asio::strand< asio::executor > >
+using tls_traits_t = traits_t< Timer_Factory, Logger, Request_Handler, Strand, tls_socket_t >;
 
 //
 // single_thread_traits_t
 //
 
 template <
-		typename TIMER_FACTORY,
-		typename LOGGER,
-		typename REQUEST_HANDLER = default_request_handler_t >
+		typename Timer_Factory,
+		typename Logger,
+		typename Request_Handler = default_request_handler_t >
 using single_thread_tls_traits_t =
-	tls_traits_t< TIMER_FACTORY, LOGGER, REQUEST_HANDLER, noop_strand_t >;
+	tls_traits_t< Timer_Factory, Logger, Request_Handler, noop_strand_t >;
 
 //
 // prepare_connection_and_start_read()
@@ -46,13 +46,13 @@ using single_thread_tls_traits_t =
 
 //! Customizes connection init routine with an additional step:
 //! perform handshake and only then start reading.
-template < typename CONNECTION, typename START_READ_CB, typename FAILED_CB >
+template < typename Connection, typename Start_Read_CB, typename Failed_CB >
 void
 prepare_connection_and_start_read(
 	tls_socket_t & socket,
-	CONNECTION & con,
-	START_READ_CB start_read_cb,
-	FAILED_CB failed_cb )
+	Connection & con,
+	Start_Read_CB start_read_cb,
+	Failed_CB failed_cb )
 {
 	socket.async_handshake(
 		asio::ssl::stream_base::server,
@@ -74,8 +74,8 @@ prepare_connection_and_start_read(
 /*!
 	Adds tls context setting.
 */
-template < typename SETTINGS >
-class extra_settings_t< SETTINGS, tls_socket_t >
+template < typename Settings >
+class extra_settings_t< Settings, tls_socket_t >
 {
 	public:
 		virtual ~extra_settings_t() = default;
@@ -83,7 +83,7 @@ class extra_settings_t< SETTINGS, tls_socket_t >
 		extra_settings_t() = default;
 		extra_settings_t( extra_settings_t && ) = default;
 
-		SETTINGS &
+		Settings &
 		tls_context(
 			asio::ssl::context context ) &
 		{
@@ -91,7 +91,7 @@ class extra_settings_t< SETTINGS, tls_socket_t >
 			return upcast_reference();
 		}
 
-		SETTINGS &&
+		Settings &&
 		tls_context(
 			asio::ssl::context context ) &&
 		{
@@ -105,10 +105,10 @@ class extra_settings_t< SETTINGS, tls_socket_t >
 		}
 
 	private:
-		SETTINGS &
+		Settings &
 		upcast_reference()
 		{
-			return static_cast< SETTINGS & >( *this );
+			return static_cast< Settings & >( *this );
 		}
 
 		asio::ssl::context m_tls_context{ asio::ssl::context::sslv23 };
@@ -126,9 +126,9 @@ template <>
 class socket_supplier_t< tls_socket_t >
 {
 	protected:
-		template < typename SETTINGS >
+		template < typename Settings >
 		socket_supplier_t(
-			SETTINGS & settings,
+			Settings & settings,
 			asio::io_context & io_context )
 			:	m_tls_context{ settings.tls_context() }
 			,	m_io_context{ io_context }

@@ -35,13 +35,13 @@ class asio_timer_factory_t
 
 				// Set new timeout guard.
 				template <
-						typename EXECUTOR,
-						typename CALLBACK_FUNC >
+						typename Executor,
+						typename Callback_Func >
 				void
 				schedule_operation_timeout_callback(
-					const EXECUTOR & executor,
+					const Executor & executor,
 					std::chrono::steady_clock::duration timeout,
-					CALLBACK_FUNC && f )
+					Callback_Func && f )
 				{
 					cancel();
 					m_operation_timer.expires_from_now( timeout );
