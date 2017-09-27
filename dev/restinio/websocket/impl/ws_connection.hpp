@@ -189,15 +189,14 @@ class ws_connection_t final
 			restinio::impl::connection_settings_shared_ptr_t< Traits > settings,
 			stream_socket_t socket,
 			strand_t strand,
-			timer_factory_handle_t timer_factory,
 			//! \}
 			message_handler_t msg_handler )
 			:	ws_connection_base_t{ conn_id }
 			,	m_settings{ std::move( settings ) }
 			,	m_socket{ std::move( socket ) }
 			,	m_strand{ std::move( strand ) }
-			,	m_write_timer_guard{ timer_factory->create_timer_guard( m_settings->m_io_context ) }
-			,	m_close_frame_from_peer_timer_guard{ timer_factory->create_timer_guard( m_settings->m_io_context ) }
+			,	m_write_timer_guard{ m_settings->create_timer_guard() }
+			,	m_close_frame_from_peer_timer_guard{ m_settings->create_timer_guard() }
 			,	m_input{ WEBSOCKET_HEADER_MAX_SIZE }
 			,	m_msg_handler{ std::move( msg_handler ) }
 			,	m_logger{ *( m_settings->m_logger ) }

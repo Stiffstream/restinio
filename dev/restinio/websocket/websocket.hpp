@@ -211,7 +211,6 @@ upgrade(
 			std::move( upgrade_internals.m_settings ),
 			std::move( upgrade_internals.m_socket ),
 			std::move( upgrade_internals.m_strand ),
-			std::move( upgrade_internals.m_timer_factory ),
 			std::move( ws_message_handler ) );
 
 	buffers_container_t upgrade_response_bufs;

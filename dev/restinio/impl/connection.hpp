@@ -203,7 +203,6 @@ class connection_t final
 {
 	public:
 		using timer_factory_t = typename Traits::timer_factory_t;
-		using timer_factory_handle_t = std::shared_ptr< timer_factory_t >;
 		using timer_guard_instance_t = typename timer_factory_t::timer_guard_instance_t;
 		using request_handler_t = typename Traits::request_handler_t;
 		using logger_t = typename Traits::logger_t;
@@ -216,17 +215,14 @@ class connection_t final
 			//! Connection socket.
 			stream_socket_t && socket,
 			//! Settings that are common for connections.
-			connection_settings_shared_ptr_t< Traits > settings,
-			//! Timeout guard factory.
-			timer_factory_handle_t timer_factory )
+			connection_settings_shared_ptr_t< Traits > settings )
 			:	connection_base_t{ conn_id }
 			,	m_socket{ std::move( socket ) }
 			,	m_strand{ m_socket.get_executor() }
 			,	m_settings{ std::move( settings ) }
 			,	m_input{ m_settings->m_buffer_size }
 			,	m_response_coordinator{ m_settings->m_max_pipelined_requests }
-			,	m_timer_factory{ std::move( timer_factory ) }
-			,	m_timer_guard{ m_timer_factory->create_timer_guard( m_settings->m_io_context ) }
+			,	m_timer_guard{ m_settings->create_timer_guard() }
 			,	m_request_handler{ *( m_settings->m_request_handler ) }
 			,	m_logger{ *( m_settings->m_logger ) }
 		{
@@ -317,18 +313,15 @@ class connection_t final
 			upgrade_internals_t(
 				connection_settings_shared_ptr_t< Traits > settings,
 				stream_socket_t socket,
-				strand_t strand,
-				timer_factory_handle_t timer_factory )
+				strand_t strand )
 				:	m_settings{ std::move( settings ) }
 				,	m_socket{ std::move( socket ) }
 				,	m_strand{ std::move( strand ) }
-				,	m_timer_factory{ std::move( timer_factory ) }
 			{}
 
 			connection_settings_shared_ptr_t< Traits > m_settings;
 			stream_socket_t m_socket;
 			strand_t m_strand;
-			timer_factory_handle_t m_timer_factory;
 		};
 
 		//! Move socket out of connection.
@@ -339,8 +332,7 @@ class connection_t final
 			return upgrade_internals_t{
 				m_settings,
 				std::move( m_socket ),
-				get_executor(),
-				std::move( m_timer_factory ) };
+				get_executor() };
 		}
 
 	private:
@@ -986,9 +978,9 @@ class connection_t final
 			Closes the connection and write to log
 			an error message.
 		*/
-		template< typename MSG_BUILDER >
+		template< typename Message_Builder >
 		void
-		trigger_error_and_close( MSG_BUILDER && msg_builder )
+		trigger_error_and_close( Message_Builder && msg_builder )
 		{
 			m_logger.error( std::move( msg_builder ) );
 
@@ -1102,9 +1094,6 @@ class connection_t final
 				} );
 		}
 
-		//! Timer_guard_factory.
-		timer_factory_handle_t m_timer_factory;
-
 		//! Operation timeout guard.
 		timer_guard_instance_t m_timer_guard;
 		//! \}
@@ -1125,23 +1114,16 @@ template < typename Traits >
 class connection_factory_t
 {
 	public:
-		using timer_factory_t = typename Traits::timer_factory_t;
-		using timer_factory_handle_t = std::shared_ptr< timer_factory_t >;
 		using logger_t = typename Traits::logger_t;
 		using stream_socket_t = typename Traits::stream_socket_t;
 
 		connection_factory_t(
 			connection_settings_shared_ptr_t< Traits > connection_settings,
-			std::unique_ptr< socket_options_setter_t > socket_options_setter,
-			timer_factory_handle_t timer_factory )
+			std::unique_ptr< socket_options_setter_t > socket_options_setter )
 			:	m_connection_settings{ std::move( connection_settings ) }
 			,	m_socket_options_setter{ std::move( socket_options_setter ) }
-			,	m_timer_factory{ std::move( timer_factory ) }
 			,	m_logger{ *(m_connection_settings->m_logger ) }
-		{
-			if( !m_timer_factory )
-				throw exception_t{ "timer_factory not set" };
-		}
+		{}
 
 		auto
 		create_new_connection(
@@ -1159,8 +1141,7 @@ class connection_factory_t
 				result = std::make_shared< connection_type_t >(
 					m_connection_id_counter++,
 					std::move( socket ),
-					m_connection_settings,
-					m_timer_factory );
+					m_connection_settings );
 			}
 			catch( const std::exception & ex )
 			{
@@ -1180,8 +1161,6 @@ class connection_factory_t
 		connection_settings_shared_ptr_t< Traits > m_connection_settings;
 
 		std::unique_ptr< socket_options_setter_t > m_socket_options_setter;
-
-		timer_factory_handle_t m_timer_factory;
 
 		logger_t & m_logger;
 };

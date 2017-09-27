@@ -73,7 +73,8 @@ class http_server_t
 				std::make_shared< connection_settings_t >(
 					settings,
 					impl::create_parser_settings(),
-					m_io_context_wrapper->io_context() );
+					m_io_context_wrapper->io_context(),
+					settings.timer_factory() );
 
 			m_acceptor =
 				std::make_shared< acceptor_t >(
@@ -81,8 +82,7 @@ class http_server_t
 					m_io_context_wrapper->io_context(),
 					std::make_shared< connection_factory_t >(
 						conn_settings,
-						settings.socket_options_setter(),
-						settings.timer_factory() ),
+						settings.socket_options_setter() ),
 					*( conn_settings->m_logger ) );
 		}
 
