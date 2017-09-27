@@ -153,15 +153,15 @@ unescape_percent_encoding( const std::string & data )
 //! \}
 
 
-template < typename TABLE = std::unordered_map< std::string, std::string > >
-TABLE
+template < typename Table = std::unordered_map< std::string, std::string > >
+Table
 parse_query_string( const std::string & query_string )
 {
 	const char * const very_first_pos = query_string.data();
 	const char * query_remainder = very_first_pos;
 	const char * query_end = query_remainder + query_string.size();
 
-	TABLE result;
+	Table result;
 
 	query_remainder = impl::modified_memchr( '?', query_remainder, query_end );
 
