@@ -34,14 +34,14 @@ namespace impl
 	other types of sockets (like `asio::ssl::stream< asio::ip::tcp::socket >`)
 	that can be used.
 */
-template < typename STREAM_SOCKET >
+template < typename Socket >
 class socket_supplier_t
 {
 	protected:
-		template < typename SETTINGS >
+		template < typename Settings >
 		socket_supplier_t(
 			//! Server settings.
-			SETTINGS & settings,
+			Settings & settings,
 			//! A context the server runs on.
 			asio::io_context & io_context )
 			:	m_io_context{ io_context }
@@ -57,7 +57,7 @@ class socket_supplier_t
 		virtual ~socket_supplier_t() = default;
 
 		//! Get the reference to socket.
-		STREAM_SOCKET &
+		Socket &
 		socket(
 			//! Index of a socket in the pool.
 			std::size_t idx )
@@ -66,7 +66,7 @@ class socket_supplier_t
 		}
 
 		//! Extract current socet via move.
-		STREAM_SOCKET
+		Socket
 		move_socket(
 			//! Index of a socket in the pool.
 			std::size_t idx )
@@ -89,7 +89,7 @@ class socket_supplier_t
 
 		//! A temporary socket for receiving new connections.
 		//! \note Must never be empty.
-		std::vector< STREAM_SOCKET > m_sockets;
+		std::vector< Socket > m_sockets;
 };
 
 //
@@ -97,22 +97,22 @@ class socket_supplier_t
 //
 
 //! Context for accepting http connections.
-template < typename TRAITS >
+template < typename Traits >
 class acceptor_t final
-	:	public std::enable_shared_from_this< acceptor_t< TRAITS > >
-	,	public socket_supplier_t< typename TRAITS::stream_socket_t >
+	:	public std::enable_shared_from_this< acceptor_t< Traits > >
+	,	public socket_supplier_t< typename Traits::stream_socket_t >
 {
 	public:
-		using connection_factory_t = impl::connection_factory_t< TRAITS >;
+		using connection_factory_t = impl::connection_factory_t< Traits >;
 		using connection_factory_shared_ptr_t =
 			std::shared_ptr< connection_factory_t >;
-		using logger_t = typename TRAITS::logger_t;
-		using stream_socket_t = typename TRAITS::stream_socket_t;
+		using logger_t = typename Traits::logger_t;
+		using stream_socket_t = typename Traits::stream_socket_t;
 		using socket_holder_base_t = socket_supplier_t< stream_socket_t >;
 
-		template < typename SETTINGS >
+		template < typename Settings >
 		acceptor_t(
-			SETTINGS & settings,
+			Settings & settings,
 			//! ASIO io_context to run on.
 			asio::io_context & io_context,
 			//! Connection factory.

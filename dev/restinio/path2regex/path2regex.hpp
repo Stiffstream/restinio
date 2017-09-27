@@ -136,40 +136,40 @@ class options_t
 //
 
 //! Appends sub-match as a request parameter to specified container.
-template < typename PARAM_CONTAINER >
+template < typename Param_Container >
 using param_appender_t =
-	std::function< void ( PARAM_CONTAINER &, std::string ) >;
+	std::function< void ( Param_Container &, std::string ) >;
 
 //
 // param_appender_sequence_t
 //
 
 //! A sequence of appenders for submatches.
-template < typename PARAM_CONTAINER >
-using param_appender_sequence_t = std::vector< param_appender_t< PARAM_CONTAINER > >;
+template < typename Param_Container >
+using param_appender_sequence_t = std::vector< param_appender_t< Param_Container > >;
 
 //
 // make_param_setter
 //
 
 //! Create default appender for named parameter.
-template < typename PARAM_CONTAINER >
-inline param_appender_t< PARAM_CONTAINER >
+template < typename Param_Container >
+inline param_appender_t< Param_Container >
 make_param_setter( std::string key )
 {
 	return
-		[ key ]( PARAM_CONTAINER & parameters, std::string value ){
+		[ key ]( Param_Container & parameters, std::string value ){
 			parameters.add_named_param( key, std::move( value ) );
 	};
 }
 
 //! Create default appender indexed parameter.
-template < typename PARAM_CONTAINER >
-inline param_appender_t< PARAM_CONTAINER >
+template < typename Param_Container >
+inline param_appender_t< Param_Container >
 make_param_setter( std::size_t /* index */)
 {
 	return
-		[ ]( PARAM_CONTAINER & parameters, std::string value ){
+		[ ]( Param_Container & parameters, std::string value ){
 			parameters.add_indexed_param( std::move( value ) );
 	};
 }
@@ -236,7 +236,7 @@ escape_string( const std::string & group )
 //
 
 //! Base class for token variants.
-template < typename PARAM_CONTAINER >
+template < typename Param_Container >
 class token_t
 {
 	public:
@@ -248,22 +248,22 @@ class token_t
 		virtual void
 		append_self_to(
 			std::string & route,
-			param_appender_sequence_t< PARAM_CONTAINER > & param_appender_sequence ) const = 0;
+			param_appender_sequence_t< Param_Container > & param_appender_sequence ) const = 0;
 };
 
-template < typename PARAM_CONTAINER >
-using token_unique_ptr_t = std::unique_ptr< token_t< PARAM_CONTAINER > >;
+template < typename Param_Container >
+using token_unique_ptr_t = std::unique_ptr< token_t< Param_Container > >;
 
-template < typename PARAM_CONTAINER >
-using token_list_t = std::vector< token_unique_ptr_t< PARAM_CONTAINER > >;
+template < typename Param_Container >
+using token_list_t = std::vector< token_unique_ptr_t< Param_Container > >;
 
 //
 // plain_string_token_t
 //
 
 //! Plain str token.
-template < typename PARAM_CONTAINER >
-class plain_string_token_t final : public token_t< PARAM_CONTAINER >
+template < typename Param_Container >
+class plain_string_token_t final : public token_t< Param_Container >
 {
 	public:
 		plain_string_token_t( const std::string & path )
@@ -273,7 +273,7 @@ class plain_string_token_t final : public token_t< PARAM_CONTAINER >
 		virtual void
 		append_self_to(
 			std::string & route,
-			param_appender_sequence_t< PARAM_CONTAINER > & ) const override
+			param_appender_sequence_t< Param_Container > & ) const override
 		{
 			route += m_escaped_path;
 		}
@@ -283,11 +283,11 @@ class plain_string_token_t final : public token_t< PARAM_CONTAINER >
 		const std::string m_escaped_path;
 };
 
-template < typename PARAM_CONTAINER >
-token_unique_ptr_t< PARAM_CONTAINER >
+template < typename Param_Container >
+token_unique_ptr_t< Param_Container >
 create_token( std::string path )
 {
-	using token_t = plain_string_token_t< PARAM_CONTAINER >;
+	using token_t = plain_string_token_t< Param_Container >;
 	return std::make_unique< token_t >( std::move( path ) );
 }
 
@@ -296,15 +296,15 @@ create_token( std::string path )
 //
 
 //! Token for paramater (named/indexed).
-template < typename PARAM_CONTAINER, typename NAME_TYPE >
-class parameter_token_t final : public token_t< PARAM_CONTAINER >
+template < typename Param_Container, typename Name >
+class parameter_token_t final : public token_t< Param_Container >
 {
 	public:
 		parameter_token_t( const parameter_token_t & ) = delete;
 		parameter_token_t( parameter_token_t && ) = delete;
 
 		parameter_token_t(
-			NAME_TYPE name,
+			Name name,
 			const std::string & prefix,
 			std::string delimiter,
 			bool optional,
@@ -323,7 +323,7 @@ class parameter_token_t final : public token_t< PARAM_CONTAINER >
 		virtual void
 		append_self_to(
 			std::string & route,
-			param_appender_sequence_t< PARAM_CONTAINER > & param_appender_sequence ) const override
+			param_appender_sequence_t< Param_Container > & param_appender_sequence ) const override
 		{
 			// Basic capturing pattern.
 			auto capture = "(?:" + m_pattern + ")";
@@ -354,11 +354,11 @@ class parameter_token_t final : public token_t< PARAM_CONTAINER >
 
 			route += capture;
 
-			param_appender_sequence.push_back( make_param_setter< PARAM_CONTAINER >( m_name ) );
+			param_appender_sequence.push_back( make_param_setter< Param_Container >( m_name ) );
 		}
 
 	private:
-		const NAME_TYPE m_name;
+		const Name m_name;
 		const std::string m_escaped_prefix;
 		const std::string m_delimiter;
 		const bool m_optional;
@@ -372,10 +372,10 @@ class parameter_token_t final : public token_t< PARAM_CONTAINER >
 //
 
 //! Creates tokent for specific parameter.
-template < typename PARAM_CONTAINER, typename NAME_TYPE >
-inline token_unique_ptr_t< PARAM_CONTAINER >
+template < typename Param_Container, typename Name >
+inline token_unique_ptr_t< Param_Container >
 create_token(
-	NAME_TYPE name,
+	Name name,
 	std::string prefix,
 	std::string delimiter,
 	bool optional,
@@ -383,7 +383,7 @@ create_token(
 	bool partial,
 	std::string pattern )
 {
-	return std::make_unique< parameter_token_t< PARAM_CONTAINER, NAME_TYPE > >(
+	return std::make_unique< parameter_token_t< Param_Container, Name > >(
 		std::move( name ),
 		std::move( prefix ),
 		std::move( delimiter ),
@@ -410,17 +410,17 @@ constexpr std::size_t group_asterisk_idx = 7;
 //
 
 //! Handling of a parameterized token.
-template < typename PARAM_CONTAINER, typename MATCH >
+template < typename Param_Container, typename MATCH >
 inline void
 handle_param_token(
 	const options_t & options,
 	const MATCH & match,
 	std::string & path,
-	token_list_t< PARAM_CONTAINER > & result )
+	token_list_t< Param_Container > & result )
 {
 	// Add preceding path as a plain string token.
 	if( !path.empty() )
-		result.push_back( create_token< PARAM_CONTAINER >( std::move( path ) ) );
+		result.push_back( create_token< Param_Container >( std::move( path ) ) );
 
 	std::string name{ match[ group_name_idx ].str() };
 	std::string prefix{ match[ group_prefix_idx ].str() };
@@ -453,7 +453,7 @@ handle_param_token(
 	{
 		// Named parameter.
 		result.push_back(
-			create_token< PARAM_CONTAINER >(
+			create_token< Param_Container >(
 				name,
 				std::move( prefix ),
 				std::move( delimiter ),
@@ -466,7 +466,7 @@ handle_param_token(
 	{
 		// Indexed parameter.
 		result.push_back(
-			create_token< PARAM_CONTAINER >(
+			create_token< Param_Container >(
 				std::size_t{ 0 }, // just to have a variable of this type.
 				std::move( prefix ),
 				std::move( delimiter ),
@@ -482,11 +482,11 @@ handle_param_token(
 //
 
 //! Parse a string for the raw tokens.
-template < typename PARAM_CONTAINER >
-token_list_t< PARAM_CONTAINER >
+template < typename Param_Container >
+token_list_t< Param_Container >
 parse( const std::string & route_str, const options_t & options )
 {
-	token_list_t< PARAM_CONTAINER > result;
+	token_list_t< Param_Container > result;
 
 	std::string path{};
 	std::regex main_path_regex{ PATH_REGEX_STR };
@@ -533,7 +533,7 @@ parse( const std::string & route_str, const options_t & options )
 	}
 
 	if( !path.empty() )
-		result.push_back( create_token< PARAM_CONTAINER >( std::move( path ) ) );
+		result.push_back( create_token< Param_Container >( std::move( path ) ) );
 
 	return result;
 }
@@ -543,14 +543,14 @@ parse( const std::string & route_str, const options_t & options )
 //
 
 //! Resulting regex and param extraction for a specific route.
-template < typename PARAM_CONTAINER >
+template < typename Param_Container >
 struct route_regex_matcher_data_t
 {
 	route_regex_matcher_data_t() = default;
 	route_regex_matcher_data_t( route_regex_matcher_data_t && ) = default;
 
 	std::regex m_regex;
-	param_appender_sequence_t< PARAM_CONTAINER > m_param_appender_sequence;
+	param_appender_sequence_t< Param_Container > m_param_appender_sequence;
 };
 
 //
@@ -558,11 +558,11 @@ struct route_regex_matcher_data_t
 //
 
 //! Makes route regex matcher out of path tokens.
-template < typename PARAM_CONTAINER >
+template < typename Param_Container >
 auto
-tokens2regexp( const token_list_t< PARAM_CONTAINER > & tokens, const options_t & options )
+tokens2regexp( const token_list_t< Param_Container > & tokens, const options_t & options )
 {
-	route_regex_matcher_data_t< PARAM_CONTAINER > result;
+	route_regex_matcher_data_t< Param_Container > result;
 	std::string route;
 	auto & param_appender_sequence = result.m_param_appender_sequence;
 
@@ -616,14 +616,14 @@ tokens2regexp( const token_list_t< PARAM_CONTAINER > & tokens, const options_t &
 //
 
 //! The main path matching regexp.
-template < typename PARAM_CONTAINER >
+template < typename Param_Container >
 inline auto
 path2regex(
 	const std::string & path,
 	const options_t & options )
 {
-	return impl::tokens2regexp< PARAM_CONTAINER >(
-			impl::parse< PARAM_CONTAINER >( path, options ),
+	return impl::tokens2regexp< Param_Container >(
+			impl::parse< Param_Container >( path, options ),
 			options );
 }
 

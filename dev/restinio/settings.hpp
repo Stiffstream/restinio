@@ -150,7 +150,7 @@ ensure_created(
 //
 
 //! Extra settings needed for working with socket.
-template < typename SETTINGS, typename SOCKET_TYPE >
+template < typename Settings, typename Socket >
 struct extra_settings_t
 {
 	virtual ~extra_settings_t() = default;
@@ -177,30 +177,30 @@ class acceptor_options_t
 
 		//! API for setting/getting options.
 		//! \{
-		template< typename OPTION >
+		template< typename Option >
 		void
-		set_option( const OPTION & option )
+		set_option( const Option & option )
 		{
 			m_acceptor.set_option( option );
 		}
 
-		template< typename OPTION >
+		template< typename Option >
 		void
-		set_option( const OPTION & option, asio::error_code & ec )
+		set_option( const Option & option, asio::error_code & ec )
 		{
 			m_acceptor.set_option( option, ec );
 		}
 
-		template< typename OPTION >
+		template< typename Option >
 		void
-		get_option( OPTION & option )
+		get_option( Option & option )
 		{
 			m_acceptor.get_option( option );
 		}
 
-		template< typename OPTION >
+		template< typename Option >
 		void
-		get_option( OPTION & option, asio::error_code & ec )
+		get_option( Option & option, asio::error_code & ec )
 		{
 			m_acceptor.get_option( option, ec );
 		}
@@ -243,30 +243,30 @@ class socket_options_t
 
 		//! API for setting/getting options.
 		//! \{
-		template< typename OPTION >
+		template< typename Option >
 		void
-		set_option( const OPTION & option )
+		set_option( const Option & option )
 		{
 			m_socket.set_option( option );
 		}
 
-		template< typename OPTION >
+		template< typename Option >
 		void
-		set_option( const OPTION & option, asio::error_code & ec )
+		set_option( const Option & option, asio::error_code & ec )
 		{
 			m_socket.set_option( option, ec );
 		}
 
-		template< typename OPTION >
+		template< typename Option >
 		void
-		get_option( OPTION & option )
+		get_option( Option & option )
 		{
 			m_socket.get_option( option );
 		}
 
-		template< typename OPTION >
+		template< typename Option >
 		void
-		get_option( OPTION & option, asio::error_code & ec )
+		get_option( Option & option, asio::error_code & ec )
 		{
 			m_socket.get_option( option, ec );
 		}

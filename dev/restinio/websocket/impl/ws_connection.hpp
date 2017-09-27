@@ -166,7 +166,7 @@ validate_current_ws_message_body( const message_details_t & md, std::string & pa
 /*
 */
 template <
-		typename TRAITS,
+		typename Traits,
 		typename WS_MESSAGE_HANDLER >
 class ws_connection_t final
 	:	public ws_connection_base_t
@@ -174,19 +174,19 @@ class ws_connection_t final
 	public:
 		using message_handler_t = WS_MESSAGE_HANDLER;
 
-		using timer_factory_t = typename TRAITS::timer_factory_t;
+		using timer_factory_t = typename Traits::timer_factory_t;
 		using timer_factory_handle_t = std::shared_ptr< timer_factory_t >;
 		using timer_guard_instance_t = typename timer_factory_t::timer_guard_instance_t;
-		using logger_t = typename TRAITS::logger_t;
-		using strand_t = typename TRAITS::strand_t;
-		using stream_socket_t = typename TRAITS::stream_socket_t;
+		using logger_t = typename Traits::logger_t;
+		using strand_t = typename Traits::strand_t;
+		using stream_socket_t = typename Traits::stream_socket_t;
 
 		ws_connection_t(
 			//! Connection id.
 			std::uint64_t conn_id,
 			//! Data inherited from http-connection.
 			//! \{
-			restinio::impl::connection_settings_shared_ptr_t< TRAITS > settings,
+			restinio::impl::connection_settings_shared_ptr_t< Traits > settings,
 			stream_socket_t socket,
 			strand_t strand,
 			timer_factory_handle_t timer_factory,
@@ -974,7 +974,7 @@ class ws_connection_t final
 		}
 
 		//! Common paramaters of a connection.
-		restinio::impl::connection_settings_shared_ptr_t< TRAITS > m_settings;
+		restinio::impl::connection_settings_shared_ptr_t< Traits > m_settings;
 
 		//! Connection.
 		stream_socket_t m_socket;

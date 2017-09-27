@@ -75,46 +75,46 @@ class tls_socket_t
 			return lowest_layer().is_open();
 		}
 
-		template< typename... ARGS >
+		template< typename... Args >
 		void
-		cancel( ARGS &&... args )
+		cancel( Args &&... args )
 		{
-			lowest_layer().cancel( std::forward< ARGS >( args )... );
+			lowest_layer().cancel( std::forward< Args >( args )... );
 		}
 
-		template< typename... ARGS >
+		template< typename... Args >
 		auto
-		async_read_some( ARGS &&... args )
+		async_read_some( Args &&... args )
 		{
-			return m_socket->async_read_some( std::forward< ARGS >( args )... );
+			return m_socket->async_read_some( std::forward< Args >( args )... );
 		}
 
-		template< typename... ARGS >
+		template< typename... Args >
 		auto
-		async_write_some( ARGS &&... args )
+		async_write_some( Args &&... args )
 		{
-			return m_socket->async_write_some( std::forward< ARGS >( args )... );
+			return m_socket->async_write_some( std::forward< Args >( args )... );
 		}
 
-		template< typename... ARGS >
+		template< typename... Args >
 		void
-		shutdown( ARGS &&... args )
+		shutdown( Args &&... args )
 		{
-			lowest_layer().shutdown( std::forward< ARGS >( args )... );
+			lowest_layer().shutdown( std::forward< Args >( args )... );
 		}
 
-		template< typename... ARGS >
+		template< typename... Args >
 		void
-		close( ARGS &&... args )
+		close( Args &&... args )
 		{
-			lowest_layer().close( std::forward< ARGS >( args )... );
+			lowest_layer().close( std::forward< Args >( args )... );
 		}
 
-		template< typename... ARGS >
+		template< typename... Args >
 		auto
-		async_handshake( ARGS &&... args )
+		async_handshake( Args &&... args )
 		{
-			return m_socket->async_handshake( std::forward< ARGS >( args )... );
+			return m_socket->async_handshake( std::forward< Args >( args )... );
 		}
 
 	private:

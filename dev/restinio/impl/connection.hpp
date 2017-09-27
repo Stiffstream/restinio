@@ -166,13 +166,13 @@ struct connection_input_t
 	}
 };
 
-template < typename CONNECTION, typename START_READ_CB, typename FAILED_CB >
+template < typename Connection, typename Start_Read_CB, typename Failed_CB >
 void
 prepare_connection_and_start_read(
 	asio::ip::tcp::socket & ,
-	CONNECTION & ,
-	START_READ_CB start_read_cb,
-	FAILED_CB )
+	Connection & ,
+	Start_Read_CB start_read_cb,
+	Failed_CB )
 {
 	// No preparation is needed, start
 	start_read_cb();
@@ -197,18 +197,18 @@ prepare_connection_and_start_read(
 
 	In case of errors connection closes itself.
 */
-template < typename TRAITS >
+template < typename Traits >
 class connection_t final
 	:	public connection_base_t
 {
 	public:
-		using timer_factory_t = typename TRAITS::timer_factory_t;
+		using timer_factory_t = typename Traits::timer_factory_t;
 		using timer_factory_handle_t = std::shared_ptr< timer_factory_t >;
 		using timer_guard_instance_t = typename timer_factory_t::timer_guard_instance_t;
-		using request_handler_t = typename TRAITS::request_handler_t;
-		using logger_t = typename TRAITS::logger_t;
-		using strand_t = typename TRAITS::strand_t;
-		using stream_socket_t = typename TRAITS::stream_socket_t;
+		using request_handler_t = typename Traits::request_handler_t;
+		using logger_t = typename Traits::logger_t;
+		using strand_t = typename Traits::strand_t;
+		using stream_socket_t = typename Traits::stream_socket_t;
 
 		connection_t(
 			//! Connection id.
@@ -216,7 +216,7 @@ class connection_t final
 			//! Connection socket.
 			stream_socket_t && socket,
 			//! Settings that are common for connections.
-			connection_settings_shared_ptr_t< TRAITS > settings,
+			connection_settings_shared_ptr_t< Traits > settings,
 			//! Timeout guard factory.
 			timer_factory_handle_t timer_factory )
 			:	connection_base_t{ conn_id }
@@ -315,7 +315,7 @@ class connection_t final
 				upgrade_internals_t && ) = default;
 
 			upgrade_internals_t(
-				connection_settings_shared_ptr_t< TRAITS > settings,
+				connection_settings_shared_ptr_t< Traits > settings,
 				stream_socket_t socket,
 				strand_t strand,
 				timer_factory_handle_t timer_factory )
@@ -325,7 +325,7 @@ class connection_t final
 				,	m_timer_factory{ std::move( timer_factory ) }
 			{}
 
-			connection_settings_shared_ptr_t< TRAITS > m_settings;
+			connection_settings_shared_ptr_t< Traits > m_settings;
 			stream_socket_t m_socket;
 			strand_t m_strand;
 			timer_factory_handle_t m_timer_factory;
@@ -1003,7 +1003,7 @@ class connection_t final
 		strand_t m_strand;
 
 		//! Common paramaters of a connection.
-		connection_settings_shared_ptr_t< TRAITS > m_settings;
+		connection_settings_shared_ptr_t< Traits > m_settings;
 
 		//! Input routine.
 		connection_input_t m_input;
@@ -1121,17 +1121,17 @@ class connection_t final
 //
 
 //! Factory for connections.
-template < typename TRAITS >
+template < typename Traits >
 class connection_factory_t
 {
 	public:
-		using timer_factory_t = typename TRAITS::timer_factory_t;
+		using timer_factory_t = typename Traits::timer_factory_t;
 		using timer_factory_handle_t = std::shared_ptr< timer_factory_t >;
-		using logger_t = typename TRAITS::logger_t;
-		using stream_socket_t = typename TRAITS::stream_socket_t;
+		using logger_t = typename Traits::logger_t;
+		using stream_socket_t = typename Traits::stream_socket_t;
 
 		connection_factory_t(
-			connection_settings_shared_ptr_t< TRAITS > connection_settings,
+			connection_settings_shared_ptr_t< Traits > connection_settings,
 			std::unique_ptr< socket_options_setter_t > socket_options_setter,
 			timer_factory_handle_t timer_factory )
 			:	m_connection_settings{ std::move( connection_settings ) }
@@ -1147,7 +1147,7 @@ class connection_factory_t
 		create_new_connection(
 			stream_socket_t socket )
 		{
-			using connection_type_t = connection_t< TRAITS >;
+			using connection_type_t = connection_t< Traits >;
 			std::shared_ptr< connection_type_t > result;
 			try
 			{
@@ -1177,7 +1177,7 @@ class connection_factory_t
 	private:
 		std::uint64_t m_connection_id_counter{ 1 };
 
-		connection_settings_shared_ptr_t< TRAITS > m_connection_settings;
+		connection_settings_shared_ptr_t< Traits > m_connection_settings;
 
 		std::unique_ptr< socket_options_setter_t > m_socket_options_setter;
 
