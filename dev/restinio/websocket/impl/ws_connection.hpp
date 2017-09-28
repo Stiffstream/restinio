@@ -152,7 +152,7 @@ validate_current_ws_message_body( const message_details_t & md, std::string & pa
 			md.m_masking_key, payload );
 	}
 
-	if( md.m_opcode == opcode_t::text_frame)
+	if( md.m_opcode == opcode_t::text_frame )
 	{
 		return check_utf8_is_correct( payload );
 	}

@@ -61,12 +61,12 @@ class a_server_t
 			,	m_http_server{
 					restinio::create_child_io_context( 1 ),
 					[this]( auto & settings ){
-						auto mbox = so_direct_mbox();
+						auto mbox = this->so_direct_mbox();
 						settings
 							.port( utest_default_port() )
 							.address( "127.0.0.1" )
-							.request_handler( [mbox]( auto req )
-								{
+							.request_handler(
+								[mbox]( auto req ){
 									if( restinio::http_connection_header_t::upgrade ==
 										req->header().connection() )
 									{
@@ -107,11 +107,6 @@ class a_server_t
 		evt_upgrade_request( const upgrade_request_t & msg )
 		{
 			auto req = msg.m_req;
-			auto ws_key = req->header().get_field("Sec-WebSocket-Key");
-
-			ws_key.append( "258EAFA5-E914-47DA-95CA-C5AB0DC85B11" );
-
-			auto digest = restinio::utils::sha1::make_digest( ws_key );
 
 			m_ws =
 				rws::upgrade< traits_t >(
@@ -201,7 +196,7 @@ class soenv_t : public so_5::environment_t
 		{
 			introduce_coop(
 				so_5::disp::active_obj::create_private_disp( *this )->binder(),
-				[ & ]( so_5::coop_t & coop ) {
+				[&]( so_5::coop_t & coop ) {
 					coop.make_agent< a_server_t >();
 				} );
 		}
@@ -227,68 +222,90 @@ start_soenv_in_separate_thread( so_5::environment_t & env )
 	return soenv_thread;
 }
 
+template < typename Socket >
+void
+fragmented_send( Socket & socket, void * buf, std::size_t n )
+{
+	const auto * b = static_cast< std::uint8_t * >( buf );
+	while( n-- )
+	{
+		asio::write( socket, asio::buffer( b++, 1 ) );
+		if( 0 < n )
+			std::this_thread::sleep_for( std::chrono::milliseconds( n ) );
+	}
+}
+
 TEST_CASE( "Simple echo" , "[ws_connection][echo][normal_close]" )
 {
 
 	soenv_t soenv{ so_5::environment_params_t{} };
 	auto soenv_thread = start_soenv_in_separate_thread( soenv );
 
-	do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
-		std::vector< std::uint8_t > bin_ws_msg_data =
-				{ 0x81, 0x85, 0xAA,0xBB,0xCC,0xDD,
-				  0xAA ^ 'H', 0xBB ^ 'e', 0xCC ^ 'l', 0xDD ^ 'l', 0xAA ^ 'o' };
-
-		REQUIRE_NOTHROW(
+	do_with_socket(
+		[&]( auto & socket, auto & /*io_context*/ ){
+			REQUIRE_NOTHROW(
 				asio::write(
 					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
-		std::array< std::uint8_t, 1024 > data;
+			std::array< std::uint8_t, 1024 > data;
 
-		std::size_t len{ 0 };
-		REQUIRE_NOTHROW(
+			std::size_t len{ 0 };
+			REQUIRE_NOTHROW(
 				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
 			);
 
-		REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( bin_ws_msg_data.data(), bin_ws_msg_data.size() ) )
-			);
+			std::vector< std::uint8_t > msg_frame =
+					{ 0x81, 0x85, 0xAA,0xBB,0xCC,0xDD,
+					  0xAA ^ 'H', 0xBB ^ 'e', 0xCC ^ 'l', 0xDD ^ 'l', 0xAA ^ 'o' };
+			SECTION( "simple msg_frame")
+			{
+				REQUIRE_NOTHROW(
+					asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
+				);
+			}
+			SECTION( "fragmentated msg_frame")
+			{
+				REQUIRE_NOTHROW(
+					fragmented_send( socket, msg_frame.data(), msg_frame.size() )
+				);
+			}
 
-		REQUIRE_NOTHROW(
+			REQUIRE_NOTHROW(
 				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
 			);
 
-		REQUIRE( 7 == len );
-		REQUIRE( 0x81 == data[ 0 ] );
-		REQUIRE( 0x05 == data[ 1 ] );
-		REQUIRE( 'H' == data[ 2 ] );
-		REQUIRE( 'e' == data[ 3 ] );
-		REQUIRE( 'l' == data[ 4 ] );
-		REQUIRE( 'l' == data[ 5 ] );
-		REQUIRE( 'o' == data[ 6 ] );
+			REQUIRE( 7 == len );
+			REQUIRE( 0x81 == data[ 0 ] );
+			REQUIRE( 0x05 == data[ 1 ] );
+			REQUIRE( 'H' == data[ 2 ] );
+			REQUIRE( 'e' == data[ 3 ] );
+			REQUIRE( 'l' == data[ 4 ] );
+			REQUIRE( 'l' == data[ 5 ] );
+			REQUIRE( 'o' == data[ 6 ] );
 
-		std::vector< std::uint8_t > close_frame =
-			{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xe8 };
+			std::vector< std::uint8_t > close_frame =
+				{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xe8 };
 
-		REQUIRE_NOTHROW(
+			REQUIRE_NOTHROW(
 				asio::write(
 					socket, asio::buffer( close_frame.data(), close_frame.size() ) )
 			);
 
-		REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
-			);
-		REQUIRE( 4 == len );
-		REQUIRE( 0x88 == data[ 0 ] );
-		REQUIRE( 0x02 == data[ 1 ] );
-		REQUIRE( 0x03 == data[ 2 ] );
-		REQUIRE( 0xe8 == data[ 3 ] );
+			REQUIRE_NOTHROW(
+					len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				);
+			REQUIRE( 4 == len );
+			REQUIRE( 0x88 == data[ 0 ] );
+			REQUIRE( 0x02 == data[ 1 ] );
+			REQUIRE( 0x03 == data[ 2 ] );
+			REQUIRE( 0xe8 == data[ 3 ] );
 
-		asio::error_code ec;
-		len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
-		REQUIRE( ec );
-		REQUIRE( asio::error::eof == ec.value() );
-	} );
+			asio::error_code ec;
+			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			REQUIRE( ec );
+			REQUIRE( asio::error::eof == ec.value() );
+		} );
 
 	soenv.stop();
 	soenv_thread.join();
@@ -296,65 +313,74 @@ TEST_CASE( "Simple echo" , "[ws_connection][echo][normal_close]" )
 
 TEST_CASE( "Ping" , "[ws_connection][ping][normal_close]" )
 {
-
 	soenv_t soenv{ so_5::environment_params_t{} };
 	auto soenv_thread = start_soenv_in_separate_thread( soenv );
 
-	do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
-		std::vector< std::uint8_t > bin_ws_msg_data =
-				{ 0x89, 0x84, 0x0A,0xB0,0x0C,0xD0,
-				  0x0A ^ 'P', 0xB0 ^ 'i', 0x0C ^ 'n', 0xD0 ^ 'g' };
-
-		REQUIRE_NOTHROW(
+	do_with_socket(
+		[&]( auto & socket, auto & /*io_context*/ ){
+			REQUIRE_NOTHROW(
 				asio::write(
 					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
-		std::array< std::uint8_t, 1024 > data;
+			std::array< std::uint8_t, 1024 > data;
 
-		std::size_t len{ 0 };
-		REQUIRE_NOTHROW(
+			std::size_t len{ 0 };
+			REQUIRE_NOTHROW(
 				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
 			);
 
-		REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( bin_ws_msg_data.data(), bin_ws_msg_data.size() ) )
-			);
+			std::vector< std::uint8_t > msg_frame =
+					{ 0x89, 0x84, 0x0A,0xB0,0x0C,0xD0,
+					  0x0A ^ 'P', 0xB0 ^ 'i', 0x0C ^ 'n', 0xD0 ^ 'g' };
 
-		REQUIRE_NOTHROW(
+			SECTION( "simple msg_frame")
+			{
+				REQUIRE_NOTHROW(
+					asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
+				);
+			}
+			SECTION( "fragmentated msg_frame")
+			{
+				REQUIRE_NOTHROW(
+					fragmented_send( socket, msg_frame.data(), msg_frame.size() )
+				);
+			}
+
+			REQUIRE_NOTHROW(
 				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
 			);
 
-		REQUIRE( 6 == len );
-		REQUIRE( 0x8A == data[ 0 ] );
-		REQUIRE( 0x04 == data[ 1 ] );
-		REQUIRE( 'P' == data[ 2 ] );
-		REQUIRE( 'i' == data[ 3 ] );
-		REQUIRE( 'n' == data[ 4 ] );
-		REQUIRE( 'g' == data[ 5 ] );
+			REQUIRE( 6 == len );
+			REQUIRE( 0x8A == data[ 0 ] );
+			REQUIRE( 0x04 == data[ 1 ] );
+			REQUIRE( 'P' == data[ 2 ] );
+			REQUIRE( 'i' == data[ 3 ] );
+			REQUIRE( 'n' == data[ 4 ] );
+			REQUIRE( 'g' == data[ 5 ] );
 
-		std::vector< std::uint8_t > close_frame =
-			{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xe8 };
+			std::vector< std::uint8_t > close_frame =
+				{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xe8 };
 
-		REQUIRE_NOTHROW(
+			REQUIRE_NOTHROW(
 				asio::write(
 					socket, asio::buffer( close_frame.data(), close_frame.size() ) )
 			);
 
-		REQUIRE_NOTHROW(
+			REQUIRE_NOTHROW(
 				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
 			);
-		REQUIRE( 4 == len );
-		REQUIRE( 0x88 == data[ 0 ] );
-		REQUIRE( 0x02 == data[ 1 ] );
-		REQUIRE( 0x03 == data[ 2 ] );
-		REQUIRE( 0xe8 == data[ 3 ] );
+			REQUIRE( 4 == len );
+			REQUIRE( 0x88 == data[ 0 ] );
+			REQUIRE( 0x02 == data[ 1 ] );
+			REQUIRE( 0x03 == data[ 2 ] );
+			REQUIRE( 0xe8 == data[ 3 ] );
 
-		asio::error_code ec;
-		len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
-		REQUIRE( ec );
-		REQUIRE( asio::error::eof == ec.value() );
-	} );
+			asio::error_code ec;
+			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			REQUIRE( ec );
+			REQUIRE( asio::error::eof == ec.value() );
+		} );
 
 	soenv.stop();
 	soenv_thread.join();
@@ -365,52 +391,62 @@ TEST_CASE( "Close" , "[ws_connection][close][normal_close]" )
 	soenv_t soenv{ so_5::environment_params_t{} };
 	auto soenv_thread = start_soenv_in_separate_thread( soenv );
 
-	do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
+	do_with_socket(
+		[&]( auto & socket, auto & /*io_context*/ ){
 
-		std::vector< std::uint8_t > bin_ws_msg_data =
-				{ 0x81, 0x85, 0x0A,0xB0,0x0C,0xD0,
-				  0x0A ^ 'c', 0xB0 ^ 'l', 0x0C ^ 'o', 0xD0 ^ 's', 0x0A ^ 'e' };
-
-		REQUIRE_NOTHROW(
+			REQUIRE_NOTHROW(
 				asio::write(
 					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
-		std::array< std::uint8_t, 1024 > data;
+			std::array< std::uint8_t, 1024 > data;
 
-		std::size_t len{ 0 };
-		REQUIRE_NOTHROW(
+			std::size_t len{ 0 };
+			REQUIRE_NOTHROW(
 				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
 			);
 
-		REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( bin_ws_msg_data.data(), bin_ws_msg_data.size() ) )
-			);
+			std::vector< std::uint8_t > msg_frame =
+					{ 0x81, 0x85, 0x0A,0xB0,0x0C,0xD0,
+					  0x0A ^ 'c', 0xB0 ^ 'l', 0x0C ^ 'o', 0xD0 ^ 's', 0x0A ^ 'e' };
 
-		REQUIRE_NOTHROW(
+			SECTION( "simple msg_frame")
+			{
+				REQUIRE_NOTHROW(
+					asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
+				);
+			}
+			SECTION( "fragmentated msg_frame")
+			{
+				REQUIRE_NOTHROW(
+					fragmented_send( socket, msg_frame.data(), msg_frame.size() )
+				);
+			}
+
+			REQUIRE_NOTHROW(
 				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
 			);
 
-		REQUIRE( 4 == len );
-		REQUIRE( 0x88 == data[ 0 ] );
-		REQUIRE( 0x02 == data[ 1 ] );
-		REQUIRE( 0x03 == data[ 2 ] );
-		REQUIRE( 0xe8 == data[ 3 ] );
+			REQUIRE( 4 == len );
+			REQUIRE( 0x88 == data[ 0 ] );
+			REQUIRE( 0x02 == data[ 1 ] );
+			REQUIRE( 0x03 == data[ 2 ] );
+			REQUIRE( 0xe8 == data[ 3 ] );
 
-		std::vector< std::uint8_t > close_frame =
-			{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xe8 };
+			std::vector< std::uint8_t > close_frame =
+				{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xe8 };
 
-		REQUIRE_NOTHROW(
+			REQUIRE_NOTHROW(
 				asio::write(
 					socket, asio::buffer( close_frame.data(), close_frame.size() ) )
 			);
 
-		asio::error_code ec;
-		len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
-		REQUIRE( 0 == len );
-		REQUIRE( ec );
-		REQUIRE( asio::error::eof == ec.value() );
-	} );
+			asio::error_code ec;
+			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			REQUIRE( 0 == len );
+			REQUIRE( ec );
+			REQUIRE( asio::error::eof == ec.value() );
+		} );
 
 	soenv.stop();
 	soenv_thread.join();
@@ -421,156 +457,242 @@ TEST_CASE( "Shutdown" , "[ws_connection][shutdown][normal_close]" )
 	soenv_t soenv{ so_5::environment_params_t{} };
 	auto soenv_thread = start_soenv_in_separate_thread( soenv );
 
-	do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
-
-		std::vector< std::uint8_t > bin_ws_msg_data =
-				{ 0x81, 0x88, 0x0A,0xB0,0x0C,0xD0,
-				  0x0A ^ 's', 0xB0 ^ 'h', 0x0C ^ 'u', 0xD0 ^ 't',
-				  0x0A ^ 'd', 0xB0 ^ 'o', 0x0C ^ 'w', 0xD0 ^ 'n' };
-
-		REQUIRE_NOTHROW(
+	do_with_socket(
+		[&]( auto & socket, auto & /*io_context*/ ){
+			REQUIRE_NOTHROW(
 				asio::write(
 					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
-		std::array< std::uint8_t, 1024 > data;
+			std::array< std::uint8_t, 1024 > data;
 
-		std::size_t len{ 0 };
-		REQUIRE_NOTHROW(
+			std::size_t len{ 0 };
+			REQUIRE_NOTHROW(
 				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
 			);
 
-		REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( bin_ws_msg_data.data(), bin_ws_msg_data.size() ) )
+			std::vector< std::uint8_t > msg_frame =
+					{ 0x81, 0x88, 0x0A,0xB0,0x0C,0xD0,
+					  0x0A ^ 's', 0xB0 ^ 'h', 0x0C ^ 'u', 0xD0 ^ 't',
+					  0x0A ^ 'd', 0xB0 ^ 'o', 0x0C ^ 'w', 0xD0 ^ 'n' };
+
+			REQUIRE_NOTHROW(
+				asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
 			);
 
-		REQUIRE_NOTHROW(
+			REQUIRE_NOTHROW(
 				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
 			);
 
-		REQUIRE( 4 == len );
-		REQUIRE( 0x88 == data[ 0 ] );
-		REQUIRE( 0x02 == data[ 1 ] );
-		REQUIRE( 0x03 == data[ 2 ] );
-		REQUIRE( 0xe8 == data[ 3 ] );
+			REQUIRE( 4 == len );
+			REQUIRE( 0x88 == data[ 0 ] );
+			REQUIRE( 0x02 == data[ 1 ] );
+			REQUIRE( 0x03 == data[ 2 ] );
+			REQUIRE( 0xe8 == data[ 3 ] );
 
-		std::vector< std::uint8_t > close_frame =
-			{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xe8 };
+			std::vector< std::uint8_t > close_frame =
+				{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xe8 };
 
-		REQUIRE_NOTHROW(
-				asio::write(
-					socket, asio::buffer( close_frame.data(), close_frame.size() ) )
-			);
+			SECTION( "simple close_frame")
+			{
+				REQUIRE_NOTHROW(
+					asio::write(
+						socket, asio::buffer( close_frame.data(), close_frame.size() ) )
+				);
+			}
+			SECTION( "fragmentated close_frame")
+			{
+				REQUIRE_NOTHROW(
+					fragmented_send( socket, close_frame.data(), close_frame.size() )
+				);
+			}
 
-		asio::error_code ec;
-		len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
-		REQUIRE( 0 == len );
-		REQUIRE( ec );
-		REQUIRE( asio::error::eof == ec.value() );
-	} );
+			asio::error_code ec;
+			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			REQUIRE( 0 == len );
+			REQUIRE( ec );
+			REQUIRE( asio::error::eof == ec.value() );
+		} );
 
 	soenv.stop();
 	soenv_thread.join();
 }
 
-TEST_CASE( "Invalid header" , "[ws_connection][error_close]" )
+TEST_CASE( "Kill" , "[ws_connection][kill][abnormal_close]" )
 {
-	std::vector< std::uint8_t > bin_ws_msg_data =
-		{ 0x81, 0x05, 'H', 'e', 'l', 'l', 'o'};
-
 	soenv_t soenv{ so_5::environment_params_t{} };
 	auto soenv_thread = start_soenv_in_separate_thread( soenv );
 
-	do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
+	do_with_socket(
+		[&]( auto & socket, auto & /*io_context*/ ){
+			REQUIRE_NOTHROW(
+					asio::write(
+						socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+				);
 
-		REQUIRE_NOTHROW(
+			std::array< std::uint8_t, 1024 > data;
+
+			std::size_t len{ 0 };
+			REQUIRE_NOTHROW(
+					len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				);
+
+			std::vector< std::uint8_t > msg_frame =
+					{ 0x81, 0x84, 0x0A,0xB0,0x0C,0xD0,
+					  0x0A ^ 'k', 0xB0 ^ 'i', 0x0C ^ 'l', 0xD0 ^ 'l' };
+
+			SECTION( "simple msg_frame")
+			{
+				REQUIRE_NOTHROW(
+						asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
+					);
+			}
+			SECTION( "fragmentated msg_frame")
+			{
+				REQUIRE_NOTHROW(
+					fragmented_send( socket, msg_frame.data(), msg_frame.size() )
+				);
+			}
+
+			asio::error_code ec;
+			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			REQUIRE( 0 == len );
+			REQUIRE( ec );
+			REQUIRE( asio::error::eof == ec.value() );
+		} );
+
+	soenv.stop();
+	soenv_thread.join();
+}
+
+TEST_CASE( "Invalid header", "[ws_connection][error_close]" )
+{
+	soenv_t soenv{ so_5::environment_params_t{} };
+	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+
+	do_with_socket(
+		[&]( auto & socket, auto & /*io_context*/ ){
+			REQUIRE_NOTHROW(
 				asio::write(
 					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
-		std::array< std::uint8_t, 1024 > data;
+			std::array< std::uint8_t, 1024 > data;
 
-		std::size_t len{ 0 };
-		REQUIRE_NOTHROW(
+			std::size_t len{ 0 };
+			REQUIRE_NOTHROW(
 				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
 			);
 
-		REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( bin_ws_msg_data.data(), bin_ws_msg_data.size() ) )
+			std::vector< std::uint8_t > msg_frame;
+			SECTION( "No mask" )
+			{
+				msg_frame.assign( { 0x81, 0x05, 'H', 'e', 'l', 'l', 'o'} );
+			}
+			SECTION( "No rsv1" )
+			{
+				msg_frame.assign(
+					{ 0x81 + 0x40, 0x85, 0xAA,0xBB,0xCC,0xDD,
+					  0xAA ^ 'H', 0xBB ^ 'e', 0xCC ^ 'l', 0xDD ^ 'l', 0xAA ^ 'o'} );
+			}
+			SECTION( "No rsv2" )
+			{
+				msg_frame.assign(
+					{ 0x81 + 0x20, 0x85, 0xAA,0xBB,0xCC,0xDD,
+					  0xAA ^ 'H', 0xBB ^ 'e', 0xCC ^ 'l', 0xDD ^ 'l', 0xAA ^ 'o'} );
+			}
+			SECTION( "No rsv3" )
+			{
+				msg_frame.assign(
+					{ 0x81 + 0x10, 0x85, 0xAA,0xBB,0xCC,0xDD,
+					  0xAA ^ 'H', 0xBB ^ 'e', 0xCC ^ 'l', 0xDD ^ 'l', 0xAA ^ 'o'} );
+			}
+
+			REQUIRE_NOTHROW(
+				asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
 			);
 
-		// Validation would fail, so no data in return.
-		REQUIRE_NOTHROW(
+			// Validation would fail, close frame in return.
+			REQUIRE_NOTHROW(
 				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
 			);
-		REQUIRE( 4 == len );
-		REQUIRE( 0x88 == data[ 0 ] );
-		REQUIRE( 0x02 == data[ 1 ] );
-		REQUIRE( (1002 >> 8) == data[ 2 ] );
-		REQUIRE( (1002 & 0xFF) == data[ 3 ] );
+			REQUIRE( 4 == len );
+			REQUIRE( 0x88 == data[ 0 ] );
+			REQUIRE( 0x02 == data[ 1 ] );
+			REQUIRE( (1002 >> 8) == data[ 2 ] );
+			REQUIRE( (1002 & 0xFF) == data[ 3 ] );
 
-		asio::error_code ec;
-		len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
-		REQUIRE( ec );
-		REQUIRE( asio::error::eof == ec.value() );
-	} );
+			asio::error_code ec;
+			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			REQUIRE( ec );
+			REQUIRE( asio::error::eof == ec.value() );
+		} );
 
 	soenv.stop();
 	soenv_thread.join();
-
 }
 
 TEST_CASE( "Invalid payload" , "[ws_connection][error_close]" )
 {
-	std::vector< std::uint8_t > bin_ws_msg_data =
-			{ 0x81, 0x85, 0x37, 0xfa, 0x21, 0x3d, 'H', 'e', 'l', 'l', 'o' };
-
 	soenv_t soenv{ so_5::environment_params_t{} };
 	auto soenv_thread = start_soenv_in_separate_thread( soenv );
 
-	do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
+	do_with_socket(
+		[&]( auto & socket, auto & /*io_context*/ ){
 
-		REQUIRE_NOTHROW(
+			REQUIRE_NOTHROW(
 				asio::write(
 					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
-		std::array< std::uint8_t, 1024 > data;
+			std::array< std::uint8_t, 1024 > data;
 
-		std::size_t len{ 0 };
-		REQUIRE_NOTHROW(
+			std::size_t len{ 0 };
+			REQUIRE_NOTHROW(
 				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
 			);
 
-		REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( bin_ws_msg_data.data(), bin_ws_msg_data.size() ) )
-			);
+			std::vector< std::uint8_t > msg_frame =
+					{ 0x81, 0x85, 0x37, 0xfa, 0x21, 0x3d, 'H', 'e', 'l', 'l', 'o' };
 
-		// Validation would fail, so no data in return.
-		REQUIRE_NOTHROW(
+			SECTION( "simple msg_frame")
+			{
+				REQUIRE_NOTHROW(
+					asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
+				);
+			}
+			SECTION( "fragmentated msg_frame")
+			{
+				REQUIRE_NOTHROW(
+					fragmented_send( socket, msg_frame.data(), msg_frame.size() )
+				);
+			}
+
+			// Validation would fail, so no data in return.
+			REQUIRE_NOTHROW(
 				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
 			);
-		REQUIRE( 4 == len );
+			REQUIRE( 4 == len );
 
-		// TODO: какие должны быть байты?
-		REQUIRE( 0x88 == (unsigned)data[ 0 ] );
-		REQUIRE( 0x02 == data[ 1 ] );
-		REQUIRE( (1007 >> 8) == data[ 2 ] );
-		REQUIRE( (1007 & 0xFF) == data[ 3 ] );
+			// TODO: какие должны быть байты?
+			REQUIRE( 0x88 == (unsigned)data[ 0 ] );
+			REQUIRE( 0x02 == data[ 1 ] );
+			REQUIRE( (1007 >> 8) == data[ 2 ] );
+			REQUIRE( (1007 & 0xFF) == data[ 3 ] );
 
-		std::vector< std::uint8_t > close_frame =
-			{ 0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xef };
+			std::vector< std::uint8_t > close_frame =
+				{ 0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xef };
 
-		REQUIRE_NOTHROW(
+			REQUIRE_NOTHROW(
 				asio::write( socket, asio::buffer( close_frame.data(), close_frame.size() ) )
 			);
 
-		asio::error_code ec;
-		len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
-		REQUIRE( 0 == len );
-		REQUIRE( ec );
-		REQUIRE( asio::error::eof == ec.value() );
-	} );
+			asio::error_code ec;
+			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			REQUIRE( 0 == len );
+			REQUIRE( ec );
+			REQUIRE( asio::error::eof == ec.value() );
+		} );
 
 	soenv.stop();
 	soenv_thread.join();
