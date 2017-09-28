@@ -49,6 +49,17 @@ struct msg_ws_message_t : public so_5::message_t
 	rws::message_handle_t m_msg;
 };
 
+//
+// g_last_close_code
+//
+
+std::atomic< std::uint16_t > g_last_close_code{ 0 };
+
+//
+// a_server_t
+//
+
+//! Agent running ws server logic.
 class a_server_t
 	:	public so_5::agent_t
 {
@@ -162,7 +173,7 @@ class a_server_t
 				// }
 				else if( rws::opcode_t::connection_close_frame == req.opcode() )
 				{
-					// TODO: print status code.
+					g_last_close_code = (std::uint16_t)rws::status_code_from_bin( req.payload() );
 					m_ws.reset();
 				}
 			}
@@ -237,6 +248,7 @@ fragmented_send( Socket & socket, void * buf, std::size_t n )
 
 TEST_CASE( "Simple echo" , "[ws_connection][echo][normal_close]" )
 {
+	g_last_close_code = 0;
 
 	soenv_t soenv{ so_5::environment_params_t{} };
 	auto soenv_thread = start_soenv_in_separate_thread( soenv );
@@ -305,14 +317,19 @@ TEST_CASE( "Simple echo" , "[ws_connection][echo][normal_close]" )
 			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
 			REQUIRE( ec );
 			REQUIRE( asio::error::eof == ec.value() );
+
 		} );
 
 	soenv.stop();
 	soenv_thread.join();
+
+	REQUIRE( 1000 == g_last_close_code );
 }
 
 TEST_CASE( "Ping" , "[ws_connection][ping][normal_close]" )
 {
+	g_last_close_code = 0;
+
 	soenv_t soenv{ so_5::environment_params_t{} };
 	auto soenv_thread = start_soenv_in_separate_thread( soenv );
 
@@ -384,10 +401,14 @@ TEST_CASE( "Ping" , "[ws_connection][ping][normal_close]" )
 
 	soenv.stop();
 	soenv_thread.join();
+
+	REQUIRE( 1000 == g_last_close_code );
 }
 
 TEST_CASE( "Close" , "[ws_connection][close][normal_close]" )
 {
+	g_last_close_code = 0;
+
 	soenv_t soenv{ so_5::environment_params_t{} };
 	auto soenv_thread = start_soenv_in_separate_thread( soenv );
 
@@ -450,10 +471,14 @@ TEST_CASE( "Close" , "[ws_connection][close][normal_close]" )
 
 	soenv.stop();
 	soenv_thread.join();
+
+	// User initiates close.
+	REQUIRE( 0 == g_last_close_code );
 }
 
 TEST_CASE( "Shutdown" , "[ws_connection][shutdown][normal_close]" )
 {
+	g_last_close_code = 0;
 	soenv_t soenv{ so_5::environment_params_t{} };
 	auto soenv_thread = start_soenv_in_separate_thread( soenv );
 
@@ -516,10 +541,14 @@ TEST_CASE( "Shutdown" , "[ws_connection][shutdown][normal_close]" )
 
 	soenv.stop();
 	soenv_thread.join();
+
+	// User initiates close via shutdown.
+	REQUIRE( 0 == g_last_close_code );
 }
 
 TEST_CASE( "Kill" , "[ws_connection][kill][abnormal_close]" )
 {
+	g_last_close_code = 0;
 	soenv_t soenv{ so_5::environment_params_t{} };
 	auto soenv_thread = start_soenv_in_separate_thread( soenv );
 
@@ -563,10 +592,12 @@ TEST_CASE( "Kill" , "[ws_connection][kill][abnormal_close]" )
 
 	soenv.stop();
 	soenv_thread.join();
+	REQUIRE( 0 == g_last_close_code );
 }
 
 TEST_CASE( "Invalid header", "[ws_connection][error_close]" )
 {
+	g_last_close_code = 0;
 	soenv_t soenv{ so_5::environment_params_t{} };
 	auto soenv_thread = start_soenv_in_separate_thread( soenv );
 
@@ -630,10 +661,13 @@ TEST_CASE( "Invalid header", "[ws_connection][error_close]" )
 
 	soenv.stop();
 	soenv_thread.join();
+
+	REQUIRE( 1002 == g_last_close_code );
 }
 
 TEST_CASE( "Invalid payload" , "[ws_connection][error_close]" )
 {
+	g_last_close_code = 0;
 	soenv_t soenv{ so_5::environment_params_t{} };
 	auto soenv_thread = start_soenv_in_separate_thread( soenv );
 
@@ -675,7 +709,7 @@ TEST_CASE( "Invalid payload" , "[ws_connection][error_close]" )
 			REQUIRE( 4 == len );
 
 			// TODO: какие должны быть байты?
-			REQUIRE( 0x88 == (unsigned)data[ 0 ] );
+			REQUIRE( 0x88 == data[ 0 ] );
 			REQUIRE( 0x02 == data[ 1 ] );
 			REQUIRE( (1007 >> 8) == data[ 2 ] );
 			REQUIRE( (1007 & 0xFF) == data[ 3 ] );
@@ -696,4 +730,6 @@ TEST_CASE( "Invalid payload" , "[ws_connection][error_close]" )
 
 	soenv.stop();
 	soenv_thread.join();
+
+	REQUIRE( 1007 == g_last_close_code );
 }
