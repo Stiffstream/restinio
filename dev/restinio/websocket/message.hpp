@@ -57,12 +57,10 @@ status_code_to_bin( status_code_t code )
 {
 	using namespace ::restinio::utils::impl::bitops;
 
-	std::string result;
-	result.push_back( n_bits_from< std::uint16_t, 8 >(
-		static_cast<std::uint16_t>(code) ) );
-	result.push_back( n_bits_from< std::uint16_t, 0 >(
-		static_cast<std::uint16_t>(code) ) );
-	return result;
+	return {
+		n_bits_from<char, 8>( static_cast<std::uint16_t>(code) ),
+		n_bits_from<char, 0>( static_cast<std::uint16_t>(code) )
+	};
 }
 
 inline status_code_t

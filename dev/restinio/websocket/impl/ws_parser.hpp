@@ -24,7 +24,7 @@ namespace restinio
 namespace websocket
 {
 
-using byte_t = char;
+using byte_t = unsigned char;
 using raw_data_t = std::string;
 
 namespace impl
