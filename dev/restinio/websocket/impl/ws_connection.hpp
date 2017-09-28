@@ -1056,13 +1056,13 @@ class ws_connection_t final
 
 		//! \}
 
-		//! Logger for operation
-		logger_t & m_logger;
-
 		//! Input routine.
 		connection_input_t m_input;
 
 		message_handler_t m_msg_handler;
+
+		//! Logger for operation
+		logger_t & m_logger;
 
 		//! Write to socket operation context.
 		restinio::impl::raw_resp_output_ctx_t m_resp_out_ctx;
