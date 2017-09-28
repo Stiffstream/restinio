@@ -61,10 +61,11 @@ class a_server_t
 			,	m_http_server{
 					restinio::create_child_io_context( 1 ),
 					[this]( auto & settings ){
+						auto mbox = so_direct_mbox();
 						settings
 							.port( utest_default_port() )
 							.address( "127.0.0.1" )
-							.request_handler( [ mbox = this->so_direct_mbox() ]( auto req )
+							.request_handler( [mbox]( auto req )
 								{
 									if( restinio::http_connection_header_t::upgrade ==
 										req->header().connection() )
