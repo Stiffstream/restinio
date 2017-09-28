@@ -496,36 +496,6 @@ write_message_details(
 	return result;
 }
 
-inline raw_data_t
-status_code_to_bin( status_code_t code )
-{
-	using namespace ::restinio::utils::impl::bitops;
-
-	raw_data_t result;
-	result.push_back( n_bits_from< std::uint16_t, 8 >(
-		static_cast<std::uint16_t>(code) ) );
-	result.push_back( n_bits_from< std::uint16_t, 0 >(
-		static_cast<std::uint16_t>(code) ) );
-	return result;
-}
-
-inline status_code_t
-status_code_from_bin( raw_data_t data )
-{
-	using namespace ::restinio::utils::impl::bitops;
-
-	std::uint16_t result{ 0 };
-	if( 2 >= data.size() )
-	{
-		result |= static_cast< std::uint8_t >( data[ 0 ] );
-		result <<= 8;
-		result |= static_cast< std::uint8_t >( data[ 1 ] );
-	}
-
-	// TODO: make it ok.
-	return (status_code_t)result;
-}
-
 } /* namespace impl */
 
 } /* namespace websocket */

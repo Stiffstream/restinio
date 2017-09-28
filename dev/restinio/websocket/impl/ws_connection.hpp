@@ -379,17 +379,20 @@ class ws_connection_t final
 		void
 		close_impl()
 		{
-			m_logger.trace( [&]{
-				return fmt::format(
-						"[ws_connection:{}] close socket",
-						connection_id() );
-			} );
+			m_close_impl.run_if_first(
+				[&]{
+					m_logger.trace( [&]{
+						return fmt::format(
+								"[ws_connection:{}] close socket",
+								connection_id() );
+					} );
 
-			asio::error_code ignored_ec;
-			m_socket.shutdown(
-				asio::ip::tcp::socket::shutdown_both,
-				ignored_ec );
-			m_socket.close();
+					asio::error_code ignored_ec;
+					m_socket.shutdown(
+						asio::ip::tcp::socket::shutdown_both,
+						ignored_ec );
+					m_socket.close();
+				} );
 		}
 
 		//! Start waiting for close-frame.
@@ -872,11 +875,18 @@ class ws_connection_t final
 
 			if( is_close_frame )
 			{
-				m_close_frame_to_peer.disable();
+				m_logger.trace( [&]{
+					return fmt::format(
+							"[ws_connection:{}] user sends close frame",
+							connection_id() );
+				} );
+
+				m_close_frame_to_peer.disable(); // It is formed and sent by user
+				m_close_frame_to_user.disable(); // And user knows that websocket is closed.
 				// No more writes.
 				m_write_state = write_state_t::write_disabled;
 
-				//TODO start waiting only close-frame.
+				// Start waiting only close-frame.
 				start_waiting_close_frame_only();
 			}
 
@@ -1119,6 +1129,7 @@ class ws_connection_t final
 
 		one_shot_action_t m_close_frame_to_user;
 		one_shot_action_t m_close_frame_to_peer;
+		one_shot_action_t m_close_impl;
 };
 
 // //! Context for handling websocket connections.
