@@ -174,6 +174,7 @@ class a_server_t
 				else if( rws::opcode_t::connection_close_frame == req.opcode() )
 				{
 					g_last_close_code = (std::uint16_t)rws::status_code_from_bin( req.payload() );
+					std::cout << "CLOSE FRAME: " << g_last_close_code << std::endl;
 					m_ws.reset();
 				}
 			}
@@ -732,4 +733,78 @@ TEST_CASE( "Invalid payload" , "[ws_connection][error_close]" )
 	soenv_thread.join();
 
 	REQUIRE( 1007 == g_last_close_code );
+}
+
+TEST_CASE( "Connection lost" , "[ws_connection][error_close][connection_lost]" )
+{
+	g_last_close_code = 0;
+	soenv_t soenv{ so_5::environment_params_t{} };
+	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+
+	do_with_socket(
+		[&]( auto & socket, auto & /*io_context*/ ){
+
+			REQUIRE_NOTHROW(
+				asio::write(
+					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+			);
+
+			std::array< std::uint8_t, 1024 > data;
+
+			std::size_t len{ 0 };
+			REQUIRE_NOTHROW(
+				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+			);
+
+			std::vector< std::uint8_t > msg_frame =
+					{ 0x81, 0x85, 0xAA,0xBB,0xCC,0xDD,
+					  0xAA ^ 'H', 0xBB ^ 'e', 0xCC ^ 'l', 0xDD ^ 'l', 0xAA ^ 'o' };
+
+			SECTION( "reset before msg")
+			{
+				std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+				// Do nothing.
+			}
+			SECTION( "after header first byte")
+			{
+				REQUIRE_NOTHROW(
+					asio::write( socket, asio::buffer( msg_frame.data(), 1 ) )
+				);
+			}
+			SECTION( "after header second byte")
+			{
+				REQUIRE_NOTHROW(
+					asio::write( socket, asio::buffer( msg_frame.data(), 2 ) )
+				);
+			}
+			SECTION( "in the middle of mask")
+			{
+				REQUIRE_NOTHROW(
+					asio::write( socket, asio::buffer( msg_frame.data(), 4 ) )
+				);
+			}
+			SECTION( "after mask before payload")
+			{
+				REQUIRE_NOTHROW(
+					asio::write( socket, asio::buffer( msg_frame.data(), 6 ) )
+				);
+			}
+			SECTION( "in the middle of the payload")
+			{
+				REQUIRE_NOTHROW(
+					asio::write( socket, asio::buffer( msg_frame.data(), 8 ) )
+				);
+			}
+
+			socket.close();
+
+		} );
+
+	// Give sobjectizer some time to run.
+	std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+	soenv.stop();
+	soenv_thread.join();
+
+
+	REQUIRE( 1006 == g_last_close_code );
 }

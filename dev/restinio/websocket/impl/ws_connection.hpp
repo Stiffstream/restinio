@@ -456,11 +456,11 @@ class ws_connection_t final
 			MSG_BUILDER && msg_builder )
 		{
 			m_logger.error( std::move( msg_builder ) );
-			close_impl();
 			m_close_frame_to_user.run_if_first(
 				[&]{
 					call_close_handler( status );
 				} );
+			close_impl();
 		}
 
 
@@ -863,8 +863,7 @@ class ws_connection_t final
 			{
 				m_logger.warn( [&]{
 					return fmt::format(
-							"[ws_connection:{}] try to write response, "
-							"while socket is closed",
+							"[ws_connection:{}] try to write while socket is closed",
 							connection_id() );
 				} );
 				return;
