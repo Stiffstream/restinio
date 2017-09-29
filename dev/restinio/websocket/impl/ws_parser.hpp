@@ -193,13 +193,13 @@ read_number_from_big_endian_bytes( T & number, const raw_data_t & data )
 // write_number_to_big_endian_bytes
 //
 
-template <int BYTES>
+template <int Bytes>
 inline void
 write_number_to_big_endian_bytes( std::uint64_t& number, raw_data_t & data )
 {
-	for( auto i = 0 ; i < BYTES ; ++i )
+	for( auto i = 0 ; i < Bytes ; ++i )
 	{
-		auto shift_value = (BYTES - i - 1) * 8;
+		auto shift_value = (Bytes - i - 1) * 8;
 		data.push_back( (number >> shift_value) & 0xFF );
 	}
 }

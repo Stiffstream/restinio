@@ -79,13 +79,13 @@ struct bits_count<std::int64_t> { static constexpr unsigned count = 64u; };
  */
 template<
 	typename T,
-	unsigned SHIFT,
-	unsigned BITS_TO_EXTRACT = details::bits_count<T>::count,
+	unsigned Shift,
+	unsigned Bits_To_Extract = details::bits_count<T>::count,
 	typename F = unsigned int >
 T
 n_bits_from( F value )
 {
-	return static_cast<T>(value >> SHIFT) & details::mask<T>(BITS_TO_EXTRACT);
+	return static_cast<T>(value >> Shift) & details::mask<T>(Bits_To_Extract);
 }
 
 } /* namespace bitops */

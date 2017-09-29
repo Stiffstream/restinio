@@ -17,6 +17,7 @@
 #include <restinio/exception.hpp>
 #include <restinio/request_handler.hpp>
 #include <restinio/io_context_wrapper.hpp>
+#include <restinio/traits.hpp>
 
 namespace restinio
 {
@@ -291,7 +292,7 @@ create_default_unique_object_instance< socket_options_setter_t >()
 //
 
 //! A fluent style interface for setting http server params.
-template < typename Traits >
+template < typename Traits = default_traits_t >
 class server_settings_t final
 	:	public extra_settings_t< server_settings_t< Traits >, typename Traits::stream_socket_t >
 {

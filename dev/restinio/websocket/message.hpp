@@ -122,7 +122,6 @@ status_code_from_bin( std::string data )
 	return (status_code_t)result;
 }
 
-
 //
 // message_t
 //
@@ -208,7 +207,6 @@ using message_handle_t = std::shared_ptr< message_t >;
 
 using default_message_handler_t =
 		std::function< void ( message_handle_t ) >;
-
 
 } /* namespace websocket */
 

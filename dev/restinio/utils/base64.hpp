@@ -65,11 +65,11 @@ uch( char ch )
 	return static_cast<uint_type_t>(static_cast<unsigned char>(ch));
 }
 
-template<unsigned int SHIFT>
+template<unsigned int Shift>
 char
 sixbits_char( uint_type_t bs )
 {
-	return ::restinio::utils::impl::bitops::n_bits_from< char, SHIFT, 6 >(bs);
+	return ::restinio::utils::impl::bitops::n_bits_from< char, Shift, 6 >(bs);
 }
 
 inline std::string

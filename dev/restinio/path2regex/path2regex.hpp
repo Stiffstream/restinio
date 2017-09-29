@@ -178,7 +178,7 @@ namespace impl
 {
 
 //! The main path matching expression.
-constexpr auto PATH_REGEX_STR =
+constexpr auto path_regex_str =
 	R"((\\.)|([\/.])?(?:(?:\:(\w+)(?:\(((?:\\.|[^\\()])+)\))?|\(((?:\\.|[^\\()])+)\))([+*?])?|(\*)))";
 
 //
@@ -489,7 +489,7 @@ parse( const std::string & route_str, const options_t & options )
 	token_list_t< Param_Container > result;
 
 	std::string path{};
-	std::regex main_path_regex{ PATH_REGEX_STR };
+	std::regex main_path_regex{ path_regex_str };
 
 	auto token_it =
 		std::sregex_iterator( route_str.begin(), route_str.end(), main_path_regex );

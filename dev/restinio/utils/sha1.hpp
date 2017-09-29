@@ -26,23 +26,23 @@ namespace sha1
 {
 
 // Block size in bytes.
-const std::uint8_t BLOCK_SIZE = 64;
+constexpr std::uint8_t block_size = 64;
 
 // Number of 32bit integers in block.
-const std::uint8_t BLOCK_INTS = 16;
+constexpr std::uint8_t block_ints = 16;
 
 // Word size in digest in bytes.
-const std::uint8_t WORD_SIZE = 4;
+constexpr std::uint8_t word_size = 4;
 
 // Digest size in bytes.
-const std::uint8_t DIGEST_SIZE = 20;
+constexpr std::uint8_t digest_size = 20;
 
 // Number of words in digest.
-const std::size_t DIGEST_ARRAY_SIZE = DIGEST_SIZE / WORD_SIZE ;
+constexpr std::size_t digest_array_size = digest_size / word_size ;
 
-using byte_block_t = std::array< std::uint8_t, BLOCK_SIZE >;
-using int_block_t = std::array< std::uint32_t, BLOCK_INTS >;
-using digest_t = std::array< std::uint32_t, DIGEST_ARRAY_SIZE >;
+using byte_block_t = std::array< std::uint8_t, block_size >;
+using int_block_t = std::array< std::uint32_t, block_ints >;
+using digest_t = std::array< std::uint32_t, digest_array_size >;
 
 template< class T >
 inline std::uint8_t
@@ -65,18 +65,18 @@ as_uint8_ptr( const T * what )
 	return reinterpret_cast< const std::uint8_t * >( what );
 }
 
-template< unsigned int SHIFT >
+template< unsigned int Shift >
 std::uint32_t
 rotate_left( const std::uint32_t x )
 {
-	return (x << SHIFT) | (x >> (32 - SHIFT));
+	return (x << Shift) | (x >> (32 - Shift));
 }
 
-template< unsigned int SHIFT >
+template< unsigned int Shift >
 inline std::uint8_t
 octet_from( std::uint32_t x )
 {
-	return ::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, SHIFT >(x);
+	return ::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, Shift >(x);
 }
 
 static uint32_t blk(const int_block_t & block, const size_t i)
@@ -132,7 +132,7 @@ transform( digest_t & digest, const byte_block_t & buf )
 {
 	int_block_t block;
 
-	for (size_t i = 0; i < BLOCK_INTS; i++)
+	for (size_t i = 0; i < block_ints; i++)
 	{
 		block[i] =
 			as_uint32(buf[4*i+3] & 0xff) |
@@ -255,12 +255,12 @@ struct builder_t
 		{
 			while( true )
 			{
-				auto part_len = std::min( length, BLOCK_SIZE - m_buffer_len );
+				auto part_len = std::min( length, block_size - m_buffer_len );
 
 				std::copy( what, what + part_len, m_buffer.begin() + m_buffer_len );
 				m_buffer_len += part_len;
 
-				if( m_buffer_len != BLOCK_SIZE )
+				if( m_buffer_len != block_size )
 					break;
 				else
 				{
@@ -285,19 +285,19 @@ struct builder_t
 
 			m_buffer[ m_buffer_len ++ ] = 0x80;
 
-			while( m_buffer_len < BLOCK_SIZE )
+			while( m_buffer_len < block_size )
 				m_buffer[m_buffer_len++] = 0x00;
 
-			if( original_buf_len > BLOCK_SIZE - 8 )
+			if( original_buf_len > block_size - 8 )
 			{
 				transform( m_digest, m_buffer );
 
-				for( size_t i = 0 ; i < BLOCK_SIZE ; ++ i )
+				for( size_t i = 0 ; i < block_size ; ++ i )
 					m_buffer[i] = 0;
 			}
 
 			// Fill total bits count in last 8 bytes of buffer as big-endian.
-			std::size_t i = BLOCK_SIZE - 8u;
+			std::size_t i = block_size - 8u;
 			const auto push_uint_to_buffer = [&]( auto big_value ) {
 				const auto v = static_cast<std::uint32_t>(big_value);
 				m_buffer[ i++ ] = octet_from<24>(v);
@@ -319,7 +319,7 @@ struct builder_t
 		calculate_total_bits_count() const
 		{
 			return (static_cast<std::uint_fast64_t>(m_transforms_count)
-					* BLOCK_SIZE + m_buffer_len) * 8;
+					* block_size + m_buffer_len) * 8;
 		}
 
 		void
@@ -353,18 +353,18 @@ struct builder_t
 namespace details
 {
 
-template< unsigned int SHIFT >
+template< unsigned int Shift >
 unsigned int
 halfbyte( digest_t::value_type v )
 {
-	return ::restinio::utils::impl::bitops::n_bits_from< unsigned int, SHIFT, 4 >(v);
+	return ::restinio::utils::impl::bitops::n_bits_from< unsigned int, Shift, 4 >(v);
 }
 
-template< unsigned int SHIFT >
+template< unsigned int Shift >
 unsigned int
 byte( digest_t::value_type v )
 {
-	return ::restinio::utils::impl::bitops::n_bits_from< unsigned int, SHIFT, 8 >(v);
+	return ::restinio::utils::impl::bitops::n_bits_from< unsigned int, Shift, 8 >(v);
 }
 
 } /* namespace details */
@@ -377,7 +377,7 @@ to_hex_string( const digest_t & what )
 	static const char digits[] = "0123456789abcdef";
 
 	std::string result;
-	result.reserve( DIGEST_ARRAY_SIZE * 8);
+	result.reserve( digest_array_size * 8);
 
 	for( const auto c : what )
 	{
@@ -400,7 +400,7 @@ to_string( const digest_t & what )
 	using namespace details;
 
 	std::string result;
-	result.reserve( DIGEST_SIZE );
+	result.reserve( digest_size );
 
 	for( const auto c : what )
 	{

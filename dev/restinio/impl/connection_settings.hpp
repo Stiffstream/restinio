@@ -42,9 +42,9 @@ struct connection_settings_t final
 	void operator = ( const connection_settings_t & ) = delete;
 	void operator = ( const connection_settings_t && ) = delete;
 
-	template < typename SETTINGS >
+	template < typename Settings >
 	connection_settings_t(
-		SETTINGS & settings,
+		Settings & settings,
 		http_parser_settings parser_settings,
 		asio::io_context & io_context,
 		timer_factory_handle_t timer_factory )
@@ -108,9 +108,9 @@ struct connection_settings_t final
 		timer_factory_handle_t m_timer_factory;
 };
 
-template < typename TRAITS >
+template < typename Traits >
 using connection_settings_shared_ptr_t =
-	std::shared_ptr< connection_settings_t< TRAITS > >;
+	std::shared_ptr< connection_settings_t< Traits > >;
 
 } /* namespace impl */
 

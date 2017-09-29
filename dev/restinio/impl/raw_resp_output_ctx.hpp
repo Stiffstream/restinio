@@ -68,13 +68,13 @@ struct raw_resp_output_ctx_t
 
 	//! Obtains ready buffers if any.
 	/*!
-		\note READY_BUFFERS_SOURCE must have
+		\note Ready_Buffers_Source must have
 		pop_ready_buffers() member function.
 	*/
-	template < class READY_BUFFERS_SOURCE >
+	template < class Ready_Buffers_Source >
 	bool
 	obtain_bufs(
-		READY_BUFFERS_SOURCE & ready_buffers_source )
+		Ready_Buffers_Source & ready_buffers_source )
 	{
 		ready_buffers_source.pop_ready_buffers(
 			max_iov_len(),

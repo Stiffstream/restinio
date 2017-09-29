@@ -22,9 +22,6 @@ namespace restinio
 namespace websocket
 {
 
-const std::string websocket_accept_field_suffix{
-	"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"};
-
 class ws_t;
 
 void
@@ -310,9 +307,10 @@ upgrade(
 	activation_t activation_flag,
 	WS_Message_Handler ws_message_handler )
 {
-	auto ws_key = req.header().get_field( restinio::http_field::sec_websocket_key );
-
-	ws_key.append( websocket_accept_field_suffix );
+	const char * websocket_accept_field_suffix = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+	const auto ws_key =
+		req.header().get_field( restinio::http_field::sec_websocket_key ) +
+		websocket_accept_field_suffix;
 
 	auto digest = restinio::utils::sha1::make_digest( ws_key );
 

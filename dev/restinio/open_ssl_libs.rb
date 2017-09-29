@@ -57,10 +57,10 @@ end
 def get_libs
   if 'mswin' == toolset.tag( 'target_os' )
       if 'vc' == toolset.name
-      get_libs_vc
-    elsif 'gcc' == toolset.name
-      get_libs_mingw
-    end
+        get_libs_vc
+      elsif 'gcc' == toolset.name
+        get_libs_mingw
+      end
   else
     get_libs_linux
   end
@@ -68,8 +68,8 @@ end
 
 MxxRu::Cpp::lib_collection_target {
   custom_local_openssl_prj = ENV[ "OPENSSL_PRJ_FILE" ]
-  if custom_local_openssl_prj.nil? 
-    custom_local_openssl_prj = 'local-openssl.rb' 
+  if custom_local_openssl_prj.nil?
+    custom_local_openssl_prj = 'local-openssl.rb'
   else
     if not File.exist?( custom_local_openssl_prj )
       raise "unable to locate file #{custom_local_openssl_prj}"
