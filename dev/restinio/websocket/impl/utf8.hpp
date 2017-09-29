@@ -31,7 +31,7 @@ class utf8_checker_t
 			if( m_current_symbol_rest_bytes > 0 )
 			{
 				// check byte is 10xxxxxx.
-				if( (bytehg  & 0xC0) == 0x80 )
+				if( (byte & 0xC0) == 0x80 )
 				{
 					m_current_symbol <<= 6;
 					byte &= 0x3F;

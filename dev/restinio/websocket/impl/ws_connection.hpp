@@ -162,8 +162,6 @@ validate_current_ws_message_body( const message_details_t & md, std::string & pa
 //
 
 //! Context for handling websocket connections.
-/*
-*/
 template <
 		typename Traits,
 		typename WS_Message_Handler >
@@ -406,13 +404,14 @@ class ws_connection_t final
 		{
 			m_close_frame_to_peer.run_if_first(
 				[&]{
-					init_close_handshake( status_code_t::normal_closure );
+					send_close_frame_to_peer( status_code_t::normal_closure );
 					start_waiting_close_frame_only();
 				} );
 		}
 
+		//! Send close frame to peer.
 		void
-		init_close_handshake( std::string payload )
+		send_close_frame_to_peer( std::string payload )
 		{
 			buffers_container_t bufs;
 			bufs.reserve( 2 );
@@ -428,15 +427,17 @@ class ws_connection_t final
 
 			init_write_if_necessary();
 
+			// No more data must be written.
 			m_write_state = write_state_t::write_disabled;
 		}
 
+		//! Send close frame to peer.
 		void
-		init_close_handshake(
+		send_close_frame_to_peer(
 			status_code_t code,
 			std::string desc = std::string{} )
 		{
-			init_close_handshake( std::string{ status_code_to_bin( code ) + desc } );
+			send_close_frame_to_peer( std::string{ status_code_to_bin( code ) + desc } );
 		}
 
 		//! Trigger an error.
@@ -482,6 +483,7 @@ class ws_connection_t final
 			}
 		}
 
+		//! Initiate read operation on socket to receive bytes for header.
 		void
 		consume_header_from_socket()
 		{
@@ -575,6 +577,7 @@ class ws_connection_t final
 			}
 		}
 
+		//! Handle parsed header.
 		void
 		handle_parsed_header( const message_details_t & md )
 		{
@@ -598,7 +601,7 @@ class ws_connection_t final
 				{
 					m_close_frame_to_peer.run_if_first(
 						[&]{
-							init_close_handshake( status_code_t::protocol_error );
+							send_close_frame_to_peer( status_code_t::protocol_error );
 							// Do not wait anything in return, because
 							// protocol is violated.
 						} );
@@ -617,6 +620,7 @@ class ws_connection_t final
 			handle_parsed_and_valid_header( md );
 		}
 
+		//! Handle parsed and valid header.
 		void
 		handle_parsed_and_valid_header( const message_details_t & md )
 		{
@@ -778,7 +782,7 @@ class ws_connection_t final
 				{
 					m_close_frame_to_peer.run_if_first(
 						[&]{
-							init_close_handshake( status_code_t::invalid_message_data );
+							send_close_frame_to_peer( status_code_t::invalid_message_data );
 							start_waiting_close_frame_only();
 						} );
 
@@ -807,7 +811,7 @@ class ws_connection_t final
 						m_close_frame_to_user.disable();
 						m_close_frame_to_peer.run_if_first(
 							[&]{
-								init_close_handshake( m_input.m_payload );
+								send_close_frame_to_peer( m_input.m_payload );
 							} );
 
 						m_read_state = read_state_t::read_nothing;
