@@ -327,4 +327,16 @@ TEST_CASE(
 
 		REQUIRE( restinio::websocket::impl::check_utf8_is_correct( str ) == false );
 	}
+	{
+		std::string str{ to_char_each({
+				0xf8, 0x88, 0x80, 0x80, 0x80
+			}) };
+
+		// for( auto ch: str )
+		// {
+		// 	std::cout << std::bitset<8>(ch) << std::endl;
+		// }
+
+		REQUIRE( restinio::websocket::impl::check_utf8_is_correct( str ) == false );
+	}
 }
