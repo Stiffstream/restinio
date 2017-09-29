@@ -26,7 +26,12 @@ using traits_t =
 
 using http_server_t = restinio::http_server_t< traits_t >;
 
-auto server_handler( rws::ws_handle_t & websocket )
+struct ws_storage_t
+{
+	rws::ws_handle_t m_handle;
+};
+
+auto server_handler()
 {
 	auto router = std::make_unique< router_t >();
 
@@ -36,15 +41,15 @@ auto server_handler( rws::ws_handle_t & websocket )
 
 			if( restinio::http_connection_header_t::upgrade == req->header().connection() )
 			{
-				websocket =
+				auto ws_storage = std::make_shared< ws_storage_t >();
+
+				ws_storage->m_handle =
 					rws::upgrade< traits_t >(
 						*req,
-						[]( auto wsh, auto m ){
+						rws::activation_t::immediate,
+						[ ws_storage ]( auto wsh, auto m ){
 							wsh->send_message( *m );
-						},
-						[]( std::string reason ){
-							std::cout << "Close websocket: " << reason << std::endl;
-						} );
+						});
 			}
 
 			return restinio::request_rejected();
@@ -59,14 +64,12 @@ int main()
 
 	try
 	{
-		rws::ws_handle_t websocket;
-
 		http_server_t http_server{
 			restinio::create_child_io_context( 1 ),
-			[&websocket]( auto & settings ){
+			[]( auto & settings ){
 				settings
 					.address( "localhost" )
-					.request_handler( server_handler( websocket ) )
+					.request_handler( server_handler() )
 					.read_next_http_message_timelimit( 10s )
 					.write_http_response_timelimit( 1s )
 					.handle_request_timeout( 1s );
@@ -82,11 +85,6 @@ int main()
 		{
 			std::cin >> cmd;
 		} while( cmd != "quit" && cmd != "q" );
-
-		if( websocket ){
-			// TODO: send close-frame and shutdown.
-			websocket->kill();
-		};
 
 		http_server.close();
 	}
