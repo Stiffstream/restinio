@@ -66,10 +66,14 @@ auto server_handler( rws::ws_handle_t & websocket )
 				websocket =
 					rws::upgrade< traits_t >(
 						*req,
+						rws::activation_t::immediate,
 						[]( auto wsh, auto m ){
 							// print_ws_message( *m );
 
-							if( m->opcode() == rws::opcode_t::ping_frame )
+							if( m->opcode() == rws::opcode_t::continuation_frame )
+ 							{
+ 							}
+							else if( m->opcode() == rws::opcode_t::ping_frame )
  							{
 								if( m->payload().size() > 125)
 								{
@@ -94,9 +98,6 @@ auto server_handler( rws::ws_handle_t & websocket )
 							{
 								wsh->send_message( *m );
 							}
-						},
-						[]( std::string reason ){
-							std::cout << "Close websocket: " << reason << std::endl;
 						} );
 
 				return restinio::request_accepted();

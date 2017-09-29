@@ -39,12 +39,10 @@ auto server_handler( rws::ws_handle_t & websocket )
 				websocket =
 					rws::upgrade< traits_t >(
 						*req,
+						rws::activation_t::immediate,
 						[]( auto wsh, auto m ){
 							wsh->send_message( *m );
-						},
-						[]( std::string reason ){
-							std::cout << "Close websocket: " << reason << std::endl;
-						} );
+						});
 			}
 
 			return restinio::request_rejected();
