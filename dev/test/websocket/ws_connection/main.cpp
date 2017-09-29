@@ -104,12 +104,7 @@ class a_server_t
 		virtual void
 		so_evt_finish() override
 		{
-			if( m_ws )
-			{
-				m_ws->send_message( true, rws::opcode_t::connection_close_frame, "" );
-				m_ws->shutdown();
-				m_ws.reset();
-			}
+			m_ws.reset();
 			m_http_server.close();
 		}
 

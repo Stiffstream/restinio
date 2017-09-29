@@ -575,6 +575,14 @@ class ws_connection_t final
 			{
 				auto & md = m_input.m_parser.current_message();
 
+				m_logger.trace( [&]{
+					return fmt::format(
+							"[ws_connection:{}] start handling {} ({:#x})",
+							connection_id(),
+							opcode_to_string( md.m_opcode ),
+							(std::uint16_t)md.m_opcode );
+				} );
+
 				if( !validate_current_ws_message_header( md ) )
 				{
 					m_logger.error( [&]{
