@@ -402,7 +402,6 @@ class ws_parser_t
 					m_current_msg.m_masking_key, data );
 			}
 		}
-
 };
 
 inline void

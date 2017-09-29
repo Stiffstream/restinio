@@ -803,3 +803,111 @@ TEST_CASE( "Connection lost" , "[ws_connection][error_close][connection_lost]" )
 
 	REQUIRE( 1006 == g_last_close_code );
 }
+
+TEST_CASE( "Invalid opcode" , "[ws_connection][error_close]" )
+{
+	g_last_close_code = 0;
+	soenv_t soenv{ so_5::environment_params_t{} };
+	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+
+	do_with_socket(
+		[&]( auto & socket, auto & /*io_context*/ ){
+			REQUIRE_NOTHROW(
+				asio::write(
+					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+			);
+
+			std::array< std::uint8_t, 1024 > data;
+
+			std::size_t len{ 0 };
+			REQUIRE_NOTHROW(
+				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+			);
+
+			std::vector< std::uint8_t > msg_frame;
+			SECTION( "opcode 0x03" )
+			{
+				msg_frame.assign(
+					{ 0x83, 0x85, 0xAA,0xBB,0xCC,0xDD,
+					  0xAA ^ 'H', 0xBB ^ 'e', 0xCC ^ 'l', 0xDD ^ 'l', 0xAA ^ 'o'} );
+			}
+			SECTION( "opcode 0x04" )
+			{
+				msg_frame.assign(
+					{ 0x84, 0x85, 0xAA,0xBB,0xCC,0xDD,
+					  0xAA ^ 'H', 0xBB ^ 'e', 0xCC ^ 'l', 0xDD ^ 'l', 0xAA ^ 'o'} );
+			}
+			SECTION( "opcode 0x05" )
+			{
+				msg_frame.assign(
+					{ 0x85, 0x85, 0xAA,0xBB,0xCC,0xDD,
+					  0xAA ^ 'H', 0xBB ^ 'e', 0xCC ^ 'l', 0xDD ^ 'l', 0xAA ^ 'o'} );
+			}
+			SECTION( "opcode 0x06" )
+			{
+				msg_frame.assign(
+					{ 0x86, 0x85, 0xAA,0xBB,0xCC,0xDD,
+					  0xAA ^ 'H', 0xBB ^ 'e', 0xCC ^ 'l', 0xDD ^ 'l', 0xAA ^ 'o'} );
+			}
+			SECTION( "opcode 0x07" )
+			{
+				msg_frame.assign(
+					{ 0x87, 0x85, 0xAA,0xBB,0xCC,0xDD,
+					  0xAA ^ 'H', 0xBB ^ 'e', 0xCC ^ 'l', 0xDD ^ 'l', 0xAA ^ 'o'} );
+			}
+			SECTION( "opcode 0x0B" )
+			{
+				msg_frame.assign(
+					{ 0x8B, 0x85, 0xAA,0xBB,0xCC,0xDD,
+					  0xAA ^ 'H', 0xBB ^ 'e', 0xCC ^ 'l', 0xDD ^ 'l', 0xAA ^ 'o'} );
+			}
+			SECTION( "opcode 0x0C" )
+			{
+				msg_frame.assign(
+					{ 0x8C, 0x85, 0xAA,0xBB,0xCC,0xDD,
+					  0xAA ^ 'H', 0xBB ^ 'e', 0xCC ^ 'l', 0xDD ^ 'l', 0xAA ^ 'o'} );
+			}
+			SECTION( "opcode 0x0D" )
+			{
+				msg_frame.assign(
+					{ 0x8D, 0x85, 0xAA,0xBB,0xCC,0xDD,
+					  0xAA ^ 'H', 0xBB ^ 'e', 0xCC ^ 'l', 0xDD ^ 'l', 0xAA ^ 'o'} );
+			}
+			SECTION( "opcode 0x0E" )
+			{
+				msg_frame.assign(
+					{ 0x8E, 0x85, 0xAA,0xBB,0xCC,0xDD,
+					  0xAA ^ 'H', 0xBB ^ 'e', 0xCC ^ 'l', 0xDD ^ 'l', 0xAA ^ 'o'} );
+			}
+			SECTION( "opcode 0x0F" )
+			{
+				msg_frame.assign(
+					{ 0x8F, 0x85, 0xAA,0xBB,0xCC,0xDD,
+					  0xAA ^ 'H', 0xBB ^ 'e', 0xCC ^ 'l', 0xDD ^ 'l', 0xAA ^ 'o'} );
+			}
+
+			REQUIRE_NOTHROW(
+				asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
+			);
+
+			// Validation would fail, close frame in return.
+			REQUIRE_NOTHROW(
+				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+			);
+			REQUIRE( 4 == len );
+			REQUIRE( 0x88 == data[ 0 ] );
+			REQUIRE( 0x02 == data[ 1 ] );
+			REQUIRE( (1002 >> 8) == data[ 2 ] );
+			REQUIRE( (1002 & 0xFF) == data[ 3 ] );
+
+			asio::error_code ec;
+			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			REQUIRE( ec );
+			REQUIRE( asio::error::eof == ec.value() );
+		} );
+
+	soenv.stop();
+	soenv_thread.join();
+
+	REQUIRE( 1002 == g_last_close_code );
+}

@@ -35,7 +35,7 @@ enum class opcode_t : std::uint8_t
 #define RESTINIO_WEBSOCKET_OPCODES_GEN( name, code ) name = code,
 	RESTINIO_WEBSOCKET_OPCODES_MAP( RESTINIO_WEBSOCKET_OPCODES_GEN )
 #undef RESTINIO_WEBSOCKET_OPCODES_GEN
-	unknown_frame
+	unknown_frame = 0x0F
 };
 
 //! Helper sunction to get method string name.
@@ -52,6 +52,24 @@ opcode_to_string( opcode_t opcode )
 		#undef RESTINIO_WEBSOCKET_OPCODES_GEN
 
 		default:; // Ignore.
+	};
+
+	return result;
+}
+
+inline bool
+is_valid_opcode( opcode_t opcode )
+{
+	bool result = true;
+	switch( opcode )
+	{
+		#define RESTINIO_WEBSOCKET_OPCODES_GEN( name, code ) \
+			case opcode_t::name: break;
+
+			RESTINIO_WEBSOCKET_OPCODES_MAP( RESTINIO_WEBSOCKET_OPCODES_GEN )
+		#undef RESTINIO_WEBSOCKET_OPCODES_GEN
+
+		default: result = false; // Ignore.
 	};
 
 	return result;
