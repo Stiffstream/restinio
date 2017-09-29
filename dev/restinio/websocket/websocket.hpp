@@ -110,9 +110,19 @@ class ws_t
 				const bool is_close_frame =
 					opcode_t::connection_close_frame == opcode;
 
-				m_ws_connection_handle->write_data(
-					std::move( bufs ),
-					is_close_frame );
+				if( is_close_frame )
+				{
+					auto con = std::move( m_ws_connection_handle );
+					con->write_data(
+						std::move( bufs ),
+						is_close_frame );
+				}
+				else
+				{
+					m_ws_connection_handle->write_data(
+						std::move( bufs ),
+						is_close_frame );
+				}
 			}
 			else
 			{

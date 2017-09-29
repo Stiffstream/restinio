@@ -18,19 +18,62 @@ namespace restinio
 namespace websocket
 {
 
+#define RESTINIO_WEBSOCKET_OPCODES_MAP( RESTINIO_GEN ) \
+	RESTINIO_GEN( continuation_frame,     0x00 ) \
+	RESTINIO_GEN( text_frame,             0x01 ) \
+	RESTINIO_GEN( binary_frame,           0x02 ) \
+	RESTINIO_GEN( connection_close_frame, 0x08 ) \
+	RESTINIO_GEN( ping_frame,             0x09 ) \
+	RESTINIO_GEN( pong_frame,             0x0A )
+
 //
 // opcode_t
 //
 
 enum class opcode_t : std::uint8_t
 {
-	continuation_frame = 0x00,
-	text_frame = 0x01,
-	binary_frame = 0x02,
-	connection_close_frame = 0x08,
-	ping_frame = 0x09,
-	pong_frame = 0x0A
+#define RESTINIO_WEBSOCKET_OPCODES_GEN( name, code ) name = code,
+	RESTINIO_WEBSOCKET_OPCODES_MAP( RESTINIO_WEBSOCKET_OPCODES_GEN )
+#undef RESTINIO_WEBSOCKET_OPCODES_GEN
+	unknown_frame = 0x0F
 };
+
+//! Helper sunction to get method string name.
+inline const char *
+opcode_to_string( opcode_t opcode )
+{
+	const char * result = "unknown_frame";
+	switch( opcode )
+	{
+		#define RESTINIO_WEBSOCKET_OPCODES_GEN( name, code ) \
+			case opcode_t::name: result = #name; break;
+
+			RESTINIO_WEBSOCKET_OPCODES_MAP( RESTINIO_WEBSOCKET_OPCODES_GEN )
+		#undef RESTINIO_WEBSOCKET_OPCODES_GEN
+
+		default:; // Ignore.
+	};
+
+	return result;
+}
+
+inline bool
+is_valid_opcode( opcode_t opcode )
+{
+	bool result = true;
+	switch( opcode )
+	{
+		#define RESTINIO_WEBSOCKET_OPCODES_GEN( name, code ) \
+			case opcode_t::name: break;
+
+			RESTINIO_WEBSOCKET_OPCODES_MAP( RESTINIO_WEBSOCKET_OPCODES_GEN )
+		#undef RESTINIO_WEBSOCKET_OPCODES_GEN
+
+		default: result = false; // Ignore.
+	};
+
+	return result;
+}
 
 //
 //  status_code_t
@@ -50,7 +93,6 @@ enum class status_code_t : std::uint16_t
 	more_extensions_expected = 1010,
 	unexpected_condition = 1011
 };
-
 
 inline std::string
 status_code_to_bin( status_code_t code )
@@ -98,8 +140,7 @@ class message_t final
 			opcode_t opcode )
 			:	m_is_final{ is_final }
 			,	m_opcode{ opcode }
-		{
-		}
+		{}
 
 		message_t(
 			bool is_final,
@@ -108,8 +149,7 @@ class message_t final
 			:	m_is_final{ is_final }
 			,	m_opcode{ opcode }
 			,	m_payload{ std::move( payload ) }
-		{
-		}
+		{}
 
 		bool
 		is_final() const

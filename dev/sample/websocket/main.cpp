@@ -37,7 +37,7 @@ auto server_handler()
 
 	router->http_get(
 		"/chat",
-		[&]( auto req, auto ){
+		[]( auto req, auto ){
 
 			if( restinio::http_connection_header_t::upgrade == req->header().connection() )
 			{

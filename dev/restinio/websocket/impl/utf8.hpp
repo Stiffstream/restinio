@@ -31,7 +31,7 @@ class utf8_checker_t
 			if( m_current_symbol_rest_bytes > 0 )
 			{
 				// check byte is 10xxxxxx.
-				if( (byte & 0xC0) == 0x80 )
+				if( (byte  & 0xC0) == 0x80 )
 				{
 					m_current_symbol <<= 6;
 					byte &= 0x3F;
@@ -52,6 +52,10 @@ class utf8_checker_t
 			{
 				m_current_symbol = 0;
 
+				if( byte == 0xC0 || byte == 0xC1 )
+				{
+					m_state = state_t::invalid;
+				}
 
 				if( (byte & 0x80) == 0x00)
 				{
@@ -99,14 +103,20 @@ class utf8_checker_t
 			return m_state == state_t::valid;
 		}
 
+		bool
+		final() const
+		{
+			return m_current_symbol_rest_bytes == 0;
+		}
+
 	private:
 
 		void
 		validate_current_symbol()
 		{
+			// std::cout << "CURRENT SYMBOL: " << std::hex << m_current_symbol << "\n";
 			if( (m_current_symbol >= 0xD800 && m_current_symbol <= 0xDFFF) ||
-				(m_current_symbol >= 0x110000 && m_current_symbol <= 0x1FFFFF) ||
-				(m_current_symbol >= 0x400000) )
+				(m_current_symbol >= 0x110000) )
 			{
 				m_state = state_t::invalid;
 			}
@@ -138,7 +148,7 @@ check_utf8_is_correct( const std::string & str )
 		}
 	}
 
-	return true;
+	return checker.final();
 }
 } /* namespace impl */
 

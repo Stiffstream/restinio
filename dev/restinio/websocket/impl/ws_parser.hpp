@@ -402,7 +402,6 @@ class ws_parser_t
 					m_current_msg.m_masking_key, data );
 			}
 		}
-
 };
 
 inline void
@@ -429,8 +428,7 @@ mask_unmask_payload( std::uint32_t masking_key, raw_data_t & payload )
 }
 
 inline raw_data_t
-write_message_details(
-	const message_details_t & message )
+write_message_details( const message_details_t & message )
 {
 	raw_data_t result;
 
@@ -495,6 +493,26 @@ write_message_details(
 
 	return result;
 }
+
+inline raw_data_t
+write_message_details(
+	bool final,
+	opcode_t opcode,
+	size_t payload_len )
+{
+	return write_message_details( message_details_t{ final, opcode, payload_len } );
+}
+
+inline raw_data_t
+write_message_details(
+	bool final,
+	opcode_t opcode,
+	size_t payload_len,
+	std::uint32_t masking_key )
+{
+	return write_message_details( message_details_t{ final, opcode, payload_len, masking_key } );
+}
+
 
 } /* namespace impl */
 
