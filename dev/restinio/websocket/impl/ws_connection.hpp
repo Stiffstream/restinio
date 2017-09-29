@@ -422,10 +422,9 @@ class ws_connection_t final
 
 			bufs.emplace_back(
 				impl::write_message_details(
-					message_details_t{
-						true,
-						opcode_t::connection_close_frame,
-						payload.size() } ) );
+					true,
+					opcode_t::connection_close_frame,
+					payload.size() ) );
 
 			bufs.emplace_back( std::move( payload ) );
 			m_awaiting_buffers.append( std::move( bufs ) );
