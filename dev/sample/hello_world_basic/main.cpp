@@ -27,31 +27,12 @@ int main()
 {
 	try
 	{
-		using http_server_t = restinio::http_server_t<>;
-
-		http_server_t http_server{
-			restinio::create_child_io_context( 1 ),
-			[]( auto & settings ){
-				settings
-					.port( 8080 )
-					.address( "localhost" )
-					.request_handler( request_handler() );
-			}
-		};
-
-		// Start server.
-		http_server.open();
-
-		// Wait for quit command.
-		std::cout << "Type \"quit\" or \"q\" to quit." << std::endl;
-		std::string cmd;
-		do
-		{
-			std::cin >> cmd;
-		} while( cmd != "quit" && cmd != "q" );
-
-		// Stop server.
-		http_server.close();
+		restinio::run(
+			1,
+			restinio::server_settings_t<>{}
+				.port( 8080 )
+				.address( "localhost" )
+				.request_handler( request_handler() ) );
 	}
 	catch( const std::exception & ex )
 	{

@@ -96,6 +96,13 @@ class http_server_t
 						std::forward< Configurator >( configurator ) ) }
 		{}
 
+		//! Get io_context on which server runs.
+		asio::io_context &
+		io_context()
+		{
+			return m_io_context_wrapper->io_context();
+		}
+
 		//! Start/stop io_context.
 		/*!
 			Is usefull when using async_open() or async_close(),
@@ -247,5 +254,39 @@ class http_server_t
 		//! Acceptor for new connections.
 		std::shared_ptr< acceptor_t > m_acceptor;
 };
+
+//
+// run()
+//
+
+//! Helper function for running http server until ctrl+c is hit.
+template < typename Traits >
+void
+run(
+	std::size_t n,
+	server_settings_t< Traits > s )
+{
+	if( 0 >= n )
+		throw exception_t{ "invalid thread pool size" };
+
+	using server_t = http_server_t< Traits >;
+
+	server_t server{
+		restinio::create_child_io_context( n ),
+		std::move( s ) };
+
+	std::promise< void > promise;
+
+	asio::signal_set break_signals{ server.io_context(), SIGINT };
+	break_signals.async_wait(
+		[&]( const asio::error_code & ec, int signal_number ){
+			if( !ec )
+				promise.set_value();
+		} );
+
+	server.open();
+	promise.get_future().get();
+	server.close();
+}
 
 } /* namespace restinio */

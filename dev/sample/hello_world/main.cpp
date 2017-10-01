@@ -76,36 +76,20 @@ int main()
 
 	try
 	{
-		using http_server_t =
-			restinio::http_server_t<
-				restinio::traits_t<
-					restinio::asio_timer_factory_t,
-					restinio::single_threaded_ostream_logger_t,
-					router_t > >;
+		using traits_t =
+			restinio::traits_t<
+				restinio::asio_timer_factory_t,
+				restinio::single_threaded_ostream_logger_t,
+				router_t >;
 
-		http_server_t http_server{
-			restinio::create_child_io_context( 1 ),
-			[]( auto & settings ){
-				settings
-					.address( "localhost" )
-					.request_handler( server_handler() )
-					.read_next_http_message_timelimit( 10s )
-					.write_http_response_timelimit( 1s )
-					.handle_request_timeout( 1s );
-			} };
-
-		http_server.open();
-
-		// Wait for quit command.
-		std::cout << "Type \"quit\" or \"q\" to quit." << std::endl;
-
-		std::string cmd;
-		do
-		{
-			std::cin >> cmd;
-		} while( cmd != "quit" && cmd != "q" );
-
-		http_server.close();
+		restinio::run(
+			1,
+			restinio::server_settings_t< traits_t >{}
+				.address( "localhost" )
+				.request_handler( server_handler() )
+				.read_next_http_message_timelimit( 10s )
+				.write_http_response_timelimit( 1s )
+				.handle_request_timeout( 1s ) );
 	}
 	catch( const std::exception & ex )
 	{
