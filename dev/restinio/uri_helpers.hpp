@@ -72,10 +72,7 @@ modified_memchr( int chr , const char * from, const char * to )
 	const char * result =
 		static_cast< const char * >( std::memchr( from, chr, to - from ) );
 
-	if( nullptr == result )
-		result = to;
-
-	return result;
+	return result ? result : to;
 }
 
 } /* namespace impl */
