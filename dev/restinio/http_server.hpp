@@ -96,6 +96,15 @@ class http_server_t
 						std::forward< Configurator >( configurator ) ) }
 		{}
 
+		//! It is allowed to inherit from http_server_t
+		virtual ~http_server_t()
+		{
+			auto acc = std::move( m_acceptor );
+			asio::post(
+				acc->get_executor(),
+				[ ctx = acc ]{ ctx->ensure_close(); } );
+		}
+
 		//! Get io_context on which server runs.
 		asio::io_context &
 		io_context()
@@ -136,11 +145,11 @@ class http_server_t
 			Server_Open_Ok_CB && open_ok_cb,
 			Server_Open_Error_CB && open_err_cb )
 		{
-			asio::dispatch(
+			asio::post(
 				m_acceptor->get_executor(),
 				[ acceptor = m_acceptor,
 					ok_cb = std::move( open_ok_cb ),
-					err_cb = std::move( open_err_cb ) ](){
+					err_cb = std::move( open_err_cb ) ]{
 					try
 					{
 						acceptor->open();
@@ -161,7 +170,7 @@ class http_server_t
 		void
 		open_sync()
 		{
-			// Make sure that we running ioservice.
+			// Make sure that we running io_context.
 			start_io_context();
 
 			// Sync object.
@@ -198,11 +207,11 @@ class http_server_t
 			Server_Close_Ok_CB && close_ok_cb,
 			Server_Close_Error_CB && close_err_cb )
 		{
-			asio::dispatch(
+			asio::post(
 				m_acceptor->get_executor(),
 				[ ctx = m_acceptor,
 					ok_cb = std::move( close_ok_cb ),
-					err_cb = std::move( close_err_cb ) ](){
+					err_cb = std::move( close_err_cb ) ]{
 					try
 					{
 						ctx->close();
@@ -236,7 +245,7 @@ class http_server_t
 
 			close_result.get_future().wait();
 
-			// Make sure that we stopped ioservice.
+			// Make sure that we stopped io_context.
 			stop_io_context();
 		}
 
@@ -289,11 +298,12 @@ run(
 
 		asio::signal_set break_signals{ server.io_context(), SIGINT };
 		break_signals.async_wait(
-			[&]( const asio::error_code & ec, int signal_number ){
+			[&]( const asio::error_code & ec, int ){
 				if( !ec )
 					server.close_async(
 						[]{ /* Ok. */ },
 						[]( std::exception_ptr ex ){
+							std::rethrow_exception( ex );
 						} );
 			} );
 
@@ -309,7 +319,7 @@ run(
 
 		asio::signal_set break_signals{ server.io_context(), SIGINT };
 		break_signals.async_wait(
-			[&]( const asio::error_code & ec, int signal_number ){
+			[&]( const asio::error_code & ec, int ){
 				if( !ec )
 					promise.set_value();
 			} );

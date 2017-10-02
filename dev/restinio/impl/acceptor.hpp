@@ -135,6 +135,15 @@ class acceptor_t final
 		void
 		open()
 		{
+			if( m_acceptor.is_open() )
+			{
+				const auto ep = m_acceptor.local_endpoint();
+				m_logger.warn( [&]{
+					return fmt::format( "server already started on {}", ep );
+				} );
+				return;
+			}
+
 			asio::ip::tcp::endpoint ep{ m_protocol, m_port };
 
 			if( !m_address.empty() )
@@ -196,20 +205,40 @@ class acceptor_t final
 		void
 		close()
 		{
-			const auto ep = m_acceptor.local_endpoint();
-
-			m_logger.trace( [&]{
-				return fmt::format( "closing server on {}", ep );
-			} );
-
 			if( m_acceptor.is_open() )
 			{
-				m_acceptor.close();
+				close_impl();
 			}
+			else
+			{
+				m_logger.trace( [&]{
+					return fmt::format( "server already closed" );
+				} );
+			}
+		}
 
-			m_logger.info( [&]{
-				return fmt::format( "server closed on {}", ep );
-			} );
+		//! Ensure that acceptor is closed.
+		void
+		ensure_close()
+		{
+			try
+			{
+				m_logger.trace( [&]{
+					return fmt::format( "REMOVEME: ENSURE CLOSE" );
+				} );
+				if( m_acceptor.is_open() )
+				{
+					close_impl();
+				}
+			}
+			catch( const std::exception & ex )
+			{
+				m_logger.error( [&]{
+					return fmt::format(
+						"acceptor ensure close error: {}",
+						ex.what() );
+				} );
+			}
 		}
 
 		auto &
@@ -289,6 +318,23 @@ class acceptor_t final
 
 			// Continue accepting.
 			accept_next( i );
+		}
+
+		//! Close opened acceptor.
+		void
+		close_impl()
+		{
+			const auto ep = m_acceptor.local_endpoint();
+
+			m_logger.trace( [&]{
+				return fmt::format( "closing server on {}", ep );
+			} );
+
+			m_acceptor.close();
+
+			m_logger.info( [&]{
+				return fmt::format( "server closed on {}", ep );
+			} );
 		}
 
 		//! Server endpoint.
