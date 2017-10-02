@@ -28,6 +28,8 @@ class utf8_checker_t
 		bool
 		process_byte( std::uint8_t byte )
 		{
+			check_overlong( byte );
+
 			if( m_current_symbol_rest_bytes > 0 )
 			{
 				// check byte is 10xxxxxx.
@@ -51,11 +53,6 @@ class utf8_checker_t
 			else
 			{
 				m_current_symbol = 0;
-
-				if( byte == 0xC0 || byte == 0xC1 )
-				{
-					m_state = state_t::invalid;
-				}
 
 				if( (byte & 0x80) == 0x00)
 				{
@@ -100,7 +97,7 @@ class utf8_checker_t
 				m_current_symbol = byte;
 			}
 
-			return m_state == state_t::valid;
+			return m_state == state_t::valid || m_state == state_t::may_be_overlong;
 		}
 
 		bool
@@ -122,6 +119,52 @@ class utf8_checker_t
 			}
 		}
 
+		void
+		check_overlong( std::uint8_t byte )
+		{
+			if( m_current_symbol_rest_bytes > 0 &&
+					m_state == state_t::may_be_overlong )
+			{
+				if( m_current_symbol_rest_bytes == 2 &&
+					(byte & 0xE0) == 0x80 )
+					m_state = state_t::overlong;
+				else if( m_current_symbol_rest_bytes == 3 &&
+					(byte & 0xF0) == 0x80 )
+					m_state = state_t::overlong;
+				else if( m_current_symbol_rest_bytes == 4 &&
+					(byte & 0xF8) == 0x80 )
+					m_state = state_t::overlong;
+				else if( m_current_symbol_rest_bytes == 5 &&
+					(byte & 0xFC) == 0x80 )
+					m_state = state_t::overlong;
+				else
+					m_state = state_t::valid;
+			}
+			else
+			{
+				if( byte == 0xC0 || byte == 0xC1 )
+				{
+					m_state = state_t::overlong;
+				}
+				else if( byte == 0xE0 )
+				{
+					m_state = state_t::may_be_overlong;
+				}
+				else if( byte == 0xF0 )
+				{
+					m_state = state_t::may_be_overlong;
+				}
+				if( byte == 0xF8 )
+				{
+					m_state = state_t::may_be_overlong;
+				}
+				if( byte == 0xFC )
+				{
+					m_state = state_t::may_be_overlong;
+				}
+			}
+		}
+
 		uint32_t m_current_symbol = 0;
 
 		size_t m_current_symbol_rest_bytes = 0;
@@ -129,7 +172,9 @@ class utf8_checker_t
 		enum class state_t
 		{
 			valid,
-			invalid
+			invalid,
+			may_be_overlong,
+			overlong
 		};
 
 		state_t m_state = state_t::valid;
