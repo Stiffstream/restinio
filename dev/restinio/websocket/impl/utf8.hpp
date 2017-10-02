@@ -195,6 +195,7 @@ check_utf8_is_correct( const std::string & str )
 
 	return checker.final();
 }
+
 } /* namespace impl */
 
 } /* namespace websocket */
