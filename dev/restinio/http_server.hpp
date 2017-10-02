@@ -261,7 +261,7 @@ class http_server_t
 
 //! Helper function for running http server until ctrl+c is hit.
 template < typename Traits >
-void
+inline void
 run(
 	std::size_t n,
 	server_settings_t< Traits > s )
@@ -271,22 +271,56 @@ run(
 
 	using server_t = http_server_t< Traits >;
 
-	server_t server{
-		restinio::create_child_io_context( n ),
-		std::move( s ) };
+	if( 1 == n )
+	{
+		// Use current thread to run.
+		asio::io_context io_context;
 
-	std::promise< void > promise;
+		server_t server{
+			restinio::use_existing_io_context( io_context ),
+			std::move( s ) };
 
-	asio::signal_set break_signals{ server.io_context(), SIGINT };
-	break_signals.async_wait(
-		[&]( const asio::error_code & ec, int signal_number ){
-			if( !ec )
-				promise.set_value();
-		} );
 
-	server.open();
-	promise.get_future().get();
-	server.close();
+		server.open_async(
+			[]{ /* Ok. */},
+			[]( std::exception_ptr ex ){
+				std::rethrow_exception( ex );
+			} );
+
+		asio::signal_set break_signals{ server.io_context(), SIGINT };
+		break_signals.async_wait(
+			[&]( const asio::error_code & ec, int signal_number ){
+				if( !ec )
+					server.close_async(
+						[]{ /* Ok. */ },
+						[]( std::exception_ptr ex ){
+						} );
+			} );
+
+		io_context.run();
+	}
+	else
+	{
+		server_t server{
+			restinio::create_child_io_context( n ),
+			std::move( s ) };
+
+		std::promise< void > promise;
+
+		asio::signal_set break_signals{ server.io_context(), SIGINT };
+		break_signals.async_wait(
+			[&]( const asio::error_code & ec, int signal_number ){
+				if( !ec )
+					promise.set_value();
+			} );
+
+		server.open();
+		promise.get_future().get();
+		server.close();
+	}
+
+
+
 }
 
 } /* namespace restinio */
