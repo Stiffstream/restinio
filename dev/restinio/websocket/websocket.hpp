@@ -46,6 +46,7 @@ class ws_t
 		ws_t(
 			ws_connection_handle_t ws_connection_handle )
 			:	m_ws_connection_handle{ std::move( ws_connection_handle ) }
+			,	m_id{ m_ws_connection_handle->connection_id() }
 		{}
 
 		~ws_t()
@@ -56,6 +57,13 @@ class ws_t
 			}
 			catch( ... )
 			{}
+		}
+
+		//! Get connection id.
+		const std::uint64_t
+		connection_id() const
+		{
+			return m_id;
 		}
 
 		//! Shutdown websocket: wait for all outgoing data to be sent,
@@ -138,6 +146,7 @@ class ws_t
 
 	private:
 		ws_connection_handle_t m_ws_connection_handle;
+		const std::uint64_t m_id;
 };
 
 //! Alias for ws_t handle.

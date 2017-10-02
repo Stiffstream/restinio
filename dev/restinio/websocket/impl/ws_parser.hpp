@@ -76,12 +76,6 @@ class message_details_t
 			init_payload_len( payload_len );
 		}
 
-		message_details_t( const message_details_t & ) = default;
-		// const message_details_t & operator= ( const message_details_t & ) = default;
-
-		// message_details_t( message_details_t && ) = delete;
-		// message_details_t & operator= ( message_details_t && ) = delete;
-
 		std::uint64_t
 		payload_len() const
 		{

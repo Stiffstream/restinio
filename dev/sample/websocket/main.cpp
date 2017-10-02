@@ -24,12 +24,7 @@ using traits_t =
 		restinio::single_threaded_ostream_logger_t,
 		router_t >;
 
-using http_server_t = restinio::http_server_t< traits_t >;
-
-struct ws_storage_t
-{
-	rws::ws_handle_t m_handle;
-};
+using ws_regestry_t = std::map< std::uint64_t, rws::ws_handle_t >;
 
 auto server_handler()
 {
@@ -37,19 +32,38 @@ auto server_handler()
 
 	router->http_get(
 		"/chat",
-		[]( auto req, auto ){
+		[ regestry = std::make_shared< ws_regestry_t >() ]( auto req, auto ) mutable {
 
 			if( restinio::http_connection_header_t::upgrade == req->header().connection() )
 			{
-				auto ws_storage = std::make_shared< ws_storage_t >();
-
-				ws_storage->m_handle =
+				auto r = std::weak_ptr< ws_regestry_t >{ regestry };
+				auto wsh =
 					rws::upgrade< traits_t >(
 						*req,
 						rws::activation_t::immediate,
-						[ ws_storage ]( auto wsh, auto m ){
-							wsh->send_message( *m );
-						});
+						[ r ]( auto wsh, auto m ){
+							if( rws::opcode_t::text_frame == m->opcode() ||
+								rws::opcode_t::binary_frame == m->opcode() ||
+								rws::opcode_t::continuation_frame == m->opcode() )
+							{
+								wsh->send_message( *m );
+							}
+							else if( rws::opcode_t::ping_frame == m->opcode() )
+							{
+								auto resp = *m;
+								resp.set_opcode( rws::opcode_t::pong_frame );
+								wsh->send_message( resp );
+							}
+							else if( rws::opcode_t::connection_close_frame == m->opcode() )
+							{
+								if( auto regestry = r.lock() )
+									regestry->erase( wsh->connection_id() );
+							}
+						} );
+
+				regestry->emplace( wsh->connection_id(), wsh );
+
+				return restinio::request_accepted();
 			}
 
 			return restinio::request_rejected();
@@ -64,29 +78,14 @@ int main()
 
 	try
 	{
-		http_server_t http_server{
-			restinio::create_child_io_context( 1 ),
-			[]( auto & settings ){
-				settings
-					.address( "localhost" )
-					.request_handler( server_handler() )
-					.read_next_http_message_timelimit( 10s )
-					.write_http_response_timelimit( 1s )
-					.handle_request_timeout( 1s );
-			} };
-
-		http_server.open();
-
-		// Wait for quit command.
-		std::cout << "Type \"quit\" or \"q\" to quit." << std::endl;
-
-		std::string cmd;
-		do
-		{
-			std::cin >> cmd;
-		} while( cmd != "quit" && cmd != "q" );
-
-		http_server.close();
+		restinio::run(
+			1,
+			restinio::server_settings_t< traits_t >{}
+				.address( "localhost" )
+				.request_handler( server_handler() )
+				.read_next_http_message_timelimit( 10s )
+				.write_http_response_timelimit( 1s )
+				.handle_request_timeout( 1s ) );
 	}
 	catch( const std::exception & ex )
 	{
