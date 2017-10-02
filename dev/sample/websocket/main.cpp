@@ -24,7 +24,7 @@ using traits_t =
 		restinio::single_threaded_ostream_logger_t,
 		router_t >;
 
-using ws_regestry_t = std::map< std::uint64_t, rws::ws_handle_t >;
+using ws_registry_t = std::map< std::uint64_t, rws::ws_handle_t >;
 
 auto server_handler()
 {
@@ -32,11 +32,11 @@ auto server_handler()
 
 	router->http_get(
 		"/chat",
-		[ regestry = std::make_shared< ws_regestry_t >() ]( auto req, auto ) mutable {
+		[ registry = std::make_shared< ws_registry_t >() ]( auto req, auto ) mutable {
 
 			if( restinio::http_connection_header_t::upgrade == req->header().connection() )
 			{
-				auto r = std::weak_ptr< ws_regestry_t >{ regestry };
+				auto r = std::weak_ptr< ws_registry_t >{ registry };
 				auto wsh =
 					rws::upgrade< traits_t >(
 						*req,
@@ -56,12 +56,12 @@ auto server_handler()
 							}
 							else if( rws::opcode_t::connection_close_frame == m->opcode() )
 							{
-								if( auto regestry = r.lock() )
-									regestry->erase( wsh->connection_id() );
+								if( auto registry = r.lock() )
+									registry->erase( wsh->connection_id() );
 							}
 						} );
 
-				regestry->emplace( wsh->connection_id(), wsh );
+				registry->emplace( wsh->connection_id(), wsh );
 
 				return restinio::request_accepted();
 			}
