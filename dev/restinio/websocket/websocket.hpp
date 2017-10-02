@@ -60,7 +60,7 @@ class ws_t
 		}
 
 		//! Get connection id.
-		const std::uint64_t
+		std::uint64_t
 		connection_id() const
 		{
 			return m_id;
