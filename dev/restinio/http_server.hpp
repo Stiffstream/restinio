@@ -64,14 +64,17 @@ class http_server_t
 		using acceptor_t = impl::acceptor_t< Traits >;
 
 	public:
+		template<typename D>
 		http_server_t(
 			io_context_wrapper_unique_ptr_t io_context_wrapper,
-			server_settings_t< Traits > settings )
+			basic_server_settings_t< D, Traits > && settings )
 			:	m_io_context_wrapper{ std::move( io_context_wrapper ) }
 		{
+			using actual_settings_type = basic_server_settings_t<D, Traits>;
+
 			auto conn_settings =
 				std::make_shared< connection_settings_t >(
-					settings,
+					std::forward<actual_settings_type>(settings),
 					impl::create_parser_settings(),
 					m_io_context_wrapper->io_context(),
 					settings.timer_factory() );
@@ -86,7 +89,14 @@ class http_server_t
 					*( conn_settings->m_logger ) );
 		}
 
-		template < typename Configurator >
+		template<
+			typename Configurator,
+			// Use SFINAE.
+			// This constructor must be called only of Configurator
+			// allows to call operator() with server_settings_t& arg.
+			typename = decltype(
+					std::declval<Configurator>()(
+							*(static_cast<server_settings_t<Traits>*>(nullptr)))) >
 		http_server_t(
 			io_context_wrapper_unique_ptr_t io_context_wrapper,
 			Configurator && configurator )
@@ -264,73 +274,5 @@ class http_server_t
 		std::shared_ptr< acceptor_t > m_acceptor;
 };
 
-//
-// run()
-//
-
-//! Helper function for running http server until ctrl+c is hit.
-template < typename Traits >
-inline void
-run(
-	std::size_t n,
-	server_settings_t< Traits > s )
-{
-	if( 0 >= n )
-		throw exception_t{ "invalid thread pool size" };
-
-	using server_t = http_server_t< Traits >;
-
-	if( 1 == n )
-	{
-		// Use current thread to run.
-		asio::io_context io_context;
-
-		server_t server{
-			restinio::use_existing_io_context( io_context ),
-			std::move( s ) };
-
-
-		server.open_async(
-			[]{ /* Ok. */},
-			[]( std::exception_ptr ex ){
-				std::rethrow_exception( ex );
-			} );
-
-		asio::signal_set break_signals{ server.io_context(), SIGINT };
-		break_signals.async_wait(
-			[&]( const asio::error_code & ec, int ){
-				if( !ec )
-					server.close_async(
-						[]{ /* Ok. */ },
-						[]( std::exception_ptr ex ){
-							std::rethrow_exception( ex );
-						} );
-			} );
-
-		io_context.run();
-	}
-	else
-	{
-		server_t server{
-			restinio::create_child_io_context( n ),
-			std::move( s ) };
-
-		std::promise< void > promise;
-
-		asio::signal_set break_signals{ server.io_context(), SIGINT };
-		break_signals.async_wait(
-			[&]( const asio::error_code & ec, int ){
-				if( !ec )
-					promise.set_value();
-			} );
-
-		server.open();
-		promise.get_future().get();
-		server.close();
-	}
-
-
-
-}
 
 } /* namespace restinio */

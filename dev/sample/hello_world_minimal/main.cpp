@@ -3,9 +3,8 @@
 
 int main()
 {
-	restinio::run(
-		1,
-		restinio::server_settings_t<>{}
+	run(
+		restinio::on_this_thread()
 			.port(8080)
 			.address("localhost")
 			.request_handler([](auto req) {

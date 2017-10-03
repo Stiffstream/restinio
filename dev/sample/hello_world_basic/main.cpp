@@ -27,9 +27,8 @@ int main()
 {
 	try
 	{
-		restinio::run(
-			1,
-			restinio::server_settings_t<>{}
+		run(
+			restinio::on_thread_pool( std::thread::hardware_concurrency() )
 				.port( 8080 )
 				.address( "localhost" )
 				.request_handler( request_handler() ) );

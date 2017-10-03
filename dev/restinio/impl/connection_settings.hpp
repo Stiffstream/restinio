@@ -44,7 +44,7 @@ struct connection_settings_t final
 
 	template < typename Settings >
 	connection_settings_t(
-		Settings & settings,
+		Settings && settings,
 		http_parser_settings parser_settings,
 		asio::io_context & io_context,
 		timer_factory_handle_t timer_factory )
