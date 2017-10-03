@@ -783,7 +783,7 @@ class basic_server_settings_t
 //FIXME: implement this!
 //! A fluent style interface for setting http server params.
 template<typename Traits = default_traits_t>
-class server_settings_t
+class server_settings_t final
 	:	public basic_server_settings_t< server_settings_t<Traits>, Traits >
 {
 	using base_type_t = basic_server_settings_t<
