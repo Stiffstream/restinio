@@ -45,14 +45,14 @@ template < typename Object >
 inline auto
 create_default_shared_object_instance( std::false_type )
 {
-	return std::unique_ptr< Object >{};
+	return std::shared_ptr< Object >{};
 }
 
 template < typename Object >
 inline auto
 create_default_shared_object_instance( std::true_type )
 {
-	return std::make_unique< Object >();
+	return std::make_shared< Object >();
 }
 
 } /* namespace details */
