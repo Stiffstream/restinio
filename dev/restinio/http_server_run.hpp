@@ -17,7 +17,14 @@ namespace restinio
 //
 // run_on_this_thread_settings_t
 //
-//FIXME: document this!
+/*!
+ * \brief Settings for the case when http_server must be run
+ * on the context of the current thread.
+ *
+ * \note
+ * Shouldn't be used directly. Only as result of on_this_thread()
+ * function as parameter for run().
+ */
 template<typename Traits>
 class run_on_this_thread_settings_t final
 	:	public basic_server_settings_t<
@@ -34,7 +41,26 @@ public:
 //
 // on_this_thread
 //
-//FIXME: document this!
+/*!
+ * \brief A special marker for the case when http_server must be
+ * run on the context of the current thread.
+ *
+ * Usage example:
+ * \code
+ * // Run with the default traits.
+ * run( restinio::on_this_thread()
+ * 	.port(8080)
+ * 	.address("localhost")
+ * 	.request_handler(...) );
+ * \endcode
+ * For a case when some custom traits must be used:
+ * \code
+ * run( restinio::on_this_thread<my_server_traits_t>()
+ * 	.port(8080)
+ * 	.address("localhost")
+ * 	.request_handler(...) );
+ * \endcode
+ */
 template<typename Traits = default_traits_t>
 run_on_this_thread_settings_t<Traits>
 on_this_thread() { return run_on_this_thread_settings_t<Traits>{}; }
@@ -42,7 +68,14 @@ on_this_thread() { return run_on_this_thread_settings_t<Traits>{}; }
 //
 // run_on_thread_pool_settings_t
 //
-//FIXME: document this!
+/*!
+ * \brief Settings for the case when http_server must be run
+ * on the context of the current thread.
+ *
+ * \note
+ * Shouldn't be used directly. Only as result of on_thread_pool()
+ * function as parameter for run().
+ */
 template<typename Traits>
 class run_on_thread_pool_settings_t final
 	:	public basic_server_settings_t<
@@ -63,6 +96,7 @@ public:
 		:	m_pool_size(pool_size)
 	{}
 
+	//! Get the pool size.
 	std::size_t
 	pool_size() const { return m_pool_size; }
 };
@@ -70,7 +104,26 @@ public:
 //
 // on_thread_pool
 //
-//FIXME: document this!
+/*!
+ * \brief A special marker for the case when http_server must be
+ * run on an thread pool.
+ *
+ * Usage example:
+ * \code
+ * // Run with the default traits.
+ * run( restinio::on_thread_pool(16) // 16 -- is the pool size.
+ * 	.port(8080)
+ * 	.address("localhost")
+ * 	.request_handler(...) );
+ * \endcode
+ * For a case when some custom traits must be used:
+ * \code
+ * run( restinio::on_thread_pool<my_server_traits_t>(16)
+ * 	.port(8080)
+ * 	.address("localhost")
+ * 	.request_handler(...) );
+ * \endcode
+ */
 template<typename Traits = default_traits_t>
 run_on_thread_pool_settings_t<Traits>
 on_thread_pool(

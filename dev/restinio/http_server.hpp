@@ -89,9 +89,11 @@ class http_server_t
 					*( conn_settings->m_logger ) );
 		}
 
-		//FIXME: there must be more readable form of this SFINAE.
 		template<
 			typename Configurator,
+			// Use SFINAE.
+			// This constructor must be called only of Configurator
+			// allows to call operator() with server_settings_t& arg.
 			typename = decltype(
 					std::declval<Configurator>()(
 							*(static_cast<server_settings_t<Traits>*>(nullptr)))) >
