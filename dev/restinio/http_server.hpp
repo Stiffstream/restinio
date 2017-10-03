@@ -92,7 +92,7 @@ class http_server_t
 		template<
 			typename Configurator,
 			// Use SFINAE.
-			// This constructor must be called only of Configurator
+			// This constructor must be called only if Configurator
 			// allows to call operator() with server_settings_t& arg.
 			typename = decltype(
 					std::declval<Configurator>()(
