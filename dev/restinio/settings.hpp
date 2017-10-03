@@ -147,14 +147,15 @@ ensure_created(
 
 
 //
-// extra_settings_t
+// socket_type_dependent_settings_t
 //
 
 //! Extra settings needed for working with socket.
 template < typename Settings, typename Socket >
-struct extra_settings_t
+class socket_type_dependent_settings_t
 {
-	virtual ~extra_settings_t() = default;
+protected :
+	~socket_type_dependent_settings_t() = default;
 
 	// No extra settings by default.
 };
@@ -294,7 +295,9 @@ create_default_unique_object_instance< socket_options_setter_t >()
 //! A fluent style interface for setting http server params.
 template < typename Traits = default_traits_t >
 class server_settings_t final
-	:	public extra_settings_t< server_settings_t< Traits >, typename Traits::stream_socket_t >
+	:	public socket_type_dependent_settings_t<
+				server_settings_t< Traits >,
+				typename Traits::stream_socket_t >
 {
 	public:
 		server_settings_t(

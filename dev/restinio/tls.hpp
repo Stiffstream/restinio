@@ -67,7 +67,7 @@ prepare_connection_and_start_read(
 }
 
 //
-// extra_settings_t
+// socket_type_dependent_settings_t
 //
 
 //! Customizes extra settings needed for working with socket.
@@ -75,13 +75,15 @@ prepare_connection_and_start_read(
 	Adds tls context setting.
 */
 template < typename Settings >
-class extra_settings_t< Settings, tls_socket_t >
+class socket_type_dependent_settings_t< Settings, tls_socket_t >
 {
-	public:
-		virtual ~extra_settings_t() = default;
+protected:
+		~socket_type_dependent_settings_t() = default;
 
-		extra_settings_t() = default;
-		extra_settings_t( extra_settings_t && ) = default;
+public:
+		socket_type_dependent_settings_t() = default;
+		socket_type_dependent_settings_t(
+			socket_type_dependent_settings_t && ) = default;
 
 		Settings &
 		tls_context(
