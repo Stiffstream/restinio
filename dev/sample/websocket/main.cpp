@@ -78,9 +78,8 @@ int main()
 
 	try
 	{
-		restinio::run(
-			1,
-			restinio::server_settings_t< traits_t >{}
+		run(
+			restinio::on_this_thread<traits_t>()
 				.address( "localhost" )
 				.request_handler( server_handler() )
 				.read_next_http_message_timelimit( 10s )
