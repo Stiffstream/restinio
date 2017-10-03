@@ -112,9 +112,9 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 			std::chrono::duration_cast< std::chrono::milliseconds >(
 				finished_at - started_at );
 
-		// Timeout is about 100 msec.
+		// Timeout is about 200 msec.
 		REQUIRE( 100 <= timeout.count() );
-		REQUIRE( 150 >= timeout.count() );
+		REQUIRE( 250 >= timeout.count() );
 
 	} );
 

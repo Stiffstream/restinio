@@ -796,7 +796,7 @@ TEST_CASE( "Connection lost" , "[ws_connection][error_close][connection_lost]" )
 		} );
 
 	// Give sobjectizer some time to run.
-	std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+	std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
 	soenv.stop();
 	soenv_thread.join();
 
