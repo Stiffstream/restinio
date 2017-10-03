@@ -289,18 +289,18 @@ create_default_unique_object_instance< socket_options_setter_t >()
 }
 
 //
-// server_settings_t
+// basic_server_settings_t
 //
 
-//! A fluent style interface for setting http server params.
-template < typename Traits = default_traits_t >
-class server_settings_t final
+//FIXME: document this!
+template<typename Derived, typename Traits>
+class basic_server_settings_t
 	:	public socket_type_dependent_settings_t<
-				server_settings_t< Traits >,
+				basic_server_settings_t< Derived, Traits >,
 				typename Traits::stream_socket_t >
 {
 	public:
-		server_settings_t(
+		basic_server_settings_t(
 			std::uint16_t port = 8080,
 			asio::ip::tcp protocol = asio::ip::tcp::v4() )
 			:	m_port{ port }
@@ -309,14 +309,14 @@ class server_settings_t final
 
 		//! Server endpoint.
 		//! \{
-		server_settings_t &
+		Derived &
 		port( std::uint16_t p ) &
 		{
 			m_port = p;
-			return *this;
+			return reference_to_derived();
 		}
 
-		server_settings_t &&
+		Derived &&
 		port( std::uint16_t p ) &&
 		{
 			return std::move( this->port( p ) );
@@ -328,14 +328,14 @@ class server_settings_t final
 			return m_port;
 		}
 
-		server_settings_t &
+		Derived &
 		protocol( asio::ip::tcp p ) &
 		{
 			m_protocol = p;
-			return *this;
+			return reference_to_derived();
 		}
 
-		server_settings_t &&
+		Derived &&
 		protocol( asio::ip::tcp p ) &&
 		{
 			return std::move( this->protocol( p ) );
@@ -347,14 +347,14 @@ class server_settings_t final
 			return m_protocol;
 		}
 
-		server_settings_t &
+		Derived &
 		address( std::string addr ) &
 		{
 			m_address = std::move(addr);
-			return *this;
+			return reference_to_derived();
 		}
 
-		server_settings_t &&
+		Derived &&
 		address( std::string addr ) &&
 		{
 			return std::move( this->address( std::move( addr ) ) );
@@ -373,14 +373,14 @@ class server_settings_t final
 			read operattion (async read).
 		*/
 		//! {
-		server_settings_t &
+		Derived &
 		buffer_size( std::size_t s ) &
 		{
 			m_buffer_size = s;
-			return *this;
+			return reference_to_derived();
 		}
 
-		server_settings_t &&
+		Derived &&
 		buffer_size( std::size_t s ) &&
 		{
 			return std::move( this->buffer_size( s ) );
@@ -400,14 +400,14 @@ class server_settings_t final
 			Generaly it defines timeout for keep-alive connections.
 		*/
 		//! \{
-		server_settings_t &
+		Derived &
 		read_next_http_message_timelimit( std::chrono::steady_clock::duration d ) &
 		{
 			m_read_next_http_message_timelimit = std::move( d );
-			return *this;
+			return reference_to_derived();
 		}
 
-		server_settings_t &&
+		Derived &&
 		read_next_http_message_timelimit( std::chrono::steady_clock::duration d ) &&
 		{
 			return std::move( this->read_next_http_message_timelimit( std::move( d ) ) );
@@ -422,14 +422,14 @@ class server_settings_t final
 
 		//! A period of time wait for response to be written to socket.
 		//! \{
-		server_settings_t &
+		Derived &
 		write_http_response_timelimit( std::chrono::steady_clock::duration d ) &
 		{
 			m_write_http_response_timelimit = std::move( d );
-			return *this;
+			return reference_to_derived();
 		}
 
-		server_settings_t &&
+		Derived &&
 		write_http_response_timelimit( std::chrono::steady_clock::duration d ) &&
 		{
 			return std::move( this->write_http_response_timelimit( std::move( d ) ) );
@@ -444,14 +444,14 @@ class server_settings_t final
 
 		//! A period of time that is given for a handler to create response.
 		//! \{
-		server_settings_t &
+		Derived &
 		handle_request_timeout( std::chrono::steady_clock::duration d ) &
 		{
 			m_handle_request_timeout = std::move( d );
-			return *this;
+			return reference_to_derived();
 		}
 
-		server_settings_t &&
+		Derived &&
 		handle_request_timeout( std::chrono::steady_clock::duration d ) &&
 		{
 			return std::move( this->handle_request_timeout( std::move( d ) ) );
@@ -466,14 +466,14 @@ class server_settings_t final
 
 		//! Max pipelined requests to receive on single connection.
 		//! \{
-		server_settings_t &
+		Derived &
 		max_pipelined_requests( std::size_t mpr ) &
 		{
 			m_max_pipelined_requests = mpr;
-			return *this;
+			return reference_to_derived();
 		}
 
-		server_settings_t &&
+		Derived &&
 		max_pipelined_requests( std::size_t mpr ) &&
 		{
 			return std::move( this->max_pipelined_requests( mpr ) );
@@ -491,15 +491,15 @@ class server_settings_t final
 		//! \{
 		using request_handler_t = typename Traits::request_handler_t;
 
-		server_settings_t &
+		Derived &
 		request_handler( std::unique_ptr< request_handler_t > handler ) &
 		{
 			m_request_handler = std::move( handler );
-			return *this;
+			return reference_to_derived();
 		}
 
 		template< typename... Params >
-		server_settings_t &
+		Derived &
 		request_handler( Params &&... params ) &
 		{
 			return set_unique_instance(
@@ -509,7 +509,7 @@ class server_settings_t final
 
 
 		template< typename... Params >
-		server_settings_t &&
+		Derived &&
 		request_handler( Params &&... params ) &&
 		{
 			return std::move( this->request_handler( std::forward< Params >( params )... ) );
@@ -530,7 +530,7 @@ class server_settings_t final
 		using timer_factory_t = typename Traits::timer_factory_t;
 
 		template< typename... Params >
-		server_settings_t &
+		Derived &
 		timer_factory( Params &&... params ) &
 		{
 			return set_shared_instance(
@@ -539,7 +539,7 @@ class server_settings_t final
 		}
 
 		template< typename... Params >
-		server_settings_t &&
+		Derived &&
 		timer_factory( Params &&... params ) &&
 		{
 			return std::move( this->timer_factory( std::forward< Params >( params )... ) );
@@ -559,7 +559,7 @@ class server_settings_t final
 		using logger_t = typename Traits::logger_t;
 
 		template< typename... Params >
-		server_settings_t &
+		Derived &
 		logger( Params &&... params ) &
 		{
 			return set_unique_instance(
@@ -568,7 +568,7 @@ class server_settings_t final
 		}
 
 		template< typename... Params >
-		server_settings_t &&
+		Derived &&
 		logger( Params &&... params ) &&
 		{
 			return std::move( this->logger( std::forward< Params >( params )... ) );
@@ -585,7 +585,7 @@ class server_settings_t final
 
 		//! Acceptor options setter.
 		//! \{
-		server_settings_t &
+		Derived &
 		acceptor_options_setter( acceptor_options_setter_t aos ) &
 		{
 			if( m_acceptor_options_setter )
@@ -596,7 +596,7 @@ class server_settings_t final
 					std::move( aos ) );
 		}
 
-		server_settings_t &&
+		Derived &&
 		acceptor_options_setter( acceptor_options_setter_t aos ) &&
 		{
 			return std::move( this->acceptor_options_setter( std::move( aos ) ) );
@@ -613,7 +613,7 @@ class server_settings_t final
 
 		//! Socket options setter.
 		//! \{
-		server_settings_t &
+		Derived &
 		socket_options_setter( socket_options_setter_t sos ) &
 		{
 			if( m_socket_options_setter )
@@ -624,7 +624,7 @@ class server_settings_t final
 					std::move( sos ) );
 		}
 
-		server_settings_t &&
+		Derived &&
 		socket_options_setter( socket_options_setter_t sos ) &&
 		{
 			return std::move( this->socket_options_setter( std::move( sos ) ) );
@@ -645,7 +645,7 @@ class server_settings_t final
 			then up to N accepts can be handled concurrently.
 		*/
 		//! \{
-		server_settings_t &
+		Derived &
 		concurrent_accepts_count( std::size_t n ) &
 		{
 			if( 0 == n || 1024 < n )
@@ -655,10 +655,10 @@ class server_settings_t final
 						n ) };
 
 			m_concurrent_accepts_count = n;
-			return *this;
+			return reference_to_derived();
 		}
 
-		server_settings_t &&
+		Derived &&
 		concurrent_accepts_count( std::size_t n ) &&
 		{
 			return std::move( this->concurrent_accepts_count( n ) );
@@ -681,14 +681,14 @@ class server_settings_t final
 			is independent to acceptors one.
 		*/
 		//! \{
-		server_settings_t &
+		Derived &
 		separate_accept_and_create_connect( bool do_separate ) &
 		{
 			m_separate_accept_and_create_connect = do_separate;
-			return *this;
+			return reference_to_derived();
 		}
 
-		server_settings_t &&
+		Derived &&
 		separate_accept_and_create_connect( bool do_separate ) &&
 		{
 			return std::move( this->separate_accept_and_create_connect( do_separate ) );
@@ -702,26 +702,32 @@ class server_settings_t final
 		//! \}
 
 	private:
+		Derived &
+		reference_to_derived()
+		{
+			return static_cast<Derived &>(*this);
+		}
+
 		template< typename Target, typename... Params >
-		server_settings_t &
+		Derived &
 		set_unique_instance( std::unique_ptr< Target > & t, Params &&... params )
 		{
 			t =
 				std::make_unique< Target >(
 					std::forward< Params >( params )... );
 
-			return *this;
+			return reference_to_derived();
 		}
 
 		template< typename Target, typename... Params >
-		server_settings_t &
+		Derived &
 		set_shared_instance( std::shared_ptr< Target > & t, Params &&... params )
 		{
 			t =
 				std::make_shared< Target >(
 					std::forward< Params >( params )... );
 
-			return *this;
+			return reference_to_derived();
 		}
 
 		//! Server endpoint.
@@ -768,6 +774,22 @@ class server_settings_t final
 
 		//! Do separate an accept operation and connection instantiation.
 		bool m_separate_accept_and_create_connect{ false };
+};
+
+//
+// server_settings_t
+//
+
+//FIXME: implement this!
+//! A fluent style interface for setting http server params.
+template<typename Traits = default_traits_t>
+class server_settings_t
+	:	public basic_server_settings_t< server_settings_t<Traits>, Traits >
+{
+	using base_type_t = basic_server_settings_t<
+				server_settings_t<Traits>, Traits>;
+public:
+	using base_type_t::base_type_t;
 };
 
 template < typename Traits, typename Configurator >

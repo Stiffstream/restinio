@@ -64,14 +64,17 @@ class http_server_t
 		using acceptor_t = impl::acceptor_t< Traits >;
 
 	public:
+		template<typename D>
 		http_server_t(
 			io_context_wrapper_unique_ptr_t io_context_wrapper,
-			server_settings_t< Traits > settings )
+			basic_server_settings_t< D, Traits > && settings )
 			:	m_io_context_wrapper{ std::move( io_context_wrapper ) }
 		{
+			using actual_settings_type = basic_server_settings_t<D, Traits>;
+
 			auto conn_settings =
 				std::make_shared< connection_settings_t >(
-					settings,
+					std::forward<actual_settings_type>(settings),
 					impl::create_parser_settings(),
 					m_io_context_wrapper->io_context(),
 					settings.timer_factory() );
@@ -86,7 +89,12 @@ class http_server_t
 					*( conn_settings->m_logger ) );
 		}
 
-		template < typename Configurator >
+		//FIXME: there must be more readable form of this SFINAE.
+		template<
+			typename Configurator,
+			typename = decltype(
+					std::declval<Configurator>()(
+							*(static_cast<server_settings_t<Traits>*>(nullptr)))) >
 		http_server_t(
 			io_context_wrapper_unique_ptr_t io_context_wrapper,
 			Configurator && configurator )
