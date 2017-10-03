@@ -1,5 +1,6 @@
 #!/usr/bin/ruby
 require 'mxx_ru/cpp'
+require 'restinio/openssl_find.rb'
 
 MxxRu::Cpp::composite_target {
 
@@ -10,6 +11,10 @@ MxxRu::Cpp::composite_target {
 	required_prj( "test/response_coordinator/prj.ut.rb" )
 	required_prj( "test/uri_helpers/prj.ut.rb" )
 	required_prj( "test/socket_options/prj.ut.rb" )
+
+	if RestinioOpenSSLFind.has_openssl(toolset)
+		required_prj( "test/socket_options_tls/prj.ut.rb" )
+	end
 
 	required_prj( "test/handle_requests/method/prj.ut.rb" )
 	required_prj( "test/handle_requests/echo_body/prj.ut.rb" )

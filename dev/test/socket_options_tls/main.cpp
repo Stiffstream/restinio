@@ -12,16 +12,17 @@
 #include <asio.hpp>
 
 #include <restinio/all.hpp>
+#include <restinio/tls.hpp>
 
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
-TEST_CASE( "Socket options" , "[socket][options]" )
+TEST_CASE( "Socket_options TLS" , "[socket][options][tls]" )
 {
 	bool socket_options_setter_was_called = false;
 	using http_server_t =
 		restinio::http_server_t<
-			restinio::traits_t<
+			restinio::tls_traits_t<
 				restinio::asio_timer_factory_t,
 				utest_logger_t > >;
 
@@ -57,31 +58,15 @@ TEST_CASE( "Socket options" , "[socket][options]" )
 
 	http_server.open();
 
-	std::string response;
-	auto create_request = []( const std::string & body ){
-		return
-			"POST /data HTTP/1.0\r\n"
-			"From: unit-test\r\n"
-			"User-Agent: unit-test\r\n"
-			"Content-Type: application/x-www-form-urlencoded\r\n"
-			"Content-Length: " + std::to_string( body.size() ) + "\r\n"
-			"Connection: close\r\n"
-			"\r\n" +
-			body;
-	};
+	// TODO: when tls client will be available use it instead of the following code:
+	do_with_socket(
+		[]( auto & socket, auto &  ){
+			// Ensure we get connected:
+			std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+			socket.close(); // Close without doing anything.
+		} );
 
-	{
-		const std::string body = "01234567890123456789";
-		REQUIRE_NOTHROW( response = do_request( create_request( body ) ) );
-
-		REQUIRE_THAT(
-			response,
-			Catch::Matchers::Contains(
-				"Content-Length: " + std::to_string( body.size() ) ) );
-		REQUIRE_THAT( response, Catch::Matchers::EndsWith( body ) );
-
-		REQUIRE( socket_options_setter_was_called );
-	}
+	REQUIRE( socket_options_setter_was_called );
 
 	http_server.close();
 }

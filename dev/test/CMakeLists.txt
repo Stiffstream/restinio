@@ -10,3 +10,8 @@ add_subdirectory(response_coordinator)
 add_subdirectory(handle_requests)
 add_subdirectory(http_pipelining)
 add_subdirectory(router)
+
+find_package(OpenSSL)
+if ( OPENSSL_FOUND )
+	add_subdirectory(socket_options_tls)
+endif ()

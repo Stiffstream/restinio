@@ -507,7 +507,6 @@ write_message_details(
 	return write_message_details( message_details_t{ final, opcode, payload_len, masking_key } );
 }
 
-
 } /* namespace impl */
 
 } /* namespace websocket */
