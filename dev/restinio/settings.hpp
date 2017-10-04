@@ -292,7 +292,17 @@ create_default_unique_object_instance< socket_options_setter_t >()
 // basic_server_settings_t
 //
 
-//FIXME: document this!
+//! Basic container for http_server settings.
+/*!
+ * It exists to provide ablity to create various derived classes
+ * like server_settings_t, run_on_this_thread_settings_t,
+ * run_on_this_thread_settings_t and so on.
+ *
+ * \tparam Derived A drived type. Reference to this derived type
+ * will be returned by setters.
+ *
+ * \tparam Traits A type with traits for http_server.
+ */
 template<typename Derived, typename Traits>
 class basic_server_settings_t
 	:	public socket_type_dependent_settings_t<
@@ -780,7 +790,6 @@ class basic_server_settings_t
 // server_settings_t
 //
 
-//FIXME: implement this!
 //! A fluent style interface for setting http server params.
 template<typename Traits = default_traits_t>
 class server_settings_t final
