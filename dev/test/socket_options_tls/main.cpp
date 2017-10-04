@@ -56,7 +56,7 @@ TEST_CASE( "Socket_options TLS" , "[socket][options][tls]" )
 		}
 	};
 
-	http_server.open();
+	http_server.start();
 
 	// TODO: when tls client will be available use it instead of the following code:
 	do_with_socket(
@@ -68,5 +68,5 @@ TEST_CASE( "Socket_options TLS" , "[socket][options][tls]" )
 
 	REQUIRE( socket_options_setter_was_called );
 
-	http_server.close();
+	http_server.stop();
 }

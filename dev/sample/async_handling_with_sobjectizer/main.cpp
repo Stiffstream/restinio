@@ -63,12 +63,12 @@ class a_http_server_t :	public so_5::agent_t
 
 		virtual void so_evt_start() override
 		{
-			m_server.open();
+			m_server.start();
 		}
 
 		virtual void so_evt_finish() override
 		{
-			m_server.close();
+			m_server.stop();
 		}
 
 	private:

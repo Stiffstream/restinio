@@ -78,7 +78,7 @@ int main()
 
 	try
 	{
-		run(
+		restinio::run(
 			restinio::on_this_thread<traits_t>()
 				.address( "localhost" )
 				.request_handler( server_handler() )

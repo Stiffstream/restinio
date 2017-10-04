@@ -127,7 +127,7 @@ TEST_CASE( "Using user controlled output response builder" , "[user_controlled_o
 		}
 	};
 
-	http_server.open();
+	http_server.start();
 
 	start_request_handler_pool();
 
@@ -326,5 +326,5 @@ TEST_CASE( "Using user controlled output response builder" , "[user_controlled_o
 
 	stop_request_handler_pool();
 
-	http_server.close();
+	http_server.stop();
 }

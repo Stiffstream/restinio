@@ -90,7 +90,7 @@ class a_server_t
 								} );
 					} }
 		{
-			m_http_server.open();
+			m_http_server.start();
 		}
 
 		virtual void
@@ -105,7 +105,7 @@ class a_server_t
 		so_evt_finish() override
 		{
 			m_ws.reset();
-			m_http_server.close();
+			m_http_server.stop();
 		}
 
 	private:

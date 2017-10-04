@@ -107,6 +107,7 @@ class acceptor_t final
 		using connection_factory_shared_ptr_t =
 			std::shared_ptr< connection_factory_t >;
 		using logger_t = typename Traits::logger_t;
+		using strand_t = typename Traits::strand_t;
 		using stream_socket_t = typename Traits::stream_socket_t;
 		using socket_holder_base_t = socket_supplier_t< stream_socket_t >;
 
@@ -126,6 +127,7 @@ class acceptor_t final
 			,	m_acceptor_options_setter{ settings.acceptor_options_setter() }
 			,	m_acceptor{ io_context }
 			,	m_executor{ io_context.get_executor() }
+			,	m_open_close_operations_executor{ io_context.get_executor() }
 			,	m_separate_accept_and_create_connect{ settings.separate_accept_and_create_connect() }
 			,	m_connection_factory{ std::move( connection_factory ) }
 			,	m_logger{ logger }
@@ -242,12 +244,18 @@ class acceptor_t final
 		}
 
 		auto &
+		get_open_close_operations_executor()
+		{
+			return  m_open_close_operations_executor;
+		}
+
+	private:
+		auto &
 		get_executor()
 		{
 			return m_executor;
 		}
 
-	private:
 		// Set a callback for a new connection.
 		void
 		accept_next( std::size_t i )
@@ -352,6 +360,7 @@ class acceptor_t final
 
 		//! Asio executor.
 		asio::executor m_executor;
+		strand_t m_open_close_operations_executor;
 
 		//! Do separate an accept operation and connection instantiation.
 		const bool m_separate_accept_and_create_connect;

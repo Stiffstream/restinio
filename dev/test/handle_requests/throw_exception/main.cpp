@@ -44,7 +44,7 @@ TEST_CASE( "Throw exception" , "[exception]" )
 		}
 	};
 
-	http_server.open();
+	http_server.start();
 
 	do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
 
@@ -70,5 +70,5 @@ TEST_CASE( "Throw exception" , "[exception]" )
 		REQUIRE( error == asio::error::eof );
 		} );
 
-	http_server.close();
+	http_server.stop();
 }

@@ -195,9 +195,9 @@ run( run_on_thread_pool_settings_t<Traits> && settings )
 				promise.set_value();
 		} );
 
-	server.open();
+	server.start();
 	promise.get_future().get();
-	server.close();
+	server.stop();
 }
 
 } /* namespace restinio */

@@ -140,8 +140,7 @@ TEST_CASE( "Simple HTTP piplining " , "[reverse_handling]" )
 				.max_pipelined_requests( 10 );
 		} };
 
-	http_server.open();
-
+	http_server.start();
 
 	{
 		std::string response;
@@ -209,7 +208,7 @@ TEST_CASE( "Simple HTTP piplining " , "[reverse_handling]" )
 		final_checks();
 	}
 
-	http_server.close();
+	http_server.stop();
 }
 
 TEST_CASE( "Long sequesnces HTTP piplining" , "[long_sequences]" )
@@ -238,7 +237,7 @@ TEST_CASE( "Long sequesnces HTTP piplining" , "[long_sequences]" )
 				.max_pipelined_requests( 128 );
 		} };
 
-	http_server.open();
+	http_server.start();
 
 	SECTION( "simple order" )
 	{
@@ -291,7 +290,7 @@ TEST_CASE( "Long sequesnces HTTP piplining" , "[long_sequences]" )
 		}
 	}
 
-	http_server.close();
+	http_server.stop();
 }
 
 TEST_CASE( "Interrupt sequesnces HTTP piplining" , "[long_sequences][interrupt]" )
@@ -320,7 +319,7 @@ TEST_CASE( "Interrupt sequesnces HTTP piplining" , "[long_sequences][interrupt]"
 				.max_pipelined_requests( 20 );
 		} };
 
-	http_server.open();
+	http_server.start();
 
 	std::ostringstream sout;
 	for( auto i = 0; i < 20; ++i )
@@ -342,5 +341,5 @@ TEST_CASE( "Interrupt sequesnces HTTP piplining" , "[long_sequences][interrupt]"
 		REQUIRE( i == resp_seq[ i ] );
 	}
 
-	http_server.close();
+	http_server.stop();
 }

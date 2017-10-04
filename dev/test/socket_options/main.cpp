@@ -55,7 +55,7 @@ TEST_CASE( "Socket options" , "[socket][options]" )
 		}
 	};
 
-	http_server.open();
+	http_server.start();
 
 	std::string response;
 	auto create_request = []( const std::string & body ){
@@ -83,5 +83,5 @@ TEST_CASE( "Socket options" , "[socket][options]" )
 		REQUIRE( socket_options_setter_was_called );
 	}
 
-	http_server.close();
+	http_server.stop();
 }

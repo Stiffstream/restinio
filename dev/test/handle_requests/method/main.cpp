@@ -45,7 +45,7 @@ TEST_CASE( "HTTP method" , "[method]" )
 					} );
 		} };
 
-	http_server.open();
+	http_server.start();
 
 	SECTION( "GET" )
 	{
@@ -132,5 +132,5 @@ TEST_CASE( "HTTP method" , "[method]" )
 		REQUIRE_THAT( response, Catch::Matchers::EndsWith( "DELETE" ) );
 	}
 
-	http_server.close();
+	http_server.stop();
 }

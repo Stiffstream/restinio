@@ -71,7 +71,7 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 				.max_pipelined_requests( 2 );
 		} };
 
-	http_server.open();
+	http_server.start();
 
 	do_with_socket( [ & ]( auto & socket, auto & io_context ){
 		const std::string pipelinedrequests{
@@ -118,7 +118,7 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 
 	} );
 
-	http_server.close();
+	http_server.stop();
 
 	req_handler_t::m_request.reset();
 }

@@ -48,7 +48,7 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 		}
 	};
 
-	http_server.open();
+	http_server.start();
 
 	std::string response;
 	auto create_request = []( const std::string & body ){
@@ -102,5 +102,5 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 		REQUIRE_THAT( response, Catch::Matchers::EndsWith( body ) );
 	}
 
-	http_server.close();
+	http_server.stop();
 }

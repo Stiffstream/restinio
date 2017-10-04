@@ -60,7 +60,7 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 					} );
 		} };
 
-	http_server.open();
+	http_server.start();
 
 	std::string response;
 	const char * request_str =
@@ -81,5 +81,5 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 	REQUIRE_THAT( response, Catch::Contains( "Sec-WebSocket-Accept:" ) );
 	REQUIRE_THAT( response, Catch::Contains( "Upgrade: websocket" ) );
 
-	http_server.close();
+	http_server.stop();
 }

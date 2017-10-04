@@ -129,7 +129,7 @@ int main()
 					.handle_request_timeout( 1s );
 			} };
 
-		http_server.open();
+		http_server.start();
 
 		// Wait for quit command.
 		std::cout << "Type \"quit\" or \"q\" to quit." << std::endl;
@@ -145,7 +145,7 @@ int main()
 			websocket->kill();
 		};
 
-		http_server.close();
+		http_server.stop();
 	}
 	catch( const std::exception & ex )
 	{

@@ -216,7 +216,7 @@ TEST_CASE( "Using user chunked output response builder" , "[chunked_output]" )
 		}
 	};
 
-	http_server.open();
+	http_server.start();
 
 	start_request_handler_pool();
 
@@ -286,6 +286,6 @@ TEST_CASE( "Using user chunked output response builder" , "[chunked_output]" )
 
 	stop_request_handler_pool();
 
-	http_server.close();
+	http_server.stop();
 }
 

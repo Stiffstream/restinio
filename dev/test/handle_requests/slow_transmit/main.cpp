@@ -55,7 +55,7 @@ TEST_CASE( "Slow transmit" , "[slow_trunsmit]" )
 		}
 	};
 
-	http_server.open();
+	http_server.start();
 
 	do_with_socket( [ & ]( auto & socket, auto & io_context ){
 
@@ -92,5 +92,5 @@ TEST_CASE( "Slow transmit" , "[slow_trunsmit]" )
 		io_context.run();
 	} );
 
-	http_server.close();
+	http_server.stop();
 }

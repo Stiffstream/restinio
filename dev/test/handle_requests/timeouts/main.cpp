@@ -54,7 +54,7 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 		}
 	};
 
-	http_server.open();
+	http_server.start();
 
 	SECTION( "write nothing" )
 	{
@@ -125,7 +125,7 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 		} );
 	}
 
-	http_server.close();
+	http_server.stop();
 }
 
 TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
@@ -156,7 +156,7 @@ TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
 		}
 	};
 
-	http_server.open();
+	http_server.start();
 
 	do_with_socket( [ & ]( auto & socket, auto & io_context ){
 
@@ -187,6 +187,6 @@ TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
 	} );
 
 
-	http_server.close();
+	http_server.stop();
 	req_to_store.reset();
 }

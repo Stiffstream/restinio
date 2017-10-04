@@ -38,7 +38,7 @@ TEST_CASE(
 					} );
 		} };
 
-	http_server.open();
+	http_server.start();
 
 	std::string response;
 	const char * request_str =
@@ -57,7 +57,7 @@ TEST_CASE(
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( *resp_message ) );
 
-	http_server.close();
+	http_server.stop();
 }
 
 TEST_CASE(
@@ -105,7 +105,7 @@ TEST_CASE(
 
 		} };
 
-	http_server.open();
+	http_server.start();
 
 	std::string response;
 	const char * request_str =
@@ -124,7 +124,7 @@ TEST_CASE(
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( *resp_message ) );
 
-	http_server.close();
+	http_server.stop();
 }
 
 TEST_CASE(
@@ -169,7 +169,7 @@ TEST_CASE(
 					} );
 		} };
 
-	http_server.open();
+	http_server.start();
 
 	std::string response;
 	const char * request_str =
@@ -188,7 +188,7 @@ TEST_CASE(
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( *resp_message ) );
 
-	http_server.close();
+	http_server.stop();
 }
 
 TEST_CASE(
@@ -264,7 +264,7 @@ TEST_CASE(
 					} );
 		} };
 
-	http_server.open();
+	http_server.start();
 
 	std::string response;
 	const char * request_str =
@@ -284,7 +284,7 @@ TEST_CASE(
 	// Add "\r\n\r\n" to ensure that resp goes right after header.
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( std::string( "\r\n\r\n" ) + *resp_message ) );
 
-	http_server.close();
+	http_server.stop();
 }
 
 TEST_CASE(
@@ -320,7 +320,7 @@ TEST_CASE(
 					} );
 		} };
 
-	http_server.open();
+	http_server.start();
 
 	std::string response;
 	const char * request_str =
@@ -339,7 +339,7 @@ TEST_CASE(
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( *resp_message ) );
 
-	http_server.close();
+	http_server.stop();
 }
 
 TEST_CASE(
@@ -380,7 +380,7 @@ TEST_CASE(
 					} );
 		} };
 
-	http_server.open();
+	http_server.start();
 
 	std::string response;
 	const char * request_str =
@@ -399,7 +399,7 @@ TEST_CASE(
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( *resp_message ) );
 
-	http_server.close();
+	http_server.stop();
 }
 
 TEST_CASE(
@@ -446,7 +446,7 @@ TEST_CASE(
 					} );
 		} };
 
-	http_server.open();
+	http_server.start();
 
 	std::string response;
 	const char * request_str =
@@ -465,7 +465,7 @@ TEST_CASE(
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( *resp_message ) );
 
-	http_server.close();
+	http_server.stop();
 }
 
 TEST_CASE(
@@ -544,7 +544,7 @@ TEST_CASE(
 					} );
 		} };
 
-	http_server.open();
+	http_server.start();
 
 	std::string response;
 	const char * request_str =
@@ -564,7 +564,7 @@ TEST_CASE(
 	// Add "\r\n\r\n" to ensure that resp goes right after header.
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( std::string( "\r\n\r\n" ) + *resp_message ) );
 
-	http_server.close();
+	http_server.stop();
 }
 
 TEST_CASE(
@@ -639,7 +639,7 @@ TEST_CASE(
 					} );
 		} };
 
-	http_server.open();
+	http_server.start();
 
 	std::string response;
 	const char * request_str =
@@ -656,5 +656,5 @@ TEST_CASE(
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( chunked_resp_message ) );
 
-	http_server.close();
+	http_server.stop();
 }

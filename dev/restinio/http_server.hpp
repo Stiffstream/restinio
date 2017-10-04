@@ -111,7 +111,7 @@ class http_server_t
 		{
 			auto acc = std::move( m_acceptor );
 			asio::post(
-				acc->get_executor(),
+				acc->get_open_close_operations_executor(),
 				[ ctx = acc ]{ ctx->ensure_close(); } );
 		}
 
@@ -156,14 +156,21 @@ class http_server_t
 			Server_Open_Error_CB && open_err_cb )
 		{
 			asio::post(
-				m_acceptor->get_executor(),
+				m_acceptor->get_open_close_operations_executor(),
 				[ acceptor = m_acceptor,
 					ok_cb = std::move( open_ok_cb ),
 					err_cb = std::move( open_err_cb ) ]{
 					try
 					{
 						acceptor->open();
-						ok_cb();
+						try
+						{
+							ok_cb();
+						}
+						catch( ... )
+						{
+							std::terminate();
+						}
 					}
 					catch( const std::exception & )
 					{
@@ -178,30 +185,27 @@ class http_server_t
 			otherwise it throws.
 		*/
 		void
-		open_sync()
+		start()
 		{
-			// Make sure that we running io_context.
-			start_io_context();
+			if( sync_running_state_t::not_running == m_sync_running_state )
+			{
+				// Make sure that we running io_context.
+				start_io_context();
 
-			// Sync object.
-			std::promise< void > open_result;
+				// Sync object.
+				std::promise< void > open_result;
 
-			open_async(
-				[ &open_result ](){
-					open_result.set_value();
-				},
-				[ &open_result ]( std::exception_ptr ex ){
-					open_result.set_exception( std::move( ex ) );
-				} );
+				open_async(
+					[ &open_result ](){
+						open_result.set_value();
+					},
+					[ &open_result ]( std::exception_ptr ex ){
+						open_result.set_exception( std::move( ex ) );
+					} );
 
-			open_result.get_future().get();
-		}
-
-		//! Shortcut for open_sync().
-		void
-		open()
-		{
-			open_sync();
+				open_result.get_future().get();
+				m_sync_running_state = sync_running_state_t::running;
+			}
 		}
 
 		//! Closes server in async way.
@@ -218,14 +222,21 @@ class http_server_t
 			Server_Close_Error_CB && close_err_cb )
 		{
 			asio::post(
-				m_acceptor->get_executor(),
-				[ ctx = m_acceptor,
+				m_acceptor->get_open_close_operations_executor(),
+				[ acceptor = m_acceptor,
 					ok_cb = std::move( close_ok_cb ),
 					err_cb = std::move( close_err_cb ) ]{
 					try
 					{
-						ctx->close();
-						ok_cb();
+						acceptor->close();
+						try
+						{
+							ok_cb();
+						}
+						catch( ... )
+						{
+							std::terminate();
+						}
 					}
 					catch( const std::exception & )
 					{
@@ -240,39 +251,44 @@ class http_server_t
 			otherwise it throws.
 		*/
 		void
-		close_sync()
+		stop()
 		{
-			// Sync object.
-			std::promise< void > close_result;
+			if( sync_running_state_t::running == m_sync_running_state )
+			{
+				// Sync object.
+				std::promise< void > close_result;
 
-			close_async(
-				[ &close_result ](){
-					close_result.set_value();
-				},
-				[ &close_result ]( std::exception_ptr ex ){
-					close_result.set_exception( std::move( ex ) );
-				} );
+				close_async(
+					[ &close_result ](){
+						close_result.set_value();
+					},
+					[ &close_result ]( std::exception_ptr ex ){
+						close_result.set_exception( std::move( ex ) );
+					} );
 
-			close_result.get_future().wait();
+				close_result.get_future().wait();
 
-			// Make sure that we stopped io_context.
-			stop_io_context();
+				// Make sure that we stopped io_context.
+				stop_io_context();
+				m_sync_running_state = sync_running_state_t::not_running;
+			}
 		}
-
-		//! Shortcut for close_sync().
-		void
-		close()
-		{
-			close_sync();
-		}
-
 	private:
 		//! A wrapper for asio io_context where server is running.
 		io_context_wrapper_unique_ptr_t m_io_context_wrapper;
 
 		//! Acceptor for new connections.
 		std::shared_ptr< acceptor_t > m_acceptor;
-};
 
+		//! State of server.
+		enum class sync_running_state_t
+		{
+			not_running,
+			running,
+		};
+
+		// Server state.
+		sync_running_state_t m_sync_running_state{ sync_running_state_t::not_running };
+};
 
 } /* namespace restinio */
