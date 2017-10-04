@@ -305,9 +305,7 @@ create_default_unique_object_instance< socket_options_setter_t >()
  */
 template<typename Derived, typename Traits>
 class basic_server_settings_t
-	:	public socket_type_dependent_settings_t<
-				basic_server_settings_t< Derived, Traits >,
-				typename Traits::stream_socket_t >
+	:	public socket_type_dependent_settings_t< Derived, typename Traits::stream_socket_t >
 {
 	public:
 		basic_server_settings_t(
