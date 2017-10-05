@@ -203,6 +203,13 @@ class ws_connection_t final
 			// Notify of a new connection instance.
 			m_logger.trace( [&]{
 					return fmt::format(
+						"[connection:{}] move socket to [ws_connection:{}]",
+						connection_id(),
+						connection_id() );
+			} );
+
+			m_logger.trace( [&]{
+					return fmt::format(
 						"[ws_connection:{}] start connection with {}",
 						connection_id(),
 						m_socket.remote_endpoint() );
