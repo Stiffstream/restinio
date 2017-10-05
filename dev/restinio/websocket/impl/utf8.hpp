@@ -19,6 +19,10 @@ namespace websocket
 namespace impl
 {
 
+//
+// utf8_checker_t
+//
+
 class utf8_checker_t
 {
 	public:
@@ -106,12 +110,18 @@ class utf8_checker_t
 			return m_current_symbol_rest_bytes == 0;
 		}
 
+		void
+		reset()
+		{
+			m_current_symbol = 0;
+			m_current_symbol_rest_bytes = 0;
+		}
+
 	private:
 
 		void
 		validate_current_symbol()
 		{
-			// std::cout << "CURRENT SYMBOL: " << std::hex << m_current_symbol << "\n";
 			if( (m_current_symbol >= 0xD800 && m_current_symbol <= 0xDFFF) ||
 				(m_current_symbol >= 0x110000) )
 			{
@@ -179,6 +189,10 @@ class utf8_checker_t
 
 		state_t m_state = state_t::valid;
 };
+
+//
+// check_utf8_is_correct
+//
 
 inline bool
 check_utf8_is_correct( const std::string & str )
