@@ -3,7 +3,7 @@
 */
 
 /*!
-	Echo server.
+	Tests for websocket parser.
 */
 
 #define CATCH_CONFIG_MAIN
