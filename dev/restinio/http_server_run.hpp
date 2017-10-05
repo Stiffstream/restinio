@@ -159,11 +159,16 @@ run( run_on_this_thread_settings_t<Traits> && settings )
 	break_signals.async_wait(
 		[&]( const asio::error_code & ec, int ){
 			if( !ec )
+			{
 				server.close_async(
-					[]{ /* Ok. */ },
+					[&]{
+						// Stop running io_service.
+						io_context.stop();
+					},
 					[]( std::exception_ptr ex ){
 						std::rethrow_exception( ex );
 					} );
+			}
 		} );
 
 	io_context.run();
