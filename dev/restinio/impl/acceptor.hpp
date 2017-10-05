@@ -54,8 +54,6 @@ class socket_supplier_t
 			}
 		}
 
-		virtual ~socket_supplier_t() = default;
-
 		//! Get the reference to socket.
 		Socket &
 		socket(
@@ -65,7 +63,7 @@ class socket_supplier_t
 			return m_sockets.at( idx );
 		}
 
-		//! Extract current socet via move.
+		//! Extract the socket via move.
 		Socket
 		move_socket(
 			//! Index of a socket in the pool.
@@ -100,7 +98,7 @@ class socket_supplier_t
 template < typename Traits >
 class acceptor_t final
 	:	public std::enable_shared_from_this< acceptor_t< Traits > >
-	,	public socket_supplier_t< typename Traits::stream_socket_t >
+	,	protected socket_supplier_t< typename Traits::stream_socket_t >
 {
 	public:
 		using connection_factory_t = impl::connection_factory_t< Traits >;
