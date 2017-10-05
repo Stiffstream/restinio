@@ -225,9 +225,6 @@ class acceptor_t final
 		{
 			try
 			{
-				m_logger.trace( [&]{
-					return fmt::format( "REMOVEME: ENSURE CLOSE" );
-				} );
 				if( m_acceptor.is_open() )
 				{
 					close_impl();
