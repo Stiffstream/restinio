@@ -333,7 +333,7 @@ TEST_CASE(
 		ws_protocol_validator_t validator;
 
 		std::string payload{ to_char_each({
-			0xf8, 0x88, 0x80, 0x80, 0x80 }) };
+			0xed, 0x9f, 0xbf }) };
 
 		message_details_t frame{
 			false, opcode_t::text_frame, payload.size(), 0xFFFFFFFF};
@@ -342,8 +342,21 @@ TEST_CASE(
 
 		REQUIRE_NOTHROW( validator.process_next_payload_part(
 			payload.data(), payload.size() ) );
+	}
+	SECTION(
+		"Check payload is incorrect utf-8 sequence in text frame" )
+	{
+		ws_protocol_validator_t validator;
 
-		REQUIRE_NOTHROW( validator.process_next_payload_part(
+		std::string payload{ to_char_each({
+			0xf8, 0x88, 0x80, 0x80, 0x80 }) };
+
+		message_details_t frame{
+			false, opcode_t::text_frame, payload.size(), 0xFFFFFFFF};
+
+		REQUIRE_NOTHROW( validator.process_new_frame(frame) );
+
+		REQUIRE_THROWS_AS( validator.process_next_payload_part(
 			payload.data(), payload.size() ) );
 	}
 }

@@ -108,7 +108,17 @@ class ws_protocol_validator_t
 			if( m_state == state_t::empty_state )
 				throw std::runtime_error( "current state is empty" );
 
-			// if( )
+			if( m_current_frame.m_opcode == opcode_t::text_frame ||
+				m_current_frame.m_opcode == opcode_t::continuation_frame &&
+				m_current_continued_data_frame_type ==
+					current_continued_data_frame_type_t::text )
+			{
+				for( size_t i = 0; i < size; ++i )
+				{
+					if( !m_utf8_checker.process_byte( data[i] ) )
+						throw std::runtime_error( "invalid utf-8 sequence" );
+				}
+			}
 		}
 
 		//! Make final checks of payload if it is necessary and reset state.
