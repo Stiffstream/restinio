@@ -163,18 +163,11 @@ class http_server_t
 					try
 					{
 						acceptor->open();
-						try
-						{
-							ok_cb();
-						}
-						catch( ... )
-						{
-							std::terminate();
-						}
+						call_nothrow_cb( ok_cb );
 					}
 					catch( const std::exception & )
 					{
-						err_cb( std::current_exception() );
+						call_nothrow_cb( err_cb, std::current_exception() );
 					}
 				} );
 		}
@@ -229,18 +222,11 @@ class http_server_t
 					try
 					{
 						acceptor->close();
-						try
-						{
-							ok_cb();
-						}
-						catch( ... )
-						{
-							std::terminate();
-						}
+						call_nothrow_cb( ok_cb );
 					}
 					catch( const std::exception & )
 					{
-						err_cb( std::current_exception() );
+						call_nothrow_cb( err_cb, std::current_exception() );
 					}
 				} );
 		}
@@ -287,8 +273,15 @@ class http_server_t
 			running,
 		};
 
-		// Server state.
+		//! Server state.
 		sync_running_state_t m_sync_running_state{ sync_running_state_t::not_running };
+
+		//! Call callback and terminate the application if callback throws.
+		template< typename Callback, typename... Args >
+		static void call_nothrow_cb( Callback && cb, Args && ...args ) noexcept
+		{
+			cb( std::forward<Args>(args)... );
+		}
 };
 
 } /* namespace restinio */

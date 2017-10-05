@@ -82,9 +82,6 @@ class run_on_thread_pool_settings_t final
 				run_on_thread_pool_settings_t<Traits>,
 				Traits>
 {
-	using base_type_t = basic_server_settings_t<
-				run_on_thread_pool_settings_t<Traits>, Traits>;
-
 	//! Size of the pool.
 	std::size_t m_pool_size;
 
