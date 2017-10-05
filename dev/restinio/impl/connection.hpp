@@ -247,7 +247,7 @@ class connection_t final
 				// Notify of a new connection instance.
 				m_logger.trace( [&]{
 					return fmt::format(
-						"[connection:{}] destroyed",
+						"[connection:{}] destructor called",
 						connection_id() );
 				} );
 			}
