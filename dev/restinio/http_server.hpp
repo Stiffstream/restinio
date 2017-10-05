@@ -167,7 +167,7 @@ class http_server_t
 					}
 					catch( const std::exception & )
 					{
-						call_nothrow_cb( err_cb, std::current_exception() );
+						err_cb( std::current_exception() );
 					}
 				} );
 		}
@@ -226,7 +226,7 @@ class http_server_t
 					}
 					catch( const std::exception & )
 					{
-						call_nothrow_cb( err_cb, std::current_exception() );
+						err_cb( std::current_exception() );
 					}
 				} );
 		}
@@ -277,10 +277,10 @@ class http_server_t
 		sync_running_state_t m_sync_running_state{ sync_running_state_t::not_running };
 
 		//! Call callback and terminate the application if callback throws.
-		template< typename Callback, typename... Args >
-		static void call_nothrow_cb( Callback && cb, Args && ...args ) noexcept
+		template< typename Callback >
+		static void call_nothrow_cb( Callback && cb ) noexcept
 		{
-			cb( std::forward<Args>(args)... );
+			cb();
 		}
 };
 
