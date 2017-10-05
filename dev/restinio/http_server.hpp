@@ -231,7 +231,7 @@ class http_server_t
 				} );
 		}
 
-		//! Start server.
+		//! Stop server.
 		/*!
 			If server was stopped successfully then function returns,
 			otherwise it throws.
@@ -253,10 +253,10 @@ class http_server_t
 					} );
 
 				close_result.get_future().wait();
+				m_sync_running_state = sync_running_state_t::not_running;
 
 				// Make sure that we stopped io_context.
 				stop_io_context();
-				m_sync_running_state = sync_running_state_t::not_running;
 			}
 		}
 	private:
