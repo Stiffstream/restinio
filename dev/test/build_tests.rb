@@ -16,7 +16,7 @@ MxxRu::Cpp::composite_target {
 		required_prj( "test/socket_options_tls/prj.ut.rb" )
 	end
 
-#	required_prj( "test/close/prj.ut.rb" )
+	required_prj( "test/start_stop/prj.ut.rb" )
 
 	required_prj( "test/handle_requests/method/prj.ut.rb" )
 	required_prj( "test/handle_requests/echo_body/prj.ut.rb" )
