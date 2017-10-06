@@ -1,5 +1,5 @@
 /*!
-	UTF-8 .
+	Protocol header validator .
 */
 
 #pragma once
@@ -16,6 +16,27 @@ namespace websocket
 
 namespace impl
 {
+
+enum class validation_state_t
+{
+	//correct codes
+	frame_header_is_valid,
+	payload_part_is_valid,
+	frame_is_valid,
+	// header validation error codes
+	invalid_opcode,
+	empty_mask_from_client_side,
+	non_final_control_frame,
+	non_zero_rsv_flags,
+	payload_len_is_too_big,
+	// frame order error codes
+	continuation_frame_without_data_frame,
+	new_data_frame_without_finishing_previous,
+	// payload validation error codes
+	invalid_close_code,
+	incorrect_utf8_data,
+	unknown_state
+};
 
 //
 // is_control_frame
@@ -67,46 +88,61 @@ class ws_protocol_validator_t
 		/*!
 			\attention method finish_frame() should be called before processing a new frame.
 		*/
-		void
+		validation_state_t
 		process_new_frame( const message_details_t & frame )
 		{
 			if( m_state != state_t::empty_state )
-				throw std::runtime_error( "frame is processing now" );
+				throw exception_t( "another frame is processing now" );
 
-			validate_frame_header( frame );
+			validation_state_t result = validation_state_t::unknown_state;
 
 			if( m_current_continued_data_frame_type ==
 					current_continued_data_frame_type_t::none &&
 				frame.m_opcode == opcode_t::continuation_frame )
-				throw std::runtime_error( "continuation frame can't be"
-					" received without previus data frame" );
-
-			if( m_current_continued_data_frame_type !=
+			{
+				result = validation_state_t::continuation_frame_without_data_frame;
+			}
+			else if( m_current_continued_data_frame_type !=
 					current_continued_data_frame_type_t::none &&
 				is_data_frame( frame.m_opcode ) )
-				throw std::runtime_error( "new data frame cant be started without"
-					" because current chunked frame didnt marked as final" );
+			{
+				result = validation_state_t::new_data_frame_without_finishing_previous;
+			}
+			else
+			{
+				result = validate_frame_header( frame );
 
-			if( frame.m_opcode == opcode_t::text_frame &&
-				frame.m_final_flag == false )
-				m_current_continued_data_frame_type =
-					current_continued_data_frame_type_t::text;
+				if( result == validation_state_t::frame_header_is_valid )
+				{
+					if( frame.m_opcode == opcode_t::text_frame &&
+					frame.m_final_flag == false )
+					{
+						m_current_continued_data_frame_type =
+							current_continued_data_frame_type_t::text;
+					}
+					else if( frame.m_opcode == opcode_t::binary_frame &&
+						frame.m_final_flag == false )
+					{
+						m_current_continued_data_frame_type =
+							current_continued_data_frame_type_t::binary;
+					}
 
-			if( frame.m_opcode == opcode_t::binary_frame &&
-				frame.m_final_flag == false )
-				m_current_continued_data_frame_type =
-					current_continued_data_frame_type_t::binary;
+					m_current_frame = frame;
+					m_state = state_t::processing_frame;
 
-			m_current_frame = frame;
-			m_state = state_t::processing_frame;
+					result = validation_state_t::frame_header_is_valid;
+				}
+			}
+
+			return result;
 		}
 
 		//! Validate next part of current frame.
-		void
+		validation_state_t
 		process_next_payload_part( const char * data, size_t size )
 		{
 			if( m_state == state_t::empty_state )
-				throw std::runtime_error( "current state is empty" );
+				throw exception_t( "current state is empty" );
 
 			if( m_current_frame.m_opcode == opcode_t::text_frame ||
 				m_current_frame.m_opcode == opcode_t::continuation_frame &&
@@ -116,19 +152,24 @@ class ws_protocol_validator_t
 				for( size_t i = 0; i < size; ++i )
 				{
 					if( !m_utf8_checker.process_byte( data[i] ) )
-						throw std::runtime_error( "invalid utf-8 sequence" );
+						return validation_state_t::incorrect_utf8_data;
 				}
 			}
+
+			return validation_state_t::payload_part_is_valid;
 		}
 
 		//! Make final checks of payload if it is necessary and reset state.
-		void
+		validation_state_t
 		finish_frame()
 		{
-			if( !m_utf8_checker.final() )
-				throw std::runtime_error( "frame payload is not valid utf-8 data" );
+			if( m_current_frame.m_final_flag )
+			{
+				if( !m_utf8_checker.final() )
+					return validation_state_t::incorrect_utf8_data;
 
-			m_utf8_checker.reset();
+				m_utf8_checker.reset();
+			}
 
 			m_state = state_t::empty_state;
 
@@ -141,30 +182,43 @@ class ws_protocol_validator_t
 				m_current_frame.m_final_flag )
 				m_current_continued_data_frame_type =
 					current_continued_data_frame_type_t::none;
+
+			return validation_state_t::frame_is_valid;
+		}
+
+		void
+		reset()
+		{
+			m_state = state_t::empty_state;
+			m_current_continued_data_frame_type =
+				current_continued_data_frame_type_t::none;
+
+			m_utf8_checker.reset();
 		}
 
 	private:
 
-		void
+		validation_state_t
 		validate_frame_header( const message_details_t & frame ) const
 		{
 			if( !is_valid_opcode( frame.m_opcode ) )
-				throw std::runtime_error( "invalid opcode" );
+				return validation_state_t::invalid_opcode;
 
 			if( is_control_frame(frame.m_opcode) && frame.m_final_flag == false )
-				throw std::runtime_error( "control frame must be final" );
+				return validation_state_t::non_final_control_frame;
 
 			if( frame.m_mask_flag == false )
-				throw std::runtime_error( "mask must be present" );
+				return validation_state_t::empty_mask_from_client_side;
 
 			if( frame.m_rsv1_flag != 0 ||
 				frame.m_rsv2_flag != 0 ||
 				frame.m_rsv3_flag != 0)
-				throw std::runtime_error( "reserved flags must be 0" );
+				return validation_state_t::non_zero_rsv_flags;
 
 			if( is_control_frame(frame.m_opcode) && frame.payload_len() > 125 )
-				throw std::runtime_error(
-					"payload len can't be greater than 125 bytes in control frames" );
+				return validation_state_t::payload_len_is_too_big;
+
+			return validation_state_t::frame_header_is_valid;
 		}
 
 		enum class state_t
