@@ -113,7 +113,7 @@ public:
 	stop_and_join()
 	{
 		m_server.close_async(
-			[]{ /* Ok */ },
+			[&]{ m_server.io_context().stop(); },
 			default_async_error_callback() );
 
 		m_thread.join();

@@ -70,7 +70,7 @@ class a_server_t
 			context_t ctx )
 			:	so_base_type_t{ ctx }
 			,	m_http_server{
-					restinio::create_child_io_context( 1 ),
+					restinio::own_io_context(),
 					[this]( auto & settings ){
 						auto mbox = this->so_direct_mbox();
 						settings
@@ -89,8 +89,8 @@ class a_server_t
 									return restinio::request_rejected();
 								} );
 					} }
+			,	m_other_thread{ m_http_server }
 		{
-			m_http_server.start();
 		}
 
 		virtual void
@@ -102,10 +102,16 @@ class a_server_t
 		}
 
 		virtual void
+		so_evt_start() override
+		{
+			m_other_thread.run();
+		}
+
+		virtual void
 		so_evt_finish() override
 		{
 			m_ws.reset();
-			m_http_server.stop();
+			m_other_thread.stop_and_join();
 		}
 
 	private:
@@ -176,6 +182,7 @@ class a_server_t
 		}
 
 		http_server_t m_http_server;
+		other_work_thread_for_server_t<http_server_t> m_other_thread;
 		rws::ws_handle_t m_ws;
 };
 
