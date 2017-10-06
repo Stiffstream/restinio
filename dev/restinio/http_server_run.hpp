@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include <restinio/impl/ioctx_on_thread_pool.hpp>
+
 #include <restinio/http_server.hpp>
 
 namespace restinio
@@ -179,29 +181,39 @@ template<typename Traits>
 inline void
 run( run_on_thread_pool_settings_t<Traits> && settings )
 {
-#if 0
 	using settings_t = run_on_thread_pool_settings_t<Traits>;
 	using server_t = http_server_t<Traits>;
 
-	const auto pool_size = settings.pool_size();
+	impl::ioctx_on_thread_pool_t pool( settings.pool_size() );
 
 	server_t server{
-		restinio::create_child_io_context( pool_size ),
+		restinio::external_io_context( pool.io_context() ),
 		std::forward<settings_t>(settings) };
-
-	std::promise< void > promise;
 
 	asio::signal_set break_signals{ server.io_context(), SIGINT };
 	break_signals.async_wait(
 		[&]( const asio::error_code & ec, int ){
 			if( !ec )
-				promise.set_value();
+			{
+				server.close_async(
+					[&]{
+						// Stop running io_service.
+						pool.stop();
+					},
+					[]( std::exception_ptr ex ){
+						std::rethrow_exception( ex );
+					} );
+			}
 		} );
 
-	server.start();
-	promise.get_future().get();
-	server.stop();
-#endif
+	server.open_async(
+		[]{ /* Ok. */},
+		[]( std::exception_ptr ex ){
+			std::rethrow_exception( ex );
+		} );
+
+	pool.start();
+	pool.wait();
 }
 
 } /* namespace restinio */

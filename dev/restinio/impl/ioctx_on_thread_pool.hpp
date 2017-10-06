@@ -16,7 +16,7 @@ namespace impl
  * Helper class for creating asio::io_context and running it
  * (via `io_context::run()`) on a thread pool.
  *
- * \note class is not thread-safe (except `io_context()` methon).
+ * \note class is not thread-safe (except `io_context()` method).
  * Expected usage scenario is to start and stop it on the same thread.
  */
 class ioctx_on_thread_pool_t
