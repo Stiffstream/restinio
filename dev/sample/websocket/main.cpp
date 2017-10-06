@@ -26,43 +26,6 @@ using traits_t =
 
 using ws_registry_t = std::map< std::uint64_t, rws::ws_handle_t >;
 
-// struct ws_registry_t // : public std::enable_shared_from_this< ws_registry_t >
-// {
-// 	~ws_registry_t()
-// 	{
-// 		std::cout << "~ws_registry_t()" << std::endl;
-// 	}
-
-// 	template < typename... Args >
-// 	void
-// 	emplace( Args &&... args )
-// 	{
-// 		m_handles.emplace( std::forward< Args >( args )... );
-// 	}
-
-// 	void
-// 	erase( std::uint64_t id )
-// 	{
-// 		m_handles.erase( id );
-// 	}
-
-// 	std::map< std::uint64_t, rws::ws_handle_t > m_handles;
-// };
-
-struct xxx_t
-{
-	xxx_t( const std::string & tag )
-		:	m_tag{ tag }
-	{}
-
-	~xxx_t()
-	{
-		std::cout << "~xxx_t: " << m_tag << std::endl;
-	}
-
-	std::string m_tag;
-};
-
 auto server_handler( ws_registry_t & registry )
 {
 	auto router = std::make_unique< router_t >();
