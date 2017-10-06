@@ -22,6 +22,17 @@ using namespace restinio;
 using namespace restinio::websocket;
 using namespace restinio::websocket::impl;
 
+std::string
+status_code_to_bin( uint16_t code)
+{
+	using namespace ::restinio::utils::impl::bitops;
+
+	return {
+		n_bits_from<char, 8>( code ),
+		n_bits_from<char, 0>( code )
+	};
+}
+
 TEST_CASE(
 	"UTF-8 check" ,
 	"[validators][utf-8]" )
@@ -116,6 +127,24 @@ TEST_CASE(
 	}
 }
 
+TEST_CASE(
+	"testing functionality of payload unmasker class" ,
+	"[validators][unmasker]" )
+{
+	std::string masked_payload{
+		to_char_each({0x7F, 0x9F, 0x4D, 0x51, 0x58}) };
+
+	unmasker_t unmasker{ 0x37FA213D };
+
+	std::string result;
+
+	for( auto byte: masked_payload )
+	{
+		result.push_back( static_cast<char>( unmasker.unmask_byte(byte) ) );
+	}
+
+	REQUIRE( result == std::string{"Hello"} );
+}
 
 TEST_CASE(
 	"websocket protocol validator" ,
@@ -372,6 +401,27 @@ TEST_CASE(
 			validation_state_t::frame_is_valid );
 	}
 	SECTION(
+		"Check payload is correct utf-8 sequence in text frame (masked)" )
+	{
+		ws_protocol_validator_t validator{ true };
+
+		std::string payload{ to_char_each({
+			0x7F, 0x9F, 0x4D, 0x51, 0x58 }) };
+
+		message_details_t frame{
+			false, opcode_t::text_frame, payload.size(), 0x37FA213D };
+
+		REQUIRE( validator.process_new_frame(frame) ==
+			validation_state_t::frame_header_is_valid );
+
+		REQUIRE( validator.process_next_payload_part(
+			payload.data(), payload.size() ) ==
+			validation_state_t::payload_part_is_valid );
+
+		REQUIRE( validator.finish_frame() ==
+			validation_state_t::frame_is_valid );
+	}
+	SECTION(
 		"Check payload is incorrect utf-8 sequence in text frame" )
 	{
 		ws_protocol_validator_t validator;
@@ -523,5 +573,129 @@ TEST_CASE(
 		REQUIRE( validator.process_next_payload_part(
 			payload2.data(), payload2.size() ) ==
 			validation_state_t::incorrect_utf8_data );
+	}
+	SECTION(
+		"Check close frame with correct close code" )
+	{
+		ws_protocol_validator_t validator;
+
+		std::string payload = status_code_to_bin(1000);
+
+		message_details_t close_frame{
+			true, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
+
+		REQUIRE( validator.process_new_frame( close_frame ) ==
+			validation_state_t::frame_header_is_valid );
+		REQUIRE(
+			validator.process_next_payload_part( payload.data(), payload.size() ) ==
+				validation_state_t::payload_part_is_valid );
+		REQUIRE( validator.finish_frame() ==
+			validation_state_t::frame_is_valid );
+	}
+	SECTION(
+		"Check close frame with incorrect close code" )
+	{
+		{
+			ws_protocol_validator_t validator;
+
+			std::string payload = status_code_to_bin(999);
+
+			message_details_t close_frame{
+				true, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
+
+			REQUIRE( validator.process_new_frame( close_frame ) ==
+				validation_state_t::frame_header_is_valid );
+			REQUIRE(
+				validator.process_next_payload_part( payload.data(), payload.size() ) ==
+					validation_state_t::invalid_close_code );
+		}
+		{
+			ws_protocol_validator_t validator;
+
+			std::string payload = status_code_to_bin(1012);
+
+			message_details_t close_frame{
+				true, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
+
+			REQUIRE( validator.process_new_frame( close_frame ) ==
+				validation_state_t::frame_header_is_valid );
+			REQUIRE(
+				validator.process_next_payload_part( payload.data(), payload.size() ) ==
+					validation_state_t::invalid_close_code );
+		}
+		{
+			ws_protocol_validator_t validator;
+
+			std::string payload = status_code_to_bin(1013);
+
+			message_details_t close_frame{
+				true, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
+
+			REQUIRE( validator.process_new_frame( close_frame ) ==
+				validation_state_t::frame_header_is_valid );
+			REQUIRE(
+				validator.process_next_payload_part( payload.data(), payload.size() ) ==
+					validation_state_t::invalid_close_code );
+		}
+		{
+			ws_protocol_validator_t validator;
+
+			std::string payload = status_code_to_bin(1014);
+
+			message_details_t close_frame{
+				true, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
+
+			REQUIRE( validator.process_new_frame( close_frame ) ==
+				validation_state_t::frame_header_is_valid );
+			REQUIRE(
+				validator.process_next_payload_part( payload.data(), payload.size() ) ==
+					validation_state_t::invalid_close_code );
+		}
+		{
+			ws_protocol_validator_t validator;
+
+			std::string payload = status_code_to_bin(1015);
+
+			message_details_t close_frame{
+				true, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
+
+			REQUIRE( validator.process_new_frame( close_frame ) ==
+				validation_state_t::frame_header_is_valid );
+			REQUIRE(
+				validator.process_next_payload_part( payload.data(), payload.size() ) ==
+					validation_state_t::invalid_close_code );
+		}
+		{
+			ws_protocol_validator_t validator;
+
+			std::string payload = status_code_to_bin(1016);
+
+			message_details_t close_frame{
+				true, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
+
+			REQUIRE( validator.process_new_frame( close_frame ) ==
+				validation_state_t::frame_header_is_valid );
+			REQUIRE(
+				validator.process_next_payload_part( payload.data(), payload.size() ) ==
+					validation_state_t::invalid_close_code );
+		}
+	}
+	SECTION(
+		"Check close frame with correct close code and text " )
+	{
+		ws_protocol_validator_t validator;
+
+		std::string payload = status_code_to_bin(1000) + "Hello";
+
+		message_details_t close_frame{
+			true, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
+
+		REQUIRE( validator.process_new_frame( close_frame ) ==
+			validation_state_t::frame_header_is_valid );
+		REQUIRE(
+			validator.process_next_payload_part( payload.data(), payload.size() ) ==
+				validation_state_t::payload_part_is_valid );
+		REQUIRE( validator.finish_frame() ==
+			validation_state_t::frame_is_valid );
 	}
 }
