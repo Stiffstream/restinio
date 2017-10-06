@@ -8,24 +8,98 @@
 
 #pragma once
 
-#include <future>
-
 #include <restinio/exception.hpp>
 #include <restinio/settings.hpp>
-#include <restinio/io_context_wrapper.hpp>
 #include <restinio/request_handler.hpp>
 #include <restinio/asio_timer_factory.hpp>
 #include <restinio/null_logger.hpp>
 #include <restinio/impl/acceptor.hpp>
 #include <restinio/traits.hpp>
 
+#include <memory>
+
 namespace restinio
 {
+
+//
+// io_context_shared_ptr_t
+//
+using io_context_shared_ptr_t = std::shared_ptr< asio::io_context >;
+
+//
+// io_context_holder_t
+//
+/*!
+ * \brief Helper class for holding shared pointer to io_context.
+ *
+ * It intended to be used as argument to http_server_t's constructor.
+ */
+class io_context_holder_t
+{
+	io_context_shared_ptr_t m_context;
+public :
+	io_context_holder_t( io_context_shared_ptr_t context )
+		: m_context( std::move(context) )
+	{}
+
+	io_context_shared_ptr_t
+	giveaway_context()
+	{
+		return std::move(m_context);
+	}
+};
+
+//
+// own_io_context
+//
+/*!
+ * \brief Function which tells that http_server should create and use
+ * its own instance of io_context.
+ *
+ * Usage example:
+ * \code
+ * restinio::http_server_t<> server(
+ * 		restinio::own_io_context(),
+ * 		restinio::server_settings_t<>()... );
+ * \endcode
+ */
+inline io_context_holder_t
+own_io_context()
+{
+	return { std::make_shared< asio::io_context >() };
+}
+
+//
+// external_io_context
+//
+/*!
+ * \brief Function which tells that http_server should use external
+ * instance of io_context and should not controll its lifetime.
+ *
+ * Usage example:
+ * \code
+ * asio::io_context ctx;
+ * ...
+ * restinio::http_server_t<> server(
+ * 		restinio::external_io_context(ctx),
+ * 		restinio::server_settings_t<>()...);
+ * \endcode
+ */
+inline io_context_holder_t
+external_io_context( asio::io_context & ctx )
+{
+	return { std::shared_ptr< asio::io_context >(
+			std::addressof(ctx),
+			// Empty deleter.
+			[]( asio::io_context * ){} )
+	};
+}
 
 //
 // http_server_t
 //
 
+//FIXME: example in code must be updated!
 //! Class for http-server.
 /*!
 	With the help of this class one can run a serevr.
@@ -36,7 +110,7 @@ namespace restinio
 	// Create and initialize object.
 	restinio::http_server_t< YOUR_TRAITS >
 		server{
-			restinio::create_child_io_context( N ),
+			restinio::own_io_context(),
 			[&]( auto & settings ){
 				//
 				settings
@@ -66,9 +140,9 @@ class http_server_t
 	public:
 		template<typename D>
 		http_server_t(
-			io_context_wrapper_unique_ptr_t io_context_wrapper,
+			io_context_holder_t io_context,
 			basic_server_settings_t< D, Traits > && settings )
-			:	m_io_context_wrapper{ std::move( io_context_wrapper ) }
+			:	m_io_context{ io_context.giveaway_context() }
 		{
 			using actual_settings_type = basic_server_settings_t<D, Traits>;
 
@@ -76,13 +150,13 @@ class http_server_t
 				std::make_shared< connection_settings_t >(
 					std::forward<actual_settings_type>(settings),
 					impl::create_parser_settings(),
-					m_io_context_wrapper->io_context(),
+					this->io_context(),
 					settings.timer_factory() );
 
 			m_acceptor =
 				std::make_shared< acceptor_t >(
 					settings,
-					m_io_context_wrapper->io_context(),
+					this->io_context(),
 					std::make_shared< connection_factory_t >(
 						conn_settings,
 						settings.socket_options_setter() ),
@@ -98,10 +172,10 @@ class http_server_t
 					std::declval<Configurator>()(
 							*(static_cast<server_settings_t<Traits>*>(nullptr)))) >
 		http_server_t(
-			io_context_wrapper_unique_ptr_t io_context_wrapper,
+			io_context_holder_t io_context,
 			Configurator && configurator )
 			:	http_server_t{
-					std::move( io_context_wrapper ),
+					io_context,
 					exec_configurator< Traits, Configurator >(
 						std::forward< Configurator >( configurator ) ) }
 		{}
@@ -119,33 +193,12 @@ class http_server_t
 		asio::io_context &
 		io_context()
 		{
-			return m_io_context_wrapper->io_context();
+			return *m_io_context;
 		}
-
-		//! Start/stop io_context.
-		/*!
-			Is usefull when using async_open() or async_close(),
-			because in case of async operation it is
-			up to user to guarantee that io_context runs.
-		*/
-		//! \{
-		void
-		start_io_context()
-		{
-			m_io_context_wrapper->start();
-		}
-
-		void
-		stop_io_context()
-		{
-			m_io_context_wrapper->stop();
-		}
-		//! \}
 
 		//! Starts server in async way.
 		/*!
-			\note It is necessary to be sure that ioservice is running
-			(\see start_io_context()).
+			\note It is necessary to be sure that ioservice is running.
 		*/
 		template <
 				typename Server_Open_Ok_CB,
@@ -157,12 +210,12 @@ class http_server_t
 		{
 			asio::post(
 				m_acceptor->get_open_close_operations_executor(),
-				[ acceptor = m_acceptor,
+				[ this,
 					ok_cb = std::move( open_ok_cb ),
 					err_cb = std::move( open_err_cb ) ]{
 					try
 					{
-						acceptor->open();
+						open_sync();
 						call_nothrow_cb( ok_cb );
 					}
 					catch( const std::exception & )
@@ -178,26 +231,12 @@ class http_server_t
 			otherwise it throws.
 		*/
 		void
-		start()
+		open_sync()
 		{
-			if( sync_running_state_t::not_running == m_sync_running_state )
+			if( running_state_t::not_running == m_running_state )
 			{
-				// Make sure that we running io_context.
-				start_io_context();
-
-				// Sync object.
-				std::promise< void > open_result;
-
-				open_async(
-					[ &open_result ](){
-						open_result.set_value();
-					},
-					[ &open_result ]( std::exception_ptr ex ){
-						open_result.set_exception( std::move( ex ) );
-					} );
-
-				open_result.get_future().get();
-				m_sync_running_state = sync_running_state_t::running;
+				m_acceptor->open();
+				m_running_state = running_state_t::running;
 			}
 		}
 
@@ -216,12 +255,12 @@ class http_server_t
 		{
 			asio::post(
 				m_acceptor->get_open_close_operations_executor(),
-				[ acceptor = m_acceptor,
+				[ this,
 					ok_cb = std::move( close_ok_cb ),
 					err_cb = std::move( close_err_cb ) ]{
 					try
 					{
-						acceptor->close();
+						close_sync();
 						call_nothrow_cb( ok_cb );
 					}
 					catch( const std::exception & )
@@ -237,44 +276,31 @@ class http_server_t
 			otherwise it throws.
 		*/
 		void
-		stop()
+		close_sync()
 		{
-			if( sync_running_state_t::running == m_sync_running_state )
+			if( running_state_t::running == m_running_state )
 			{
-				// Sync object.
-				std::promise< void > close_result;
-
-				close_async(
-					[ &close_result ](){
-						close_result.set_value();
-					},
-					[ &close_result ]( std::exception_ptr ex ){
-						close_result.set_exception( std::move( ex ) );
-					} );
-
-				close_result.get_future().wait();
-				m_sync_running_state = sync_running_state_t::not_running;
-
-				// Make sure that we stopped io_context.
-				stop_io_context();
+				m_acceptor->close();
+				m_running_state = running_state_t::not_running;
 			}
 		}
+
 	private:
 		//! A wrapper for asio io_context where server is running.
-		io_context_wrapper_unique_ptr_t m_io_context_wrapper;
+		io_context_shared_ptr_t m_io_context;
 
 		//! Acceptor for new connections.
 		std::shared_ptr< acceptor_t > m_acceptor;
 
 		//! State of server.
-		enum class sync_running_state_t
+		enum class running_state_t
 		{
 			not_running,
 			running,
 		};
 
 		//! Server state.
-		sync_running_state_t m_sync_running_state{ sync_running_state_t::not_running };
+		running_state_t m_running_state{ running_state_t::not_running };
 
 		//! Call callback and terminate the application if callback throws.
 		template< typename Callback >
@@ -285,3 +311,4 @@ class http_server_t
 };
 
 } /* namespace restinio */
+

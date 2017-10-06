@@ -146,14 +146,8 @@ run( run_on_this_thread_settings_t<Traits> && settings )
 	asio::io_context io_context;
 
 	server_t server{
-		restinio::use_existing_io_context( io_context ),
+		restinio::external_io_context( io_context ),
 		std::forward<settings_t>(settings) };
-
-	server.open_async(
-		[]{ /* Ok. */},
-		[]( std::exception_ptr ex ){
-			std::rethrow_exception( ex );
-		} );
 
 	asio::signal_set break_signals{ server.io_context(), SIGINT };
 	break_signals.async_wait(
@@ -171,6 +165,12 @@ run( run_on_this_thread_settings_t<Traits> && settings )
 			}
 		} );
 
+	server.open_async(
+		[]{ /* Ok. */},
+		[]( std::exception_ptr ex ){
+			std::rethrow_exception( ex );
+		} );
+
 	io_context.run();
 }
 
@@ -179,6 +179,7 @@ template<typename Traits>
 inline void
 run( run_on_thread_pool_settings_t<Traits> && settings )
 {
+#if 0
 	using settings_t = run_on_thread_pool_settings_t<Traits>;
 	using server_t = http_server_t<Traits>;
 
@@ -200,6 +201,7 @@ run( run_on_thread_pool_settings_t<Traits> && settings )
 	server.start();
 	promise.get_future().get();
 	server.stop();
+#endif
 }
 
 } /* namespace restinio */
