@@ -388,7 +388,7 @@ TEST_CASE(
 			0xed, 0x9f, 0xbf }) };
 
 		message_details_t frame{
-			false, opcode_t::text_frame, payload.size(), 0xFFFFFFFF};
+			true, opcode_t::text_frame, payload.size(), 0xFFFFFFFF};
 
 		REQUIRE( validator.process_new_frame(frame) ==
 			validation_state_t::frame_header_is_valid );
@@ -399,6 +399,27 @@ TEST_CASE(
 
 		REQUIRE( validator.finish_frame() ==
 			validation_state_t::frame_is_valid );
+	}
+	SECTION(
+		"Check payload is correct utf-8 sequence in text frame but without last byte" )
+	{
+		ws_protocol_validator_t validator;
+
+		std::string payload{ to_char_each({
+			0xed, 0x9f }) };
+
+		message_details_t frame{
+			true, opcode_t::text_frame, payload.size(), 0xFFFFFFFF};
+
+		REQUIRE( validator.process_new_frame(frame) ==
+			validation_state_t::frame_header_is_valid );
+
+		REQUIRE( validator.process_next_payload_part(
+			payload.data(), payload.size() ) ==
+			validation_state_t::payload_part_is_valid );
+
+		REQUIRE( validator.finish_frame() ==
+			validation_state_t::incorrect_utf8_data );
 	}
 	SECTION(
 		"Check payload is correct utf-8 sequence in text frame (masked)" )
