@@ -31,7 +31,7 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_context( 1 ),
+		restinio::own_io_context(),
 		[]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -54,7 +54,8 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 		}
 	};
 
-	http_server.start();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
 	SECTION( "write nothing" )
 	{
@@ -125,7 +126,7 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 		} );
 	}
 
-	http_server.stop();
+	other_thread.stop_and_join();
 }
 
 TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
@@ -139,7 +140,7 @@ TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
 	restinio::request_handle_t req_to_store;
 
 	http_server_t http_server{
-		restinio::create_child_io_context( 1 ),
+		restinio::own_io_context(),
 		[ & ]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -156,7 +157,8 @@ TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
 		}
 	};
 
-	http_server.start();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
 	do_with_socket( [ & ]( auto & socket, auto & io_context ){
 
@@ -187,6 +189,6 @@ TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
 	} );
 
 
-	http_server.stop();
+	other_thread.stop_and_join();
 	req_to_store.reset();
 }

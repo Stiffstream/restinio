@@ -205,7 +205,7 @@ TEST_CASE( "Using user chunked output response builder" , "[chunked_output]" )
 				req_handler_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_context( 1 ),
+		restinio::own_io_context(),
 		[]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -216,7 +216,8 @@ TEST_CASE( "Using user chunked output response builder" , "[chunked_output]" )
 		}
 	};
 
-	http_server.start();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
 	start_request_handler_pool();
 
@@ -286,6 +287,6 @@ TEST_CASE( "Using user chunked output response builder" , "[chunked_output]" )
 
 	stop_request_handler_pool();
 
-	http_server.stop();
+	other_thread.stop_and_join();
 }
 

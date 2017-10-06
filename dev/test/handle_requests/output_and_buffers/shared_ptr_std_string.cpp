@@ -21,7 +21,7 @@ TEST_CASE(
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_context( 1 ),
+		restinio::own_io_context(),
 		[ & ]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -38,7 +38,8 @@ TEST_CASE(
 					} );
 		} };
 
-	http_server.start();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
 	std::string response;
 	const char * request_str =
@@ -57,7 +58,7 @@ TEST_CASE(
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( *resp_message ) );
 
-	http_server.stop();
+	other_thread.stop_and_join();
 }
 
 TEST_CASE(
@@ -79,7 +80,7 @@ TEST_CASE(
 
 
 	http_server_t http_server{
-		restinio::create_child_io_context( 1 ),
+		restinio::own_io_context(),
 		[ & ]( auto & settings ){
 
 
@@ -105,7 +106,8 @@ TEST_CASE(
 
 		} };
 
-	http_server.start();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
 	std::string response;
 	const char * request_str =
@@ -124,7 +126,7 @@ TEST_CASE(
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( *resp_message ) );
 
-	http_server.stop();
+	other_thread.stop_and_join();
 }
 
 TEST_CASE(
@@ -141,7 +143,7 @@ TEST_CASE(
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_context( 1 ),
+		restinio::own_io_context(),
 		[ & ]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -169,7 +171,8 @@ TEST_CASE(
 					} );
 		} };
 
-	http_server.start();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
 	std::string response;
 	const char * request_str =
@@ -188,7 +191,7 @@ TEST_CASE(
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( *resp_message ) );
 
-	http_server.stop();
+	other_thread.stop_and_join();
 }
 
 TEST_CASE(
@@ -206,7 +209,7 @@ TEST_CASE(
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_context( 1 ),
+		restinio::own_io_context(),
 		[ & ]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -264,7 +267,8 @@ TEST_CASE(
 					} );
 		} };
 
-	http_server.start();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
 	std::string response;
 	const char * request_str =
@@ -284,7 +288,7 @@ TEST_CASE(
 	// Add "\r\n\r\n" to ensure that resp goes right after header.
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( std::string( "\r\n\r\n" ) + *resp_message ) );
 
-	http_server.stop();
+	other_thread.stop_and_join();
 }
 
 TEST_CASE(
@@ -300,7 +304,7 @@ TEST_CASE(
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_context( 1 ),
+		restinio::own_io_context(),
 		[ & ]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -320,7 +324,8 @@ TEST_CASE(
 					} );
 		} };
 
-	http_server.start();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
 	std::string response;
 	const char * request_str =
@@ -339,7 +344,7 @@ TEST_CASE(
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( *resp_message ) );
 
-	http_server.stop();
+	other_thread.stop_and_join();
 }
 
 TEST_CASE(
@@ -357,7 +362,7 @@ TEST_CASE(
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_context( 1 ),
+		restinio::own_io_context(),
 		[ & ]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -380,7 +385,8 @@ TEST_CASE(
 					} );
 		} };
 
-	http_server.start();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
 	std::string response;
 	const char * request_str =
@@ -399,7 +405,7 @@ TEST_CASE(
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( *resp_message ) );
 
-	http_server.stop();
+	other_thread.stop_and_join();
 }
 
 TEST_CASE(
@@ -415,7 +421,7 @@ TEST_CASE(
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_context( 1 ),
+		restinio::own_io_context(),
 		[ & ]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -446,7 +452,8 @@ TEST_CASE(
 					} );
 		} };
 
-	http_server.start();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
 	std::string response;
 	const char * request_str =
@@ -465,7 +472,7 @@ TEST_CASE(
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( *resp_message ) );
 
-	http_server.stop();
+	other_thread.stop_and_join();
 }
 
 TEST_CASE(
@@ -483,7 +490,7 @@ TEST_CASE(
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_context( 1 ),
+		restinio::own_io_context(),
 		[ & ]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -544,7 +551,8 @@ TEST_CASE(
 					} );
 		} };
 
-	http_server.start();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
 	std::string response;
 	const char * request_str =
@@ -564,7 +572,7 @@ TEST_CASE(
 	// Add "\r\n\r\n" to ensure that resp goes right after header.
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( std::string( "\r\n\r\n" ) + *resp_message ) );
 
-	http_server.stop();
+	other_thread.stop_and_join();
 }
 
 TEST_CASE(
@@ -609,7 +617,7 @@ TEST_CASE(
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_context( 1 ),
+		restinio::own_io_context(),
 		[ & ]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -639,7 +647,8 @@ TEST_CASE(
 					} );
 		} };
 
-	http_server.start();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
 	std::string response;
 	const char * request_str =
@@ -656,5 +665,5 @@ TEST_CASE(
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( chunked_resp_message ) );
 
-	http_server.stop();
+	other_thread.stop_and_join();
 }

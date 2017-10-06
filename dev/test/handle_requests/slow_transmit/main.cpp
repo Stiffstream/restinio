@@ -31,7 +31,7 @@ TEST_CASE( "Slow transmit" , "[slow_trunsmit]" )
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_context( 1 ),
+		restinio::own_io_context(),
 		[]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -55,7 +55,8 @@ TEST_CASE( "Slow transmit" , "[slow_trunsmit]" )
 		}
 	};
 
-	http_server.start();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
 	do_with_socket( [ & ]( auto & socket, auto & io_context ){
 
@@ -92,5 +93,5 @@ TEST_CASE( "Slow transmit" , "[slow_trunsmit]" )
 		io_context.run();
 	} );
 
-	http_server.stop();
+	other_thread.stop_and_join();
 }
