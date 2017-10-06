@@ -139,7 +139,9 @@ on_thread_pool(
 //! Helper function for running http server until ctrl+c is hit.
 template<typename Traits>
 inline void
-run( run_on_this_thread_settings_t<Traits> && settings )
+run(
+	run_on_this_thread_settings_t<Traits> && settings,
+	std::function< void(void) > clean_resources = {} )
 {
 	using settings_t = run_on_this_thread_settings_t<Traits>;
 	using server_t = http_server_t<Traits>;
@@ -174,6 +176,11 @@ run( run_on_this_thread_settings_t<Traits> && settings )
 		} );
 
 	io_context.run();
+
+	if( clean_resources )
+	{
+		clean_resources();
+	}
 }
 
 //! Helper function for running http server until ctrl+c is hit.
