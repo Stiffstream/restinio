@@ -26,22 +26,58 @@ using traits_t =
 
 using ws_registry_t = std::map< std::uint64_t, rws::ws_handle_t >;
 
-auto server_handler()
+// struct ws_registry_t // : public std::enable_shared_from_this< ws_registry_t >
+// {
+// 	~ws_registry_t()
+// 	{
+// 		std::cout << "~ws_registry_t()" << std::endl;
+// 	}
+
+// 	template < typename... Args >
+// 	void
+// 	emplace( Args &&... args )
+// 	{
+// 		m_handles.emplace( std::forward< Args >( args )... );
+// 	}
+
+// 	void
+// 	erase( std::uint64_t id )
+// 	{
+// 		m_handles.erase( id );
+// 	}
+
+// 	std::map< std::uint64_t, rws::ws_handle_t > m_handles;
+// };
+
+struct xxx_t
+{
+	xxx_t( const std::string & tag )
+		:	m_tag{ tag }
+	{}
+
+	~xxx_t()
+	{
+		std::cout << "~xxx_t: " << m_tag << std::endl;
+	}
+
+	std::string m_tag;
+};
+
+auto server_handler( ws_registry_t & registry )
 {
 	auto router = std::make_unique< router_t >();
 
 	router->http_get(
 		"/chat",
-		[ registry = std::make_shared< ws_registry_t >() ]( auto req, auto ) mutable {
+		[ &registry ]( auto req, auto ) mutable {
 
 			if( restinio::http_connection_header_t::upgrade == req->header().connection() )
 			{
-				auto r = std::weak_ptr< ws_registry_t >{ registry };
 				auto wsh =
 					rws::upgrade< traits_t >(
 						*req,
 						rws::activation_t::immediate,
-						[ r ]( auto wsh, auto m ){
+						[ &registry ]( auto wsh, auto m ){
 							if( rws::opcode_t::text_frame == m->opcode() ||
 								rws::opcode_t::binary_frame == m->opcode() ||
 								rws::opcode_t::continuation_frame == m->opcode() )
@@ -56,12 +92,11 @@ auto server_handler()
 							}
 							else if( rws::opcode_t::connection_close_frame == m->opcode() )
 							{
-								if( auto registry = r.lock() )
-									registry->erase( wsh->connection_id() );
+								registry.erase( wsh->connection_id() );
 							}
 						} );
 
-				registry->emplace( wsh->connection_id(), wsh );
+				registry.emplace( wsh->connection_id(), wsh );
 
 				return restinio::request_accepted();
 			}
@@ -78,13 +113,17 @@ int main()
 
 	try
 	{
+		ws_registry_t registry;
 		restinio::run(
 			restinio::on_this_thread<traits_t>()
 				.address( "localhost" )
-				.request_handler( server_handler() )
+				.request_handler( server_handler( registry ) )
 				.read_next_http_message_timelimit( 10s )
 				.write_http_response_timelimit( 1s )
-				.handle_request_timeout( 1s ) );
+				.handle_request_timeout( 1s ),
+			[&]{ registry.clear(); } );
+
+
 	}
 	catch( const std::exception & ex )
 	{
