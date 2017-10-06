@@ -25,7 +25,7 @@ TEST_CASE( "start-stop" , "[stop]" )
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_context( 1 ),
+		restinio::own_io_context(),
 		[]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -34,8 +34,12 @@ TEST_CASE( "start-stop" , "[stop]" )
 					[]( auto req ){ return restinio::request_rejected(); } );
 		} };
 
-	REQUIRE_NOTHROW( http_server.start() );
-	REQUIRE_NOTHROW( http_server.stop() );
+	asio::post( http_server.io_context(),
+		[&] {
+			REQUIRE_NOTHROW( http_server.open_sync() );
+			REQUIRE_NOTHROW( http_server.close_sync() );
+		} );
+	http_server.io_context().run();
 }
 
 TEST_CASE( "start-stop-stop" , "[stop]" )
@@ -47,7 +51,7 @@ TEST_CASE( "start-stop-stop" , "[stop]" )
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_context( 1 ),
+		restinio::own_io_context(),
 		[]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -56,9 +60,13 @@ TEST_CASE( "start-stop-stop" , "[stop]" )
 					[]( auto req ){ return restinio::request_rejected(); } );
 		} };
 
-	REQUIRE_NOTHROW( http_server.start() );
-	REQUIRE_NOTHROW( http_server.stop() );
-	REQUIRE_NOTHROW( http_server.stop() );
+	asio::post( http_server.io_context(),
+		[&] {
+			REQUIRE_NOTHROW( http_server.open_sync() );
+			REQUIRE_NOTHROW( http_server.close_sync() );
+			REQUIRE_NOTHROW( http_server.close_sync() );
+		} );
+	http_server.io_context().run();
 }
 
 TEST_CASE( "start-start-stop" , "[stop]" )
@@ -70,7 +78,7 @@ TEST_CASE( "start-start-stop" , "[stop]" )
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_context( 1 ),
+		restinio::own_io_context(),
 		[]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -79,11 +87,16 @@ TEST_CASE( "start-start-stop" , "[stop]" )
 					[]( auto req ){ return restinio::request_rejected(); } );
 		} };
 
-	REQUIRE_NOTHROW( http_server.start() );
-	REQUIRE_NOTHROW( http_server.start() );
-	REQUIRE_NOTHROW( http_server.stop() );
+	asio::post( http_server.io_context(),
+		[&] {
+			REQUIRE_NOTHROW( http_server.open_sync() );
+			REQUIRE_NOTHROW( http_server.open_sync() );
+			REQUIRE_NOTHROW( http_server.close_sync() );
+		} );
+	http_server.io_context().run();
 }
 
+#if 0
 TEST_CASE( "start-dtor" , "[stop]" )
 {
 	auto runner = []{
@@ -108,3 +121,4 @@ TEST_CASE( "start-dtor" , "[stop]" )
 
 	REQUIRE_NOTHROW( runner() );
 }
+#endif
