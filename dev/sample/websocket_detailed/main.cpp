@@ -117,35 +117,14 @@ int main()
 	{
 		rws::ws_handle_t websocket;
 
-		http_server_t http_server{
-			restinio::create_child_io_context( 1 ),
-			[&websocket]( auto & settings ){
-				settings
+		run( restinio::on_this_thread<traits_t>()
 					.address( "localhost" )
 					.port( 9001 )
 					.request_handler( server_handler( websocket ) )
 					.read_next_http_message_timelimit( 10s )
 					.write_http_response_timelimit( 1s )
-					.handle_request_timeout( 1s );
-			} };
+					.handle_request_timeout( 1s ) );
 
-		http_server.start();
-
-		// Wait for quit command.
-		std::cout << "Type \"quit\" or \"q\" to quit." << std::endl;
-
-		std::string cmd;
-		do
-		{
-			std::cin >> cmd;
-		} while( cmd != "quit" && cmd != "q" );
-
-		if( websocket ){
-			// TODO: send close-frame and shutdown.
-			websocket->kill();
-		};
-
-		http_server.stop();
 	}
 	catch( const std::exception & ex )
 	{
