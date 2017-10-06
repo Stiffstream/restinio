@@ -35,7 +35,7 @@ module RestinioOpenSSLFind
     elsif dir_indx_after_11
       openssl_after_11
     else
-      raise "OpenSSL libs not found; tried [#{openssl_before_11.join(', ')}] and [#{openssl_after_11.join(', ')}]"
+      []
     end
   end
 

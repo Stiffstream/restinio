@@ -133,6 +133,8 @@ class message_details_t
 //! Data with expected size.
 struct expected_data_t
 {
+	expected_data_t() = default;
+
 	expected_data_t( size_t expected_size )
 		:	m_expected_size{ expected_size }
 	{
@@ -141,6 +143,12 @@ struct expected_data_t
 
 	size_t m_expected_size{0};
 	raw_data_t m_loaded_data;
+
+	bool
+	all_bytes_loaded() const
+	{
+		return m_loaded_data.size() == m_expected_size;
+	}
 
 	//! Try to add one more byte to loaded data and check loaded data size.
 	/*!
@@ -155,7 +163,7 @@ struct expected_data_t
 
 		m_loaded_data.push_back(byte);
 
-		return m_loaded_data.size() == m_expected_size;
+		return all_bytes_loaded();
 	}
 
 	void
