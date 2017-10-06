@@ -16,7 +16,6 @@
 
 #include <restinio/exception.hpp>
 #include <restinio/request_handler.hpp>
-#include <restinio/io_context_wrapper.hpp>
 #include <restinio/traits.hpp>
 
 namespace restinio

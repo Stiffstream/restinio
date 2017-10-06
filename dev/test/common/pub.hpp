@@ -1,8 +1,13 @@
 #pragma once
 
-#include <string>
 
 #include <asio.hpp>
+
+#include <string>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+
 
 constexpr std::uint16_t
 utest_default_port()
@@ -67,4 +72,51 @@ do_request(
 
 	return result;
 }
+
+auto
+default_async_error_callback()
+{
+	return []( auto ex ) { std::rethrow_exception(ex); };
+}
+
+template<typename Http_Server>
+class other_work_thread_for_server_t
+{
+	Http_Server & m_server;
+
+	std::thread m_thread;
+	std::mutex m_mutex;
+	std::condition_variable m_cv;
+
+public:
+	other_work_thread_for_server_t(
+		Http_Server & server )
+		: m_server(server)
+	{}
+
+	void
+	run()
+	{
+		std::unique_lock< std::mutex > lock(m_mutex);
+		m_thread = std::thread( [this] {
+			m_server.open_async(
+				[&]{
+					std::lock_guard<std::mutex> l{ m_mutex };
+					m_cv.notify_one();
+				},
+				default_async_error_callback() );
+			m_server.io_context().run();
+		} );
+	}
+
+	void
+	stop_and_join()
+	{
+		m_server.close_async(
+			[]{ /* Ok */ },
+			default_async_error_callback() );
+
+		m_thread.join();
+	}
+};
 

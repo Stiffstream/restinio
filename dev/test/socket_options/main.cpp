@@ -26,7 +26,7 @@ TEST_CASE( "Socket options" , "[socket][options]" )
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_context( 1 ),
+		restinio::own_io_context(),
 		[&socket_options_setter_was_called]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -55,7 +55,8 @@ TEST_CASE( "Socket options" , "[socket][options]" )
 		}
 	};
 
-	http_server.start();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
 	std::string response;
 	auto create_request = []( const std::string & body ){
@@ -83,5 +84,6 @@ TEST_CASE( "Socket options" , "[socket][options]" )
 		REQUIRE( socket_options_setter_was_called );
 	}
 
-	http_server.stop();
+	other_thread.stop_and_join();
 }
+
