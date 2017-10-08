@@ -355,7 +355,8 @@ class ws_protocol_validator_t
 				frame.m_rsv3_flag != 0)
 				return validation_state_t::non_zero_rsv_flags;
 
-			if( is_control_frame(frame.m_opcode) && frame.payload_len() > 125 )
+			if( is_control_frame(frame.m_opcode) && frame.payload_len() >
+				WEBSOCKET_MAX_PAYLOAD_SIZE_WITHOUT_EXT )
 				return validation_state_t::payload_len_is_too_big;
 
 			return validation_state_t::frame_header_is_valid;
