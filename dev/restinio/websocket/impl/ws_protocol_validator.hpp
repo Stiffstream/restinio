@@ -17,6 +17,10 @@ namespace websocket
 namespace impl
 {
 
+//
+// validation_state_t
+//
+
 enum class validation_state_t
 {
 	//correct codes
@@ -37,6 +41,10 @@ enum class validation_state_t
 	incorrect_utf8_data,
 	unknown_state
 };
+
+//
+// validation_state_str
+//
 
 const char *
 validation_state_str( validation_state_t state )
@@ -90,6 +98,8 @@ is_data_frame( opcode_t opcode )
 
 struct unmasker_t
 {
+	unmasker_t() = default;
+
 	unmasker_t( uint32_t masking_key )
 	:	m_mask{
 			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 24 >(
@@ -109,7 +119,28 @@ struct unmasker_t
 		return masked_byte ^ m_mask[ (m_processed_bytes_count++) % 4 ];
 	}
 
-	const uint8_t m_mask[ WEBSOCKET_MASKING_KEY_SIZE ];
+	void
+	reset( uint32_t masking_key )
+	{
+		m_processed_bytes_count = 0;
+
+		mask_array_t tmp{
+			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 24 >(
+				masking_key),
+			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 16 >(
+				masking_key),
+			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 8 >(
+				masking_key),
+			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 0 >(
+				masking_key) };
+
+		std::swap( m_mask, tmp);
+
+	}
+
+	using mask_array_t = std::array< uint8_t, WEBSOCKET_MASKING_KEY_SIZE>;
+
+	mask_array_t m_mask;
 
 	size_t m_processed_bytes_count{ 0 };
 };
@@ -192,8 +223,9 @@ class ws_protocol_validator_t
 					m_state = state_t::processing_frame;
 
 					if( m_do_unmask )
-						m_unmasker_handle = std::make_unique< unmasker_t >(
-							frame.m_masking_key );
+					{
+						m_unmasker.reset( frame.m_masking_key );
+					}
 
 					result = validation_state_t::frame_header_is_valid;
 				}
@@ -215,8 +247,8 @@ class ws_protocol_validator_t
 			{
 				for( size_t i = 0; i < size; ++i )
 				{
-					std::uint8_t byte = m_unmasker_handle?
-						m_unmasker_handle->unmask_byte( data[i] ):
+					std::uint8_t byte = m_do_unmask?
+						m_unmasker.unmask_byte( data[i] ):
 						data[i];
 
 					if( !m_utf8_checker.process_byte( byte ) )
@@ -229,8 +261,9 @@ class ws_protocol_validator_t
 			{
 				for( size_t i = 0; i < size; ++i )
 				{
-					std::uint8_t byte = m_unmasker_handle?
-						m_unmasker_handle->unmask_byte( data[i] ): data[i];
+					std::uint8_t byte = m_do_unmask?
+						m_unmasker.unmask_byte( data[i] ):
+						data[i];
 
 					if( !m_expected_close_code.all_bytes_loaded() )
 					{
@@ -362,7 +395,8 @@ class ws_protocol_validator_t
 		utf8_checker_t m_utf8_checker;
 
 		bool m_do_unmask{ false };
-		std::unique_ptr< unmasker_t > m_unmasker_handle;
+
+		unmasker_t m_unmasker;
 };
 
 } /* namespace impl */

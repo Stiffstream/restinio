@@ -128,7 +128,7 @@ TEST_CASE(
 }
 
 TEST_CASE(
-	"Test validation_state_str function" ,
+	"validation_state_str function" ,
 	"[validators][state_to_str]" )
 {
 	REQUIRE( validation_state_str(
@@ -166,19 +166,31 @@ TEST_CASE(
 	"testing functionality of payload unmasker class" ,
 	"[validators][unmasker]" )
 {
-	std::string masked_payload{
-		to_char_each({0x7F, 0x9F, 0x4D, 0x51, 0x58}) };
-
-	unmasker_t unmasker{ 0x37FA213D };
-
-	std::string result;
-
-	for( auto byte: masked_payload )
 	{
-		result.push_back( static_cast<char>( unmasker.unmask_byte(byte) ) );
-	}
+		std::string masked_payload{
+			to_char_each({0x7F, 0x9F, 0x4D, 0x51, 0x58}) };
 
-	REQUIRE( result == std::string{"Hello"} );
+		unmasker_t unmasker{ 0x37FA213D };
+
+		std::string result;
+
+		for( auto byte: masked_payload )
+		{
+			result.push_back( static_cast<char>( unmasker.unmask_byte(byte) ) );
+		}
+
+		REQUIRE( result == std::string{"Hello"} );
+	}
+	{
+		unmasker_t unmasker;
+
+		unmasker.reset( 0x37FA213D );
+
+		REQUIRE( unmasker.m_mask[0] == 0x37 );
+		REQUIRE( unmasker.m_mask[1] == 0xFA );
+		REQUIRE( unmasker.m_mask[2] == 0x21 );
+		REQUIRE( unmasker.m_mask[3] == 0x3D );
+	}
 }
 
 TEST_CASE(
