@@ -888,7 +888,7 @@ class connection_t final
 
 				m_logger.trace( [&]{
 					return fmt::format(
-							"[connection:{}] outgoing data was sent: {}b",
+							"[connection:{}] outgoing data was sent: {} bytes",
 							connection_id(),
 							written );
 				} );
