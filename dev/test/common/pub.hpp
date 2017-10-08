@@ -73,7 +73,7 @@ do_request(
 	return result;
 }
 
-auto
+inline auto
 default_async_error_callback()
 {
 	return []( auto ex ) { std::rethrow_exception(ex); };
@@ -107,6 +107,8 @@ public:
 				default_async_error_callback() );
 			m_server.io_context().run();
 		} );
+
+		m_cv.wait( lock );
 	}
 
 	void
