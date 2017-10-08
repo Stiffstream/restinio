@@ -128,6 +128,41 @@ TEST_CASE(
 }
 
 TEST_CASE(
+	"Test validation_state_str function" ,
+	"[validators][state_to_str]" )
+{
+	REQUIRE( validation_state_str(
+		validation_state_t::frame_header_is_valid) == "frame_header_is_valid" );
+	REQUIRE( validation_state_str(
+		validation_state_t::payload_part_is_valid) == "payload_part_is_valid" );
+	REQUIRE( validation_state_str(
+		validation_state_t::frame_is_valid) == "frame_is_valid" );
+	REQUIRE( validation_state_str(
+		validation_state_t::invalid_opcode) == "invalid_opcode" );
+	REQUIRE( validation_state_str(
+		validation_state_t::empty_mask_from_client_side) ==
+			"empty_mask_from_client_side" );
+	REQUIRE( validation_state_str(
+		validation_state_t::non_final_control_frame) == "non_final_control_frame" );
+	REQUIRE( validation_state_str(
+		validation_state_t::non_zero_rsv_flags) == "non_zero_rsv_flags" );
+	REQUIRE( validation_state_str(
+		validation_state_t::payload_len_is_too_big) == "payload_len_is_too_big" );
+	REQUIRE( validation_state_str(
+		validation_state_t::continuation_frame_without_data_frame) ==
+			"continuation_frame_without_data_frame" );
+	REQUIRE( validation_state_str(
+		validation_state_t::new_data_frame_without_finishing_previous) ==
+			"new_data_frame_without_finishing_previous" );
+	REQUIRE( validation_state_str(
+		validation_state_t::invalid_close_code) == "invalid_close_code" );
+	REQUIRE( validation_state_str(
+		validation_state_t::incorrect_utf8_data) == "incorrect_utf8_data" );
+	REQUIRE( validation_state_str(
+		validation_state_t::unknown_state) == "unknown_state" );
+}
+
+TEST_CASE(
 	"testing functionality of payload unmasker class" ,
 	"[validators][unmasker]" )
 {

@@ -38,6 +38,29 @@ enum class validation_state_t
 	unknown_state
 };
 
+const char *
+validation_state_str( validation_state_t state )
+{
+	static constexpr const char* table[] =
+	{
+		"frame_header_is_valid",
+		"payload_part_is_valid",
+		"frame_is_valid",
+		"invalid_opcode",
+		"empty_mask_from_client_side",
+		"non_final_control_frame",
+		"non_zero_rsv_flags",
+		"payload_len_is_too_big",
+		"continuation_frame_without_data_frame",
+		"new_data_frame_without_finishing_previous",
+		"invalid_close_code",
+		"incorrect_utf8_data",
+		"unknown_state"
+	};
+
+	return table[static_cast<unsigned int>(state)];
+}
+
 //
 // is_control_frame
 //
@@ -100,11 +123,11 @@ struct unmasker_t
 	This class checks:
 
 	text frame and close frame are with valid uff-8 payload;
-	close frame has а valid close code;
+	close frame has a valid close code;
 	continuation chunks of text frame have valid utf-8 text;
 	there is invalid situation when continuation frame came without any data frame.
 	continuation frame or control frame is wating after data frame with fin flag set in 0.
-	opcode has а valid code
+	opcode has a valid code
 	control frame can't be fragmented.
 
 */
@@ -131,14 +154,13 @@ class ws_protocol_validator_t
 
 			validation_state_t result = validation_state_t::unknown_state;
 
-			if( m_current_continued_data_frame_type ==
-					current_continued_data_frame_type_t::none &&
+			if( m_previous_data_frame == previous_data_frame_t::none &&
 				frame.m_opcode == opcode_t::continuation_frame )
 			{
 				result = validation_state_t::continuation_frame_without_data_frame;
 			}
-			else if( m_current_continued_data_frame_type !=
-					current_continued_data_frame_type_t::none &&
+			else if( m_previous_data_frame !=
+					previous_data_frame_t::none &&
 				is_data_frame( frame.m_opcode ) )
 			{
 				result = validation_state_t::new_data_frame_without_finishing_previous;
@@ -150,16 +172,16 @@ class ws_protocol_validator_t
 				if( result == validation_state_t::frame_header_is_valid )
 				{
 					if( frame.m_opcode == opcode_t::text_frame &&
-					frame.m_final_flag == false )
+						frame.m_final_flag == false )
 					{
-						m_current_continued_data_frame_type =
-							current_continued_data_frame_type_t::text;
+						m_previous_data_frame =
+							previous_data_frame_t::text;
 					}
 					else if( frame.m_opcode == opcode_t::binary_frame &&
 						frame.m_final_flag == false )
 					{
-						m_current_continued_data_frame_type =
-							current_continued_data_frame_type_t::binary;
+						m_previous_data_frame =
+							previous_data_frame_t::binary;
 					}
 					else if( frame.m_opcode == opcode_t::connection_close_frame )
 					{
@@ -189,8 +211,7 @@ class ws_protocol_validator_t
 
 			if( m_current_frame.m_opcode == opcode_t::text_frame ||
 				m_current_frame.m_opcode == opcode_t::continuation_frame &&
-				m_current_continued_data_frame_type ==
-					current_continued_data_frame_type_t::text )
+				m_previous_data_frame == previous_data_frame_t::text )
 			{
 				for( size_t i = 0; i < size; ++i )
 				{
@@ -199,7 +220,9 @@ class ws_protocol_validator_t
 						data[i];
 
 					if( !m_utf8_checker.process_byte( byte ) )
+					{
 						return validation_state_t::incorrect_utf8_data;
+					}
 				}
 			}
 			else if( m_current_frame.m_opcode == opcode_t::connection_close_frame )
@@ -207,8 +230,7 @@ class ws_protocol_validator_t
 				for( size_t i = 0; i < size; ++i )
 				{
 					std::uint8_t byte = m_unmasker_handle?
-						m_unmasker_handle->unmask_byte( data[i] ):
-						data[i];
+						m_unmasker_handle->unmask_byte( data[i] ): data[i];
 
 					if( !m_expected_close_code.all_bytes_loaded() )
 					{
@@ -260,12 +282,13 @@ class ws_protocol_validator_t
 			// if continued data frame is present and current processed frame is
 			// continuation frame with final bit set in 1 then reset current continued
 			// data frame type
-			if( m_current_continued_data_frame_type !=
-					current_continued_data_frame_type_t::none &&
+			if( m_previous_data_frame != previous_data_frame_t::none &&
 				!is_control_frame(m_current_frame.m_opcode) &&
 				m_current_frame.m_final_flag )
-				m_current_continued_data_frame_type =
-					current_continued_data_frame_type_t::none;
+			{
+				m_previous_data_frame =
+					previous_data_frame_t::none;
+			}
 
 			return validation_state_t::frame_is_valid;
 		}
@@ -274,8 +297,8 @@ class ws_protocol_validator_t
 		reset()
 		{
 			m_state = state_t::empty_state;
-			m_current_continued_data_frame_type =
-				current_continued_data_frame_type_t::none;
+			m_previous_data_frame =
+				previous_data_frame_t::none;
 
 			m_utf8_checker.reset();
 		}
@@ -320,7 +343,7 @@ class ws_protocol_validator_t
 			processing_frame
 		};
 
-		enum class current_continued_data_frame_type_t
+		enum class previous_data_frame_t
 		{
 			none,
 			text,
@@ -329,8 +352,8 @@ class ws_protocol_validator_t
 
 		state_t m_state{ state_t::empty_state };
 
-		current_continued_data_frame_type_t m_current_continued_data_frame_type{
-			current_continued_data_frame_type_t::none };
+		previous_data_frame_t m_previous_data_frame{
+			previous_data_frame_t::none };
 
 		message_details_t m_current_frame;
 
