@@ -146,7 +146,7 @@ struct unmasker_t
 	{
 		m_processed_bytes_count = 0;
 
-		mask_array_t tmp{
+		m_mask = mask_array_t{
 			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 24 >(
 				masking_key),
 			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 16 >(
@@ -154,9 +154,8 @@ struct unmasker_t
 			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 8 >(
 				masking_key),
 			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 0 >(
-				masking_key) };
-
-		std::swap( m_mask, tmp);
+				masking_key)
+		};
 
 	}
 
