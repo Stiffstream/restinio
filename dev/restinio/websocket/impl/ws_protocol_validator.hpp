@@ -550,7 +550,7 @@ class ws_protocol_validator_t
 		//! This flag set if it's need to unmask payload parts.
 		bool m_unmask_flag{ false };
 
-		//! Need to unmask coming from client side payload.
+		//! Unmask payload coming from client side.
 		unmasker_t m_unmasker;
 };
 
