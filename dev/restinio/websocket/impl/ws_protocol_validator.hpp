@@ -48,7 +48,7 @@ enum class validation_state_t
 //
 
 //! Helper function for logging validation states.
-const char *
+inline const char *
 validation_state_str( validation_state_t state )
 {
 	static constexpr const char* table[] =
