@@ -197,7 +197,7 @@ class ws_protocol_validator_t
 		ws_protocol_validator_t() = default;
 
 		ws_protocol_validator_t( bool do_unmask )
-		:	m_unmask_frag{ do_unmask }
+		:	m_unmask_flag{ do_unmask }
 		{
 		}
 
@@ -235,7 +235,7 @@ class ws_protocol_validator_t
 				m_current_frame = frame;
 				m_working_state = working_state_t::processing_frame;
 
-				if( m_unmask_frag )
+				if( m_unmask_flag )
 				{
 					m_unmasker.reset( frame.m_masking_key );
 				}
@@ -388,7 +388,7 @@ class ws_protocol_validator_t
 		std::uint8_t
 		process_payload_byte( std::uint8_t byte )
 		{
-			byte = m_unmask_frag?
+			byte = m_unmask_flag?
 				m_unmasker.unmask_byte( byte ): byte;
 
 			if( m_current_frame.m_opcode == opcode_t::text_frame ||
@@ -548,7 +548,7 @@ class ws_protocol_validator_t
 		utf8_checker_t m_utf8_checker;
 
 		//! This flag set if it's need to unmask payload parts.
-		bool m_unmask_frag{ false };
+		bool m_unmask_flag{ false };
 
 		//! Need to unmask coming from client side payload.
 		unmasker_t m_unmasker;
