@@ -123,40 +123,6 @@ struct connection_input_t
 	}
 };
 
-// //! Check current websocket message header has correct flags and fields.
-// bool
-// validate_message_header( const message_details_t & md )
-// {
-// 	if( !is_valid_opcode( md.m_opcode ) ||
-// 		md.m_masking_key == 0 ||
-// 		md.m_rsv1_flag != 0 ||
-// 		md.m_rsv2_flag != 0 ||
-// 		md.m_rsv3_flag != 0 )
-// 	{
-// 		return false;
-// 	}
-
-// 	return true;
-// }
-
-// //! Check current websocket message body is correct.
-// bool
-// validate_current_ws_message_body( const message_details_t & md, std::string & payload )
-// {
-// 	if( md.m_mask_flag == true )
-// 	{
-// 		mask_unmask_payload(
-// 			md.m_masking_key, payload );
-// 	}
-
-// 	if( md.m_opcode == opcode_t::text_frame )
-// 	{
-// 		return check_utf8_is_correct( payload );
-// 	}
-
-// 	return true;
-// }
-
 //
 // ws_connection_t
 //
