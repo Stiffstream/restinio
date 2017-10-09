@@ -159,7 +159,7 @@ TEST_CASE(
 	REQUIRE( validation_state_str(
 		validation_state_t::incorrect_utf8_data) == "incorrect_utf8_data" );
 	REQUIRE( validation_state_str(
-		validation_state_t::unknown_state) == "unknown_state" );
+		validation_state_t::initial_state) == "initial_state" );
 }
 
 TEST_CASE(
@@ -354,9 +354,12 @@ TEST_CASE(
 
 		REQUIRE( validator.process_new_frame(frame) ==
 			validation_state_t::continuation_frame_without_data_frame );
+
+		REQUIRE( validator.finish_frame() ==
+			validation_state_t::continuation_frame_without_data_frame );
 	}
 	SECTION(
-		"Set invalid validation state on data frame without finishing of previous data frame (fin=1)" )
+		"Set invalid validation state on new data frame came after frame with fim=0" )
 	{
 		ws_protocol_validator_t validator;
 
@@ -371,6 +374,9 @@ TEST_CASE(
 			false, opcode_t::text_frame, 5, 0xFFFFFFFF};
 
 		REQUIRE( validator.process_new_frame(frame2) ==
+			validation_state_t::new_data_frame_without_finishing_previous );
+
+		REQUIRE( validator.finish_frame() ==
 			validation_state_t::new_data_frame_without_finishing_previous );
 
 	}
@@ -505,6 +511,9 @@ TEST_CASE(
 
 		REQUIRE( validator.process_next_payload_part(
 			payload.data(), payload.size() ) ==
+			validation_state_t::incorrect_utf8_data );
+
+		REQUIRE( validator.finish_frame() ==
 			validation_state_t::incorrect_utf8_data );
 	}
 	SECTION(
@@ -641,6 +650,9 @@ TEST_CASE(
 		REQUIRE( validator.process_next_payload_part(
 			payload2.data(), payload2.size() ) ==
 			validation_state_t::incorrect_utf8_data );
+
+		REQUIRE( validator.finish_frame() ==
+			validation_state_t::incorrect_utf8_data );
 	}
 	SECTION(
 		"Check close frame with correct close code" )
@@ -676,6 +688,8 @@ TEST_CASE(
 			REQUIRE(
 				validator.process_next_payload_part( payload.data(), payload.size() ) ==
 					validation_state_t::invalid_close_code );
+			REQUIRE(
+				validator.finish_frame() == validation_state_t::invalid_close_code );
 		}
 		{
 			ws_protocol_validator_t validator;
@@ -690,6 +704,8 @@ TEST_CASE(
 			REQUIRE(
 				validator.process_next_payload_part( payload.data(), payload.size() ) ==
 					validation_state_t::invalid_close_code );
+			REQUIRE(
+				validator.finish_frame() == validation_state_t::invalid_close_code );
 		}
 		{
 			ws_protocol_validator_t validator;
@@ -718,6 +734,8 @@ TEST_CASE(
 			REQUIRE(
 				validator.process_next_payload_part( payload.data(), payload.size() ) ==
 					validation_state_t::invalid_close_code );
+			REQUIRE(
+				validator.finish_frame() == validation_state_t::invalid_close_code );
 		}
 		{
 			ws_protocol_validator_t validator;
@@ -732,6 +750,8 @@ TEST_CASE(
 			REQUIRE(
 				validator.process_next_payload_part( payload.data(), payload.size() ) ==
 					validation_state_t::invalid_close_code );
+			REQUIRE(
+				validator.finish_frame() == validation_state_t::invalid_close_code );
 		}
 		{
 			ws_protocol_validator_t validator;
@@ -746,10 +766,12 @@ TEST_CASE(
 			REQUIRE(
 				validator.process_next_payload_part( payload.data(), payload.size() ) ==
 					validation_state_t::invalid_close_code );
+			REQUIRE(
+				validator.finish_frame() == validation_state_t::invalid_close_code );
 		}
 	}
 	SECTION(
-		"Check close frame with correct close code and text " )
+		"Check close frame with correct close code and text" )
 	{
 		ws_protocol_validator_t validator;
 
@@ -765,5 +787,28 @@ TEST_CASE(
 				validation_state_t::payload_part_is_valid );
 		REQUIRE( validator.finish_frame() ==
 			validation_state_t::frame_is_valid );
+	}
+	SECTION(
+		"Unmask and check payload is correct utf-8 sequence in text frame" )
+	{
+		ws_protocol_validator_t validator{ true };
+
+		std::string payload{ to_char_each({
+			0x7F, 0x9F, 0x4D, 0x51, 0x58 }) };
+
+		message_details_t frame{
+			false, opcode_t::text_frame, payload.size(), 0x37FA213D };
+
+		REQUIRE( validator.process_new_frame(frame) ==
+			validation_state_t::frame_header_is_valid );
+
+		REQUIRE( validator.process_and_unmask_next_payload_part(
+			&payload[0], payload.size() ) ==
+			validation_state_t::payload_part_is_valid );
+
+		REQUIRE( validator.finish_frame() ==
+			validation_state_t::frame_is_valid );
+
+		REQUIRE( payload == "Hello" );
 	}
 }
