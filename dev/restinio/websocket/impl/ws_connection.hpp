@@ -17,7 +17,7 @@
 #include <restinio/all.hpp>
 #include <restinio/websocket/message.hpp>
 #include <restinio/websocket/impl/ws_parser.hpp>
-#include <restinio/websocket/impl/utf8.hpp>
+#include <restinio/websocket/impl/ws_protocol_validator.hpp>
 
 namespace restinio
 {
@@ -123,39 +123,39 @@ struct connection_input_t
 	}
 };
 
-//! Check current websocket message header has correct flags and fields.
-bool
-validate_message_header( const message_details_t & md )
-{
-	if( !is_valid_opcode( md.m_opcode ) ||
-		md.m_masking_key == 0 ||
-		md.m_rsv1_flag != 0 ||
-		md.m_rsv2_flag != 0 ||
-		md.m_rsv3_flag != 0 )
-	{
-		return false;
-	}
+// //! Check current websocket message header has correct flags and fields.
+// bool
+// validate_message_header( const message_details_t & md )
+// {
+// 	if( !is_valid_opcode( md.m_opcode ) ||
+// 		md.m_masking_key == 0 ||
+// 		md.m_rsv1_flag != 0 ||
+// 		md.m_rsv2_flag != 0 ||
+// 		md.m_rsv3_flag != 0 )
+// 	{
+// 		return false;
+// 	}
 
-	return true;
-}
+// 	return true;
+// }
 
-//! Check current websocket message body is correct.
-bool
-validate_current_ws_message_body( const message_details_t & md, std::string & payload )
-{
-	if( md.m_mask_flag == true )
-	{
-		mask_unmask_payload(
-			md.m_masking_key, payload );
-	}
+// //! Check current websocket message body is correct.
+// bool
+// validate_current_ws_message_body( const message_details_t & md, std::string & payload )
+// {
+// 	if( md.m_mask_flag == true )
+// 	{
+// 		mask_unmask_payload(
+// 			md.m_masking_key, payload );
+// 	}
 
-	if( md.m_opcode == opcode_t::text_frame )
-	{
-		return check_utf8_is_correct( payload );
-	}
+// 	if( md.m_opcode == opcode_t::text_frame )
+// 	{
+// 		return check_utf8_is_correct( payload );
+// 	}
 
-	return true;
-}
+// 	return true;
+// }
 
 //
 // ws_connection_t
@@ -596,7 +596,10 @@ class ws_connection_t final
 						(std::uint16_t)md.m_opcode );
 			} );
 
-			if( !validate_message_header( md ) )
+			const auto validation_result =
+				m_protocol_validator.process_new_frame( md );
+
+			if( validation_state_t::frame_header_is_valid != validation_result )
 			{
 				m_logger.error( [&]{
 					return fmt::format(
@@ -653,18 +656,23 @@ class ws_connection_t final
 
 				m_input.m_buf.consumed_bytes( payload_part_size );
 
-				if( payload_part_size == payload_length )
+				if( validate_payload_part( &m_input.m_payload.front(), payload_part_size ) )
 				{
-					// All message is obtained.
-					call_handler_on_current_message();
+					if( payload_part_size == payload_length )
+					{
+						// All message is obtained.
+						call_handler_on_current_message();
+					}
+					else
+					{
+						// Read the rest of payload:
+						start_read_payload(
+							&m_input.m_payload.front() + payload_part_size,
+							payload_length - payload_part_size );
+					}
 				}
-				else
-				{
-					// Read the rest of payload:
-					start_read_payload(
-						&m_input.m_payload.front() + payload_part_size,
-						payload_length - payload_part_size );
-				}
+				// Else payload is invalid and validate_payload_part()
+				// has handled the case so do nothing.
 			}
 		}
 
@@ -726,22 +734,27 @@ class ws_connection_t final
 							length );
 				} );
 
-				if( length < length_remaining )
+				if( validate_payload_part( payload_data, length ) )
 				{
-					//Here: not all payload is obtained,
-					// so inintiate read once again:
-					this->start_read_payload(
-						payload_data + length,
-						length_remaining - length );
-				}
-				else
-				{
-					// Here: all the payload is ready.
-					assert( length == length_remaining );
+					if( length < length_remaining )
+					{
+						//Here: not all payload is obtained,
+						// so inintiate read once again:
+						this->start_read_payload(
+							payload_data + length,
+							length_remaining - length );
+					}
+					else
+					{
+						// Here: all the payload is ready.
+						assert( length == length_remaining );
 
-					// All message is obtained.
-					call_handler_on_current_message();
+						// All message is obtained.
+						call_handler_on_current_message();
+					}
 				}
+				// Else payload is invalid and validate_payload_part()
+				// has handled the case so do nothing.
 			}
 			else
 			{
@@ -773,18 +786,62 @@ class ws_connection_t final
 			}
 		}
 
-		void
-		call_handler_on_current_message()
+		//! Validates a part of received payload.
+		bool
+		validate_payload_part( char * data, std::size_t size )
 		{
-			auto & md = m_input.m_parser.current_message();
-			if( !validate_current_ws_message_body( md, m_input.m_payload ) )
+			const auto validation_result =
+				m_protocol_validator.process_and_unmask_next_payload_part( data, size );
+
+			if( validation_state_t::payload_part_is_valid != validation_result )
 			{
-				m_logger.error( [&]{
+				handle_invalid_payload( validation_result );
+				return false;
+			}
+
+			return true;
+		}
+
+		//! Handle payload errors.
+		void
+		handle_invalid_payload( validation_state_t validation_result )
+		{
+			m_logger.error( [&]{
 					return fmt::format(
 							"[ws_connection:{}] invalid paload",
 							connection_id() );
 				} );
 
+			if( validation_state_t::invalid_close_code == validation_result  )
+			{
+				// A corner case: invalid payload in close frame.
+
+				if( read_state_t::read_any_frame == m_read_state )
+				{
+					// Case: close frame was not expected.
+
+					// This actually must be executed:
+					m_close_frame_to_peer.run_if_first(
+						[&]{
+							send_close_frame_to_peer( status_code_t::protocol_error );
+							// Do not wait anything in return, because
+							// protocol is violated.
+						} );
+
+					// Notify user of a close but use a correct close code.
+					call_close_handler_if_necessary( status_code_t::protocol_error );
+				}
+				else if( read_state_t::read_only_close_frame == m_read_state )
+				{
+					// Case: close frame was expected.
+
+					// We got a close frame but it is incorrect,
+					// so just close (there is not too much we can do).
+					close_impl();
+				}
+			}
+			else
+			{
 				if( read_state_t::read_any_frame == m_read_state )
 				{
 					m_close_frame_to_peer.run_if_first(
@@ -802,7 +859,15 @@ class ws_connection_t final
 					start_read_header();
 				}
 			}
-			else
+		}
+
+		void
+		call_handler_on_current_message()
+		{
+			auto & md = m_input.m_parser.current_message();
+
+			const auto validation_result = m_protocol_validator.finish_frame();
+			if( validation_state_t::frame_is_valid == validation_result )
 			{
 				if( read_state_t::read_any_frame == m_read_state )
 				{
@@ -856,6 +921,10 @@ class ws_connection_t final
 						start_read_header();
 					}
 				}
+			}
+			else
+			{
+				handle_invalid_payload( validation_result );
 			}
 		}
 
@@ -977,7 +1046,7 @@ class ws_connection_t final
 
 				m_logger.trace( [&]{
 					return fmt::format(
-							"[ws_connection:{}] outgoing data was sent: {}b",
+							"[ws_connection:{}] outgoing data was sent: {} bytes",
 							connection_id(),
 							written );
 				} );
@@ -1069,9 +1138,14 @@ class ws_connection_t final
 
 		//! \}
 
+
 		//! Input routine.
 		connection_input_t m_input;
 
+		//! Helper for validating protocol.
+		ws_protocol_validator_t m_protocol_validator{ true };
+
+		//! Websocket message handler provided by user.
 		message_handler_t m_msg_handler;
 
 		//! Logger for operation

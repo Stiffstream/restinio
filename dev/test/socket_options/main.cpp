@@ -55,7 +55,7 @@ TEST_CASE( "Socket options" , "[socket][options]" )
 		}
 	};
 
-	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_work_thread_for_server_t< http_server_t > other_thread(http_server);
 	other_thread.run();
 
 	std::string response;
