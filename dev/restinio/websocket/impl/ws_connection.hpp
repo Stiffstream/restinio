@@ -83,13 +83,6 @@ class ws_outgoing_data_t
 		}
 
 	private:
-		//! Flag is set when user initiates close.
-		/*!
-			If flag is switched on, then after sending all the buffers
-			the socket mus be closed.
-		*/
-		bool m_close_when_done{ false };
-
 		//! A queue of buffers.
 		buffers_container_t m_awaiting_buffers;
 };
