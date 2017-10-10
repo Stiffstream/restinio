@@ -49,6 +49,8 @@ struct msg_ws_message_t : public so_5::message_t
 	rws::message_handle_t m_msg;
 };
 
+struct server_started_t : public so_5::signal_t {};
+
 //
 // g_last_close_code
 //
@@ -68,8 +70,10 @@ class a_server_t
 
 	public:
 		a_server_t(
-			context_t ctx )
+			context_t ctx,
+			so_5::mchain_t server_started_mchain )
 			:	so_base_type_t{ ctx }
+			,	m_server_started_mchain( std::move(server_started_mchain) )
 			,	m_http_server{
 					restinio::own_io_context(),
 					[this]( auto & settings ){
@@ -109,6 +113,7 @@ class a_server_t
 		so_evt_start() override
 		{
 			m_other_thread.run();
+			so_5::send<server_started_t>( m_server_started_mchain );
 		}
 
 		virtual void
@@ -185,6 +190,7 @@ class a_server_t
 			}
 		}
 
+		const so_5::mchain_t m_server_started_mchain;
 		http_server_t m_http_server;
 		other_work_thread_for_server_t<http_server_t> m_other_thread;
 		rws::ws_handle_t m_ws;
@@ -201,44 +207,42 @@ const std::string upgrade_request{
 	"User-Agent: unit-test\r\n"
 	"\r\n" };
 
-class soenv_t : public so_5::environment_t
+class sobj_t
 {
-	public:
-	using base_type_t = so_5::environment_t;
+	so_5::wrapped_env_t m_sobj;
 
-	using base_type_t::base_type_t;
+	static void
+	init( so_5::environment_t & env )
+	{
+		auto server_started_mchain = so_5::create_mchain(env);
+		// Launch server as separate coop.
+		env.introduce_coop(
+			so_5::disp::active_obj::create_private_disp(env)->binder(),
+			[&]( so_5::coop_t & coop ) {
+				coop.make_agent< a_server_t >(server_started_mchain);
+			} );
+		// Wait acknowledgement about successful server start.
+		so_5::receive(
+				server_started_mchain,
+				std::chrono::seconds(5),
+				[](so_5::mhood_t<server_started_t>) {});
+	}
 
-	private:
-		virtual void
-		init() override
-		{
-			introduce_coop(
-				so_5::disp::active_obj::create_private_disp( *this )->binder(),
-				[&]( so_5::coop_t & coop ) {
-					coop.make_agent< a_server_t >();
-				} );
-		}
+public :
+	sobj_t( const sobj_t & ) = delete;
+	sobj_t( sobj_t && ) = delete;
+
+	sobj_t()
+		:	m_sobj( &sobj_t::init )
+	{}
+
+	void
+	stop_and_join()
+	{
+		m_sobj.stop();
+		m_sobj.join();
+	}
 };
-
-std::thread
-start_soenv_in_separate_thread( so_5::environment_t & env )
-{
-	std::thread soenv_thread{ [&](){
-		try
-		{
-			env.run();
-		}
-		catch( const std::exception & ex )
-		{
-			std::cerr << "Error running sobjectizer: " << ex.what() << std::endl;
-		}
-	} };
-
-	// Give some time for server to start.
-	std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
-
-	return soenv_thread;
-}
 
 template < typename Socket >
 void
@@ -255,8 +259,7 @@ fragmented_send( Socket & socket, void * buf, std::size_t n )
 
 TEST_CASE( "Simple echo" , "[ws_connection][echo][normal_close]" )
 {
-	soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -325,16 +328,14 @@ TEST_CASE( "Simple echo" , "[ws_connection][echo][normal_close]" )
 
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 	REQUIRE( 1000 == g_last_close_code );
 }
 
 TEST_CASE( "Ping" , "[ws_connection][ping][normal_close]" )
 {
-	soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -402,16 +403,14 @@ TEST_CASE( "Ping" , "[ws_connection][ping][normal_close]" )
 			REQUIRE( asio::error::eof == ec.value() );
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 	REQUIRE( 1000 == g_last_close_code );
 }
 
 TEST_CASE( "Close" , "[ws_connection][close][normal_close]" )
 {
-	soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -470,8 +469,7 @@ TEST_CASE( "Close" , "[ws_connection][close][normal_close]" )
 			REQUIRE( asio::error::eof == ec.value() );
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 	// User initiates close.
 	REQUIRE( 0 == g_last_close_code );
@@ -479,8 +477,7 @@ TEST_CASE( "Close" , "[ws_connection][close][normal_close]" )
 
 TEST_CASE( "Shutdown" , "[ws_connection][shutdown][normal_close]" )
 {
-soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -539,8 +536,7 @@ soenv_t soenv{ so_5::environment_params_t{} };
 			REQUIRE( asio::error::eof == ec.value() );
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 	// User initiates close via shutdown.
 	REQUIRE( 0 == g_last_close_code );
@@ -548,8 +544,7 @@ soenv_t soenv{ so_5::environment_params_t{} };
 
 TEST_CASE( "Kill" , "[ws_connection][kill][abnormal_close]" )
 {
-soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -589,15 +584,14 @@ soenv_t soenv{ so_5::environment_params_t{} };
 			REQUIRE( asio::error::eof == ec.value() );
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
+
 	REQUIRE( 0 == g_last_close_code );
 }
 
 TEST_CASE( "Invalid header", "[ws_connection][error_close]" )
 {
-soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -657,16 +651,14 @@ soenv_t soenv{ so_5::environment_params_t{} };
 			REQUIRE( asio::error::eof == ec.value() );
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 	REQUIRE( 1002 == g_last_close_code );
 }
 
 TEST_CASE( "Invalid payload" , "[ws_connection][error_close]" )
 {
-soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -725,16 +717,14 @@ soenv_t soenv{ so_5::environment_params_t{} };
 			REQUIRE( asio::error::eof == ec.value() );
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 	REQUIRE( 1007 == g_last_close_code );
 }
 
 TEST_CASE( "Connection lost" , "[ws_connection][error_close][connection_lost]" )
 {
-soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -797,8 +787,7 @@ soenv_t soenv{ so_5::environment_params_t{} };
 
 	// Give sobjectizer some time to run.
 	std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 
 	REQUIRE( 1006 == g_last_close_code );
@@ -806,8 +795,7 @@ soenv_t soenv{ so_5::environment_params_t{} };
 
 TEST_CASE( "Invalid opcode" , "[ws_connection][error_close]" )
 {
-soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -905,16 +893,14 @@ soenv_t soenv{ so_5::environment_params_t{} };
 			REQUIRE( asio::error::eof == ec.value() );
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 	REQUIRE( 1002 == g_last_close_code );
 }
 
 TEST_CASE( "Invalid payload, close on first err 1" , "[ws_connection][echo][normal_close]" )
 {
-	soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -999,8 +985,7 @@ TEST_CASE( "Invalid payload, close on first err 1" , "[ws_connection][echo][norm
 			REQUIRE( asio::error::eof == ec.value() );
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 	REQUIRE( 1007 == g_last_close_code );
 	REQUIRE( 1 == g_message_handled );
@@ -1008,8 +993,7 @@ TEST_CASE( "Invalid payload, close on first err 1" , "[ws_connection][echo][norm
 
 TEST_CASE( "Invalid payload, close on first err 2", "[ws_connection][echo][normal_close]" )
 {
-	soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -1099,8 +1083,7 @@ TEST_CASE( "Invalid payload, close on first err 2", "[ws_connection][echo][norma
 			REQUIRE( asio::error::eof == ec.value() );
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 	REQUIRE( 1007 == g_last_close_code );
 	REQUIRE( 1 == g_message_handled );
@@ -1109,8 +1092,7 @@ TEST_CASE( "Invalid payload, close on first err 2", "[ws_connection][echo][norma
 
 TEST_CASE( "Invalid payload, close on first err 3", "[ws_connection][echo][normal_close]" )
 {
-	soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -1200,8 +1182,7 @@ TEST_CASE( "Invalid payload, close on first err 3", "[ws_connection][echo][norma
 			REQUIRE( asio::error::eof == ec.value() );
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 	REQUIRE( 1007 == g_last_close_code );
 	REQUIRE( 1 == g_message_handled ); // close frame only.
