@@ -49,11 +49,14 @@ struct msg_ws_message_t : public so_5::message_t
 	rws::message_handle_t m_msg;
 };
 
+struct server_started_t : public so_5::signal_t {};
+
 //
 // g_last_close_code
 //
 
 std::atomic< std::uint16_t > g_last_close_code{ 0 };
+std::atomic< std::uint16_t > g_message_handled{ 0 };
 
 //
 // a_server_t
@@ -67,8 +70,10 @@ class a_server_t
 
 	public:
 		a_server_t(
-			context_t ctx )
+			context_t ctx,
+			so_5::mchain_t server_started_mchain )
 			:	so_base_type_t{ ctx }
+			,	m_server_started_mchain( std::move(server_started_mchain) )
 			,	m_http_server{
 					restinio::own_io_context(),
 					[this]( auto & settings ){
@@ -81,6 +86,7 @@ class a_server_t
 									if( restinio::http_connection_header_t::upgrade ==
 										req->header().connection() )
 									{
+										++g_message_handled;
 										so_5::send< upgrade_request_t >( mbox, req );
 
 										return restinio::request_accepted();
@@ -91,6 +97,8 @@ class a_server_t
 					} }
 			,	m_other_thread{ m_http_server }
 		{
+			g_last_close_code = 0;
+			g_message_handled = 0;
 		}
 
 		virtual void
@@ -105,6 +113,7 @@ class a_server_t
 		so_evt_start() override
 		{
 			m_other_thread.run();
+			so_5::send<server_started_t>( m_server_started_mchain );
 		}
 
 		virtual void
@@ -181,6 +190,7 @@ class a_server_t
 			}
 		}
 
+		const so_5::mchain_t m_server_started_mchain;
 		http_server_t m_http_server;
 		other_work_thread_for_server_t<http_server_t> m_other_thread;
 		rws::ws_handle_t m_ws;
@@ -197,44 +207,43 @@ const std::string upgrade_request{
 	"User-Agent: unit-test\r\n"
 	"\r\n" };
 
-class soenv_t : public so_5::environment_t
+class sobj_t
 {
-	public:
-	using base_type_t = so_5::environment_t;
+	so_5::wrapped_env_t m_sobj;
 
-	using base_type_t::base_type_t;
+	static void
+	init( so_5::environment_t & env )
+	{
+		auto server_started_mchain = so_5::create_mchain(env);
+		// Launch server as separate coop.
+		env.introduce_coop(
+			so_5::disp::active_obj::create_private_disp(env)->binder(),
+			[&]( so_5::coop_t & coop ) {
+				coop.make_agent< a_server_t >(server_started_mchain);
+			} );
+		// Wait acknowledgement about successful server start.
+		so_5::receive(
+				server_started_mchain,
+				std::chrono::seconds(5),
+				[](so_5::mhood_t<server_started_t>) {});
+	}
 
-	private:
-		virtual void
-		init() override
-		{
-			introduce_coop(
-				so_5::disp::active_obj::create_private_disp( *this )->binder(),
-				[&]( so_5::coop_t & coop ) {
-					coop.make_agent< a_server_t >();
-				} );
-		}
+public :
+	sobj_t( const sobj_t & ) = delete;
+	sobj_t( sobj_t && ) = delete;
+
+	sobj_t()
+	{
+		init( m_sobj.environment() );
+	}
+
+	void
+	stop_and_join()
+	{
+		m_sobj.stop();
+		m_sobj.join();
+	}
 };
-
-std::thread
-start_soenv_in_separate_thread( so_5::environment_t & env )
-{
-	std::thread soenv_thread{ [&](){
-		try
-		{
-			env.run();
-		}
-		catch( const std::exception & ex )
-		{
-			std::cerr << "Error running sobjectizer: " << ex.what() << std::endl;
-		}
-	} };
-
-	// Give some time for server to start.
-	std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
-
-	return soenv_thread;
-}
 
 template < typename Socket >
 void
@@ -251,10 +260,7 @@ fragmented_send( Socket & socket, void * buf, std::size_t n )
 
 TEST_CASE( "Simple echo" , "[ws_connection][echo][normal_close]" )
 {
-	g_last_close_code = 0;
-
-	soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -323,18 +329,14 @@ TEST_CASE( "Simple echo" , "[ws_connection][echo][normal_close]" )
 
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 	REQUIRE( 1000 == g_last_close_code );
 }
 
 TEST_CASE( "Ping" , "[ws_connection][ping][normal_close]" )
 {
-	g_last_close_code = 0;
-
-	soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -402,18 +404,14 @@ TEST_CASE( "Ping" , "[ws_connection][ping][normal_close]" )
 			REQUIRE( asio::error::eof == ec.value() );
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 	REQUIRE( 1000 == g_last_close_code );
 }
 
 TEST_CASE( "Close" , "[ws_connection][close][normal_close]" )
 {
-	g_last_close_code = 0;
-
-	soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -472,8 +470,7 @@ TEST_CASE( "Close" , "[ws_connection][close][normal_close]" )
 			REQUIRE( asio::error::eof == ec.value() );
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 	// User initiates close.
 	REQUIRE( 0 == g_last_close_code );
@@ -481,9 +478,7 @@ TEST_CASE( "Close" , "[ws_connection][close][normal_close]" )
 
 TEST_CASE( "Shutdown" , "[ws_connection][shutdown][normal_close]" )
 {
-	g_last_close_code = 0;
-	soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -542,8 +537,7 @@ TEST_CASE( "Shutdown" , "[ws_connection][shutdown][normal_close]" )
 			REQUIRE( asio::error::eof == ec.value() );
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 	// User initiates close via shutdown.
 	REQUIRE( 0 == g_last_close_code );
@@ -551,9 +545,7 @@ TEST_CASE( "Shutdown" , "[ws_connection][shutdown][normal_close]" )
 
 TEST_CASE( "Kill" , "[ws_connection][kill][abnormal_close]" )
 {
-	g_last_close_code = 0;
-	soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -593,16 +585,14 @@ TEST_CASE( "Kill" , "[ws_connection][kill][abnormal_close]" )
 			REQUIRE( asio::error::eof == ec.value() );
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
+
 	REQUIRE( 0 == g_last_close_code );
 }
 
 TEST_CASE( "Invalid header", "[ws_connection][error_close]" )
 {
-	g_last_close_code = 0;
-	soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -662,17 +652,14 @@ TEST_CASE( "Invalid header", "[ws_connection][error_close]" )
 			REQUIRE( asio::error::eof == ec.value() );
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 	REQUIRE( 1002 == g_last_close_code );
 }
 
 TEST_CASE( "Invalid payload" , "[ws_connection][error_close]" )
 {
-	g_last_close_code = 0;
-	soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -731,17 +718,14 @@ TEST_CASE( "Invalid payload" , "[ws_connection][error_close]" )
 			REQUIRE( asio::error::eof == ec.value() );
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 	REQUIRE( 1007 == g_last_close_code );
 }
 
 TEST_CASE( "Connection lost" , "[ws_connection][error_close][connection_lost]" )
 {
-	g_last_close_code = 0;
-	soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -804,8 +788,7 @@ TEST_CASE( "Connection lost" , "[ws_connection][error_close][connection_lost]" )
 
 	// Give sobjectizer some time to run.
 	std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 
 	REQUIRE( 1006 == g_last_close_code );
@@ -813,9 +796,7 @@ TEST_CASE( "Connection lost" , "[ws_connection][error_close][connection_lost]" )
 
 TEST_CASE( "Invalid opcode" , "[ws_connection][error_close]" )
 {
-	g_last_close_code = 0;
-	soenv_t soenv{ so_5::environment_params_t{} };
-	auto soenv_thread = start_soenv_in_separate_thread( soenv );
+	sobj_t sobj;
 
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
@@ -913,8 +894,298 @@ TEST_CASE( "Invalid opcode" , "[ws_connection][error_close]" )
 			REQUIRE( asio::error::eof == ec.value() );
 		} );
 
-	soenv.stop();
-	soenv_thread.join();
+	sobj.stop_and_join();
 
 	REQUIRE( 1002 == g_last_close_code );
 }
+
+TEST_CASE( "Invalid payload, close on first err 1" , "[ws_connection][echo][normal_close]" )
+{
+	sobj_t sobj;
+
+	do_with_socket(
+		[&]( auto & socket, auto & /*io_context*/ ){
+			REQUIRE_NOTHROW(
+				asio::write(
+					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+			);
+
+			std::array< std::uint8_t, 1024 > data;
+
+			std::size_t len{ 0 };
+			REQUIRE_NOTHROW(
+				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+			);
+
+			std::vector< std::uint8_t > msg_frame =
+					{ 0x81, 0x80 | 0x10, 0xAA,0xAA,0xAA,0xAA,
+					  0xAA ^ '1', 0xAA ^ '2', 0xAA ^ '3', 0xAA ^ '4',
+					  0xAA ^ '5', 0xAA ^ '6', 0xAA ^ '7', 0xAA ^ '8',
+					  0xAA ^ '9', 0xAA ^ 'A', 0xAA ^ 'B', 0xAA ^ 'C',
+					  0xAA ^ 'D', 0xAA ^ 'E', 0xAA ^ 'F', 0xAA ^ '0' };
+
+			std::size_t indx = 6;
+			SECTION( "pos 0")
+			{
+				indx += 0;
+			}
+			SECTION( "pos 2")
+			{
+				indx += 2;
+			}
+			SECTION( "pos 4")
+			{
+				indx += 4;
+			}
+			SECTION( "pos 8")
+			{
+				indx += 8;
+			}
+			SECTION( "pos 15")
+			{
+				indx += 15;
+			}
+			msg_frame[ indx ] = 0xFF ^ 0xAA;
+
+			REQUIRE_NOTHROW(
+				asio::write( socket, asio::buffer( msg_frame.data(), indx ) )
+			);
+
+			// Now error:
+			REQUIRE_NOTHROW(
+				asio::write( socket, asio::buffer( msg_frame.data() + indx, 1 ) )
+			);
+
+			REQUIRE_NOTHROW(
+					len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				);
+			REQUIRE( 4 == len );
+			REQUIRE( 0x88 == data[ 0 ] );
+			REQUIRE( 0x02 == data[ 1 ] );
+			REQUIRE( 0x03 == data[ 2 ] );
+			REQUIRE( 0xef == data[ 3 ] );
+
+			if( indx != msg_frame.size() )
+			{
+				REQUIRE_NOTHROW(
+					asio::write( socket, asio::buffer( msg_frame.data() + indx + 1, msg_frame.size() - indx - 1 ) )
+				);
+			}
+
+			std::vector< std::uint8_t > close_frame =
+				{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xef };
+
+			REQUIRE_NOTHROW(
+				asio::write(
+					socket, asio::buffer( close_frame.data(), close_frame.size() ) )
+			);
+
+			asio::error_code ec;
+			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			REQUIRE( ec );
+			REQUIRE( asio::error::eof == ec.value() );
+		} );
+
+	sobj.stop_and_join();
+
+	REQUIRE( 1007 == g_last_close_code );
+	REQUIRE( 1 == g_message_handled );
+}
+
+TEST_CASE( "Invalid payload, close on first err 2", "[ws_connection][echo][normal_close]" )
+{
+	sobj_t sobj;
+
+	do_with_socket(
+		[&]( auto & socket, auto & /*io_context*/ ){
+			REQUIRE_NOTHROW(
+				asio::write(
+					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+			);
+
+			std::array< std::uint8_t, 1024 > data;
+
+			std::size_t len{ 0 };
+			REQUIRE_NOTHROW(
+				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+			);
+
+			std::vector< std::uint8_t > msg_frame =
+					{ 0x81, 0x80 | 0x10, 0xAA,0xAA,0xAA,0xAA,
+					  0xAA ^ '1', 0xAA ^ '2', 0xAA ^ '3', 0xAA ^ '4',
+					  0xAA ^ '5', 0xAA ^ '6', 0xAA ^ '7', 0xAA ^ '8',
+					  0xAA ^ '9', 0xAA ^ 'A', 0xAA ^ 'B', 0xAA ^ 'C',
+					  0xAA ^ 'D', 0xAA ^ 'E', 0xAA ^ 'F', 0xAA ^ '0' };
+
+			std::size_t indx = 6;
+			SECTION( "pos 0")
+			{
+				indx += 0;
+			}
+			SECTION( "pos 2")
+			{
+				indx += 2;
+			}
+			SECTION( "pos 4")
+			{
+				indx += 4;
+			}
+			SECTION( "pos 8")
+			{
+				indx += 8;
+			}
+			SECTION( "pos 15")
+			{
+				indx += 15;
+			}
+			unsigned char c = 0xFF ^ 0xAA;
+
+			REQUIRE_NOTHROW(
+				asio::write( socket, asio::buffer( msg_frame.data(), indx ) )
+			);
+
+			// Now error:
+			REQUIRE_NOTHROW(
+				asio::write( socket, asio::buffer( &c, 1 ) )
+			);
+
+			REQUIRE_NOTHROW(
+					len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				);
+			REQUIRE( 4 == len );
+			REQUIRE( 0x88 == data[ 0 ] );
+			REQUIRE( 0x02 == data[ 1 ] );
+			REQUIRE( 0x03 == data[ 2 ] );
+			REQUIRE( 0xef == data[ 3 ] );
+
+			if( indx != msg_frame.size() )
+			{
+				REQUIRE_NOTHROW(
+					asio::write( socket, asio::buffer( msg_frame.data() + indx + 1, msg_frame.size() - indx - 1 ) )
+				);
+			}
+
+			// Send one more text-frame (valid one).
+			REQUIRE_NOTHROW(
+				asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
+			);
+
+			std::vector< std::uint8_t > close_frame =
+				{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xef };
+
+			REQUIRE_NOTHROW(
+				asio::write(
+					socket, asio::buffer( close_frame.data(), close_frame.size() ) )
+			);
+
+			asio::error_code ec;
+			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			REQUIRE( ec );
+			REQUIRE( asio::error::eof == ec.value() );
+		} );
+
+	sobj.stop_and_join();
+
+	REQUIRE( 1007 == g_last_close_code );
+	REQUIRE( 1 == g_message_handled );
+}
+
+
+TEST_CASE( "Invalid payload, close on first err 3", "[ws_connection][echo][normal_close]" )
+{
+	sobj_t sobj;
+
+	do_with_socket(
+		[&]( auto & socket, auto & /*io_context*/ ){
+			REQUIRE_NOTHROW(
+				asio::write(
+					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+			);
+
+			std::array< std::uint8_t, 1024 > data;
+
+			std::size_t len{ 0 };
+			REQUIRE_NOTHROW(
+				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+			);
+
+			std::vector< std::uint8_t > msg_frame =
+					{ 0x81, 0x80 | 0x10, 0xAA,0xAA,0xAA,0xAA,
+					  0xAA ^ '1', 0xAA ^ '2', 0xAA ^ '3', 0xAA ^ '4',
+					  0xAA ^ '5', 0xAA ^ '6', 0xAA ^ '7', 0xAA ^ '8',
+					  0xAA ^ '9', 0xAA ^ 'A', 0xAA ^ 'B', 0xAA ^ 'C',
+					  0xAA ^ 'D', 0xAA ^ 'E', 0xAA ^ 'F', 0xAA ^ '0' };
+
+			std::size_t indx = 6;
+			SECTION( "pos 0")
+			{
+				indx += 0;
+			}
+			SECTION( "pos 2")
+			{
+				indx += 2;
+			}
+			SECTION( "pos 4")
+			{
+				indx += 4;
+			}
+			SECTION( "pos 8")
+			{
+				indx += 8;
+			}
+			SECTION( "pos 15")
+			{
+				indx += 15;
+			}
+			msg_frame[ indx ] = 0xFF ^ 0xAA;
+
+			REQUIRE_NOTHROW(
+				asio::write( socket, asio::buffer( msg_frame.data(), indx ) )
+			);
+
+			// Now error:
+			REQUIRE_NOTHROW(
+				asio::write( socket, asio::buffer( msg_frame.data() + indx, 1 ) )
+			);
+
+			REQUIRE_NOTHROW(
+					len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				);
+			REQUIRE( 4 == len );
+			REQUIRE( 0x88 == data[ 0 ] );
+			REQUIRE( 0x02 == data[ 1 ] );
+			REQUIRE( 0x03 == data[ 2 ] );
+			REQUIRE( 0xef == data[ 3 ] );
+
+			if( indx != msg_frame.size() )
+			{
+				REQUIRE_NOTHROW(
+					asio::write( socket, asio::buffer( msg_frame.data() + indx + 1, msg_frame.size() - indx - 1 ) )
+				);
+			}
+
+			// Send one more text-frame (invalid one).
+			REQUIRE_NOTHROW(
+				asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
+			);
+
+			std::vector< std::uint8_t > close_frame =
+				{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xef };
+
+			REQUIRE_NOTHROW(
+				asio::write(
+					socket, asio::buffer( close_frame.data(), close_frame.size() ) )
+			);
+
+			asio::error_code ec;
+			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			REQUIRE( ec );
+			REQUIRE( asio::error::eof == ec.value() );
+		} );
+
+	sobj.stop_and_join();
+
+	REQUIRE( 1007 == g_last_close_code );
+	REQUIRE( 1 == g_message_handled ); // close frame only.
+}
+

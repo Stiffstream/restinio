@@ -39,6 +39,7 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 						{
 							try
 							{
+								namespace rws = restinio::websocket;
 								auto ws =
 									rws::upgrade< traits_t >(
 										*req,

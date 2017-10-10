@@ -622,9 +622,15 @@ class ws_connection_t final
 
 				m_input.m_buf.consumed_bytes( payload_part_size );
 
-				if( validate_payload_part( &m_input.m_payload.front(), payload_part_size ) )
+				const std::size_t length_remaining =
+					payload_length - payload_part_size;
+
+				if( validate_payload_part(
+						&m_input.m_payload.front(),
+						payload_part_size,
+						length_remaining ) )
 				{
-					if( payload_part_size == payload_length )
+					if( 0 == length_remaining )
 					{
 						// All message is obtained.
 						call_handler_on_current_message();
@@ -634,7 +640,7 @@ class ws_connection_t final
 						// Read the rest of payload:
 						start_read_payload(
 							&m_input.m_payload.front() + payload_part_size,
-							payload_length - payload_part_size );
+							length_remaining );
 					}
 				}
 				// Else payload is invalid and validate_payload_part()
@@ -648,7 +654,9 @@ class ws_connection_t final
 			//! A pointer to the remainder of unfetched payload.
 			char * payload_data,
 			//! The size of the remainder of unfetched payload.
-			std::size_t length_remaining )
+			std::size_t length_remaining,
+			//! Validate payload and call handler.
+			bool do_validate_payload_and_call_msg_handler = true )
 		{
 			m_socket.async_read_some(
 				asio::buffer( payload_data, length_remaining ),
@@ -657,7 +665,8 @@ class ws_connection_t final
 					[ this,
 						ctx = shared_from_this(),
 						payload_data,
-						length_remaining ](
+						length_remaining,
+						do_validate_payload_and_call_msg_handler ](
 						const asio::error_code & ec,
 						std::size_t length ){
 
@@ -667,7 +676,8 @@ class ws_connection_t final
 									payload_data,
 									length_remaining,
 									ec,
-									length );
+									length,
+									do_validate_payload_and_call_msg_handler );
 							}
 							catch( const std::exception & ex )
 							{
@@ -689,7 +699,8 @@ class ws_connection_t final
 			char * payload_data,
 			std::size_t length_remaining,
 			const std::error_code & ec,
-			std::size_t length )
+			std::size_t length,
+			bool do_validate_payload_and_call_msg_handler = true )
 		{
 			if( !ec )
 			{
@@ -700,27 +711,49 @@ class ws_connection_t final
 							length );
 				} );
 
-				if( validate_payload_part( payload_data, length ) )
+				assert( length <= length_remaining );
+
+				const std::size_t next_length_remaining =
+					length_remaining - length;
+
+				if( do_validate_payload_and_call_msg_handler )
 				{
-					if( length < length_remaining )
+					if( validate_payload_part( payload_data, length, next_length_remaining ) )
 					{
-						//Here: not all payload is obtained,
-						// so inintiate read once again:
-						this->start_read_payload(
-							payload_data + length,
-							length_remaining - length );
+						if( 0 == next_length_remaining )
+						{
+							// Here: all the payload is ready.
+
+							// All message is obtained.
+							call_handler_on_current_message();
+						}
+						else
+						{
+							//Here: not all payload is obtained,
+							// so inintiate read once again:
+							start_read_payload(
+								payload_data + length,
+								next_length_remaining,
+								do_validate_payload_and_call_msg_handler );
+						}
+					}
+					// Else payload is invalid and validate_payload_part()
+					// has handled the case so do nothing.
+				}
+				else
+				{
+					if( 0 == next_length_remaining )
+					{
+						start_read_header();
 					}
 					else
 					{
-						// Here: all the payload is ready.
-						assert( length == length_remaining );
-
-						// All message is obtained.
-						call_handler_on_current_message();
+						start_read_payload(
+							payload_data + length,
+							length_remaining - length,
+							do_validate_payload_and_call_msg_handler );
 					}
 				}
-				// Else payload is invalid and validate_payload_part()
-				// has handled the case so do nothing.
 			}
 			else
 			{
@@ -754,14 +787,41 @@ class ws_connection_t final
 
 		//! Validates a part of received payload.
 		bool
-		validate_payload_part( char * data, std::size_t size )
+		validate_payload_part(
+			char * payload_data,
+			std::size_t length,
+			std::size_t next_length_remaining )
 		{
 			const auto validation_result =
-				m_protocol_validator.process_and_unmask_next_payload_part( data, size );
+				m_protocol_validator.process_and_unmask_next_payload_part( payload_data, length );
 
 			if( validation_state_t::payload_part_is_valid != validation_result )
 			{
 				handle_invalid_payload( validation_result );
+
+				if( validation_state_t::incorrect_utf8_data == validation_result )
+				{
+					// Can skip this payload because it was not a bad close frame.
+
+					// It is the case we are expecting close frame
+					// so validator must be ready to receive more headers
+					// and payloads after this frame.
+					m_protocol_validator.reset();
+
+					if( 0 == next_length_remaining )
+					{
+						start_read_header();
+					}
+					else
+					{
+						// Skip checking payload for this frame:
+						const bool do_validate_payload_and_call_msg_handler = false;
+						start_read_payload(
+								payload_data + length,
+								next_length_remaining,
+								do_validate_payload_and_call_msg_handler );
+					}
+				}
 				return false;
 			}
 
@@ -817,12 +877,6 @@ class ws_connection_t final
 						} );
 
 					call_close_handler_if_necessary( status_code_t::invalid_message_data );
-				}
-
-				if( read_state_t::read_only_close_frame == m_read_state )
-				{
-					// Wait for next frame.
-					start_read_header();
 				}
 			}
 		}

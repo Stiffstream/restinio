@@ -8,8 +8,6 @@
 
 #define CATCH_CONFIG_MAIN
 
-#include <bitset>
-
 #include <catch/catch.hpp>
 
 #include <restinio/websocket/impl/utf8.hpp>
@@ -17,6 +15,8 @@
 
 #include <test/common/pub.hpp>
 #include <test/websocket/common/pub.hpp>
+
+using namespace std::literals::string_literals;
 
 using namespace restinio;
 using namespace restinio::websocket;
@@ -118,11 +118,6 @@ TEST_CASE(
 				0xf0, 0x90, 0x80, 0x80
 			}) };
 
-		// for( auto ch: str )
-		// {
-		// 	std::cout << std::bitset<8>(ch) << std::endl;
-		// }
-
 		REQUIRE( check_utf8_is_correct( str ) == true );
 	}
 }
@@ -132,34 +127,34 @@ TEST_CASE(
 	"[validators][state_to_str]" )
 {
 	REQUIRE( validation_state_str(
-		validation_state_t::frame_header_is_valid) == "frame_header_is_valid" );
+		validation_state_t::frame_header_is_valid) == "frame_header_is_valid"s );
 	REQUIRE( validation_state_str(
-		validation_state_t::payload_part_is_valid) == "payload_part_is_valid" );
+		validation_state_t::payload_part_is_valid) == "payload_part_is_valid"s );
 	REQUIRE( validation_state_str(
-		validation_state_t::frame_is_valid) == "frame_is_valid" );
+		validation_state_t::frame_is_valid) == "frame_is_valid"s );
 	REQUIRE( validation_state_str(
-		validation_state_t::invalid_opcode) == "invalid_opcode" );
+		validation_state_t::invalid_opcode) == "invalid_opcode"s );
 	REQUIRE( validation_state_str(
 		validation_state_t::empty_mask_from_client_side) ==
-			"empty_mask_from_client_side" );
+			"empty_mask_from_client_side"s );
 	REQUIRE( validation_state_str(
-		validation_state_t::non_final_control_frame) == "non_final_control_frame" );
+		validation_state_t::non_final_control_frame) == "non_final_control_frame"s );
 	REQUIRE( validation_state_str(
-		validation_state_t::non_zero_rsv_flags) == "non_zero_rsv_flags" );
+		validation_state_t::non_zero_rsv_flags) == "non_zero_rsv_flags"s );
 	REQUIRE( validation_state_str(
-		validation_state_t::payload_len_is_too_big) == "payload_len_is_too_big" );
+		validation_state_t::payload_len_is_too_big) == "payload_len_is_too_big"s );
 	REQUIRE( validation_state_str(
 		validation_state_t::continuation_frame_without_data_frame) ==
-			"continuation_frame_without_data_frame" );
+			"continuation_frame_without_data_frame"s );
 	REQUIRE( validation_state_str(
 		validation_state_t::new_data_frame_without_finishing_previous) ==
-			"new_data_frame_without_finishing_previous" );
+			"new_data_frame_without_finishing_previous"s );
 	REQUIRE( validation_state_str(
-		validation_state_t::invalid_close_code) == "invalid_close_code" );
+		validation_state_t::invalid_close_code) == "invalid_close_code"s );
 	REQUIRE( validation_state_str(
-		validation_state_t::incorrect_utf8_data) == "incorrect_utf8_data" );
+		validation_state_t::incorrect_utf8_data) == "incorrect_utf8_data"s );
 	REQUIRE( validation_state_str(
-		validation_state_t::initial_state) == "initial_state" );
+		validation_state_t::initial_state) == "initial_state"s );
 }
 
 TEST_CASE(
