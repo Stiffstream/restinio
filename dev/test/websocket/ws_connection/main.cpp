@@ -233,8 +233,9 @@ public :
 	sobj_t( sobj_t && ) = delete;
 
 	sobj_t()
-		:	m_sobj( &sobj_t::init )
-	{}
+	{
+		init( m_sobj.environment() );
+	}
 
 	void
 	stop_and_join()
