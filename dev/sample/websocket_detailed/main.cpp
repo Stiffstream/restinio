@@ -25,6 +25,48 @@ using traits_t =
 
 using http_server_t = restinio::http_server_t< traits_t >;
 
+struct ws_message_handler_t
+{
+	void
+	operator()( rws::ws_handle_t wsh, rws::message_handle_t m )
+	{
+		if( m->opcode() == rws::opcode_t::continuation_frame )
+		{
+			m_continuation_frame_buffer.append( m->payload() );
+
+			if( m->is_final() )
+				wsh->send_message(
+					true, m_continued_frame_opcode, m_continuation_frame_buffer );
+		}
+		else if( m->opcode() == rws::opcode_t::ping_frame )
+		{
+			auto pong = *m;
+			pong.set_opcode( rws::opcode_t::pong_frame );
+			wsh->send_message( pong );
+		}
+		else if( m->opcode() == rws::opcode_t::pong_frame )
+		{
+		}
+		else if( m->opcode() == rws::opcode_t::connection_close_frame )
+		{
+			wsh->send_message( *m );
+			wsh->shutdown();
+		}
+		else
+		{
+			if( m->is_final() )
+				wsh->send_message( *m );
+			else
+			{
+				m_continued_frame_opcode = m->opcode();
+				m_continuation_frame_buffer.append( m->payload() );
+			}
+		}
+	}
+
+	rws::opcode_t m_continued_frame_opcode;
+	std::string m_continuation_frame_buffer;
+};
 
 auto server_handler( rws::ws_handle_t & websocket )
 {
@@ -40,40 +82,7 @@ auto server_handler( rws::ws_handle_t & websocket )
 					rws::upgrade< traits_t >(
 						*req,
 						rws::activation_t::immediate,
-						[]( auto wsh, auto m ){
-							// print_ws_message( *m );
-
-							if( m->opcode() == rws::opcode_t::continuation_frame )
- 							{
- 							}
-							else if( m->opcode() == rws::opcode_t::ping_frame )
- 							{
-								if( m->payload().size() > 125)
-								{
-									// TODO: if this is error so why send anything?
-									wsh->kill();
-								}
-
-								auto pong = *m;
-								pong.set_opcode( rws::opcode_t::pong_frame );
-								wsh->send_message( pong );
-							}
-							else if( m->opcode() == rws::opcode_t::pong_frame )
-							{
-							}
-							else if( m->opcode() == rws::opcode_t::connection_close_frame )
-							{
-								// TODO: send response if code not 1006.
-
-
-								wsh->send_message( *m );
-								wsh->shutdown();
-							}
-							else
-							{
-								wsh->send_message( *m );
-							}
-						} );
+						ws_message_handler_t{} );
 
 				return restinio::request_accepted();
 			}
