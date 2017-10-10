@@ -24,12 +24,17 @@ namespace restinio
 namespace websocket
 {
 
+//! Alias for byte.
 using byte_t = unsigned char;
+
+//! Bytes buffer.
 using raw_data_t = std::string;
 
 namespace impl
 {
 
+//! Websocket parser constants.
+//! \{
 constexpr size_t websocket_first_two_bytes_size = 2;
 constexpr size_t websocket_max_payload_size_without_ext = 125;
 constexpr size_t websocket_short_ext_payload_length = 2;
@@ -44,17 +49,17 @@ constexpr byte_t bit_flag_5 = 0x20;
 constexpr byte_t bit_flag_4 = 0x10;
 constexpr byte_t opcode_mask = 0x0F;
 constexpr byte_t payload_len_mask = 0x7F;
+//! \}
 
 //
 // message_details_t
 //
 
-//! TODO!
+//! Websocket message class with more detailed protocol information.
 class message_details_t
 {
 	public:
-		message_details_t()
-		{}
+		message_details_t() = default;
 
 		message_details_t( bool final, opcode_t opcode, size_t payload_len )
 			:	m_final_flag{ final }
@@ -76,6 +81,7 @@ class message_details_t
 			init_payload_len( payload_len );
 		}
 
+		//! Get payload len.
 		std::uint64_t
 		payload_len() const
 		{
@@ -83,6 +89,7 @@ class message_details_t
 			return m_payload_len > websocket_max_payload_size_without_ext? m_ext_payload_len: m_payload_len;
 		}
 
+		//! Set masking key.
 		void
 		set_masking_key( std::uint32_t value )
 		{
@@ -90,23 +97,41 @@ class message_details_t
 			m_mask_flag = true;
 		}
 
-		//
-
+		//! Final flag.
 		bool m_final_flag = true;
 
+		//! Reserved flags.
+		//! \{
 		bool m_rsv1_flag = false;
 		bool m_rsv2_flag = false;
 		bool m_rsv3_flag = false;
+		//! \}
 
+		//! Opcode.
 		opcode_t m_opcode = opcode_t::continuation_frame;
 
+		//! Mask flag.
 		bool m_mask_flag = false;
 
+		//! Payload len.
+		/*!
+			It contains payload len or ext payload len code.
+		*/
 		std::uint8_t m_payload_len = 0;
+
+		//! Ext payload len.
 		std::uint64_t m_ext_payload_len = 0;
+
+		//! Masking key.
 		std::uint32_t m_masking_key = 0;
 
 	private:
+
+		//! Initialize payload len.
+		/*!
+			Set only payload length if value is lower than 126 or payload length
+			and ext payload length otherwise.
+		*/
 		void
 		init_payload_len( size_t payload_len )
 		{
@@ -141,9 +166,13 @@ struct expected_data_t
 		m_loaded_data.reserve( m_expected_size );
 	}
 
+	//! Expected data size in bytes.
 	size_t m_expected_size{0};
+
+	//! Buffer for accumulating data.
 	raw_data_t m_loaded_data;
 
+	//! Check all bytes are loaded.
 	bool
 	all_bytes_loaded() const
 	{
@@ -166,6 +195,7 @@ struct expected_data_t
 		return all_bytes_loaded();
 	}
 
+	//! Reset internal state on next expected data size.
 	void
 	reset( size_t expected_size )
 	{
@@ -179,6 +209,7 @@ struct expected_data_t
 // read_number_from_big_endian_bytes
 //
 
+//! Read number from buffer with network bytes order.
 template <typename T>
 inline void
 read_number_from_big_endian_bytes( T & number, const raw_data_t & data )
@@ -195,6 +226,7 @@ read_number_from_big_endian_bytes( T & number, const raw_data_t & data )
 // write_number_to_big_endian_bytes
 //
 
+//! Save number to buffer with network bytes order.
 template <int Bytes>
 inline void
 write_number_to_big_endian_bytes( std::uint64_t& number, raw_data_t & data )
@@ -210,10 +242,18 @@ write_number_to_big_endian_bytes( std::uint64_t& number, raw_data_t & data )
 // ws_parser_t
 //
 
-//! TODO!
+//! Websocket parser.
+/*!
+	This class can parse message from binary buffer.
+
+	It is not necessary to have all buffer before parsing. Parser can process
+	pieces of data and save intermediate state.
+*/
 class ws_parser_t
 {
 	public:
+
+		//! Parse piece of data from buffer.
 		size_t
 		parser_execute( const char * data, size_t size )
 		{
@@ -232,12 +272,17 @@ class ws_parser_t
 			return parsed_bytes;
 		}
 
+		//! Check header of current websocket message is parsed.
 		bool
 		header_parsed() const
 		{
 			return m_current_state == state_t::header_parsed;
 		}
 
+		//! Reset internal state.
+		/*!
+			Need to call this function before processing next message.
+		*/
 		void
 		reset()
 		{
@@ -246,6 +291,7 @@ class ws_parser_t
 			m_expected_data.reset( websocket_first_two_bytes_size );
 		}
 
+		//! Get current mesasge details.
 		const message_details_t &
 		current_message() const
 		{
@@ -253,10 +299,17 @@ class ws_parser_t
 		}
 
 	private:
+
+		//! Buffer for parts of websocket message with known size.
+		/*!
+			Default value is first 2 bytes for flags and opcode.
+		*/
 		expected_data_t m_expected_data{ websocket_first_two_bytes_size };
 
+		//! Current websocket message details.
 		message_details_t m_current_msg;
 
+		//! Internal state.
 		enum class state_t
 		{
 			waiting_for_first_2_bytes,
@@ -265,8 +318,10 @@ class ws_parser_t
 			header_parsed
 		};
 
+		//! Current state.
 		state_t m_current_state = state_t::waiting_for_first_2_bytes;
 
+		//! Process one byte of incoming buffer.
 		void
 		process_byte( byte_t byte )
 		{
@@ -297,6 +352,10 @@ class ws_parser_t
 			}
 		}
 
+		//! Process first two bytes of message.
+		/*!
+			Parse flags, opcode, payload length and set new state.
+		*/
 		void
 		process_first_2_bytes()
 		{
@@ -331,6 +390,10 @@ class ws_parser_t
 			}
 		}
 
+		//! Process extended length.
+		/*!
+			Parse extended length and set new state.
+		*/
 		void
 		process_extended_length()
 		{
@@ -352,6 +415,10 @@ class ws_parser_t
 		}
 
 		void
+		//! Process extended length.
+		/*!
+			Parse masking key and set new state.
+		*/
 		process_masking_key()
 		{
 			parse_masking_key(
@@ -361,6 +428,7 @@ class ws_parser_t
 			m_current_state = state_t::header_parsed;
 		}
 
+		//! Parse first two bytes of message from buffer.
 		void
 		parse_first_2_bytes(
 			const raw_data_t & data )
@@ -376,6 +444,7 @@ class ws_parser_t
 			m_current_msg.m_payload_len = data[1] & payload_len_mask;
 		}
 
+		//! Parse extended length from buffer.
 		void
 		parse_ext_payload_len(
 			std::uint8_t payload_len,
@@ -393,6 +462,7 @@ class ws_parser_t
 			}
 		}
 
+		//! Parse masking key from buffer.
 		void
 		parse_masking_key(
 			bool mask_flag,
@@ -406,6 +476,7 @@ class ws_parser_t
 		}
 };
 
+//! Do msak/unmask operation with buffer.
 inline void
 mask_unmask_payload( std::uint32_t masking_key, raw_data_t & payload )
 {
@@ -429,6 +500,10 @@ mask_unmask_payload( std::uint32_t masking_key, raw_data_t & payload )
 	}
 }
 
+//! Serialize websocket message details into bytes buffer.
+/*!
+	\return buffer with written websocket message.
+*/
 inline raw_data_t
 write_message_details( const message_details_t & message )
 {
@@ -496,6 +571,10 @@ write_message_details( const message_details_t & message )
 	return result;
 }
 
+//! Serialize websocket message details into bytes buffer.
+/*!
+	\return buffer with written websocket message.
+*/
 inline raw_data_t
 write_message_details(
 	bool final,
@@ -505,6 +584,10 @@ write_message_details(
 	return write_message_details( message_details_t{ final, opcode, payload_len } );
 }
 
+//! Serialize websocket message details into bytes buffer.
+/*!
+	\return buffer with written websocket message.
+*/
 inline raw_data_t
 write_message_details(
 	bool final,
