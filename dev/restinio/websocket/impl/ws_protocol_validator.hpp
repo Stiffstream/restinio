@@ -482,8 +482,14 @@ class ws_protocol_validator_t
 		validate_close_code( uint16_t close_code )
 		{
 			if( close_code < 1000 ||
-				close_code > 1011 ||
-				close_code == 1004 ||
+				(close_code > 1011 && close_code < 3000) ||
+				close_code > 4999 )
+			{
+				set_validation_state(
+					validation_state_t::invalid_close_code );
+			}
+
+			if( close_code == 1004 ||
 				close_code == 1005 ||
 				close_code == 1006 )
 			{
