@@ -25,33 +25,6 @@ using traits_t =
 
 using http_server_t = restinio::http_server_t< traits_t >;
 
-// void
-// print_ws_header( const rws::ws_message_header_t & header )
-// {
-// 	std::cout <<
-// 		"final: " << header.m_is_final <<
-// 		", opcode: " << static_cast<int>(header.m_opcode) <<
-// 		", payload_len: " << header.m_payload_len <<
-// 		", masking_key: " << header.m_masking_key
-// 		<< std::endl;
-// }
-
-// void
-// print_ws_message( const rws::message_t & msg )
-// {
-// 	std::cout << "header: {";
-
-// 	print_ws_header(msg.header());
-
-// 	std::cout << "}, payload: '" << msg.payload() << "' (";
-
-// 	for( const auto ch : msg.payload() )
-// 	{
-// 		std::cout << std::hex << (static_cast< int >(ch) & 0xFF) << " ";
-// 	}
-
-// 	std::cout << ")" << std::endl;
-// }
 
 auto server_handler( rws::ws_handle_t & websocket )
 {
