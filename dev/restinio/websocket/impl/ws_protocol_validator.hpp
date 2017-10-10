@@ -154,8 +154,7 @@ struct unmasker_t
 			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 8 >(
 				masking_key),
 			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 0 >(
-				masking_key)
-		};
+				masking_key) };
 
 	}
 
@@ -468,7 +467,9 @@ class ws_protocol_validator_t
 		{
 			if( close_code < 1000 ||
 				close_code > 1011 ||
-				close_code == 1004 )
+				close_code == 1004 ||
+				close_code == 1005 ||
+				close_code == 1006 )
 			{
 				try_to_set_validation_state(
 					validation_state_t::invalid_close_code );
