@@ -968,7 +968,7 @@ TEST_CASE( "Invalid payload, close on first err 1" , "[ws_connection][echo][norm
 			if( indx != msg_frame.size() )
 			{
 				REQUIRE_NOTHROW(
-					asio::write( socket, asio::buffer( msg_frame.data() + indx + 1, msg_frame.size() - indx + 1 ) )
+					asio::write( socket, asio::buffer( msg_frame.data() + indx + 1, msg_frame.size() - indx - 1 ) )
 				);
 			}
 
@@ -1061,7 +1061,7 @@ TEST_CASE( "Invalid payload, close on first err 2", "[ws_connection][echo][norma
 			if( indx != msg_frame.size() )
 			{
 				REQUIRE_NOTHROW(
-					asio::write( socket, asio::buffer( msg_frame.data() + indx + 1, msg_frame.size() - indx + 1 ) )
+					asio::write( socket, asio::buffer( msg_frame.data() + indx + 1, msg_frame.size() - indx - 1 ) )
 				);
 			}
 
@@ -1160,7 +1160,7 @@ TEST_CASE( "Invalid payload, close on first err 3", "[ws_connection][echo][norma
 			if( indx != msg_frame.size() )
 			{
 				REQUIRE_NOTHROW(
-					asio::write( socket, asio::buffer( msg_frame.data() + indx + 1, msg_frame.size() - indx + 1 ) )
+					asio::write( socket, asio::buffer( msg_frame.data() + indx + 1, msg_frame.size() - indx - 1 ) )
 				);
 			}
 
