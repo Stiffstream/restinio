@@ -30,20 +30,20 @@ using raw_data_t = std::string;
 namespace impl
 {
 
-constexpr size_t WEBSOCKET_FIRST_TWO_BYTES_SIZE = 2;
-constexpr size_t WEBSOCKET_MAX_PAYLOAD_SIZE_WITHOUT_EXT = 125;
-constexpr size_t WEBSOCKET_SHORT_EXT_PAYLOAD_LENGTH = 2;
-constexpr size_t WEBSOCKET_LONG_EXT_PAYLOAD_LENGTH = 8;
-constexpr size_t WEBSOCKET_SHORT_EXT_LEN_CODE = 126;
-constexpr size_t WEBSOCKET_LONG_EXT_LEN_CODE = 127;
-constexpr size_t WEBSOCKET_MASKING_KEY_SIZE = 4;
+constexpr size_t websocket_first_two_bytes_size = 2;
+constexpr size_t websocket_max_payload_size_without_ext = 125;
+constexpr size_t websocket_short_ext_payload_length = 2;
+constexpr size_t websocket_long_ext_payload_length = 8;
+constexpr size_t websocket_short_ext_len_code = 126;
+constexpr size_t websocket_long_ext_len_code = 127;
+constexpr size_t websocket_masking_key_size = 4;
 
-constexpr byte_t BIT_FLAG_7 = 0x80;
-constexpr byte_t BIT_FLAG_6 = 0x40;
-constexpr byte_t BIT_FLAG_5 = 0x20;
-constexpr byte_t BIT_FLAG_4 = 0x10;
-constexpr byte_t OPCODE_MASK = 0x0F;
-constexpr byte_t PAYLOAD_LEN_MASK = 0x7F;
+constexpr byte_t bit_flag_7 = 0x80;
+constexpr byte_t bit_flag_6 = 0x40;
+constexpr byte_t bit_flag_5 = 0x20;
+constexpr byte_t bit_flag_4 = 0x10;
+constexpr byte_t opcode_mask = 0x0F;
+constexpr byte_t payload_len_mask = 0x7F;
 
 //
 // message_details_t
@@ -80,7 +80,7 @@ class message_details_t
 		payload_len() const
 		{
 			// 126 and 127 are codes of ext payload. 125 and lower are real payload len.
-			return m_payload_len > WEBSOCKET_MAX_PAYLOAD_SIZE_WITHOUT_EXT? m_ext_payload_len: m_payload_len;
+			return m_payload_len > websocket_max_payload_size_without_ext? m_ext_payload_len: m_payload_len;
 		}
 
 		void
@@ -110,12 +110,12 @@ class message_details_t
 		void
 		init_payload_len( size_t payload_len )
 		{
-			if( payload_len > WEBSOCKET_MAX_PAYLOAD_SIZE_WITHOUT_EXT )
+			if( payload_len > websocket_max_payload_size_without_ext )
 			{
 				// if payload greater than 2bytes-number.
 				m_payload_len = payload_len > 0xFFFF ?
-					WEBSOCKET_LONG_EXT_LEN_CODE:
-					WEBSOCKET_SHORT_EXT_LEN_CODE;
+					websocket_long_ext_len_code:
+					websocket_short_ext_len_code;
 
 				m_ext_payload_len = payload_len;
 			}
@@ -243,7 +243,7 @@ class ws_parser_t
 		{
 			m_current_state = state_t::waiting_for_first_2_bytes;
 			m_current_msg = message_details_t();
-			m_expected_data.reset( WEBSOCKET_FIRST_TWO_BYTES_SIZE );
+			m_expected_data.reset( websocket_first_two_bytes_size );
 		}
 
 		const message_details_t &
@@ -253,7 +253,7 @@ class ws_parser_t
 		}
 
 	private:
-		expected_data_t m_expected_data{ WEBSOCKET_FIRST_TWO_BYTES_SIZE };
+		expected_data_t m_expected_data{ websocket_first_two_bytes_size };
 
 		message_details_t m_current_msg;
 
@@ -305,11 +305,11 @@ class ws_parser_t
 
 			size_t payload_len = m_current_msg.m_payload_len;
 
-			if( payload_len > WEBSOCKET_MAX_PAYLOAD_SIZE_WITHOUT_EXT )
+			if( payload_len > websocket_max_payload_size_without_ext )
 			{
-				size_t expected_data_size = payload_len == WEBSOCKET_SHORT_EXT_LEN_CODE?
-					WEBSOCKET_SHORT_EXT_PAYLOAD_LENGTH:
-					WEBSOCKET_LONG_EXT_PAYLOAD_LENGTH;
+				size_t expected_data_size = payload_len == websocket_short_ext_len_code?
+					websocket_short_ext_payload_length:
+					websocket_long_ext_payload_length;
 
 				m_expected_data.reset( expected_data_size );
 
@@ -317,7 +317,7 @@ class ws_parser_t
 			}
 			else if( m_current_msg.m_mask_flag )
 			{
-				size_t expected_data_size = WEBSOCKET_MASKING_KEY_SIZE;
+				size_t expected_data_size = websocket_masking_key_size;
 				m_expected_data.reset( expected_data_size );
 
 				m_current_state = state_t::waiting_for_mask_key;
@@ -340,7 +340,7 @@ class ws_parser_t
 
 			if( m_current_msg.m_mask_flag )
 			{
-				size_t expected_data_size = WEBSOCKET_MASKING_KEY_SIZE;
+				size_t expected_data_size = websocket_masking_key_size;
 				m_expected_data.reset( expected_data_size );
 
 				m_current_state = state_t::waiting_for_mask_key;
@@ -365,15 +365,15 @@ class ws_parser_t
 		parse_first_2_bytes(
 			const raw_data_t & data )
 		{
-			m_current_msg.m_final_flag = (data[0] & BIT_FLAG_7) != 0;
-			m_current_msg.m_rsv1_flag = (data[0] & BIT_FLAG_6) != 0;
-			m_current_msg.m_rsv2_flag = (data[0] & BIT_FLAG_5) != 0;
-			m_current_msg.m_rsv3_flag = (data[0] & BIT_FLAG_4) != 0;
+			m_current_msg.m_final_flag = (data[0] & bit_flag_7) != 0;
+			m_current_msg.m_rsv1_flag = (data[0] & bit_flag_6) != 0;
+			m_current_msg.m_rsv2_flag = (data[0] & bit_flag_5) != 0;
+			m_current_msg.m_rsv3_flag = (data[0] & bit_flag_4) != 0;
 
-			m_current_msg.m_opcode = static_cast< opcode_t >( data[0] & OPCODE_MASK );
+			m_current_msg.m_opcode = static_cast< opcode_t >( data[0] & opcode_mask );
 
-			m_current_msg.m_mask_flag = (data[1] & BIT_FLAG_7) != 0;
-			m_current_msg.m_payload_len = data[1] & PAYLOAD_LEN_MASK;
+			m_current_msg.m_mask_flag = (data[1] & bit_flag_7) != 0;
+			m_current_msg.m_payload_len = data[1] & payload_len_mask;
 		}
 
 		void
@@ -381,12 +381,12 @@ class ws_parser_t
 			std::uint8_t payload_len,
 			const raw_data_t & data )
 		{
-			if( payload_len == WEBSOCKET_SHORT_EXT_LEN_CODE )
+			if( payload_len == websocket_short_ext_len_code )
 			{
 				read_number_from_big_endian_bytes(
 					m_current_msg.m_ext_payload_len, data );
 			}
-			else if( payload_len == WEBSOCKET_LONG_EXT_LEN_CODE )
+			else if( payload_len == websocket_long_ext_len_code )
 			{
 				read_number_from_big_endian_bytes(
 					m_current_msg.m_ext_payload_len, data );
@@ -436,47 +436,47 @@ write_message_details( const message_details_t & message )
 
 	byte_t byte = 0x00;
 
-	if( message.m_final_flag ) byte |= BIT_FLAG_7;
-	if( message.m_rsv1_flag ) byte |= BIT_FLAG_6;
-	if( message.m_rsv2_flag ) byte |= BIT_FLAG_5;
-	if( message.m_rsv3_flag ) byte |= BIT_FLAG_4;
+	if( message.m_final_flag ) byte |= bit_flag_7;
+	if( message.m_rsv1_flag ) byte |= bit_flag_6;
+	if( message.m_rsv2_flag ) byte |= bit_flag_5;
+	if( message.m_rsv3_flag ) byte |= bit_flag_4;
 
-	byte |= static_cast< std::uint8_t> (message.m_opcode) & OPCODE_MASK;
+	byte |= static_cast< std::uint8_t> (message.m_opcode) & opcode_mask;
 
 	result.push_back( byte );
 
 	byte = 0x00;
 
 	if( message.m_mask_flag )
-		byte |= BIT_FLAG_7;
+		byte |= bit_flag_7;
 
 	auto length = message.m_payload_len;
 
-	if( length < WEBSOCKET_SHORT_EXT_LEN_CODE )
+	if( length < websocket_short_ext_len_code )
 	{
 		byte |= length;
 		result.push_back( byte );
 	}
-	else if ( length == WEBSOCKET_SHORT_EXT_LEN_CODE )
+	else if ( length == websocket_short_ext_len_code )
 	{
-		byte |= WEBSOCKET_SHORT_EXT_LEN_CODE;
+		byte |= websocket_short_ext_len_code;
 
 		result.push_back( byte );
 
 		auto ext_len = message.m_ext_payload_len;
 
-		write_number_to_big_endian_bytes< WEBSOCKET_SHORT_EXT_PAYLOAD_LENGTH>(
+		write_number_to_big_endian_bytes< websocket_short_ext_payload_length>(
 			ext_len, result );
 	}
-	else if ( length == WEBSOCKET_LONG_EXT_LEN_CODE )
+	else if ( length == websocket_long_ext_len_code )
 	{
-		byte |= WEBSOCKET_LONG_EXT_LEN_CODE;
+		byte |= websocket_long_ext_len_code;
 
 		result.push_back( byte );
 
 		auto ext_len = message.m_ext_payload_len;
 
-		write_number_to_big_endian_bytes< WEBSOCKET_LONG_EXT_PAYLOAD_LENGTH >(
+		write_number_to_big_endian_bytes< websocket_long_ext_payload_length >(
 			ext_len, result );
 	}
 

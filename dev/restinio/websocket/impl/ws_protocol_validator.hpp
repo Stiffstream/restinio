@@ -158,7 +158,7 @@ struct unmasker_t
 
 	}
 
-	using mask_array_t = std::array< uint8_t, WEBSOCKET_MASKING_KEY_SIZE>;
+	using mask_array_t = std::array< uint8_t, websocket_masking_key_size>;
 
 	//! Bytes array with masking key.
 	mask_array_t m_mask;
@@ -383,7 +383,7 @@ class ws_protocol_validator_t
 					validation_state_t::non_zero_rsv_flags );
 			}
 			else if( is_control_frame(frame.m_opcode) && frame.payload_len() >
-				WEBSOCKET_MAX_PAYLOAD_SIZE_WITHOUT_EXT )
+				websocket_max_payload_size_without_ext )
 			{
 				set_validation_state(
 					validation_state_t::payload_len_is_too_big );
