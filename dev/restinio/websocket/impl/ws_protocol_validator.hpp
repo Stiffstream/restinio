@@ -228,6 +228,9 @@ class ws_protocol_validator_t
 					case opcode_t::connection_close_frame:
 						m_expected_close_code.reset(2);
 					break;
+
+					default:
+					break;
 				}
 
 				m_current_frame = frame;
@@ -251,7 +254,7 @@ class ws_protocol_validator_t
 
 			if( is_state_still_valid() )
 				set_validation_state(
-					validation_state_t::payload_part_is_valid);
+					validation_state_t::payload_part_is_valid );
 			else
 				return m_validation_state;
 
@@ -276,7 +279,7 @@ class ws_protocol_validator_t
 
 			if( is_state_still_valid() )
 				set_validation_state(
-					validation_state_t::payload_part_is_valid);
+					validation_state_t::payload_part_is_valid );
 			else
 				return m_validation_state;
 
@@ -394,7 +397,7 @@ class ws_protocol_validator_t
 			Do all necessary validations with payload byte.
 
 			\return unmasked byte if unmask flag is set.
-			\return copy oforiginal byte if unmask flag isn't set.
+			\return copy of original byte if unmask flag isn't set.
 		*/
 		std::uint8_t
 		process_payload_byte( std::uint8_t byte )
