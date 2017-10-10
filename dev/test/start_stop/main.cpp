@@ -31,7 +31,7 @@ TEST_CASE( "start-stop" , "[stop]" )
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.request_handler(
-					[]( auto req ){ return restinio::request_rejected(); } );
+					[]( auto ){ return restinio::request_rejected(); } );
 		} };
 
 	asio::post( http_server.io_context(),
@@ -57,7 +57,7 @@ TEST_CASE( "start-stop-stop" , "[stop]" )
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.request_handler(
-					[]( auto req ){ return restinio::request_rejected(); } );
+					[]( auto ){ return restinio::request_rejected(); } );
 		} };
 
 	asio::post( http_server.io_context(),
@@ -84,7 +84,7 @@ TEST_CASE( "start-start-stop" , "[stop]" )
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.request_handler(
-					[]( auto req ){ return restinio::request_rejected(); } );
+					[]( auto ){ return restinio::request_rejected(); } );
 		} };
 
 	asio::post( http_server.io_context(),

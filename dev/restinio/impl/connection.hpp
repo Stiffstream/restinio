@@ -328,7 +328,6 @@ class connection_t final
 		upgrade_internals_t
 		move_upgrade_internals()
 		{
-			// TODO: fix data race issue.
 			return upgrade_internals_t{
 				m_settings,
 				std::move( m_socket ),
