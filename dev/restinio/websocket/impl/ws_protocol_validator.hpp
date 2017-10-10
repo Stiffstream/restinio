@@ -213,21 +213,21 @@ class ws_protocol_validator_t
 			if( validate_frame_header( frame ) &&
 				check_previous_frame_type( frame.m_opcode ) )
 			{
-				if( frame.m_opcode == opcode_t::text_frame &&
-					frame.m_final_flag == false )
+				switch( frame.m_opcode )
 				{
-					m_previous_data_frame =
-						previous_data_frame_t::text;
-				}
-				else if( frame.m_opcode == opcode_t::binary_frame &&
-					frame.m_final_flag == false )
-				{
-					m_previous_data_frame =
-						previous_data_frame_t::binary;
-				}
-				else if( frame.m_opcode == opcode_t::connection_close_frame )
-				{
-					m_expected_close_code.reset(2);
+					case opcode_t::text_frame:
+						if( !frame.m_final_flag )
+							m_previous_data_frame = previous_data_frame_t::text;
+					break;
+
+					case opcode_t::binary_frame:
+						if( !frame.m_final_flag )
+							m_previous_data_frame = previous_data_frame_t::binary;
+					break;
+
+					case opcode_t::connection_close_frame:
+						m_expected_close_code.reset(2);
+					break;
 				}
 
 				m_current_frame = frame;
@@ -249,13 +249,19 @@ class ws_protocol_validator_t
 			if( m_working_state == working_state_t::empty_state )
 				throw exception_t( "current state is empty" );
 
-			try_to_set_validation_state(
-				validation_state_t::payload_part_is_valid) ;
+			if( is_state_still_valid() )
+				set_validation_state(
+					validation_state_t::payload_part_is_valid);
+			else
+				return m_validation_state;
 
 			for( size_t i = 0; i < size; ++i )
 			{
 				process_payload_byte(
 					static_cast<std::uint8_t>(data[i]) );
+
+				if( m_validation_state != validation_state_t::payload_part_is_valid )
+					break;
 			}
 
 			return m_validation_state;
@@ -268,13 +274,19 @@ class ws_protocol_validator_t
 			if( m_working_state == working_state_t::empty_state )
 				throw exception_t( "current state is empty" );
 
-			try_to_set_validation_state(
-				validation_state_t::payload_part_is_valid);
+			if( is_state_still_valid() )
+				set_validation_state(
+					validation_state_t::payload_part_is_valid);
+			else
+				return m_validation_state;
 
 			for( size_t i = 0; i < size; ++i )
 			{
 				data[i] = process_payload_byte(
 					static_cast<std::uint8_t>(data[i]) );
+
+				if( m_validation_state != validation_state_t::payload_part_is_valid )
+					break;
 			}
 
 			return m_validation_state;
@@ -284,12 +296,13 @@ class ws_protocol_validator_t
 		validation_state_t
 		finish_frame()
 		{
-			try_to_set_validation_state( validation_state_t::frame_is_valid );
+			if( is_state_still_valid() )
+				set_validation_state( validation_state_t::frame_is_valid );
 
 			if( m_current_frame.m_final_flag )
 			{
 				if( !m_utf8_checker.final() )
-					try_to_set_validation_state(
+					set_validation_state(
 						validation_state_t::incorrect_utf8_data );
 
 				m_utf8_checker.reset();
@@ -341,35 +354,35 @@ class ws_protocol_validator_t
 		bool
 		validate_frame_header( const message_details_t & frame )
 		{
-			try_to_set_validation_state(
+			set_validation_state(
 				validation_state_t::frame_header_is_valid );
 
 			if( !is_valid_opcode( frame.m_opcode ) )
 			{
-				try_to_set_validation_state(
+				set_validation_state(
 					validation_state_t::invalid_opcode );
 			}
 			else if( is_control_frame(frame.m_opcode) && frame.m_final_flag == false )
 			{
-				try_to_set_validation_state(
+				set_validation_state(
 					validation_state_t::non_final_control_frame );
 			}
 			else if( frame.m_mask_flag == false )
 			{
-				try_to_set_validation_state(
+				set_validation_state(
 					validation_state_t::empty_mask_from_client_side );
 			}
 			else if( frame.m_rsv1_flag != 0 ||
 				frame.m_rsv2_flag != 0 ||
 				frame.m_rsv3_flag != 0)
 			{
-				try_to_set_validation_state(
+				set_validation_state(
 					validation_state_t::non_zero_rsv_flags );
 			}
 			else if( is_control_frame(frame.m_opcode) && frame.payload_len() >
 				WEBSOCKET_MAX_PAYLOAD_SIZE_WITHOUT_EXT )
 			{
-				try_to_set_validation_state(
+				set_validation_state(
 					validation_state_t::payload_len_is_too_big );
 			}
 
@@ -395,7 +408,7 @@ class ws_protocol_validator_t
 			{
 				if( !m_utf8_checker.process_byte( byte ) )
 				{
-					try_to_set_validation_state(
+					set_validation_state(
 						validation_state_t::incorrect_utf8_data );
 				}
 			}
@@ -416,7 +429,7 @@ class ws_protocol_validator_t
 				else
 				{
 					if( !m_utf8_checker.process_byte( byte ) )
-						try_to_set_validation_state(
+						set_validation_state(
 							validation_state_t::incorrect_utf8_data );
 				}
 			}
@@ -443,7 +456,7 @@ class ws_protocol_validator_t
 			if( m_previous_data_frame == previous_data_frame_t::none &&
 				opcode == opcode_t::continuation_frame )
 			{
-				try_to_set_validation_state(
+				set_validation_state(
 					validation_state_t::continuation_frame_without_data_frame );
 
 				return false;
@@ -452,7 +465,7 @@ class ws_protocol_validator_t
 					previous_data_frame_t::none &&
 				is_data_frame( opcode ) )
 			{
-				try_to_set_validation_state(
+				set_validation_state(
 					validation_state_t::new_data_frame_without_finishing_previous );
 
 				return false;
@@ -471,31 +484,27 @@ class ws_protocol_validator_t
 				close_code == 1005 ||
 				close_code == 1006 )
 			{
-				try_to_set_validation_state(
+				set_validation_state(
 					validation_state_t::invalid_close_code );
 			}
 		}
 
+		bool
+		is_state_still_valid() const
+		{
+			return m_validation_state == validation_state_t::initial_state ||
+				m_validation_state == validation_state_t::frame_header_is_valid ||
+				m_validation_state == validation_state_t::payload_part_is_valid ||
+				m_validation_state == validation_state_t::frame_is_valid;
+		}
+
 		//! Try to set validation state.
 		/*!
-			Set validation state with new value if code of new value is
-			greater than current code.
-
-			For example normal case:
-
-			initial_state(0) ---> frame_header_is_valid(1) --->
-			payload_part_is_valid(2) ---> frame_is_valid(3)
-
-			and case with validation fails:
-
-			initial_state(0) ---> frame_header_is_valid(1) --->
-			incorrect_utf8_data(12) --|-> frame_is_valid(3)
-
+			Set validation state with new value.
 		*/
 		void
-		try_to_set_validation_state( validation_state_t state )
+		set_validation_state( validation_state_t state )
 		{
-			if( m_validation_state < state )
 				m_validation_state = state;
 		}
 
