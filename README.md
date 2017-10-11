@@ -114,29 +114,9 @@ IGNORE ALL THE FOLLOWING
 IGNORE ALL THE FOLLOWING
 
 IGNORE ALL THE FOLLOWING
-
 IGNORE ALL THE FOLLOWING
 
 ## Getting started
-
-
-Internal logic of *RESTinio* is separated from
-maintaining `asio::io_context` directly by a wrapper class.
-In most cases it would be enough to use one of standard wrappers.
-The first one is provided by
-`use_existing_io_context( asio::io_context & )`
-and is a proxy for user managed `asio::io_context` instance.
-And the second is the one provided by
-`create_child_io_context( unsigned int thread_pool_size )`
-that creates an object with `asio::io_context` inside
-that runs on a thread pool and is managed by server object.
-Child io_context running on a single thread is used in example.
-
-Template class `restinio::http_server_t<TRAITS>` encapsulates server
-logic. It has two parameters: the first one is a wrapper for
-`asio::io_context` instance passed as `io_context`,
-and the second one is a `server_settings_t<TRAITS>`
-object that defines server port, protocol (ipv4/ipv6), timeouts etc.
 
 
 Server settings are set with lambda.

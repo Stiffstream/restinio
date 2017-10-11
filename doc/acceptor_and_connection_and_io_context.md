@@ -1,6 +1,6 @@
 # *RESTinio* context entities running on asio::io_context
 
-In general *RESTinio* runs its logic on `asio::io_context`.
+*RESTinio* runs its logic on `asio::io_context`.
 *RESTinio* works with asio on the base of callbacks,
 that means tha some context is always passed from one callback to another.
 There are two main entities the contexts of which is passed between callbacks:

@@ -15,7 +15,7 @@ It easy to learn how to use *RESTinio* by example.
 ## Minimalistic hello world
 
 Here is a minimal hello world http server
-([see full example](./dev/sample/hello_world_minimal/main.cpp)):
+([see full example](../dev/sample/hello_world_minimal/main.cpp)):
 ~~~~~
 ::c++
 #include <iostream>
@@ -43,7 +43,7 @@ it hides some boilerplate code for simple common cases.
 * run server on current thread;
 * run server on thread pool.
 
-See details [here](./dev/restinio/http_server_run.hpp).
+See details [here](../dev/restinio/http_server_run.hpp).
 
 Each `restinio::run()` function creates http server instance with specified settings
 and runs it. And for also it subscribes to breakflag signals to stop the server
@@ -183,7 +183,7 @@ There are two helper functions:
 `restinio::request_accepted()` and `restinio::request_rejected()`
 for refering an itemes of enum. Both of them are used in the sample.
 
-See also a full ([sample](./dev/sample/hello_world_basic/main.cpp)).
+See also a full ([sample](../dev/sample/hello_world_basic/main.cpp)).
 
 ## Enhance request handler even more
 
@@ -325,5 +325,5 @@ restinio::run(
 Function `restinio::on_this_thread<Traits>()` involves a creation of a special type
 and from this type `restinio::run()` function deduces the trats for its server.
 
-See also a full ([sample](./dev/sample/hello_world_basic/main.cpp)).
+See also a full ([sample](../dev/sample/hello_world_basic/main.cpp)).
 

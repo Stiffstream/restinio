@@ -114,7 +114,7 @@ external_io_context( asio::io_context & ctx )
 	are called somewhere inside asio::io_context::run(). For example:
 	\code
 	// Create and initialize object.
-	restinio::http_server_t< Your_Traits > server{
+	restinio::http_server_t< my_traits_t > server{
 			restinio::own_io_context(),
 			[&]( auto & settings ){
 				//
@@ -143,7 +143,7 @@ external_io_context( asio::io_context & ctx )
 	called from any other thread. For example:
 	\code
 	asio::io_context io_ctx;
-	restinio::http_server_t< Your_Traits > server{
+	restinio::http_server_t< my_traits_t > server{
 			restinio::external_io_context(io_ctx),
 			[&]( auto & settings ) { ... } };
 
