@@ -78,23 +78,20 @@ module RestinioOpenSSLFind
   end
 
   def self.get_lib_dirs( toolset )
-    @@libs
-    if( @@libs.nil? )
-      @@libs = []
-      IO.popen( "#{toolset.cpp_compiler_name} -print-search-dirs 2>&1",
-                :err => [:child, :out] ) do |io|
-        io.each_line do |line|
-          if /^libraries: =(?<libstr>.*)/ =~ line
-            splitter = ':'
-            if 'mswin' == toolset.tag( 'target_os' )
-              splitter = ';'
-            end
-            libs += libstr.split( splitter )
+    libs = []
+    IO.popen( "#{toolset.cpp_compiler_name} -print-search-dirs 2>&1",
+              :err => [:child, :out] ) do |io|
+      io.each_line do |line|
+        if /^libraries: =(?<libstr>.*)/ =~ line
+          splitter = ':'
+          if 'mswin' == toolset.tag( 'target_os' )
+            splitter = ';'
           end
+          libs += libstr.split( splitter )
         end
       end
     end
-    @@libs
+    libs
   end
 
   def self.check_libs_available( toolset, libs )
