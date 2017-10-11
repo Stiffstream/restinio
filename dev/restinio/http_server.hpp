@@ -99,17 +99,22 @@ external_io_context( asio::io_context & ctx )
 // http_server_t
 //
 
-//FIXME: example in code must be updated!
 //! Class for http-server.
 /*!
-	With the help of this class one can run a serevr.
+	With the help of this class one can run a server.
 	Server can be started and stopped in sync or async way.
 
-	Typycal use case is:
+	Please note that it is responsibility of user to provide a working
+	context for http_server. It means that user must call
+	asio::io_context::run() on some work thread (or on several working
+	threads).
+
+	Sync way for starting and stopping a http_server can be used only if
+	http_server_t::open_sync() and http_server_t::open_async() methods
+	are called somewhere inside asio::io_context::run(). For example:
 	\code
 	// Create and initialize object.
-	restinio::http_server_t< YOUR_TRAITS >
-		server{
+	restinio::http_server_t< Your_Traits > server{
 			restinio::own_io_context(),
 			[&]( auto & settings ){
 				//
@@ -122,12 +127,43 @@ external_io_context( asio::io_context & ctx )
 						} );
 			} };
 
-	server.open();
+	// Post initial action to asio event loop.
+	asio::post( server.io_context(),
+		[&] {
+			// Starting the server in a sync way.
+			server.open_sync();
+		} );
 
 	// Running server.
+	server.io_context().run();
+	\endcode
 
-	server.close();
+	Async way for starting and stopping a http_server can be used if
+	http_server_t::open_async() and http_server_t::open_async() can be
+	called from any other thread. For example:
+	\code
+	asio::io_context io_ctx;
+	restinio::http_server_t< Your_Traits > server{
+			restinio::external_io_context(io_ctx),
+			[&]( auto & settings ) { ... } };
 
+	// Launch thread on which server will work.
+	std::thread server_thread{ [&] {
+			io_ctx.run();
+		} };
+
+	// Start server in async way. Actual start will be performed
+	// on the context of server_thread.
+	server.open_async(
+			// Ok callback. Nothing to do.
+			[]{},
+			// Error callback. Rethrow an exception.
+			[]( auto ex_ptr ) {
+				std::rethrow_exception( ex_ptr );
+			} );
+	...
+	// Wait while server_thread finishes its work.
+	server_thread.join();
 	\endcode
 */
 template < typename Traits = default_traits_t >
@@ -143,6 +179,7 @@ class http_server_t
 			io_context_holder_t io_context,
 			basic_server_settings_t< D, Traits > && settings )
 			:	m_io_context{ io_context.giveaway_context() }
+			,	m_cleanup_functor{ settings.giveaway_cleanup_func() }
 		{
 			using actual_settings_type = basic_server_settings_t<D, Traits>;
 
@@ -183,10 +220,8 @@ class http_server_t
 		//! It is allowed to inherit from http_server_t
 		virtual ~http_server_t()
 		{
-			auto acc = std::move( m_acceptor );
-			asio::post(
-				acc->get_open_close_operations_executor(),
-				[ ctx = acc ]{ ctx->ensure_close(); } );
+			// Ensure server is closed after destruction of http_server instance.
+			close_sync();
 		}
 
 		//! Get io_context on which server runs.
@@ -281,6 +316,7 @@ class http_server_t
 			if( running_state_t::running == m_running_state )
 			{
 				m_acceptor->close();
+				call_cleanup_functor();
 				m_running_state = running_state_t::not_running;
 			}
 		}
@@ -288,6 +324,9 @@ class http_server_t
 	private:
 		//! A wrapper for asio io_context where server is running.
 		io_context_shared_ptr_t m_io_context;
+
+		//! An optional user's cleanup functor.
+		cleanup_functor_t m_cleanup_functor;
 
 		//! Acceptor for new connections.
 		std::shared_ptr< acceptor_t > m_acceptor;
@@ -301,6 +340,25 @@ class http_server_t
 
 		//! Server state.
 		running_state_t m_running_state{ running_state_t::not_running };
+
+		//! Call a cleanup functor if it is defined.
+		/*!
+		 * \note
+		 * Cleanup functor can be called only once. Next call to
+		 * call_cleanup_functor() will do nothing.
+		 *
+		 * \attention
+		 * Cleanup functor can't throw.
+		 */
+		void
+		call_cleanup_functor() noexcept
+		{
+			if( m_cleanup_functor )
+			{
+				cleanup_functor_t fn{ std::move(m_cleanup_functor) };
+				fn();
+			}
+		}
 
 		//! Call callback and terminate the application if callback throws.
 		template< typename Callback >

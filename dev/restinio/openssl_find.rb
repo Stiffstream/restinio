@@ -25,7 +25,7 @@ module RestinioOpenSSLFind
     end
 
     if dir_indx_before_11 and dir_indx_after_11
-      if dir_indx_after_11 < dir_indx_after_11
+      if dir_indx_before_11 < dir_indx_after_11
         openssl_before_11
       else
         openssl_after_11
@@ -66,36 +66,32 @@ module RestinioOpenSSLFind
     end
   end
 
+  # Returns the name from environment variable OPENSSL_PRJ_FILE or
+  # name 'local-openssl.rb' if OPENSSL_PRJ_FILE is not set.
+  #
+  # Note that this file can be nonexistent. Because of that File.exist?
+  # must be used to check presence of this file.
   def self.try_to_get_custom_file
     custom_local_openssl_prj = ENV[ "OPENSSL_PRJ_FILE" ]
-    if custom_local_openssl_prj.nil?
-      custom_local_openssl_prj = 'local-openssl.rb'
-    else
-      if not File.exist?( custom_local_openssl_prj )
-        raise "unable to locate specified file #{custom_local_openssl_prj}"
-      end
-    end
+    custom_local_openssl_prj = 'local-openssl.rb' unless custom_local_openssl_prj
     custom_local_openssl_prj
   end
 
   def self.get_lib_dirs( toolset )
-    @@libs
-    if( @@libs.nil? )
-      @@libs = []
-      IO.popen( "#{toolset.cpp_compiler_name} -print-search-dirs 2>&1",
-                :err => [:child, :out] ) do |io|
-        io.each_line do |line|
-          if /^libraries: =(?<libstr>.*)/ =~ line
-            splitter = ':'
-            if 'mswin' == toolset.tag( 'target_os' )
-              splitter = ';'
-            end
-            libs += libstr.split( splitter )
+    libs = []
+    IO.popen( "#{toolset.cpp_compiler_name} -print-search-dirs 2>&1",
+              :err => [:child, :out] ) do |io|
+      io.each_line do |line|
+        if /^libraries: =(?<libstr>.*)/ =~ line
+          splitter = ':'
+          if 'mswin' == toolset.tag( 'target_os' )
+            splitter = ';'
           end
+          libs += libstr.split( splitter )
         end
       end
     end
-    @@libs
+    libs
   end
 
   def self.check_libs_available( toolset, libs )
@@ -111,11 +107,12 @@ module RestinioOpenSSLFind
   end
 
   def self.has_openssl( toolset )
-    if try_to_get_custom_file
+    custom_prj = try_to_get_custom_file
+    if File.exist?(custom_prj)
       true
     else
       libraries = get_libs( toolset )
-      if libraries
+      if !libraries.empty?
         check_libs_available( toolset, libraries )
       else
         false
@@ -124,3 +121,6 @@ module RestinioOpenSSLFind
   end
 
 end #module RestinioOpenSSLFind
+
+# vim:ts=2:sts=2:sw=2:expandtab
+

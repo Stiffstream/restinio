@@ -217,27 +217,6 @@ class acceptor_t final
 			}
 		}
 
-		//! Ensure that acceptor is closed.
-		void
-		ensure_close()
-		{
-			try
-			{
-				if( m_acceptor.is_open() )
-				{
-					close_impl();
-				}
-			}
-			catch( const std::exception & ex )
-			{
-				m_logger.error( [&]{
-					return fmt::format(
-						"acceptor ensure close error: {}",
-						ex.what() );
-				} );
-			}
-		}
-
 		auto &
 		get_open_close_operations_executor()
 		{

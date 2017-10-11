@@ -25,33 +25,48 @@ using traits_t =
 
 using http_server_t = restinio::http_server_t< traits_t >;
 
-// void
-// print_ws_header( const rws::ws_message_header_t & header )
-// {
-// 	std::cout <<
-// 		"final: " << header.m_is_final <<
-// 		", opcode: " << static_cast<int>(header.m_opcode) <<
-// 		", payload_len: " << header.m_payload_len <<
-// 		", masking_key: " << header.m_masking_key
-// 		<< std::endl;
-// }
+struct ws_message_handler_t
+{
+	void
+	operator()( rws::ws_handle_t wsh, rws::message_handle_t m )
+	{
+		if( m->opcode() == rws::opcode_t::continuation_frame )
+		{
+			m_continuation_frame_buffer.append( m->payload() );
 
-// void
-// print_ws_message( const rws::message_t & msg )
-// {
-// 	std::cout << "header: {";
+			if( m->is_final() )
+				wsh->send_message(
+					true, m_continued_frame_opcode, m_continuation_frame_buffer );
+		}
+		else if( m->opcode() == rws::opcode_t::ping_frame )
+		{
+			auto pong = *m;
+			pong.set_opcode( rws::opcode_t::pong_frame );
+			wsh->send_message( pong );
+		}
+		else if( m->opcode() == rws::opcode_t::pong_frame )
+		{
+		}
+		else if( m->opcode() == rws::opcode_t::connection_close_frame )
+		{
+			wsh->send_message( *m );
+			wsh->shutdown();
+		}
+		else
+		{
+			if( m->is_final() )
+				wsh->send_message( *m );
+			else
+			{
+				m_continued_frame_opcode = m->opcode();
+				m_continuation_frame_buffer.append( m->payload() );
+			}
+		}
+	}
 
-// 	print_ws_header(msg.header());
-
-// 	std::cout << "}, payload: '" << msg.payload() << "' (";
-
-// 	for( const auto ch : msg.payload() )
-// 	{
-// 		std::cout << std::hex << (static_cast< int >(ch) & 0xFF) << " ";
-// 	}
-
-// 	std::cout << ")" << std::endl;
-// }
+	rws::opcode_t m_continued_frame_opcode;
+	std::string m_continuation_frame_buffer;
+};
 
 auto server_handler( rws::ws_handle_t & websocket )
 {
@@ -67,38 +82,7 @@ auto server_handler( rws::ws_handle_t & websocket )
 					rws::upgrade< traits_t >(
 						*req,
 						rws::activation_t::immediate,
-						[]( auto wsh, auto m ){
-							// print_ws_message( *m );
-
-							if( m->opcode() == rws::opcode_t::continuation_frame )
- 							{
- 							}
-							else if( m->opcode() == rws::opcode_t::ping_frame )
- 							{
-								if( m->payload().size() > 125)
-								{
-									// TODO: if this is error so why send anything?
-									wsh->kill();
-								}
-
-								auto pong = *m;
-								pong.set_opcode( rws::opcode_t::pong_frame );
-								wsh->send_message( pong );
-							}
-							else if( m->opcode() == rws::opcode_t::pong_frame )
-							{
-							}
-							else if( m->opcode() == rws::opcode_t::connection_close_frame )
-							{
-								// TODO: send response if code not 1006.
-								wsh->send_message( *m );
-								wsh->shutdown();
-							}
-							else
-							{
-								wsh->send_message( *m );
-							}
-						} );
+						ws_message_handler_t{} );
 
 				return restinio::request_accepted();
 			}

@@ -83,9 +83,8 @@ int main()
 				.request_handler( server_handler( registry ) )
 				.read_next_http_message_timelimit( 10s )
 				.write_http_response_timelimit( 1s )
-				.handle_request_timeout( 1s ),
-			[&]{ registry.clear(); } );
-
+				.handle_request_timeout( 1s )
+				.cleanup_func( [&]{ registry.clear(); } ) );
 
 	}
 	catch( const std::exception & ex )
