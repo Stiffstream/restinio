@@ -125,7 +125,6 @@ class acceptor_t final
 			,	m_acceptor_options_setter{ settings.acceptor_options_setter() }
 			,	m_acceptor{ io_context }
 			,	m_executor{ io_context.get_executor() }
-			,	m_open_close_operations_executor{ io_context.get_executor() }
 			,	m_separate_accept_and_create_connect{ settings.separate_accept_and_create_connect() }
 			,	m_connection_factory{ std::move( connection_factory ) }
 			,	m_logger{ logger }
@@ -217,40 +216,13 @@ class acceptor_t final
 			}
 		}
 
-		//! Ensure that acceptor is closed.
-		void
-		ensure_close()
-		{
-			try
-			{
-				if( m_acceptor.is_open() )
-				{
-					close_impl();
-				}
-			}
-			catch( const std::exception & ex )
-			{
-				m_logger.error( [&]{
-					return fmt::format(
-						"acceptor ensure close error: {}",
-						ex.what() );
-				} );
-			}
-		}
-
-		auto &
-		get_open_close_operations_executor()
-		{
-			return  m_open_close_operations_executor;
-		}
-
-	private:
 		auto &
 		get_executor()
 		{
 			return m_executor;
 		}
 
+	private:
 		// Set a callback for a new connection.
 		void
 		accept_next( std::size_t i )
@@ -355,7 +327,6 @@ class acceptor_t final
 
 		//! Asio executor.
 		asio::executor m_executor;
-		strand_t m_open_close_operations_executor;
 
 		//! Do separate an accept operation and connection instantiation.
 		const bool m_separate_accept_and_create_connect;

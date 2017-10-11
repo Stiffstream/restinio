@@ -288,6 +288,14 @@ create_default_unique_object_instance< socket_options_setter_t >()
 }
 
 //
+// cleanup_functor_t
+//
+/*!
+ * \brief Type of holder for user's cleanup function.
+ */
+using cleanup_functor_t = std::function< void(void) >;
+
+//
 // basic_server_settings_t
 //
 
@@ -708,6 +716,30 @@ class basic_server_settings_t
 		}
 		//! \}
 
+		//! Cleanup function.
+		//! \{
+		template< typename Func >
+		Derived &
+		cleanup_func( Func && func ) &
+		{
+			m_cleanup_functor = std::move(func);
+			return reference_to_derived();
+		}
+
+		template< typename Func >
+		Derived &&
+		cleanup_func( Func && func ) &&
+		{
+			return std::move(this->cleanup_func( std::forward<Func>(func) ));
+		}
+
+		cleanup_functor_t
+		giveaway_cleanup_func()
+		{
+			return std::move(m_cleanup_functor);
+		}
+		//! \}
+
 	private:
 		Derived &
 		reference_to_derived()
@@ -781,6 +813,9 @@ class basic_server_settings_t
 
 		//! Do separate an accept operation and connection instantiation.
 		bool m_separate_accept_and_create_connect{ false };
+
+		//! Optional cleanup functor.
+		cleanup_functor_t m_cleanup_functor;
 };
 
 //

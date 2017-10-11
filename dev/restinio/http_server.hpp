@@ -143,6 +143,7 @@ class http_server_t
 			io_context_holder_t io_context,
 			basic_server_settings_t< D, Traits > && settings )
 			:	m_io_context{ io_context.giveaway_context() }
+			,	m_cleanup_functor{ settings.giveaway_cleanup_func() }
 		{
 			using actual_settings_type = basic_server_settings_t<D, Traits>;
 
@@ -183,10 +184,8 @@ class http_server_t
 		//! It is allowed to inherit from http_server_t
 		virtual ~http_server_t()
 		{
-			auto acc = std::move( m_acceptor );
-			asio::post(
-				acc->get_open_close_operations_executor(),
-				[ ctx = acc ]{ ctx->ensure_close(); } );
+			// Ensure server is closed after destruction of http_server instance.
+			close_sync();
 		}
 
 		//! Get io_context on which server runs.
@@ -209,7 +208,7 @@ class http_server_t
 			Server_Open_Error_CB && open_err_cb )
 		{
 			asio::post(
-				m_acceptor->get_open_close_operations_executor(),
+				m_acceptor->get_executor(),
 				[ this,
 					ok_cb = std::move( open_ok_cb ),
 					err_cb = std::move( open_err_cb ) ]{
@@ -254,7 +253,7 @@ class http_server_t
 			Server_Close_Error_CB && close_err_cb )
 		{
 			asio::post(
-				m_acceptor->get_open_close_operations_executor(),
+				m_acceptor->get_executor(),
 				[ this,
 					ok_cb = std::move( close_ok_cb ),
 					err_cb = std::move( close_err_cb ) ]{
@@ -281,6 +280,7 @@ class http_server_t
 			if( running_state_t::running == m_running_state )
 			{
 				m_acceptor->close();
+				call_cleanup_functor();
 				m_running_state = running_state_t::not_running;
 			}
 		}
@@ -288,6 +288,9 @@ class http_server_t
 	private:
 		//! A wrapper for asio io_context where server is running.
 		io_context_shared_ptr_t m_io_context;
+
+		//! An optional user's cleanup functor.
+		cleanup_functor_t m_cleanup_functor;
 
 		//! Acceptor for new connections.
 		std::shared_ptr< acceptor_t > m_acceptor;
@@ -301,6 +304,25 @@ class http_server_t
 
 		//! Server state.
 		running_state_t m_running_state{ running_state_t::not_running };
+
+		//! Call a cleanup functor if it is defined.
+		/*!
+		 * \note
+		 * Cleanup functor can be called only once. Next call to
+		 * call_cleanup_functor() will do nothing.
+		 *
+		 * \attention
+		 * Cleanup functor can't throw.
+		 */
+		void
+		call_cleanup_functor() noexcept
+		{
+			if( m_cleanup_functor )
+			{
+				cleanup_functor_t fn{ std::move(m_cleanup_functor) };
+				fn();
+			}
+		}
 
 		//! Call callback and terminate the application if callback throws.
 		template< typename Callback >
