@@ -208,7 +208,7 @@ class http_server_t
 			Server_Open_Error_CB && open_err_cb )
 		{
 			asio::post(
-				m_acceptor->get_executor(),
+				m_acceptor->get_open_close_operations_executor(),
 				[ this,
 					ok_cb = std::move( open_ok_cb ),
 					err_cb = std::move( open_err_cb ) ]{
@@ -253,7 +253,7 @@ class http_server_t
 			Server_Close_Error_CB && close_err_cb )
 		{
 			asio::post(
-				m_acceptor->get_executor(),
+				m_acceptor->get_open_close_operations_executor(),
 				[ this,
 					ok_cb = std::move( close_ok_cb ),
 					err_cb = std::move( close_err_cb ) ]{
