@@ -21,10 +21,9 @@ init_resp( RESP resp )
 	return resp;
 };
 
-namespace rr = restinio::router;
-using router_t = rr::express_router_t;
+using router_t = restinio::router::express_router_t;
 
-auto server_handler()
+auto create_request_handler()
 {
 	auto router = std::make_unique< router_t >();
 
@@ -56,12 +55,12 @@ auto server_handler()
 				init_resp( req->create_response() )
 						.append_header( restinio::http_field::content_type, "text/html; charset=utf-8" )
 						.set_body(
-R"-(<html>
-<head><title>Hello from RESTinio!</title></head>
-<body>
-<center><h1>Hello world</h1></center>
-</body>
-</html>)-" )
+							"<html>\r\n"
+							"  <head><title>Hello from RESTinio!</title></head>\r\n"
+							"  <body>\r\n"
+							"    <center><h1>Hello world</h1></center>\r\n"
+							"  </body>\r\n"
+							"</html>\r\n" )
 						.done();
 
 				return restinio::request_accepted();
@@ -82,13 +81,11 @@ int main()
 				restinio::single_threaded_ostream_logger_t,
 				router_t >;
 
-		run(
+		restinio::run(
 			restinio::on_this_thread<traits_t>()
+				.port( 8080 )
 				.address( "localhost" )
-				.request_handler( server_handler() )
-				.read_next_http_message_timelimit( 10s )
-				.write_http_response_timelimit( 1s )
-				.handle_request_timeout( 1s ) );
+				.request_handler( create_request_handler() );
 	}
 	catch( const std::exception & ex )
 	{

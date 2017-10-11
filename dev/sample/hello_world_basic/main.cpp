@@ -3,7 +3,7 @@
 #include <restinio/all.hpp>
 
 // Create request handler.
-auto request_handler()
+auto create_request_handler()
 {
 	return []( auto req ) {
 			if( restinio::http_method_get() == req->header().method() &&
@@ -27,11 +27,11 @@ int main()
 {
 	try
 	{
-		run(
+		restinio::run(
 			restinio::on_thread_pool( std::thread::hardware_concurrency() )
 				.port( 8080 )
 				.address( "localhost" )
-				.request_handler( request_handler() ) );
+				.request_handler( create_request_handler() ) );
 	}
 	catch( const std::exception & ex )
 	{

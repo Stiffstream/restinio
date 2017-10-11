@@ -1,7 +1,3 @@
-**NOTE** Currently this repo contains *RESTinio* version that is under development.
-
-[TOC]
-
 # What Is It?
 *RESTinio* is a header-only library for creating REST applications in c++.
 It helps to create http server that can handle requests asynchronously.
@@ -39,174 +35,91 @@ And a header-only design is a plus.
 And it happens that under such conditions you don't have a lot of options.
 So we have come up with *RESTinio*...
 
-# Obtain And Build
+# How to use it
 
-## Prerequisites
+* [Obtain And Build](./doc/obtain_and_build.md)
+* [Getting started](./doc/getting_started.md)
+* [Advanced doc](./doc/advanced_doc.md)
 
-To use *RESTinio* it is necessary to have:
+# Roadmap
 
-* Reasonably modern C++14 compiler (VC++14.0, GCC 5.3 or above, clang 3.8 or above);
-* [asio](http://think-async.com/Asio) from [git repo](https://github.com/chriskohlhoff/asio.git), commit `f5c570826d2ebf50eb38c44039181946a473148b`;
-* [nodejs/http-parser](https://github.com/nodejs/http-parser) 2.7.1;
-* [fmtlib](http://fmtlib.net/latest/index.html) 4.0.0.
-* Optional: [SObjectizer](https://sourceforge.net/projects/sobjectizer/) 5.5.19.3;
+The list of features for next releases
 
-For building samples, benchmarks and tests:
+|       Feature        | description | release  |
+|----------------------|-------------|----------|
+| HTTP client | Introduce functionality for building and sending requests and receiving and parsing results. | ? |
+| Improve router | Improve router with type conversion of parameters | ? |
+| Compresion | Support compressed content | ? |
+| Improve API | Make easy cases easy by hiding template stuff | ? |
+| Raw response | Support raw response, when response message data is fully constructed in user domain. | ? |
+| Client disconnect detection | In case client disconnects before response is ready, clean up connection. | ? |
+| Full CMake support | Add missing cmake support for [SObjectizer](https://sourceforge.net/projects/sobjectizer/) samples | ? |
 
-* [Mxx_ru](https://sourceforge.net/projects/mxxru/) 1.6.13 or above;
-* [rapidjson](https://github.com/miloyip/rapidjson) 1.1.0;
-* [json_dto](https://bitbucket.org/sobjectizerteam/json_dto-0.1) 0.1.2.1 or above;
-* [args](https://github.com/Taywee/args) 6.0.4;
-* [CATCH](https://github.com/philsquared/Catch) 1.9.6.
+## Done features
 
-## Obtaining
+|       Feature        | description | release  |
+|----------------------|-------------|----------|
+| Running server simplification | Add functions to deal with boilerplate code for running server in simple cases | 0.3.0 |
+| Improve internal design | Redesign server start/stop logic | 0.3.0 |
+| Web Sockets | Basic support for Web Sockets | 0.3.0 |
+| Acceptor options | Custom options for socket can be set in settings. | 0.3.0 |
+| Separate accept and create connection | creating connection instance that involves allocations and initialization can be done in a context that is independent to acceptors context. | 0.3.0 |
+| Concurrent accept | Server can accept several client connections concurrently. | 0.3.0 |
+| Add uri helpers | A number of functions to work with query string see [uri_helpers.hpp](./dev/restinio/uri_helpers.hpp). | 0.3.0 |
+| Improve header fields API | Type/enum support for known header fields and their values. | 0.2.2 |
+| TLS support | Sopport for HTTPS with OpenSSL | 0.2.2 |
+| External buffers | Support external (constant) buffers support for body and/or body parts. | 0.2.2 |
+| Benchmarks | Non trivial benchmarks. Comparison with other libraries with similar features on the range of various scenarios. | started independent [project](https://bitbucket.org/sobjectizerteam/restinio-benchmark-jun2017) |
+| Routers for message handlers | Support for a URI dependent routing to a set of handlers (express-like router). | 0.2.1 |
+| Bind localhost aliases | Accept "localhost" and "ip6-localhost" as address parameter for server to bound to.  | 0.2.1 |
+| Chunked transfer encoding | Support for chunked transfer encoding. Separate responses on header and body chunks, so it will be possible to send header and then body divided on chunks. | 0.2.0 |
+| HTTP pipelining | [HTTP pipelining](https://en.wikipedia.org/wiki/HTTP_pipelining) support. Read, parse and call a handler for incoming requests independently. When responses become available send them to client in order of corresponding requests. | 0.2.0 |
+| Address binding | Bind server to specific ip address. | 0.1.0 |
+| Timeout control | Enable timeout guards for operations of receiving request (read and parse complete request), handling request, write response | 0.1.0 |
+| Logging | Support for logging of internal server work. | 0.1.0 |
+| ASIO thread pool | Support ASIO running on a thread pool. | 0.1.0 |
+| IPv6 | IPv6 support. | 0.1.0 |
 
-There are two ways of obtaining *RESTinio*.
 
-* Getting from
-[repository](https://bitbucket.org/sobjectizerteam/restinio-0.2).
-In this case external dependencies must be obtained with Mxx_ru externals tool.
-* Getting
-[archive](https://bitbucket.org/sobjectizerteam/restinio-0.2/downloads/restinio-0.2.1-full.tar.bz2).
-Archive includes source code for all external dependencies.
+# License
 
-### Cloning of hg repository
+*RESTinio* is distributed under GNU Affero GPL v.3 license (see [LICENSE](./LICENSE) and [AGPL](./agpl-3.0.txt) files).
 
-```
-hg clone https://bitbucket.org/sobjectizerteam/restinio-0.2
-```
+For the license of *asio* library see COPYING file in *asio* distributive.
 
-And then:
-```
-cd restinio-0.2
-mxxruexternals
-```
-to download and extract *RESTinio*'s dependencies.
+For the license of *nodejs/http-parser* library
+see LICENSE file in *nodejs/http-parser* distributive.
 
-### MxxRu::externals recipe
+For the license of *fmtlib* see LICENSE file in *fmtlib* distributive.
 
-See MxxRu::externals recipes for *RESTinio*
-[here](./doc/MxxRu_externals_recipe.md).
+For the license of *SObjectizer* library see LICENSE file in *SObjectizer* distributive.
 
-### Getting archive
+For the license of *rapidjson* library see LICENSE file in *rapidjson* distributive.
 
-```
-wget https://bitbucket.org/sobjectizerteam/restinio-0.2/downloads/restinio-0.2.2-full.tar.bz2
-tar xjvf restinio-0.2.2-full.tar.bz2
-cd restinio-0.2.2-full
-```
+For the license of *json_dto* library see LICENSE file in *json_dto* distributive.
 
-## Build
+For the license of *args* library see LICENSE file in *args* distributive.
 
-### CMake
+For the license of *CATCH* library see LICENSE file in *CATCH* distributive.
 
-Building with CMake currently is provided for samples, tests and benches
-not depending on SObjectizer.
-To build them run the following commands:
-```
-hg clone https://bitbucket.org/sobjectizerteam/restinio-0.2
-cd restinio-0.2
-mxxruexternals
-cd dev
-mkdir cmake_build
-cd cmake_build
-cmake -DCMAKE_INSTALL_PREFIX=target -DCMAKE_BUILD_TYPE=Release ..
-make
-make install
-```
 
-Or, if getting sources from archive:
-```
-wget https://bitbucket.org/sobjectizerteam/restinio-0.2/downloads/restinio-0.2.2-full.tar.bz2
-tar xjvf restinio-0.2.2-full.tar.bz2
-cd restinio-0.2.2-full/dev
-mkdir cmake_build
-cd cmake_build
-cmake -DCMAKE_INSTALL_PREFIX=target -DCMAKE_BUILD_TYPE=Release ..
-make
-make install
-```
+IGNORE ALL THE FOLLOWING
 
-### Mxx_ru
-While *RESTinio* is header-only library, samples, tests and benches require a build.
+IGNORE ALL THE FOLLOWING
 
-Compiling with Mxx_ru:
-```
-hg clone https://bitbucket.org/sobjectizerteam/restinio-0.2
-cd restinio-0.2
-mxxruexternals
-cd dev
-ruby build.rb
-```
+IGNORE ALL THE FOLLOWING
 
-For release or debug builds use the following commands:
-```
-ruby build.rb --mxx-cpp-release
-ruby build.rb --mxx-cpp-debug
-```
+IGNORE ALL THE FOLLOWING
 
-*NOTE.* It might be necessary to set up `MXX_RU_CPP_TOOLSET` environment variable,
-see Mxx_ru documentation for further details.
+IGNORE ALL THE FOLLOWING
 
-### Dependencies default settings
+IGNORE ALL THE FOLLOWING
 
-External libraries used by *RESTinio* have the following default settings:
-
-* A standalone version of *asio* is used and a chrono library is used,
-so `ASIO_STANDALONE` and `ASIO_HAS_STD_CHRONO` defines are necessary. Also
-`ASIO_DISABLE_STD_STRING_VIEW` is defined, btcause it is a C++17 feature and
-not all compilers support it yet;
-* a less strict version of *nodejs/http-parser* is used, so the following
-definition `HTTP_PARSER_STRICT=0` is applied;
-* *fmtlib* is used as a header-only library, hence a `FMT_HEADER_ONLY`
-define is necessary;
-* for *RapidJSON* two definitions are necessary: `RAPIDJSON_HAS_STDSTRING` and
-`RAPIDJSON_HAS_CXX11_RVALUE_REFS`.
-
-# How To Use It?
+IGNORE ALL THE FOLLOWING
 
 ## Getting started
 
-To start using *RESTinio* make sure that all dependencies are available.
-The tricky one is [nodejs/http-parser](https://github.com/nodejs/http-parser),
-because it is a to be compiled unit, which can be built as a static library and
-linked to your target or can be a part of your target.
 
-To start using *RESTinio* simply include `<restinio/all.hpp>` header.
-It includes all necessary headers of the library.
-
-It easy to learn how to use *RESTinio* by example.
-Here is a hello world application
-([see full example](./dev/sample/hello_world_basic/main.cpp)):
-~~~~~
-::c++
-using http_server_t = restinio::http_server_t<>;
-
-http_server_t http_server{
-  restinio::create_child_io_context( 1 ),
-  []( auto & settings ){
-    settings.port( 8080 ).request_handler( request_handler() );
-  }
-};
-
-// Start server.
-http_server.open();
-
-// ...
-
-// Stop server.
-http_server.close();
-~~~~~
-
-Template class `restinio::http_server_t<TRAITS>` encapsulates server
-logic. It has two parameters: the first one is a wrapper for
-`asio::io_context` instance passed as `io_context`,
-and the second one is a `server_settings_t<TRAITS>`
-object that defines server port, protocol (ipv4/ipv6), timeouts etc.
-
-*RESTinio* does its networking stuff with
-[asio](http://think-async.com/Asio) library, so to run server
-it must have an `asio::io_context` instance to run on.
 Internal logic of *RESTinio* is separated from
 maintaining `asio::io_context` directly by a wrapper class.
 In most cases it would be enough to use one of standard wrappers.
@@ -218,6 +131,13 @@ And the second is the one provided by
 that creates an object with `asio::io_context` inside
 that runs on a thread pool and is managed by server object.
 Child io_context running on a single thread is used in example.
+
+Template class `restinio::http_server_t<TRAITS>` encapsulates server
+logic. It has two parameters: the first one is a wrapper for
+`asio::io_context` instance passed as `io_context`,
+and the second one is a `server_settings_t<TRAITS>`
+object that defines server port, protocol (ipv4/ipv6), timeouts etc.
+
 
 Server settings are set with lambda.
 It is more convenient to use generic lambda to omit
@@ -274,154 +194,6 @@ Otherwise handler returns `restinio::request_handling_status_t::rejected` value
 meaning that request was not accepted for handling and *RESTinio* must take care of it.
 
 ## Basic idea
-
-In general *RESTinio* runs its logic on `asio::io_context`.
-There are two major object types running:
-
-* acceptor -- receives new connections and creates connection objects that
-performs session logic;
-* connection -- does tcp io-operations, http-parsing and calls handler.
-
-### Acceptor
-
-There is a single instance of acceptor and as much connections as needed.
-
-Acceptors life cycle is trivial and is the following:
-
-1. Start listening for new connection.
-2. Receive new tcp-connection.
-3. Create connection handler object and start running it.
-4. Back to step 1'.
-
-When the server is closed cycle breaks up.
-
-To set custom options for acceptor use `server_settings_t::acceptor_options_setter()`.
-
-By default *RESTinio* accepts connections one-by-one,
-so a big number of clients initiating simultaneous connections might be a problem
-even when running `asio::io_context` on a pool of threads.
-There are a number of options to tune *RESTinio* for such cases.
-
-* Increase the number of concurrent accepts. By default *RESTinio*
-initiates only one accept operation, but when running server on
-N threads then up to N accepts can be handled concurrently.
-See `server_settings_t::concurrent_accepts_count()`.
-* After accepting new connection on socket *RESTinio* creates
-internal connection wrapper object. The creation of such object can
-be done separately (in another callback posted on asio).
-So creating connection instance that involves allocations
-and initialization can be done in a context that is independent to acceptors one.
-It makes on-accept callback to run faster, thus more connections can be
-accepted in the same time interval.
-See `server_settings_t::separate_accept_and_create_connect()`
-
-Example of using acceptor options:
-~~~~~
-::c++
-// using traits_t = ...
-restinio::http_server_t< traits_t >
-  server{
-    restinio::create_child_io_context( 4 ),
-    restinio::server_settings_t< traits_t >{}
-      .port( port )
-      .buffer_size( 1024 )
-      .max_pipelined_requests( 4 )
-      .request_handler( db )
-      // Using acceptor options:
-      .acceptor_options_setter(
-        []( auto & options ){
-          options.set_option( asio::ip::tcp::acceptor::reuse_address( true ) );
-        } )
-      .concurrent_accepts_count( 4 )
-      .separate_accept_and_create_connect( true ) };
-~~~~~
-
-### Connection
-
-Connections life cycle is more complicated and cannot be expressed lineary.
-Simultaneously connection runs two logical objectives. The first one is
-responsible for receiving requests and passing them to handler (read part) and
-the second objective is streaming resulting responses back to client (write part).
-Such logical separation comes from HTTP pipelining support and
-various types of response building strategies.
-
-Without error handling and timeouts control Read part looks like this:
-
-1. Start reading from socket.
-2. Receive a portion of data from socket and parse HTTP request out of it.
-3. If HTTP message parsing is incomplete then go back to step 1.
-4. If HTTP message parsing is complete pass request and connection to request handler.
-5. If request handler rejects request, then push not-implemented response (status 501)
-to outgoing queue and stop reading from socket.
-5. If request was accepted and the number of requests in process is less than
-`max_pipelined_requests` then go back to step 1.
-6. Stop reading socket until awaken by the write part.
-
-And the Write part looks like this:
-
-1. Wait for response pieces initiated from user domain
-either directly inside of handler call or from other context where
-response actually is being built.
-2. Push response data to outgoing queue with consideration of associated response position
-(multiple request can be in process, and response for a given request
-cannot be written to socket before writing all previous responses to it).
-3. Check if there is outgoing data ready to send.
-4. If there is no ready data available then go back to step 1.
-5. Send ready data.
-6. Wait for write operation to complete. If more response pieces comes while
-write operation runs it is simply received (steps 1-2 without any further go).
-7. After write operation completes:
-if last committed response was marked to close connection
-then connection is closed and destroyed.
-8. If it appears that the room for more pipeline requests became available again
-then awake the read part.
-9. Go back to step 3.
-
-Of course implementation has error checks. Also implementation controls timeouts of
-operations that are spread in time:
-
-* reading the request: from starting reading bytes from socket up to
-parsing a complete http-message;
-* handling the request: from passing request data and connection handle
-to request handler up to getting response to be written to socket;
-* writing response to socket.
-
-When handling a request there are two possible cases:
-
-* response is created inside the request handlers call;
-* request handler delegates handling job to other context via
-some kind of async API.
-
-The first case is trivial and response is simply begins to be written.
-
-The second case and its possibility is a key point of *RESTinio* being created for.
-As request data and connection handle are wrapped in shared pointers
-so they can be moved to other context.
-So it is possible to create handlers that can interact with async API.
-When response data is ready response can be built and sent using request handle.
-After response building is complete connection handle
-will post the necessary job to run on host `asio::io_context`.
-So one can perform asynchronous request handling and
-not to block worker threads.
-
-To set custom options for acceptor use `server_settings_t::socket_options_setter()`:
-~~~~~
-::c++
-// using traits_t = ...
-restinio::http_server_t< traits_t >
-  server{
-    restinio::create_child_io_context( 4 ),
-    restinio::server_settings_t< traits_t >{}
-      .port( port )
-      .buffer_size( 1024 )
-      .max_pipelined_requests( 4 )
-      .request_handler( db )
-      // Using custom socket options:
-      .socket_options_setter(
-        []( auto & options ){
-          options.set_option( asio::ip::tcp::no_delay{ true } );
-        } ) };
-~~~~~
 
 ## Class *http_server_t*
 
@@ -1114,61 +886,3 @@ http_server.open();
 ```
 
 See full [example](./dev/sample/hello_world_https/main.cpp) for details.
-
-# Roadmap
-
-The list of features for next releases
-
-|       Feature        | description | release  |
-|----------------------|-------------|----------|
-| HTTP client | Introduce functionality for building and sending requests and receiving and parsing results. | ? |
-| Web Sockets | Support for Web Sockets | ? |
-| Improve router | Improve router with type conversion of parameters | ? |
-| Compresion | Support compressed content | ? |
-| Improve API | Make easy cases easy by hiding template stuff | ? |
-| Raw response | Support raw response, when response message data is fully constructed in user domain. | ? |
-| Client disconnect detection | In case client disconnects before response is ready, clean up connection. | ? |
-| Full CMake support | Add missing cmake support for [SObjectizer](https://sourceforge.net/projects/sobjectizer/) samples | ? |
-
-## Done features
-
-|       Feature        | description | release  |
-|----------------------|-------------|----------|
-| Acceptor options | Custom options for socket can be set in settings. | 0.2.3 |
-| Separate accept and create connection | creating connection instance that involves allocations and initialization can be done in a context that is independent to acceptors context. | 0.2.3 |
-| Concurrent accept | Server can accept several client connections concurrently. | 0.2.3 |
-| Add uri helpers | A number of functions to work with query string see [uri_helpers.hpp](./dev/restinio/uri_helpers.hpp). | 0.2.3 |
-| Improve header fields API | Type/enum support for known header fields and their values. | 0.2.2 |
-| TLS support | Sopport for HTTPS with OpenSSL | 0.2.2 |
-| External buffers | Support external (constant) buffers support for body and/or body parts. | 0.2.2 |
-| Benchmarks | Non trivial benchmarks. Comparison with other libraries with similar features on the range of various scenarios. | started independent [project](https://bitbucket.org/sobjectizerteam/restinio-benchmark-jun2017) |
-| Routers for message handlers | Support for a URI dependent routing to a set of handlers (express-like router). | 0.2.1 |
-| Bind localhost aliases | Accept "localhost" and "ip6-localhost" as address parameter for server to bound to.  | 0.2.1 |
-| Chunked transfer encoding | Support for chunked transfer encoding. Separate responses on header and body chunks, so it will be possible to send header and then body divided on chunks. | 0.2.0 |
-| HTTP pipelining | [HTTP pipelining](https://en.wikipedia.org/wiki/HTTP_pipelining) support. Read, parse and call a handler for incoming requests independently. When responses become available send them to client in order of corresponding requests. | 0.2.0 |
-| Address binding | Bind server to specific ip address. | 0.1.0 |
-| Timeout control | Enable timeout guards for operations of receiving request (read and parse complete request), handling request, write response | 0.1.0 |
-| Logging | Support for logging of internal server work. | 0.1.0 |
-| ASIO thread pool | Support ASIO running on a thread pool. | 0.1.0 |
-| IPv6 | IPv6 support. | 0.1.0 |
-
-# License
-
-*RESTinio* is distributed under GNU Affero GPL v.3 license (see [LICENSE](./LICENSE) and [AGPL](./agpl-3.0.txt) files).
-
-For the license of *asio* library see COPYING file in *asio* distributive.
-
-For the license of *nodejs/http-parser* library
-see LICENSE file in *nodejs/http-parser* distributive.
-
-For the license of *fmtlib* see LICENSE file in *fmtlib* distributive.
-
-For the license of *SObjectizer* library see LICENSE file in *SObjectizer* distributive.
-
-For the license of *rapidjson* library see LICENSE file in *rapidjson* distributive.
-
-For the license of *json_dto* library see LICENSE file in *json_dto* distributive.
-
-For the license of *args* library see LICENSE file in *args* distributive.
-
-For the license of *CATCH* library see LICENSE file in *CATCH* distributive.
