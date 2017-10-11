@@ -487,6 +487,8 @@ class ws_protocol_validator_t
 			{
 				set_validation_state(
 					validation_state_t::invalid_close_code );
+
+				return;
 			}
 
 			if( close_code == 1004 ||
@@ -495,9 +497,12 @@ class ws_protocol_validator_t
 			{
 				set_validation_state(
 					validation_state_t::invalid_close_code );
+
+				return;
 			}
 		}
 
+		//! Check validation state is still valid.
 		bool
 		is_state_still_valid() const
 		{
