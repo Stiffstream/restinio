@@ -5,8 +5,8 @@ For a quik start see [getting started](./doc/getting_started.md).
 To learn more about *RESTinio* and how it works see the following docs:
 
 * [basic idea](./basic_idea.md);
-* [response builder](./response_builder.md);
 * [traits](./traits.md);
+* [response builder](./response_builder.md);
 * [server settings](./server_settings.md);
 * [express router.md](./express_router.md);
 * [RESTinio* context entities running on asio::io_context](./acceptor_and_connection_and_io_context.md);
