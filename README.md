@@ -1289,6 +1289,59 @@ restinio::http_server_t< traits_t >
 
 # Using external io_context
 
+*RESTinio* can run its logic on externals io_context.
+So, for example, it is possible to run more than one server using the same io_context:
+~~~~~
+::c++
+// External io_context.
+asio::io_context io_context;
+
+using server_t = restinio::http_server_t<>;
+using settings_t = restinio::server_settings_t<>;
+
+server_t srv1{
+  restinio::external_io_context( io_context ),
+  settings_t{}
+    .port( 8080 )
+    .address( "localhost" )
+    .request_handler( create_request_handler( "server1" ) ) };
+
+server_t srv2{
+  restinio::external_io_context( io_context ),
+  settings_t{}
+    .port( 8081 )
+    .address( "localhost" )
+    .request_handler( create_request_handler( "server2" ) ) };
+
+asio::signal_set break_signals{ io_context, SIGINT };
+break_signals.async_wait(
+  [&]( const asio::error_code & ec, int ){
+    if( !ec )
+    {
+      srv1.close_sync();
+      srv2.close_sync();
+    }
+  } );
+
+srv1.open_async(
+  []{ /* Ok. */},
+  []( std::exception_ptr ex ){
+    std::rethrow_exception( ex );
+  } );
+srv2.open_async(
+  []{ /* Ok. */},
+  []( std::exception_ptr ex ){
+    std::rethrow_exception( ex );
+  } );
+
+io_context.run();
+~~~~~
+
+Helper function `restinio::external_io_context()`
+create such io_context holder that passes to server only its reference.
+
+See also a full [sample](./dev/sample/using_external_io_context/main.cpp).
+
 # Buffers
 
 RESTinio has a capability to receive not only string buffers but also
