@@ -519,7 +519,7 @@ using single_thread_traits_t =
   traits_t< Timer_Factory, Logger, Request_Handler, noop_strand_t >; // Implementation omitted.
 ~~~~~
 
-Refer to [Traits](#markdown-header-traits) and [restinio/traits.hpp](./dev/restinio/traits.hpp) for details.
+Refer to [Traits](#markdown-header-traits_1) and [restinio/traits.hpp](./dev/restinio/traits.hpp) for details.
 
 ## Class *http_server_t<Traits>*
 
@@ -712,7 +712,7 @@ socket_options_setter and cleanup_func.
 
 When `http_server_t` instance is created all settings are checked to be properly instantiated.
 
-Refer to [server settings](#markdown-header-server-settings) and[restinio/settings.hpp](./dev/restinio/settings.hpp for details.
+Refer to [server settings](#markdown-header-server-settings) and [restinio/settings.hpp](./dev/restinio/settings.hpp for details.
 
 # Traits
 
@@ -862,7 +862,7 @@ eliminate overhead of `asio::strand`.
 ## stream_socket_t
 
 `stream_socket_t` allows to customize underlying socket type,
-so it possible to create https server using identical interface (see [TLS support](#markdown-header-tls-support.md)).
+so it possible to create https server using identical interface (see [TLS support](#markdown-header-tls-support)).
 
 # Response builder
 
