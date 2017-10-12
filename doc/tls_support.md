@@ -44,4 +44,4 @@ restinio::run(
 // ...
 ~~~~~
 
-See full [example](../dev/sample/hello_world_https/main.cpp) for details.
+See full [sample](../dev/sample/hello_world_https/main.cpp) for details.

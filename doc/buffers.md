@@ -26,7 +26,6 @@ class must be used. There is a helper function `const_buffer()` that helps to cr
 
 ~~~~~
 ::c++
-
 // Request handler:
 []( restinio::request_handle_t req ){
   // Create response builder.

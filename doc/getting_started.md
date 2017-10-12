@@ -187,42 +187,14 @@ See also a full ([sample](../dev/sample/hello_world_basic/main.cpp)).
 
 ## Enhance request handler even more
 
-One of the reasons to create *RESTinio* was an ability to have
-[express](https://expressjs.com/)-like request handler router.
+Here we will add basic routing for incoming requests.
+*RESTinio* has [express](https://expressjs.com/)-like request handler router
+(see [express router](./express_router.md) for more deteils).
 
-Since v 0.2.1 *RESTinio* has a router based on idea borrowed
-from [express](https://expressjs.com/) - a JavaScript framework.
-
-Routers acts as a request handler (it means it is a function-object
-that can be called as a request handler).
-But router aggregates several handlers and picks one or none of them to handle the request.
-The choice of the handler to execute depends on request target and HTTP method.
-If router finds no handler matching request then it rejects it.
-There is a difference between ordinary restinio request handler
-and the one that is used with experss router and is bound to concrete endpoint.
 The signature of a handlers that can be put in router
 has an additional parameter -- a container with parameters extracted from URI.
 
-Express router is defined by `express_router_t` class.
-Its implementation is inspired by
-[express-router](https://expressjs.com/en/starter/basic-routing.html).
-It allows to define route path with injection of parameters that become available for handlers.
-For example the following code sets a handler with 2 parameters:
-~~~~~
-::c++
-  router.http_get(
-    R"(/article/:article_id/:page(\d+))",
-    []( auto req, auto params ){
-      const auto article_id = params[ "article_id" ];
-      auto page = std::to_string( params[ "page" ] );
-      // ...
-    } );
-~~~~~
-
-The first parameter is still request handle, and the second parameter is
-an instance of `route_params_t` that holds parameters of the request.
-
-Lets enhance how we can use express router in a sample request handle:
+Lets see how we can use express router in a sample request handle:
 ~~~~~
 ::c++
 using router_t = restinio::router::express_router_t;
