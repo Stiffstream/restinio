@@ -57,16 +57,10 @@ int main()
 				}
 			} );
 
-		srv1.open_async(
-			[]{ /* Ok. */},
-			[]( std::exception_ptr ex ){
-				std::rethrow_exception( ex );
-			} );
-		srv2.open_async(
-			[]{ /* Ok. */},
-			[]( std::exception_ptr ex ){
-				std::rethrow_exception( ex );
-			} );
+		asio::post( io_context, [&]{
+			srv1.open_sync();
+			srv2.open_sync();
+		} );
 
 		io_context.run();
 	}
