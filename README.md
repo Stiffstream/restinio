@@ -468,7 +468,7 @@ When describing  *RESTinio* http server there are three abstractions
 vital for understanding of how to use it.
 
 * `http_server_t<Traits>` - a class representing http server.
-* `http_server_settings_t<Traits>` - a class representing server settings.
+* `server_settings_t<Traits>` - a class representing server settings.
 * `Traits` - a customization type for previous abstractions,
 that makes it possible to tune concrete server implementaion.
 
