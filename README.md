@@ -8,10 +8,9 @@ It helps to create http server that can handle requests asynchronously.
 Currently it is in beta state and represents our solution for the problem of
 being able to handle request asynchronously with additional features.
 
-RESTinio is distributed on dual-license mode.
-There is a GNU Affero GPL v.3 license for usage of RESTinio in OpenSource software.
-There is also a commercial license for usage of RESTinio in proprietary projects
-(contact "info at stiffstream dot com" for more information).
+RESTinio is distributed BSD-3-CLAUSE license. General support is provided via
+Issues section on Bitbucket. If you need commercial support then contact "info
+at stiffstream dot com" for more information.
 
 ## Why creating yet another library of that kind?
 
@@ -710,7 +709,7 @@ socket_options_setter and cleanup_func.
 
 When `http_server_t` instance is created all settings are checked to be properly instantiated.
 
-Refer to [server settings](#markdown-header-server-settings) and [restinio/settings.hpp](./dev/restinio/settings.hpp for details.
+Refer to [server settings](#markdown-header-server-settings) and [restinio/settings.hpp](./dev/restinio/settings.hpp) for details.
 
 # Traits
 
@@ -1478,7 +1477,7 @@ See full [sample](./dev/sample/hello_world_https/main.cpp) for details.
 
 # License
 
-*RESTinio* is distributed under GNU Affero GPL v.3 license (see [LICENSE](./LICENSE) and [AGPL](./agpl-3.0.txt) files).
+*RESTinio* is distributed under BSD-3-CLAUSE license (see [LICENSE](./LICENSE) file).
 
 For the license of *asio* library see COPYING file in *asio* distributive.
 
