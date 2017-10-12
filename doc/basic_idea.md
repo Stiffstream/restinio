@@ -37,47 +37,29 @@ There is a helper classes for working with traits:
 ~~~~~
 ::c++
 template <
-		typename Timer_Factory,
-		typename Logger,
-		typename Request_Handler = default_request_handler_t,
-		typename Strand = asio::strand< asio::executor >,
-		typename Socket = asio::ip::tcp::socket >
+    typename Timer_Factory,
+    typename Logger,
+    typename Request_Handler = default_request_handler_t,
+    typename Strand = asio::strand< asio::executor >,
+    typename Socket = asio::ip::tcp::socket >
 struct traits_t; // Implementation omitted.
 
 template <
-		typename Timer_Factory,
-		typename Logger,
-		typename Request_Handler = default_request_handler_t >
+    typename Timer_Factory,
+    typename Logger,
+    typename Request_Handler = default_request_handler_t >
 using single_thread_traits_t =
-	traits_t< Timer_Factory, Logger, Request_Handler, noop_strand_t >; // Implementation omitted.
+  traits_t< Timer_Factory, Logger, Request_Handler, noop_strand_t >; // Implementation omitted.
 ~~~~~
 
-Refer to ([traits.hpp](../dev/restinio/traits.hpp)) for details.
-
-### List of types that must be defined be *Traits*
-
-* `timer_factory_t` defines the logic of how timeouts are managed;
-* `logger_t` defines logger that is used by *RESTinio* to track its inner logic;
-* `request_handler_t` defines a function-like type to be used as request handler;
-* `strand_t` - defines a class that is used by connection as a wrapper
-for its callback-handlers running on `asio::io_context` thread(s)
-in order to guarantee serialized callbacks invocation
-(see [asio doc](https://chriskohlhoff.github.io/networking-ts-doc/doc/networking_ts/reference/strand.html)).
-Actually there are two options for the strand type:
-`asio::strand< asio::executor >` and `asio::executor`.
-The first is a real strand that guarantees serialized invocation and
-the second one is simply a default executor to eliminate unnecessary overhead
-when running `asio::io context` on a single thread;
-* `stream_socket_t` is a customization point that tells restinio
-what type of socket used for connections. This parameter allows restinio
-to support TLS connection (see [TLS support](./tls_support.md)).
+Refer to [Traits](./traits.md) and [restinio/traits.hpp](../dev/restinio/traits.hpp) for details.
 
 ## Class *http_server_t<Traits>*
 
 Class `http_server_t<Traits>` is a template class parameterized with a single template parameter: `Traits`.
 Its meaning is directly depicted in its name, `http_server_t<Traits>`
 represents http-server.
-It is handy to consider `http_server_t<TRAITS>` class as a root class
+It is handy to consider `http_server_t<Traits>` class as a root class
 for the rest of *RESTinio* ecosystem running behind it, because pretty much all of them are
 also template types parameterized with the same `Traits` parameter.
 
@@ -128,8 +110,139 @@ To create the such holder use on of the following functions:
 
 ### Running server
 
-Refer to ([http_server.hpp](../dev/restinio/http_server.hpp)) for details.
+To run server there are open()/close() methods :
+~~~~~
+::c++
+class http_server_t
+{
+  // ...
+  public:
+    template <
+        typename Server_Open_Ok_CB,
+        typename Server_Open_Error_CB >
+    void
+    open_async(
+      Server_Open_Ok_CB && open_ok_cb,
+      Server_Open_Error_CB && open_err_cb )
 
-## Class *http_server_settings_t<Traits>*
+    void
+    open_sync();
 
-Refer to ([settings.hpp](./dev/restinio/settings.hpp)) for details.
+    template <
+        typename Server_Close_Ok_CB,
+        typename Server_Close_Error_CB >
+    void
+    close_async(
+      Server_Close_Ok_CB && close_ok_cb,
+      Server_Close_Error_CB && close_err_cb );
+
+    void
+    close_sync();
+    //...
+}
+~~~~~
+
+There are sync methods for starting/stoping server and async.
+To choose the right method it is necessary to understand
+that *RESTinio* doesn't start and run io_context that it runs on.
+So user is responsible for running io_context.
+Sync versions of `open()/close()` methods assume they are called on
+the context of a running io_context. For example:
+~~~~~
+::c++
+// Create and initialize object.
+restinio::http_server_t< my_traits_t > server{
+  restinio::own_io_context(),
+  [&]( auto & settings ){
+    //
+    settings
+      .port( args.port() )
+      // .set_more_params( ... )
+      .request_handler(
+        []( restinio::request_handle_t req ){
+            // Handle request.
+        } );
+  } };
+
+// Post initial action to asio event loop.
+asio::post( server.io_context(),
+  [&] {
+    // Starting the server in a sync way.
+    server.open_sync();
+  } );
+
+// Running server.
+server.io_context().run();
+~~~~~
+
+Async versions of `open()/close()` methods can be used from any thread.
+But it is not guaranteed that server is already  started when method finishes.
+When using async_open() user provides two callbacks, the first one is called if server starts
+successfully, and the second one is for handling error.
+For example:
+~~~~~
+::c++
+asio::io_context io_ctx;
+restinio::http_server_t< my_traits_t > server{
+    restinio::external_io_context(io_ctx),
+    [&]( auto & settings ) { ... } };
+
+// Launch thread on which server will work.
+std::thread server_thread{ [&] {
+    io_ctx.run();
+  } };
+
+// Start server in async way. Actual start will be performed
+// on the context of server_thread.
+server.open_async(
+    // Ok callback. Nothing to do.
+    []{},
+    // Error callback. Rethrow an exception.
+    []( auto ex_ptr ) {
+      std::rethrow_exception( ex_ptr );
+    } );
+...
+// Wait while server_thread finishes its work.
+server_thread.join();
+~~~~~
+
+Refer to ([restinio/http_server.hpp](../dev/restinio/http_server.hpp)) for details.
+
+## Class *server_settings_t<Traits>*
+
+Class `server_settings_t<Traits>` serves to pass settings to `http_server_t<Traits>`.
+It is defined in [restinio/settings.hpp](../dev/restinio/settings.hpp);
+
+For each parameter a setter/getter pair is provided.
+While setting most of parameters is pretty straightforward,
+there are some parameters with a bit tricky setter/getter semantics.
+They are request_handler, timer_factory, logger, acceptor_options_setter,
+socket_options_setter and cleanup_func.
+
+For example setter for request_handler looks like this:
+~~~~~
+::c++
+template< typename... PARAMS >
+server_settings_t &
+request_handler( PARAMS &&... params );
+~~~~~
+
+When called an instance of `std::unique_ptr<Traits::request_handler_t>`
+will be created with specified `params`.
+If no constructor with such parameters is available, then compilation error will occur.
+If `request_handler_t` has a default constructor then it is not
+mandatory to call setter -- the default constructed instance will be used.
+But there is an exception for `std::function` type,
+because even though it has a default constructor
+it will be useless when constructed in such a way.
+
+Request handler is constructed as unique_ptr, then getter
+returns unique_ptr value with ownership, so while manipulating
+`server_settings_t` object don't use it.
+
+The same applies to timer_factory,logger parameters, acceptor_options_setter,
+socket_options_setter and cleanup_func.
+
+When `http_server_t` instance is created all settings are checked to be properly instantiated.
+
+Refer to [server settings](./server_settings.md) and[restinio/settings.hpp](../dev/restinio/settings.hpp for details.

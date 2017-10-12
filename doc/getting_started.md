@@ -75,22 +75,22 @@ As request handler is a function-object we will use a function to create one:
 // Create request handler.
 auto create_request_handler()
 {
-	return []( auto req ) {
-			if( restinio::http_method_get() == req->header().method() &&
-				req->header().request_target() == "/" )
-			{
-				req->create_response()
-					.append_header( restinio::http_field::server, "RESTinio hello world server" )
-					.append_header_date_field()
-					.append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
-					.set_body( "Hello world!")
-					.done();
+  return []( auto req ) {
+      if( restinio::http_method_get() == req->header().method() &&
+        req->header().request_target() == "/" )
+      {
+        req->create_response()
+          .append_header( restinio::http_field::server, "RESTinio hello world server" )
+          .append_header_date_field()
+          .append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
+          .set_body( "Hello world!")
+          .done();
 
-				return restinio::request_accepted();
-			}
+        return restinio::request_accepted();
+      }
 
-			return restinio::request_rejected();
-		};
+      return restinio::request_rejected();
+    };
 }
 ~~~~~
 
@@ -112,22 +112,22 @@ that has the following API (details are omitted):
 */
 class request_t // Base class omitted.
 {
-	// Internals and implementation omitted.
-	public:
-		//! Get request header.
-		const http_request_header_t &
-		header() const;
+  // Internals and implementation omitted.
+  public:
+    //! Get request header.
+    const http_request_header_t &
+    header() const;
 
-		//! Get request body.
-		const std::string &
-		body() const;
+    //! Get request body.
+    const std::string &
+    body() const;
 
-		//! Create response.
-		template < typename Output = restinio_controlled_output_t >
-		auto
-		create_response(
-			std::uint16_t status_code = 200,
-			std::string reason_phrase = "OK" );
+    //! Create response.
+    template < typename Output = restinio_controlled_output_t >
+    auto
+    create_response(
+      std::uint16_t status_code = 200,
+      std::string reason_phrase = "OK" );
 };
 ~~~~~
 
@@ -171,11 +171,11 @@ Any request handler must return a value of `request_handling_status_t` enum:
 ::c++
 enum class request_handling_status_t : std::uint8_t
 {
-	//! Request accepted for handling.
-	accepted,
+  //! Request accepted for handling.
+  accepted,
 
-	//! Request wasn't accepted for handling.
-	rejected
+  //! Request wasn't accepted for handling.
+  rejected
 };
 ~~~~~
 
@@ -229,49 +229,49 @@ using router_t = restinio::router::express_router_t;
 
 auto create_server_handler()
 {
-	auto router = std::make_unique< router_t >();
+  auto router = std::make_unique< router_t >();
 
-	router->http_get(
-		"/",
-		[]( auto req, auto ){
-				init_resp( req->create_response() )
-					.append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
-					.set_body( "Hello world!")
-					.done();
+  router->http_get(
+    "/",
+    []( auto req, auto ){
+        init_resp( req->create_response() )
+          .append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
+          .set_body( "Hello world!")
+          .done();
 
-				return restinio::request_accepted();
-		} );
+        return restinio::request_accepted();
+    } );
 
-	router->http_get(
-		"/json",
-		[]( auto req, auto ){
-				init_resp( req->create_response() )
-					.append_header( restinio::http_field::content_type, "text/json; charset=utf-8" )
-					.set_body( R"-({"message" : "Hello world!"})-")
-					.done();
+  router->http_get(
+    "/json",
+    []( auto req, auto ){
+        init_resp( req->create_response() )
+          .append_header( restinio::http_field::content_type, "text/json; charset=utf-8" )
+          .set_body( R"-({"message" : "Hello world!"})-")
+          .done();
 
-				return restinio::request_accepted();
-		} );
+        return restinio::request_accepted();
+    } );
 
-	router->http_get(
-		"/html",
-		[]( auto req, auto ){
-				init_resp( req->create_response() )
-						.append_header( restinio::http_field::content_type, "text/html; charset=utf-8" )
-						.set_body(
-							"<html>\r\n"
-							"  <head><title>Hello from RESTinio!</title></head>\r\n"
-							"  <body>\r\n"
-							"    <center><h1>Hello world</h1></center>\r\n"
-							"  </body>\r\n"
-							"</html>\r\n" )
-						.done();
+  router->http_get(
+    "/html",
+    []( auto req, auto ){
+        init_resp( req->create_response() )
+            .append_header( restinio::http_field::content_type, "text/html; charset=utf-8" )
+            .set_body(
+              "<html>\r\n"
+              "  <head><title>Hello from RESTinio!</title></head>\r\n"
+              "  <body>\r\n"
+              "    <center><h1>Hello world</h1></center>\r\n"
+              "  </body>\r\n"
+              "</html>\r\n" )
+            .done();
 
-				return restinio::request_accepted();
-		} );
+        return restinio::request_accepted();
+    } );
 
 
-	return router;
+  return router;
 }
 ~~~~~
 
@@ -302,10 +302,10 @@ In this sample we explicitly define a traits to use:
 using router_t = restinio::router::express_router_t;
 
 using traits_t =
-	restinio::traits_t<
-		restinio::asio_timer_factory_t,
-		restinio::single_threaded_ostream_logger_t,
-		router_t >;
+  restinio::traits_t<
+    restinio::asio_timer_factory_t,
+    restinio::single_threaded_ostream_logger_t,
+    router_t >;
 ~~~~~
 
 Here we use a helper class `restinio::traits_t`
@@ -316,10 +316,10 @@ And to run the server we need to point the traits we are using:
 ~~~~~
 ::c++
 restinio::run(
-	restinio::on_this_thread<traits_t>() // Use custom traits.
-		.port( 8080 )
-		.address( "localhost" )
-		.request_handler( create_request_handler() );
+  restinio::on_this_thread<traits_t>() // Use custom traits.
+    .port( 8080 )
+    .address( "localhost" )
+    .request_handler( create_request_handler() );
 ~~~~~
 
 Function `restinio::on_this_thread<Traits>()` involves a creation of a special type

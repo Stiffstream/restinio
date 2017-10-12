@@ -110,7 +110,7 @@ external_io_context( asio::io_context & ctx )
 	threads).
 
 	Sync way for starting and stopping a http_server can be used only if
-	http_server_t::open_sync() and http_server_t::open_async() methods
+	http_server_t::open_sync() and http_server_t::close_sync() methods
 	are called somewhere inside asio::io_context::run(). For example:
 	\code
 	// Create and initialize object.
