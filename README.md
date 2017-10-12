@@ -234,63 +234,49 @@ and listen for connections on port 8080.
 
 Lets see a more complicated request handler and look at what it does.
 
-As request handler is a function-object we will use a function to create one:
+Let's use the following function as a request handler:
 ~~~~~
 ::c++
-// Create request handler.
-auto create_request_handler()
+restinio::request_handling_status_t handler(restinio::request_handle_t req);
 {
-  return []( auto req ) {
-      if( restinio::http_method_get() == req->header().method() &&
-        req->header().request_target() == "/" )
-      {
-        req->create_response()
-          .append_header( restinio::http_field::server, "RESTinio hello world server" )
-          .append_header_date_field()
-          .append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
-          .set_body( "Hello world!")
-          .done();
+  if( restinio::http_method_get() == req->header().method() &&
+      req->header().request_target() == "/" )
+  {
+    req->create_response()
+      .append_header( restinio::http_field::server, "RESTinio hello world server" )
+      .append_header_date_field()
+      .append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
+      .set_body( "Hello world!")
+      .done();
+    return restinio::request_accepted();
+  }
+  return restinio::request_rejected();
+}
 
-        return restinio::request_accepted();
-      }
+int main()
+{
+  restinio::run(
+    restinio::on_this_thread()
+      .port(8080).address("localhost")
+      .request_handler(handler));
 
-      return restinio::request_rejected();
-    };
+  return 0;
 }
 ~~~~~
 
-Function `create_request_handler()` creates a lambda function
-with the signature that later becomes the following (with concrete types):
-~~~~~
-::c++
-restinio::request_handling_status_t func( restinio::request_handle_t req );
-~~~~~
-
-Function has a single parameter that holds a hanle on actual request - `restinio::request_t`
+Function has a single parameter that holds a handle on actual request - `restinio::request_t`
 that has the following API (details are omitted):
 ~~~~~
 ::c++
-/! HTTP Request data.
-/*!
-  Provides acces to header and body, and creates response builder
-  for a given request.
-*/
 class request_t // Base class omitted.
 {
-  // Internals and implementation omitted.
   public:
-    //! Get request header.
-    const http_request_header_t &
-    header() const;
+    const http_request_header_t & header() const;
 
-    //! Get request body.
-    const std::string &
-    body() const;
+    const std::string & body() const;
 
-    //! Create response.
-    template < typename Output = restinio_controlled_output_t >
-    auto
-    create_response(
+    template <typename Output = restinio_controlled_output_t>
+    auto create_response(
       std::uint16_t status_code = 200,
       std::string reason_phrase = "OK" );
 };
@@ -318,28 +304,25 @@ all further call would throw.
 
 For setting response in the sample above we use some functions  of a response builder:
 
-* `append_header( field, value )` - for setting header fields;
+* `append_header(field, value)` - for setting header fields;
 * `append_header_date_field()` - for setting `Date` field value with current timmestamp;
 * `set_body()` - for setting response body;
 
-All of mentioned functions return the reference to a response builder tha gives
+All of mentioned functions return the reference to a response builder that gives
 some syntactic sugar and allows to set response in a nice way.
 
 For sending response to peer a `done()` function is used.
 It stops constructing response
 (no setters will have an effect on the response) and initiates sending
-a response via underlying tcp connection.
+a response via underlying TCP connection.
 
 A one thing left to mention is what request handler returns.
 Any request handler must return a value of `request_handling_status_t` enum:
 ~~~~~
 ::c++
-enum class request_handling_status_t : std::uint8_t
+enum class request_handling_status_t
 {
-  //! Request accepted for handling.
   accepted,
-
-  //! Request wasn't accepted for handling.
   rejected
 };
 ~~~~~
@@ -410,10 +393,25 @@ auto create_server_handler()
 
   return router;
 }
+
+int main()
+{
+	using traits_t =
+		restinio::traits_t<
+			restinio::asio_timer_factory_t,
+			restinio::single_threaded_ostream_logger_t,
+			router_t >;
+
+	restinio::run(
+		restinio::on_this_thread<traits_t>()
+			.port( 8080 )
+			.address( "localhost" )
+			.request_handler( create_request_handler() ) );
+}
 ~~~~~
 
 Function `create_server_handler()` creates an instance of
-`restinio::router::express_router_t` with thre endpoints:
+`restinio::router::express_router_t` with three endpoints:
 
 * '/' - default path: reply with text hello message;
 * '/json': reply with json hello message;
@@ -425,7 +423,7 @@ Considering implementation of `create_server_handler()` above,
 we can notice that it return a unique pointer on a router class.
 And it is not function object. So how *RESTinio* can use it?
 To receive an accurate answer one should read
-[basic idea](#markdown-header-basic-idea) page first.
+[basic idea](#markdown-header-basic-idea) section first.
 
 A brief and non accurate answer will be that
 "RESTinio" is customizable for concrete types of handler,
