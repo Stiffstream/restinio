@@ -1,3 +1,7 @@
+# *RESTinio*
+
+[TOC]
+
 # What Is It?
 *RESTinio* is a header-only library for creating REST applications in c++.
 It helps to create http server that can handle requests asynchronously.
@@ -176,7 +180,7 @@ It easy to learn how to use *RESTinio* by example.
 ## Minimalistic hello world
 
 Here is a minimal hello world http server
-([see full example](../dev/sample/hello_world_minimal/main.cpp)):
+([see full example](./dev/sample/hello_world_minimal/main.cpp)):
 ~~~~~
 ::c++
 #include <iostream>
@@ -204,7 +208,7 @@ it hides some boilerplate code for simple common cases.
 * run server on current thread;
 * run server on thread pool.
 
-See details [here](../dev/restinio/http_server_run.hpp).
+See details [here](./dev/restinio/http_server_run.hpp).
 
 Each `restinio::run()` function creates http server instance with specified settings
 and runs it. And for also it subscribes to breakflag signals to stop the server
@@ -344,13 +348,13 @@ There are two helper functions:
 `restinio::request_accepted()` and `restinio::request_rejected()`
 for refering an itemes of enum. Both of them are used in the sample.
 
-See also a full ([sample](../dev/sample/hello_world_basic/main.cpp)).
+See also a full ([sample](./dev/sample/hello_world_basic/main.cpp)).
 
 ## Enhance request handler even more
 
 Here we will add basic routing for incoming requests.
 *RESTinio* has [express](https://expressjs.com/)-like request handler router
-(see [express router](./express_router.md) for more deteils).
+(see [express router](#markdown-header-express-router) for more deteils).
 
 The signature of a handlers that can be put in router
 has an additional parameter -- a container with parameters extracted from URI.
@@ -421,7 +425,7 @@ Considering implementation of `create_server_handler()` above,
 we can notice that it return a unique pointer on a router class.
 And it is not function object. So how *RESTinio* can use it?
 To receive an accurate answer one should read
-[basic idea](./basic_idea.md) page first.
+[basic idea](#markdown-header-basic-idea) page first.
 
 A brief and non accurate answer will be that
 "RESTinio" is customizable for concrete types of handler,
@@ -458,7 +462,7 @@ restinio::run(
 Function `restinio::on_this_thread<Traits>()` involves a creation of a special type
 and from this type `restinio::run()` function deduces the trats for its server.
 
-See also a full ([sample](../dev/sample/hello_world_basic/main.cpp)).
+See also a full ([sample](./dev/sample/hello_world_basic/main.cpp)).
 
 # Basic idea
 
@@ -479,7 +483,7 @@ An instance of `asio::io_context` is used to run the server.
 *RESTinio* can use its own privately created `asio::io_context` or
 it can make use of external io_context instance.
 The last case requires some assumptions to be fulfilled
-(see [using external io_context](./using_external_io_context.md)).
+(see [using external io_context](#markdown-header-using-external-io_context)).
 
 ## Traits
 
@@ -514,7 +518,7 @@ using single_thread_traits_t =
   traits_t< Timer_Factory, Logger, Request_Handler, noop_strand_t >; // Implementation omitted.
 ~~~~~
 
-Refer to [Traits](./traits.md) and [restinio/traits.hpp](../dev/restinio/traits.hpp) for details.
+Refer to [Traits](#markdown-header-traits) and [restinio/traits.hpp](./dev/restinio/traits.hpp) for details.
 
 ## Class *http_server_t<Traits>*
 
@@ -562,7 +566,7 @@ But in the end it delegates construction to the first custructor.
 *RESTinio* runs its logic on `asio::io_context`, but its internal logic
 is separated from maintaining io_context directly, hence allowing to
 run restinio on external (specified by user) instance of `asio::io_context`
-(see [using external io context](./using_external_io_context.md)).
+(see [using external io context](#markdown-header-using-external-io_context)).
 So there is a special class for wrapping io_context instance and pass it to
 `http_server_t` constructor: `io_context_holder_t`.
 To create the such holder use on of the following functions:
@@ -668,12 +672,12 @@ server.open_async(
 server_thread.join();
 ~~~~~
 
-Refer to ([restinio/http_server.hpp](../dev/restinio/http_server.hpp)) for details.
+Refer to ([restinio/http_server.hpp](./dev/restinio/http_server.hpp)) for details.
 
 ## Class *server_settings_t<Traits>*
 
 Class `server_settings_t<Traits>` serves to pass settings to `http_server_t<Traits>`.
-It is defined in [restinio/settings.hpp](../dev/restinio/settings.hpp);
+It is defined in [restinio/settings.hpp](./dev/restinio/settings.hpp);
 
 For each parameter a setter/getter pair is provided.
 While setting most of parameters is pretty straightforward,
@@ -707,7 +711,7 @@ socket_options_setter and cleanup_func.
 
 When `http_server_t` instance is created all settings are checked to be properly instantiated.
 
-Refer to [server settings](./server_settings.md) and[restinio/settings.hpp](../dev/restinio/settings.hpp for details.
+Refer to [server settings](#markdown-header-server-settings) and[restinio/settings.hpp](./dev/restinio/settings.hpp for details.
 
 # Traits
 
@@ -727,7 +731,7 @@ the second one is simply a default executor to eliminate unnecessary overhead
 when running `asio::io context` on a single thread;
 * `stream_socket_t` is a customization point that tells restinio
 what type of socket used for connections. This parameter allows restinio
-to support TLS connection (see [TLS support](./tls_support.md)).
+to support TLS connection (see [TLS support](#markdown-header-tls-support.md)).
 
 ## timer_factory_t
 `timer_factory_t` - defines a timeout controller logic.
@@ -784,11 +788,11 @@ class timer_factory_t
 
 * `null_timer_factory_t` -- noop timer guards, they produce timer guards
 that do nothing (when no control needed).
-See [restinio/null_timer_factory.hpp](../dev/restinio/null_timer_factory.hpp);
+See [restinio/null_timer_factory.hpp](./dev/restinio/null_timer_factory.hpp);
 * `asio_timer_factory_t` -- timer guards implemented with asio timers.
-See [restinio/asio_timer_factory.hpp](../dev/restinio/asio_timer_factory.hpp);
+See [restinio/asio_timer_factory.hpp](./dev/restinio/asio_timer_factory.hpp);
 * `so5::so_timer_factory_t` -- timer guards implemented with *SObjectizer* timers.
-See [restinio/so5/so_timer_factory.hpp](../dev/restinio/so5/so_timer_factory.hpp)
+See [restinio/so5/so_timer_factory.hpp](./dev/restinio/so5/so_timer_factory.hpp)
 Note that `restinio/so5/so_timer_factory.hpp` header file is not included
 by `restinio/all.hpp`, so it needs to be included separately.
 
@@ -817,9 +821,9 @@ class null_logger_t
 
 `Msg_Builder` is lambda that returns a message to log out.
 This approach allows compiler to optimize logging when it is possible,
-see [null_logger_t](../dev/restinio/loggers.hpp).
+see [null_logger_t](./dev/restinio/loggers.hpp).
 
-For implementation example see [ostream_logger_t](../dev/restinio/ostream_logger.hpp).
+For implementation example see [ostream_logger_t](./dev/restinio/ostream_logger.hpp).
 
 ## request_handler_t
 
@@ -857,15 +861,14 @@ eliminate overhead of `asio::strand`.
 ## stream_socket_t
 
 `stream_socket_t` allows to customize underlying socket type,
-so it possible to create https server using identical interface (see [TLS support](./tls_support.md)).
-
+so it possible to create https server using identical interface (see [TLS support](#markdown-header-tls-support.md)).
 
 # Response builder
 
 Lets consider that we are at the point when response
 on a particular request is ready to be created and send.
 The key here is to use a given connection handle and
-[response_builder_t](../dev/restinio/message_builders.hpp) that is created by
+[response_builder_t](./dev/restinio/message_builders.hpp) that is created by
 this connection handle:
 
 Basic example of default response builder:
@@ -1125,10 +1128,10 @@ But the following will not:
 * http://localhost/indexed/173-xyz/one
 * http://localhost/indexed/ABCDE-2017/one/two/three
 
-See full [example](../dev/sample/express_router_tutorial/main.cpp)
+See full [example](./dev/sample/express_router_tutorial/main.cpp)
 
 For details on `route_params_t` and `express_router_t` see
-[express.hpp](../dev/restinio/router/express.cpp).
+[express.hpp](./dev/restinio/router/express.cpp).
 
 # *RESTinio* context entities running on asio::io_context
 
@@ -1291,7 +1294,7 @@ RESTinio has a capability to receive not only string buffers but also
 constant and custom buffers. Message builders has
 body setters methods (set_body(), append_body(), append_chunk())
 with an argument of a type `buffer_storage_t`
-(see [buffers.hpp](../dev/restinio/buffers.hpp) for more details).
+(see [buffers.hpp](./dev/restinio/buffers.hpp) for more details).
 `buffer_storage_t` is a wrapper for different type of buffers
 that creates `asio::const_buffer` out of different implementations:
 
@@ -1399,7 +1402,7 @@ restinio::run(
 // ...
 ~~~~~
 
-See full [sample](../dev/sample/hello_world_https/main.cpp) for details.
+See full [sample](./dev/sample/hello_world_https/main.cpp) for details.
 
 
 # Version history
