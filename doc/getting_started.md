@@ -288,7 +288,7 @@ Considering implementation of `create_server_handler()` above,
 we can notice that it return a unique pointer on a router class.
 And it is not function object. So how *RESTinio* can use it?
 To receive an accurate answer one should read
-[basic idea](./doc/basic_idea.md) page first.
+[basic idea](./basic_idea.md) page first.
 
 A brief and non accurate answer will be that
 "RESTinio" is customizable for concrete types of handler,
