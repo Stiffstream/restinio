@@ -19,6 +19,9 @@ namespace restinio
 namespace websocket
 {
 
+namespace basic
+{
+
 class ws_t;
 using ws_handle_t = std::shared_ptr< ws_t >;
 
@@ -31,7 +34,7 @@ class ws_connection_base_t
 	:	public std::enable_shared_from_this< ws_connection_base_t >
 {
 	public:
-		ws_connection_base_t(std::uint64_t id )
+		ws_connection_base_t( std::uint64_t id )
 			:	m_connection_id{ id }
 		{}
 		virtual ~ws_connection_base_t() = default;
@@ -69,6 +72,8 @@ class ws_connection_base_t
 //! Alias for WebSocket connection handle.
 using ws_connection_handle_t =
 	std::shared_ptr< ws_connection_base_t >;
+
+} /* namespace basic */
 
 } /* namespace websocket */
 

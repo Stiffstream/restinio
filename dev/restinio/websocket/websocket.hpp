@@ -22,6 +22,9 @@ namespace restinio
 namespace websocket
 {
 
+namespace basic
+{
+
 class ws_t;
 
 void
@@ -218,7 +221,7 @@ upgrade(
 	}
 	auto & con = dynamic_cast< connection_t & >( *conn_ptr );
 
-	using ws_connection_t = websocket::impl::ws_connection_t< Traits, WS_Message_Handler >;
+	using ws_connection_t = impl::ws_connection_t< Traits, WS_Message_Handler >;
 
 	auto upgrade_internals = con.move_upgrade_internals();
 	auto ws_connection =
@@ -338,6 +341,8 @@ upgrade(
 			std::move( upgrade_response_header_fields ),
 			std::move( ws_message_handler ) );
 }
+
+} /* namespace basic */
 
 } /* namespace websocket */
 

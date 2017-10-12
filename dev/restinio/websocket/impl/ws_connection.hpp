@@ -25,6 +25,9 @@ namespace restinio
 namespace websocket
 {
 
+namespace basic
+{
+
 namespace impl
 {
 
@@ -1232,6 +1235,8 @@ class ws_connection_t final
 };
 
 } /* namespace impl */
+
+} /* namespace basic */
 
 } /* namespace websocket */
 
