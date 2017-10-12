@@ -50,8 +50,6 @@ class ws_outgoing_data_t
 		void
 		append( buffers_container_t bufs )
 		{
-			assert( !m_close_when_done );
-
 			if( m_awaiting_buffers.empty() )
 			{
 				m_awaiting_buffers = std::move( bufs );
