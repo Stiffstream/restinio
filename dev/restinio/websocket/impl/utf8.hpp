@@ -16,6 +16,9 @@ namespace restinio
 namespace websocket
 {
 
+namespace basic
+{
+
 namespace impl
 {
 
@@ -211,6 +214,8 @@ check_utf8_is_correct( const std::string & str )
 }
 
 } /* namespace impl */
+
+} /* namespace basic */
 
 } /* namespace websocket */
 

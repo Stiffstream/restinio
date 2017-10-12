@@ -14,6 +14,9 @@ namespace restinio
 namespace websocket
 {
 
+namespace basic
+{
+
 namespace impl
 {
 
@@ -578,6 +581,8 @@ class ws_protocol_validator_t
 };
 
 } /* namespace impl */
+
+} /* namespace basic */
 
 } /* namespace websocket */
 

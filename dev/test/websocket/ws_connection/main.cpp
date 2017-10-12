@@ -22,7 +22,7 @@
 #include <test/common/pub.hpp>
 #include <test/websocket/common/pub.hpp>
 
-namespace rws = restinio::websocket;
+namespace rws = restinio::websocket::basic;
 
 using traits_t =
 	restinio::traits_t<

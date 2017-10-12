@@ -21,9 +21,8 @@
 
 #include <test/websocket/common/pub.hpp>
 
-using namespace restinio;
-using namespace restinio::websocket;
-using namespace restinio::websocket::impl;
+using namespace restinio::websocket::basic;
+using namespace restinio::websocket::basic::impl;
 
 TEST_CASE( "Validate parser implementation details" , "[websocket][parser][impl]" )
 {

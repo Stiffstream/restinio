@@ -18,6 +18,9 @@ namespace restinio
 namespace websocket
 {
 
+namespace basic
+{
+
 #define RESTINIO_WEBSOCKET_OPCODES_MAP( RESTINIO_GEN ) \
 	RESTINIO_GEN( continuation_frame,     0x00 ) \
 	RESTINIO_GEN( text_frame,             0x01 ) \
@@ -207,6 +210,8 @@ using message_handle_t = std::shared_ptr< message_t >;
 
 using default_message_handler_t =
 		std::function< void ( message_handle_t ) >;
+
+} /* namespace basic */
 
 } /* namespace websocket */
 

@@ -85,7 +85,7 @@ int main()
 			restinio::on_this_thread<traits_t>()
 				.port( 8080 )
 				.address( "localhost" )
-				.request_handler( create_request_handler() );
+				.request_handler( create_request_handler() ) );
 	}
 	catch( const std::exception & ex )
 	{

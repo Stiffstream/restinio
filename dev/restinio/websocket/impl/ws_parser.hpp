@@ -24,6 +24,9 @@ namespace restinio
 namespace websocket
 {
 
+namespace basic
+{
+
 //! Alias for byte.
 using byte_t = unsigned char;
 
@@ -599,6 +602,8 @@ write_message_details(
 }
 
 } /* namespace impl */
+
+} /* namespace basic */
 
 } /* namespace websocket */
 

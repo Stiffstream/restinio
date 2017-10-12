@@ -15,7 +15,7 @@
 namespace rr = restinio::router;
 using router_t = rr::express_router_t;
 
-namespace rws = restinio::websocket;
+namespace rws = restinio::websocket::basic;
 
 using traits_t =
 	restinio::traits_t<

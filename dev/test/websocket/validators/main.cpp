@@ -18,9 +18,8 @@
 
 using namespace std::literals::string_literals;
 
-using namespace restinio;
-using namespace restinio::websocket;
-using namespace restinio::websocket::impl;
+using namespace restinio::websocket::basic;
+using namespace restinio::websocket::basic::impl;
 
 std::string
 status_code_to_bin( uint16_t code)
