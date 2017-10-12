@@ -490,7 +490,7 @@ The last case requires some assumptions to be fulfilled
 Main class `http_server_t` is a template class parameterized with a single
 template parameter: `Traits`.
 Traits class must specify a set of types used inside *RESTinio*, they are:
-~~~~
+~~~~~
 ::c++
 timer_factory_t;
 logger_t;
@@ -500,6 +500,7 @@ stream_socket_t;
 ~~~~~
 
 There is a helper classes for working with traits:
+
 ~~~~~
 ::c++
 template <
