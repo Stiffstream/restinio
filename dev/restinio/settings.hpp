@@ -479,7 +479,7 @@ class basic_server_settings_t
 		}
 		//! \}
 
-		//! Max pipelined requests to receive on single connection.
+		//! Max pipelined requests able to receive on single connection.
 		//! \{
 		Derived &
 		max_pipelined_requests( std::size_t mpr ) &
