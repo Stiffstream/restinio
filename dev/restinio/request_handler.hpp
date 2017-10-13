@@ -18,7 +18,15 @@
 namespace restinio
 {
 
-class websocket_t;
+class request_t;
+
+namespace impl
+{
+
+connection_handle_t &
+access_req_connection( request_t & );
+
+} /* namespace impl */
 
 //
 // request_t
@@ -32,11 +40,8 @@ class websocket_t;
 class request_t final
 	:	public std::enable_shared_from_this< request_t >
 {
-	template < typename TRAITS, typename WS_MESSAGE_HANDLER >
-	friend std::unique_ptr< websocket_t >
-	upgrade_to_websocket(			/*TODO params*/
-		request_t & ,
-		WS_MESSAGE_HANDLER ws_message_handler );
+	friend connection_handle_t &
+	impl::access_req_connection( request_t & );
 
 	public:
 		request_t(
@@ -50,20 +55,26 @@ class request_t final
 			,	m_connection{ std::move( connection ) }
 		{}
 
+		//! Get request header.
 		const http_request_header_t &
 		header() const
 		{
 			return m_header;
 		}
 
+		//! Get request body.
 		const std::string &
 		body() const
 		{
 			return m_body;
 		}
 
-		template < typename RESPONSE_BUILDER_OUTPUT_TYPE =
-					restinio_controlled_output_t >
+		//! Create response.
+		/*!
+			Creates response object if is called for the first time
+			all further calls will throw exception.
+		*/
+		template < typename Output = restinio_controlled_output_t >
 		auto
 		create_response(
 			std::uint16_t status_code = 200,
@@ -71,7 +82,7 @@ class request_t final
 		{
 			check_connection();
 
-			return response_builder_t< RESPONSE_BUILDER_OUTPUT_TYPE >{
+			return response_builder_t< Output >{
 				status_code,
 				reason_phrase,
 				std::move( m_connection ),
@@ -105,5 +116,18 @@ using request_handle_t = std::shared_ptr< request_t >;
 
 using default_request_handler_t =
 		std::function< request_handling_status_t ( request_handle_t ) >;
+
+
+namespace impl
+{
+
+inline connection_handle_t &
+access_req_connection( request_t & req )
+{
+	return req.m_connection;
+}
+
+} /* namespace impl */
+
 
 } /* namespace restinio */

@@ -272,3 +272,226 @@ TEST_CASE( "working with response header" , "[header][response]" )
 		REQUIRE( h.reason_phrase() == "Not Found" );
 	}
 }
+
+TEST_CASE( "working with string_to_field()" , "[header][string_to_field]" )
+{
+
+#define RESTINIO_FIELD_FROM_STRIN_TEST( field_id, field_name ) \
+	REQUIRE( http_field:: field_id == string_to_field( #field_name ) );
+
+	RESTINIO_FIELD_FROM_STRIN_TEST( a_im,                         A-IM )
+	RESTINIO_FIELD_FROM_STRIN_TEST( accept,                       Accept )
+	RESTINIO_FIELD_FROM_STRIN_TEST( accept_additions,             Accept-Additions )
+	RESTINIO_FIELD_FROM_STRIN_TEST( accept_charset,               Accept-Charset )
+	RESTINIO_FIELD_FROM_STRIN_TEST( accept_datetime,              Accept-Datetime )
+	RESTINIO_FIELD_FROM_STRIN_TEST( accept_encoding,              Accept-Encoding )
+	RESTINIO_FIELD_FROM_STRIN_TEST( accept_features,              Accept-Features )
+	RESTINIO_FIELD_FROM_STRIN_TEST( accept_language,              Accept-Language )
+	RESTINIO_FIELD_FROM_STRIN_TEST( accept_patch,                 Accept-Patch )
+	RESTINIO_FIELD_FROM_STRIN_TEST( accept_post,                  Accept-Post )
+	RESTINIO_FIELD_FROM_STRIN_TEST( accept_ranges,                Accept-Ranges )
+	RESTINIO_FIELD_FROM_STRIN_TEST( age,                          Age )
+	RESTINIO_FIELD_FROM_STRIN_TEST( allow,                        Allow )
+	RESTINIO_FIELD_FROM_STRIN_TEST( alpn,                         ALPN )
+	RESTINIO_FIELD_FROM_STRIN_TEST( alt_svc,                      Alt-Svc )
+	RESTINIO_FIELD_FROM_STRIN_TEST( alt_used,                     Alt-Used )
+	RESTINIO_FIELD_FROM_STRIN_TEST( alternates,                   Alternates )
+	RESTINIO_FIELD_FROM_STRIN_TEST( apply_to_redirect_ref,        Apply-To-Redirect-Ref )
+	RESTINIO_FIELD_FROM_STRIN_TEST( authentication_control,       Authentication-Control )
+	RESTINIO_FIELD_FROM_STRIN_TEST( authentication_info,          Authentication-Info )
+	RESTINIO_FIELD_FROM_STRIN_TEST( authorization,                Authorization )
+	RESTINIO_FIELD_FROM_STRIN_TEST( c_ext,                        C-Ext )
+	RESTINIO_FIELD_FROM_STRIN_TEST( c_man,                        C-Man )
+	RESTINIO_FIELD_FROM_STRIN_TEST( c_opt,                        C-Opt )
+	RESTINIO_FIELD_FROM_STRIN_TEST( c_pep,                        C-PEP )
+	RESTINIO_FIELD_FROM_STRIN_TEST( c_pep_info,                   C-PEP-Info )
+	RESTINIO_FIELD_FROM_STRIN_TEST( cache_control,                Cache-Control )
+	RESTINIO_FIELD_FROM_STRIN_TEST( caldav_timezones,             CalDAV-Timezones )
+	RESTINIO_FIELD_FROM_STRIN_TEST( close,                        Close )
+	RESTINIO_FIELD_FROM_STRIN_TEST( content_base,                 Content-Base )
+	RESTINIO_FIELD_FROM_STRIN_TEST( content_disposition,          Content-Disposition )
+	RESTINIO_FIELD_FROM_STRIN_TEST( content_encoding,             Content-Encoding )
+	RESTINIO_FIELD_FROM_STRIN_TEST( content_id,                   Content-ID )
+	RESTINIO_FIELD_FROM_STRIN_TEST( content_language,             Content-Language )
+	RESTINIO_FIELD_FROM_STRIN_TEST( content_location,             Content-Location )
+	RESTINIO_FIELD_FROM_STRIN_TEST( content_md5,                  Content-MD5 )
+	RESTINIO_FIELD_FROM_STRIN_TEST( content_range,                Content-Range )
+	RESTINIO_FIELD_FROM_STRIN_TEST( content_script_type,          Content-Script-Type )
+	RESTINIO_FIELD_FROM_STRIN_TEST( content_style_type,           Content-Style-Type )
+	RESTINIO_FIELD_FROM_STRIN_TEST( content_type,                 Content-Type )
+	RESTINIO_FIELD_FROM_STRIN_TEST( content_version,              Content-Version )
+	RESTINIO_FIELD_FROM_STRIN_TEST( cookie,                       Cookie )
+	RESTINIO_FIELD_FROM_STRIN_TEST( cookie2,                      Cookie2 )
+	RESTINIO_FIELD_FROM_STRIN_TEST( dasl,                         DASL )
+	RESTINIO_FIELD_FROM_STRIN_TEST( dav,                          DAV )
+	RESTINIO_FIELD_FROM_STRIN_TEST( date,                         Date )
+	RESTINIO_FIELD_FROM_STRIN_TEST( default_style,                Default-Style )
+	RESTINIO_FIELD_FROM_STRIN_TEST( delta_base,                   Delta-Base )
+	RESTINIO_FIELD_FROM_STRIN_TEST( depth,                        Depth )
+	RESTINIO_FIELD_FROM_STRIN_TEST( derived_from,                 Derived-From )
+	RESTINIO_FIELD_FROM_STRIN_TEST( destination,                  Destination )
+	RESTINIO_FIELD_FROM_STRIN_TEST( differential_id,              Differential-ID )
+	RESTINIO_FIELD_FROM_STRIN_TEST( digest,                       Digest )
+	RESTINIO_FIELD_FROM_STRIN_TEST( etag,                         ETag )
+	RESTINIO_FIELD_FROM_STRIN_TEST( expect,                       Expect )
+	RESTINIO_FIELD_FROM_STRIN_TEST( expires,                      Expires )
+	RESTINIO_FIELD_FROM_STRIN_TEST( ext,                          Ext )
+	RESTINIO_FIELD_FROM_STRIN_TEST( forwarded,                    Forwarded )
+	RESTINIO_FIELD_FROM_STRIN_TEST( from,                         From )
+	RESTINIO_FIELD_FROM_STRIN_TEST( getprofile,                   GetProfile )
+	RESTINIO_FIELD_FROM_STRIN_TEST( hobareg,                      Hobareg )
+	RESTINIO_FIELD_FROM_STRIN_TEST( host,                         Host )
+	RESTINIO_FIELD_FROM_STRIN_TEST( http2_settings,               HTTP2-Settings )
+	RESTINIO_FIELD_FROM_STRIN_TEST( im,                           IM )
+	RESTINIO_FIELD_FROM_STRIN_TEST( if_,                          If )
+	RESTINIO_FIELD_FROM_STRIN_TEST( if_match,                     If-Match )
+	RESTINIO_FIELD_FROM_STRIN_TEST( if_modified_since,            If-Modified-Since )
+	RESTINIO_FIELD_FROM_STRIN_TEST( if_none_match,                If-None-Match )
+	RESTINIO_FIELD_FROM_STRIN_TEST( if_range,                     If-Range )
+	RESTINIO_FIELD_FROM_STRIN_TEST( if_schedule_tag_match,        If-Schedule-Tag-Match )
+	RESTINIO_FIELD_FROM_STRIN_TEST( if_unmodified_since,          If-Unmodified-Since )
+	RESTINIO_FIELD_FROM_STRIN_TEST( keep_alive,                   Keep-Alive )
+	RESTINIO_FIELD_FROM_STRIN_TEST( label,                        Label )
+	RESTINIO_FIELD_FROM_STRIN_TEST( last_modified,                Last-Modified )
+	RESTINIO_FIELD_FROM_STRIN_TEST( link,                         Link )
+	RESTINIO_FIELD_FROM_STRIN_TEST( location,                     Location )
+	RESTINIO_FIELD_FROM_STRIN_TEST( lock_token,                   Lock-Token )
+	RESTINIO_FIELD_FROM_STRIN_TEST( man,                          Man )
+	RESTINIO_FIELD_FROM_STRIN_TEST( max_forwards,                 Max-Forwards )
+	RESTINIO_FIELD_FROM_STRIN_TEST( memento_datetime,             Memento-Datetime )
+	RESTINIO_FIELD_FROM_STRIN_TEST( meter,                        Meter )
+	RESTINIO_FIELD_FROM_STRIN_TEST( mime_version,                 MIME-Version )
+	RESTINIO_FIELD_FROM_STRIN_TEST( negotiate,                    Negotiate )
+	RESTINIO_FIELD_FROM_STRIN_TEST( opt,                          Opt )
+	RESTINIO_FIELD_FROM_STRIN_TEST( optional_www_authenticate,    Optional-WWW-Authenticate )
+	RESTINIO_FIELD_FROM_STRIN_TEST( ordering_type,                Ordering-Type )
+	RESTINIO_FIELD_FROM_STRIN_TEST( origin,                       Origin )
+	RESTINIO_FIELD_FROM_STRIN_TEST( overwrite,                    Overwrite )
+	RESTINIO_FIELD_FROM_STRIN_TEST( p3p,                          P3P )
+	RESTINIO_FIELD_FROM_STRIN_TEST( pep,                          PEP )
+	RESTINIO_FIELD_FROM_STRIN_TEST( pics_label,                   PICS-Label )
+	RESTINIO_FIELD_FROM_STRIN_TEST( pep_info,                     Pep-Info )
+	RESTINIO_FIELD_FROM_STRIN_TEST( position,                     Position )
+	RESTINIO_FIELD_FROM_STRIN_TEST( pragma,                       Pragma )
+	RESTINIO_FIELD_FROM_STRIN_TEST( prefer,                       Prefer )
+	RESTINIO_FIELD_FROM_STRIN_TEST( preference_applied,           Preference-Applied )
+	RESTINIO_FIELD_FROM_STRIN_TEST( profileobject,                ProfileObject )
+	RESTINIO_FIELD_FROM_STRIN_TEST( protocol,                     Protocol )
+	RESTINIO_FIELD_FROM_STRIN_TEST( protocol_info,                Protocol-Info )
+	RESTINIO_FIELD_FROM_STRIN_TEST( protocol_query,               Protocol-Query )
+	RESTINIO_FIELD_FROM_STRIN_TEST( protocol_request,             Protocol-Request )
+	RESTINIO_FIELD_FROM_STRIN_TEST( proxy_authenticate,           Proxy-Authenticate )
+	RESTINIO_FIELD_FROM_STRIN_TEST( proxy_authentication_info,    Proxy-Authentication-Info )
+	RESTINIO_FIELD_FROM_STRIN_TEST( proxy_authorization,          Proxy-Authorization )
+	RESTINIO_FIELD_FROM_STRIN_TEST( proxy_features,               Proxy-Features )
+	RESTINIO_FIELD_FROM_STRIN_TEST( proxy_instruction,            Proxy-Instruction )
+	RESTINIO_FIELD_FROM_STRIN_TEST( public_,                      Public )
+	RESTINIO_FIELD_FROM_STRIN_TEST( public_key_pins,              Public-Key-Pins )
+	RESTINIO_FIELD_FROM_STRIN_TEST( public_key_pins_report_only,  Public-Key-Pins-Report-Only )
+	RESTINIO_FIELD_FROM_STRIN_TEST( range,                        Range )
+	RESTINIO_FIELD_FROM_STRIN_TEST( redirect_ref,                 Redirect-Ref )
+	RESTINIO_FIELD_FROM_STRIN_TEST( referer,                      Referer )
+	RESTINIO_FIELD_FROM_STRIN_TEST( retry_after,                  Retry-After )
+	RESTINIO_FIELD_FROM_STRIN_TEST( safe,                         Safe )
+	RESTINIO_FIELD_FROM_STRIN_TEST( schedule_reply,               Schedule-Reply )
+	RESTINIO_FIELD_FROM_STRIN_TEST( schedule_tag,                 Schedule-Tag )
+	RESTINIO_FIELD_FROM_STRIN_TEST( sec_websocket_accept,         Sec-WebSocket-Accept )
+	RESTINIO_FIELD_FROM_STRIN_TEST( sec_websocket_extensions,     Sec-WebSocket-Extensions )
+	RESTINIO_FIELD_FROM_STRIN_TEST( sec_websocket_key,            Sec-WebSocket-Key )
+	RESTINIO_FIELD_FROM_STRIN_TEST( sec_websocket_protocol,       Sec-WebSocket-Protocol )
+	RESTINIO_FIELD_FROM_STRIN_TEST( sec_websocket_version,        Sec-WebSocket-Version )
+	RESTINIO_FIELD_FROM_STRIN_TEST( security_scheme,              Security-Scheme )
+	RESTINIO_FIELD_FROM_STRIN_TEST( server,                       Server )
+	RESTINIO_FIELD_FROM_STRIN_TEST( set_cookie,                   Set-Cookie )
+	RESTINIO_FIELD_FROM_STRIN_TEST( set_cookie2,                  Set-Cookie2 )
+	RESTINIO_FIELD_FROM_STRIN_TEST( setprofile,                   SetProfile )
+	RESTINIO_FIELD_FROM_STRIN_TEST( slug,                         SLUG )
+	RESTINIO_FIELD_FROM_STRIN_TEST( soapaction,                   SoapAction )
+	RESTINIO_FIELD_FROM_STRIN_TEST( status_uri,                   Status-URI )
+	RESTINIO_FIELD_FROM_STRIN_TEST( strict_transport_security,    Strict-Transport-Security )
+	RESTINIO_FIELD_FROM_STRIN_TEST( surrogate_capability,         Surrogate-Capability )
+	RESTINIO_FIELD_FROM_STRIN_TEST( surrogate_control,            Surrogate-Control )
+	RESTINIO_FIELD_FROM_STRIN_TEST( tcn,                          TCN )
+	RESTINIO_FIELD_FROM_STRIN_TEST( te,                           TE )
+	RESTINIO_FIELD_FROM_STRIN_TEST( timeout,                      Timeout )
+	RESTINIO_FIELD_FROM_STRIN_TEST( topic,                        Topic )
+	RESTINIO_FIELD_FROM_STRIN_TEST( trailer,                      Trailer )
+	RESTINIO_FIELD_FROM_STRIN_TEST( transfer_encoding,            Transfer-Encoding )
+	RESTINIO_FIELD_FROM_STRIN_TEST( ttl,                          TTL )
+	RESTINIO_FIELD_FROM_STRIN_TEST( urgency,                      Urgency )
+	RESTINIO_FIELD_FROM_STRIN_TEST( uri,                          URI )
+	RESTINIO_FIELD_FROM_STRIN_TEST( upgrade,                      Upgrade )
+	RESTINIO_FIELD_FROM_STRIN_TEST( user_agent,                   User-Agent )
+	RESTINIO_FIELD_FROM_STRIN_TEST( variant_vary,                 Variant-Vary )
+	RESTINIO_FIELD_FROM_STRIN_TEST( vary,                         Vary )
+	RESTINIO_FIELD_FROM_STRIN_TEST( via,                          Via )
+	RESTINIO_FIELD_FROM_STRIN_TEST( www_authenticate,             WWW-Authenticate )
+	RESTINIO_FIELD_FROM_STRIN_TEST( want_digest,                  Want-Digest )
+	RESTINIO_FIELD_FROM_STRIN_TEST( warning,                      Warning )
+	RESTINIO_FIELD_FROM_STRIN_TEST( x_frame_options,              X-Frame-Options )
+
+#undef RESTINIO_FIELD_FROM_STRIN_TEST
+}
+
+TEST_CASE( "Connection" , "[header][connection]" )
+{
+	using namespace Catch;
+
+	{
+		// Default.
+		http_response_header_t h;
+		const auto serialized =
+			impl::create_header_string( h,
+				impl::content_length_field_presence_t::skip_content_length );
+
+		REQUIRE_THAT(
+			serialized,
+			Contains( "Connection: close" ) ||
+			!Contains( "Content-Length" ) );
+	}
+	{
+		// Default.
+		http_response_header_t h;
+		const auto serialized =
+			impl::create_header_string( h );
+
+		REQUIRE_THAT(
+			serialized,
+			Contains( "Connection: close" ) ||
+			Contains( "Content-Length: 0" ) );
+	}
+
+	{
+		http_response_header_t h;
+		h.should_keep_alive( false );
+		const auto serialized =
+			impl::create_header_string( h );
+
+		REQUIRE_THAT(
+			serialized,
+			Contains( "Connection: close" ) );
+	}
+
+	{
+		http_response_header_t h;
+		h.should_keep_alive( true );
+		const auto serialized =
+			impl::create_header_string( h );
+
+		REQUIRE_THAT(
+			serialized,
+			Contains( "Connection: keep-alive" ) );
+	}
+
+	{
+		http_response_header_t h;
+		h.connection( http_connection_header_t::upgrade );
+		const auto serialized =
+			impl::create_header_string( h );
+
+		REQUIRE_THAT(
+			serialized,
+			Contains( "Connection: Upgrade" ) );
+	}
+}
+

@@ -1,8 +1,13 @@
 #pragma once
 
-#include <string>
 
 #include <asio.hpp>
+
+#include <string>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+
 
 constexpr std::uint16_t
 utest_default_port()
@@ -17,17 +22,17 @@ do_with_socket(
 	const std::string & addr = "127.0.0.1",
 	std::uint16_t port = utest_default_port() )
 {
-	asio::io_service io_service;
-	asio::ip::tcp::socket socket{ io_service };
+	asio::io_context io_context;
+	asio::ip::tcp::socket socket{ io_context };
 
-	asio::ip::tcp::resolver resolver{ io_service };
+	asio::ip::tcp::resolver resolver{ io_context };
 	asio::ip::tcp::resolver::query
 		query{ asio::ip::tcp::v4(), addr, std::to_string( port ) };
 	asio::ip::tcp::resolver::iterator iterator = resolver.resolve( query );
 
 	asio::connect( socket, iterator );
 
-	lambda( socket, io_service );
+	lambda( socket, io_context );
 	socket.close();
 }
 
@@ -39,7 +44,7 @@ do_request(
 {
 	std::string result;
 	do_with_socket(
-		[ & ]( auto & socket, auto & /*io_service*/ ){
+		[ & ]( auto & socket, auto & /*io_context*/ ){
 
 			asio::streambuf b;
 			std::ostream req_stream(&b);
@@ -57,7 +62,7 @@ do_request(
 			while( asio::read( socket, response_stream, asio::transfer_at_least(1), error) )
 				sout << &response_stream;
 
-			if (error != asio::error::eof)
+			if ( error != asio::error::eof )
 				throw asio::system_error(error);
 
 			result = sout.str();
@@ -67,4 +72,53 @@ do_request(
 
 	return result;
 }
+
+inline auto
+default_async_error_callback()
+{
+	return []( auto ex ) { std::rethrow_exception(ex); };
+}
+
+template<typename Http_Server>
+class other_work_thread_for_server_t
+{
+	Http_Server & m_server;
+
+	std::thread m_thread;
+	std::mutex m_mutex;
+	std::condition_variable m_cv;
+
+public:
+	other_work_thread_for_server_t(
+		Http_Server & server )
+		: m_server(server)
+	{}
+
+	void
+	run()
+	{
+		std::unique_lock< std::mutex > lock(m_mutex);
+		m_thread = std::thread( [this] {
+			m_server.open_async(
+				[&]{
+					std::lock_guard<std::mutex> l{ m_mutex };
+					m_cv.notify_one();
+				},
+				default_async_error_callback() );
+			m_server.io_context().run();
+		} );
+
+		m_cv.wait( lock );
+	}
+
+	void
+	stop_and_join()
+	{
+		m_server.close_async(
+			[&]{ m_server.io_context().stop(); },
+			default_async_error_callback() );
+
+		m_thread.join();
+	}
+};
 

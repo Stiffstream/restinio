@@ -61,7 +61,7 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 				req_handler_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_service( 1 ),
+		restinio::own_io_context(),
 		[]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -71,9 +71,10 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 				.max_pipelined_requests( 2 );
 		} };
 
-	http_server.open();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
-	do_with_socket( [ & ]( auto & socket, auto & io_service ){
+	do_with_socket( [ & ]( auto & socket, auto & io_context ){
 		const std::string pipelinedrequests{
 			"GET / HTTP/1.1\r\n"
 			"Host: 127.0.0.1\r\n"
@@ -104,7 +105,7 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 				REQUIRE( ec );
 				REQUIRE( ec == asio::error::eof );
 			} );
-		io_service.run();
+		io_context.run();
 
 		const auto finished_at = std::chrono::steady_clock::now();
 
@@ -112,13 +113,13 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 			std::chrono::duration_cast< std::chrono::milliseconds >(
 				finished_at - started_at );
 
-		// Timeout is about 100 msec.
+		// Timeout is about 200 msec.
 		REQUIRE( 100 <= timeout.count() );
-		REQUIRE( 150 >= timeout.count() );
+		REQUIRE( 250 >= timeout.count() );
 
 	} );
 
-	http_server.close();
+	other_thread.stop_and_join();
 
 	req_handler_t::m_request.reset();
 }

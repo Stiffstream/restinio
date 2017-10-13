@@ -249,3 +249,51 @@ TEST_CASE( "Timer factory" , "[settings][timer_factory]" )
 		REQUIRE_NOTHROW( s.timer_factory() );
 	}
 }
+
+TEST_CASE( "Acceptor options" , "[settings][acceptor_options]" )
+{
+	using settings_t = server_settings_t< restinio::default_traits_t >;
+
+	settings_t s{};
+
+	auto acceptor_option_setter = s.acceptor_options_setter();
+	REQUIRE( acceptor_option_setter );
+
+	bool lambda_was_called = false;
+	s.acceptor_options_setter(
+		[&]( auto & ){
+			lambda_was_called = true;
+		} );
+
+	acceptor_option_setter = s.acceptor_options_setter();
+	restinio::acceptor_options_t
+		acceptor_options{ *static_cast< asio::ip::tcp::acceptor * >( nullptr ) };
+
+	(*acceptor_option_setter)( acceptor_options );
+
+	REQUIRE( lambda_was_called );
+}
+
+TEST_CASE( "Socket options" , "[settings][socket_options]" )
+{
+	using settings_t = server_settings_t< restinio::default_traits_t >;
+
+	settings_t s{};
+
+	auto socket_option_setter = s.socket_options_setter();
+	REQUIRE( socket_option_setter );
+
+	bool lambda_was_called = false;
+	s.socket_options_setter(
+		[&]( auto & ){
+			lambda_was_called = true;
+		} );
+
+	socket_option_setter = s.socket_options_setter();
+	restinio::socket_options_t
+		socket_options{ *static_cast< asio::ip::tcp::socket * >( nullptr ) };
+
+	(*socket_option_setter)( socket_options );
+
+	REQUIRE( lambda_was_called );
+}

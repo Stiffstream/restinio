@@ -29,24 +29,24 @@ class asio_timer_factory_t
 			:	public std::enable_shared_from_this< timer_guard_t >
 		{
 			public:
-				timer_guard_t( asio::io_service & iosvc )
+				timer_guard_t( asio::io_context & iosvc )
 					:	m_operation_timer{ iosvc }
 				{}
 
 				// Set new timeout guard.
 				template <
-						typename EXECUTOR,
-						typename CALLBACK_FUNC >
+						typename Executor,
+						typename Callback_Func >
 				void
 				schedule_operation_timeout_callback(
-					const EXECUTOR & executor,
+					const Executor & executor,
 					std::chrono::steady_clock::duration timeout,
-					CALLBACK_FUNC && f )
+					Callback_Func && f )
 				{
 					cancel();
 					m_operation_timer.expires_from_now( timeout );
 					m_operation_timer.async_wait(
-						asio::wrap(
+						asio::bind_executor(
 							executor,
 							[ this,
 								cb = std::move( f ),
@@ -75,7 +75,7 @@ class asio_timer_factory_t
 
 		// Create guard for connection.
 		timer_guard_instance_t
-		create_timer_guard( asio::io_service & iosvc )
+		create_timer_guard( asio::io_context & iosvc )
 		{
 			return std::make_shared< timer_guard_t >( iosvc );
 		}

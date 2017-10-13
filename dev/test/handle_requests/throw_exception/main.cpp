@@ -31,7 +31,7 @@ TEST_CASE( "Throw exception" , "[exception]" )
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_service( 1 ),
+		restinio::own_io_context(),
 		[]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -44,9 +44,10 @@ TEST_CASE( "Throw exception" , "[exception]" )
 		}
 	};
 
-	http_server.open();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
-	do_with_socket( [ & ]( auto & socket, auto & /*io_service*/ ){
+	do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
 
 		const std::string request{
 			"GET / HTTP/1.1\r\n"
@@ -70,5 +71,5 @@ TEST_CASE( "Throw exception" , "[exception]" )
 		REQUIRE( error == asio::error::eof );
 		} );
 
-	http_server.close();
+	other_thread.stop_and_join();
 }

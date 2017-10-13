@@ -57,22 +57,31 @@ class a_http_server_t :	public so_5::agent_t
 			restinio::server_settings_t< TRAITS > settings )
 			:	so_5::agent_t{ std::move( ctx ) }
 			,	m_server{
-					restinio::create_child_io_service( 1 ),
+					restinio::own_io_context(),
 					std::move( settings ) }
 		{}
 
 		virtual void so_evt_start() override
 		{
-			m_server.open();
+			m_server_thread = std::thread{ [&] {
+				m_server.open_async(
+						[]{ /* Ok. */ },
+						[]( auto ex ) { std::rethrow_exception( ex ); } );
+				m_server.io_context().run();
+			} };
 		}
 
 		virtual void so_evt_finish() override
 		{
-			m_server.close();
+			m_server.close_async(
+					[&]{ m_server.io_context().stop(); },
+					[]( auto ex ) { std::rethrow_exception( ex ); } );
+			m_server_thread.join();
 		}
 
 	private:
 		restinio::http_server_t< TRAITS > m_server;
+		std::thread m_server_thread;
 };
 
 void create_main_coop(

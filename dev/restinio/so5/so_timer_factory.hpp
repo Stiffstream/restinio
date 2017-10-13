@@ -25,8 +25,8 @@ namespace so5
 //! Check timer.
 struct msg_ckeck_timer_t : public so_5::message_t
 {
-	template < typename CHECKER >
-	msg_ckeck_timer_t( CHECKER && checker )
+	template < typename Checker >
+	msg_ckeck_timer_t( Checker && checker )
 		:	m_checker{ std::move( checker ) }
 	{}
 
@@ -64,13 +64,13 @@ class so_timer_factory_t
 
 				// Set new timeout guard.
 				template <
-						typename EXECUTOR,
-						typename CALLBACK_FUNC >
+						typename Executor,
+						typename Callback_Func >
 				void
 				schedule_operation_timeout_callback(
-					const EXECUTOR & executor,
+					const Executor & executor,
 					std::chrono::steady_clock::duration timeout,
-					CALLBACK_FUNC && f )
+					Callback_Func && f )
 				{
 					cancel();
 					m_timeout_handler = std::move( f );
@@ -110,10 +110,10 @@ class so_timer_factory_t
 					m_timeout_handler = timeout_handler_t{};
 				}
 
-				template< typename EXECUTOR >
+				template< typename Executor >
 				void
 				init_timeout_check(
-					const EXECUTOR & executor,
+					const Executor & executor,
 					std::uint32_t tag )
 				{
 					asio::post(
@@ -140,7 +140,7 @@ class so_timer_factory_t
 
 		// Create guard for connection.
 		timer_guard_instance_t
-		create_timer_guard( asio::io_service & )
+		create_timer_guard( asio::io_context & )
 		{
 			return std::make_shared< timer_guard_t >( m_env, m_mbox );
 		}

@@ -21,6 +21,39 @@
 namespace restinio
 {
 
+namespace impl
+{
+
+#include "impl/to_lower_lut.inl"
+
+constexpr auto
+uchar_at( const char * const from, const std::size_t at )
+{
+	return static_cast< unsigned char >( from[ at ] );
+};
+
+} /* namespace impl */
+
+//
+// caseless_cmp()
+//
+
+//! Comparator for fields names.
+inline bool
+caseless_cmp(
+	const char * a,
+	const char * b,
+	std::size_t size )
+{
+	const unsigned char * const table = impl::to_lower_lut< unsigned char >();
+
+	for( std::size_t i = 0; i < size; ++i )
+		if( table[ impl::uchar_at( a, i ) ] != table[ impl::uchar_at( b, i ) ] )
+			return false;
+
+	return true;
+}
+
 //
 // caseless_cmp()
 //
@@ -35,11 +68,7 @@ caseless_cmp(
 {
 	if( a_size == b_size )
 	{
-		for( std::size_t i = 0; i < a_size; ++i )
-			if( std::tolower( a[ i ] ) != std::tolower( b[ i ] ) )
-				return false;
-
-		return true;
+		return caseless_cmp( a, b, a_size );
 	}
 
 	return false;
@@ -244,16 +273,245 @@ using http_field = http_field_t;
 inline http_field_t
 string_to_field( const char * field_name, std::size_t field_name_size )
 {
-	#define RESTINIO_HTTP_FIELD_TOENUM_GEN( name, string_name ) \
-		{                                                       \
-			const char field_str[] = #string_name ;             \
-			if( caseless_cmp(                                   \
-				field_name, field_name_size,                    \
-				field_str, sizeof( field_str ) - 1 ) )          \
-				return http_field_t:: name;                     \
-		}
-		RESTINIO_HTTP_FIELDS_MAP( RESTINIO_HTTP_FIELD_TOENUM_GEN )
-	#undef RESTINIO_HTTP_FIELD_TOENUM_GEN
+
+#define RESTINIO_HTTP_CHECK_FOR_FIELD( field_id, candidate_field_name ) \
+	if( caseless_cmp(field_name, #candidate_field_name , field_name_size ) ) \
+		return http_field_t:: field_id;
+
+	// TODO: make most popular fields to be checked first.
+
+	switch( field_name_size )
+	{
+		case 2:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( if_,                          If )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( im,                           IM )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( te,                           TE )
+			break;
+
+		case 3:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( age,                          Age )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( dav,                          DAV )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( ext,                          Ext )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( man,                          Man )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( opt,                          Opt )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( p3p,                          P3P )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( pep,                          PEP )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( tcn,                          TCN )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( ttl,                          TTL )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( uri,                          URI )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( via,                          Via )
+			break;
+
+		case 4:
+			// Known to be more used first:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( host,                         Host )
+
+			RESTINIO_HTTP_CHECK_FOR_FIELD( a_im,                         A-IM )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( alpn,                         ALPN )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( dasl,                         DASL )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( date,                         Date )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( etag,                         ETag )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( from,                         From )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( link,                         Link )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( safe,                         Safe )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( slug,                         SLUG )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( vary,                         Vary )
+			break;
+
+		case 5:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( allow,                        Allow )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( c_ext,                        C-Ext )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( c_man,                        C-Man )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( c_opt,                        C-Opt )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( c_pep,                        C-PEP )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( close,                        Close )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( depth,                        Depth )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( label,                        Label )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( meter,                        Meter )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( range,                        Range )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( topic,                        Topic )
+			break;
+
+		case 6:
+			// Known to be more used first:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( accept,                       Accept )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( cookie,                       Cookie )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( server,                       Server )
+
+			RESTINIO_HTTP_CHECK_FOR_FIELD( digest,                       Digest )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( expect,                       Expect )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( origin,                       Origin )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( pragma,                       Pragma )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( prefer,                       Prefer )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( public_,                      Public )
+			break;
+
+		case 7:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( alt_svc,                      Alt-Svc )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( cookie2,                      Cookie2 )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( expires,                      Expires )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( hobareg,                      Hobareg )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( referer,                      Referer )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( timeout,                      Timeout )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( trailer,                      Trailer )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( urgency,                      Urgency )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( upgrade,                      Upgrade )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( warning,                      Warning )
+			break;
+
+		case 8:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( alt_used,                     Alt-Used )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( if_match,                     If-Match )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( if_range,                     If-Range )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( location,                     Location )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( pep_info,                     Pep-Info )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( position,                     Position )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( protocol,                     Protocol )
+			break;
+
+		case 9:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( forwarded,                    Forwarded )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( negotiate,                    Negotiate )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( overwrite,                    Overwrite )
+			break;
+
+		case 10:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( alternates,                   Alternates )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( c_pep_info,                   C-PEP-Info )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( content_id,                   Content-ID )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( delta_base,                   Delta-Base )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( getprofile,                   GetProfile )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( keep_alive,                   Keep-Alive )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( lock_token,                   Lock-Token )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( pics_label,                   PICS-Label )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( set_cookie,                   Set-Cookie )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( setprofile,                   SetProfile )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( soapaction,                   SoapAction )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( status_uri,                   Status-URI )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( user_agent,                   User-Agent )
+			break;
+
+		case 11:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( accept_post,                  Accept-Post )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( content_md5,                  Content-MD5 )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( destination,                  Destination )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( retry_after,                  Retry-After )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( set_cookie2,                  Set-Cookie2 )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( want_digest,                  Want-Digest )
+			break;
+
+		case 12:
+			// Known to be more used first:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( content_type,                 Content-Type )
+
+			RESTINIO_HTTP_CHECK_FOR_FIELD( accept_patch,                 Accept-Patch )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( content_base,                 Content-Base )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( derived_from,                 Derived-From )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( max_forwards,                 Max-Forwards )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( mime_version,                 MIME-Version )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( schedule_tag,                 Schedule-Tag )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( redirect_ref,                 Redirect-Ref )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( variant_vary,                 Variant-Vary )
+			break;
+
+		case 13:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( accept_ranges,                Accept-Ranges )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( authorization,                Authorization )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( cache_control,                Cache-Control )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( content_range,                Content-Range )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( default_style,                Default-Style )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( if_none_match,                If-None-Match )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( last_modified,                Last-Modified )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( ordering_type,                Ordering-Type )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( profileobject,                ProfileObject )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( protocol_info,                Protocol-Info )
+			break;
+
+		case 14:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( accept_charset,               Accept-Charset )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( http2_settings,               HTTP2-Settings )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( protocol_query,               Protocol-Query )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( proxy_features,               Proxy-Features )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( schedule_reply,               Schedule-Reply )
+			break;
+
+		case 15:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( accept_encoding,              Accept-Encoding )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( accept_features,              Accept-Features )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( accept_language,              Accept-Language )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( accept_datetime,              Accept-Datetime )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( content_version,              Content-Version )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( differential_id,              Differential-ID )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( public_key_pins,              Public-Key-Pins )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( security_scheme,              Security-Scheme )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( x_frame_options,              X-Frame-Options )
+			break;
+
+		case 16:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( accept_additions,             Accept-Additions )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( caldav_timezones,             CalDAV-Timezones )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( content_encoding,             Content-Encoding )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( content_language,             Content-Language )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( content_location,             Content-Location )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( memento_datetime,             Memento-Datetime )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( protocol_request,             Protocol-Request )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( www_authenticate,             WWW-Authenticate )
+			break;
+
+		case 17:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( if_modified_since,            If-Modified-Since )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( proxy_instruction,            Proxy-Instruction )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( sec_websocket_key,            Sec-WebSocket-Key )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( surrogate_control,            Surrogate-Control )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( transfer_encoding,            Transfer-Encoding )
+			break;
+
+		case 18:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( content_style_type,           Content-Style-Type )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( preference_applied,           Preference-Applied )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( proxy_authenticate,           Proxy-Authenticate )
+			break;
+
+		case 19:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( authentication_info,          Authentication-Info )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( content_disposition,          Content-Disposition )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( content_script_type,          Content-Script-Type )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( if_unmodified_since,          If-Unmodified-Since )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( proxy_authorization,          Proxy-Authorization )
+			break;
+
+		case 20:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( sec_websocket_accept,         Sec-WebSocket-Accept )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( surrogate_capability,         Surrogate-Capability )
+			break;
+
+		case 21:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( apply_to_redirect_ref,        Apply-To-Redirect-Ref )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( if_schedule_tag_match,        If-Schedule-Tag-Match )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( sec_websocket_version,        Sec-WebSocket-Version )
+			break;
+
+		case 22:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( authentication_control,       Authentication-Control )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( sec_websocket_protocol,       Sec-WebSocket-Protocol )
+			break;
+
+		case 24:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( sec_websocket_extensions,     Sec-WebSocket-Extensions )
+			break;
+
+		case 25:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( optional_www_authenticate,    Optional-WWW-Authenticate )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( proxy_authentication_info,    Proxy-Authentication-Info )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( strict_transport_security,    Strict-Transport-Security )
+			break;
+
+		case 27:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( public_key_pins_report_only,  Public-Key-Pins-Report-Only )
+			break;
+	}
+
+#undef RESTINIO_HTTP_CHECK_FOR_FIELD
 
 	return http_field_t::field_unspecified;
 }
@@ -276,7 +534,7 @@ string_to_field( const std::string & field_name )
 //
 
 //! Helper sunction to get method string name.
-constexpr inline const char *
+inline const char *
 field_to_string( http_field_t f )
 {
 	const char * result = "";
@@ -337,9 +595,15 @@ struct http_header_field_t
 class http_header_fields_t;
 namespace impl
 {
+
 void
 append_last_field_accessor( http_header_fields_t &, const std::string & );
+
 } /* namespace impl */
+
+#if !defined( RESTINIO_HEADER_FIELDS_DEFAULT_RESERVE_COUNT )
+	#define RESTINIO_HEADER_FIELDS_DEFAULT_RESERVE_COUNT 4
+#endif
 
 //
 // http_header_fields_t
@@ -364,13 +628,22 @@ class http_header_fields_t
 	public:
 		using fields_container_t = std::vector< http_header_field_t >;
 
-		http_header_fields_t() = default;
+		http_header_fields_t()
+		{
+			m_fields.reserve( RESTINIO_HEADER_FIELDS_DEFAULT_RESERVE_COUNT );
+		}
 		http_header_fields_t(const http_header_fields_t &) = default;
 		http_header_fields_t(http_header_fields_t &&) = default;
 		virtual ~http_header_fields_t() {}
 
 		http_header_fields_t & operator=(const http_header_fields_t &) = default;
 		http_header_fields_t & operator=(http_header_fields_t &&) = default;
+
+		void
+		swap_fields( http_header_fields_t & http_header_fields )
+		{
+			std::swap( m_fields, http_header_fields.m_fields );
+		}
 
 		//! Chack field by name.
 		bool
@@ -659,6 +932,18 @@ class http_header_fields_t
 };
 
 //
+// http_connection_header_t
+//
+
+//! Values for conection header field.
+enum class http_connection_header_t : std::uint8_t
+{
+	keep_alive,
+	close,
+	upgrade
+};
+
+//
 // http_header_common_t
 //
 
@@ -698,12 +983,30 @@ struct http_header_common_t
 		bool
 		should_keep_alive() const
 		{
-			return m_should_keep_alive;
+			return http_connection_header_t::keep_alive == m_http_connection_header_field_value;
 		}
 
 		void
 		should_keep_alive( bool keep_alive )
-		{ m_should_keep_alive = keep_alive; }
+		{
+			connection( keep_alive?
+				http_connection_header_t::keep_alive :
+				http_connection_header_t::close );
+		}
+
+		//! Get the value of 'connection' header field.
+		http_connection_header_t
+		connection() const
+		{
+			return m_http_connection_header_field_value;
+		}
+
+		//! Set the value of 'connection' header field.
+		void
+		connection( http_connection_header_t ch )
+		{
+			m_http_connection_header_field_value = ch;
+		}
 
 	private:
 		//! Http version.
@@ -715,7 +1018,7 @@ struct http_header_common_t
 		//! Length of body of an http-message.
 		std::uint64_t m_content_length{ 0 };
 
-		bool m_should_keep_alive{ false };
+		http_connection_header_t m_http_connection_header_field_value{ http_connection_header_t::close };
 };
 
 //! HTTP methods mapping with nodejs http methods
@@ -822,7 +1125,7 @@ http_method_from_nodejs( int m )
 //
 
 //! Helper sunction to get method string name.
-constexpr inline const char *
+inline const char *
 method_to_string( http_method_t m )
 {
 	const char * result = "<unknown>";

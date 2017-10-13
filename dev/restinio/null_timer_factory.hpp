@@ -27,28 +27,35 @@ struct null_timer_factory_t
 	{
 		// Set new timeout guard.
 		template <
-				typename EXECUTOR,
-				typename CALLBACK_FUNC >
-		void
+				typename Executor,
+				typename Callback >
+		constexpr void
 		schedule_operation_timeout_callback(
-			const EXECUTOR & ,
+			const Executor & ,
 			std::chrono::steady_clock::duration ,
-			CALLBACK_FUNC && ) const
+			Callback && ) const
 		{}
 
 		// Cancel timeout guard if any.
-		void
+		constexpr void
 		cancel() const
 		{}
 	};
 
-	using timer_guard_instance_t = std::shared_ptr< timer_guard_t >;
+	struct timer_guard_instance_t
+	{
+		constexpr const timer_guard_t *
+		operator ->() const noexcept
+		{
+			return static_cast< timer_guard_t * >( nullptr );
+		}
+	};
 
 	// Create guard for connection.
 	timer_guard_instance_t
-	create_timer_guard( asio::io_service & )
+	create_timer_guard( asio::io_context & )
 	{
-		return std::make_shared< timer_guard_t >();
+		return timer_guard_instance_t{};
 	}
 };
 

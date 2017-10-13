@@ -27,7 +27,7 @@ namespace restinio
 // base_response_builder_t
 //
 
-template < typename RESPONSE_BUILDER >
+template < typename Response_Builder >
 class base_response_builder_t
 {
 	public:
@@ -69,7 +69,7 @@ class base_response_builder_t
 		//! \}
 
 		//! Add header field.
-		RESPONSE_BUILDER &
+		Response_Builder &
 		append_header(
 			std::string field_name,
 			std::string field_value )
@@ -80,18 +80,31 @@ class base_response_builder_t
 			return upcast_reference();
 		}
 
+		//! Add header field.
+		Response_Builder &
+		append_header(
+			http_field_t field_id,
+			std::string field_value )
+		{
+			m_header.set_field(
+				field_id,
+				std::move( field_value ) );
+			return upcast_reference();
+		}
+
 		//! Add header `Date` field.
-		RESPONSE_BUILDER &
+		Response_Builder &
 		append_header_date_field(
 			std::time_t t = std::time( nullptr ) )
 		{
 			const auto tpoint = make_gmtime( t );
 
 			std::array< char, 64 > buf;
+			// TODO: is there a faster way to get time string?
 			strftime(
 				buf.data(),
 				buf.size(),
-				"%a, %d %b %Y %T GMT",
+				"%a, %d %b %Y %H:%M:%S GMT",
 				&tpoint );
 
 			m_header.set_field(
@@ -101,14 +114,14 @@ class base_response_builder_t
 			return upcast_reference();
 		}
 
-		RESPONSE_BUILDER &
+		Response_Builder &
 		connection_close()
 		{
 			m_header.should_keep_alive( false );
 			return upcast_reference();
 		}
 
-		RESPONSE_BUILDER &
+		Response_Builder &
 		connection_keep_alive()
 		{
 			m_header.should_keep_alive();
@@ -122,10 +135,10 @@ class base_response_builder_t
 		const request_id_t m_request_id;
 
 	private:
-		RESPONSE_BUILDER &
+		Response_Builder &
 		upcast_reference()
 		{
-			return static_cast< RESPONSE_BUILDER & >( *this );
+			return static_cast< Response_Builder & >( *this );
 		}
 };
 
@@ -133,7 +146,7 @@ class base_response_builder_t
 // response_builder_t
 //
 
-template < typename RESP_OUTPUT_STRATEGY >
+template < typename Response_Output_Strategy >
 class response_builder_t
 {
 	response_builder_t() = delete;

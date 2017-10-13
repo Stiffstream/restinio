@@ -25,7 +25,7 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_service( 1 ),
+		restinio::own_io_context(),
 		[]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -48,7 +48,8 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 		}
 	};
 
-	http_server.open();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
 	std::string response;
 	auto create_request = []( const std::string & body ){
@@ -102,5 +103,5 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 		REQUIRE_THAT( response, Catch::Matchers::EndsWith( body ) );
 	}
 
-	http_server.close();
+	other_thread.stop_and_join();
 }

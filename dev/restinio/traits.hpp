@@ -20,18 +20,18 @@ namespace restinio
 //
 
 template <
-		typename TIMER_FACTORY,
-		typename LOGGER,
-		typename REQUEST_HANDLER = default_request_handler_t,
-		typename STRAND = asio::strand< asio::executor >,
-		typename STREAM_SOCKET = asio::ip::tcp::socket >
+		typename Timer_Factory,
+		typename Logger,
+		typename Request_Handler = default_request_handler_t,
+		typename Strand = asio::strand< asio::executor >,
+		typename Socket = asio::ip::tcp::socket >
 struct traits_t
 {
-	using timer_factory_t = TIMER_FACTORY;
-	using logger_t = LOGGER;
-	using request_handler_t = REQUEST_HANDLER;
-	using strand_t = STRAND;
-	using stream_socket_t = STREAM_SOCKET;
+	using timer_factory_t = Timer_Factory;
+	using logger_t = Logger;
+	using request_handler_t = Request_Handler;
+	using strand_t = Strand;
+	using stream_socket_t = Socket;
 };
 
 using noop_strand_t = asio::executor;
@@ -41,11 +41,11 @@ using noop_strand_t = asio::executor;
 //
 
 template <
-		typename TIMER_FACTORY,
-		typename LOGGER,
-		typename REQUEST_HANDLER = default_request_handler_t >
+		typename Timer_Factory,
+		typename Logger,
+		typename Request_Handler = default_request_handler_t >
 using single_thread_traits_t =
-	traits_t< TIMER_FACTORY, LOGGER, REQUEST_HANDLER, noop_strand_t >;
+	traits_t< Timer_Factory, Logger, Request_Handler, noop_strand_t >;
 
 //
 // default_traits_t

@@ -11,33 +11,34 @@
 #include <asio/ssl.hpp>
 
 #include <restinio/traits.hpp>
+#include <restinio/impl/tls_socket.hpp>
 
 namespace restinio
 {
 
-using tls_socket_t = asio::ssl::stream< asio::ip::tcp::socket >;
+using tls_socket_t = impl::tls_socket_t;
 
 //
 // tls_traits_t
 //
 
 template <
-		typename TIMER_FACTORY,
-		typename LOGGER,
-		typename REQUEST_HANDLER,
-		typename STRAND >
-using tls_traits_t = traits_t< TIMER_FACTORY, LOGGER, REQUEST_HANDLER, STRAND, tls_socket_t >;
+		typename Timer_Factory,
+		typename Logger,
+		typename Request_Handler = default_request_handler_t,
+		typename Strand = asio::strand< asio::executor > >
+using tls_traits_t = traits_t< Timer_Factory, Logger, Request_Handler, Strand, tls_socket_t >;
 
 //
 // single_thread_traits_t
 //
 
 template <
-		typename TIMER_FACTORY,
-		typename LOGGER,
-		typename REQUEST_HANDLER = default_request_handler_t >
+		typename Timer_Factory,
+		typename Logger,
+		typename Request_Handler = default_request_handler_t >
 using single_thread_tls_traits_t =
-	tls_traits_t< TIMER_FACTORY, LOGGER, REQUEST_HANDLER, noop_strand_t >;
+	tls_traits_t< Timer_Factory, Logger, Request_Handler, noop_strand_t >;
 
 //
 // prepare_connection_and_start_read()
@@ -45,13 +46,13 @@ using single_thread_tls_traits_t =
 
 //! Customizes connection init routine with an additional step:
 //! perform handshake and only then start reading.
-template < typename CONNECTION, typename START_READ_CB, typename FAILED_CB >
+template < typename Connection, typename Start_Read_CB, typename Failed_CB >
 void
 prepare_connection_and_start_read(
 	tls_socket_t & socket,
-	CONNECTION & con,
-	START_READ_CB start_read_cb,
-	FAILED_CB failed_cb )
+	Connection & con,
+	Start_Read_CB start_read_cb,
+	Failed_CB failed_cb )
 {
 	socket.async_handshake(
 		asio::ssl::stream_base::server,
@@ -66,23 +67,25 @@ prepare_connection_and_start_read(
 }
 
 //
-// extra_settings_t
+// socket_type_dependent_settings_t
 //
 
 //! Customizes extra settings needed for working with socket.
 /*!
 	Adds tls context setting.
 */
-template < typename SETTINGS >
-class extra_settings_t< SETTINGS, tls_socket_t >
+template < typename Settings >
+class socket_type_dependent_settings_t< Settings, tls_socket_t >
 {
-	public:
-		virtual ~extra_settings_t() = default;
+protected:
+		~socket_type_dependent_settings_t() = default;
 
-		extra_settings_t() = default;
-		extra_settings_t( extra_settings_t && ) = default;
+public:
+		socket_type_dependent_settings_t() = default;
+		socket_type_dependent_settings_t(
+			socket_type_dependent_settings_t && ) = default;
 
-		SETTINGS &
+		Settings &
 		tls_context(
 			asio::ssl::context context ) &
 		{
@@ -90,7 +93,7 @@ class extra_settings_t< SETTINGS, tls_socket_t >
 			return upcast_reference();
 		}
 
-		SETTINGS &&
+		Settings &&
 		tls_context(
 			asio::ssl::context context ) &&
 		{
@@ -104,10 +107,10 @@ class extra_settings_t< SETTINGS, tls_socket_t >
 		}
 
 	private:
-		SETTINGS &
+		Settings &
 		upcast_reference()
 		{
-			return static_cast< SETTINGS & >( *this );
+			return static_cast< Settings & >( *this );
 		}
 
 		asio::ssl::context m_tls_context{ asio::ssl::context::sslv23 };
@@ -117,44 +120,61 @@ namespace impl
 {
 
 //
-// socket_holder_t
+// socket_supplier_t
 //
 
 //! A custom socket storage for tls_socket_t.
 template <>
-class socket_holder_t< tls_socket_t >
+class socket_supplier_t< tls_socket_t >
 {
 	protected:
-		template < typename SETTINGS >
-		socket_holder_t(
-			SETTINGS & settings,
-			asio::io_service & io_service )
+		template < typename Settings >
+		socket_supplier_t(
+			Settings & settings,
+			asio::io_context & io_context )
 			:	m_tls_context{ settings.tls_context() }
-			,	m_io_service{ io_service }
-			,	m_socket{
-					std::make_unique< tls_socket_t >( m_io_service, m_tls_context ) }
-		{}
-
-		virtual ~socket_holder_t() = default;
-
-		tls_socket_t &
-		socket()
+			,	m_io_context{ io_context }
 		{
-			return *m_socket;
+			m_sockets.reserve( settings.concurrent_accepts_count() );
+
+			while( m_sockets.size() < settings.concurrent_accepts_count() )
+			{
+				m_sockets.emplace_back( m_io_context, m_tls_context );
+			}
 		}
 
-		std::unique_ptr< tls_socket_t >
-		move_socket()
+		virtual ~socket_supplier_t() = default;
+
+		tls_socket_t &
+		socket(
+			//! Index of a socket in the pool.
+			std::size_t idx )
 		{
-			auto res = std::make_unique< tls_socket_t >( m_io_service, m_tls_context );
-			std::swap( res, m_socket );
+			return m_sockets.at( idx );
+		}
+
+		auto
+		move_socket(
+			//! Index of a socket in the pool.
+			std::size_t idx )
+		{
+			tls_socket_t res{ m_io_context, m_tls_context };
+			std::swap( res, m_sockets.at( idx ) );
 			return res;
+		}
+
+		//! The number of sockets that can be used for
+		//! cuncurrent accept operations.
+		auto
+		cuncurrent_accept_sockets_count() const
+		{
+			return m_sockets.size();
 		}
 
 	private:
 		asio::ssl::context m_tls_context;
-		asio::io_service & m_io_service;
-		std::unique_ptr< tls_socket_t > m_socket;
+		asio::io_context & m_io_context;
+		std::vector< tls_socket_t > m_sockets;
 };
 
 } /* namespace impl */

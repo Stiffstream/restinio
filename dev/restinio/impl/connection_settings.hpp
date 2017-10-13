@@ -28,22 +28,26 @@ namespace impl
 	Each connection has access to common params and
 	server-agent throught this object.
 */
-template < typename TRAITS >
+template < typename Traits >
 struct connection_settings_t final
-	:	public std::enable_shared_from_this< connection_settings_t< TRAITS > >
+	:	public std::enable_shared_from_this< connection_settings_t< Traits > >
 {
-	using request_handler_t = typename TRAITS::request_handler_t;
-	using logger_t = typename TRAITS::logger_t;
+	using timer_factory_t = typename Traits::timer_factory_t;
+	using timer_factory_handle_t = std::shared_ptr< timer_factory_t >;
+	using request_handler_t = typename Traits::request_handler_t;
+	using logger_t = typename Traits::logger_t;
 
 	connection_settings_t( const connection_settings_t & ) = delete;
 	connection_settings_t( const connection_settings_t && ) = delete;
 	void operator = ( const connection_settings_t & ) = delete;
 	void operator = ( const connection_settings_t && ) = delete;
 
-	template < typename SETTINGS >
+	template < typename Settings >
 	connection_settings_t(
-		SETTINGS & settings,
-		http_parser_settings parser_settings )
+		Settings && settings,
+		http_parser_settings parser_settings,
+		asio::io_context & io_context,
+		timer_factory_handle_t timer_factory )
 		:	m_request_handler{ settings.request_handler() }
 		,	m_parser_settings{ parser_settings }
 		,	m_buffer_size{ settings.buffer_size() }
@@ -55,7 +59,12 @@ struct connection_settings_t final
 				settings.handle_request_timeout() }
 		,	m_max_pipelined_requests{ settings.max_pipelined_requests() }
 		,	m_logger{ settings.logger() }
-	{}
+		,	m_io_context{ io_context }
+		,	m_timer_factory{ std::move( timer_factory ) }
+	{
+		if( !m_timer_factory )
+			throw exception_t{ "timer_factory not set" };
+	}
 
 	//! Request handler factory.
 	std::unique_ptr< request_handler_t > m_request_handler;
@@ -83,11 +92,25 @@ struct connection_settings_t final
 
 	const std::unique_ptr< logger_t > m_logger;
 	//! \}
+
+	//! Create new timer guard.
+	auto
+	create_timer_guard()
+	{
+		return m_timer_factory->create_timer_guard( m_io_context );
+	}
+
+	private:
+		//! A service loop that runs sockets.
+		asio::io_context & m_io_context;
+
+		//! Timer factory for timout guards.
+		timer_factory_handle_t m_timer_factory;
 };
 
-template < typename TRAITS >
+template < typename Traits >
 using connection_settings_shared_ptr_t =
-	std::shared_ptr< connection_settings_t< TRAITS > >;
+	std::shared_ptr< connection_settings_t< Traits > >;
 
 } /* namespace impl */
 

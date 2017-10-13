@@ -1,0 +1,126 @@
+/*
+	restinio
+*/
+
+/*!
+	Socket adapter for asio::ssl::stream< asio::ip::tcp::socket >.
+*/
+
+namespace restinio
+{
+
+namespace impl
+{
+
+//
+// tls_socket_t
+//
+
+//! Socket adapter for asio::ssl::stream< asio::ip::tcp::socket >.
+/*!
+	As asio::ssl::stream< asio::ip::tcp::socket > class is not movable
+	and lack some some functionality compared to asio::ip::tcp::socket
+	it is necesasary to have an adapter for it to use it the same way as
+	asio::ip::tcp::socket in template classes and functions.
+*/
+class tls_socket_t
+{
+	public:
+		using socket_t = asio::ssl::stream< asio::ip::tcp::socket >;
+		tls_socket_t( const tls_socket_t & ) = delete;
+		const tls_socket_t & operator = ( const tls_socket_t & ) = delete;
+
+		tls_socket_t(
+			asio::io_context & io_context,
+			asio::ssl::context & tls_context )
+			:	m_socket{ std::make_unique< socket_t >( io_context, tls_context ) }
+		{}
+
+		tls_socket_t( tls_socket_t && ) = default;
+		tls_socket_t & operator = ( tls_socket_t && ) = default;
+
+		void
+		swap( tls_socket_t & sock )
+		{
+			std::swap( m_socket, sock.m_socket );
+		}
+
+		auto &
+		lowest_layer()
+		{
+			return m_socket->lowest_layer();
+		}
+
+		const auto &
+		lowest_layer() const
+		{
+			return m_socket->lowest_layer();
+		}
+
+		auto
+		get_executor()
+		{
+			return lowest_layer().get_executor();
+		}
+
+		auto
+		remote_endpoint() const
+		{
+			return lowest_layer().remote_endpoint();
+		}
+
+		auto
+		is_open() const
+		{
+			return lowest_layer().is_open();
+		}
+
+		template< typename... Args >
+		void
+		cancel( Args &&... args )
+		{
+			lowest_layer().cancel( std::forward< Args >( args )... );
+		}
+
+		template< typename... Args >
+		auto
+		async_read_some( Args &&... args )
+		{
+			return m_socket->async_read_some( std::forward< Args >( args )... );
+		}
+
+		template< typename... Args >
+		auto
+		async_write_some( Args &&... args )
+		{
+			return m_socket->async_write_some( std::forward< Args >( args )... );
+		}
+
+		template< typename... Args >
+		void
+		shutdown( Args &&... args )
+		{
+			lowest_layer().shutdown( std::forward< Args >( args )... );
+		}
+
+		template< typename... Args >
+		void
+		close( Args &&... args )
+		{
+			lowest_layer().close( std::forward< Args >( args )... );
+		}
+
+		template< typename... Args >
+		auto
+		async_handshake( Args &&... args )
+		{
+			return m_socket->async_handshake( std::forward< Args >( args )... );
+		}
+
+	private:
+		std::unique_ptr< socket_t > m_socket;
+};
+
+} /* namespace impl */
+
+} /* namespace restinio */

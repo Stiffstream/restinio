@@ -25,7 +25,7 @@ TEST_CASE( "HTTP method" , "[method]" )
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_service( 1 ),
+		restinio::own_io_context(),
 		[]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -45,7 +45,8 @@ TEST_CASE( "HTTP method" , "[method]" )
 					} );
 		} };
 
-	http_server.open();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
 	SECTION( "GET" )
 	{
@@ -132,5 +133,5 @@ TEST_CASE( "HTTP method" , "[method]" )
 		REQUIRE_THAT( response, Catch::Matchers::EndsWith( "DELETE" ) );
 	}
 
-	http_server.close();
+	other_thread.stop_and_join();
 }

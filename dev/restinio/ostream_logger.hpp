@@ -50,7 +50,7 @@ struct null_lock_t
 /*!
 	\note It is not efficient.
 */
-template < typename LOCK >
+template < typename Lock >
 class ostream_logger_t
 {
 	public:
@@ -65,30 +65,30 @@ class ostream_logger_t
 			:	m_out{ &out }
 		{}
 
-		template< typename MSG_BUILDER >
+		template< typename Message_Builder >
 		void
-		trace( MSG_BUILDER && msg_builder )
+		trace( Message_Builder && msg_builder )
 		{
 			log_message( "TRACE", msg_builder() );
 		}
 
-		template< typename MSG_BUILDER >
+		template< typename Message_Builder >
 		void
-		info( MSG_BUILDER && msg_builder )
+		info( Message_Builder && msg_builder )
 		{
 			log_message( " INFO", msg_builder() );
 		}
 
-		template< typename MSG_BUILDER >
+		template< typename Message_Builder >
 		void
-		warn( MSG_BUILDER && msg_builder )
+		warn( Message_Builder && msg_builder )
 		{
 			log_message( " WARN", msg_builder() );
 		}
 
-		template< typename MSG_BUILDER >
+		template< typename Message_Builder >
 		void
-		error( MSG_BUILDER && msg_builder )
+		error( Message_Builder && msg_builder )
 		{
 			log_message( "ERROR", msg_builder() );
 		}
@@ -97,7 +97,7 @@ class ostream_logger_t
 		void
 		log_message( const char * tag, const std::string & msg )
 		{
-			std::unique_lock< LOCK > lock{ m_lock };
+			std::unique_lock< Lock > lock{ m_lock };
 
 			using namespace std;
 			using namespace chrono;
@@ -116,7 +116,7 @@ class ostream_logger_t
 				<< std::endl;
 		}
 
-		LOCK m_lock;
+		Lock m_lock;
 		std::ostream * m_out;
 };
 

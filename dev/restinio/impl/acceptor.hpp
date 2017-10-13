@@ -22,11 +22,11 @@ namespace impl
 {
 
 //
-// socket_holder_t
+// socket_supplier_t
 //
 
 /*
-	A helper base class that hides socket instance.
+	A helper base class that hides a pool of socket instances.
 
 	It prepares a socket for new connections.
 	And as it is template class over a socket type
@@ -34,47 +34,60 @@ namespace impl
 	other types of sockets (like `asio::ssl::stream< asio::ip::tcp::socket >`)
 	that can be used.
 */
-template < typename STREAM_SOCKET >
-class socket_holder_t
+template < typename Socket >
+class socket_supplier_t
 {
 	protected:
-		template < typename SETTINGS >
-		socket_holder_t(
-			SETTINGS & ,
-			asio::io_service & io_service )
-			:	m_io_service{ io_service }
-			,	m_socket{ std::make_unique< STREAM_SOCKET >( m_io_service ) }
-		{}
-
-		virtual ~socket_holder_t() = default;
-
-		//! Get the reference to socket.
-		STREAM_SOCKET &
-		socket()
+		template < typename Settings >
+		socket_supplier_t(
+			//! Server settings.
+			Settings & settings,
+			//! A context the server runs on.
+			asio::io_context & io_context )
+			:	m_io_context{ io_context }
 		{
-			return *m_socket;
+			m_sockets.reserve( settings.concurrent_accepts_count() );
+
+			while( m_sockets.size() < settings.concurrent_accepts_count() )
+			{
+				m_sockets.emplace_back( m_io_context );
+			}
 		}
 
-		//! Extract current socet via move.
-		std::unique_ptr< STREAM_SOCKET >
-		move_socket()
+		//! Get the reference to socket.
+		Socket &
+		socket(
+			//! Index of a socket in the pool.
+			std::size_t idx )
 		{
-			// As a socket must never be empty,
-			// first a new socket is created,
-			// and then it is swapped with m_socket
-			// and the result is returned.
-			auto res = std::make_unique< STREAM_SOCKET >( m_io_service );
-			std::swap( res, m_socket );
+			return m_sockets.at( idx );
+		}
+
+		//! Extract the socket via move.
+		Socket
+		move_socket(
+			//! Index of a socket in the pool.
+			std::size_t idx )
+		{
+			auto res = std::move( m_sockets.at( idx ) );
 			return res;
 		}
 
+		//! The number of sockets that can be used for
+		//! cuncurrent accept operations.
+		auto
+		cuncurrent_accept_sockets_count() const
+		{
+			return m_sockets.size();
+		}
+
 	private:
-		//! io_service for sockets to run on.
-		asio::io_service & m_io_service;
+		//! io_context for sockets to run on.
+		asio::io_context & m_io_context;
 
 		//! A temporary socket for receiving new connections.
 		//! \note Must never be empty.
-		std::unique_ptr< STREAM_SOCKET > m_socket;
+		std::vector< Socket > m_sockets;
 };
 
 //
@@ -82,40 +95,38 @@ class socket_holder_t
 //
 
 //! Context for accepting http connections.
-template < typename TRAITS >
+template < typename Traits >
 class acceptor_t final
-	:	public std::enable_shared_from_this< acceptor_t< TRAITS > >
-	,	public socket_holder_t< typename TRAITS::stream_socket_t >
+	:	public std::enable_shared_from_this< acceptor_t< Traits > >
+	,	protected socket_supplier_t< typename Traits::stream_socket_t >
 {
 	public:
-		using connection_factory_t = impl::connection_factory_t< TRAITS >;
+		using connection_factory_t = impl::connection_factory_t< Traits >;
 		using connection_factory_shared_ptr_t =
 			std::shared_ptr< connection_factory_t >;
-		using logger_t = typename TRAITS::logger_t;
-		using strand_t = typename TRAITS::strand_t;
-		using stream_socket_t = typename TRAITS::stream_socket_t;
-		using socket_holder_base_t = socket_holder_t< stream_socket_t >;
+		using logger_t = typename Traits::logger_t;
+		using strand_t = typename Traits::strand_t;
+		using stream_socket_t = typename Traits::stream_socket_t;
+		using socket_holder_base_t = socket_supplier_t< stream_socket_t >;
 
-		template < typename SETTINGS >
+		template < typename Settings >
 		acceptor_t(
-			SETTINGS & settings,
-			// //! Server port.
-			// std::uint16_t port,
-			// //! Server protocol.
-			// asio::ip::tcp protocol,
-			// //! Is only local connections allowed.
-			// std::string address,
-			//! ASIO io_service to run on.
-			asio::io_service & io_service,
+			Settings & settings,
+			//! ASIO io_context to run on.
+			asio::io_context & io_context,
 			//! Connection factory.
 			connection_factory_shared_ptr_t connection_factory,
+			//! Logger.
 			logger_t & logger )
-			:	socket_holder_base_t{ settings, io_service }
+			:	socket_holder_base_t{ settings, io_context }
 			,	m_port{ settings.port() }
 			,	m_protocol{ settings.protocol() }
 			,	m_address{ settings.address() }
-			,	m_acceptor{ io_service }
-			,	m_strand{ this->socket().lowest_layer().get_executor() }
+			,	m_acceptor_options_setter{ settings.acceptor_options_setter() }
+			,	m_acceptor{ io_context }
+			,	m_executor{ io_context.get_executor() }
+			,	m_open_close_operations_executor{ io_context.get_executor() }
+			,	m_separate_accept_and_create_connect{ settings.separate_accept_and_create_connect() }
 			,	m_connection_factory{ std::move( connection_factory ) }
 			,	m_logger{ logger }
 		{}
@@ -124,6 +135,15 @@ class acceptor_t final
 		void
 		open()
 		{
+			if( m_acceptor.is_open() )
+			{
+				const auto ep = m_acceptor.local_endpoint();
+				m_logger.warn( [&]{
+					return fmt::format( "server already started on {}", ep );
+				} );
+				return;
+			}
+
 			asio::ip::tcp::endpoint ep{ m_protocol, m_port };
 
 			if( !m_address.empty() )
@@ -145,17 +165,28 @@ class acceptor_t final
 
 				m_acceptor.open( ep.protocol() );
 
-				m_acceptor.set_option(
-					asio::ip::tcp::acceptor::reuse_address( true ) );
+				{
+					// Set acceptor options.
+					acceptor_options_t options{ m_acceptor };
+
+					(*m_acceptor_options_setter)( options );
+				}
 
 				m_acceptor.bind( ep );
 				m_acceptor.listen( asio::socket_base::max_connections );
 
 				// Call accept connections routine.
-				accept_next();
+				for( std::size_t i = 0; i< this->cuncurrent_accept_sockets_count(); ++i )
+				{
+					m_logger.info( [&]{
+						return fmt::format( "init accept #{}", i );
+					} );
+
+					accept_next( i );
+				}
 
 				m_logger.info( [&]{
-					return fmt::format( "server started  on {}", ep );
+					return fmt::format( "server started on {}", ep );
 				} );
 			}
 			catch( const std::exception & ex )
@@ -174,83 +205,118 @@ class acceptor_t final
 		void
 		close()
 		{
-			const auto ep = m_acceptor.local_endpoint();
-
-			m_logger.trace( [&]{
-				return fmt::format( "closing server on {}", ep );
-			} );
-
 			if( m_acceptor.is_open() )
 			{
-				m_acceptor.close();
+				close_impl();
 			}
-
-			m_logger.info( [&]{
-				return fmt::format( "server closed on {}", ep );
-			} );
+			else
+			{
+				m_logger.trace( [&]{
+					return fmt::format( "server already closed" );
+				} );
+			}
 		}
 
-		strand_t &
-		get_executor()
+		auto &
+		get_open_close_operations_executor()
 		{
-			return m_strand;
+			return  m_open_close_operations_executor;
 		}
 
 	private:
+		auto &
+		get_executor()
+		{
+			return m_executor;
+		}
+
 		// Set a callback for a new connection.
 		void
-		accept_next()
+		accept_next( std::size_t i )
 		{
 			m_acceptor.async_accept(
-				this->socket().lowest_layer(),
-				asio::wrap(
+				this->socket( i ).lowest_layer(),
+				asio::bind_executor(
 					get_executor(),
-					[ ctx = this->shared_from_this() ]( auto ec ){
+					[ i, ctx = this->shared_from_this() ]( auto ec ){
 						// Check if acceptor is running.
 						// Also it cover
 						// `asio::error:operation_aborted == ec`
 						// case.
 						if( ctx->m_acceptor.is_open() )
 						{
-							ctx->accept_current_connection( ec );
+							ctx->accept_current_connection( i, ec );
 						}
 					} ) );
 		}
 
 		//! Accept current connection.
 		void
-		accept_current_connection( const std::error_code & ec )
+		accept_current_connection(
+			//! socket index in the pool of sockets.
+			std::size_t i,
+			const std::error_code & ec )
 		{
 			if( !ec )
 			{
 				m_logger.trace( [&]{
 					return fmt::format(
-							"accept connection from: {}",
-							this->socket().lowest_layer().remote_endpoint() );
+							"accept connection from {} on socket #{}",
+							this->socket( i ).lowest_layer().remote_endpoint(), i );
 				} );
 
-				// Create new connection handler.
-				auto conn =
-					m_connection_factory
-						->create_new_connection( this->move_socket() );
+				auto create_and_init_connection =
+					[ sock = this->move_socket( i ), factory = m_connection_factory ]() mutable {
+						// Create new connection handler.
+						auto conn = factory->create_new_connection( std::move( sock ) );
 
-				//! If connection handler was created,
-				// then start waiting for request message.
-				if( conn )
-					conn->init();
+						//! If connection handler was created,
+						// then start waiting for request message.
+						if( conn )
+							conn->init();
+					};
+
+				if( m_separate_accept_and_create_connect )
+				{
+					asio::post(
+						get_executor(),
+						std::move( create_and_init_connection ) );
+				}
+				else
+				{
+					create_and_init_connection();
+				}
 			}
 			else
 			{
 				// Something goes wrong with connection.
 				m_logger.error( [&]{
 					return fmt::format(
-						"failed to accept connection: {}",
-						ec );
+						"failed to accept connection on socket #{}: {}",
+						i,
+						ec.message() );
 				} );
 			}
 
 			// Continue accepting.
-			accept_next();
+			accept_next( i );
+		}
+
+		//! Close opened acceptor.
+		void
+		close_impl()
+		{
+			const auto ep = m_acceptor.local_endpoint();
+
+			m_logger.trace( [&]{
+				return fmt::format( "closing server on {}", ep );
+			} );
+
+			m_acceptor.close();
+
+			m_logger.info( [&]{
+				return fmt::format( "server closed on {}", ep );
+			} );
 		}
 
 		//! Server endpoint.
@@ -262,17 +328,22 @@ class acceptor_t final
 
 		//! Server port listener and connection receiver routine.
 		//! \{
+		std::unique_ptr< acceptor_options_setter_t > m_acceptor_options_setter;
 		asio::ip::tcp::acceptor m_acceptor;
-		// stream_socket_t m_socket;
 		//! \}
 
-		//! Sync object for acceptor events.
-		strand_t m_strand;
+		//! Asio executor.
+		asio::executor m_executor;
+		strand_t m_open_close_operations_executor;
+
+		//! Do separate an accept operation and connection instantiation.
+		const bool m_separate_accept_and_create_connect;
 
 		//! Factory for creating connections.
 		connection_factory_shared_ptr_t m_connection_factory;
 
 		logger_t & m_logger;
+
 };
 
 } /* namespace impl */

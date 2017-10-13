@@ -31,7 +31,7 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 				utest_logger_t > >;
 
 	http_server_t http_server{
-		restinio::create_child_io_service( 1 ),
+		restinio::own_io_context(),
 		[]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -54,11 +54,12 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 		}
 	};
 
-	http_server.open();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
 	SECTION( "write nothing" )
 	{
-		do_with_socket( [ & ]( auto & socket, auto & /*io_service*/ ){
+		do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
 			std::this_thread::sleep_for( std::chrono::milliseconds( 6 ) );
 
 			std::array< char, 64 > data;
@@ -75,7 +76,7 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 
 	SECTION( "write a little" )
 	{
-		do_with_socket( [ & ]( auto & socket, auto & /*io_service*/ ){
+		do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
 
 			const std::string a_part_of_request{ "GET / HTT" };
 
@@ -98,7 +99,7 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 
 	SECTION( "write almost all" )
 	{
-		do_with_socket( [ & ]( auto & socket, auto & /*io_service*/ ){
+		do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
 
 			const std::string a_part_of_request{
 				"GET / HTTP/1.1\r\n"
@@ -125,7 +126,7 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 		} );
 	}
 
-	http_server.close();
+	other_thread.stop_and_join();
 }
 
 TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
@@ -139,7 +140,7 @@ TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
 	restinio::request_handle_t req_to_store;
 
 	http_server_t http_server{
-		restinio::create_child_io_service( 1 ),
+		restinio::own_io_context(),
 		[ & ]( auto & settings ){
 			settings
 				.port( utest_default_port() )
@@ -156,9 +157,10 @@ TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
 		}
 	};
 
-	http_server.open();
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
 
-	do_with_socket( [ & ]( auto & socket, auto & io_service ){
+	do_with_socket( [ & ]( auto & socket, auto & io_context ){
 
 		const std::string request{
 			"GET / HTTP/1.1\r\n"
@@ -183,10 +185,10 @@ TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
 				REQUIRE( ec == asio::error::eof );
 			} );
 
-		io_service.run();
+		io_context.run();
 	} );
 
 
-	http_server.close();
+	other_thread.stop_and_join();
 	req_to_store.reset();
 }

@@ -166,13 +166,13 @@ struct connection_input_t
 	}
 };
 
-template < typename CONNECTION, typename START_READ_CB, typename FAILED_CB >
+template < typename Connection, typename Start_Read_CB, typename Failed_CB >
 void
 prepare_connection_and_start_read(
 	asio::ip::tcp::socket & ,
-	CONNECTION & ,
-	START_READ_CB start_read_cb,
-	FAILED_CB )
+	Connection & ,
+	Start_Read_CB start_read_cb,
+	Failed_CB )
 {
 	// No preparation is needed, start
 	start_read_cb();
@@ -197,34 +197,32 @@ prepare_connection_and_start_read(
 
 	In case of errors connection closes itself.
 */
-template < typename TRAITS >
+template < typename Traits >
 class connection_t final
 	:	public connection_base_t
 {
 	public:
-		using timer_factory_t = typename TRAITS::timer_factory_t;
+		using timer_factory_t = typename Traits::timer_factory_t;
 		using timer_guard_instance_t = typename timer_factory_t::timer_guard_instance_t;
-		using request_handler_t = typename TRAITS::request_handler_t;
-		using logger_t = typename TRAITS::logger_t;
-		using strand_t = typename TRAITS::strand_t;
-		using stream_socket_t = typename TRAITS::stream_socket_t;
+		using request_handler_t = typename Traits::request_handler_t;
+		using logger_t = typename Traits::logger_t;
+		using strand_t = typename Traits::strand_t;
+		using stream_socket_t = typename Traits::stream_socket_t;
 
 		connection_t(
 			//! Connection id.
 			std::uint64_t conn_id,
 			//! Connection socket.
-			std::unique_ptr< stream_socket_t > socket,
+			stream_socket_t && socket,
 			//! Settings that are common for connections.
-			connection_settings_shared_ptr_t< TRAITS > settings,
-			//! Operation timeout guard.
-			timer_guard_instance_t timer_guard )
+			connection_settings_shared_ptr_t< Traits > settings )
 			:	connection_base_t{ conn_id }
 			,	m_socket{ std::move( socket ) }
-			,	m_strand{ socket_lowest_layer().get_executor() }
+			,	m_strand{ m_socket.get_executor() }
 			,	m_settings{ std::move( settings ) }
 			,	m_input{ m_settings->m_buffer_size }
 			,	m_response_coordinator{ m_settings->m_max_pipelined_requests }
-			,	m_timer_guard{ std::move( timer_guard ) }
+			,	m_timer_guard{ m_settings->create_timer_guard() }
 			,	m_request_handler{ *( m_settings->m_request_handler ) }
 			,	m_logger{ *( m_settings->m_logger ) }
 		{
@@ -233,7 +231,7 @@ class connection_t final
 					return fmt::format(
 						"[connection:{}] start connection with {}",
 						connection_id(),
-						socket_lowest_layer().remote_endpoint() );
+						m_socket.remote_endpoint() );
 			} );
 		}
 
@@ -249,7 +247,7 @@ class connection_t final
 				// Notify of a new connection instance.
 				m_logger.trace( [&]{
 					return fmt::format(
-						"[connection:{}] destroyed",
+						"[connection:{}] destructor called",
 						connection_id() );
 				} );
 			}
@@ -261,7 +259,7 @@ class connection_t final
 		init()
 		{
 			prepare_connection_and_start_read(
-				socket_ref(),
+				m_socket,
 				*this,
 				[ & ]{ wait_for_http_message(); },
 				[ & ]( const asio::error_code & ec ){
@@ -307,18 +305,33 @@ class connection_t final
 			}
 		}
 
-		//! Move socket out of connection.
-		auto
-		move_socket()
+		struct upgrade_internals_t
 		{
-			auto res = std::move( m_socket );
-		}
+			upgrade_internals_t(
+				upgrade_internals_t && ) = default;
 
-		//! Пуее
-		auto
-		get_settings() const
+			upgrade_internals_t(
+				connection_settings_shared_ptr_t< Traits > settings,
+				stream_socket_t socket,
+				strand_t strand )
+				:	m_settings{ std::move( settings ) }
+				,	m_socket{ std::move( socket ) }
+				,	m_strand{ std::move( strand ) }
+			{}
+
+			connection_settings_shared_ptr_t< Traits > m_settings;
+			stream_socket_t m_socket;
+			strand_t m_strand;
+		};
+
+		//! Move socket out of connection.
+		upgrade_internals_t
+		move_upgrade_internals()
 		{
-			return m_settings;
+			return upgrade_internals_t{
+				m_settings,
+				std::move( m_socket ),
+				get_executor() };
 		}
 
 	private:
@@ -339,12 +352,14 @@ class connection_t final
 						connection_id() );
 			} );
 
-			socket_ref().async_read_some(
+			m_socket.async_read_some(
 				m_input.m_buf.make_asio_buffer(),
-				asio::wrap(
+				asio::bind_executor(
 					get_executor(),
-					[ this, ctx = shared_from_this() ]( auto ec, std::size_t length ){
-						this->after_read( ec, length );
+					[ this, ctx = shared_from_this() ](
+						const asio::error_code & ec,
+						std::size_t length ){
+						after_read( ec, length );
 					} ) );
 		}
 
@@ -588,7 +603,8 @@ class connection_t final
 						parser_ctx.m_header.request_target() );
 			} );
 
-			guard_request_handling_operation();
+			// Do not guard upgrade request.
+			m_timer_guard->cancel();
 
 			// After calling handler we expect the results or
 			// no further operations with connection
@@ -603,7 +619,7 @@ class connection_t final
 						std::move( parser_ctx.m_body ),
 						shared_from_this() ) ) )
 			{
-				if( m_socket )
+				if( m_socket.is_open() )
 				{
 					// Request is rejected, so our socket
 					// must not be moved out to websocket connection.
@@ -648,28 +664,20 @@ class connection_t final
 			//! parts of a response.
 			buffers_container_t bufs ) override
 		{
-			// TODO: Avoid heap allocation:
-
-			// Unfortunately ASIO tends to call a copy ctor for bufs
-			// If pass it to lambda as `bufs = std::move( bufs ),`
-			// so bufs_transmit_instance workaround is used.
-			auto bufs_transmit_instance =
-				std::make_unique< buffers_container_t >( std::move( bufs ) );
-
-			//! Run write message on io_service loop if possible.
+			//! Run write message on io_context loop if possible.
 			asio::dispatch(
 				get_executor(),
 				[ this,
 					request_id,
 					response_output_flags,
-					bufs = std::move( bufs_transmit_instance ),
-					ctx = shared_from_this() ](){
+					actual_bufs = std::move( bufs ),
+					ctx = shared_from_this() ]() mutable {
 						try
 						{
 							write_response_parts_impl(
 								request_id,
 								response_output_flags,
-								std::move( *bufs ) );
+								std::move( actual_bufs ) );
 						}
 						catch( const std::exception & ex )
 						{
@@ -693,9 +701,7 @@ class connection_t final
 			//! parts of a response.
 			buffers_container_t bufs )
 		{
-			assert( m_socket );
-
-			if( !socket_lowest_layer().is_open() )
+			if( !m_socket.is_open() )
 			{
 				m_logger.warn( [&]{
 					return fmt::format(
@@ -768,33 +774,18 @@ class connection_t final
 
 			if( !m_resp_out_ctx.transmitting() )
 			{
+				// Here: not writing anything to socket, so
+				// write operation can be initiated.
+
 				if( m_resp_out_ctx.obtain_bufs( m_response_coordinator ) )
 				{
-					// Remember if all response cells were busy.
+					// Here: and there is smth to write.
+
+					// Remember if all response cells were busy:
 					const auto full_after = m_response_coordinator.is_full();
 
+					// Asio buffers (param for async write):
 					auto & bufs = m_resp_out_ctx.create_bufs();
-
-					// There is somethig to write.
-					asio::async_write(
-						socket_ref(),
-						bufs,
-						asio::wrap(
-							get_executor(),
-							[ this,
-								ctx = shared_from_this(),
-								should_keep_alive = !m_response_coordinator.closed(),
-								should_init_read_after_this_write =
-									full_before && !full_after ]
-								( auto ec, std::size_t written ){
-									this->after_write(
-										ec,
-										written,
-										should_keep_alive,
-										should_init_read_after_this_write );
-							} ) );
-
-					guard_write_operation();
 
 					if( m_response_coordinator.closed() )
 					{
@@ -809,9 +800,7 @@ class connection_t final
 
 						// Reading new requests is useless.
 						asio::error_code ignored_ec;
-						socket_lowest_layer().shutdown(
-							asio::ip::tcp::socket::shutdown_receive,
-							ignored_ec );
+						m_socket.cancel( ignored_ec );
 					}
 					else
 					{
@@ -822,6 +811,27 @@ class connection_t final
 								connection_id(),
 								bufs.size() ); } );
 					}
+
+					// There is somethig to write.
+					asio::async_write(
+						m_socket,
+						bufs,
+						asio::bind_executor(
+							get_executor(),
+							[ this,
+								ctx = shared_from_this(),
+								should_keep_alive = !m_response_coordinator.closed(),
+								init_read_after_this_write =
+									full_before && !full_after ]
+								( const asio::error_code & ec, std::size_t written ){
+									after_write(
+										ec,
+										written,
+										should_keep_alive,
+										init_read_after_this_write );
+							} ) );
+
+					guard_write_operation();
 				}
 				else if( m_response_coordinator.closed() )
 				{
@@ -866,7 +876,7 @@ class connection_t final
 		inline void
 		after_write(
 			const std::error_code & ec,
-			std::size_t /*written*/,
+			std::size_t written,
 			bool should_keep_alive,
 			bool should_init_read_after_this_write )
 		{
@@ -877,8 +887,9 @@ class connection_t final
 
 				m_logger.trace( [&]{
 					return fmt::format(
-							"[connection:{}] outgoing data was sent",
-							connection_id() );
+							"[connection:{}] outgoing data was sent: {} bytes",
+							connection_id(),
+							written );
 				} );
 
 				if( should_keep_alive )
@@ -955,10 +966,10 @@ class connection_t final
 			} );
 
 			asio::error_code ignored_ec;
-			socket_lowest_layer().shutdown(
+			m_socket.shutdown(
 				asio::ip::tcp::socket::shutdown_both,
 				ignored_ec );
-			socket_lowest_layer().close();
+			m_socket.close();
 		}
 
 		//! Trigger an error.
@@ -966,9 +977,9 @@ class connection_t final
 			Closes the connection and write to log
 			an error message.
 		*/
-		template< typename MSG_BUILDER >
+		template< typename Message_Builder >
 		void
-		trigger_error_and_close( MSG_BUILDER && msg_builder )
+		trigger_error_and_close( Message_Builder && msg_builder )
 		{
 			m_logger.error( std::move( msg_builder ) );
 
@@ -976,26 +987,14 @@ class connection_t final
 		}
 		//! \}
 
-		//! Connection
-		std::unique_ptr< stream_socket_t > m_socket;
-
-		stream_socket_t &
-		socket_ref()
-		{
-			return *m_socket;
-		}
-
-		auto &
-		socket_lowest_layer()
-		{
-			return m_socket->lowest_layer();
-		}
+		//! Connection.
+		stream_socket_t m_socket;
 
 		//! Sync object for connection events.
 		strand_t m_strand;
 
 		//! Common paramaters of a connection.
-		connection_settings_shared_ptr_t< TRAITS > m_settings;
+		connection_settings_shared_ptr_t< Traits > m_settings;
 
 		//! Input routine.
 		connection_input_t m_input;
@@ -1110,47 +1109,57 @@ class connection_t final
 //
 
 //! Factory for connections.
-template < typename TRAITS >
+template < typename Traits >
 class connection_factory_t
 {
 	public:
-		using timer_factory_t = typename TRAITS::timer_factory_t;
-		using logger_t = typename TRAITS::logger_t;
-		using stream_socket_t = typename TRAITS::stream_socket_t;
+		using logger_t = typename Traits::logger_t;
+		using stream_socket_t = typename Traits::stream_socket_t;
 
 		connection_factory_t(
-			connection_settings_shared_ptr_t< TRAITS > connection_settings,
-			asio::io_service & io_service,
-			std::unique_ptr< timer_factory_t > timer_factory )
+			connection_settings_shared_ptr_t< Traits > connection_settings,
+			std::unique_ptr< socket_options_setter_t > socket_options_setter )
 			:	m_connection_settings{ std::move( connection_settings ) }
-			,	m_io_service{ io_service }
-			,	m_timer_factory{ std::move( timer_factory ) }
+			,	m_socket_options_setter{ std::move( socket_options_setter ) }
 			,	m_logger{ *(m_connection_settings->m_logger ) }
-		{
-			if( !m_timer_factory )
-				throw exception_t{ "timer_factory not set" };
-		}
+		{}
 
 		auto
 		create_new_connection(
-			std::unique_ptr< stream_socket_t > socket )
+			stream_socket_t socket )
 		{
-			using connection_type_t = connection_t< TRAITS >;
-			return std::make_shared< connection_type_t >(
-				m_connection_id_counter++,
-				std::move( socket ),
-				m_connection_settings,
-				m_timer_factory->create_timer_guard( m_io_service ) );
+			using connection_type_t = connection_t< Traits >;
+			std::shared_ptr< connection_type_t > result;
+			try
+			{
+				{
+					socket_options_t options{ socket.lowest_layer() };
+					(*m_socket_options_setter)( options );
+				}
+
+				result = std::make_shared< connection_type_t >(
+					m_connection_id_counter++,
+					std::move( socket ),
+					m_connection_settings );
+			}
+			catch( const std::exception & ex )
+			{
+				m_logger.error( [&]{
+					return fmt::format(
+						"failed to create connection: {}",
+						ex.what() );
+				} );
+			}
+
+			return result;
 		}
 
 	private:
 		std::uint64_t m_connection_id_counter{ 1 };
 
-		connection_settings_shared_ptr_t< TRAITS > m_connection_settings;
+		connection_settings_shared_ptr_t< Traits > m_connection_settings;
 
-		asio::io_service & m_io_service;
-
-		std::unique_ptr< timer_factory_t > m_timer_factory;
+		std::unique_ptr< socket_options_setter_t > m_socket_options_setter;
 
 		logger_t & m_logger;
 };

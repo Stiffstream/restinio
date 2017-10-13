@@ -22,24 +22,24 @@ namespace restinio
 class null_logger_t
 {
 	public:
-		template< typename MSG_BUILDER >
+		template< typename Message_Builder >
 		constexpr void
-		trace( MSG_BUILDER && ) const
+		trace( Message_Builder && ) const
 		{}
 
-		template< typename MSG_BUILDER >
+		template< typename Message_Builder >
 		constexpr void
-		info( MSG_BUILDER && ) const
+		info( Message_Builder && ) const
 		{}
 
-		template< typename MSG_BUILDER >
+		template< typename Message_Builder >
 		constexpr void
-		warn( MSG_BUILDER && ) const
+		warn( Message_Builder && ) const
 		{}
 
-		template< typename MSG_BUILDER >
+		template< typename Message_Builder >
 		constexpr void
-		error( MSG_BUILDER && ) const
+		error( Message_Builder && ) const
 		{}
 };
 

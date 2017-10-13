@@ -1,3 +1,7 @@
+#!/usr/bin/ruby
+require 'mxx_ru/cpp'
+require 'restinio/openssl_find.rb'
+
 MxxRu::Cpp::composite_target {
 
 	required_prj( "test/header/prj.ut.rb" )
@@ -5,7 +9,14 @@ MxxRu::Cpp::composite_target {
 	required_prj( "test/ref_qualifiers_settings/prj.ut.rb" )
 	required_prj( "test/buffers/prj.ut.rb" )
 	required_prj( "test/response_coordinator/prj.ut.rb" )
-	required_prj( "test/escape/prj.ut.rb" )
+	required_prj( "test/uri_helpers/prj.ut.rb" )
+	required_prj( "test/socket_options/prj.ut.rb" )
+
+	if RestinioOpenSSLFind.has_openssl(toolset)
+		required_prj( "test/socket_options_tls/prj.ut.rb" )
+	end
+
+	required_prj( "test/start_stop/prj.ut.rb" )
 
 	required_prj( "test/handle_requests/method/prj.ut.rb" )
 	required_prj( "test/handle_requests/echo_body/prj.ut.rb" )
@@ -22,5 +33,16 @@ MxxRu::Cpp::composite_target {
 	required_prj( "test/router/express/prj.ut.rb" )
 	required_prj( "test/router/express_router/prj.ut.rb" )
 
-	required_prj( "test/websocket/prj.ut.rb" )
+	required_prj( "test/encoders/prj.ut.rb" )
+
+	# ================================================================
+	# Benches for implementation tuning.
+	required_prj( "test/to_lower_bench/prj.rb" )
+	# ================================================================
+	# Websocket tests
+
+	required_prj( "test/handle_requests/upgrade/prj.ut.rb" )
+	required_prj( "test/websocket/parser/prj.ut.rb" )
+	required_prj( "test/websocket/validators/prj.ut.rb" )
+	required_prj( "test/websocket/ws_connection/prj.ut.rb" )
 }

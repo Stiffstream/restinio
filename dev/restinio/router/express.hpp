@@ -156,7 +156,7 @@ class route_matcher_t
 			return false;
 		}
 
-		bool
+		inline bool
 		operator () (
 			const http_request_header_t & h,
 			route_params_t & parameters ) const
@@ -181,27 +181,100 @@ using express_request_handler_t =
 		std::function< request_handling_status_t( request_handle_t, route_params_t ) >;
 
 //
+// express_route_entry_t
+//
+
+//! A single express route entry.
+/*!
+	Might be helpful for use without express_router_t,
+	if only a single route is needed.
+	It gives the same help with route parameters.
+*/
+class express_route_entry_t
+{
+		express_route_entry_t(
+			http_method_t method,
+			path2regex::impl::route_regex_matcher_data_t< route_params_t > matcher_data,
+			express_request_handler_t handler )
+			:	m_matcher{
+					method,
+					std::move( matcher_data.m_regex ),
+					std::move( matcher_data.m_param_appender_sequence ) }
+			,	m_handler{ std::move( handler ) }
+		{}
+
+	public:
+		express_route_entry_t( const express_route_entry_t & ) = delete;
+		const express_route_entry_t &
+		operator = ( const express_route_entry_t & ) = delete;
+
+		express_route_entry_t() = default;
+		express_route_entry_t( express_route_entry_t && ) = default;
+		express_route_entry_t &
+		operator = ( express_route_entry_t && ) = default;
+
+		express_route_entry_t(
+			http_method_t method,
+			const std::string & route_path,
+			const path2regex::options_t & options,
+			express_request_handler_t handler )
+			:	express_route_entry_t{
+					method,
+					path2regex::path2regex< route_params_t >(
+						route_path,
+						options ),
+					std::move( handler ) }
+		{}
+
+		express_route_entry_t(
+			http_method_t method,
+			const std::string & route_path,
+			express_request_handler_t handler )
+			:	express_route_entry_t{
+					method,
+					route_path,
+					path2regex::options_t{},
+					std::move( handler ) }
+		{}
+
+		//! Checks if request header matches entry,
+		//! and if so, set route params.
+		bool
+		match( const http_request_header_t & h, route_params_t & params ) const
+		{
+			return m_matcher( h, params );
+		}
+
+		//! Calls a handler of given request with given params.
+		request_handling_status_t
+		handle( request_handle_t rh, route_params_t rp ) const
+		{
+			return m_handler( std::move( rh ), std::move( rp ) );
+		}
+
+		//! Try to match the entry and calls a handler with extracted params.
+		request_handling_status_t
+		try_to_handle( request_handle_t rh ) const
+		{
+			route_params_t params;
+			if( match( rh->header(), params ) )
+				return handle( std::move( rh ), std::move( params ) );
+
+			return request_rejected();
+		}
+
+	private:
+		impl::route_matcher_t m_matcher;
+		express_request_handler_t m_handler;
+};
+
+//
 // express_router_t
 //
 
 //! Express.js style router.
 class express_router_t
 {
-		struct handler_entry_t
-		{
-			handler_entry_t() = default;
-			handler_entry_t( handler_entry_t && ) = default;
-			handler_entry_t(
-				impl::route_matcher_t matcher,
-				express_request_handler_t handler )
-				:	m_matcher{ std::move( matcher ) }
-				,	m_handler{ std::move( handler ) }
-			{}
-
-			impl::route_matcher_t m_matcher;
-			express_request_handler_t m_handler;
-		};
-
 	public:
 		express_router_t() = default;
 		express_router_t( express_router_t && ) = default;
@@ -212,9 +285,9 @@ class express_router_t
 			route_params_t params;
 			for( const auto & entry : m_handlers )
 			{
-				if( entry.m_matcher( req->header(), params ) )
+				if( entry.match( req->header(), params ) )
 				{
-					return entry.m_handler( std::move( req ), std::move( params ) );
+					return entry.handle( std::move( req ), std::move( params ) );
 				}
 			}
 
@@ -241,17 +314,7 @@ class express_router_t
 			const path2regex::options_t & options,
 			express_request_handler_t handler )
 		{
-			auto mather_data =
-				path2regex::path2regex< route_params_t >(
-					route_path,
-					options );
-
-			m_handlers.emplace_back(
-				impl::route_matcher_t{
-					method,
-					std::move( mather_data.m_regex ),
-					std::move( mather_data.m_param_appender_sequence ) },
-				std::move( handler ) );
+			m_handlers.emplace_back( method, route_path, options, std::move( handler ) );
 		}
 
 		void
@@ -375,7 +438,7 @@ class express_router_t
 		}
 
 	private:
-		std::vector< handler_entry_t > m_handlers;
+		std::vector< express_route_entry_t > m_handlers;
 };
 
 } /* namespace router */

@@ -16,7 +16,7 @@ template < typename RESP >
 RESP
 init_resp( RESP resp )
 {
-	resp.append_header( "Server", "RESTinio sample server /v.0.2" );
+	resp.append_header( restinio::http_field::server, "RESTinio sample server /v.0.2" );
 	resp.append_header_date_field();
 
 	return resp;
@@ -33,7 +33,7 @@ auto server_handler()
 		"/",
 		[]( auto req, auto ){
 				init_resp( req->create_response() )
-					.append_header( "Content-Type", "text/plain; charset=utf-8" )
+					.append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
 					.set_body( "Hello world!")
 					.done();
 
@@ -44,7 +44,7 @@ auto server_handler()
 		"/json",
 		[]( auto req, auto ){
 				init_resp( req->create_response() )
-					.append_header( "Content-Type", "text/json; charset=utf-8" )
+					.append_header( restinio::http_field::content_type, "text/json; charset=utf-8" )
 					.set_body( R"-({"message" : "Hello world!"})-")
 					.done();
 
@@ -55,7 +55,7 @@ auto server_handler()
 		"/html",
 		[]( auto req, auto ){
 				init_resp( req->create_response() )
-						.append_header( "Content-Type", "text/html; charset=utf-8" )
+						.append_header( restinio::http_field::content_type, "text/html; charset=utf-8" )
 						.set_body(
 R"-(<html>
 <head><title>Hello from RESTinio!</title></head>
@@ -90,45 +90,26 @@ int main( int argc, const char * argv[] )
 				restinio::single_threaded_ostream_logger_t,
 				router_t >;
 
-		using http_server_t = restinio::http_server_t< traits_t >;
+		asio::ssl::context tls_context{ asio::ssl::context::sslv23 };
+		tls_context.set_options(
+			asio::ssl::context::default_workarounds
+			| asio::ssl::context::no_sslv2
+			| asio::ssl::context::single_dh_use );
 
-		http_server_t http_server{
-			restinio::create_child_io_service( 1 ),
-			[ & ]( auto & settings ){
-				// Set TLS context.
-				asio::ssl::context tls_context{ asio::ssl::context::sslv23 };
-				tls_context.set_options(
-					asio::ssl::context::default_workarounds
-					| asio::ssl::context::no_sslv2
-					| asio::ssl::context::single_dh_use );
+		tls_context.use_certificate_chain_file( certs_dir + "/server.pem" );
+		tls_context.use_private_key_file(
+			certs_dir + "/key.pem",
+			asio::ssl::context::pem );
+		tls_context.use_tmp_dh_file( certs_dir + "/dh2048.pem" );
 
-				tls_context.use_certificate_chain_file( certs_dir + "/server.pem" );
-				tls_context.use_private_key_file(
-					certs_dir + "/key.pem",
-					asio::ssl::context::pem );
-				tls_context.use_tmp_dh_file( certs_dir + "/dh2048.pem" );
-
-				settings
-					.address( "localhost" )
-					.request_handler( server_handler() )
-					.read_next_http_message_timelimit( 10s )
-					.write_http_response_timelimit( 1s )
-					.handle_request_timeout( 1s )
-					.tls_context( std::move( tls_context ) );
-			} };
-
-		http_server.open();
-
-		// Wait for quit command.
-		std::cout << "Type \"quit\" or \"q\" to quit." << std::endl;
-
-		std::string cmd;
-		do
-		{
-			std::cin >> cmd;
-		} while( cmd != "quit" && cmd != "q" );
-
-		http_server.close();
+		restinio::run(
+			restinio::on_this_thread< traits_t >()
+				.address( "localhost" )
+				.request_handler( server_handler() )
+				.read_next_http_message_timelimit( 10s )
+				.write_http_response_timelimit( 1s )
+				.handle_request_timeout( 1s )
+				.tls_context( std::move( tls_context ) ) );
 	}
 	catch( const std::exception & ex )
 	{
