@@ -409,8 +409,8 @@ class ws_protocol_validator_t
 				m_unmasker.unmask_byte( byte ): byte;
 
 			if( m_current_frame.m_opcode == opcode_t::text_frame ||
-				m_current_frame.m_opcode == opcode_t::continuation_frame &&
-					m_previous_data_frame == previous_data_frame_t::text )
+				(m_current_frame.m_opcode == opcode_t::continuation_frame &&
+					m_previous_data_frame == previous_data_frame_t::text) )
 			{
 				if( !m_utf8_checker.process_byte( byte ) )
 				{
