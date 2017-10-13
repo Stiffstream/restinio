@@ -991,7 +991,158 @@ and expects user to set body using chunks of data.
 
 # Server settings
 
+## Traits independent settings
+|      settings        | type | description |
+|----------------------|------|-------------|
+| port | `std::uint16_t` | Server port. |
+| protocol | `asio::ip::tcp` | Protocol ipv4/ipv6 used for server endpoint. |
+| address | `std::string` | Addres for server endpoint. Can be set to a concrete ip address when running on maschine with two or more network cards. Also supports values `localhost`, `ip6-localhost`. |
+| buffer_size | `std::size_t` | It limits a size of chunk that can be read from socket in a single read operattion (when receiving http request). |
+| read_next_http_message_timelimit | `std::chrono::steady_clock::duration` | A period for holding connection before completely receiving new http-request. Starts counting since connection is establised or a previous request was responsed. |
+| write_http_response_timelimit | `std::chrono::steady_clock::duration` | A period of time wait for response to be written to socket. |
+| handle_request_timeout | `std::chrono::steady_clock::duration` | A period of time that is given for a handler to create response. |
+| max_pipelined_requests | `std::size_t` | Max pipelined requests able to receive on single connection. |
+| acceptor_options_setter | `acceptor_options_setter_t` | Acceptor options setter. |
+| socket_options_setter | `socket_options_setter_t` | Socket options setter. |
+| concurrent_accepts_count | `std::size_t` | Max number of running concurrent accepts. When running server on N threads then up to N accepts can be handled concurrently. |
+| separate_accept_and_create_connect | `bool` | For the cases when a lot of connection can be fired by clients in a short time interval, it is vital to accept connections and initiate new accept operations as quick as possible. So creating connection instance that involves allocations and initialization can be done in a context that is independent to acceptors one. |
+| cleanup_func | function-object | [Cleanup function](#markdown-header-сleanup-function). |
+
+## Traits dependent settings
+
+Consider the following aliases
+~~~~~
+::c++
+using request_handler_t = typename Traits::request_handler_t;
+~~~~~
+
+In the following table `Params &&...` stands for variadic template parameters
+in the following sense:
+
+~~~~~
+::c++
+template< typename... Params >
+auto &
+request_handler( Params &&... params )
+{
+  return set_unique_instance(
+      m_request_handler,
+      std::forward< Params >( params )... );
+}
+~~~~~
+
+|      settings        | type | description |
+|----------------------|------|-------------|
+| request_handler | `std::unique_ptr< request_handler_t >` `Params &&...` | Request handler. |
+| timer_factory | `Params &&...` | Timers factory (see [timer](#markdown-header-timer_factory_t)). |
+| logger | `Params &&...` | Logger (see [logger](#markdown-header-logger_t)). |
+
 # Cleanup function
+
+## Purpose
+
+One of corner cases of *RESTinio* usage is user's resources cleanup on server's shutdown.
+A user can easily create a cyclical dependency between dynamically created objects
+which will prevent deallocation of these objects at the end of the server's work.
+
+For example lets consider a case when all request are stored into some thread-safe
+storage to be processed later. It could looks like:
+
+~~~~~
+::c++
+void launch_server(thread_safe_request_queue & pending_requests)
+{
+  restinio::run(
+    restinio::on_this_thread().port(8080).address("localhost")
+      .request_handler([&](auto req) {
+        pending_requests.push_back(std::move(req));
+        return restinio::request_accepted();
+      }));
+}
+~~~~~
+
+This simple code contains a serious defect:
+when the server finished its work it will be destroyed just before return from `restinio::run`.
+But some `request_handle_t` will live inside `pending_requests` container.
+It means that some internal RESTinio objects
+(like connections objects and associated socket objects) will be alive,
+because there are `request_handle_t` which holds references to them.
+
+A user can add a cleanup of `pending_requests` just after return from `restinio::run` like this:
+~~~~~
+::c++
+void launch_server(thread_safe_request_queue & pending_requests)
+{
+  restinio::run(
+    restinio::on_this_thread().port(8080).address("localhost")
+      .request_handler([&](auto req) {
+        pending_requests.push_back(std::move(req));
+        return restinio::request_accepted();
+      }));
+  pending_requests.clean();
+}
+~~~~~
+But there are some other problems.
+The main of them is: when `request_handle_t` objects from `pending_requests` will be destroyed then
+calls to already destroyed `restinio::http_server_t` and corresponding
+`asio::io_context` objects can be made.
+This can lead to various hard to detect bugs.
+
+It means that user should clean up its resources at the moment of the server's shutdown
+just before return from `restinio::run`.
+To do that user can set up `cleanup_func` which will be called by the server during shutdown procedure.
+
+By using `cleanup_func` the code above can be rewritten that way:
+~~~~~
+::c++
+void launch_server(thread_safe_request_queue & pending_requests)
+{
+  restinio::run(
+    restinio::on_this_thread().port(8080).address("localhost")
+      .request_handler([&](auto req) {
+        pending_requests.push_back(std::move(req));
+        return restinio::request_accepted();
+      })
+      .cleanup_func([&]{
+        pending_requests.clean();
+      }));
+}
+~~~~~
+
+Note that `cleanup_func` is a part of `server_settings_t`.
+It means that it can be used even when RESTinio server is ran via
+`restino::http_server_t` instance. For example:
+~~~~~
+::c++
+restinio::http_server_t<> server{
+  restinio::own_io_context(),
+  [&](auto & settings) {
+    settings.port(8080).address("localhost")
+      .request_handler(...)
+      .cleanup_func([&]{
+        pending_requests.clean();
+      });
+  }};
+~~~~~
+
+## When cleanup_func is called
+
+If a user sets `cleanup_func` in `server_settings_t`
+then this cleanup function will be called if the server is started and:
+
+* `restinio::http_server_t::close_sync` is called directly or indirectly
+(as result of `close_async` call);
+* destructor for `restinio::http_server_t` is called when the server wasn't closed manually.
+In that case `close_sync` is called inside `http_server_t`'s destructor.
+
+Technically speaking the `cleanup_func` is called inside `close_sync` just after the acceptor will be closed.
+
+**Important notes:** The topic of cleaning up connections,
+requests and associated resources is a hard one.
+During the work on RESTinio v.0.3 we have found one solution which seems to be working.
+But it could be not the best one.
+So if you have some troubles with it or have some ideas on this topic please let us know.
+We are working hard on this topic and will be glad to hear any feedback from you.
 
 ## What is this?
 
@@ -1003,7 +1154,8 @@ objects at the end of the server's work.
 For example lets consider a case when all request are stored into some
 thread-safe storage to be processed later. It could looks like:
 
-~~~~~{.cpp}
+~~~~~
+::c++
 void launch_server(thread_safe_request_queue & pending_requests)
 {
   restinio::run(
@@ -1016,7 +1168,7 @@ void launch_server(thread_safe_request_queue & pending_requests)
 ~~~~~
 
 This simple code contains a serious defect: when the server finished its
-work it will be destroyed just before return from `restinio::run`. But some 
+work it will be destroyed just before return from `restinio::run`. But some
 `request_handle_t` will live inside `pending_requests` container. It means
 that some internal RESTinio objects (like connections objects and associated
 socket objects) will be alive, because there are `request_handle_t` which
@@ -1024,7 +1176,8 @@ holds references to them.
 
 A user can add a cleanup of `pending_requests` just after return from
 `restinio::run` like this:
-~~~~~{.cpp}
+~~~~~
+::c++
 void launch_server(thread_safe_request_queue & pending_requests)
 {
   restinio::run(
@@ -1041,13 +1194,14 @@ objects from `pending_requests` will be destroyed then calls to already
 destroyed `restinio::http_server_t` and corresponding `asio::io_context`
 objects can be made. This can lead to various hard to detect bugs.
 
-It means that user should clean up its resources at the moment of the 
+It means that user should clean up its resources at the moment of the
 server's shutdown just before return from `restinio::run`. To do that user
 can set up `cleanup_func` which will be called by the server during
 shutdown procedure.
 
 By using `cleanup_func` the code above can be rewritten that way:
-~~~~~{.cpp}
+~~~~~
+::c++
 void launch_server(thread_safe_request_queue & pending_requests)
 {
   restinio::run(
@@ -1065,7 +1219,8 @@ void launch_server(thread_safe_request_queue & pending_requests)
 Note that `cleanup_func` is a part of `server_settings_t`. It means
 that it can be used even when RESTinio server is ran via
 `restino::http_server_t` instance. For example:
-~~~~~{.cpp}
+~~~~~
+::c++
 restinio::http_server_t<> server{
   restinio::own_io_context(),
   [&](auto & settings) {
@@ -1236,6 +1391,72 @@ See full [example](./dev/sample/express_router_tutorial/main.cpp)
 
 For details on `route_params_t` and `express_router_t` see
 [express.hpp](./dev/restinio/router/express.cpp).
+
+# Using *restinio::run*
+
+There are two ways of running *RESTinio* server:
+
+* easy way by using free functions `restinio::run`
+* advanced way by using template class `restinio::http_server_t`
+
+## Running server by using run() functions
+
+The simplest way of running *RESTinio* server is usage of `restinio::run` functions.
+For example, to run single-threaded *RESTinio* server on the context of the current thread:
+
+~~~~~
+::c++
+restinio::run(
+  restinio::on_this_thread()
+    .port(8080)
+    .address("localhost")
+    .request_handler([](auto req) {
+      return req->create_response().set_body("Hello, World!").done();
+    }));
+// The current thread will be blocked until RESTinio server finishes its work.
+~~~~~
+
+To run multi-threaded RESTinio server on the context of thread pool:
+~~~~~
+::c++
+restinio::run(
+  restinio::on_thread_pool(16) // Thread pool size is 16 threads.
+    .port(8080)
+    .address("localhost")
+    .request_handler([](auto req) {
+      return req->create_response().set_body("Hello, World!").done();
+    }));
+// The current thread will be blocked until RESTinio server finishes its work.
+~~~~~
+
+Note that `run()` doesn't provide a way to stop the server from outside of `run()`.
+It means that `run()` will block the current thread
+until the server will finish its work by itself.
+However inside `run()` a signal handler for SIGINT it installed
+and the server finishes its work when SIGINT is sent to the application
+(for example if user breaks the application by pressing Ctrl+C/Ctrl+Break).
+Such approach seems to be appropriate for very simple servers
+like small test programs or quick-and-dirty prototypes.
+If you need more control you should use `restinio::http_server_t` class.
+
+A user-defined traits for *RESTinio* server can be passed as template parameters
+for `restinio::on_this_thread` and `restinio::on_thread_pool` helpers.
+For example:
+~~~~~
+::c++
+using my_traits_t = restinio::traits_t<
+    restinio::asio_timer_factory_t,
+    restinio::single_threaded_ostream_logger_t,
+    restinio::router::express_router_t >;
+restinio::run(
+  restinio::on_this_thread<my_traits_t>()
+    .port(8080)
+    .address("localhost")
+    .request_handler([](auto req) {
+      return req->create_response().set_body("Hello, World!").done();
+    }));
+// The current thread will be blocked until RESTinio server finishes its work.
+~~~~~
 
 # *RESTinio* context entities running on asio::io_context
 
