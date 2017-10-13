@@ -993,7 +993,7 @@ and expects user to set body using chunks of data.
 
 # Cleanup function
 
-## What is this!
+## What is this?
 
 One of corner cases of RESTinio usage is user's resources cleanup on
 server's shutdown. A user can easily create a cyclical dependency between
