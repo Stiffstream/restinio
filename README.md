@@ -89,10 +89,12 @@ See MxxRu::externals recipes for *RESTinio*
 
 ### Getting archive
 
+Choose the file fom [downloads page](https://bitbucket.org/sobjectizerteam/restinio-0.3/downloads/).
+
 ```
-wget https://bitbucket.org/sobjectizerteam/restinio-0.3/downloads/restinio-0.3.0-full.tar.bz2
-tar xjvf restinio-0.3.0-full.tar.bz2
-cd restinio-0.3.0-full
+wget https://bitbucket.org/sobjectizerteam/restinio-0.3/downloads/<ARCHIVE>
+tar xjvf <ARCHIVE>
+cd <UNPACKED_DIR>
 ```
 
 ## Build
@@ -114,11 +116,11 @@ make
 make install
 ```
 
-Or, if getting sources from archive:
+Or, if getting sources from archive (*<ARCHIVE>*):
 ```
-wget https://bitbucket.org/sobjectizerteam/restinio-0.3/downloads/restinio-0.3.0-full.tar.bz2
-tar xjvf restinio-0.3.0-full.tar.bz2
-cd restinio-0.3.0-full/dev
+wget https://bitbucket.org/sobjectizerteam/restinio-0.3/downloads/<ARCHIVE>
+tar xjvf <ARCHIVE>
+cd <UNPACKED_DIR>/dev
 mkdir cmake_build
 cd cmake_build
 cmake -DCMAKE_INSTALL_PREFIX=target -DCMAKE_BUILD_TYPE=Release ..
