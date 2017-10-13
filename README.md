@@ -1002,6 +1002,11 @@ and expects user to set body using chunks of data.
 | write_http_response_timelimit | `std::chrono::steady_clock::duration` | A period of time wait for response to be written to socket. |
 | handle_request_timeout | `std::chrono::steady_clock::duration` | A period of time that is given for a handler to create response. |
 | max_pipelined_requests | `std::size_t` | Max pipelined requests able to receive on single connection. |
+| acceptor_options_setter | `acceptor_options_setter_t` | Acceptor options setter. |
+| socket_options_setter | `socket_options_setter_t` | Socket options setter. |
+| concurrent_accepts_count | `std::size_t` | Max number of running concurrent accepts. When running server on N threads then up to N accepts can be handled concurrently. |
+| separate_accept_and_create_connect | `bool` | For the cases when a lot of connection can be fired by clients in a short time interval, it is vital to accept connections and initiate new accept operations as quick as possible. So creating connection instance that involves allocations and initialization can be done in a context that is independent to acceptors one. |
+| cleanup_func | function-object | Cleanup function. |
 
 ## Traits dependent settings
 
@@ -1031,11 +1036,6 @@ request_handler( Params &&... params )
 | request_handler | `std::unique_ptr< request_handler_t >` `Params &&...` | Request handler. |
 | timer_factory | `Params &&...` | Timers factory (see [timer](#markdown-header-timer_factory_t)). |
 | logger | `Params &&...` | Logger (see [logger](#markdown-header-logger_t)). |
-| acceptor_options_setter | `acceptor_options_setter_t` | Acceptor options setter. |
-| socket_options_setter | `socket_options_setter_t` | Socket options setter. |
-| concurrent_accepts_count | `std::size_t` | Max number of running concurrent accepts. When running server on N threads then up to N accepts can be handled concurrently. |
-| separate_accept_and_create_connect | `bool` | For the cases when a lot of connection can be fired by clients in a short time interval, it is vital to accept connections and initiate new accept operations as quick as possible. So creating connection instance that involves allocations and initialization can be done in a context that is independent to acceptors one. |
-| cleanup_func | function-object | Cleanup function. |
 
 # Cleanup function
 
