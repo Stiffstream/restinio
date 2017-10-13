@@ -115,7 +115,7 @@ public :
 				}
 			}
 		}
-		catch( const std::exception & ex )
+		catch( const std::exception & )
 		{
 			mark_as_bad_request( resp );
 		}
