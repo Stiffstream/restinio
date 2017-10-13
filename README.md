@@ -1154,7 +1154,8 @@ objects at the end of the server's work.
 For example lets consider a case when all request are stored into some
 thread-safe storage to be processed later. It could looks like:
 
-~~~~~{.cpp}
+~~~~~
+::c++
 void launch_server(thread_safe_request_queue & pending_requests)
 {
   restinio::run(
@@ -1175,7 +1176,8 @@ holds references to them.
 
 A user can add a cleanup of `pending_requests` just after return from
 `restinio::run` like this:
-~~~~~{.cpp}
+~~~~~
+::c++
 void launch_server(thread_safe_request_queue & pending_requests)
 {
   restinio::run(
@@ -1198,7 +1200,8 @@ can set up `cleanup_func` which will be called by the server during
 shutdown procedure.
 
 By using `cleanup_func` the code above can be rewritten that way:
-~~~~~{.cpp}
+~~~~~
+::c++
 void launch_server(thread_safe_request_queue & pending_requests)
 {
   restinio::run(
@@ -1216,7 +1219,8 @@ void launch_server(thread_safe_request_queue & pending_requests)
 Note that `cleanup_func` is a part of `server_settings_t`. It means
 that it can be used even when RESTinio server is ran via
 `restino::http_server_t` instance. For example:
-~~~~~{.cpp}
+~~~~~
+::c++
 restinio::http_server_t<> server{
   restinio::own_io_context(),
   [&](auto & settings) {
@@ -1387,6 +1391,72 @@ See full [example](./dev/sample/express_router_tutorial/main.cpp)
 
 For details on `route_params_t` and `express_router_t` see
 [express.hpp](./dev/restinio/router/express.cpp).
+
+# Using *restinio::run*
+
+There are two ways of running *RESTinio* server:
+
+* easy way by using free functions `restinio::run`
+* advanced way by using template class `restinio::http_server_t`
+
+## Running server by using run() functions
+
+The simplest way of running *RESTinio* server is usage of `restinio::run` functions.
+For example, to run single-threaded *RESTinio* server on the context of the current thread:
+
+~~~~~
+::c++
+restinio::run(
+  restinio::on_this_thread()
+    .port(8080)
+    .address("localhost")
+    .request_handler([](auto req) {
+      return req->create_response().set_body("Hello, World!").done();
+    }));
+// The current thread will be blocked until RESTinio server finishes its work.
+~~~~~
+
+To run multi-threaded RESTinio server on the context of thread pool:
+~~~~~
+::c++
+restinio::run(
+  restinio::on_thread_pool(16) // Thread pool size is 16 threads.
+    .port(8080)
+    .address("localhost")
+    .request_handler([](auto req) {
+      return req->create_response().set_body("Hello, World!").done();
+    }));
+// The current thread will be blocked until RESTinio server finishes its work.
+~~~~~
+
+Note that `run()` doesn't provide a way to stop the server from outside of `run()`.
+It means that `run()` will block the current thread
+until the server will finish its work by itself.
+However inside `run()` a signal handler for SIGINT it installed
+and the server finishes its work when SIGINT is sent to the application
+(for example if user breaks the application by pressing Ctrl+C/Ctrl+Break).
+Such approach seems to be appropriate for very simple servers
+like small test programs or quick-and-dirty prototypes.
+If you need more control you should use `restinio::http_server_t` class.
+
+A user-defined traits for *RESTinio* server can be passed as template parameters
+for `restinio::on_this_thread` and `restinio::on_thread_pool` helpers.
+For example:
+~~~~~
+::c++
+using my_traits_t = restinio::traits_t<
+    restinio::asio_timer_factory_t,
+    restinio::single_threaded_ostream_logger_t,
+    restinio::router::express_router_t >;
+restinio::run(
+  restinio::on_this_thread<my_traits_t>()
+    .port(8080)
+    .address("localhost")
+    .request_handler([](auto req) {
+      return req->create_response().set_body("Hello, World!").done();
+    }));
+// The current thread will be blocked until RESTinio server finishes its work.
+~~~~~
 
 # *RESTinio* context entities running on asio::io_context
 
