@@ -643,7 +643,7 @@ server.io_context().run();
 
 Async versions of `open()/close()` methods can be used from any thread.
 But it is not guaranteed that server is already  started when method finishes.
-When using async_open() user provides two callbacks, the first one is called if server starts
+When using open_async() user provides two callbacks, the first one is called if server starts
 successfully, and the second one is for handling error.
 For example:
 ~~~~~
