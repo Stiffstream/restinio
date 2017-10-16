@@ -1289,13 +1289,6 @@ For details on `route_params_t` and `express_router_t` see
 
 # Using *restinio::run*
 
-There are two ways of running *RESTinio* server:
-
-* easy way by using free functions `restinio::run`
-* advanced way by using template class `restinio::http_server_t`
-
-## Running server by using run() functions
-
 The simplest way of running *RESTinio* server is usage of `restinio::run` functions.
 For example, to run single-threaded *RESTinio* server on the context of the current thread:
 
