@@ -561,7 +561,7 @@ http_server_t< my_traits_t > http_server{
   } };
 ~~~~~
 
-But in the end it delegates construction to the first custructor.
+But in the end it delegates construction to the first constructor.
 
 *RESTinio* runs its logic on `asio::io_context`, but its internal logic
 is separated from maintaining io_context directly, hence allowing to
