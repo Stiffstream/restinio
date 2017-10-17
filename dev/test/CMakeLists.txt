@@ -11,6 +11,8 @@ add_subdirectory(start_stop)
 add_subdirectory(handle_requests)
 add_subdirectory(http_pipelining)
 add_subdirectory(router)
+add_subdirectory(encoders)
+add_subdirectory(websocket)
 
 find_package(OpenSSL)
 if ( OPENSSL_FOUND )
