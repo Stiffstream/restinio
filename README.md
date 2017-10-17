@@ -1648,9 +1648,7 @@ When an update request detected user can create websocket handler. To create web
 ~~~~~
 ::c++
 // Upgrade http-connection of a current request to a websocket connection.
-template <
-    typename Traits,
-    typename WS_Message_Handler >
+template<typename Traits, typename WS_Message_Handler >
 ws_handle_t upgrade(
   // Upgrade request.
   request_t & req,
@@ -1681,10 +1679,10 @@ RESTinio automatically performs the following checks:
 * Reserved bits are not set.
 * Opcode has correct value.
 * Mask flag is present.
-* Payload size is not greater than 125 bytes if current frame is control frame .
+* Payload size is not greater than 125 bytes if the current frame is control frame .
 * Continuation frame can't be received without any previous data frame.
-* Close code has correct value if current frame is close frame.
-* Payload has correct UTF-8 value if current frame is close frame or text frame.
+* Close code has correct value if the current frame is close frame.
+* Payload has correct UTF-8 value if the current frame is close frame or text frame.
 * Final flag is set in control frames.
 * Concatenated payload in fragmented text frames has correct UTF-8 value.
 
@@ -1717,11 +1715,9 @@ For example:
 auto websocket_handle =
   restinio::websocket::basic::upgrade< traits_t >(
     *req,
-    rws::activation_t::immediate,
+    restinio::websocket::basic::activation_t::immediate,
     ws_message_handler_t{} );
-
 ...
-
 websocket_handle->shutdown();
 ~~~~~
 
