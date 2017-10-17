@@ -561,7 +561,7 @@ http_server_t< my_traits_t > http_server{
   } };
 ~~~~~
 
-But in the end it delegates construction to the first custructor.
+But in the end it delegates construction to the first constructor.
 
 *RESTinio* runs its logic on `asio::io_context`, but its internal logic
 is separated from maintaining io_context directly, hence allowing to
@@ -643,7 +643,7 @@ server.io_context().run();
 
 Async versions of `open()/close()` methods can be used from any thread.
 But it is not guaranteed that server is already  started when method finishes.
-When using async_open() user provides two callbacks, the first one is called if server starts
+When using open_async() user provides two callbacks, the first one is called if server starts
 successfully, and the second one is for handling error.
 For example:
 ~~~~~
