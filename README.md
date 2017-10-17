@@ -1289,13 +1289,6 @@ For details on `route_params_t` and `express_router_t` see
 
 # Using *restinio::run*
 
-There are two ways of running *RESTinio* server:
-
-* easy way by using free functions `restinio::run`
-* advanced way by using template class `restinio::http_server_t`
-
-## Running server by using run() functions
-
 The simplest way of running *RESTinio* server is usage of `restinio::run` functions.
 For example, to run single-threaded *RESTinio* server on the context of the current thread:
 
@@ -1622,6 +1615,197 @@ For example `std::shared_ptr< std::string >` can be used.
 Such form of buffers was introduced for dealing with the cases
 when there are lots of parallel requests that must be served with the same response
 (or partly the same, so identical parts can be wrapped in shared buffers).
+
+# Websocket
+
+Since version 0.3.0 *RESTinio* has a basic support of websockets.
+To start working with websockets one needs to upgrade underlying HTTP connection.
+*RESTinio* has a special function to do the trick,
+it returns to user a special object - websocket handle.
+*RESTinio* guarantees correctness of websocket frames and takes care of close frames
+in order to follow the [protocol](https://tools.ietf.org/html/rfc6455).
+But ping/pong controls are left for user to handle.
+
+## Upgrade connection
+
+RESTinio doesn't detect HTTP Upgrade request for upgrading current connection to websockets. User have to do this check manually. For example:
+
+~~~~~{.cpp}
+auto request_handler(restinio::request_handle_t req) {
+  if(restinio::http_connection_header_t::upgrade == req->header().connection()) {
+    // An upgrade request detected and will be processed...
+    ...
+    return restinio::request_accepted();
+  }
+  else {
+    ...
+  }
+  return restinio::request_rejected();
+}
+~~~~~
+
+When an update request detected user can create websocket handler. To create websocket handler a `restinio::websocket::basic::upgrade()` function is used:
+~~~~~
+::c++
+// Upgrade http-connection of a current request to a websocket connection.
+template<typename Traits, typename WS_Message_Handler >
+ws_handle_t upgrade(
+  // Upgrade request.
+  request_t & req,
+  // Activation policy.
+  activation_t activation_flag,
+  // Message handler.
+  WS_Message_Handler ws_message_handler );
+~~~~~
+
+This function takes request handle, activation flag and websocket message handler as parameters.
+
+* `req` - a given http-request, its underlying tcp connection is used for websocket session;
+* `activation_flag` - a policy that says whether to start reading and handling messages in upgrade function
+(`activation_t::immediate`) or wait until user calls `ws_t::activate()` explicitly (`activation_t::delayed`);
+* `ws_message_handler` - function object for handling websocket messages.
+
+Function returns a handle (shared pointer) on `restinio::websocket::basic::ws_t`
+that is an abstraction for websocket. User have to keep this handle all the time when
+he want to use this websocket connection. When the last reference on this handle is lost
+connection will be closed.
+
+See also [other overloads](./dev/restinio/websocket/websocket.hpp) of `upgrade()` function.
+
+## Сorrectness of websocket frames
+
+RESTinio automatically performs the following checks:
+
+* Reserved bits are not set.
+* Opcode has correct value.
+* Mask flag is present.
+* Payload size is not greater than 125 bytes if the current frame is control frame .
+* Continuation frame can't be received without any previous data frame.
+* Close code has correct value if the current frame is close frame.
+* Payload has correct UTF-8 value if the current frame is close frame or text frame.
+* Final flag is set in control frames.
+* Concatenated payload in fragmented text frames has correct UTF-8 value.
+
+User reсeives a frame only if this frame is correct. In case of incorrect frame RESTinio sends close frame to the client-side.
+
+## Close websocket
+
+To close current websocket connection there are shutdown/kill methods:
+~~~~~
+::c++
+class ws_t
+{
+  public:
+  // ...
+
+  void shutdown();
+
+  void kill();
+
+  // ...
+};
+~~~~~
+
+* `shutdown()` waits for close frame from client side;
+* `kill()` just closes connection without closing handshake.
+
+For example:
+~~~~~
+::c++
+auto websocket_handle =
+  restinio::websocket::basic::upgrade< traits_t >(
+    *req,
+    restinio::websocket::basic::activation_t::immediate,
+    ws_message_handler_t{} );
+...
+websocket_handle->shutdown();
+~~~~~
+
+## Minimalistic sample
+
+Here is a minimal echo server:
+
+~~~~~
+::c++
+
+#include <restinio/all.hpp>
+#include <restinio/websocket/websocket.hpp>
+
+
+namespace rr = restinio::router;
+using router_t = rr::express_router_t;
+
+namespace rws = restinio::websocket::basic;
+
+using traits_t =
+  restinio::traits_t<
+    restinio::asio_timer_factory_t,
+    restinio::single_threaded_ostream_logger_t,
+    router_t >;
+
+// Alias for container with stored websocket handles.
+using ws_registry_t = std::map< std::uint64_t, rws::ws_handle_t >;
+
+auto server_handler( ws_registry_t & registry )
+{
+  auto router = std::make_unique< router_t >();
+
+  router->http_get(
+    "/chat",
+    [ &registry ]( auto req, auto ) mutable {
+
+      if( restinio::http_connection_header_t::upgrade == req->header().connection() )
+      {
+        auto wsh =
+          rws::upgrade< traits_t >(
+            *req,
+            rws::activation_t::immediate,
+            [ &registry ]( auto wsh, auto m ){
+              wsh->send_message( *m );
+            } );
+        // Store websocket handle to registry object to prevent closing of the websocket
+        // on exit from this request handler.
+        registry.emplace( wsh->connection_id(), wsh );
+
+        return restinio::request_accepted();
+      }
+
+      return restinio::request_rejected();
+    } );
+
+  return router;
+}
+
+int main()
+{
+  using namespace std::chrono;
+
+  try
+  {
+    // This registry is necessary for storing handles to created websockets.
+    ws_registry_t registry;
+    restinio::run(
+      restinio::on_this_thread<traits_t>()
+        .address( "localhost" )
+        .request_handler( server_handler( registry ) )
+        .read_next_http_message_timelimit( 10s )
+        .write_http_response_timelimit( 1s )
+        .handle_request_timeout( 1s )
+        // Registry has to be cleaned manually.
+        // This will lead to closing all websockets when server finishes its work.
+        .cleanup_func( [&]{ registry.clear(); } ) );
+
+  }
+  catch( const std::exception & ex )
+  {
+    std::cerr << "Error: " << ex.what() << std::endl;
+    return 1;
+  }
+
+  return 0;
+}
+~~~~~
+
 
 # TLS support
 
