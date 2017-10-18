@@ -821,7 +821,7 @@ class null_logger_t
 
 `Msg_Builder` is lambda that returns a message to log out.
 This approach allows compiler to optimize logging when it is possible,
-see [null_logger_t](./dev/restinio/loggers.hpp).
+see [null_logger_t](./dev/restinio/null_logger.hpp).
 
 For implementation example see [ostream_logger_t](./dev/restinio/ostream_logger.hpp).
 
