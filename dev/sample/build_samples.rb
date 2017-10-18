@@ -12,7 +12,8 @@ MxxRu::Cpp::composite_target {
 	required_prj 'sample/websocket_detailed/prj.rb'
 	required_prj 'sample/using_external_io_context/prj.rb'
 
-	if RestinioOpenSSLFind.has_openssl(toolset)
+	# if RestinioOpenSSLFind.has_openssl(toolset)
 		required_prj 'sample/hello_world_https/prj.rb'
-	end
+		required_prj 'sample/websocket_wss/prj.rb'
+	# end
 }
