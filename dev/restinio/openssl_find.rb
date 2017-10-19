@@ -2,6 +2,7 @@ module RestinioOpenSSLFind
 
   def self.file_exists?( dir, f )
     fname = File.join( dir, f )
+
     if File.exist?( fname ) and File.file?( fname )
       fname
     else
@@ -49,10 +50,17 @@ module RestinioOpenSSLFind
     [ 'ssl', 'crypto' ]
   end
 
-  def self.get_libs_mingw
-    get_libs_linux + [ 'gdi32' ]
+  def self.get_libs_names_linux
+    [ 'libssl.so', 'libcrypto.so' ]
   end
 
+  def self.get_libs_mingw
+    [ 'ssl', 'crypto', 'gdi32' ]
+  end
+
+  def self.get_libs_names_mingw
+    [ 'libssl.a', 'libcrypto.a', 'libgdi32.a' ]
+  end
 
   def self.get_libs( toolset )
     if 'mswin' == toolset.tag( 'target_os' )
@@ -63,6 +71,18 @@ module RestinioOpenSSLFind
         end
     else
       get_libs_linux
+    end
+  end
+
+  def self.get_libs_names( toolset )
+    if 'mswin' == toolset.tag( 'target_os' )
+        if 'vc' == toolset.name
+          get_libs_vc
+        elsif 'gcc' == toolset.name
+          get_libs_names_mingw
+        end
+    else
+      get_libs_names_linux
     end
   end
 
@@ -111,7 +131,7 @@ module RestinioOpenSSLFind
     if File.exist?(custom_prj)
       true
     else
-      libraries = get_libs( toolset )
+      libraries = get_libs_names( toolset )
       if !libraries.empty?
         check_libs_available( toolset, libraries )
       else
