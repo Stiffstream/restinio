@@ -55,13 +55,12 @@ module RestinioOpenSSLFind
   end
 
   def self.get_libs_mingw
-    get_libs_linux + [ 'gdi32' ]
+    [ 'ssl', 'crypto', 'gdi32' ]
   end
 
   def self.get_libs_names_mingw
-    get_libs_names_linux + [ 'libgdi32.so' ]
+    [ 'libssl.a', 'libcrypto.a', 'libgdi32.a' ]
   end
-
 
   def self.get_libs( toolset )
     if 'mswin' == toolset.tag( 'target_os' )
