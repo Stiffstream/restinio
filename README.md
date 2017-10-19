@@ -996,18 +996,18 @@ and expects user to set body using chunks of data.
 ## Traits independent settings
 |      settings        | type | description |
 |----------------------|------|-------------|
-| port | `std::uint16_t` | Server port. |
-| protocol | `asio::ip::tcp` | Protocol ipv4/ipv6 used for server endpoint. |
-| address | `std::string` | Addres for server endpoint. Can be set to a concrete ip address when running on maschine with two or more network cards. Also supports values `localhost`, `ip6-localhost`. |
-| buffer_size | `std::size_t` | It limits a size of chunk that can be read from socket in a single read operattion (when receiving http request). |
-| read_next_http_message_timelimit | `std::chrono::steady_clock::duration` | A period for holding connection before completely receiving new http-request. Starts counting since connection is establised or a previous request was responsed. |
-| write_http_response_timelimit | `std::chrono::steady_clock::duration` | A period of time wait for response to be written to socket. |
-| handle_request_timeout | `std::chrono::steady_clock::duration` | A period of time that is given for a handler to create response. |
-| max_pipelined_requests | `std::size_t` | Max pipelined requests able to receive on single connection. |
-| acceptor_options_setter | `acceptor_options_setter_t` | Acceptor options setter. |
-| socket_options_setter | `socket_options_setter_t` | Socket options setter. |
-| concurrent_accepts_count | `std::size_t` | Max number of running concurrent accepts. When running server on N threads then up to N accepts can be handled concurrently. |
-| separate_accept_and_create_connect | `bool` | For the cases when a lot of connection can be fired by clients in a short time interval, it is vital to accept connections and initiate new accept operations as quick as possible. So creating connection instance that involves allocations and initialization can be done in a context that is independent to acceptors one. |
+| port | std:: uint16_t | Server port. |
+| protocol | asio:: ip:: tcp | Protocol ipv4/ipv6 used for server endpoint. |
+| address | std:: string | Addres for server endpoint. Can be set to a concrete ip address when running on maschine with two or more network cards. Also supports values `localhost`, `ip6-localhost`. |
+| buffer_size | std:: size_t | It limits a size of chunk that can be read from socket in a single read operattion (when receiving http request). |
+| read_next_http_message_timelimit | std:: chrono:: steady_clock:: duration | A period for holding connection before completely receiving new http-request. Starts counting since connection is establised or a previous request was responsed. |
+| write_http_response_timelimit | std::chrono:: steady_clock:: duration | A period of time wait for response to be written to socket. |
+| handle_request_timeout | std:: chrono:: steady_clock:: duration | A period of time that is given for a handler to create response. |
+| max_pipelined_requests | std:: size_t | Max pipelined requests able to receive on single connection. |
+| acceptor_options_setter | acceptor_options_setter_t | Acceptor options setter. |
+| socket_options_setter | socket_options_setter_t | Socket options setter. |
+| concurrent_accepts_count | std:: size_t | Max number of running concurrent accepts. When running server on N threads then up to N accepts can be handled concurrently. |
+| separate_accept_and_create_connect | bool | For the cases when a lot of connection can be fired by clients in a short time interval, it is vital to accept connections and initiate new accept operations as quick as possible. So creating connection instance that involves allocations and initialization can be done in a context that is independent to acceptors one. |
 | cleanup_func | function-object | [Cleanup function](#markdown-header-сleanup-function). |
 
 ## Traits dependent settings
