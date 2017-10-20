@@ -1009,11 +1009,12 @@ class connection_t final
 		//! \{
 
 		//! Helper function to work with timer guard.
-		template < typename FUNC >
+		// template < typename FUNC >
 		void
 		schedule_operation_timeout_callback(
 			std::chrono::steady_clock::duration timeout,
-			FUNC && f )
+			void (*cb)(connection_t & ) )
+			// FUNC && f )
 		{
 			std::weak_ptr< connection_base_t > weak_ctx = shared_from_this();
 
@@ -1021,10 +1022,11 @@ class connection_t final
 				->schedule_operation_timeout_callback(
 					get_executor(),
 					timeout,
-					[ weak_ctx = std::move( weak_ctx ), cb = std::move( f ) ](){
+					// [ weak_ctx, cb = std::move( f ) ](){
+					[ weak_ctx, cb ](){
 						if( auto ctx = weak_ctx.lock() )
 						{
-							cb();
+							cb( static_cast< connection_t & >( *ctx ) );
 						}
 					} );
 		}
@@ -1039,19 +1041,19 @@ class connection_t final
 			{
 				schedule_operation_timeout_callback(
 					m_settings->m_read_next_http_message_timelimit,
-					[ this ](){
-						m_logger.trace( [&]{
+					[]( connection_t & self ){
+						self.m_logger.trace( [&self]{
 							return fmt::format(
 									"[connection:{}] wait for request timed out",
-									this->connection_id() );
+									self.connection_id() );
 						} );
-						close();
+						self.close();
 					} );
 			}
 		}
 
 		//! Start guard request handling operation if necessary.
-		void
+		constexpr void
 		guard_request_handling_operation()
 		{
 			// Guard handling request only when
@@ -1060,19 +1062,14 @@ class connection_t final
 			{
 				schedule_operation_timeout_callback(
 					m_settings->m_handle_request_timeout,
-					[ this ](){
-						m_logger.warn( [&]{
+					[]( connection_t & self ){
+						self.m_logger.trace( [&self]{
 							return fmt::format(
 									"[connection:{}] handle request timed out",
-									this->connection_id() );
+									self.connection_id() );
 						} );
 
-						close();
-						// TODO: it is not always possible to write such resp.
-						// write_response_parts_impl(
-						// 	request_id,
-						// 	response_output_flags_t{ true, false },
-						// 	{ create_timeout_resp() } );
+						self.close();
 					} );
 			}
 		}
@@ -1083,13 +1080,13 @@ class connection_t final
 		{
 			schedule_operation_timeout_callback(
 				m_settings->m_write_http_response_timelimit,
-				[ this ](){
-					m_logger.trace( [&]{
+				[]( connection_t & self ){
+					self.m_logger.trace( [&self]{
 						return fmt::format(
 								"[connection:{}] writing response timed out",
-								this->connection_id() );
+								self.connection_id() );
 					} );
-					close();
+					self.close();
 				} );
 		}
 

@@ -29,8 +29,8 @@ class asio_timer_factory_t
 			:	public std::enable_shared_from_this< timer_guard_t >
 		{
 			public:
-				timer_guard_t( asio::io_context & iosvc )
-					:	m_operation_timer{ iosvc }
+				timer_guard_t( asio::io_context & io_context )
+					:	m_operation_timer{ io_context }
 				{}
 
 				// Set new timeout guard.
@@ -43,18 +43,24 @@ class asio_timer_factory_t
 					std::chrono::steady_clock::duration timeout,
 					Callback_Func && f )
 				{
-					cancel();
-					m_operation_timer.expires_from_now( timeout );
+					// cancel();
+					Executor callback_executor = executor;
+					m_operation_timer.expires_after( timeout );
 					m_operation_timer.async_wait(
-						asio::bind_executor(
-							executor,
-							[ this,
+							[ callback_executor,
 								cb = std::move( f ),
 								tag = ++m_current_timer_tag,
-								ctx = shared_from_this() ]( auto ec ){
-								if( !ec && tag == m_current_timer_tag )
-									cb();
-							} ) );
+								ctx = shared_from_this() ]( const auto & ec ){
+									if( !ec )
+									{
+										asio::post(
+											callback_executor,
+											[ cb = std::move( cb ), tag, ctx = std::move( ctx ) ]{
+												if( tag == ctx->m_current_timer_tag )
+													cb();
+											} );
+									}
+								} );
 				}
 
 				// Cancel timeout guard if any.
@@ -62,7 +68,8 @@ class asio_timer_factory_t
 				cancel()
 				{
 					++m_current_timer_tag;
-					m_operation_timer.cancel_one();
+					// m_operation_timer.cancel_one();
+					m_operation_timer.cancel();
 				}
 
 			private:
