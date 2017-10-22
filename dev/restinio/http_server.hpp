@@ -173,6 +173,9 @@ class http_server_t
 		using connection_factory_t = impl::connection_factory_t< Traits >;
 		using acceptor_t = impl::acceptor_t< Traits >;
 
+
+		std::shared_ptr< connection_settings_t > m_settings;
+
 	public:
 		template<typename D>
 		http_server_t(
@@ -184,6 +187,7 @@ class http_server_t
 			using actual_settings_type = basic_server_settings_t<D, Traits>;
 
 			auto conn_settings =
+			m_settings =
 				std::make_shared< connection_settings_t >(
 					std::forward<actual_settings_type>(settings),
 					impl::create_parser_settings(),
@@ -270,6 +274,7 @@ class http_server_t
 		{
 			if( running_state_t::not_running == m_running_state )
 			{
+				m_settings->timer_factory().start( *m_io_context );
 				m_acceptor->open();
 				m_running_state = running_state_t::running;
 			}
@@ -315,6 +320,7 @@ class http_server_t
 		{
 			if( running_state_t::running == m_running_state )
 			{
+				m_settings->timer_factory().stop( *m_io_context );
 				m_acceptor->close();
 				call_cleanup_functor();
 				m_running_state = running_state_t::not_running;

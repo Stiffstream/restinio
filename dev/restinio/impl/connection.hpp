@@ -1017,12 +1017,10 @@ class connection_t final
 			// FUNC && f )
 		{
 			std::weak_ptr< connection_base_t > weak_ctx = shared_from_this();
-
 			m_timer_guard
 				->schedule_operation_timeout_callback(
 					get_executor(),
 					timeout,
-					// [ weak_ctx, cb = std::move( f ) ](){
 					[ weak_ctx, cb ](){
 						if( auto ctx = weak_ctx.lock() )
 						{

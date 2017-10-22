@@ -57,6 +57,12 @@ struct null_timer_factory_t
 	{
 		return timer_guard_instance_t{};
 	}
+
+	constexpr void
+	start( asio::io_context & ) {}
+
+	constexpr void
+	stop( asio::io_context & ) {}
 };
 
 } /* namespace restinio */

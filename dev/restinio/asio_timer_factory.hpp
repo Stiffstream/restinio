@@ -43,7 +43,6 @@ class asio_timer_factory_t
 					std::chrono::steady_clock::duration timeout,
 					Callback_Func && f )
 				{
-					// cancel();
 					Executor callback_executor = executor;
 					m_operation_timer.expires_after( timeout );
 					m_operation_timer.async_wait(
@@ -68,7 +67,6 @@ class asio_timer_factory_t
 				cancel()
 				{
 					++m_current_timer_tag;
-					// m_operation_timer.cancel_one();
 					m_operation_timer.cancel();
 				}
 
@@ -82,10 +80,16 @@ class asio_timer_factory_t
 
 		// Create guard for connection.
 		timer_guard_instance_t
-		create_timer_guard( asio::io_context & iosvc )
+		create_timer_guard( asio::io_context & io_context )
 		{
-			return std::make_shared< timer_guard_t >( iosvc );
+			return std::make_shared< timer_guard_t >( io_context );
 		}
+
+		constexpr void
+		start( asio::io_context & io_context ) {}
+
+		constexpr void
+		stop( asio::io_context & ) {}
 };
 
 } /* namespace restinio */

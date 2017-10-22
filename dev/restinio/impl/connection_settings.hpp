@@ -100,6 +100,13 @@ struct connection_settings_t final
 		return m_timer_factory->create_timer_guard( m_io_context );
 	}
 
+	//! Get timer factory.
+	timer_factory_t &
+	timer_factory()
+	{
+		return *m_timer_factory;
+	}
+
 	private:
 		//! A service loop that runs sockets.
 		asio::io_context & m_io_context;
