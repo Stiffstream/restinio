@@ -145,6 +145,12 @@ class so_timer_factory_t
 			return std::make_shared< timer_guard_t >( m_env, m_mbox );
 		}
 
+		void
+		start( asio::io_context & ) {}
+
+		void
+		stop( asio::io_context & ) {}
+
 	private:
 		so_5::environment_t & m_env;
 		so_5::mbox_t m_mbox;

@@ -108,15 +108,16 @@ class timer_context_t : public std::enable_shared_from_this< timer_context_t< Ex
 			std::chrono::steady_clock::duration timeout,
 			callback_t cb )
 		{
-			timer_data_t t{ timeout, std::move( executor ), std::move( cb ) };
 			auto it = m_timers.find( timer_id );
 			if( m_timers.end() != it )
 			{
-				it->second = std::move( t );
+				it->second.m_cb = std::move( cb );
+				it->second.m_expired_after = std::chrono::steady_clock::now() + timeout;
 			}
 			else
 			{
-				typename timer_table_t::value_type p{ timer_id, std::move( t ) };
+				typename timer_table_t::value_type
+					p{ timer_id, timer_data_t{ timeout, std::move( executor ), std::move( cb ) } };
 				m_timers.insert( std::move( p ) );
 			}
 		}
@@ -139,12 +140,13 @@ class timer_context_t : public std::enable_shared_from_this< timer_context_t< Ex
 			while( it_end != it )
 			{
 				auto & d = it->second;
+
 				if( d.m_expired_after <= now )
 				{
 					asio::dispatch(
 						d.m_cb_executor,
 						[ cb = std::move( d.m_cb ) ]{
-								cb();
+							cb();
 						} );
 
 					it = m_timers.erase( it );
@@ -178,7 +180,7 @@ class timer_context_t : public std::enable_shared_from_this< timer_context_t< Ex
 			const timer_data_t & operator = ( const timer_data_t & ) = delete;
 
 			timer_data_t( timer_data_t && ) = default;
-			timer_data_t & operator = ( timer_data_t && ) = default;
+			timer_data_t & operator = ( timer_data_t && ) = delete;
 
 			std::chrono::steady_clock::time_point m_expired_after;
 			Executor m_cb_executor;
@@ -299,5 +301,8 @@ class asio_tick_timer_factory_t
 
 		timer_context_handle_t m_timer_context;
 };
+
+using mt_asio_tick_timer_factory_t = asio_tick_timer_factory_t< asio::strand< asio::executor > >;
+using st_asio_tick_timer_factory_t = asio_tick_timer_factory_t< asio::executor >;
 
 } /* namespace restinio */

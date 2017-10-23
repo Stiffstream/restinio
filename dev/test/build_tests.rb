@@ -10,10 +10,14 @@ MxxRu::Cpp::composite_target {
 	required_prj( "test/buffers/prj.ut.rb" )
 	required_prj( "test/response_coordinator/prj.ut.rb" )
 	required_prj( "test/uri_helpers/prj.ut.rb" )
-	required_prj( "test/socket_options/prj.ut.rb" )
+	if not $sanitizer_build or $sanitizer_build != 'thread_sanitizer'
+		required_prj( "test/socket_options/prj.ut.rb" )
+	end
 
 	if RestinioOpenSSLFind.has_openssl(toolset)
-		required_prj( "test/socket_options_tls/prj.ut.rb" )
+		if not $sanitizer_build or $sanitizer_build != 'thread_sanitizer'
+			required_prj( "test/socket_options_tls/prj.ut.rb" )
+		end
 	end
 
 	required_prj( "test/start_stop/prj.ut.rb" )
