@@ -23,174 +23,50 @@
 
 const std::string RESP_BODY{ "-=UNIT-TEST=-" };
 
-TEST_CASE( "ST Timeout on reading requests" , "[timeout][read]" )
-{
-	using http_server_t =
-		restinio::http_server_t<
-			restinio::single_thread_traits_t<
-				restinio::st_timertt_wheel_timer_factory_t,
-				utest_logger_t > >;
+#define TIMERTT_TYPE restinio::st_timertt_wheel_timer_factory_t
+#define TIMERTT_TYPE_STR "ST timertt_wheel"
 
-	http_server_t http_server{
-		restinio::own_io_context(),
-		[]( auto & settings ){
-			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
-				.timer_factory( std::chrono::milliseconds( 10 ) )
-				.read_next_http_message_timelimit( std::chrono::milliseconds( 50 ) )
-				.request_handler( []( auto req ){
-					if( restinio::http_method_get() == req->header().method() )
-					{
-						req->create_response()
-							.append_header( "Server", "RESTinio utest server" )
-							.append_header_date_field()
-							.append_header( "Content-Type", "text/plain; charset=utf-8" )
-							.set_body( RESP_BODY )
-							.done();
+#include "tests.inl"
 
-						return restinio::request_accepted();
-					}
-					return restinio::request_rejected();
-				} );
-		}
-	};
+#undef TIMERTT_TYPE_STR
+#undef TIMERTT_TYPE
 
-	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
-	other_thread.run();
+#define TIMERTT_TYPE restinio::mt_timertt_wheel_timer_factory_t
+#define TIMERTT_TYPE_STR "MT timertt_wheel"
 
-	SECTION( "write nothing" )
-	{
-		do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
-			std::this_thread::sleep_for( std::chrono::milliseconds( 65 ) );
+#include "tests.inl"
 
-			std::array< char, 64 > data;
+#undef TIMERTT_TYPE_STR
+#undef TIMERTT_TYPE
 
-			asio::error_code error;
+#define TIMERTT_TYPE restinio::st_timertt_list_timer_factory_t
+#define TIMERTT_TYPE_STR "ST timertt_list"
 
-			size_t length = // sock.read_some(asio::buffer(data), error);
-				asio::read( socket, asio::buffer(data), error );
+#include "tests.inl"
 
-			REQUIRE( 0 == length );
-			REQUIRE( error == asio::error::eof );
-		} );
-	}
+#undef TIMERTT_TYPE_STR
+#undef TIMERTT_TYPE
 
-	SECTION( "write a little" )
-	{
-		do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
+#define TIMERTT_TYPE restinio::mt_timertt_list_timer_factory_t
+#define TIMERTT_TYPE_STR "MT timertt_list"
 
-			const std::string a_part_of_request{ "GET / HTT" };
+#include "tests.inl"
 
-			REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( a_part_of_request ) )
-				);
+#undef TIMERTT_TYPE_STR
+#undef TIMERTT_TYPE
 
-			std::this_thread::sleep_for( std::chrono::milliseconds( 65 ) );
+#define TIMERTT_TYPE restinio::st_timertt_heap_timer_factory_t
+#define TIMERTT_TYPE_STR "ST timertt_heap"
 
-			std::array< char, 64 > data;
-			asio::error_code error;
+#include "tests.inl"
 
-			size_t length = // sock.read_some(asio::buffer(data), error);
-				asio::read( socket, asio::buffer(data), error );
+#undef TIMERTT_TYPE_STR
+#undef TIMERTT_TYPE
 
-			REQUIRE( 0 == length );
-			REQUIRE( error == asio::error::eof );
-		} );
-	}
+#define TIMERTT_TYPE restinio::mt_timertt_heap_timer_factory_t
+#define TIMERTT_TYPE_STR "MT timertt_heap"
 
-	SECTION( "write almost all" )
-	{
-		do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
+#include "tests.inl"
 
-			const std::string a_part_of_request{
-				"GET / HTTP/1.1\r\n"
-				"Host: 127.0.0.1\r\n"
-				"User-Agent: unit-test\r\n"
-				"Accept: */*\r\n"
-				"Connection: close\r\n"
-				"\r" }; // '\n' is missing
-
-			REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( a_part_of_request ) )
-				);
-
-			std::this_thread::sleep_for( std::chrono::milliseconds( 65 ) );
-
-			std::array< char, 64 > data;
-			asio::error_code error;
-
-			size_t length = // sock.read_some(asio::buffer(data), error);
-				asio::read( socket, asio::buffer(data), error );
-
-			REQUIRE( 0 == length );
-			REQUIRE( error == asio::error::eof );
-		} );
-	}
-
-	other_thread.stop_and_join();
-}
-
-TEST_CASE( "ST Timeout on handling request" , "[timeout][handle_request]" )
-{
-	using http_server_t =
-		restinio::http_server_t<
-			restinio::single_thread_traits_t<
-				restinio::st_timertt_wheel_timer_factory_t,
-				utest_logger_t > >;
-
-	restinio::request_handle_t req_to_store;
-
-	http_server_t http_server{
-		restinio::own_io_context(),
-		[ & ]( auto & settings ){
-			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
-				.timer_factory( std::chrono::milliseconds( 10 ) )
-				.handle_request_timeout( std::chrono::milliseconds( 50 ) )
-				.request_handler( [ & ]( auto req ){
-
-					// Store connection.
-					req_to_store = std::move( req );
-
-					// Signal that request is going to be handled.
-					return restinio::request_accepted();
-				} );
-		}
-	};
-
-	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
-	other_thread.run();
-
-	do_with_socket( [ & ]( auto & socket, auto & io_context ){
-
-		const std::string request{
-			"GET / HTTP/1.1\r\n"
-			"Host: 127.0.0.1\r\n"
-			"User-Agent: unit-test\r\n"
-			"Accept: */*\r\n"
-			"Connection: close\r\n"
-			"\r\n" };
-
-		REQUIRE_NOTHROW(
-			asio::write( socket, asio::buffer( request ) )
-			);
-
-		std::array< char, 1024 > data;
-
-		socket.async_read_some(
-			asio::buffer( data ),
-			[ & ]( auto ec, std::size_t length ){
-
-				REQUIRE( 0 == length );
-				REQUIRE( ec );
-				REQUIRE( ec == asio::error::eof );
-			} );
-
-		io_context.run();
-	} );
-
-	other_thread.stop_and_join();
-	req_to_store.reset();
-}
+#undef TIMERTT_TYPE_STR
+#undef TIMERTT_TYPE

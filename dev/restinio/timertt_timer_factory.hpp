@@ -245,11 +245,37 @@ struct timertt_actor_exception_handler_t
 	}
 };
 
-using st_timertt_wheel_timer_factory_t =
+template < typename Thread_Safety >
+using timertt_wheel_timer_factory_t =
 	timertt_timer_factory_t<
-		timertt::timer_wheel_manager_template<
-			timertt::thread_safety::unsafe,
-			timertt_noop_error_logger_t,
-			timertt_actor_exception_handler_t > >;
+			timertt::timer_wheel_manager_template<
+				Thread_Safety,
+				timertt_noop_error_logger_t,
+				timertt_actor_exception_handler_t > >;
+
+using st_timertt_wheel_timer_factory_t = timertt_wheel_timer_factory_t< timertt::thread_safety::unsafe >;
+using mt_timertt_wheel_timer_factory_t = timertt_wheel_timer_factory_t< timertt::thread_safety::safe >;
+
+template < typename Thread_Safety >
+using timertt_list_timer_factory_t =
+	timertt_timer_factory_t<
+			timertt::timer_list_manager_template<
+				Thread_Safety,
+				timertt_noop_error_logger_t,
+				timertt_actor_exception_handler_t > >;
+
+using st_timertt_list_timer_factory_t = timertt_list_timer_factory_t< timertt::thread_safety::unsafe >;
+using mt_timertt_list_timer_factory_t = timertt_list_timer_factory_t< timertt::thread_safety::safe >;
+
+template < typename Thread_Safety >
+using timertt_heap_timer_factory_t =
+	timertt_timer_factory_t<
+			timertt::timer_heap_manager_template<
+				Thread_Safety,
+				timertt_noop_error_logger_t,
+				timertt_actor_exception_handler_t > >;
+
+using st_timertt_heap_timer_factory_t = timertt_heap_timer_factory_t< timertt::thread_safety::unsafe >;
+using mt_timertt_heap_timer_factory_t = timertt_heap_timer_factory_t< timertt::thread_safety::safe >;
 
 } /* namespace restinio */
