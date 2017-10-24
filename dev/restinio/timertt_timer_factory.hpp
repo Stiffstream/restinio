@@ -131,6 +131,10 @@ class timertt_timer_factory_t
 				} }
 		{}
 
+		timertt_timer_factory_t()
+			:	timertt_timer_factory_t{ std::chrono::seconds( 1 ) }
+		{}
+
 		//! Timer guard for async operations.
 		class timer_guard_t final
 			:	public std::enable_shared_from_this< timer_guard_t >
