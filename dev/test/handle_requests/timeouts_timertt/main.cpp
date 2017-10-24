@@ -1,0 +1,196 @@
+/*
+	restinio
+*/
+
+/*!
+	Test triggering timeouts.
+*/
+
+#define CATCH_CONFIG_MAIN
+#include <catch/catch.hpp>
+
+#include <asio.hpp>
+
+#include <restinio/all.hpp>
+#include <restinio/timertt_timer_factory.hpp>
+
+#include <test/common/utest_logger.hpp>
+#include <test/common/pub.hpp>
+
+#if defined(__GNUG__)
+#pragma GCC diagnostic ignored "-Wparentheses"
+#endif
+
+const std::string RESP_BODY{ "-=UNIT-TEST=-" };
+
+TEST_CASE( "ST Timeout on reading requests" , "[timeout][read]" )
+{
+	using http_server_t =
+		restinio::http_server_t<
+			restinio::single_thread_traits_t<
+				restinio::st_timertt_wheel_timer_factory_t,
+				utest_logger_t > >;
+
+	http_server_t http_server{
+		restinio::own_io_context(),
+		[]( auto & settings ){
+			settings
+				.port( utest_default_port() )
+				.address( "127.0.0.1" )
+				.timer_factory( std::chrono::milliseconds( 10 ) )
+				.read_next_http_message_timelimit( std::chrono::milliseconds( 50 ) )
+				.request_handler( []( auto req ){
+					if( restinio::http_method_get() == req->header().method() )
+					{
+						req->create_response()
+							.append_header( "Server", "RESTinio utest server" )
+							.append_header_date_field()
+							.append_header( "Content-Type", "text/plain; charset=utf-8" )
+							.set_body( RESP_BODY )
+							.done();
+
+						return restinio::request_accepted();
+					}
+					return restinio::request_rejected();
+				} );
+		}
+	};
+
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
+
+	SECTION( "write nothing" )
+	{
+		do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
+			std::this_thread::sleep_for( std::chrono::milliseconds( 65 ) );
+
+			std::array< char, 64 > data;
+
+			asio::error_code error;
+
+			size_t length = // sock.read_some(asio::buffer(data), error);
+				asio::read( socket, asio::buffer(data), error );
+
+			REQUIRE( 0 == length );
+			REQUIRE( error == asio::error::eof );
+		} );
+	}
+
+	SECTION( "write a little" )
+	{
+		do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
+
+			const std::string a_part_of_request{ "GET / HTT" };
+
+			REQUIRE_NOTHROW(
+				asio::write( socket, asio::buffer( a_part_of_request ) )
+				);
+
+			std::this_thread::sleep_for( std::chrono::milliseconds( 65 ) );
+
+			std::array< char, 64 > data;
+			asio::error_code error;
+
+			size_t length = // sock.read_some(asio::buffer(data), error);
+				asio::read( socket, asio::buffer(data), error );
+
+			REQUIRE( 0 == length );
+			REQUIRE( error == asio::error::eof );
+		} );
+	}
+
+	SECTION( "write almost all" )
+	{
+		do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
+
+			const std::string a_part_of_request{
+				"GET / HTTP/1.1\r\n"
+				"Host: 127.0.0.1\r\n"
+				"User-Agent: unit-test\r\n"
+				"Accept: */*\r\n"
+				"Connection: close\r\n"
+				"\r" }; // '\n' is missing
+
+			REQUIRE_NOTHROW(
+				asio::write( socket, asio::buffer( a_part_of_request ) )
+				);
+
+			std::this_thread::sleep_for( std::chrono::milliseconds( 65 ) );
+
+			std::array< char, 64 > data;
+			asio::error_code error;
+
+			size_t length = // sock.read_some(asio::buffer(data), error);
+				asio::read( socket, asio::buffer(data), error );
+
+			REQUIRE( 0 == length );
+			REQUIRE( error == asio::error::eof );
+		} );
+	}
+
+	other_thread.stop_and_join();
+}
+
+TEST_CASE( "ST Timeout on handling request" , "[timeout][handle_request]" )
+{
+	using http_server_t =
+		restinio::http_server_t<
+			restinio::single_thread_traits_t<
+				restinio::st_timertt_wheel_timer_factory_t,
+				utest_logger_t > >;
+
+	restinio::request_handle_t req_to_store;
+
+	http_server_t http_server{
+		restinio::own_io_context(),
+		[ & ]( auto & settings ){
+			settings
+				.port( utest_default_port() )
+				.address( "127.0.0.1" )
+				.timer_factory( std::chrono::milliseconds( 10 ) )
+				.handle_request_timeout( std::chrono::milliseconds( 50 ) )
+				.request_handler( [ & ]( auto req ){
+
+					// Store connection.
+					req_to_store = std::move( req );
+
+					// Signal that request is going to be handled.
+					return restinio::request_accepted();
+				} );
+		}
+	};
+
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
+
+	do_with_socket( [ & ]( auto & socket, auto & io_context ){
+
+		const std::string request{
+			"GET / HTTP/1.1\r\n"
+			"Host: 127.0.0.1\r\n"
+			"User-Agent: unit-test\r\n"
+			"Accept: */*\r\n"
+			"Connection: close\r\n"
+			"\r\n" };
+
+		REQUIRE_NOTHROW(
+			asio::write( socket, asio::buffer( request ) )
+			);
+
+		std::array< char, 1024 > data;
+
+		socket.async_read_some(
+			asio::buffer( data ),
+			[ & ]( auto ec, std::size_t length ){
+
+				REQUIRE( 0 == length );
+				REQUIRE( ec );
+				REQUIRE( ec == asio::error::eof );
+			} );
+
+		io_context.run();
+	} );
+
+	other_thread.stop_and_join();
+	req_to_store.reset();
+}
