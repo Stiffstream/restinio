@@ -49,9 +49,11 @@ class timer_context_t : public std::enable_shared_from_this< timer_context_t< Ex
 				m_strand,
 				[ ctx = this->shared_from_this(),
 					timer_id,
-					callback_executor,
+					callback_executor = std::move( callback_executor ),
 					timeout,
-					cb = callback_t{ std::move( cb ) } ]{
+					// cb = callback_t{ std::move( cb ) }
+					cb = std::move( cb )
+					]{
 					ctx->schedule_impl(
 						timer_id,
 						std::move( callback_executor ),
@@ -101,12 +103,13 @@ class timer_context_t : public std::enable_shared_from_this< timer_context_t< Ex
 	private:
 		using callback_t = std::function< void (void ) >;
 
+		template < typename Callback_Func >
 		void
 		schedule_impl(
 			void * timer_id,
 			Executor executor,
 			std::chrono::steady_clock::duration timeout,
-			callback_t cb )
+			Callback_Func && cb )
 		{
 			auto it = m_timers.find( timer_id );
 			if( m_timers.end() != it )
