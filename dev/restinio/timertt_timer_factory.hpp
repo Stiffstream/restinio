@@ -154,6 +154,9 @@ class timertt_timer_factory_t
 					std::chrono::steady_clock::duration timeout,
 					Callback_Func && cb )
 				{
+					if( m_timer_id )
+						m_timer_context->cancel_timer( std::move(m_timer_id) );
+
 					m_timer_id =
 						m_timer_context->schedule_timer(
 							timeout,
