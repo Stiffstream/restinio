@@ -22,7 +22,8 @@ namespace impl
 
 //! Context wrapper for a timer logic.
 template < typename Executor >
-class timer_context_t : public std::enable_shared_from_this< timer_context_t< Executor > >
+class timer_context_t final
+	:	public std::enable_shared_from_this< timer_context_t< Executor > >
 {
 	public:
 		timer_context_t(
@@ -51,9 +52,7 @@ class timer_context_t : public std::enable_shared_from_this< timer_context_t< Ex
 					timer_id,
 					callback_executor = std::move( callback_executor ),
 					timeout,
-					// cb = callback_t{ std::move( cb ) }
-					cb = std::move( cb )
-					]{
+					cb = std::move( cb ) ]{
 					ctx->schedule_impl(
 						timer_id,
 						std::move( callback_executor ),
@@ -120,7 +119,7 @@ class timer_context_t : public std::enable_shared_from_this< timer_context_t< Ex
 			else
 			{
 				typename timer_table_t::value_type
-					p{ timer_id, timer_data_t{ timeout, std::move( executor ), std::move( cb ) } };
+					p{ timer_id, timer_data_t{ timeout, std::move( cb ), std::move( executor ) } };
 				m_timers.insert( std::move( p ) );
 			}
 		}
@@ -169,14 +168,11 @@ class timer_context_t : public std::enable_shared_from_this< timer_context_t< Ex
 		{
 			timer_data_t(
 				std::chrono::steady_clock::duration timeout_from_now,
-				Executor cb_executor,
-				callback_t cb )
+				callback_t cb,
+				Executor cb_executor )
 				:	m_expired_after( std::chrono::steady_clock::now() + timeout_from_now )
-				,	m_cb_executor( std::move( cb_executor ) )
 				,	m_cb{ std::move( cb ) }
-			{}
-
-			~timer_data_t()
+				,	m_cb_executor( std::move( cb_executor ) )
 			{}
 
 			timer_data_t( const timer_data_t & ) = delete;
@@ -186,8 +182,8 @@ class timer_context_t : public std::enable_shared_from_this< timer_context_t< Ex
 			timer_data_t & operator = ( timer_data_t && ) = delete;
 
 			std::chrono::steady_clock::time_point m_expired_after;
-			Executor m_cb_executor;
 			callback_t m_cb;
+			Executor m_cb_executor;
 		};
 
 		using timer_table_t = std::unordered_map< void *, timer_data_t >;

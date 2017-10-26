@@ -40,27 +40,31 @@ class timer_context_t
 			,	m_timer_manager{ std::forward< Args >( args )... }
 		{}
 
+		timer_id_t
+		create_timer()
+		{
+			return m_timer_manager.allocate();
+		}
+
 		//! Schedule or reschedule a given timer with specified callback.
 		template < typename Callback_Func >
-		timer_id_t
+		void
 		schedule_timer(
+			const timer_id_t & timer_id,
 			std::chrono::steady_clock::duration timeout,
 			Callback_Func && cb )
 		{
-			timer_id_t timer_id = m_timer_manager.allocate();
 			m_timer_manager.activate(
 				timer_id,
 				timeout,
 				std::move( cb ) );
-
-			return timer_id;
 		}
 
 		//! Cancel a given timer.
 		void
-		cancel_timer( timer_id_t timer_id )
+		cancel_timer( const timer_id_t & timer_id )
 		{
-			m_timer_manager.deactivate( std::move( timer_id ) );
+			m_timer_manager.deactivate( timer_id );
 		}
 
 		void
@@ -107,9 +111,7 @@ class timer_context_t
 //
 
 //! Timer factory implementation using asio timers.
-template <
-		typename Timer_Manager,
-		typename Executor = asio::strand< asio::executor > >
+template < typename Timer_Manager >
 class timertt_timer_factory_t
 {
 		using timer_context_t = impl::timer_context_t< Timer_Manager >;
@@ -142,6 +144,7 @@ class timertt_timer_factory_t
 			public:
 				timer_guard_t( timer_context_handle_t timer_context )
 					:	m_timer_context{ std::move( timer_context ) }
+					,	m_timer_id{ m_timer_context->create_timer() }
 				{}
 
 				// Set new timeout guard.
@@ -154,22 +157,24 @@ class timertt_timer_factory_t
 					std::chrono::steady_clock::duration timeout,
 					Callback_Func && cb )
 				{
-					m_timer_id =
-						m_timer_context->schedule_timer(
-							timeout,
-							[ cb_executor = executor,
-								cb = std::move( cb ),
-								tag = ++m_current_timer_tag,
-								ctx = this->shared_from_this() ]{
-									asio::dispatch(
-										cb_executor,
-										[ cb = std::move( cb ), tag, ctx = std::move( ctx ) ]{
-											if( tag == ctx->m_current_timer_tag )
-											{
-												cb();
-											}
-										} );
-							} );
+					cancel();
+
+					m_timer_context->schedule_timer(
+						m_timer_id,
+						timeout,
+						[ cb_executor = executor,
+							cb = std::move( cb ),
+							tag = ++m_current_timer_tag,
+							ctx = this->shared_from_this() ]{
+								asio::dispatch(
+									cb_executor,
+									[ cb = std::move( cb ), tag, ctx = std::move( ctx ) ]{
+										if( tag == ctx->m_current_timer_tag )
+										{
+											cb();
+										}
+									} );
+						} );
 				}
 
 				// Cancel timeout guard if any.
