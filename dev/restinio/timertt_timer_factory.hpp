@@ -157,24 +157,25 @@ class timertt_timer_factory_t
 					std::chrono::steady_clock::duration timeout,
 					Callback_Func && cb )
 				{
-					cancel();
+					if( m_timer_id )
+						cancel();
 
-					m_timer_context->schedule_timer(
-						m_timer_id,
-						timeout,
-						[ cb_executor = executor,
-							cb = std::move( cb ),
-							tag = ++m_current_timer_tag,
-							ctx = this->shared_from_this() ]{
-								asio::dispatch(
-									cb_executor,
-									[ cb = std::move( cb ), tag, ctx = std::move( ctx ) ]{
-										if( tag == ctx->m_current_timer_tag )
-										{
-											cb();
-										}
-									} );
-						} );
+						m_timer_context->schedule_timer(
+							m_timer_id,
+							timeout,
+							[ cb_executor = executor,
+								cb = std::move( cb ),
+								tag = ++m_current_timer_tag,
+								ctx = this->shared_from_this() ]{
+									asio::dispatch(
+										cb_executor,
+										[ cb = std::move( cb ), tag, ctx = std::move( ctx ) ]{
+											if( tag == ctx->m_current_timer_tag )
+											{
+												cb();
+											}
+										} );
+							} );
 				}
 
 				// Cancel timeout guard if any.

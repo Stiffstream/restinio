@@ -10,10 +10,13 @@
 
 #include <memory>
 
-#include <restinio/common_types.hpp>
+#include <restinio/tcp_connection_ctx_base.hpp>
 #include <restinio/buffers.hpp>
 
 namespace restinio
+{
+
+namespace impl
 {
 
 //
@@ -22,20 +25,13 @@ namespace restinio
 
 //! HTTP connection base.
 class connection_base_t
-	:	public std::enable_shared_from_this< connection_base_t >
+	:	public tcp_connection_ctx_base_t
 {
 	public:
 		connection_base_t(std::uint64_t id )
-			:	m_connection_id{ id }
+			:	tcp_connection_ctx_base_t{ id }
 		{}
 		virtual ~connection_base_t() = default;
-
-		//! Get connection id.
-		std::uint64_t
-		connection_id() const
-		{
-			return m_connection_id;
-		}
 
 		//! Write parts for specified request.
 		virtual void
@@ -46,14 +42,11 @@ class connection_base_t
 			response_output_flags_t response_output_flags,
 			//! parts of a response.
 			buffers_container_t bufs ) = 0;
-
-	private:
-		//! Id of a connection.
-		const std::uint64_t m_connection_id;
 };
 
 //! Alias for http connection handle.
-using connection_handle_t =
-	std::shared_ptr< connection_base_t >;
+using connection_handle_t = std::shared_ptr< connection_base_t >;
+
+} /* namespace impl */
 
 } /* namespace restinio */
