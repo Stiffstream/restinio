@@ -12,8 +12,8 @@
 
 #include <restinio/exception.hpp>
 #include <restinio/http_headers.hpp>
-#include <restinio/connection_handle.hpp>
 #include <restinio/message_builders.hpp>
+#include <restinio/impl/connection_handle.hpp>
 
 namespace restinio
 {
@@ -40,7 +40,7 @@ access_req_connection( request_t & );
 class request_t final
 	:	public std::enable_shared_from_this< request_t >
 {
-	friend connection_handle_t &
+	friend impl::connection_handle_t &
 	impl::access_req_connection( request_t & );
 
 	public:
@@ -48,7 +48,7 @@ class request_t final
 			request_id_t request_id,
 			http_request_header_t header,
 			std::string body,
-			connection_handle_t connection )
+			impl::connection_handle_t connection )
 			:	m_request_id{ request_id }
 			,	m_header{ std::move( header ) }
 			,	m_body{ std::move( body ) }
@@ -104,7 +104,7 @@ class request_t final
 		const http_request_header_t m_header;
 		const std::string m_body;
 
-		connection_handle_t m_connection;
+		impl::connection_handle_t m_connection;
 };
 
 //! Request handler, that is the type for calling request handlers.

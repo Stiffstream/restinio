@@ -15,8 +15,8 @@
 
 #include <restinio/common_types.hpp>
 #include <restinio/http_headers.hpp>
-#include <restinio/connection_handle.hpp>
 #include <restinio/os.hpp>
+#include <restinio/impl/connection_handle.hpp>
 
 #include <restinio/impl/header_helpers.hpp>
 
@@ -43,7 +43,7 @@ class base_response_builder_t
 		base_response_builder_t(
 			std::uint16_t status_code,
 			std::string reason_phrase,
-			connection_handle_t connection,
+			impl::connection_handle_t connection,
 			request_id_t request_id,
 			bool should_keep_alive )
 			:	m_header{ status_code, std::move( reason_phrase ) }
@@ -131,7 +131,7 @@ class base_response_builder_t
 	protected:
 		http_response_header_t m_header;
 
-		connection_handle_t m_connection;
+		impl::connection_handle_t m_connection;
 		const request_id_t m_request_id;
 
 	private:
@@ -351,7 +351,7 @@ class response_builder_t< user_controlled_output_t > final
 	private:
 		void
 		send_ready_data(
-			connection_handle_t conn,
+			impl::connection_handle_t conn,
 			response_parts_attr_t response_parts_attr )
 		{
 			if( !m_header_was_sent )
@@ -468,7 +468,7 @@ class response_builder_t< chunked_output_t > final
 		response_builder_t(
 			std::uint16_t status_code,
 			std::string reason_phrase,
-			connection_handle_t connection,
+			impl::connection_handle_t connection,
 			request_id_t request_id,
 			bool should_keep_alive )
 			:	base_type_t{
@@ -527,7 +527,7 @@ class response_builder_t< chunked_output_t > final
 	private:
 		void
 		send_ready_data(
-			connection_handle_t conn,
+			impl::connection_handle_t conn,
 			response_parts_attr_t response_parts_attr )
 		{
 			if( !m_header_was_sent )

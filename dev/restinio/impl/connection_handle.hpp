@@ -31,7 +31,6 @@ class connection_base_t
 		connection_base_t(std::uint64_t id )
 			:	tcp_connection_ctx_base_t{ id }
 		{}
-		virtual ~connection_base_t() = default;
 
 		//! Write parts for specified request.
 		virtual void

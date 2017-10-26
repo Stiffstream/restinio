@@ -10,8 +10,8 @@
 
 #include <functional>
 
-#include <restinio/websocket/ws_connection_handle.hpp>
 #include <restinio/websocket/message.hpp>
+#include <restinio/websocket/impl/ws_connection_handle.hpp>
 #include <restinio/websocket/impl/ws_connection.hpp>
 #include <restinio/utils/base64.hpp>
 #include <restinio/utils/sha1.hpp>
@@ -35,6 +35,11 @@ activate( ws_t & ws );
 //
 
 //! A WebSocket bind.
+/*!
+	An abstraction for websocket. User have to keep this handle during all the period
+	that websocket is used. It must be stored in a `shared_ptr<ws_t>` (ws_handle_t)
+	and when the last reference on this handle is lost underlying connection will be closed.
+*/
 class ws_t
 	:	public std::enable_shared_from_this< ws_t >
 {
@@ -47,9 +52,8 @@ class ws_t
 		void operator = ( ws_t && ) = delete;
 
 		ws_t(
-			ws_connection_handle_t ws_connection_handle )
+			impl::ws_connection_handle_t ws_connection_handle )
 			:	m_ws_connection_handle{ std::move( ws_connection_handle ) }
-			,	m_id{ m_ws_connection_handle->connection_id() }
 		{}
 
 		~ws_t()
@@ -63,10 +67,14 @@ class ws_t
 		}
 
 		//! Get connection id.
+		/*!
+			If connection exists then its id is returned,
+			otherwise retursn zero.
+		*/
 		std::uint64_t
 		connection_id() const
 		{
-			return m_id;
+			return m_ws_connection_handle ? m_ws_connection_handle->connection_id() : 0;
 		}
 
 		//! Shutdown websocket: wait for all outgoing data to be sent,
@@ -148,8 +156,7 @@ class ws_t
 		}
 
 	private:
-		ws_connection_handle_t m_ws_connection_handle;
-		const std::uint64_t m_id;
+		impl::ws_connection_handle_t m_ws_connection_handle;
 };
 
 //! Alias for ws_t handle.

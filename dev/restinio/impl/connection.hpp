@@ -16,8 +16,8 @@
 
 #include <restinio/exception.hpp>
 #include <restinio/http_headers.hpp>
-#include <restinio/connection_handle.hpp>
 #include <restinio/request_handler.hpp>
+#include <restinio/impl/connection_handle.hpp>
 #include <restinio/impl/header_helpers.hpp>
 #include <restinio/impl/response_coordinator.hpp>
 #include <restinio/impl/connection_settings.hpp>
@@ -509,7 +509,7 @@ class connection_t final
 								request_id,
 								std::move( parser_ctx.m_header ),
 								std::move( parser_ctx.m_body ),
-								shared_from_this() ) ) )
+								shared_from_concrete< connection_base_t >() ) ) )
 					{
 						// If handler refused request, say not implemented.
 						write_response_parts_impl(
@@ -617,7 +617,7 @@ class connection_t final
 						request_id,
 						std::move( parser_ctx.m_header ),
 						std::move( parser_ctx.m_body ),
-						shared_from_this() ) ) )
+						shared_from_concrete< connection_base_t >() ) ) )
 			{
 				if( m_socket.is_open() )
 				{
@@ -1016,7 +1016,9 @@ class connection_t final
 			void (*cb)(connection_t & ) )
 			// FUNC && f )
 		{
-			std::weak_ptr< connection_base_t > weak_ctx = shared_from_this();
+			std::weak_ptr< connection_base_t > weak_ctx =
+				shared_from_concrete< connection_base_t >();
+
 			m_timer_guard
 				->schedule_operation_timeout_callback(
 					get_executor(),

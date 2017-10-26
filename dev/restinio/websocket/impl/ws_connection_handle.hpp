@@ -10,6 +10,7 @@
 
 #include <memory>
 
+#include <restinio/tcp_connection_ctx_base.hpp>
 #include <restinio/common_types.hpp>
 #include <restinio/buffers.hpp>
 
@@ -25,26 +26,21 @@ namespace basic
 class ws_t;
 using ws_handle_t = std::shared_ptr< ws_t >;
 
+namespace impl
+{
+
 //
 // ws_connection_base_t
 //
 
 //! WebSocket connection base.
 class ws_connection_base_t
-	:	public std::enable_shared_from_this< ws_connection_base_t >
+	:	public tcp_connection_ctx_base_t
 {
 	public:
 		ws_connection_base_t( std::uint64_t id )
-			:	m_connection_id{ id }
+			:	tcp_connection_ctx_base_t{ id }
 		{}
-		virtual ~ws_connection_base_t() = default;
-
-		//! Get connection id.
-		std::uint64_t
-		connection_id() const
-		{
-			return m_connection_id;
-		}
 
 		//! Shutdown websocket.
 		virtual void
@@ -63,15 +59,12 @@ class ws_connection_base_t
 		write_data(
 			buffers_container_t bufs,
 			bool is_close_frame ) = 0;
-
-	private:
-		//! Id of a connection.
-		const std::uint64_t m_connection_id;
 };
 
 //! Alias for WebSocket connection handle.
-using ws_connection_handle_t =
-	std::shared_ptr< ws_connection_base_t >;
+using ws_connection_handle_t = std::shared_ptr< ws_connection_base_t >;
+
+} /* namespace impl */
 
 } /* namespace basic */
 

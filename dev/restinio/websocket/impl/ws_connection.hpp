@@ -1104,7 +1104,8 @@ class ws_connection_t final
 		void
 		guard_write_operation()
 		{
-			std::weak_ptr< ws_connection_base_t > weak_ctx = shared_from_this();
+			std::weak_ptr< ws_connection_base_t > weak_ctx =
+				shared_from_concrete< ws_connection_base_t >();
 
 			m_write_timer_guard
 				->schedule_operation_timeout_callback(
@@ -1131,7 +1132,8 @@ class ws_connection_t final
 		void
 		guard_close_frame_from_peer_operation()
 		{
-			std::weak_ptr< ws_connection_base_t > weak_ctx = shared_from_this();
+			std::weak_ptr< ws_connection_base_t > weak_ctx =
+				shared_from_concrete< ws_connection_base_t >();
 
 			m_close_frame_from_peer_timer_guard
 				->schedule_operation_timeout_callback(
@@ -1149,7 +1151,6 @@ class ws_connection_t final
 						}
 					} );
 		}
-
 		//! \}
 
 

@@ -24,7 +24,7 @@ create_fake_request( std::string target, http_method_t method = http_method_get(
 			0,
 			http_request_header_t{ method, std::move( target ) },
 			"",
-			connection_handle_t{} );
+			restinio::impl::connection_handle_t{} );
 }
 
 TEST_CASE( "Simple named param" , "[express][simple][named_params]" )
