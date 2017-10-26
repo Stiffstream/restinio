@@ -203,7 +203,7 @@ class connection_t final
 {
 	public:
 		using timer_factory_t = typename Traits::timer_factory_t;
-		using timer_guard_instance_t = typename timer_factory_t::timer_guard_instance_t;
+		using timer_guard_t = typename timer_factory_t::timer_guard_t;
 		using request_handler_t = typename Traits::request_handler_t;
 		using logger_t = typename Traits::logger_t;
 		using strand_t = typename Traits::strand_t;
@@ -222,7 +222,7 @@ class connection_t final
 			,	m_settings{ std::move( settings ) }
 			,	m_input{ m_settings->m_buffer_size }
 			,	m_response_coordinator{ m_settings->m_max_pipelined_requests }
-			,	m_timer_guard{ m_settings->create_timer_guard() }
+			,	m_timer_invocation_ctx{ m_settings->create_timer_guard() }
 			,	m_request_handler{ *( m_settings->m_request_handler ) }
 			,	m_logger{ *( m_settings->m_logger ) }
 		{
@@ -604,7 +604,7 @@ class connection_t final
 			} );
 
 			// Do not guard upgrade request.
-			m_timer_guard->cancel();
+			m_timer_invocation_ctx.m_timer_guard.cancel();
 
 			// After calling handler we expect the results or
 			// no further operations with connection
@@ -957,7 +957,7 @@ class connection_t final
 		void
 		close()
 		{
-			m_timer_guard->cancel();
+			m_timer_invocation_ctx.m_timer_guard.cancel();
 
 			m_logger.trace( [&]{
 				return fmt::format(
@@ -1008,27 +1008,29 @@ class connection_t final
 		//! Timer to controll operations.
 		//! \{
 
+		static connection_t &
+		cast_to_self( tcp_connection_ctx_base_t & base )
+		{
+			return static_cast<connection_t &>(base);
+		}
+
 		//! Helper function to work with timer guard.
 		// template < typename FUNC >
 		void
 		schedule_operation_timeout_callback(
 			std::chrono::steady_clock::duration timeout,
-			void (*cb)(connection_t & ) )
-			// FUNC && f )
+			timer_invocation_cb_t timer_invocation_cb )
 		{
 			std::weak_ptr< connection_base_t > weak_ctx =
 				shared_from_concrete< connection_base_t >();
 
-			m_timer_guard
-				->schedule_operation_timeout_callback(
-					get_executor(),
-					timeout,
-					[ weak_ctx, cb ](){
-						if( auto ctx = weak_ctx.lock() )
-						{
-							cb( static_cast< connection_t & >( *ctx ) );
-						}
-					} );
+			m_timer_invocation_ctx
+				.m_timer_guard
+					.schedule_operation_timeout_callback(
+						timeout,
+						m_timer_invocation_ctx.create_invocation_tag(),
+						std::move( weak_ctx ),
+						timer_invocation_cb );
 		}
 
 		//! Statr guard read operation if necessary.
@@ -1041,13 +1043,20 @@ class connection_t final
 			{
 				schedule_operation_timeout_callback(
 					m_settings->m_read_next_http_message_timelimit,
-					[]( connection_t & self ){
-						self.m_logger.trace( [&self]{
-							return fmt::format(
-									"[connection:{}] wait for request timed out",
-									self.connection_id() );
-						} );
-						self.close();
+					[]( timer_invocation_tag_t invocation_tag,
+						tcp_connection_ctx_weak_handle_t connection_ctx ){
+
+						if( auto ctx = connection_ctx.lock() )
+						{
+							auto & self = cast_to_self( *ctx );
+							asio::dispatch(
+								self.get_executor(),
+								[ &self, invocation_tag, ctx = std::move( ctx ) ]() mutable {
+									self.invoke_timer_if_necessary(
+										invocation_tag,
+										"wait for request" );
+								} );
+						}
 					} );
 			}
 		}
@@ -1062,14 +1071,20 @@ class connection_t final
 			{
 				schedule_operation_timeout_callback(
 					m_settings->m_handle_request_timeout,
-					[]( connection_t & self ){
-						self.m_logger.trace( [&self]{
-							return fmt::format(
-									"[connection:{}] handle request timed out",
-									self.connection_id() );
-						} );
+					[]( timer_invocation_tag_t invocation_tag,
+						tcp_connection_ctx_weak_handle_t connection_ctx ){
 
-						self.close();
+						if( auto ctx = connection_ctx.lock() )
+						{
+							auto & self = cast_to_self( *ctx );
+							asio::dispatch(
+								self.get_executor(),
+								[ &self, invocation_tag, ctx = std::move( ctx ) ]() mutable {
+									self.invoke_timer_if_necessary(
+										invocation_tag,
+										"handle request" );
+								} );
+						}
 					} );
 			}
 		}
@@ -1079,19 +1094,57 @@ class connection_t final
 		guard_write_operation()
 		{
 			schedule_operation_timeout_callback(
-				m_settings->m_write_http_response_timelimit,
-				[]( connection_t & self ){
-					self.m_logger.trace( [&self]{
-						return fmt::format(
-								"[connection:{}] writing response timed out",
-								self.connection_id() );
-					} );
-					self.close();
+				m_settings->m_handle_request_timeout,
+				[]( timer_invocation_tag_t invocation_tag,
+					tcp_connection_ctx_weak_handle_t connection_ctx ){
+
+					if( auto ctx = connection_ctx.lock() )
+					{
+						auto & self = cast_to_self( *ctx );
+						asio::dispatch(
+							self.get_executor(),
+							[ &self, invocation_tag, ctx = std::move( ctx ) ]() mutable{
+								self.invoke_timer_if_necessary(
+									invocation_tag,
+									"writing response" );
+							} );
+					}
 				} );
 		}
 
-		//! Operation timeout guard.
-		timer_guard_instance_t m_timer_guard;
+		void
+		invoke_timer_if_necessary(
+			timer_invocation_tag_t invocation_tag,
+			const char * operation_name )
+		{
+			if( invocation_tag == m_timer_invocation_ctx.m_invocation_tag )
+			{
+					m_logger.trace( [&]{
+						return fmt::format(
+								"[connection:{}] {} timed out",
+								connection_id(),
+								operation_name );
+					} );
+
+					close();
+			}
+		}
+
+		//! Data related to timer handlers invocation.
+		struct timer_invocation_ctx_t
+		{
+			timer_invocation_ctx_t( timer_guard_t timer_guard )
+				:	m_timer_guard{ std::move( timer_guard ) }
+			{}
+
+			auto create_invocation_tag() { return ++m_invocation_tag; }
+
+			//! Operation timeout guard.
+			timer_guard_t m_timer_guard;
+			timer_invocation_tag_t m_invocation_tag{ 0 };
+		};
+
+		timer_invocation_ctx_t m_timer_invocation_ctx;
 		//! \}
 
 		//! Request handler.
