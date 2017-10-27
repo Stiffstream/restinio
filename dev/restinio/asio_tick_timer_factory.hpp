@@ -14,6 +14,8 @@
 
 #include <asio.hpp>
 
+#include <restinio/timer_common.hpp>
+
 namespace restinio
 {
 
@@ -37,27 +39,29 @@ class timer_context_t final
 		{}
 
 		//! Schedule or reschedule a given timer with specified callback.
-		template < typename Callback_Func >
 		void
 		schedule_timer(
 			void * timer_id,
-			const Executor & executor,
 			std::chrono::steady_clock::duration timeout,
-			Callback_Func && cb )
+			timer_invocation_tag_t tag,
+			tcp_connection_ctx_weak_handle_t tcp_connection_ctx,
+			timer_invocation_cb_t invocation_cb )
 		{
-			Executor callback_executor = executor;
 			asio::dispatch(
 				m_strand,
 				[ ctx = this->shared_from_this(),
 					timer_id,
-					callback_executor = std::move( callback_executor ),
 					timeout,
-					cb = std::move( cb ) ]{
+					tag,
+					tcp_connection_ctx = std::move( tcp_connection_ctx ),
+					invocation_cb ]{
+
 					ctx->schedule_impl(
 						timer_id,
-						std::move( callback_executor ),
-						std::move( timeout ),
-						std::move( cb ) );
+						timeout,
+						tag,
+						invocation_cb,
+						std::move( tcp_connection_ctx ) );
 				} );
 		}
 
@@ -102,25 +106,33 @@ class timer_context_t final
 	private:
 		using callback_t = std::function< void (void ) >;
 
-		template < typename Callback_Func >
 		void
 		schedule_impl(
 			void * timer_id,
-			Executor executor,
 			std::chrono::steady_clock::duration timeout,
-			Callback_Func && cb )
+			timer_invocation_tag_t tag,
+			timer_invocation_cb_t invocation_cb,
+			tcp_connection_ctx_weak_handle_t tcp_connection_ctx )
 		{
 			auto it = m_timers.find( timer_id );
 			if( m_timers.end() != it )
 			{
-				it->second.m_cb = std::move( cb );
 				it->second.m_expired_after = std::chrono::steady_clock::now() + timeout;
+				it->second.m_tag = tag;
+				it->second.m_invocation_cb = invocation_cb;
 			}
 			else
 			{
 				typename timer_table_t::value_type
-					p{ timer_id, timer_data_t{ timeout, std::move( cb ), std::move( executor ) } };
-				m_timers.insert( std::move( p ) );
+					entry{
+						timer_id,
+						timer_data_t{
+							timeout,
+							tag,
+							invocation_cb,
+							std::move( tcp_connection_ctx ) } };
+
+				m_timers.insert( std::move( entry ) );
 			}
 		}
 
@@ -145,12 +157,7 @@ class timer_context_t final
 
 				if( d.m_expired_after <= now )
 				{
-					asio::dispatch(
-						d.m_cb_executor,
-						[ cb = std::move( d.m_cb ) ]{
-							cb();
-						} );
-
+					(*d.m_invocation_cb)( d.m_tag, std::move( d.m_tcp_connection_ctx ) );
 					it = m_timers.erase( it );
 				}
 				else
@@ -168,11 +175,13 @@ class timer_context_t final
 		{
 			timer_data_t(
 				std::chrono::steady_clock::duration timeout_from_now,
-				callback_t cb,
-				Executor cb_executor )
-				:	m_expired_after( std::chrono::steady_clock::now() + timeout_from_now )
-				,	m_cb{ std::move( cb ) }
-				,	m_cb_executor( std::move( cb_executor ) )
+				timer_invocation_tag_t tag,
+				timer_invocation_cb_t invocation_cb,
+				tcp_connection_ctx_weak_handle_t tcp_connection_ctx )
+				:	m_expired_after{ std::chrono::steady_clock::now() + timeout_from_now }
+				,	m_tag{ tag }
+				,	m_invocation_cb{ invocation_cb }
+				,	m_tcp_connection_ctx{ std::move( tcp_connection_ctx ) }
 			{}
 
 			timer_data_t( const timer_data_t & ) = delete;
@@ -182,8 +191,9 @@ class timer_context_t final
 			timer_data_t & operator = ( timer_data_t && ) = delete;
 
 			std::chrono::steady_clock::time_point m_expired_after;
-			callback_t m_cb;
-			Executor m_cb_executor;
+			timer_invocation_tag_t m_tag;
+			timer_invocation_cb_t m_invocation_cb;
+			tcp_connection_ctx_weak_handle_t m_tcp_connection_ctx;
 		};
 
 		using timer_table_t = std::unordered_map< void *, timer_data_t >;
@@ -219,28 +229,20 @@ class asio_tick_timer_factory_t
 					:	m_timer_context{ std::move( timer_context ) }
 				{}
 
-				// Set new timeout guard.
-				template <
-						typename Callback_Executor,
-						typename Callback_Func >
+				// Guard operation.
 				void
 				schedule_operation_timeout_callback(
-					const Callback_Executor & executor,
 					std::chrono::steady_clock::duration timeout,
-					Callback_Func && cb )
+					timer_invocation_tag_t tag,
+					tcp_connection_ctx_weak_handle_t tcp_connection_ctx,
+					timer_invocation_cb_t invocation_cb )
 				{
 					m_timer_context->schedule_timer(
 						this,
-						executor,
 						timeout,
-						[ cb = std::move( cb ),
-							tag = ++m_current_timer_tag,
-							ctx = this->shared_from_this() ]{
-							if( tag == ctx->m_current_timer_tag )
-							{
-								cb();
-							}
-						} );
+						tag,
+						std::move( tcp_connection_ctx ),
+						invocation_cb );
 				}
 
 				// Cancel timeout guard if any.
@@ -252,17 +254,15 @@ class asio_tick_timer_factory_t
 
 			private:
 				timer_context_handle_t m_timer_context;
-				std::uint32_t m_current_timer_tag{ 0 };
 			//! \}
 		};
 
-		using timer_guard_instance_t = std::shared_ptr< timer_guard_t >;
-
 		// Create guard for connection.
-		timer_guard_instance_t
+		timer_guard_t
 		create_timer_guard( asio::io_context & )
 		{
-			return std::make_shared< timer_guard_t >( m_timer_context );
+			assert( m_timer_context );
+			return timer_guard_t( m_timer_context );
 		}
 
 		void

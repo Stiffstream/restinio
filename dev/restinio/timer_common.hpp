@@ -21,6 +21,7 @@ using timer_invocation_tag_t = std::uint32_t;
 
 //! A pointer to invocation callback for a specific context object.
 using timer_invocation_cb_t =
-	void ( timer_invocation_tag_t , tcp_connection_ctx_weak_handle_t );
+	std::add_pointer< void ( timer_invocation_tag_t , tcp_connection_ctx_weak_handle_t ) >::type
+	;
 
 } /* namespace restinio */

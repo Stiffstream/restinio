@@ -34,7 +34,7 @@ class asio_timer_factory_t
 					:	m_operation_timer{ io_context }
 				{}
 
-				// Set new timeout guard.
+				// Guard operation.
 				void
 				schedule_operation_timeout_callback(
 					std::chrono::steady_clock::duration timeout,
@@ -65,8 +65,6 @@ class asio_timer_factory_t
 				asio::steady_timer m_operation_timer;
 			//! \}
 		};
-
-		// using timer_guard_instance_t = std::shared_ptr< timer_guard_t >;
 
 		// Create guard for connection.
 		timer_guard_t
