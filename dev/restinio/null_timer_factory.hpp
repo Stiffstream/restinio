@@ -12,6 +12,8 @@
 
 #include <asio.hpp>
 
+#include <restinio/timer_common.hpp>
+
 namespace restinio
 {
 
@@ -26,14 +28,9 @@ struct null_timer_factory_t
 	struct timer_guard_t
 	{
 		// Set new timeout guard.
-		template <
-				typename Executor,
-				typename Callback >
+		template <typename... Args >
 		constexpr void
-		schedule_operation_timeout_callback(
-			const Executor & ,
-			std::chrono::steady_clock::duration ,
-			Callback && ) const
+		schedule_operation_timeout_callback( Args &&... ) const
 		{}
 
 		// Cancel timeout guard if any.
@@ -42,20 +39,11 @@ struct null_timer_factory_t
 		{}
 	};
 
-	struct timer_guard_instance_t
-	{
-		constexpr const timer_guard_t *
-		operator ->() const noexcept
-		{
-			return static_cast< timer_guard_t * >( nullptr );
-		}
-	};
-
 	// Create guard for connection.
-	timer_guard_instance_t
+	constexpr timer_guard_t
 	create_timer_guard( asio::io_context & )
 	{
-		return timer_guard_instance_t{};
+		return timer_guard_t{};
 	}
 
 	constexpr void
