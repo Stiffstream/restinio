@@ -50,7 +50,6 @@ class so_timer_factory_t
 
 		//! Timer guard for async operations.
 		class timer_guard_t final
-			:	public std::enable_shared_from_this< timer_guard_t >
 		{
 			public:
 				using timeout_handler_t = std::function< void ( void ) >;
@@ -63,31 +62,25 @@ class so_timer_factory_t
 				{}
 
 				// Set new timeout guard.
-				template <
-						typename Executor,
-						typename Callback_Func >
 				void
 				schedule_operation_timeout_callback(
-					const Executor & executor,
 					std::chrono::steady_clock::duration timeout,
-					Callback_Func && f )
+					timer_invocation_tag_t tag,
+					tcp_connection_ctx_weak_handle_t tcp_connection_ctx,
+					timer_invocation_cb_t invocation_cb )
+
+					// const Executor & executor,
+					// std::chrono::steady_clock::duration timeout,
+					// Callback_Func && f )
 				{
 					cancel();
-					m_timeout_handler = std::move( f );
 
-					std::weak_ptr< timer_guard_t > self_wp = shared_from_this();
 					auto msg =
 						std::make_unique< msg_ckeck_timer_t >(
-							[ self_wp,
-								executor = executor,
-								tag = m_current_timer_tag](){
-
-									if( auto ctx = self_wp.lock() )
-									{
-										ctx->init_timeout_check(
-											executor,
-											tag );
-									}
+							[ tag,
+								tcp_connection_ctx = std::move( tcp_connection_ctx ),
+								invocation_cb]() mutable {
+									(*invocation_cb)( tag, std::move( tcp_connection_ctx ) );
 								} );
 
 					m_current_op_timer =
@@ -102,47 +95,22 @@ class so_timer_factory_t
 				void
 				cancel()
 				{
-					++m_current_timer_tag;
 					m_current_op_timer.release();
-
-					// Important to clear previous handler,
-					// because it might inderectly reference itself.
-					m_timeout_handler = timeout_handler_t{};
-				}
-
-				template< typename Executor >
-				void
-				init_timeout_check(
-					const Executor & executor,
-					std::uint32_t tag )
-				{
-					asio::post(
-						executor,
-						[ this, ctx = shared_from_this(), tag ](){
-							if( tag == m_current_timer_tag )
-								m_timeout_handler();
-						} );
 				}
 
 			private:
-				std::uint32_t m_current_timer_tag{ 0 };
-
 				so_5::environment_t & m_env;
 				const so_5::mbox_t m_mbox;
 
 				so_5::timer_id_t m_current_op_timer;
-
-				timeout_handler_t m_timeout_handler;
 			//! \}
 		};
 
-		using timer_guard_instance_t = std::shared_ptr< timer_guard_t >;
-
 		// Create guard for connection.
-		timer_guard_instance_t
+		timer_guard_t
 		create_timer_guard( asio::io_context & )
 		{
-			return std::make_shared< timer_guard_t >( m_env, m_mbox );
+			return timer_guard_t( m_env, m_mbox );
 		}
 
 		void

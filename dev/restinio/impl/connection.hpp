@@ -23,6 +23,7 @@
 #include <restinio/impl/connection_settings.hpp>
 #include <restinio/impl/fixed_buffer.hpp>
 #include <restinio/impl/raw_resp_output_ctx.hpp>
+#include <restinio/impl/timer_invocation_ctx.hpp>
 
 namespace restinio
 {
@@ -604,7 +605,7 @@ class connection_t final
 			} );
 
 			// Do not guard upgrade request.
-			m_timer_invocation_ctx.m_timer_guard.cancel();
+			m_timer_invocation_ctx.cancel();
 
 			// After calling handler we expect the results or
 			// no further operations with connection
@@ -957,7 +958,7 @@ class connection_t final
 		void
 		close()
 		{
-			m_timer_invocation_ctx.m_timer_guard.cancel();
+			m_timer_invocation_ctx.cancel();
 
 			m_logger.trace( [&]{
 				return fmt::format(
@@ -1011,7 +1012,7 @@ class connection_t final
 		static connection_t &
 		cast_to_self( tcp_connection_ctx_base_t & base )
 		{
-			return static_cast<connection_t &>(base);
+			return static_cast< connection_t & >( base );
 		}
 
 		//! Helper function to work with timer guard.
@@ -1117,7 +1118,7 @@ class connection_t final
 			timer_invocation_tag_t invocation_tag,
 			const char * operation_name )
 		{
-			if( invocation_tag == m_timer_invocation_ctx.m_invocation_tag )
+			if( m_timer_invocation_ctx.is_same_tag( invocation_tag ) )
 			{
 					m_logger.trace( [&]{
 						return fmt::format(
@@ -1130,21 +1131,7 @@ class connection_t final
 			}
 		}
 
-		//! Data related to timer handlers invocation.
-		struct timer_invocation_ctx_t
-		{
-			timer_invocation_ctx_t( timer_guard_t timer_guard )
-				:	m_timer_guard{ std::move( timer_guard ) }
-			{}
-
-			auto create_invocation_tag() { return ++m_invocation_tag; }
-
-			//! Operation timeout guard.
-			timer_guard_t m_timer_guard;
-			timer_invocation_tag_t m_invocation_tag{ 0 };
-		};
-
-		timer_invocation_ctx_t m_timer_invocation_ctx;
+		timer_invocation_ctx_t< timer_guard_t > m_timer_invocation_ctx;
 		//! \}
 
 		//! Request handler.

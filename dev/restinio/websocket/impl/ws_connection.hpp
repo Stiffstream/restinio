@@ -15,6 +15,7 @@
 #include <fmt/format.h>
 
 #include <restinio/all.hpp>
+#include <restinio/impl/timer_invocation_ctx.hpp>
 #include <restinio/websocket/message.hpp>
 #include <restinio/websocket/impl/ws_parser.hpp>
 #include <restinio/websocket/impl/ws_protocol_validator.hpp>
@@ -133,7 +134,7 @@ class ws_connection_t final
 
 		using timer_factory_t = typename Traits::timer_factory_t;
 		using timer_factory_handle_t = std::shared_ptr< timer_factory_t >;
-		using timer_guard_instance_t = typename timer_factory_t::timer_guard_instance_t;
+		using timer_guard_t = typename timer_factory_t::timer_guard_t;
 		using logger_t = typename Traits::logger_t;
 		using strand_t = typename Traits::strand_t;
 		using stream_socket_t = typename Traits::stream_socket_t;
@@ -919,7 +920,7 @@ class ws_connection_t final
 					if( opcode_t::connection_close_frame == md.m_opcode )
 					{
 						// Got it!
-						m_close_frame_from_peer_timer_guard->cancel();
+						m_close_frame_from_peer_timer_guard.cancel();
 
 						close_impl();
 
@@ -1052,7 +1053,7 @@ class ws_connection_t final
 			const std::error_code & ec,
 			std::size_t written )
 		{
-			m_write_timer_guard->cancel();
+			m_write_timer_guard.cancel();
 			if( !ec )
 			{
 				// Release buffers.
@@ -1097,8 +1098,11 @@ class ws_connection_t final
 		//! Timers.
 		//! \{
 
-		//! Write operation timeout guard.
-		timer_guard_instance_t m_write_timer_guard;
+		static ws_connection_t &
+		cast_to_self( tcp_connection_ctx_base_t & base )
+		{
+			return static_cast< ws_connection_t & >( base );
+		}
 
 		//! Start guard write operation if necessary.
 		void
@@ -1108,26 +1112,56 @@ class ws_connection_t final
 				shared_from_concrete< ws_connection_base_t >();
 
 			m_write_timer_guard
-				->schedule_operation_timeout_callback(
-					get_executor(),
-					m_settings->m_write_http_response_timelimit,
-					[ this, weak_ctx = std::move( weak_ctx ) ](){
-						if( auto ctx = weak_ctx.lock() )
+				.m_timer_guard
+					.schedule_operation_timeout_callback(
+						m_settings->m_write_http_response_timelimit,
+						m_write_timer_guard.create_invocation_tag(),
+						std::move( weak_ctx ),
+						[]( timer_invocation_tag_t invocation_tag,
+						tcp_connection_ctx_weak_handle_t connection_ctx ){
+
+						if( auto ctx = connection_ctx.lock() )
 						{
-							m_logger.trace( [&]{
-								return fmt::format(
-										"[wd_connection:{}] write operation timed out",
-										this->connection_id() );
+							auto & self = cast_to_self( *ctx );
+							asio::dispatch(
+								self.get_executor(),
+								[ &self, invocation_tag, ctx = std::move( ctx ) ]() mutable {
+									if( self.m_write_timer_guard.is_same_tag( invocation_tag ) )
+									{
+										self.m_logger.trace( [&]{
+											return fmt::format(
+													"[wd_connection:{}] write operation timed out",
+													self.connection_id() );
+											} );
+										self.m_close_frame_to_peer.disable();
+										self.call_close_handler_if_necessary( status_code_t::unexpected_condition );
+										self.close_impl();
+									}
 								} );
-							m_close_frame_to_peer.disable();
-							call_close_handler_if_necessary( status_code_t::unexpected_condition );
-							close_impl();
 						}
 					} );
+
+			// m_write_timer_guard
+			// 	->schedule_operation_timeout_callback(
+			// 		get_executor(),
+			// 		m_settings->m_write_http_response_timelimit,
+			// 		[ this, weak_ctx = std::move( weak_ctx ) ](){
+			// 			if( auto ctx = weak_ctx.lock() )
+			// 			{
+			// 				m_logger.trace( [&]{
+			// 					return fmt::format(
+			// 							"[wd_connection:{}] write operation timed out",
+			// 							this->connection_id() );
+			// 					} );
+			// 				m_close_frame_to_peer.disable();
+			// 				call_close_handler_if_necessary( status_code_t::unexpected_condition );
+			// 				close_impl();
+			// 			}
+			// 		} );
 		}
 
-		//! Waiting for close frame from peer timeout guard.
-		timer_guard_instance_t m_close_frame_from_peer_timer_guard;
+		//! Write operation timeout guard.
+		restinio::impl::timer_invocation_ctx_t< timer_guard_t > m_write_timer_guard;
 
 		void
 		guard_close_frame_from_peer_operation()
@@ -1136,21 +1170,53 @@ class ws_connection_t final
 				shared_from_concrete< ws_connection_base_t >();
 
 			m_close_frame_from_peer_timer_guard
-				->schedule_operation_timeout_callback(
-					get_executor(),
-					m_settings->m_read_next_http_message_timelimit,
-					[ this, weak_ctx = std::move( weak_ctx ) ](){
-						if( auto ctx = weak_ctx.lock() )
+				.m_timer_guard
+					.schedule_operation_timeout_callback(
+						m_settings->m_write_http_response_timelimit,
+						m_close_frame_from_peer_timer_guard.create_invocation_tag(),
+						std::move( weak_ctx ),
+						[]( timer_invocation_tag_t invocation_tag,
+						tcp_connection_ctx_weak_handle_t connection_ctx ){
+
+						if( auto ctx = connection_ctx.lock() )
 						{
-							m_logger.trace( [&]{
-								return fmt::format(
-										"[wd_connection:{}] waiting for close-frame from peer timed out",
-										this->connection_id() );
+							auto & self = cast_to_self( *ctx );
+							asio::dispatch(
+								self.get_executor(),
+								[ &self, invocation_tag, ctx = std::move( ctx ) ]() mutable {
+									if( self.m_close_frame_from_peer_timer_guard.is_same_tag( invocation_tag ) )
+									{
+										self.m_logger.trace( [&]{
+											return fmt::format(
+													"[wd_connection:{}] waiting for close-frame from peer timed out",
+													self.connection_id() );
+											} );
+										self.close_impl();
+									}
 								} );
-							close_impl();
 						}
 					} );
+
+			// m_close_frame_from_peer_timer_guard
+			// 	->schedule_operation_timeout_callback(
+			// 		get_executor(),
+			// 		m_settings->m_read_next_http_message_timelimit,
+			// 		[ this, weak_ctx = std::move( weak_ctx ) ](){
+			// 			if( auto ctx = weak_ctx.lock() )
+			// 			{
+			// 				m_logger.trace( [&]{
+			// 					return fmt::format(
+			// 							"[wd_connection:{}] waiting for close-frame from peer timed out",
+			// 							this->connection_id() );
+			// 					} );
+			// 				close_impl();
+			// 			}
+			// 		} );
 		}
+
+		//! Waiting for close frame from peer timeout guard.
+		restinio::impl::timer_invocation_ctx_t< timer_guard_t >
+			m_close_frame_from_peer_timer_guard;
 		//! \}
 
 
