@@ -222,7 +222,6 @@ class asio_tick_timer_factory_t
 
 		//! Timer guard for async operations.
 		class timer_guard_t final
-			:	public std::enable_shared_from_this< timer_guard_t >
 		{
 			public:
 				timer_guard_t( timer_context_handle_t timer_context )
