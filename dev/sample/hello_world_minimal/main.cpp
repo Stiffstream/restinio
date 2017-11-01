@@ -1,4 +1,3 @@
-#include <iostream>
 #include <restinio/all.hpp>
 
 int main()
