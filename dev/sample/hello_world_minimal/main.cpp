@@ -1,4 +1,3 @@
-#include <iostream>
 #include <restinio/all.hpp>
 
 #include <restinio/timertt_timer_factory.hpp>
