@@ -220,7 +220,7 @@ class acceptor_t final
 		auto &
 		get_open_close_operations_executor()
 		{
-			return  m_open_close_operations_executor;
+			return m_open_close_operations_executor;
 		}
 
 	private:
@@ -238,12 +238,8 @@ class acceptor_t final
 				this->socket( i ).lowest_layer(),
 				asio::bind_executor(
 					get_executor(),
-					[ i, ctx = this->shared_from_this() ]( auto ec ){
-						// Check if acceptor is running.
-						// Also it cover
-						// `asio::error:operation_aborted == ec`
-						// case.
-						if( ctx->m_acceptor.is_open() )
+					[ i, ctx = this->shared_from_this() ]( const auto & ec ){
+						if( !ec )
 						{
 							ctx->accept_current_connection( i, ec );
 						}
