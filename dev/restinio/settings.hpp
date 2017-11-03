@@ -540,32 +540,33 @@ class basic_server_settings_t
 		//! \}
 
 
-		//! Timers factory.
+		//! Timers manager.
 		//! \{
-		using timer_factory_t = typename Traits::timer_factory_t;
+		using timer_manager_t = typename Traits::timer_manager_t;
+		using timer_factory_t = typename timer_manager_t::fatory_t;
 
 		template< typename... Params >
 		Derived &
-		timer_factory( Params &&... params ) &
+		timer_manager( Params &&... params ) &
 		{
-			return set_shared_instance(
+			return set_unique_instance(
 					m_timer_factory,
 					std::forward< Params >( params )... );
 		}
 
 		template< typename... Params >
 		Derived &&
-		timer_factory( Params &&... params ) &&
+		timer_manager( Params &&... params ) &&
 		{
-			return std::move( this->timer_factory( std::forward< Params >( params )... ) );
+			return std::move( this->timer_manager( std::forward< Params >( params )... ) );
 		}
 
-		std::shared_ptr< timer_factory_t >
+		std::unique_ptr< timer_factory_t >
 		timer_factory()
 		{
 			return ensure_created(
 				std::move( m_timer_factory ),
-				"timer factory must be set" );
+				"timer manager is not set" );
 		}
 		//! \}
 
@@ -798,7 +799,7 @@ class basic_server_settings_t
 		std::unique_ptr< request_handler_t > m_request_handler;
 
 		//! Timers factory.
-		std::shared_ptr< timer_factory_t > m_timer_factory;
+		std::unique_ptr< timer_factory_t > m_timer_factory;
 
 		//! Logger.
 		std::unique_ptr< logger_t > m_logger;

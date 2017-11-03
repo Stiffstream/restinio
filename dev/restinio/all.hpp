@@ -13,8 +13,8 @@
 #include <restinio/message_builders.hpp>
 #include <restinio/http_server.hpp>
 #include <restinio/http_server_run.hpp>
-#include <restinio/asio_timer_factory.hpp>
-#include <restinio/null_timer_factory.hpp>
+#include <restinio/asio_timer_manager.hpp>
+#include <restinio/null_timer_manager.hpp>
 #include <restinio/null_logger.hpp>
 #include <restinio/ostream_logger.hpp>
 #include <restinio/uri_helpers.hpp>

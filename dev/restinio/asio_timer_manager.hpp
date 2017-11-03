@@ -19,13 +19,18 @@ namespace restinio
 {
 
 //
-// asio_timer_factory_t
+// asio_timer_manager_t
 //
 
 //! Timer factory implementation using asio timers.
-class asio_timer_factory_t
+class asio_timer_manager_t final
+	:	public std::enable_shared_from_this< asio_timer_manager_t >
 {
 	public:
+		asio_timer_manager_t( asio::io_context & io_context )
+			:	m_io_context( io_context )
+		{}
+
 		//! Timer guard for async operations.
 		class timer_guard_t final
 		{
@@ -68,16 +73,22 @@ class asio_timer_factory_t
 
 		// Create guard for connection.
 		timer_guard_t
-		create_timer_guard( asio::io_context & io_context )
+		create_timer_guard()
 		{
-			return timer_guard_t{ io_context };
+			return timer_guard_t{ m_io_context };
 		}
 
-		constexpr void
-		start( asio::io_context & io_context ) {}
+	struct factory_t
+	{
+		auto
+		create( asio::io_context & io_context ) const
+		{
+			return std::make_shared< asio_timer_manager_t >( io_context );
+		}
+	};
 
-		constexpr void
-		stop( asio::io_context & ) {}
+	private:
+		asio::io_context & m_io_context;
 };
 
 } /* namespace restinio */

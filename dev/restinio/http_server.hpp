@@ -172,9 +172,8 @@ class http_server_t
 		using connection_settings_t = impl::connection_settings_t< Traits >;
 		using connection_factory_t = impl::connection_factory_t< Traits >;
 		using acceptor_t = impl::acceptor_t< Traits >;
-
-
-		std::shared_ptr< connection_settings_t > m_settings;
+		using timer_manager_t = typename Traits::timer_manager_t;
+		using timer_manager_handle_t = std::shared_ptr< timer_manager_t >;
 
 	public:
 		template<typename D>
@@ -186,13 +185,16 @@ class http_server_t
 		{
 			using actual_settings_type = basic_server_settings_t<D, Traits>;
 
+			auto timer_factory = settings.timer_factory();
+			m_timer_manager = timer_factory->create( this->io_context() );
+
 			auto conn_settings =
 			m_settings =
 				std::make_shared< connection_settings_t >(
-					std::forward<actual_settings_type>(settings),
+					std::forward< actual_settings_type >(settings),
 					impl::create_parser_settings(),
 					this->io_context(),
-					settings.timer_factory() );
+					m_timer_manager );
 
 			m_acceptor =
 				std::make_shared< acceptor_t >(
@@ -274,7 +276,7 @@ class http_server_t
 		{
 			if( running_state_t::not_running == m_running_state )
 			{
-				m_settings->timer_factory().start( *m_io_context );
+				m_timer_manager.start();
 				m_acceptor->open();
 				m_running_state = running_state_t::running;
 			}
@@ -320,7 +322,7 @@ class http_server_t
 		{
 			if( running_state_t::running == m_running_state )
 			{
-				m_settings->timer_factory().stop( *m_io_context );
+				m_timer_manager.stop();
 				m_acceptor->close();
 				call_cleanup_functor();
 				m_running_state = running_state_t::not_running;
@@ -336,6 +338,9 @@ class http_server_t
 
 		//! Acceptor for new connections.
 		std::shared_ptr< acceptor_t > m_acceptor;
+
+		//! Timer manager object.
+		timer_manager_handle_t m_timer_manager;
 
 		//! State of server.
 		enum class running_state_t
