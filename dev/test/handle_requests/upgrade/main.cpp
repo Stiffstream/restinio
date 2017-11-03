@@ -22,7 +22,7 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 {
 	using traits_t =
 		restinio::traits_t<
-			restinio::asio_timer_factory_t,
+			restinio::asio_timer_manager_t,
 			utest_logger_t >;
 
 	using http_server_t = restinio::http_server_t< traits_t >;

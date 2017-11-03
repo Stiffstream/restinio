@@ -27,7 +27,7 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 	using http_server_t =
 		restinio::http_server_t<
 			restinio::traits_t<
-				restinio::asio_timer_factory_t,
+				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
 	http_server_t http_server{
@@ -134,7 +134,7 @@ TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
 	using http_server_t =
 		restinio::http_server_t<
 			restinio::traits_t<
-				restinio::asio_timer_factory_t,
+				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
 	restinio::request_handle_t req_to_store;

@@ -56,7 +56,7 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 	using http_server_t =
 		restinio::http_server_t<
 			restinio::traits_t<
-				restinio::asio_timer_factory_t,
+				restinio::asio_timer_manager_t,
 				utest_logger_t,
 				req_handler_t > >;
 

@@ -132,9 +132,9 @@ class ws_connection_t final
 	public:
 		using message_handler_t = WS_Message_Handler;
 
-		using timer_factory_t = typename Traits::timer_factory_t;
-		using timer_factory_handle_t = std::shared_ptr< timer_factory_t >;
-		using timer_guard_t = typename timer_factory_t::timer_guard_t;
+		using timer_manager_t = typename Traits::timer_manager_t;
+		using timer_manager_handle_t = std::shared_ptr< timer_manager_t >;
+		using timer_guard_t = typename timer_manager_t::timer_guard_t;
 		using logger_t = typename Traits::logger_t;
 		using strand_t = typename Traits::strand_t;
 		using stream_socket_t = typename Traits::stream_socket_t;

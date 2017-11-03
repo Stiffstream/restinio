@@ -19,7 +19,7 @@ namespace rws = restinio::websocket::basic;
 
 using traits_t =
 	restinio::single_thread_tls_traits_t<
-		restinio::asio_timer_factory_t,
+		restinio::asio_timer_manager_t,
 		restinio::single_threaded_ostream_logger_t,
 		router_t >;
 

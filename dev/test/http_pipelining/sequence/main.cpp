@@ -121,7 +121,7 @@ TEST_CASE( "Simple HTTP piplining " , "[reverse_handling]" )
 	using http_server_t =
 		restinio::http_server_t<
 			restinio::traits_t<
-				restinio::asio_timer_factory_t,
+				restinio::asio_timer_manager_t,
 				utest_logger_t,
 				req_handler_t< 3 > > >;
 
@@ -219,7 +219,7 @@ TEST_CASE( "Long sequesnces HTTP piplining" , "[long_sequences]" )
 	using http_server_t =
 		restinio::http_server_t<
 			restinio::traits_t<
-				restinio::asio_timer_factory_t,
+				restinio::asio_timer_manager_t,
 				utest_logger_t,
 				req_handler_t< 128 > > >;
 
@@ -302,7 +302,7 @@ TEST_CASE( "Interrupt sequesnces HTTP piplining" , "[long_sequences][interrupt]"
 	using http_server_t =
 		restinio::http_server_t<
 			restinio::traits_t<
-				restinio::asio_timer_factory_t,
+				restinio::asio_timer_manager_t,
 				utest_logger_t,
 				req_handler_t< 20 > > >;
 
