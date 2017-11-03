@@ -19,24 +19,113 @@
 namespace restinio
 {
 
-namespace impl
-{
+//
+// asio_tick_timer_manager_t
+//
 
-//! Context wrapper for a timer logic.
-template < typename Executor >
-class timer_context_t final
-	:	public std::enable_shared_from_this< timer_context_t< Executor > >
+//! Timer factory implementation using asio timers.
+template < typename Executor = asio::strand< asio::executor > >
+class asio_tick_timer_manager_t
+	:	public std::enable_shared_from_this< asio_tick_timer_manager_t< Executor > >
 {
 	public:
-		timer_context_t(
+		struct factory_t
+		{
+			const std::chrono::steady_clock::duration m_tick;
+			const std::size_t m_initial_buckets;
+
+			factory_t(
+				std::chrono::steady_clock::duration tick = std::chrono::seconds( 1 ),
+				std::size_t initial_buckets = 64 )
+				:	m_tick{ tick }
+				,	m_initial_buckets{ initial_buckets }
+			{}
+
+			auto
+			create( asio::io_context & io_context ) const
+			{
+				return
+					std::make_shared< asio_tick_timer_manager_t >(
+						io_context,
+						m_tick,
+						m_initial_buckets );
+			}
+		};
+
+
+		asio_tick_timer_manager_t(
 			asio::io_context & io_context,
 			std::chrono::steady_clock::duration tick,
 			std::size_t initial_buckets )
-			:	m_strand{ io_context.get_executor() }
-			,	m_tick_timer{ io_context }
+			:	m_tick_timer{ io_context }
+			,	m_strand{ io_context.get_executor() }
 			,	m_tick{ std::move( tick ) }
 			,	m_timers{ initial_buckets }
 		{}
+
+		//! Timer guard for async operations.
+		class timer_guard_t final
+		{
+			public:
+				timer_guard_t( std::shared_ptr< asio_tick_timer_manager_t > timer_context )
+					:	m_timer_manager{ std::move( timer_context ) }
+				{}
+
+				// Guard operation.
+				void
+				schedule_operation_timeout_callback(
+					std::chrono::steady_clock::duration timeout,
+					timer_invocation_tag_t tag,
+					tcp_connection_ctx_weak_handle_t tcp_connection_ctx,
+					timer_invocation_cb_t invocation_cb )
+				{
+					m_timer_manager->schedule_timer(
+						this,
+						timeout,
+						tag,
+						std::move( tcp_connection_ctx ),
+						invocation_cb );
+				}
+
+				// Cancel timeout guard if any.
+				void
+				cancel()
+				{
+					m_timer_manager->cancel_timer( this );
+				}
+
+			private:
+				std::shared_ptr< asio_tick_timer_manager_t > m_timer_manager;
+			//! \}
+		};
+
+		// Create guard for connection.
+		timer_guard_t
+		create_timer_guard()
+		{
+			return timer_guard_t( this->shared_from_this() );
+		}
+
+		void
+		start()
+		{
+			asio::dispatch(
+				m_strand,
+				[ ctx = this->shared_from_this() ]{
+					ctx->m_timers.clear();
+					ctx->schedule_next_tick();
+				} );
+		}
+
+		void
+		stop()
+		{
+			asio::dispatch(
+				m_strand,
+				[ ctx = this->shared_from_this() ]{
+					ctx->m_tick_timer.cancel();
+				} );
+		}
 
 		//! Schedule or reschedule a given timer with specified callback.
 		void
@@ -74,13 +163,14 @@ class timer_context_t final
 			// causes cancel_impl() to execute which invalidates
 			// iterator on expired timer table entry in
 			// check_expired_timers() loop.
-			asio::post(
+			asio::dispatch(
 				m_strand,
 				[ timer_id, ctx = this->shared_from_this() ]{
 					ctx->cancel_impl( timer_id );
 				} );
 		}
 
+	private:
 		void
 		schedule_next_tick()
 		{
@@ -94,17 +184,12 @@ class timer_context_t final
 							ctx->check_expired_timers();
 							ctx->schedule_next_tick();
 						}
+						else
+						{
+							ctx->m_timers.clear();
+						}
 					} ) );
 		}
-
-		void
-		cancel_tick()
-		{
-			m_tick_timer.cancel();
-		}
-
-	private:
-		using callback_t = std::function< void (void ) >;
 
 		void
 		schedule_impl(
@@ -167,8 +252,10 @@ class timer_context_t final
 			}
 		}
 
-		Executor m_strand;
 		asio::steady_timer m_tick_timer;
+		Executor m_strand;
+
+		//! Tick duration.
 		const std::chrono::steady_clock::duration m_tick;
 
 		struct timer_data_t
@@ -200,107 +287,7 @@ class timer_context_t final
 		timer_table_t m_timers;
 };
 
-} /* namespace impl */
-
-//
-// asio_tick_timer_factory_t
-//
-
-//! Timer factory implementation using asio timers.
-template < typename Executor = asio::strand< asio::executor > >
-class asio_tick_timer_factory_t
-{
-	using timer_context_handle_t = std::shared_ptr< impl::timer_context_t< Executor > >;
-
-	public:
-		asio_tick_timer_factory_t(
-			std::chrono::steady_clock::duration tick = std::chrono::seconds( 1 ),
-			std::size_t initial_buckets = 64 )
-			:	m_tick{ std::move( tick ) }
-			,	m_initial_buckets{ initial_buckets }
-		{}
-
-		//! Timer guard for async operations.
-		class timer_guard_t final
-		{
-			public:
-				timer_guard_t( timer_context_handle_t timer_context )
-					:	m_timer_context{ std::move( timer_context ) }
-				{}
-
-				// Guard operation.
-				void
-				schedule_operation_timeout_callback(
-					std::chrono::steady_clock::duration timeout,
-					timer_invocation_tag_t tag,
-					tcp_connection_ctx_weak_handle_t tcp_connection_ctx,
-					timer_invocation_cb_t invocation_cb )
-				{
-					m_timer_context->schedule_timer(
-						this,
-						timeout,
-						tag,
-						std::move( tcp_connection_ctx ),
-						invocation_cb );
-				}
-
-				// Cancel timeout guard if any.
-				void
-				cancel()
-				{
-					m_timer_context->cancel_timer( this );
-				}
-
-			private:
-				timer_context_handle_t m_timer_context;
-			//! \}
-		};
-
-		// Create guard for connection.
-		timer_guard_t
-		create_timer_guard( asio::io_context & )
-		{
-			assert( m_timer_context );
-			return timer_guard_t( m_timer_context );
-		}
-
-		void
-		start( asio::io_context & io_context )
-		{
-			cancel_tick_if_needed();
-			m_timer_context =
-				std::make_shared< impl::timer_context_t< Executor > >(
-					io_context,
-					m_tick,
-					m_initial_buckets );
-			m_timer_context->schedule_next_tick();
-		}
-
-		void
-		stop( asio::io_context & )
-		{
-			cancel_tick_if_needed();
-		}
-
-	private:
-		void
-		cancel_tick_if_needed()
-		{
-			if( m_timer_context )
-			{
-				m_timer_context->cancel_tick();
-				m_timer_context.reset();
-			}
-		}
-
-		//! Tick duration.
-		const std::chrono::steady_clock::duration m_tick;
-		const std::size_t m_initial_buckets;
-
-		timer_context_handle_t m_timer_context;
-};
-
-using mt_asio_tick_timer_factory_t = asio_tick_timer_factory_t< asio::strand< asio::executor > >;
-using st_asio_tick_timer_factory_t = asio_tick_timer_factory_t< asio::executor >;
+using mt_asio_tick_timer_manager_t = asio_tick_timer_manager_t< asio::strand< asio::executor > >;
+using st_asio_tick_timer_manager_t = asio_tick_timer_manager_t< asio::executor >;
 
 } /* namespace restinio */

@@ -12,7 +12,7 @@
 #include <asio.hpp>
 
 #include <restinio/all.hpp>
-#include <restinio/asio_tick_timer_factory.hpp>
+#include <restinio/asio_tick_timer_manager.hpp>
 
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
@@ -28,7 +28,7 @@ TEST_CASE( "ST Timeout on reading requests" , "[timeout][read]" )
 	using http_server_t =
 		restinio::http_server_t<
 			restinio::single_thread_traits_t<
-				restinio::st_asio_tick_timer_factory_t,
+				restinio::st_asio_tick_timer_manager_t,
 				utest_logger_t > >;
 
 	http_server_t http_server{
@@ -37,7 +37,7 @@ TEST_CASE( "ST Timeout on reading requests" , "[timeout][read]" )
 			settings
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
-				.timer_factory( std::chrono::milliseconds( 10 ) )
+				.timer_manager( std::chrono::milliseconds( 10 ) )
 				.read_next_http_message_timelimit( std::chrono::milliseconds( 50 ) )
 				.request_handler( []( auto req ){
 					if( restinio::http_method_get() == req->header().method() )
@@ -136,7 +136,7 @@ TEST_CASE( "ST Timeout on handling request" , "[timeout][handle_request]" )
 	using http_server_t =
 		restinio::http_server_t<
 			restinio::single_thread_traits_t<
-				restinio::st_asio_tick_timer_factory_t,
+				restinio::st_asio_tick_timer_manager_t,
 				utest_logger_t > >;
 
 	restinio::request_handle_t req_to_store;
@@ -147,7 +147,7 @@ TEST_CASE( "ST Timeout on handling request" , "[timeout][handle_request]" )
 			settings
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
-				.timer_factory( std::chrono::milliseconds( 10 ) )
+				.timer_manager( std::chrono::milliseconds( 10 ) )
 				.handle_request_timeout( std::chrono::milliseconds( 50 ) )
 				.request_handler( [ & ]( auto req ){
 
@@ -200,7 +200,7 @@ TEST_CASE( "MT Timeout on reading requests" , "[timeout][read]" )
 	using http_server_t =
 		restinio::http_server_t<
 			restinio::traits_t<
-				restinio::mt_asio_tick_timer_factory_t,
+				restinio::mt_asio_tick_timer_manager_t,
 				utest_logger_t > >;
 
 	http_server_t http_server{
@@ -209,7 +209,7 @@ TEST_CASE( "MT Timeout on reading requests" , "[timeout][read]" )
 			settings
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
-				.timer_factory( std::chrono::milliseconds( 10 ) )
+				.timer_manager( std::chrono::milliseconds( 10 ) )
 				.read_next_http_message_timelimit( std::chrono::milliseconds( 50 ) )
 				.request_handler( []( auto req ){
 					if( restinio::http_method_get() == req->header().method() )
@@ -308,7 +308,7 @@ TEST_CASE( "MT Timeout on handling request" , "[timeout][handle_request]" )
 	using http_server_t =
 		restinio::http_server_t<
 			restinio::traits_t<
-				restinio::mt_asio_tick_timer_factory_t,
+				restinio::mt_asio_tick_timer_manager_t,
 				utest_logger_t > >;
 
 	restinio::request_handle_t req_to_store;
@@ -319,7 +319,7 @@ TEST_CASE( "MT Timeout on handling request" , "[timeout][handle_request]" )
 			settings
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
-				.timer_factory( std::chrono::milliseconds( 10 ) )
+				.timer_manager( std::chrono::milliseconds( 10 ) )
 				.handle_request_timeout( std::chrono::milliseconds( 50 ) )
 				.request_handler( [ & ]( auto req ){
 
