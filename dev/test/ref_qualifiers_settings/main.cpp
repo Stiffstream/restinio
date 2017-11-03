@@ -70,44 +70,52 @@ struct tester_req_handler_t
 };
 
 
-struct tester_timer_factory_t
-	:	public tagged_object_t
+struct tester_timer_manager_t
 {
-	using tagged_object_t::tagged_object_t;
-
 	//! Timer guard for async operations.
 	struct timer_guard_t
 	{
 		// Set new timeout guard.
-		template <
-				typename EXECUTOR,
-				typename CALLBACK_FUNC >
-		void
-		schedule_operation_timeout_callback(
-			const EXECUTOR & ,
-			std::chrono::steady_clock::duration ,
-			CALLBACK_FUNC && ) const
+		template <typename... Args >
+		constexpr void
+		schedule_operation_timeout_callback( Args &&... ) const
 		{}
 
 		// Cancel timeout guard if any.
-		void
+		constexpr void
 		cancel() const
 		{}
 	};
 
-	using timer_guard_instance_t = std::shared_ptr< timer_guard_t >;
-
 	// Create guard for connection.
-	timer_guard_instance_t
-	create_timer_guard( asio::io_service & )
+	timer_guard_t
+	create_timer_guard()
 	{
-		return std::make_shared< timer_guard_t >();
+		return timer_guard_t();
 	}
+
+	//! Start/stop timer manager.
+	//! \{
+	void start() const {}
+	void stop() const {}
+	//! \}
+
+	struct factory_t
+		:	public tagged_object_t
+	{
+		using tagged_object_t::tagged_object_t;
+
+		auto
+		create( asio::io_context & )
+		{
+			return std::make_shared< tester_timer_manager_t >();
+		}
+	};
 };
 
 using traits_t =
 	restinio::traits_t<
-		tester_timer_factory_t,
+		tester_timer_manager_t,
 		tester_logger_t,
 		tester_req_handler_t >;
 
@@ -168,7 +176,7 @@ TEST_CASE( "Ref-qualifiers" , "[settings][ref_qualifiers]" )
 			.handle_request_timeout( std::chrono::seconds( 122 ) )
 			.max_pipelined_requests( 42 )
 			.request_handler( "REQUESTHANDLER" )
-			.timer_factory( "TIMERFACTORY" )
+			.timer_manager( "TIMERFACTORY" )
 			.logger( "LOGGER" )
 			.concurrent_accepts_count( 4 )
 			.acceptor_options_setter(

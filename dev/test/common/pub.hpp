@@ -73,21 +73,12 @@ do_request(
 	return result;
 }
 
-inline auto
-default_async_error_callback()
-{
-	return []( auto ex ) { std::rethrow_exception(ex); };
-}
-
 template<typename Http_Server>
 class other_work_thread_for_server_t
 {
 	Http_Server & m_server;
 
 	std::thread m_thread;
-	std::mutex m_mutex;
-	std::condition_variable m_cv;
-
 public:
 	other_work_thread_for_server_t(
 		Http_Server & server )
@@ -97,26 +88,30 @@ public:
 	void
 	run()
 	{
-		std::unique_lock< std::mutex > lock(m_mutex);
 		m_thread = std::thread( [this] {
-			m_server.open_async(
-				[&]{
-					std::lock_guard<std::mutex> l{ m_mutex };
-					m_cv.notify_one();
-				},
-				default_async_error_callback() );
+			m_server.open_sync();
 			m_server.io_context().run();
 		} );
 
-		m_cv.wait( lock );
+		// Ensure server was started:
+		std::promise< void > p;
+		asio::post(
+			m_server.io_context(),
+			[&]{
+				p.set_value();
+			} );
+		p.get_future().get();
 	}
 
 	void
 	stop_and_join()
 	{
-		m_server.close_async(
-			[&]{ m_server.io_context().stop(); },
-			default_async_error_callback() );
+		asio::post(
+			m_server.io_context(),
+			[&]{
+				m_server.close_sync();
+				m_server.io_context().stop();
+			} );
 
 		m_thread.join();
 	}

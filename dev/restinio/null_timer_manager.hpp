@@ -23,7 +23,6 @@ namespace restinio
 
 //! Timer factory implementation using asio timers.
 struct null_timer_manager_t final
-	:	public std::enable_shared_from_this< null_timer_manager_t >
 {
 	//! Timer guard for async operations.
 	struct timer_guard_t
@@ -46,6 +45,12 @@ struct null_timer_manager_t final
 	{
 		return timer_guard_t{};
 	}
+
+	//! Start/stop timer manager.
+	//! \{
+	constexpr void start() const {}
+	constexpr void stop() const {}
+	//! \}
 
 	struct factory_t
 	{

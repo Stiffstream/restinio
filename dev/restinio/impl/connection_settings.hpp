@@ -32,8 +32,8 @@ template < typename Traits >
 struct connection_settings_t final
 	:	public std::enable_shared_from_this< connection_settings_t< Traits > >
 {
-	using timer_factory_t = typename Traits::timer_factory_t;
-	using timer_factory_handle_t = std::shared_ptr< timer_factory_t >;
+	using timer_manager_t = typename Traits::timer_manager_t;
+	using timer_manager_handle_t = std::shared_ptr< timer_manager_t >;
 	using request_handler_t = typename Traits::request_handler_t;
 	using logger_t = typename Traits::logger_t;
 
@@ -47,7 +47,7 @@ struct connection_settings_t final
 		Settings && settings,
 		http_parser_settings parser_settings,
 		asio::io_context & io_context,
-		timer_factory_handle_t timer_factory )
+		timer_manager_handle_t timer_manager )
 		:	m_request_handler{ settings.request_handler() }
 		,	m_parser_settings{ parser_settings }
 		,	m_buffer_size{ settings.buffer_size() }
@@ -59,11 +59,10 @@ struct connection_settings_t final
 				settings.handle_request_timeout() }
 		,	m_max_pipelined_requests{ settings.max_pipelined_requests() }
 		,	m_logger{ settings.logger() }
-		,	m_io_context{ io_context }
-		,	m_timer_factory{ std::move( timer_factory ) }
+		,	m_timer_manager{ std::move( timer_manager ) }
 	{
-		if( !m_timer_factory )
-			throw exception_t{ "timer_factory not set" };
+		if( !m_timer_manager )
+			throw exception_t{ "timer manager not set" };
 	}
 
 	//! Request handler factory.
@@ -97,22 +96,12 @@ struct connection_settings_t final
 	auto
 	create_timer_guard()
 	{
-		return m_timer_factory->create_timer_guard( m_io_context );
-	}
-
-	//! Get timer factory.
-	timer_factory_t &
-	timer_factory()
-	{
-		return *m_timer_factory;
+		return m_timer_manager->create_timer_guard();
 	}
 
 	private:
-		//! A service loop that runs sockets.
-		asio::io_context & m_io_context;
-
 		//! Timer factory for timout guards.
-		timer_factory_handle_t m_timer_factory;
+		timer_manager_handle_t m_timer_manager;
 };
 
 template < typename Traits >

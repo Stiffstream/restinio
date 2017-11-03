@@ -203,8 +203,8 @@ class connection_t final
 	:	public connection_base_t
 {
 	public:
-		using timer_factory_t = typename Traits::timer_factory_t;
-		using timer_guard_t = typename timer_factory_t::timer_guard_t;
+		using timer_manager_t = typename Traits::timer_manager_t;
+		using timer_guard_t = typename timer_manager_t::timer_guard_t;
 		using request_handler_t = typename Traits::request_handler_t;
 		using logger_t = typename Traits::logger_t;
 		using strand_t = typename Traits::strand_t;

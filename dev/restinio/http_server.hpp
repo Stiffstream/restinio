@@ -11,8 +11,6 @@
 #include <restinio/exception.hpp>
 #include <restinio/settings.hpp>
 #include <restinio/request_handler.hpp>
-#include <restinio/asio_timer_factory.hpp>
-#include <restinio/null_logger.hpp>
 #include <restinio/impl/acceptor.hpp>
 #include <restinio/traits.hpp>
 
@@ -189,7 +187,6 @@ class http_server_t
 			m_timer_manager = timer_factory->create( this->io_context() );
 
 			auto conn_settings =
-			m_settings =
 				std::make_shared< connection_settings_t >(
 					std::forward< actual_settings_type >(settings),
 					impl::create_parser_settings(),
@@ -276,7 +273,7 @@ class http_server_t
 		{
 			if( running_state_t::not_running == m_running_state )
 			{
-				m_timer_manager.start();
+				m_timer_manager->start();
 				m_acceptor->open();
 				m_running_state = running_state_t::running;
 			}
@@ -322,7 +319,7 @@ class http_server_t
 		{
 			if( running_state_t::running == m_running_state )
 			{
-				m_timer_manager.stop();
+				m_timer_manager->stop();
 				m_acceptor->close();
 				call_cleanup_functor();
 				m_running_state = running_state_t::not_running;

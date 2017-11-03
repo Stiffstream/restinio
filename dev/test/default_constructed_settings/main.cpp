@@ -38,7 +38,7 @@ TEST_CASE( "Request handler" , "[settings][request_handler]" )
 		using settings_t =
 			server_settings_t<
 				traits_t<
-					asio_timer_factory_t,
+					asio_timer_manager_t,
 					null_logger_t,
 					req_handler_t > >;
 
@@ -63,7 +63,7 @@ TEST_CASE( "Request handler" , "[settings][request_handler]" )
 		using settings_t =
 			server_settings_t<
 				traits_t<
-					asio_timer_factory_t,
+					asio_timer_manager_t,
 					null_logger_t,
 					req_handler_t > >;
 
@@ -84,7 +84,7 @@ TEST_CASE( "Request handler" , "[settings][request_handler]" )
 		using settings_t =
 			server_settings_t<
 				traits_t<
-					asio_timer_factory_t,
+					asio_timer_manager_t,
 					null_logger_t,
 					req_handler_t > >;
 
@@ -145,7 +145,7 @@ TEST_CASE( "Logger" , "[settings][logger]" )
 		using settings_t =
 			server_settings_t<
 				traits_t<
-					asio_timer_factory_t,
+					asio_timer_manager_t,
 					logger1_t > >;
 
 		settings_t s{};
@@ -162,7 +162,7 @@ TEST_CASE( "Logger" , "[settings][logger]" )
 		using settings_t =
 			server_settings_t<
 				traits_t<
-					asio_timer_factory_t,
+					asio_timer_manager_t,
 					logger2_t > >;
 
 		settings_t s{};
@@ -178,38 +178,61 @@ TEST_CASE( "Logger" , "[settings][logger]" )
 
 #define RESTINIO_TIMERFACTORY_UTEST_INTERNALS \
 struct timer_guard_t { \
-	template < typename EXECUTOR, typename CALLBACK_FUNC > \
-	void schedule_operation_timeout_callback( \
-		const EXECUTOR & , \
-		std::chrono::steady_clock::duration, \
-		CALLBACK_FUNC && ) const \
-	{} \
-	void cancel() const {} \
+		template <typename... Args > \
+		constexpr void \
+		schedule_operation_timeout_callback( Args &&... ) const \
+		{} \
+		constexpr void \
+		cancel() const \
+		{}\
 }; \
-using timer_guard_instance_t = std::shared_ptr< timer_guard_t >; \
-timer_guard_instance_t create_timer_guard( asio::io_service & ) \
-{ return std::make_shared< timer_guard_t >(); }
+	void start() const {} \
+	void stop() const {}
 
-struct timer_factory1_t
+
+struct timer_manager1_t
 {
 	const bool m_is_default_constructed;
 
-	timer_factory1_t()
-		:	m_is_default_constructed{ true }
-	{}
-	timer_factory1_t( int )
-		:	m_is_default_constructed{ false }
+	timer_manager1_t( bool is_default_constructed )
+		:	m_is_default_constructed{ is_default_constructed }
 	{}
 
 	RESTINIO_TIMERFACTORY_UTEST_INTERNALS
+
+	struct factory_t
+	{
+		const bool m_is_default_constructed;
+
+		factory_t()
+			:	m_is_default_constructed{ true }
+		{}
+
+		factory_t( int )
+			:	m_is_default_constructed{ false }
+		{}
+
+		auto create( asio::io_context & )
+		{
+			return std::make_shared< timer_manager1_t >( m_is_default_constructed );
+		}
+	};
 };
 
-struct timer_factory2_t
+struct timer_manager2_t
 {
-	timer_factory2_t( int )
-	{}
-
 	RESTINIO_TIMERFACTORY_UTEST_INTERNALS
+
+	struct factory_t
+	{
+		factory_t( int )
+		{}
+
+		auto create( asio::io_context & )
+		{
+			return std::make_shared< timer_manager2_t >();
+		}
+	};
 };
 
 TEST_CASE( "Timer factory" , "[settings][timer_factory]" )
@@ -219,15 +242,17 @@ TEST_CASE( "Timer factory" , "[settings][timer_factory]" )
 		using settings_t =
 			server_settings_t<
 				traits_t<
-					timer_factory1_t,
+					timer_manager1_t,
 					logger1_t > >;
 
 		settings_t s{};
 
-		REQUIRE( s.timer_factory()->m_is_default_constructed );
+		asio::io_context io_context;
 
-		s.timer_factory( 42 );
-		REQUIRE_FALSE( s.timer_factory()->m_is_default_constructed );
+		REQUIRE( s.timer_factory()->create(io_context)->m_is_default_constructed );
+
+		s.timer_manager( 42 );
+		REQUIRE_FALSE( s.timer_factory()->create(io_context)->m_is_default_constructed );
 	}
 
 	SECTION( "No default ctor" )
@@ -236,16 +261,16 @@ TEST_CASE( "Timer factory" , "[settings][timer_factory]" )
 		using settings_t =
 			server_settings_t<
 				traits_t<
-					timer_factory2_t,
+					timer_manager2_t,
 					logger2_t > >;
 
 		settings_t s{};
 
 		REQUIRE_THROWS_WITH(
 			s.timer_factory(),
-			Catch::Matchers::Contains( "timer factory" ) );
+			Catch::Matchers::Contains( "timer manager" ) );
 
-		s.timer_factory( 42 );
+		s.timer_manager( 42 );
 		REQUIRE_NOTHROW( s.timer_factory() );
 	}
 }

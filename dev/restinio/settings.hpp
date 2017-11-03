@@ -543,7 +543,7 @@ class basic_server_settings_t
 		//! Timers manager.
 		//! \{
 		using timer_manager_t = typename Traits::timer_manager_t;
-		using timer_factory_t = typename timer_manager_t::fatory_t;
+		using timer_factory_t = typename timer_manager_t::factory_t;
 
 		template< typename... Params >
 		Derived &

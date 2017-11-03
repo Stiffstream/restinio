@@ -78,14 +78,20 @@ class asio_timer_manager_t final
 			return timer_guard_t{ m_io_context };
 		}
 
-	struct factory_t
-	{
-		auto
-		create( asio::io_context & io_context ) const
+		//! Start/stop timer manager.
+		//! \{
+		void start() const {}
+		void stop() const {}
+		//! \}
+
+		struct factory_t
 		{
-			return std::make_shared< asio_timer_manager_t >( io_context );
-		}
-	};
+			auto
+			create( asio::io_context & io_context ) const
+			{
+				return std::make_shared< asio_timer_manager_t >( io_context );
+			}
+		};
 
 	private:
 		asio::io_context & m_io_context;

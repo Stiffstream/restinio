@@ -23,7 +23,7 @@ TEST_CASE( "Socket_options TLS" , "[socket][options][tls]" )
 	using http_server_t =
 		restinio::http_server_t<
 			restinio::tls_traits_t<
-				restinio::asio_timer_factory_t,
+				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
 	http_server_t http_server{
@@ -64,7 +64,12 @@ TEST_CASE( "Socket_options TLS" , "[socket][options][tls]" )
 		[]( auto & socket, auto &  ){
 			// Ensure we get connected:
 			std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+
+			socket.shutdown( asio::ip::tcp::socket::shutdown_both );
 			socket.close(); // Close without doing anything.
+
+			//! Ensure we closed.
+			std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 		} );
 
 	REQUIRE( socket_options_setter_was_called );

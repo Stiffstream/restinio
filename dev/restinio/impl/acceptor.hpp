@@ -339,7 +339,6 @@ class acceptor_t final
 		connection_factory_shared_ptr_t m_connection_factory;
 
 		logger_t & m_logger;
-
 };
 
 } /* namespace impl */
