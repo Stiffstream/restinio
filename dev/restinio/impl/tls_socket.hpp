@@ -27,13 +27,15 @@ class tls_socket_t
 {
 	public:
 		using socket_t = asio::ssl::stream< asio::ip::tcp::socket >;
+		using context_handle_t = std::shared_ptr< asio::ssl::context >;
 		tls_socket_t( const tls_socket_t & ) = delete;
 		const tls_socket_t & operator = ( const tls_socket_t & ) = delete;
 
 		tls_socket_t(
 			asio::io_context & io_context,
-			asio::ssl::context & tls_context )
-			:	m_socket{ std::make_unique< socket_t >( io_context, tls_context ) }
+			context_handle_t tls_context )
+			:	m_context{ std::move( tls_context ) }
+			,	m_socket{ std::make_unique< socket_t >( io_context, *m_context ) }
 		{}
 
 		tls_socket_t( tls_socket_t && ) = default;
@@ -42,6 +44,7 @@ class tls_socket_t
 		void
 		swap( tls_socket_t & sock )
 		{
+			std::swap( m_context, sock.m_context );
 			std::swap( m_socket, sock.m_socket );
 		}
 
@@ -118,6 +121,7 @@ class tls_socket_t
 		}
 
 	private:
+		context_handle_t m_context;
 		std::unique_ptr< socket_t > m_socket;
 };
 

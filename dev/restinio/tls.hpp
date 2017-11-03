@@ -132,7 +132,7 @@ class socket_supplier_t< tls_socket_t >
 		socket_supplier_t(
 			Settings & settings,
 			asio::io_context & io_context )
-			:	m_tls_context{ settings.tls_context() }
+			:	m_tls_context{ std::make_shared< asio::ssl::context >( settings.tls_context() ) }
 			,	m_io_context{ io_context }
 		{
 			m_sockets.reserve( settings.concurrent_accepts_count() );
@@ -172,7 +172,7 @@ class socket_supplier_t< tls_socket_t >
 		}
 
 	private:
-		asio::ssl::context m_tls_context;
+		std::shared_ptr< asio::ssl::context > m_tls_context;
 		asio::io_context & m_io_context;
 		std::vector< tls_socket_t > m_sockets;
 };
