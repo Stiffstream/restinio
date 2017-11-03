@@ -23,7 +23,7 @@ namespace so5
 //
 
 //! Check timer.
-struct msg_ckeck_timer_t : public so_5::message_t
+struct msg_ckeck_timer_t final : public so_5::message_t
 {
 	template < typename Checker >
 	msg_ckeck_timer_t( Checker && checker )
@@ -34,14 +34,14 @@ struct msg_ckeck_timer_t : public so_5::message_t
 };
 
 //
-// so_timer_factory_t
+// so_timer_manager_t
 //
 
 //! Timer factory implementation using asio timers.
-class so_timer_factory_t
+class so_timer_manager_t final
 {
 	public:
-		so_timer_factory_t(
+		so_timer_manager_t(
 			so_5::environment_t & env,
 			so_5::mbox_t mbox )
 			:	m_env{ env }
@@ -68,10 +68,6 @@ class so_timer_factory_t
 					timer_invocation_tag_t tag,
 					tcp_connection_ctx_weak_handle_t tcp_connection_ctx,
 					timer_invocation_cb_t invocation_cb )
-
-					// const Executor & executor,
-					// std::chrono::steady_clock::duration timeout,
-					// Callback_Func && f )
 				{
 					cancel();
 
@@ -108,16 +104,33 @@ class so_timer_factory_t
 
 		// Create guard for connection.
 		timer_guard_t
-		create_timer_guard( asio::io_context & )
+		create_timer_guard()
 		{
-			return timer_guard_t( m_env, m_mbox );
+			return timer_guard_t{ m_env, m_mbox };
 		}
 
-		void
-		start( asio::io_context & ) {}
+		//! Start/stop timer manager.
+		//! \{
+		void start() const {}
+		void stop() const {}
+		//! \}
 
-		void
-		stop( asio::io_context & ) {}
+		struct factory_t
+		{
+			so_5::environment_t & m_env;
+			so_5::mbox_t m_mbox;
+
+			factory_t( so_5::environment_t & env,so_5::mbox_t mbox )
+				:	m_env{ env }
+				,	m_mbox{ std::move( mbox ) }
+			{}
+
+			auto
+			create( asio::io_context & ) const
+			{
+				return std::make_shared< so_timer_manager_t >( m_env, m_mbox );
+			}
+		};
 
 	private:
 		so_5::environment_t & m_env;

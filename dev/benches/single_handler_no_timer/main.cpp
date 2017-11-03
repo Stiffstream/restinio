@@ -59,7 +59,7 @@ main(int argc, const char *argv[] )
 			{
 				using traits_t =
 					restinio::traits_t<
-						restinio::null_timer_factory_t,
+						restinio::null_timer_manager_t,
 						restinio::null_logger_t,
 						req_handler_t >;
 
@@ -69,7 +69,7 @@ main(int argc, const char *argv[] )
 			{
 				using traits_t =
 					restinio::single_thread_traits_t<
-						restinio::null_timer_factory_t,
+						restinio::null_timer_manager_t,
 						restinio::null_logger_t,
 						req_handler_t >;
 
