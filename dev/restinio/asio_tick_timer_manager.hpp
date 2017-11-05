@@ -242,8 +242,12 @@ class asio_tick_timer_manager_t
 
 				if( d.m_expired_after <= now )
 				{
-					(*d.m_invocation_cb)( d.m_tag, std::move( d.m_tcp_connection_ctx ) );
+					auto cb = d.m_invocation_cb;
+					auto tag = d.m_tag;
+					auto ctx = std::move( d.m_tcp_connection_ctx );
+
 					it = m_timers.erase( it );
+					(*cb)( tag, std::move( ctx ) );
 				}
 				else
 				{

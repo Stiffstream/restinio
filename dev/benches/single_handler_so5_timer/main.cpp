@@ -6,7 +6,7 @@
 #include <fstream>
 
 #include <restinio/all.hpp>
-#include <restinio/so5/so_timer_factory.hpp>
+#include <restinio/so5/so_timer_manager.hpp>
 
 #include <benches/common_args/app_args.hpp>
 
@@ -82,7 +82,7 @@ void run_app( const app_args_t & args )
 						.read_next_http_message_timelimit( 5s )
 						.write_http_response_timelimit( 5s )
 						.handle_request_timeout( 5s )
-						.timer_factory(
+						.timer_manager(
 							coop.environment(),
 							coop.make_agent< restinio::so5::a_timeout_handler_t >()->so_direct_mbox() )
 						.max_pipelined_requests( 4 ) );

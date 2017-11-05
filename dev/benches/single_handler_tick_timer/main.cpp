@@ -6,7 +6,7 @@
 #include <fstream>
 
 #include <restinio/all.hpp>
-#include <restinio/asio_tick_timer_factory.hpp>
+#include <restinio/asio_tick_timer_manager.hpp>
 
 #include <benches/common_args/app_args.hpp>
 
@@ -61,7 +61,7 @@ int main(int argc, const char *argv[])
 			{
 				using traits_t =
 					restinio::traits_t<
-						restinio::asio_tick_timer_factory_t<>,
+						restinio::asio_tick_timer_manager_t<>,
 						restinio::null_logger_t,
 						req_handler_t >;
 
@@ -71,7 +71,7 @@ int main(int argc, const char *argv[])
 			{
 				using traits_t =
 					restinio::single_thread_traits_t<
-						restinio::asio_tick_timer_factory_t< asio::executor >,
+						restinio::asio_tick_timer_manager_t< asio::executor >,
 						restinio::null_logger_t,
 						req_handler_t >;
 
