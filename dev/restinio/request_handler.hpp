@@ -13,7 +13,7 @@
 #include <restinio/exception.hpp>
 #include <restinio/http_headers.hpp>
 #include <restinio/message_builders.hpp>
-#include <restinio/impl/connection_handle.hpp>
+#include <restinio/impl/connection_base.hpp>
 
 namespace restinio
 {

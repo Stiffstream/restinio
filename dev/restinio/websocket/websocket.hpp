@@ -11,7 +11,7 @@
 #include <functional>
 
 #include <restinio/websocket/message.hpp>
-#include <restinio/websocket/impl/ws_connection_handle.hpp>
+#include <restinio/websocket/impl/ws_connection_base.hpp>
 #include <restinio/websocket/impl/ws_connection.hpp>
 #include <restinio/utils/base64.hpp>
 #include <restinio/utils/sha1.hpp>

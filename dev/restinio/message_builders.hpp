@@ -16,7 +16,7 @@
 #include <restinio/common_types.hpp>
 #include <restinio/http_headers.hpp>
 #include <restinio/os.hpp>
-#include <restinio/impl/connection_handle.hpp>
+#include <restinio/impl/connection_base.hpp>
 
 #include <restinio/impl/header_helpers.hpp>
 

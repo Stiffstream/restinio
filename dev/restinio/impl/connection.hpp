@@ -17,7 +17,7 @@
 #include <restinio/exception.hpp>
 #include <restinio/http_headers.hpp>
 #include <restinio/request_handler.hpp>
-#include <restinio/impl/connection_handle.hpp>
+#include <restinio/impl/connection_base.hpp>
 #include <restinio/impl/header_helpers.hpp>
 #include <restinio/impl/response_coordinator.hpp>
 #include <restinio/impl/connection_settings.hpp>
