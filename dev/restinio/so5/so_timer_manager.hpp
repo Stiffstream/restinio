@@ -25,12 +25,11 @@ namespace so5
 //! Check timer.
 struct msg_ckeck_timer_t final : public so_5::message_t
 {
-	template < typename Checker >
-	msg_ckeck_timer_t( Checker && checker )
-		:	m_checker{ std::move( checker ) }
+	msg_ckeck_timer_t( tcp_connection_ctx_weak_handle_t weak_handle )
+		:	m_weak_handle{ std::move( weak_handle ) }
 	{}
 
-	std::function< void ( void ) > m_checker;
+	tcp_connection_ctx_weak_handle_t m_weak_handle;
 };
 
 //
@@ -43,9 +42,11 @@ class so_timer_manager_t final
 	public:
 		so_timer_manager_t(
 			so_5::environment_t & env,
-			so_5::mbox_t mbox )
+			so_5::mbox_t mbox,
+			std::chrono::steady_clock::duration check_period )
 			:	m_env{ env }
 			,	m_mbox{ std::move( mbox ) }
+			,	m_check_period{ check_period }
 		{}
 
 		//! Timer guard for async operations.
@@ -56,35 +57,30 @@ class so_timer_manager_t final
 
 				timer_guard_t(
 					so_5::environment_t & env,
-					so_5::mbox_t mbox )
+					so_5::mbox_t mbox,
+					std::chrono::steady_clock::duration check_period )
 					:	m_env{ env }
 					,	m_mbox{ std::move( mbox ) }
+					,	m_check_period{ check_period }
 				{}
 
 				// Set new timeout guard.
 				void
-				schedule_operation_timeout_callback(
-					std::chrono::steady_clock::duration timeout,
-					timer_invocation_tag_t tag,
-					tcp_connection_ctx_weak_handle_t tcp_connection_ctx,
-					timer_invocation_cb_t invocation_cb )
+				schedule_timeout_check_invocation(
+					tcp_connection_ctx_weak_handle_t weak_handle )
 				{
-					cancel();
+					if( !m_current_op_timer.is_active() )
+					{
+						auto msg =
+							std::make_unique< msg_ckeck_timer_t >( std::move( weak_handle ) );
 
-					auto msg =
-						std::make_unique< msg_ckeck_timer_t >(
-							[ tag,
-								tcp_connection_ctx = std::move( tcp_connection_ctx ),
-								invocation_cb]() mutable {
-									(*invocation_cb)( tag, std::move( tcp_connection_ctx ) );
-								} );
-
-					m_current_op_timer =
-						m_env.schedule_timer(
-							std::move( msg ),
-							m_mbox,
-							std::move( timeout ),
-							std::chrono::steady_clock::duration::zero() );
+						m_current_op_timer =
+							m_env.schedule_timer(
+								std::move( msg ),
+								m_mbox,
+								m_check_period,
+								m_check_period );
+					}
 				}
 
 				// Cancel timeout guard if any.
@@ -99,6 +95,7 @@ class so_timer_manager_t final
 				const so_5::mbox_t m_mbox;
 
 				so_5::timer_id_t m_current_op_timer;
+				const std::chrono::steady_clock::duration m_check_period;
 			//! \}
 		};
 
@@ -106,7 +103,7 @@ class so_timer_manager_t final
 		timer_guard_t
 		create_timer_guard()
 		{
-			return timer_guard_t{ m_env, m_mbox };
+			return timer_guard_t{ m_env, m_mbox, m_check_period };
 		}
 
 		//! Start/stop timer manager.
@@ -119,22 +116,28 @@ class so_timer_manager_t final
 		{
 			so_5::environment_t & m_env;
 			so_5::mbox_t m_mbox;
+			const std::chrono::steady_clock::duration m_check_period;
 
-			factory_t( so_5::environment_t & env,so_5::mbox_t mbox )
+			factory_t(
+				so_5::environment_t & env,
+				so_5::mbox_t mbox,
+				std::chrono::steady_clock::duration check_period = std::chrono::seconds{ 1 } )
 				:	m_env{ env }
 				,	m_mbox{ std::move( mbox ) }
+				,	m_check_period{ check_period }
 			{}
 
 			auto
 			create( asio::io_context & ) const
 			{
-				return std::make_shared< so_timer_manager_t >( m_env, m_mbox );
+				return std::make_shared< so_timer_manager_t >( m_env, m_mbox, m_check_period );
 			}
 		};
 
 	private:
 		so_5::environment_t & m_env;
 		so_5::mbox_t m_mbox;
+		const std::chrono::steady_clock::duration m_check_period;
 };
 
 //
@@ -154,7 +157,8 @@ class a_timeout_handler_t final
 			so_subscribe_self()
 				.event(
 					[]( const msg_ckeck_timer_t & msg ){
-						msg.m_checker();
+						if( auto h = msg.m_weak_handle.lock() )
+							h->check_timeout();
 					} );
 		}
 };

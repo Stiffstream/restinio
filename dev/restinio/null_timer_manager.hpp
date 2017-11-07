@@ -30,7 +30,7 @@ struct null_timer_manager_t final
 		// Set new timeout guard.
 		template <typename... Args >
 		constexpr void
-		schedule_operation_timeout_callback( Args &&... ) const
+		schedule_timeout_check_invocation( Args &&... ) const
 		{}
 
 		// Cancel timeout guard if any.

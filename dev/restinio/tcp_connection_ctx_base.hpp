@@ -39,6 +39,10 @@ class tcp_connection_ctx_base_t
 			return m_connection_id;
 		}
 
+		//! Check timeouts for all activities.
+		virtual void
+		check_timeout() = 0;
+
 	protected:
 		template < typename Derived >
 		std::shared_ptr< Derived >
@@ -54,6 +58,7 @@ class tcp_connection_ctx_base_t
 
 //! Alias for http connection handle.
 using tcp_connection_ctx_handle_t = std::shared_ptr< tcp_connection_ctx_base_t >;
+using tcp_connection_ctx_weak_handle_t = std::weak_ptr< tcp_connection_ctx_base_t >;
 
 } /* namespace restinio */
 

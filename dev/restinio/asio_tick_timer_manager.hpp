@@ -32,12 +32,15 @@ class asio_tick_timer_manager_t
 		struct factory_t
 		{
 			const std::chrono::steady_clock::duration m_tick;
+			const std::chrono::steady_clock::duration m_check_period;
 			const std::size_t m_initial_buckets;
 
 			factory_t(
 				std::chrono::steady_clock::duration tick = std::chrono::seconds( 1 ),
+				std::chrono::steady_clock::duration check_period = std::chrono::seconds( 1 ),
 				std::size_t initial_buckets = 64 )
-				:	m_tick{ tick }
+				:	m_tick{ check_period }
+				,	m_check_period{ check_period }
 				,	m_initial_buckets{ initial_buckets }
 			{}
 
@@ -48,18 +51,20 @@ class asio_tick_timer_manager_t
 					std::make_shared< asio_tick_timer_manager_t >(
 						io_context,
 						m_tick,
+						m_check_period,
 						m_initial_buckets );
 			}
 		};
 
-
 		asio_tick_timer_manager_t(
 			asio::io_context & io_context,
 			std::chrono::steady_clock::duration tick,
+			std::chrono::steady_clock::duration check_period,
 			std::size_t initial_buckets )
 			:	m_tick_timer{ io_context }
 			,	m_strand{ io_context.get_executor() }
 			,	m_tick{ std::move( tick ) }
+			,	m_check_period{ std::move( check_period ) }
 			,	m_timers{ initial_buckets }
 		{}
 
@@ -73,18 +78,10 @@ class asio_tick_timer_manager_t
 
 				// Guard operation.
 				void
-				schedule_operation_timeout_callback(
-					std::chrono::steady_clock::duration timeout,
-					timer_invocation_tag_t tag,
-					tcp_connection_ctx_weak_handle_t tcp_connection_ctx,
-					timer_invocation_cb_t invocation_cb )
+				schedule_timeout_check_invocation(
+					tcp_connection_ctx_weak_handle_t weak_handle )
 				{
-					m_timer_manager->schedule_timer(
-						this,
-						timeout,
-						tag,
-						std::move( tcp_connection_ctx ),
-						invocation_cb );
+					m_timer_manager->schedule_timer( this, std::move( weak_handle ) );
 				}
 
 				// Cancel timeout guard if any.
@@ -131,26 +128,15 @@ class asio_tick_timer_manager_t
 		void
 		schedule_timer(
 			void * timer_id,
-			std::chrono::steady_clock::duration timeout,
-			timer_invocation_tag_t tag,
-			tcp_connection_ctx_weak_handle_t tcp_connection_ctx,
-			timer_invocation_cb_t invocation_cb )
+			tcp_connection_ctx_weak_handle_t tcp_connection_ctx )
 		{
 			asio::dispatch(
 				m_strand,
 				[ ctx = this->shared_from_this(),
-					timer_id,
-					timeout,
-					tag,
 					tcp_connection_ctx = std::move( tcp_connection_ctx ),
-					invocation_cb ]{
+					timer_id ]{
 
-					ctx->schedule_impl(
-						timer_id,
-						timeout,
-						tag,
-						invocation_cb,
-						std::move( tcp_connection_ctx ) );
+					ctx->schedule_impl( timer_id,std::move( tcp_connection_ctx ) );
 				} );
 		}
 
@@ -194,17 +180,12 @@ class asio_tick_timer_manager_t
 		void
 		schedule_impl(
 			void * timer_id,
-			std::chrono::steady_clock::duration timeout,
-			timer_invocation_tag_t tag,
-			timer_invocation_cb_t invocation_cb,
 			tcp_connection_ctx_weak_handle_t tcp_connection_ctx )
 		{
 			auto it = m_timers.find( timer_id );
 			if( m_timers.end() != it )
 			{
-				it->second.m_expired_after = std::chrono::steady_clock::now() + timeout;
-				it->second.m_tag = tag;
-				it->second.m_invocation_cb = invocation_cb;
+				it->second.m_expired_after = std::chrono::steady_clock::now() + m_check_period;
 			}
 			else
 			{
@@ -212,9 +193,7 @@ class asio_tick_timer_manager_t
 					entry{
 						timer_id,
 						timer_data_t{
-							timeout,
-							tag,
-							invocation_cb,
+							m_check_period,
 							std::move( tcp_connection_ctx ) } };
 
 				m_timers.insert( std::move( entry ) );
@@ -240,14 +219,13 @@ class asio_tick_timer_manager_t
 			{
 				auto & d = it->second;
 
-				if( d.m_expired_after <= now )
+				if( d.m_expired_after < now )
 				{
-					auto cb = d.m_invocation_cb;
-					auto tag = d.m_tag;
-					auto ctx = std::move( d.m_tcp_connection_ctx );
-
+					auto tcp_connection_ctx = std::move( d.m_tcp_connection_ctx );
 					it = m_timers.erase( it );
-					(*cb)( tag, std::move( ctx ) );
+
+					if( auto h = tcp_connection_ctx.lock() )
+						h->check_timeout();
 				}
 				else
 				{
@@ -261,17 +239,14 @@ class asio_tick_timer_manager_t
 
 		//! Tick duration.
 		const std::chrono::steady_clock::duration m_tick;
+		const std::chrono::steady_clock::duration m_check_period;
 
 		struct timer_data_t
 		{
 			timer_data_t(
 				std::chrono::steady_clock::duration timeout_from_now,
-				timer_invocation_tag_t tag,
-				timer_invocation_cb_t invocation_cb,
 				tcp_connection_ctx_weak_handle_t tcp_connection_ctx )
 				:	m_expired_after{ std::chrono::steady_clock::now() + timeout_from_now }
-				,	m_tag{ tag }
-				,	m_invocation_cb{ invocation_cb }
 				,	m_tcp_connection_ctx{ std::move( tcp_connection_ctx ) }
 			{}
 
@@ -282,8 +257,6 @@ class asio_tick_timer_manager_t
 			timer_data_t & operator = ( timer_data_t && ) = delete;
 
 			std::chrono::steady_clock::time_point m_expired_after;
-			timer_invocation_tag_t m_tag;
-			timer_invocation_cb_t m_invocation_cb;
 			tcp_connection_ctx_weak_handle_t m_tcp_connection_ctx;
 		};
 

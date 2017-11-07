@@ -66,6 +66,7 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 			settings
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
+				.timer_manager( std::chrono::milliseconds( 50 ) )
 				.read_next_http_message_timelimit( std::chrono::seconds( 5 ) )
 				.handle_request_timeout( std::chrono::milliseconds( 100 ) )
 				.max_pipelined_requests( 2 );
@@ -87,7 +88,7 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 			"User-Agent: unit-test\r\n"
 			"Accept: */*\r\n"
 			"Connection: keep-alive\r\n"
-			"\r" }; // not \n for second request.
+			"\r" }; // No \n for second request.
 
 		const auto started_at = std::chrono::steady_clock::now();
 

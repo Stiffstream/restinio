@@ -27,34 +27,38 @@ class asio_timer_manager_t final
 	:	public std::enable_shared_from_this< asio_timer_manager_t >
 {
 	public:
-		asio_timer_manager_t( asio::io_context & io_context )
+		asio_timer_manager_t(
+			asio::io_context & io_context,
+			std::chrono::steady_clock::duration check_period )
 			:	m_io_context( io_context )
+			,	m_check_period{ check_period }
 		{}
 
 		//! Timer guard for async operations.
 		class timer_guard_t final
 		{
 			public:
-				timer_guard_t( asio::io_context & io_context )
+				timer_guard_t(
+					asio::io_context & io_context,
+					std::chrono::steady_clock::duration check_period )
 					:	m_operation_timer{ io_context }
+					,	m_check_period{ check_period }
 				{}
 
 				// Guard operation.
 				void
-				schedule_operation_timeout_callback(
-					std::chrono::steady_clock::duration timeout,
-					timer_invocation_tag_t tag,
-					tcp_connection_ctx_weak_handle_t tcp_connection_ctx,
-					timer_invocation_cb_t invocation_cb )
+				schedule_timeout_check_invocation(
+					tcp_connection_ctx_weak_handle_t weak_handle )
 				{
-					m_operation_timer.expires_after( timeout );
+					m_operation_timer.expires_after( m_check_period );
 					m_operation_timer.async_wait(
-							[ tag,
-								tcp_connection_ctx = std::move( tcp_connection_ctx ),
-								invocation_cb ]( const auto & ec ){
+							[ weak_handle = std::move( weak_handle ) ]( const auto & ec ){
 									if( !ec )
 									{
-										(*invocation_cb)( tag, std::move( tcp_connection_ctx ) );
+										if( auto h = weak_handle.lock() )
+										{
+											h->check_timeout();
+										}
 									}
 								} );
 				}
@@ -68,6 +72,7 @@ class asio_timer_manager_t final
 
 			private:
 				asio::steady_timer m_operation_timer;
+				const std::chrono::steady_clock::duration m_check_period;
 			//! \}
 		};
 
@@ -75,7 +80,7 @@ class asio_timer_manager_t final
 		timer_guard_t
 		create_timer_guard()
 		{
-			return timer_guard_t{ m_io_context };
+			return timer_guard_t{ m_io_context, m_check_period };
 		}
 
 		//! Start/stop timer manager.
@@ -86,15 +91,23 @@ class asio_timer_manager_t final
 
 		struct factory_t
 		{
+			factory_t() {}
+			factory_t( std::chrono::steady_clock::duration check_period )
+				:	m_check_period{ check_period }
+			{}
+
 			auto
 			create( asio::io_context & io_context ) const
 			{
-				return std::make_shared< asio_timer_manager_t >( io_context );
+				return std::make_shared< asio_timer_manager_t >( io_context, m_check_period );
 			}
+
+			const std::chrono::steady_clock::duration m_check_period{ std::chrono::seconds{ 1 } };
 		};
 
 	private:
 		asio::io_context & m_io_context;
+		const std::chrono::steady_clock::duration m_check_period;
 };
 
 } /* namespace restinio */

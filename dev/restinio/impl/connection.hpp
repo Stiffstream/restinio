@@ -223,7 +223,7 @@ class connection_t final
 			,	m_settings{ std::move( settings ) }
 			,	m_input{ m_settings->m_buffer_size }
 			,	m_response_coordinator{ m_settings->m_max_pipelined_requests }
-			,	m_timer_invocation_ctx{ m_settings->create_timer_guard() }
+			,	m_timer_guard{ m_settings->create_timer_guard() }
 			,	m_request_handler{ *( m_settings->m_request_handler ) }
 			,	m_logger{ *( m_settings->m_logger ) }
 		{
@@ -262,7 +262,14 @@ class connection_t final
 			prepare_connection_and_start_read(
 				m_socket,
 				*this,
-				[ & ]{ wait_for_http_message(); },
+				[ & ]{
+					// Start timeout checking.
+					m_prepared_weak_ctx = shared_from_this();
+					init_next_timeout_checking();
+
+					// Start reading request.
+					wait_for_http_message();
+				},
 				[ & ]( const asio::error_code & ec ){
 					trigger_error_and_close( [&]{
 						return fmt::format(
@@ -605,7 +612,7 @@ class connection_t final
 			} );
 
 			// Do not guard upgrade request.
-			m_timer_invocation_ctx.cancel();
+			cancel_timeout_checking();
 
 			// After calling handler we expect the results or
 			// no further operations with connection
@@ -958,7 +965,7 @@ class connection_t final
 		void
 		close()
 		{
-			m_timer_invocation_ctx.cancel();
+			cancel_timeout_checking();
 
 			m_logger.trace( [&]{
 				return fmt::format(
@@ -1009,85 +1016,131 @@ class connection_t final
 		//! Timer to controll operations.
 		//! \{
 
+		//! Check timeouts for all activities.
 		static connection_t &
 		cast_to_self( tcp_connection_ctx_base_t & base )
 		{
 			return static_cast< connection_t & >( base );
 		}
 
+		virtual void
+		check_timeout() override
+		{
+			asio::dispatch(
+				get_executor(),
+				[ ctx = shared_from_this() ]{
+					cast_to_self( *ctx ).check_timeout_impl();
+				} );
+		}
+
+		using timout_cb_t = void (connection_t::* )( void );
+
+		timout_cb_t m_current_timeout_cb{ nullptr };
+		std::chrono::steady_clock::time_point m_current_timeout_after;
+		tcp_connection_ctx_weak_handle_t m_prepared_weak_ctx;
+		timer_guard_t m_timer_guard;
+
+		void
+		check_timeout_impl()
+		{
+			if( std::chrono::steady_clock::now() > m_current_timeout_after )
+			{
+				if( m_current_timeout_cb )
+					(this->*m_current_timeout_cb)();
+			}
+			else
+			{
+				init_next_timeout_checking();
+			}
+		}
+
+		//! schedule next timeout checking.
+		void
+		init_next_timeout_checking()
+		{
+			m_timer_guard.schedule_timeout_check_invocation( m_prepared_weak_ctx );
+		}
+
+		void
+		cancel_timeout_checking()
+		{
+			m_current_timeout_cb = nullptr;
+			m_timer_guard.cancel();
+		}
+
 		//! Helper function to work with timer guard.
-		// template < typename FUNC >
+		void
+		schedule_operation_timeout_callback(
+			std::chrono::steady_clock::time_point timeout_after,
+			timout_cb_t timout_cb )
+		{
+			m_current_timeout_after = timeout_after;
+			m_current_timeout_cb = timout_cb;
+		}
+
 		void
 		schedule_operation_timeout_callback(
 			std::chrono::steady_clock::duration timeout,
-			timer_invocation_cb_t timer_invocation_cb )
+			timout_cb_t timout_cb )
 		{
-			std::weak_ptr< connection_base_t > weak_ctx =
-				shared_from_concrete< connection_base_t >();
+			schedule_operation_timeout_callback(
+				std::chrono::steady_clock::now() + timeout,
+				timout_cb );
+		}
 
-			m_timer_invocation_ctx
-				.m_timer_guard
-					.schedule_operation_timeout_callback(
-						timeout,
-						m_timer_invocation_ctx.create_invocation_tag(),
-						std::move( weak_ctx ),
-						timer_invocation_cb );
+		void
+		handle_xxx_timeout( const char * operation_name )
+		{
+			m_logger.trace( [&]{
+				return fmt::format(
+						"[connection:{}] {} timed out",
+						connection_id(),
+						operation_name );
+			} );
+
+			close();
+		}
+
+		void
+		handle_read_timeout()
+		{
+			handle_xxx_timeout( "wait for request" );
 		}
 
 		//! Statr guard read operation if necessary.
 		void
 		guard_read_operation()
 		{
-			// Guard read timeout for read operation only when
-			// there is no request in process.
 			if( m_response_coordinator.empty() )
 			{
 				schedule_operation_timeout_callback(
 					m_settings->m_read_next_http_message_timelimit,
-					[]( timer_invocation_tag_t invocation_tag,
-						tcp_connection_ctx_weak_handle_t connection_ctx ){
-
-						if( auto ctx = connection_ctx.lock() )
-						{
-							auto & self = cast_to_self( *ctx );
-							asio::dispatch(
-								self.get_executor(),
-								[ &self, invocation_tag, ctx = std::move( ctx ) ]() mutable {
-									self.invoke_timer_if_necessary(
-										invocation_tag,
-										"wait for request" );
-								} );
-						}
-					} );
+					&connection_t::handle_read_timeout );
 			}
+		}
+
+		void
+		handle_request_handling_timeout()
+		{
+			handle_xxx_timeout( "handle request" );
 		}
 
 		//! Start guard request handling operation if necessary.
 		constexpr void
 		guard_request_handling_operation()
 		{
-			// Guard handling request only when
-			// there is no responses that are written.
 			if( !m_resp_out_ctx.transmitting() )
 			{
 				schedule_operation_timeout_callback(
 					m_settings->m_handle_request_timeout,
-					[]( timer_invocation_tag_t invocation_tag,
-						tcp_connection_ctx_weak_handle_t connection_ctx ){
-
-						if( auto ctx = connection_ctx.lock() )
-						{
-							auto & self = cast_to_self( *ctx );
-							asio::dispatch(
-								self.get_executor(),
-								[ &self, invocation_tag, ctx = std::move( ctx ) ]() mutable {
-									self.invoke_timer_if_necessary(
-										invocation_tag,
-										"handle request" );
-								} );
-						}
-					} );
+					&connection_t::handle_request_handling_timeout );
 			}
+		}
+
+		void
+		handle_write_response_timeout()
+		{
+			handle_xxx_timeout( "writing response" );
 		}
 
 		//! Start guard write operation if necessary.
@@ -1095,43 +1148,9 @@ class connection_t final
 		guard_write_operation()
 		{
 			schedule_operation_timeout_callback(
-				m_settings->m_handle_request_timeout,
-				[]( timer_invocation_tag_t invocation_tag,
-					tcp_connection_ctx_weak_handle_t connection_ctx ){
-
-					if( auto ctx = connection_ctx.lock() )
-					{
-						auto & self = cast_to_self( *ctx );
-						asio::dispatch(
-							self.get_executor(),
-							[ &self, invocation_tag, ctx = std::move( ctx ) ]() mutable{
-								self.invoke_timer_if_necessary(
-									invocation_tag,
-									"writing response" );
-							} );
-					}
-				} );
+				m_settings->m_write_http_response_timelimit,
+				&connection_t::handle_write_response_timeout );
 		}
-
-		void
-		invoke_timer_if_necessary(
-			timer_invocation_tag_t invocation_tag,
-			const char * operation_name )
-		{
-			if( m_timer_invocation_ctx.is_same_tag( invocation_tag ) )
-			{
-					m_logger.trace( [&]{
-						return fmt::format(
-								"[connection:{}] {} timed out",
-								connection_id(),
-								operation_name );
-					} );
-
-					close();
-			}
-		}
-
-		timer_invocation_ctx_t< timer_guard_t > m_timer_invocation_ctx;
 		//! \}
 
 		//! Request handler.
