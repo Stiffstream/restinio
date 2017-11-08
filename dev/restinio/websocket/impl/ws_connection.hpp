@@ -15,7 +15,7 @@
 #include <fmt/format.h>
 
 #include <restinio/all.hpp>
-#include <restinio/impl/timer_invocation_ctx.hpp>
+#include <restinio/impl/executor_wrapper.hpp>
 #include <restinio/websocket/message.hpp>
 #include <restinio/websocket/impl/ws_parser.hpp>
 #include <restinio/websocket/impl/ws_protocol_validator.hpp>
@@ -128,7 +128,10 @@ template <
 		typename WS_Message_Handler >
 class ws_connection_t final
 	:	public ws_connection_base_t
+	,	public restinio::impl::executor_wrapper_t< typename Traits::strand_t >
 {
+		using executor_wrapper_base_t = restinio::impl::executor_wrapper_t< typename Traits::strand_t >;
+
 	public:
 		using message_handler_t = WS_Message_Handler;
 
@@ -146,15 +149,15 @@ class ws_connection_t final
 			std::uint64_t conn_id,
 			//! Data inherited from http-connection.
 			//! \{
-			restinio::impl::connection_settings_shared_ptr_t< Traits > settings,
+			restinio::impl::connection_settings_handle_t< Traits > settings,
 			stream_socket_t socket,
 			strand_t strand,
 			//! \}
 			message_handler_t msg_handler )
 			:	ws_connection_base_t{ conn_id }
+			,	executor_wrapper_base_t{ socket.get_executor() }
 			,	m_settings{ std::move( settings ) }
 			,	m_socket{ std::move( socket ) }
-			,	m_strand{ std::move( strand ) }
 			,	m_timer_guard{ m_settings->create_timer_guard() }
 			,	m_input{ websocket_header_max_size() }
 			,	m_msg_handler{ std::move( msg_handler ) }
@@ -201,7 +204,7 @@ class ws_connection_t final
 		shutdown() override
 		{
 			asio::dispatch(
-				get_executor(),
+				this->get_executor(),
 				[ this, ctx = shared_from_this() ](){
 					try
 					{
@@ -231,7 +234,7 @@ class ws_connection_t final
 		kill() override
 		{
 			asio::dispatch(
-				get_executor(),
+				this->get_executor(),
 				[ this, ctx = shared_from_this() ](){
 					try
 					{
@@ -266,7 +269,7 @@ class ws_connection_t final
 
 			// Run write message on io_context loop (direct invocation if possible).
 			asio::dispatch(
-				get_executor(),
+				this->get_executor(),
 				[ this, ctx = shared_from_this(), wswh = std::move( wswh ) ](){
 					try
 					{
@@ -300,7 +303,7 @@ class ws_connection_t final
 		{
 			//! Run write message on io_context loop if possible.
 			asio::dispatch(
-				get_executor(),
+				this->get_executor(),
 				[ this,
 					actual_bufs = std::move( bufs ),
 					ctx = shared_from_this(),
@@ -335,13 +338,6 @@ class ws_connection_t final
 				} );
 		}
 	private:
-		//! An executor for callbacks on async operations.
-		inline strand_t &
-		get_executor()
-		{
-			return m_strand;
-		}
-
 		//! Standard close routine.
 		void
 		close_impl()
@@ -468,7 +464,7 @@ class ws_connection_t final
 			m_socket.async_read_some(
 				m_input.m_buf.make_asio_buffer(),
 				asio::bind_executor(
-					get_executor(),
+					this->get_executor(),
 					[ this, ctx = shared_from_this() ](
 						const asio::error_code & ec,
 						std::size_t length ){
@@ -660,7 +656,7 @@ class ws_connection_t final
 			m_socket.async_read_some(
 				asio::buffer( payload_data, length_remaining ),
 				asio::bind_executor(
-					get_executor(),
+					this->get_executor(),
 					[ this,
 						ctx = shared_from_this(),
 						payload_data,
@@ -1027,7 +1023,7 @@ class ws_connection_t final
 						m_socket,
 						bufs,
 						asio::bind_executor(
-							get_executor(),
+							this->get_executor(),
 							[ this,
 								ctx = shared_from_this() ]
 								( const asio::error_code & ec, std::size_t written ){
@@ -1090,13 +1086,10 @@ class ws_connection_t final
 		}
 
 		//! Common paramaters of a connection.
-		restinio::impl::connection_settings_shared_ptr_t< Traits > m_settings;
+		restinio::impl::connection_settings_handle_t< Traits > m_settings;
 
 		//! Connection.
 		stream_socket_t m_socket;
-
-		//! Sync object for connection events.
-		strand_t m_strand;
 
 		//! Timers.
 		//! \{
@@ -1110,7 +1103,7 @@ class ws_connection_t final
 		check_timeout() override
 		{
 			asio::dispatch(
-				get_executor(),
+				this->get_executor(),
 				[ ctx = shared_from_this() ]{
 					cast_to_self( *ctx ).check_timeout_impl();
 				} );

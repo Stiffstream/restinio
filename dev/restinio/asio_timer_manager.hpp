@@ -30,7 +30,7 @@ class asio_timer_manager_t final
 		asio_timer_manager_t(
 			asio::io_context & io_context,
 			std::chrono::steady_clock::duration check_period )
-			:	m_io_context( io_context )
+			:	m_io_context{ io_context }
 			,	m_check_period{ check_period }
 		{}
 
@@ -89,8 +89,10 @@ class asio_timer_manager_t final
 		void stop() const {}
 		//! \}
 
-		struct factory_t
+		struct factory_t final
 		{
+			const std::chrono::steady_clock::duration m_check_period{ std::chrono::seconds{ 1 } };
+
 			factory_t() {}
 			factory_t( std::chrono::steady_clock::duration check_period )
 				:	m_check_period{ check_period }
@@ -101,8 +103,6 @@ class asio_timer_manager_t final
 			{
 				return std::make_shared< asio_timer_manager_t >( io_context, m_check_period );
 			}
-
-			const std::chrono::steady_clock::duration m_check_period{ std::chrono::seconds{ 1 } };
 		};
 
 	private:

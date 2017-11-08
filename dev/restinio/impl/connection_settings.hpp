@@ -105,7 +105,7 @@ struct connection_settings_t final
 };
 
 template < typename Traits >
-using connection_settings_shared_ptr_t =
+using connection_settings_handle_t =
 	std::shared_ptr< connection_settings_t< Traits > >;
 
 } /* namespace impl */

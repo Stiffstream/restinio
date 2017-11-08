@@ -52,10 +52,10 @@ struct null_timer_manager_t final
 	constexpr void stop() const {}
 	//! \}
 
-	struct factory_t
+	struct factory_t final
 	{
 		auto
-		create( asio::io_context & )
+		create( asio::io_context & ) const
 		{
 			return std::make_shared< null_timer_manager_t >();
 		}

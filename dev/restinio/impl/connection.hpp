@@ -24,6 +24,7 @@
 #include <restinio/impl/fixed_buffer.hpp>
 #include <restinio/impl/raw_resp_output_ctx.hpp>
 #include <restinio/impl/timer_invocation_ctx.hpp>
+#include <restinio/impl/executor_wrapper.hpp>
 
 namespace restinio
 {
@@ -201,7 +202,10 @@ prepare_connection_and_start_read(
 template < typename Traits >
 class connection_t final
 	:	public connection_base_t
+	,	public executor_wrapper_t< typename Traits::strand_t >
 {
+		using executor_wrapper_base_t = executor_wrapper_t< typename Traits::strand_t >;
+
 	public:
 		using timer_manager_t = typename Traits::timer_manager_t;
 		using timer_guard_t = typename timer_manager_t::timer_guard_t;
@@ -216,10 +220,10 @@ class connection_t final
 			//! Connection socket.
 			stream_socket_t && socket,
 			//! Settings that are common for connections.
-			connection_settings_shared_ptr_t< Traits > settings )
+			connection_settings_handle_t< Traits > settings )
 			:	connection_base_t{ conn_id }
+			,	executor_wrapper_base_t{ socket.get_executor() }
 			,	m_socket{ std::move( socket ) }
-			,	m_strand{ m_socket.get_executor() }
 			,	m_settings{ std::move( settings ) }
 			,	m_input{ m_settings->m_buffer_size }
 			,	m_response_coordinator{ m_settings->m_max_pipelined_requests }
@@ -313,13 +317,14 @@ class connection_t final
 			}
 		}
 
+		//! Internals that are necessary for upgrade.
 		struct upgrade_internals_t
 		{
 			upgrade_internals_t(
 				upgrade_internals_t && ) = default;
 
 			upgrade_internals_t(
-				connection_settings_shared_ptr_t< Traits > settings,
+				connection_settings_handle_t< Traits > settings,
 				stream_socket_t socket,
 				strand_t strand )
 				:	m_settings{ std::move( settings ) }
@@ -327,7 +332,7 @@ class connection_t final
 				,	m_strand{ std::move( strand ) }
 			{}
 
-			connection_settings_shared_ptr_t< Traits > m_settings;
+			connection_settings_handle_t< Traits > m_settings;
 			stream_socket_t m_socket;
 			strand_t m_strand;
 		};
@@ -339,17 +344,10 @@ class connection_t final
 			return upgrade_internals_t{
 				m_settings,
 				std::move( m_socket ),
-				get_executor() };
+				this->get_executor() };
 		}
 
 	private:
-		//! An executor for callbacks on async operations.
-		inline strand_t &
-		get_executor()
-		{
-			return m_strand;
-		}
-
 		//! Start (continue) a chain of read-parse-read-... operations.
 		inline void
 		consume_message()
@@ -363,7 +361,7 @@ class connection_t final
 			m_socket.async_read_some(
 				m_input.m_buf.make_asio_buffer(),
 				asio::bind_executor(
-					get_executor(),
+					this->get_executor(),
 					[ this, ctx = shared_from_this() ](
 						const asio::error_code & ec,
 						std::size_t length ){
@@ -674,7 +672,7 @@ class connection_t final
 		{
 			//! Run write message on io_context loop if possible.
 			asio::dispatch(
-				get_executor(),
+				this->get_executor(),
 				[ this,
 					request_id,
 					response_output_flags,
@@ -825,7 +823,7 @@ class connection_t final
 						m_socket,
 						bufs,
 						asio::bind_executor(
-							get_executor(),
+							this->get_executor(),
 							[ this,
 								ctx = shared_from_this(),
 								should_keep_alive = !m_response_coordinator.closed(),
@@ -998,11 +996,8 @@ class connection_t final
 		//! Connection.
 		stream_socket_t m_socket;
 
-		//! Sync object for connection events.
-		strand_t m_strand;
-
 		//! Common paramaters of a connection.
-		connection_settings_shared_ptr_t< Traits > m_settings;
+		connection_settings_handle_t< Traits > m_settings;
 
 		//! Input routine.
 		connection_input_t m_input;
@@ -1027,7 +1022,7 @@ class connection_t final
 		check_timeout() override
 		{
 			asio::dispatch(
-				get_executor(),
+				this->get_executor(),
 				[ ctx = shared_from_this() ]{
 					cast_to_self( *ctx ).check_timeout_impl();
 				} );
@@ -1173,7 +1168,7 @@ class connection_factory_t
 		using stream_socket_t = typename Traits::stream_socket_t;
 
 		connection_factory_t(
-			connection_settings_shared_ptr_t< Traits > connection_settings,
+			connection_settings_handle_t< Traits > connection_settings,
 			std::unique_ptr< socket_options_setter_t > socket_options_setter )
 			:	m_connection_settings{ std::move( connection_settings ) }
 			,	m_socket_options_setter{ std::move( socket_options_setter ) }
@@ -1213,7 +1208,7 @@ class connection_factory_t
 	private:
 		std::uint64_t m_connection_id_counter{ 1 };
 
-		connection_settings_shared_ptr_t< Traits > m_connection_settings;
+		connection_settings_handle_t< Traits > m_connection_settings;
 
 		std::unique_ptr< socket_options_setter_t > m_socket_options_setter;
 
