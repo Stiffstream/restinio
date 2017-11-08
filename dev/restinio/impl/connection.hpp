@@ -23,7 +23,6 @@
 #include <restinio/impl/connection_settings.hpp>
 #include <restinio/impl/fixed_buffer.hpp>
 #include <restinio/impl/raw_resp_output_ctx.hpp>
-#include <restinio/impl/timer_invocation_ctx.hpp>
 #include <restinio/impl/executor_wrapper.hpp>
 
 namespace restinio
