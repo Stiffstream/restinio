@@ -62,7 +62,7 @@ MxxRu::arch_externals :json_dto do |e|
 end
 
 MxxRu::arch_externals :args do |e|
-  e.url 'https://github.com/Taywee/args/archive/6.0.4.tar.gz'
+  e.url 'https://github.com/Taywee/args/archive/6.2.0.zip'
 
   e.map_file 'args.hxx' => 'dev/args/*'
 end
