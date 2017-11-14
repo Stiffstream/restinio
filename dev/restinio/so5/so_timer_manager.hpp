@@ -158,7 +158,7 @@ class a_timeout_handler_t final
 				.event(
 					[]( const msg_ckeck_timer_t & msg ){
 						if( auto h = msg.m_weak_handle.lock() )
-							h->check_timeout();
+							h->check_timeout( h );
 					} );
 		}
 };

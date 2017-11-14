@@ -1100,11 +1100,11 @@ class ws_connection_t final
 		}
 
 		virtual void
-		check_timeout() override
+		check_timeout( tcp_connection_ctx_handle_t & self ) override
 		{
 			asio::dispatch(
 				this->get_executor(),
-				[ ctx = shared_from_this() ]{
+				[ ctx = std::move( self ) ]{
 					cast_to_self( *ctx ).check_timeout_impl();
 				} );
 		}

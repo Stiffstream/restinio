@@ -1017,23 +1017,32 @@ class connection_t final
 			return static_cast< connection_t & >( base );
 		}
 
+		//! Schedules real timedout operations check on
+		//! the executer of a connection.
 		virtual void
-		check_timeout() override
+		check_timeout( tcp_connection_ctx_handle_t & self ) override
 		{
 			asio::dispatch(
 				this->get_executor(),
-				[ ctx = shared_from_this() ]{
+				[ ctx = std::move( self ) ]{
 					cast_to_self( *ctx ).check_timeout_impl();
 				} );
 		}
 
+		//! Callback type for timedout operations.
 		using timout_cb_t = void (connection_t::* )( void );
 
+		//! Callback to all if timeout happened.
 		timout_cb_t m_current_timeout_cb{ nullptr };
-		std::chrono::steady_clock::time_point m_current_timeout_after;
-		tcp_connection_ctx_weak_handle_t m_prepared_weak_ctx;
-		timer_guard_t m_timer_guard;
 
+		//! Timeout point of a current guarded operation.
+		std::chrono::steady_clock::time_point m_current_timeout_after;
+		//! Timer guard.
+		timer_guard_t m_timer_guard;
+		//! A prepared weak handle for passing it to timer guard.
+		tcp_connection_ctx_weak_handle_t m_prepared_weak_ctx;
+
+		//! Check timed out operation.
 		void
 		check_timeout_impl()
 		{
@@ -1048,13 +1057,14 @@ class connection_t final
 			}
 		}
 
-		//! schedule next timeout checking.
+		//! Schedule next timeout checking.
 		void
 		init_next_timeout_checking()
 		{
 			m_timer_guard.schedule_timeout_check_invocation( m_prepared_weak_ctx );
 		}
 
+		//! Stop timout guarding.
 		void
 		cancel_timeout_checking()
 		{

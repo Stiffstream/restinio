@@ -41,9 +41,13 @@ class tcp_connection_ctx_base_t
 
 		//! Check timeouts for all activities.
 		virtual void
-		check_timeout() = 0;
+		check_timeout(
+			//! A handle to itself (eliminates one shared_ptr instantiation).
+			std::shared_ptr< tcp_connection_ctx_base_t > & self ) = 0;
 
 	protected:
+
+		//! Cast self to derived class.
 		template < typename Derived >
 		std::shared_ptr< Derived >
 		shared_from_concrete()

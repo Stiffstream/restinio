@@ -57,7 +57,7 @@ class asio_timer_manager_t final
 									{
 										if( auto h = weak_handle.lock() )
 										{
-											h->check_timeout();
+											h->check_timeout( h );
 										}
 									}
 								} );

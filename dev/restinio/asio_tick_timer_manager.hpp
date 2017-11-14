@@ -225,7 +225,7 @@ class asio_tick_timer_manager_t
 					it = m_timers.erase( it );
 
 					if( auto h = tcp_connection_ctx.lock() )
-						h->check_timeout();
+						h->check_timeout( h );
 				}
 				else
 				{
