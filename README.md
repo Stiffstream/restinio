@@ -45,18 +45,18 @@ So we have come up with *RESTinio*...
 To use *RESTinio* it is necessary to have:
 
 * Reasonably modern C++14 compiler (VC++14.0, GCC 5.4 or above, clang 3.8 or above);
-* [asio](http://think-async.com/Asio) from [git repo](https://github.com/chriskohlhoff/asio.git), commit `f5c570826d2ebf50eb38c44039181946a473148b`;
+* [asio](http://think-async.com/Asio) from [git repo](https://github.com/chriskohlhoff/asio.git), commit `d52b8164665e779f58e30d60e4ff9a8da1ce3c4a`;
 * [nodejs/http-parser](https://github.com/nodejs/http-parser) 2.7.1;
 * [fmtlib](http://fmtlib.net/latest/index.html) 4.0.0.
-* Optional: [SObjectizer](https://sourceforge.net/projects/sobjectizer/) 5.5.19.3;
+* Optional: [SObjectizer](https://sourceforge.net/projects/sobjectizer/) 5.5.19.5;
 
 For building samples, benchmarks and tests:
 
 * [Mxx_ru](https://sourceforge.net/projects/mxxru/) 1.6.13 or above;
 * [rapidjson](https://github.com/miloyip/rapidjson) 1.1.0;
-* [json_dto](https://bitbucket.org/sobjectizerteam/json_dto-0.1) 0.1.2.1 or above;
-* [args](https://github.com/Taywee/args) 6.0.4;
-* [CATCH](https://github.com/philsquared/Catch) 1.9.6.
+* [json_dto](https://bitbucket.org/sobjectizerteam/json_dto-0.1) 0.2.3 or above;
+* [args](https://github.com/Taywee/args) 6.2.0;
+* [CATCH](https://github.com/philsquared/Catch) 2.0.1.
 
 ## Obtaining
 
@@ -66,7 +66,7 @@ There are two ways of obtaining *RESTinio*.
 [repository](https://bitbucket.org/sobjectizerteam/restinio-0.3).
 In this case external dependencies must be obtained with Mxx_ru externals tool.
 * Getting
-[archive](https://bitbucket.org/sobjectizerteam/restinio-0.2/downloads/restinio-0.2.1-full.tar.bz2).
+[archive](https://bitbucket.org/sobjectizerteam/restinio-0.3/downloads/restinio-0.3.0-full.tar.bz2).
 Archive includes source code for all external dependencies.
 
 ### Cloning of hg repository
@@ -184,7 +184,6 @@ Here is a minimal hello world http server
 ([see full example](./dev/sample/hello_world_minimal/main.cpp)):
 ~~~~~
 ::c++
-#include <iostream>
 #include <restinio/all.hpp>
 
 int main()
@@ -399,7 +398,7 @@ int main()
 {
 	using traits_t =
 		restinio::traits_t<
-			restinio::asio_timer_factory_t,
+			restinio::asio_timer_manager_t,
 			restinio::single_threaded_ostream_logger_t,
 			router_t >;
 
@@ -491,7 +490,7 @@ template parameter: `Traits`.
 Traits class must specify a set of types used inside *RESTinio*, they are:
 ~~~~~
 ::c++
-timer_factory_t;
+timer_manager_t;
 logger_t;
 request_handler_t;
 strand_t;
@@ -503,7 +502,7 @@ There is a helper classes for working with traits:
 ~~~~~
 ::c++
 template <
-    typename Timer_Factory,
+    typename Timer_Manager,
     typename Logger,
     typename Request_Handler = default_request_handler_t,
     typename Strand = asio::strand< asio::executor >,
@@ -511,11 +510,11 @@ template <
 struct traits_t; // Implementation omitted.
 
 template <
-    typename Timer_Factory,
+    typename Timer_Manager,
     typename Logger,
     typename Request_Handler = default_request_handler_t >
 using single_thread_traits_t =
-  traits_t< Timer_Factory, Logger, Request_Handler, noop_strand_t >; // Implementation omitted.
+  traits_t< Timer_Manager, Logger, Request_Handler, noop_strand_t >; // Implementation omitted.
 ~~~~~
 
 Refer to [Traits](#markdown-header-traits_1) and [restinio/traits.hpp](./dev/restinio/traits.hpp) for details.
@@ -572,7 +571,7 @@ So there is a special class for wrapping io_context instance and pass it to
 To create the such holder use on of the following functions:
 
 * `restinio::own_io_context()` -- create and use its own instance of io_context;
-* `restinio::external_io_context()` -- use external instance of io_context.
+* `restinio::external_io_context(asio::io_context&)` -- use external instance of io_context.
 
 ### Running server
 
@@ -717,7 +716,7 @@ Refer to [server settings](#markdown-header-server-settings) and [restinio/setti
 
 ## List of types that must be defined be *Traits*
 
-* `timer_factory_t` defines the logic of how timeouts are managed;
+* `timer_manager_t` defines the logic of how timeouts are managed;
 * `logger_t` defines logger that is used by *RESTinio* to track its inner logic;
 * `request_handler_t` defines a function-like type to be used as request handler;
 * `strand_t` - defines a class that is used by connection as a wrapper
@@ -733,67 +732,117 @@ when running `asio::io context` on a single thread;
 what type of socket used for connections. This parameter allows restinio
 to support TLS connection (see [TLS support](#markdown-header-tls-support.md)).
 
-## timer_factory_t
-`timer_factory_t` - defines a timeout controller logic.
-It must define a nested type `timer_guard_t` with the following interface:
+## timer_manager_t
+`timer_manager_t` - defines a timeout controller logic.
+It must define two nested types.
+The first one is `timer_guard_t` with the following interface:
 
 ~~~~~
 ::c++
 class timer_guard_t
 {
   public:
-    // Set new timeout guard.
-    template <
-        typename Executor,
-        typename Callback_Func >
-    void
-    schedule_operation_timeout_callback(
-      const Executor & executor,
-      std::chrono::steady_clock::duration timeout,
-      Callback_Func && f );
+    // Schedule a checking of timed out operations
+    // after time interval specified by timer-manager.
+    void schedule_timeout_check_invocation(
+      // Weak pointer to object to check timed out ops.
+      // tcp_connection_ctx_weak_handle_t = std::weak_ptr< tcp_connection_ctx_base_t >
+      tcp_connection_ctx_weak_handle_t weak_handle );
 
     // Cancel timeout guard if any.
-    void
-    cancel();
+    void cancel();
 };
 ~~~~~
 
-The first method starts guarding timeout of a specified duration,
-and if it occurs some how the specified callback must be posted on
-`asio::io_context` executor.
+To understand the ground idea behind timer managers it is needed to clarify on
+`tcp_connection_ctx_base_t` a weak pointer of whih is passed to
+`timer_guard_t::schedule_timeout_check_invocation()`. A class
+`tcp_connection_ctx_base_t` has a virtual method:
+~~~~~
+::c++
+//! Check timeouts for all activities.
+virtual void check_timeout(
+  //! A handle to itself (eliminates one shared_ptr instantiation).
+  std::shared_ptr< tcp_connection_ctx_base_t > & self ) = 0;
+~~~~~
 
-The second method must cancel execution of the previously scheduled timer.
+Internal classes that inherit from `tcp_connection_ctx_base_t` implement this method
+to initiate a check whether there are a timed out operations.
+So `timer_guard_t::schedule_timeout_check_invocation()` timer guard must simply
+store a weak pointer to `tcp_connection_ctx_base_t` somewhere and try to
+invoke `check_timeout()` after a some period of time that is specified by timer manager.
+Here is an example of how to try to invoke `check_timeout()`:
+~~~~~
+::c++
+// restinio::tcp_connection_ctx_weak_handle_t weak_handle;
 
-An instance of `std::shared_ptr< timer_guard_t >` is stored in each connection
-managed by *RESTinio* and to create it `timer_factory_t` must define
+if( auto h = weak_handle.lock() )
+{
+  // If here then  h is a shared pointer to an exiting object.
+  h->check_timeout( h );
+}
+~~~~~
+
+Suppose timer manager sets a time period for checking to 1 second, so each second
+a context object of a given connection will check if any timeout happened.
+Between two sequencial checks connection context object may change the actual operation
+that is tracked for timeout many times.
+
+A `timer_guard_t::cancel()` method must cancel scheduled check of a given timer_guard.
+
+An instance of `timer_guard_t` is stored in each connection
+managed by *RESTinio* and to create it `timer_manager_t` must define
 the following method:
 
 ~~~~~
 ::c++
-class timer_factory_t
+class timer_manager_t
 {
   public:
     // ...
 
-    using timer_guard_instance_t = std::shared_ptr< timer_guard_t >;
+    // struct/class  timer_guard_t{ ... };
+    // using timer_guard_t = ...;
 
     // Create guard for connection.
-    timer_guard_instance_t
-    create_timer_guard( asio::io_context & );
+    timer_guard_t create_timer_guard();
     // ...
 };
 ~~~~~
 
-*RESTinio* comes with a set of ready-to-use `timer_factory_t` implementation:
+The second type nested in `timer_manager_t` must be `factory_t`,
+that must implement `create(asio::io_context&)` method:
+~~~~~
+::c++
+struct factory_t
+{
+  /* Extra parameters for creating timer manager */
 
-* `null_timer_factory_t` -- noop timer guards, they produce timer guards
+  auto create( asio::io_context & io_context ) const
+  {
+    return std::make_shared< asio_timer_manager_t >( /* params */ );
+  }
+};
+~~~~~
+
+Nested factory type is needed for holding paramaters of a timer manager
+that come from settings. Timer manager itself might need a referenece to
+`asio::io_context` on which server runs, and it is not available on the level
+of settings object. So creation of timer instance is done in two steps.
+First step - factory is created in server settings and stores params that are needed for
+creating timer manager. Second step - when server is instantiated
+(hence `asio::io_context` is known) a timer manager is created using factory.
+
+*RESTinio* comes with a set of ready-to-use `timer_manager_t` implementation:
+
+* `null_timer_manager_t` -- noop timer guards, they produce timer guards
 that do nothing (when no control needed).
-See [restinio/null_timer_factory.hpp](./dev/restinio/null_timer_factory.hpp);
-* `asio_timer_factory_t` -- timer guards implemented with asio timers.
-See [restinio/asio_timer_factory.hpp](./dev/restinio/asio_timer_factory.hpp);
-* `so5::so_timer_factory_t` -- timer guards implemented with *SObjectizer* timers.
-See [restinio/so5/so_timer_factory.hpp](./dev/restinio/so5/so_timer_factory.hpp)
-Note that `restinio/so5/so_timer_factory.hpp` header file is not included
+See [restinio/null_timer_manager.hpp](./dev/restinio/null_timer_manager.hpp);
+* `asio_timer_manager_t` -- timer guards implemented with asio timers.
+See [restinio/asio_timer_manager.hpp](./dev/restinio/asio_timer_manager.hpp);
+* `so5::so_timer_manager_t` -- timer guards implemented with *SObjectizer* timers.
+See [restinio/so5/so_timer_manager.hpp](./dev/restinio/so5/so_timer_manager.hpp)
+Note that `restinio/so5/so_timer_manager.hpp` header file is not included
 by `restinio/all.hpp`, so it needs to be included separately.
 
 ## logger_t
