@@ -56,7 +56,7 @@ MxxRu::arch_externals :rapidjson_mxxru do |e|
 end
 
 MxxRu::arch_externals :json_dto do |e|
-  e.url 'https://bitbucket.org/sobjectizerteam/json_dto-0.1/get/v.0.1.2.1.tar.bz2'
+  e.url 'https://bitbucket.org/sobjectizerteam/json_dto-0.2/downloads/json_dto-0.2.3-full.zip'
 
   e.map_dir 'dev/json_dto' => 'dev'
 end
