@@ -1130,7 +1130,7 @@ class connection_t final
 		}
 
 		//! Start guard request handling operation if necessary.
-		constexpr void
+		void
 		guard_request_handling_operation()
 		{
 			if( !m_resp_out_ctx.transmitting() )
