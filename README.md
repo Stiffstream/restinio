@@ -438,7 +438,7 @@ using router_t = restinio::router::express_router_t;
 
 using traits_t =
   restinio::traits_t<
-    restinio::asio_timer_factory_t,
+    restinio::asio_timer_manager_t,
     restinio::single_threaded_ostream_logger_t,
     router_t >;
 ~~~~~
@@ -1085,7 +1085,7 @@ request_handler( Params &&... params )
 |      settings        | type | description |
 |----------------------|------|-------------|
 | request_handler | `std::unique_ptr< request_handler_t >` `Params &&...` | Request handler. |
-| timer_factory | `Params &&...` | Timers factory (see [timer](#markdown-header-timer_factory_t)). |
+| timer_manager | `Params &&...` | Timers manager (see [timer](#markdown-header-timer_manager_t)). |
 | logger | `Params &&...` | Logger (see [logger](#markdown-header-logger_t)). |
 
 # Cleanup function
@@ -1382,7 +1382,7 @@ For example:
 ~~~~~
 ::c++
 using my_traits_t = restinio::traits_t<
-    restinio::asio_timer_factory_t,
+    restinio::asio_timer_manager_t,
     restinio::single_threaded_ostream_logger_t,
     restinio::router::express_router_t >;
 restinio::run(
@@ -1788,7 +1788,7 @@ namespace rws = restinio::websocket::basic;
 
 using traits_t =
   restinio::traits_t<
-    restinio::asio_timer_factory_t,
+    restinio::asio_timer_manager_t,
     restinio::single_threaded_ostream_logger_t,
     router_t >;
 
