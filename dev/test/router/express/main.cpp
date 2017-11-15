@@ -3,7 +3,7 @@
 */
 
 /*!
-	Tests for express router.
+	Tests for express router engine.
 */
 
 #define CATCH_CONFIG_MAIN
@@ -45,10 +45,3 @@ TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 	REQUIRE( params.indexed_parameters().size() == 0 );
 
 }
-
-// TEST_CASE( "Original tests" , "[path2regex][original][generated]" )
-// {
-
-// #include "original_tests.inl"
-
-// }

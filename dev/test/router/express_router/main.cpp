@@ -3,7 +3,7 @@
 */
 
 /*!
-	Tests for first match routers.
+	Tests for express router.
 */
 
 #define CATCH_CONFIG_MAIN

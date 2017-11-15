@@ -1,0 +1,17 @@
+GET /abcd
+GET /abcd0123456
+GET /bcda
+GET /bcda0123456
+GET /cdab
+GET /cdab0123456
+GET /dabc
+GET /dabc0123456
+GET /XXX/:id(\d+)
+GET /1abcd
+GET /2bcda
+GET /3cdab
+GET /4dabc
+GET /abcd1
+GET /bcda2
+GET /cdab3
+GET /dabc4
