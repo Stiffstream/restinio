@@ -37,6 +37,7 @@ MxxRu::Cpp::composite_target {
 	required_prj( "test/router/express/prj.ut.rb" )
 	required_prj( "test/router/express_router/prj.ut.rb" )
 	required_prj( "test/router/express_router_bench/prj.rb" )
+	required_prj( "test/router/cmp_router_bench/prj.rb" )
 
 	required_prj( "test/encoders/prj.ut.rb" )
 

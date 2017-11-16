@@ -1,0 +1,8 @@
+GET /users/:id(\d+)
+GET /users/:id(\d+)/visits
+POST /users/new
+GET /locations/:id(\d+)
+GET /locations/:id(\d+)/avg
+POST /locations/new
+GET /visits/:id(\d+)
+POST /visits/new
