@@ -1110,7 +1110,8 @@ class ws_connection_t final
 		}
 
 		std::chrono::steady_clock::time_point m_write_operation_timeout_after;
-		std::chrono::steady_clock::time_point m_close_frame_from_peer_timeout_after;
+		std::chrono::steady_clock::time_point m_close_frame_from_peer_timeout_after =
+			std::chrono::steady_clock::time_point::max();
 		tcp_connection_ctx_weak_handle_t m_prepared_weak_ctx;
 		timer_guard_t m_timer_guard;
 
@@ -1162,7 +1163,7 @@ class ws_connection_t final
 		void
 		guard_close_frame_from_peer_operation()
 		{
-			m_write_operation_timeout_after =
+			m_close_frame_from_peer_timeout_after =
 				std::chrono::steady_clock::now() + m_settings->m_read_next_http_message_timelimit;
 		}
 		//! \}
