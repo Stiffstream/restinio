@@ -1149,7 +1149,7 @@ class ws_connection_t final
 		void
 		init_next_timeout_checking()
 		{
-			m_timer_guard.schedule_timeout_check_invocation( m_prepared_weak_ctx );
+			m_timer_guard.schedule( m_prepared_weak_ctx );
 		}
 
 		//! Start guard write operation if necessary.

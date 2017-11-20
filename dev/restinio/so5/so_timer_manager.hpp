@@ -64,10 +64,9 @@ class so_timer_manager_t final
 					,	m_check_period{ check_period }
 				{}
 
-				// Set new timeout guard.
+				//! Schedule timeout check invocation.
 				void
-				schedule_timeout_check_invocation(
-					tcp_connection_ctx_weak_handle_t weak_handle )
+				schedule( tcp_connection_ctx_weak_handle_t weak_handle )
 				{
 					if( !m_current_op_timer.is_active() )
 					{

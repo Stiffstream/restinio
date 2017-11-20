@@ -45,10 +45,9 @@ class asio_timer_manager_t final
 					,	m_check_period{ check_period }
 				{}
 
-				// Guard operation.
+				// Schedule timeouts check invocation.
 				void
-				schedule_timeout_check_invocation(
-					tcp_connection_ctx_weak_handle_t weak_handle )
+				schedule( tcp_connection_ctx_weak_handle_t weak_handle )
 				{
 					m_operation_timer.expires_after( m_check_period );
 					m_operation_timer.async_wait(

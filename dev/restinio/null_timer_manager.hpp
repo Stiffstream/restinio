@@ -27,10 +27,10 @@ struct null_timer_manager_t final
 	//! Timer guard for async operations.
 	struct timer_guard_t
 	{
-		// Set new timeout guard.
+		// Schedule timeouts check invocation.
 		template <typename... Args >
 		constexpr void
-		schedule_timeout_check_invocation( Args &&... ) const
+		schedule( Args &&... ) const
 		{}
 
 		// Cancel timeout guard if any.
