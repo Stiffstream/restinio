@@ -11,6 +11,8 @@
 #include <restinio/path2regex/path2regex.hpp>
 #include <restinio/request_handler.hpp>
 
+#include <restinio/router/std_regex_engine.hpp>
+
 #include <map>
 #include <vector>
 
@@ -106,39 +108,6 @@ namespace impl
 
 using param_appender_sequence_t =
 	path2regex::param_appender_sequence_t< route_params_t >;
-
-struct std_regex_engine_t
-{
-	using compiled_regex_t = std::regex;
-	using match_results_t = std::cmatch;
-	using matched_item_descriptor_t = match_results_t::value_type;
-
-	static auto
-	try_match(
-		const std::string & target,
-		const compiled_regex_t & r,
-		match_results_t & match_results )
-	{
-		return
-			std::regex_search(
-				target.data(),
-				target.data() + target.size(),
-				match_results,
-				r );
-	}
-
-	static auto
-	start_str_piece( const matched_item_descriptor_t & m )
-	{
-		return m.first;
-	}
-
-	static auto
-	size_str_piece( const matched_item_descriptor_t & m )
-	{
-		return m.second - m.first;
-	}
-};
 
 //
 // route_matcher_t
