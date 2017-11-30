@@ -34,31 +34,15 @@ class route_params_t
 		route_params_t &
 		operator = ( route_params_t && ) = default;
 
-		//! Prefix and suffix of the matched route.
+		//! Matched route.
 		//! \{
 		const auto &
 		match() const { return m_match; }
-		const auto &
-		prefix() const { return m_prefix; }
-		const auto &
-		suffix() const { return m_suffix; }
 
 		void
 		match( const char * str, std::size_t size )
 		{
 			m_match.assign( str, size );
-		}
-
-		void
-		prefix( const char * str, std::size_t size )
-		{
-			m_prefix.assign( str, size );
-		}
-
-		void
-		suffix( const char * str, std::size_t size )
-		{
-			m_suffix.assign( str, size );
 		}
 		//! \}
 
@@ -123,17 +107,54 @@ namespace impl
 using param_appender_sequence_t =
 	path2regex::param_appender_sequence_t< route_params_t >;
 
+struct std_regex_engine_t
+{
+	using compiled_regex_t = std::regex;
+	using match_results_t = std::cmatch;
+	using matched_item_descriptor_t = match_results_t::value_type;
+
+	static auto
+	try_match(
+		const std::string & target,
+		const compiled_regex_t & r,
+		match_results_t & match_results )
+	{
+		return
+			std::regex_search(
+				target.data(),
+				target.data() + target.size(),
+				match_results,
+				r );
+	}
+
+	static auto
+	start_str_piece( const matched_item_descriptor_t & m )
+	{
+		return m.first;
+	}
+
+	static auto
+	size_str_piece( const matched_item_descriptor_t & m )
+	{
+		return m.second - m.first;
+	}
+};
+
 //
 // route_matcher_t
 //
 
 //! A matcher for a given path.
+template <typename Regex_Engine = std_regex_engine_t>
 class route_matcher_t
 {
 	public:
+		using regex_t = typename Regex_Engine::compiled_regex_t;
+		using match_results_t = typename Regex_Engine::match_results_t;
+
 		route_matcher_t(
 			http_method_t method,
-			std::regex route_regex,
+			regex_t route_regex,
 			param_appender_sequence_t param_appender_sequence )
 			:	m_method{ method }
 			,	m_route_regex{ std::move( route_regex ) }
@@ -148,28 +169,27 @@ class route_matcher_t
 			const std::string & request_target,
 			route_params_t & parameters ) const
 		{
-			std::cmatch matches;
-			if( std::regex_search(
-					request_target.data(),
-					request_target.data() + request_target.size(),
-					matches,
-					m_route_regex ) )
+			match_results_t matches;
+			if( Regex_Engine::try_match(
+					request_target,
+					m_route_regex,
+					matches ) )
 			{
 				assert( m_param_appender_sequence.size() + 1 == matches.size() );
 
 				auto get_size = []( const auto & m ){ return m.second - m.first; };
 
-				parameters.match( matches[0].first, get_size( matches[0] ) );
-				parameters.prefix( matches.prefix().first, get_size( matches.prefix() ) );
-				parameters.suffix( matches.suffix().first, get_size( matches.suffix() ) );
+				parameters.match(
+					Regex_Engine::start_str_piece( matches[0] ),
+					Regex_Engine::size_str_piece( matches[0] ) );
 
 				for( std::size_t i = 1; i < matches.size(); ++i )
 				{
 					const auto & m = matches[ i ];
 					m_param_appender_sequence[ i - 1](
 						parameters,
-						m.first,
-						get_size( m ) );
+						Regex_Engine::start_str_piece( m ),
+						Regex_Engine::size_str_piece( m ) );
 				}
 
 				return true;
@@ -189,7 +209,7 @@ class route_matcher_t
 
 	private:
 		http_method_t m_method;
-		std::regex m_route_regex;
+		regex_t m_route_regex;
 		param_appender_sequence_t m_param_appender_sequence;
 };
 
@@ -286,7 +306,7 @@ class express_route_entry_t
 		}
 
 	private:
-		impl::route_matcher_t m_matcher;
+		impl::route_matcher_t<> m_matcher;
 		express_request_handler_t m_handler;
 };
 

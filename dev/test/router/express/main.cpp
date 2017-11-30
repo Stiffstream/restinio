@@ -13,9 +13,7 @@
 
 #include <restinio/router/express.hpp>
 
-using namespace restinio;
-using namespace restinio::router;
-using restinio::router::impl::route_matcher_t;
+#include "usings.inl"
 
 TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 {

@@ -4,9 +4,7 @@
 
 #include <restinio/router/express.hpp>
 
-using namespace restinio;
-using namespace restinio::router;
-using restinio::router::impl::route_matcher_t;
+#include "usings.inl"
 
 TEST_CASE( "Original tests (part1)" , "[path2regex][original][generated][part1]" )
 {
