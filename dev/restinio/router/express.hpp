@@ -201,6 +201,7 @@ using express_request_handler_t =
 	if only a single route is needed.
 	It gives the same help with route parameters.
 */
+template <typename Regex_Engine = std_regex_engine_t>
 class express_route_entry_t
 {
 		express_route_entry_t(
@@ -275,7 +276,7 @@ class express_route_entry_t
 		}
 
 	private:
-		impl::route_matcher_t<> m_matcher;
+		impl::route_matcher_t< Regex_Engine > m_matcher;
 		express_request_handler_t m_handler;
 };
 
@@ -284,6 +285,7 @@ class express_route_entry_t
 //
 
 //! Express.js style router.
+template <typename Regex_Engine = std_regex_engine_t>
 class express_router_t
 {
 	public:
@@ -305,6 +307,8 @@ class express_router_t
 			return request_rejected();
 		}
 
+		//! Add handlers.
+		//! \{
 		void
 		add_handler(
 			http_method_t method,
@@ -447,9 +451,13 @@ class express_router_t
 				options,
 				std::move( handler ) );
 		}
+		//! \}
 
 	private:
-		std::vector< express_route_entry_t > m_handlers;
+		using route_entry_t = express_route_entry_t< Regex_Engine >;
+
+		//! A list of existing routes.
+		std::vector< route_entry_t > m_handlers;
 };
 
 } /* namespace router */
