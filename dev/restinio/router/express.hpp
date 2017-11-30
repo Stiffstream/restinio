@@ -44,11 +44,22 @@ class route_params_t
 		suffix() const { return m_suffix; }
 
 		void
-		match( std::string value ){ m_match = std::move( value ); }
+		match( const char * str, std::size_t size )
+		{
+			m_match.assign( str, size );
+		}
+
 		void
-		prefix( std::string value ) { m_prefix = std::move( value ); }
+		prefix( const char * str, std::size_t size )
+		{
+			m_prefix.assign( str, size );
+		}
+
 		void
-		suffix( std::string value ) { m_suffix = std::move( value ); }
+		suffix( const char * str, std::size_t size )
+		{
+			m_suffix.assign( str, size );
+		}
 		//! \}
 
 		const auto &
@@ -76,15 +87,15 @@ class route_params_t
 		}
 
 		void
-		add_indexed_param( std::string value )
+		add_indexed_param( const char * str, std::size_t size )
 		{
-			m_indexed_parameters.emplace_back( std::move( value ) );
+			m_indexed_parameters.emplace_back( str, size );
 		}
 
 		void
-		add_named_param( std::string key, std::string value )
+		add_named_param( std::string key, const char * str, std::size_t size )
 		{
-			m_named_parameters[ std::move( key ) ] = std::move( value );
+			m_named_parameters[ std::move( key ) ] = std::string( str, size );
 		}
 
 		void
@@ -109,7 +120,8 @@ class route_params_t
 namespace impl
 {
 
-using param_appender_sequence_t = path2regex::param_appender_sequence_t< route_params_t >;
+using param_appender_sequence_t =
+	path2regex::param_appender_sequence_t< route_params_t >;
 
 //
 // route_matcher_t
@@ -136,18 +148,28 @@ class route_matcher_t
 			const std::string & request_target,
 			route_params_t & parameters ) const
 		{
-			std::smatch matches;
-			if( std::regex_search( request_target, matches, m_route_regex ) )
+			std::cmatch matches;
+			if( std::regex_search(
+					request_target.data(),
+					request_target.data() + request_target.size(),
+					matches,
+					m_route_regex ) )
 			{
 				assert( m_param_appender_sequence.size() + 1 == matches.size() );
 
-				parameters.match( matches[0].str() );
-				parameters.prefix( matches.prefix() );
-				parameters.suffix( matches.suffix() );
+				auto get_size = []( const auto & m ){ return m.second - m.first; };
+
+				parameters.match( matches[0].first, get_size( matches[0] ) );
+				parameters.prefix( matches.prefix().first, get_size( matches.prefix() ) );
+				parameters.suffix( matches.suffix().first, get_size( matches.suffix() ) );
 
 				for( std::size_t i = 1; i < matches.size(); ++i )
 				{
-					m_param_appender_sequence[ i - 1]( parameters, matches[ i ] );
+					const auto & m = matches[ i ];
+					m_param_appender_sequence[ i - 1](
+						parameters,
+						m.first,
+						get_size( m ) );
 				}
 
 				return true;

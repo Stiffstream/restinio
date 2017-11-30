@@ -138,7 +138,7 @@ class options_t
 //! Appends sub-match as a request parameter to specified container.
 template < typename Param_Container >
 using param_appender_t =
-	std::function< void ( Param_Container &, std::string ) >;
+	std::function< void ( Param_Container &, const char * str, std::size_t size ) >;
 
 //
 // param_appender_sequence_t
@@ -158,19 +158,22 @@ inline param_appender_t< Param_Container >
 make_param_setter( std::string key )
 {
 	return
-		[ key ]( Param_Container & parameters, std::string value ){
-			parameters.add_named_param( key, std::move( value ) );
-	};
+		[ key = std::move( key ) ](
+			Param_Container & parameters,
+			const char * str,
+			std::size_t size ){
+			parameters.add_named_param( key, str, size );
+		};
 }
 
 //! Create default appender indexed parameter.
 template < typename Param_Container >
 inline param_appender_t< Param_Container >
-make_param_setter( std::size_t /* index */)
+make_param_setter( std::size_t )
 {
 	return
-		[ ]( Param_Container & parameters, std::string value ){
-			parameters.add_indexed_param( std::move( value ) );
+		[]( Param_Container & parameters, const char * str, std::size_t size ){
+			parameters.add_indexed_param( str, size );
 	};
 }
 
@@ -354,7 +357,8 @@ class parameter_token_t final : public token_t< Param_Container >
 
 			route += capture;
 
-			param_appender_sequence.push_back( make_param_setter< Param_Container >( m_name ) );
+			param_appender_sequence.push_back(
+				make_param_setter< Param_Container >( m_name ) );
 		}
 
 	private:
