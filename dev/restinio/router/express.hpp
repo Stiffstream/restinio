@@ -114,7 +114,7 @@ using param_appender_sequence_t =
 //
 
 //! A matcher for a given path.
-template <typename Regex_Engine = std_regex_engine_t>
+template < typename Regex_Engine = std_regex_engine_t>
 class route_matcher_t
 {
 	public:
@@ -201,12 +201,14 @@ using express_request_handler_t =
 	if only a single route is needed.
 	It gives the same help with route parameters.
 */
-template <typename Regex_Engine = std_regex_engine_t>
+template < typename Regex_Engine = std_regex_engine_t>
 class express_route_entry_t
 {
+		using matcher_init_data_t =
+			path2regex::impl::route_regex_matcher_data_t< route_params_t, Regex_Engine >;
 		express_route_entry_t(
 			http_method_t method,
-			path2regex::impl::route_regex_matcher_data_t< route_params_t > matcher_data,
+			matcher_init_data_t matcher_data,
 			express_request_handler_t handler )
 			:	m_matcher{
 					method,
@@ -232,7 +234,7 @@ class express_route_entry_t
 			express_request_handler_t handler )
 			:	express_route_entry_t{
 					method,
-					path2regex::path2regex< route_params_t >(
+					path2regex::path2regex< route_params_t, Regex_Engine >(
 						route_path,
 						options ),
 					std::move( handler ) }
@@ -285,7 +287,7 @@ class express_route_entry_t
 //
 
 //! Express.js style router.
-template <typename Regex_Engine = std_regex_engine_t>
+template < typename Regex_Engine = std_regex_engine_t>
 class express_router_t
 {
 	public:

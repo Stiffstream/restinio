@@ -547,13 +547,17 @@ parse( const std::string & route_str, const options_t & options )
 //
 
 //! Resulting regex and param extraction for a specific route.
-template < typename Param_Container >
+template < typename Param_Container, typename Regex_Engine >
 struct route_regex_matcher_data_t
 {
 	route_regex_matcher_data_t() = default;
 	route_regex_matcher_data_t( route_regex_matcher_data_t && ) = default;
 
-	std::regex m_regex;
+	// TODO: delete copy ctor/assign.
+
+	using regex_t = typename Regex_Engine::compiled_regex_t;
+
+	regex_t m_regex;
 	param_appender_sequence_t< Param_Container > m_param_appender_sequence;
 };
 
@@ -562,11 +566,11 @@ struct route_regex_matcher_data_t
 //
 
 //! Makes route regex matcher out of path tokens.
-template < typename Param_Container >
+template < typename Param_Container, typename Regex_Engine >
 auto
 tokens2regexp( const token_list_t< Param_Container > & tokens, const options_t & options )
 {
-	route_regex_matcher_data_t< Param_Container > result;
+	route_regex_matcher_data_t< Param_Container, Regex_Engine > result;
 	std::string route;
 	auto & param_appender_sequence = result.m_param_appender_sequence;
 
@@ -603,13 +607,13 @@ tokens2regexp( const token_list_t< Param_Container > & tokens, const options_t &
 		route += "(?=" + delimiter + "|$)";
 	}
 
-	auto regex_flags = std::regex::ECMAScript;
-	if( !options.sensitive() )
-	{
-		regex_flags |= std::regex::icase;
-	}
+	// auto regex_flags = std::regex::ECMAScript;
+	// if( !options.sensitive() )
+	// {
+	// 	regex_flags |= std::regex::icase;
+	// }
 
-	result.m_regex.assign( "^" + route, regex_flags );
+	result.m_regex = Regex_Engine::compile_regex( "^" + route, options.sensitive() );
 	return result;
 }
 
@@ -620,13 +624,13 @@ tokens2regexp( const token_list_t< Param_Container > & tokens, const options_t &
 //
 
 //! The main path matching regexp.
-template < typename Param_Container >
+template < typename Param_Container, typename Regex_Engine >
 inline auto
 path2regex(
 	const std::string & path,
 	const options_t & options )
 {
-	return impl::tokens2regexp< Param_Container >(
+	return impl::tokens2regexp< Param_Container, Regex_Engine >(
 			impl::parse< Param_Container >( path, options ),
 			options );
 }

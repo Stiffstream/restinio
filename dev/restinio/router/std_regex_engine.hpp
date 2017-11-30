@@ -27,6 +27,24 @@ struct std_regex_engine_t
 	using match_results_t = std::cmatch;
 	using matched_item_descriptor_t = match_results_t::value_type;
 
+	//! Create compiled regex object for a given route.
+	static auto
+	compile_regex(
+		//! Regular expression (the pattern).
+		const std::string & r,
+		//! Option for case sensativity.
+		bool is_case_sensative )
+	{
+		auto regex_flags = std::regex::ECMAScript;
+
+		if( !is_case_sensative )
+		{
+			regex_flags |= std::regex::icase;
+		}
+
+		return compiled_regex_t{ r, regex_flags };
+	}
+
 	//! Wrapper function for matching logic invokation.
 	static auto
 	try_match(
