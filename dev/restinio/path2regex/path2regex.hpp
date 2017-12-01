@@ -22,6 +22,61 @@ namespace restinio
 namespace path2regex
 {
 
+namespace impl
+{
+
+//
+// escape_group()
+//
+
+//! Escapes not allowed symbols in a sub-match group assigned to a parameter.
+inline auto
+escape_group( const std::string & group )
+{
+	std::string result;
+	result.reserve( group.size() + group.size() / 2 );
+
+	for( const char c : group )
+	{
+		if( '=' == c || '!' == c || ':' == c ||
+			'$' == c || '/' == c || '(' == c || ')' == c )
+			result+= '\\';
+
+		result+= c;
+	}
+
+	return result;
+}
+
+//
+// escape_string()
+//
+
+//! Excape regex control chars.
+inline auto
+escape_string( const std::string & group )
+{
+	std::string result;
+	result.reserve( group.size() + group.size() / 2 );
+
+	for( const char c : group )
+	{
+		if( '.' == c || '+' == c || '*' == c ||
+			'?' == c || '=' == c || '^' == c ||
+			':' == c || '$' == c || '{' == c ||
+			'}' == c || '(' == c || ')' == c ||
+			'[' == c || ']' == c || '|' == c ||
+			'\\' == c || '/' == c )
+			result+= '\\';
+
+		result+= c;
+	}
+
+	return result;
+}
+
+} /* namespace impl */
+
 //
 // options_t
 //
@@ -117,6 +172,62 @@ class options_t
 			return result;
 		}
 
+		options_t &
+		delimiters( std::string p ) &
+		{
+			m_delimiters = std::move( p );
+			return *this;
+		}
+
+		options_t &&
+		delimiters( std::string p ) &&
+		{
+			return std::move( this->delimiters( std::move( p ) ) );
+		}
+
+		const std::string &
+		delimiters() const
+		{
+			return m_delimiters;
+		}
+
+		options_t &
+		ends_with( std::vector< std::string > p ) &
+		{
+			m_ends_with = std::move( p );
+			return *this;
+		}
+
+		options_t &&
+		ends_with( std::vector< std::string > p ) &&
+		{
+			return std::move( this->ends_with( std::move( p ) ) );
+		}
+
+		const std::vector< std::string > &
+		ends_with() const
+		{
+			return m_ends_with;
+		}
+
+		std::string
+		make_ends_with() const
+		{
+			std::string result;
+
+			for( const auto e : m_ends_with )
+			{
+				if( !e.empty() )
+				{
+					result += impl::escape_string( e ) + "|";
+				}
+			}
+
+			result += "$";
+
+			return result;
+		}
+
 	private:
 		//! When true the route will be case sensitive.
 		bool m_sensitive{ false };
@@ -127,8 +238,14 @@ class options_t
 		//! When false the path will match at the beginning.
 		bool m_ending{ true };
 
-		//! Path delimeter.
+		//! Path delimiter.
 		std::string m_delimiter{ "/" };
+
+		//! Path delimiters.
+		std::string m_delimiters{ "./" };
+
+		//! Path delimiter.
+		std::vector< std::string > m_ends_with;
 };
 
 //
@@ -182,57 +299,8 @@ namespace impl
 
 //! The main path matching expression.
 constexpr auto path_regex_str =
-	R"((\\.)|([\/.])?(?:(?:\:(\w+)(?:\(((?:\\.|[^\\()])+)\))?|\(((?:\\.|[^\\()])+)\))([+*?])?|(\*)))";
-
-//
-// escape_group()
-//
-
-//! Escapes not allowed symbols in a sub-match group assigned to a parameter.
-inline auto
-escape_group( const std::string & group )
-{
-	std::string result;
-	result.reserve( group.size() + group.size() / 2 );
-
-	for( const char c : group )
-	{
-		if( '=' == c || '!' == c || ':' == c ||
-			'$' == c || '/' == c || '(' == c || ')' == c )
-			result+= '\\';
-
-		result+= c;
-	}
-
-	return result;
-}
-
-//
-// escape_string()
-//
-
-//! Excape regex control chars.
-inline auto
-escape_string( const std::string & group )
-{
-	std::string result;
-	result.reserve( group.size() + group.size() / 2 );
-
-	for( const char c : group )
-	{
-		if( '.' == c || '+' == c || '*' == c ||
-			'?' == c || '=' == c || '^' == c ||
-			':' == c || '$' == c || '{' == c ||
-			'}' == c || '(' == c || ')' == c ||
-			'[' == c || ']' == c || '|' == c ||
-			'\\' == c || '/' == c )
-			result+= '\\';
-
-		result+= c;
-	}
-
-	return result;
-}
+	// R"((\\.)|([\/.])?(?:(?:\:(\w+)(?:\(((?:\\.|[^\\()])+)\))?|\(((?:\\.|[^\\()])+)\))([+*?])?|(\*)))";
+	R"((\\.)|(?:\:(\w+)(?:\(((?:\\.|[^\\()])+)\))?|\(((?:\\.|[^\\()])+)\))([+*?])?)";
 
 //
 // token_t
@@ -252,6 +320,12 @@ class token_t
 		append_self_to(
 			std::string & route,
 			param_appender_sequence_t< Param_Container > & param_appender_sequence ) const = 0;
+
+		virtual bool
+		is_end_delimited( const std::string & ) const
+		{
+			return false;
+		}
 };
 
 template < typename Param_Container >
@@ -271,6 +345,7 @@ class plain_string_token_t final : public token_t< Param_Container >
 	public:
 		plain_string_token_t( const std::string & path )
 			:	m_escaped_path{ escape_string( path ) }
+			,	m_last_char{ path.back() }
 		{}
 
 		virtual void
@@ -281,9 +356,16 @@ class plain_string_token_t final : public token_t< Param_Container >
 			route += m_escaped_path;
 		}
 
+		virtual bool
+		is_end_delimited( const std::string & delimiters ) const override
+		{
+			return std::string::npos != delimiters.find( m_last_char );
+		}
+
 	private:
 		//! Already escaped piece of the route.
 		const std::string m_escaped_path;
+		const char m_last_char;
 };
 
 template < typename Param_Container >
@@ -398,15 +480,21 @@ create_token(
 }
 
 //! Indexes for different groups in matched result
-//! (used when extructing tokens from initial route).
+//! (used when extracting tokens from initial route).
 //! \{
 constexpr std::size_t group_escaped_idx = 1;
-constexpr std::size_t group_prefix_idx = 2;
-constexpr std::size_t group_name_idx = 3;
-constexpr std::size_t group_capture_idx = 4;
-constexpr std::size_t group_group_idx = 5;
-constexpr std::size_t group_modifier_idx = 6;
-constexpr std::size_t group_asterisk_idx = 7;
+constexpr std::size_t group_name_idx = 2;
+constexpr std::size_t group_capture_idx = 3;
+constexpr std::size_t group_group_idx = 4;
+constexpr std::size_t group_modifier_idx = 5;
+
+// constexpr std::size_t group_escaped_idx = 1;
+// constexpr std::size_t group_prefix_idx = 2;
+// constexpr std::size_t group_name_idx = 3;
+// constexpr std::size_t group_capture_idx = 4;
+// constexpr std::size_t group_group_idx = 5;
+// constexpr std::size_t group_modifier_idx = 6;
+// constexpr std::size_t group_asterisk_idx = 7;
 //! \}
 
 //
@@ -420,32 +508,51 @@ handle_param_token(
 	const options_t & options,
 	const MATCH & match,
 	std::string & path,
+	bool & path_escaped,
 	token_list_t< Param_Container > & result )
 {
-	// Add preceding path as a plain string token.
-	if( !path.empty() )
-		result.push_back( create_token< Param_Container >( std::move( path ) ) );
+	std::string prefix{ "" }; // prev in js code.
+	if( !path_escaped && !path.empty() )
+	{
+		const auto k = path.size() - 1;
 
-	std::string name{ match[ group_name_idx ].str() };
-	std::string prefix{ match[ group_prefix_idx ].str() };
-	std::string delimiter = options.make_delimiter( prefix );
-	const std::string modifier{ match[ group_modifier_idx ].str() };
-	const bool optional = modifier == "?" || modifier == "*";
-	const bool repeat = modifier == "+" || modifier == "*";
+		if( std::string::npos != options.delimiters().find( path[k] ) )
+		{
+			prefix = path.substr( k, 1 );
+			path = path.substr( 0, k );
+		}
+	}
+
+	// Push the current path onto the tokens.
+	if( !path.empty() )
+	{
+		result.push_back( create_token< Param_Container >( std::move( path ) ) );
+		path_escaped = false;
+	}
 
 	const auto next = match.suffix().str().substr( 0, 1 );
-	const bool partial = !prefix.empty() && !next.empty() && prefix != next;
-	const bool asterisk = !match[ group_asterisk_idx ].str().empty();
 
-	auto create_pattern = [ asterisk, delimiter ]( auto pattern ){
+	std::string name{ match[ group_name_idx ].str() };
+	// std::string prefix{ match[ group_prefix_idx ].str() };
+	const std::string modifier{ match[ group_modifier_idx ].str() };
+
+	const bool partial = !prefix.empty() && !next.empty() && prefix != next;
+
+	const bool optional = modifier == "?" || modifier == "*";
+	const bool repeat = modifier == "+" || modifier == "*";
+	std::string delimiter = options.make_delimiter( prefix );
+
+	// const bool asterisk = !match[ group_asterisk_idx ].str().empty();
+
+	auto create_pattern = [ /*asterisk, */ delimiter ]( auto pattern ){
 		if( !pattern.empty() )
 		{
 			pattern = escape_group( pattern );
 		}
-		else if( asterisk )
-		{
-			pattern = ".*";
-		}
+		// else if( asterisk )
+		// {
+		// 	pattern = ".*";
+		// }
 		else
 		{
 			pattern = "[^" + escape_string( delimiter ) + "]+?";
@@ -494,6 +601,7 @@ parse( const std::string & route_str, const options_t & options )
 
 	std::string path{};
 	std::regex main_path_regex{ path_regex_str };
+	bool path_escaped = false;
 
 	auto token_it =
 		std::sregex_iterator( route_str.begin(), route_str.end(), main_path_regex );
@@ -509,7 +617,7 @@ parse( const std::string & route_str, const options_t & options )
 	{
 		const auto & match = *token_it;
 
-		assert( 8 == match.size() );
+		assert( 6 == match.size() );
 
 		path += match.prefix();
 
@@ -517,12 +625,12 @@ parse( const std::string & route_str, const options_t & options )
 		if( !escaped.empty() )
 		{
 			assert( 2 == escaped.size() );
-
 			path += escaped[ 1 ];
+			path_escaped = true;
 		}
 		else
 		{
-			handle_param_token( options, match, path, result );
+			handle_param_token( options, match, path, path_escaped, result );
 		}
 
 		auto next_it = token_it;
@@ -580,31 +688,43 @@ tokens2regexp( const token_list_t< Param_Container > & tokens, const options_t &
 	}
 
 	const auto & delimiter = escape_string( options.delimiter() );
-	const bool ends_with_delimiter =
-		route.size() >= delimiter.size() &&
-		route.substr( route.size() - delimiter.size() ) == delimiter;
+	const auto & ends_with = options.make_ends_with();
+	// const bool ends_with_delimiter =
+	// 	route.size() >= delimiter.size() &&
+	// 	route.substr( route.size() - delimiter.size() ) == delimiter;
 
 	// In non-strict mode we allow a slash at the end of match. If the path to
 	// match already ends with a slash, we remove it for consistency. The slash
 	// is valid at the end of a path match, not in the middle. This is important
 	// in non-ending mode, where "/test/" shouldn't match "/test//route".
-	if( !options.strict() )
-	{
-		if( ends_with_delimiter )
-			route.resize( route.size() - delimiter.size() );
+	// if( !options.strict() )
+	// {
+	// 	if( ends_with_delimiter )
+	// 		route.resize( route.size() - delimiter.size() );
 
-		route += "(?:" + delimiter + "(?=$))?";
-	}
+	// 	route += "(?:" + delimiter + "(?=$))?";
+	// }
 
 	if( options.ending() )
 	{
-		route += '$';
+		if( !options.strict() )
+		{
+			route += "(?:" + delimiter + ")?";
+		}
+
+		if( ends_with == "$" )
+			route += '$';
+		else
+			route += "(?=" + ends_with + ")";
 	}
-	else if( !( options.strict() && ends_with_delimiter ) )
+	else
 	{
-		// In non-ending mode, we need the capturing groups to match as much as
-		// possible by using a positive lookahead to the end or next path segment.
-		route += "(?=" + delimiter + "|$)";
+		if( !options.strict() )
+			route += "(?:" + delimiter + "(?=" + ends_with + "))?";
+
+		if( !tokens.empty() &&
+			!tokens.back()->is_end_delimited( options.delimiters() ) )
+			route += "(?=" + delimiter + "|" + ends_with + ")";
 	}
 
 	// auto regex_flags = std::regex::ECMAScript;

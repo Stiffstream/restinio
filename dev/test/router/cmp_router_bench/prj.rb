@@ -11,4 +11,3 @@ MxxRu::Cpp::exe_target {
 	cpp_source( "route_parser.cpp" )
 	cpp_source( "main.cpp" )
 }
-

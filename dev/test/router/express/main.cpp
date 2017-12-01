@@ -18,7 +18,7 @@
 TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 {
 	auto mather_data =
-		path2regex::path2regex< route_params_t >(
+		path2regex::path2regex< route_params_t, regex_engine_t >(
 			"/foo/:bar",
 			path2regex::options_t{} );
 
