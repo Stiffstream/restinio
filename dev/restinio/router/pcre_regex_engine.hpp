@@ -80,9 +80,8 @@ class pcre_regex_wrapper_t
 	public:
 		pcre_regex_wrapper_t() = default;
 		pcre_regex_wrapper_t( const std::string & r, int options )
-			:	m_pcre_options{ options }
 		{
-			compile( r );
+			compile( r, options );
 		}
 
 		pcre_regex_wrapper_t( const pcre_regex_wrapper_t & ) = delete;
@@ -107,12 +106,6 @@ class pcre_regex_wrapper_t
 			}
 		}
 
-		auto
-		pcre_options() const
-		{
-			return m_pcre_options;
-		}
-
 		const pcre *
 		pcre_regex() const
 		{
@@ -120,16 +113,15 @@ class pcre_regex_wrapper_t
 		}
 
 	private:
-		int m_pcre_options;
 		pcre * m_route_regex{ nullptr };
 
 		void
-		compile( const std::string & r )
+		compile( const std::string & r, int options )
 		{
 			const char* compile_error;
 			int eoffset;
 
-			m_route_regex = pcre_compile( r.c_str(), m_pcre_options, &compile_error, &eoffset, NULL );
+			m_route_regex = pcre_compile( r.c_str(), options, &compile_error, &eoffset, NULL );
 			if( nullptr == m_route_regex )
 			{
 				throw std::runtime_error{
@@ -181,7 +173,7 @@ struct pcre_regex_engine_t
 				target.data(),
 				target.size(),
 				0, // startoffset
-				r.pcre_options(),
+				0, // options
 				match_results.m_submatches.data(),
 				match_results.m_submatches.size() );
 
