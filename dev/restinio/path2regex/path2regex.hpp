@@ -659,9 +659,11 @@ template < typename Param_Container, typename Regex_Engine >
 struct route_regex_matcher_data_t
 {
 	route_regex_matcher_data_t() = default;
-	route_regex_matcher_data_t( route_regex_matcher_data_t && ) = default;
+	route_regex_matcher_data_t( const route_regex_matcher_data_t & ) = delete;
+	const route_regex_matcher_data_t & operator = ( const route_regex_matcher_data_t & ) = delete;
 
-	// TODO: delete copy ctor/assign.
+	route_regex_matcher_data_t( route_regex_matcher_data_t && ) = default;
+	route_regex_matcher_data_t & operator = ( route_regex_matcher_data_t && ) = delete;
 
 	using regex_t = typename Regex_Engine::compiled_regex_t;
 

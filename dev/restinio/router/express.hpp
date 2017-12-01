@@ -144,21 +144,31 @@ class route_matcher_t
 					m_route_regex,
 					matches ) )
 			{
-				assert( m_param_appender_sequence.size() + 1 == matches.size() );
-
-				auto get_size = []( const auto & m ){ return m.second - m.first; };
+				assert( m_param_appender_sequence.size() + 1 >= matches.size() );
 
 				parameters.match(
 					Regex_Engine::start_str_piece( matches[0] ),
 					Regex_Engine::size_str_piece( matches[0] ) );
 
-				for( std::size_t i = 1; i < matches.size(); ++i )
+				// Std regex and pcre engines handle
+				// trailing groups with empty values differently.
+				// Std despite they are empty includes them in the list of match results;
+				// Pcre on the other hand does not.
+				// So the second for is for pushing empty values
+
+				std::size_t i = 1;
+				for( ; i < matches.size(); ++i )
 				{
 					const auto & m = matches[ i ];
 					m_param_appender_sequence[ i - 1](
 						parameters,
 						Regex_Engine::start_str_piece( m ),
 						Regex_Engine::size_str_piece( m ) );
+				}
+
+				for( ; i < m_param_appender_sequence.size() + 1; ++i )
+				{
+					m_param_appender_sequence[ i - 1 ]( parameters, "", 0 );
 				}
 
 				return true;
