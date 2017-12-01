@@ -22,6 +22,11 @@ namespace router
 	#define RESTINIO_PCRE_REGEX_INGINE_MAX_CAPTURE_GROUPS 20
 #endif
 
+//
+// pcre_match_results_wrapper_t
+//
+
+//! A wrapper class for working with pcre match results.
 struct pcre_match_results_wrapper_t
 {
 	struct matched_item_descriptor_t
@@ -42,6 +47,7 @@ struct pcre_match_results_wrapper_t
 	{
 		if( m_submatches[ 2 * i ] >= 0 )
 		{
+			// Submatch has non-empty value.
 			return matched_item_descriptor_t{
 					m_target + m_submatches[ 2 * i ],
 					static_cast< std::size_t >(
@@ -54,6 +60,10 @@ struct pcre_match_results_wrapper_t
 
 	std::size_t size() const { return m_size; }
 
+	//! The beginning of the matched string.
+	/*!
+		Used for creating matched_item_descriptor_t instances.
+	*/
 	const char * m_target;
 	std::size_t m_size{ 0 };
 	std::array< int, 3 * RESTINIO_PCRE_REGEX_INGINE_MAX_CAPTURE_GROUPS > m_submatches;

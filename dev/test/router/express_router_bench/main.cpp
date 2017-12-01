@@ -8,7 +8,15 @@
 
 #include <restinio/all.hpp>
 
-using router_t = restinio::router::express_router_t;
+#ifndef RESTINIO_EXPRESS_ROUTER_BENCH_APP_TITLE
+	#define RESTINIO_EXPRESS_ROUTER_BENCH_APP_TITLE "Express router benchmark"
+#endif
+
+#ifndef RESTINIO_EXPRESS_ROUTER_BENCH_REGEX_ENGINE
+	#define RESTINIO_EXPRESS_ROUTER_BENCH_REGEX_ENGINE restinio::router::std_regex_engine_t
+#endif
+
+using router_t = restinio::router::express_router_t< RESTINIO_EXPRESS_ROUTER_BENCH_REGEX_ENGINE >;
 
 struct app_args_t
 {
@@ -20,7 +28,7 @@ struct app_args_t
 
 	app_args_t( int argc, const char * argv[] )
 	{
-		args::ArgumentParser parser( "Express router benchmark", "" );
+		args::ArgumentParser parser( RESTINIO_EXPRESS_ROUTER_BENCH_APP_TITLE, "" );
 		args::HelpFlag help( parser, "Help", "Usage example", { 'h', "help" } );
 
 		args::ValueFlag< std::uint16_t > arg_port(

@@ -10,8 +10,6 @@
 
 #include "route_parser.hpp"
 
-using router_t = restinio::router::express_router_t;
-
 struct app_args_t
 {
 	bool m_help{ false };
