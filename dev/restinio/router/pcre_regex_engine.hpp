@@ -94,8 +94,13 @@ class pcre_regex_wrapper_t
 
 		pcre_regex_wrapper_t & operator = ( pcre_regex_wrapper_t && rw )
 		{
-			m_route_regex = rw.m_route_regex;
-			rw.m_route_regex = nullptr;
+			if( this != &rw )
+			{
+				m_route_regex = rw.m_route_regex;
+				rw.m_route_regex = nullptr;
+			}
+
+			return *this;
 		}
 
 		~pcre_regex_wrapper_t()
