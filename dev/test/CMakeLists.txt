@@ -14,7 +14,6 @@ add_subdirectory(router)
 add_subdirectory(encoders)
 add_subdirectory(websocket)
 
-find_package(OpenSSL)
 if ( OPENSSL_FOUND )
 	add_subdirectory(socket_options_tls)
 endif ()

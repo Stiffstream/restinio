@@ -28,11 +28,16 @@ add_definitions(-DRAPIDJSON_HAS_STDSTRING -DRAPIDJSON_HAS_CXX11_RVALUE_REFS)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-add_subdirectory(nodejs/http_parser)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
+find_package(OpenSSL)
+find_package(PCRE)
+
+add_subdirectory(nodejs/http_parser)
 
 enable_testing()
 add_subdirectory(test)
+
 if(WIN32)
 	configure_file(${CMAKE_SOURCE_DIR}/cmake/run_tests.bat ${CMAKE_BINARY_DIR} NEWLINE_STYLE WIN32)
 endif()

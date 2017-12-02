@@ -7,3 +7,5 @@ set(UNITTEST_SRCFILES
 	part5.cpp
 	main.cpp )
 include(${CMAKE_SOURCE_DIR}/cmake/unittest.cmake)
+
+target_link_libraries(${UNITTEST} ${PCRE_LIBRARIES})

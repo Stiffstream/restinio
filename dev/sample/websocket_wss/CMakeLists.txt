@@ -1,7 +1,5 @@
 set(SAMPLE sample.websocket_wss)
 
-find_package(OpenSSL)
-
 add_executable(${SAMPLE} main.cpp)
 target_link_libraries(${SAMPLE} nodejs_http_parser)
 
