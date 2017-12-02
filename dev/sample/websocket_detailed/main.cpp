@@ -13,7 +13,7 @@
 #include <restinio/websocket/websocket.hpp>
 
 namespace rr = restinio::router;
-using router_t = rr::express_router_t;
+using router_t = rr::express_router_t<>;
 
 namespace rws = restinio::websocket::basic;
 

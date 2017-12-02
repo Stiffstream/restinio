@@ -41,7 +41,7 @@ struct book_t
 using book_collection_t = std::vector< book_t >;
 
 namespace rr = restinio::router;
-using router_t = rr::express_router_t;
+using router_t = rr::express_router_t<>;
 
 class books_handler_t
 {

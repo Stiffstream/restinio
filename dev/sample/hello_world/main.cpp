@@ -21,7 +21,7 @@ init_resp( RESP resp )
 	return resp;
 };
 
-using router_t = restinio::router::express_router_t;
+using router_t = restinio::router::express_router_t<>;
 
 auto create_request_handler()
 {

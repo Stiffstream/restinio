@@ -23,7 +23,7 @@ init_resp( RESP resp )
 };
 
 namespace rr = restinio::router;
-using router_t = rr::express_router_t;
+using router_t = rr::express_router_t<>;
 
 auto server_handler()
 {
