@@ -2,6 +2,23 @@ require File.join( File.dirname(__FILE__), 'lib_finder.rb' )
 
 module RestinioPCREFind
 
+  def self.find_libs( libs )
+
+    lib_dirs = ENV[ "LIB" ]
+    if lib_dirs
+
+      dirs_to_look = lib_dirs.split( ';' ).select{|p| p != "" }
+
+      dir = dirs_to_look.find_index{|d| RestinioLibFinder.all_files_exist( d, libs ) }
+    end
+
+    if dir
+      dir
+    else
+      []
+    end
+  end
+
   def self.get_libs_vc
     RestinioLibFinder.find_libs( [ 'pcre.lib' ] )
   end
