@@ -1,6 +1,7 @@
 #!/usr/bin/ruby
 require 'mxx_ru/cpp'
 require 'restinio/openssl_find.rb'
+require 'restinio/pcre_find.rb'
 
 MxxRu::Cpp::composite_target {
 
@@ -40,9 +41,12 @@ MxxRu::Cpp::composite_target {
 	required_prj( "test/router/express/prj.ut.rb" )
 	required_prj( "test/router/express_router/prj.ut.rb" )
 	required_prj( "test/router/express_router_bench/prj.rb" )
-	required_prj( "test/router/express_pcre/prj.ut.rb" )
-	required_prj( "test/router/express_router_pcre/prj.ut.rb" )
-	required_prj( "test/router/express_router_pcre_bench/prj.rb" )
+
+	if RestinioPCREFind.has_pcre(toolset)
+		required_prj( "test/router/express_pcre/prj.ut.rb" )
+		required_prj( "test/router/express_router_pcre/prj.ut.rb" )
+		required_prj( "test/router/express_router_pcre_bench/prj.rb" )
+	end
 
 	required_prj( "test/router/cmp_router_bench/prj.rb" )
 	# ================================================================
