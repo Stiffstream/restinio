@@ -20,7 +20,7 @@ module RestinioPCREFind
   end
 
   def self.get_libs_vc
-    RestinioLibFinder.find_libs( [ 'pcre.lib' ] )
+    find_libs( [ 'pcre.lib' ] )
   end
 
   def self.get_libs_linux
