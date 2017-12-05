@@ -32,6 +32,11 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 find_package(OpenSSL)
 find_package(PCRE)
+find_package(PCRE2)
+IF(PCRE2_FOUND)
+  add_definitions(-DPCRE2_STATIC)
+  add_definitions(-DPCRE2_CODE_UNIT_WIDTH=8)
+ENDIF(PCRE2_FOUND)
 
 add_subdirectory(nodejs/http_parser)
 
