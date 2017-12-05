@@ -18,8 +18,8 @@ namespace router
 {
 
 // Max itemes that can be captured be pcre engine.
-#ifndef RESTINIO_PCRE_REGEX_INGINE_MAX_CAPTURE_GROUPS
-	#define RESTINIO_PCRE_REGEX_INGINE_MAX_CAPTURE_GROUPS 20
+#ifndef RESTINIO_PCRE_REGEX_ENGINE_MAX_CAPTURE_GROUPS
+	#define RESTINIO_PCRE_REGEX_ENGINE_MAX_CAPTURE_GROUPS 20
 #endif
 
 //
@@ -66,7 +66,7 @@ struct pcre_match_results_wrapper_t
 	*/
 	const char * m_target;
 	std::size_t m_size{ 0 };
-	std::array< int, 3 * RESTINIO_PCRE_REGEX_INGINE_MAX_CAPTURE_GROUPS > m_submatches;
+	std::array< int, 3 * RESTINIO_PCRE_REGEX_ENGINE_MAX_CAPTURE_GROUPS > m_submatches;
 };
 
 
