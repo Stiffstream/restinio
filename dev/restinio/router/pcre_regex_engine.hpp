@@ -23,9 +23,7 @@ namespace pcre_details
 {
 
 // Max itemes that can be captured be pcre engine.
-#ifndef RESTINIO_PCRE_REGEX_ENGINE_MAX_CAPTURE_GROUPS
-	#define RESTINIO_PCRE_REGEX_ENGINE_MAX_CAPTURE_GROUPS 20
-#endif
+constexpr std::size_t max_capture_groups = 20;
 
 //
 // match_results_t
@@ -71,7 +69,7 @@ struct match_results_t final
 	*/
 	const char * m_target;
 	std::size_t m_size{ 0 };
-	std::array< int, 3 * RESTINIO_PCRE_REGEX_ENGINE_MAX_CAPTURE_GROUPS > m_submatches;
+	std::array< int, 3 * max_capture_groups > m_submatches;
 };
 
 

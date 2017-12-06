@@ -24,10 +24,8 @@ namespace router
 namespace pcre2_details
 {
 
-// Max itemes that can be captured be pcre engine.
-#ifndef RESTINIO_PCRE2_REGEX_ENGINE_MAX_CAPTURE_GROUPS
-	#define RESTINIO_PCRE2_REGEX_ENGINE_MAX_CAPTURE_GROUPS 20
-#endif
+// Max itemes that can be captured be pcre2 engine.
+constexpr std::size_t max_capture_groups = 20;
 
 //
 // match_results_t
@@ -38,9 +36,7 @@ struct match_results_t final
 {
 	match_results_t()
 	{
-		m_match_data = pcre2_match_data_create(
-			RESTINIO_PCRE2_REGEX_ENGINE_MAX_CAPTURE_GROUPS,
-			nullptr );
+		m_match_data = pcre2_match_data_create( max_capture_groups, nullptr );
 	}
 
 	~match_results_t()
