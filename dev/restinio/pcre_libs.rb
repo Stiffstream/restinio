@@ -8,7 +8,8 @@ MxxRu::Cpp::lib_collection_target {
   if File.exist?( custom_local_pcre_prj )
     required_prj custom_local_pcre_prj
   else
-    RestinioPCREFind.get_libs( toolset ).each{|l| lib(l)}
+    define( "PCRE2_STATIC", Mxx_ru::Cpp::Target::OPT_UPSPREAD )
+    RestinioPCREFind.get_libs( toolset ).each{|l| lib_static(l)}
   end
 }
 

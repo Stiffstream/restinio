@@ -11,6 +11,8 @@
 #include <pcre.h>
 #include <fmt/format.h>
 
+#include <restinio/exception.hpp>
+
 namespace restinio
 {
 
@@ -130,7 +132,7 @@ class pcre_regex_wrapper_t
 			if( nullptr == m_route_regex )
 			{
 				throw std::runtime_error{
-						fmt::format("unable to compile regex: {}", compile_error ) };
+						fmt::format("unable to compile regex \"{}\": {}", r, compile_error ) };
 			}
 		}
 };

@@ -13,7 +13,7 @@ module RestinioPCRE2Find
     end
 
     if dir
-      dir
+      libs
     else
       []
     end

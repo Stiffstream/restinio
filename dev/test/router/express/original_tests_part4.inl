@@ -260,12 +260,13 @@
 
 	// Test #73
 	{
+		// MANUAL FIX for pcre: [\w-.] is not strictly valid, so use [\w\-.] instead.
 		// "/:remote([\\w-.]+)/:user([\\w-]+)"
 		// null
 		// [["/endpoint/user",["/endpoint/user","endpoint","user"]],["/endpoint/user-name",["/endpoint/user-name","endpoint","user-name"]],["/foo.bar/user-name",["/foo.bar/user-name","foo.bar","user-name"]]]
 		auto matcher_data =
 			path2regex::path2regex< route_params_t, regex_engine_t >(
-				R"route(/:remote([\w-.]+)/:user([\w-]+))route",
+				R"route(/:remote([\w\-.]+)/:user([\w-]+))route",
 				path2regex::options_t{} );
 
 		route_matcher_t

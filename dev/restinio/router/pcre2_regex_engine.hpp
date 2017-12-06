@@ -8,10 +8,12 @@
 
 #pragma once
 
-// #define PCRE2_CODE_UNIT_WIDTH 8
+#include <array>
 
 #include <pcre2.h>
 #include <fmt/format.h>
+
+#include <restinio/exception.hpp>
 
 namespace restinio
 {
@@ -152,9 +154,12 @@ class pcre2_regex_wrapper_t
 			if( nullptr == m_route_regex )
 			{
 				std::array< unsigned char, 256 > buffer;
-				(void)pcre2_get_error_message(errorcode, buffer.data(), buffer.size() );
-				throw std::runtime_error{
-						fmt::format("unable to compile regex: {}", (char*)buffer.data() ) };
+				(void)pcre2_get_error_message( errorcode, buffer.data(), buffer.size() );
+				throw exception_t{
+						fmt::format( 
+							"unable to compile regex \"{}\": {}", 
+							r, 
+							reinterpret_cast< const char * >( buffer.data() ) ) };
 			}
 		}
 };
