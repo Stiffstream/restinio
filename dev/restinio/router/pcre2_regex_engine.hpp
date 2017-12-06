@@ -21,37 +21,40 @@ namespace restinio
 namespace router
 {
 
+namespace pcre2_details
+{
+
 // Max itemes that can be captured be pcre engine.
 #ifndef RESTINIO_PCRE2_REGEX_ENGINE_MAX_CAPTURE_GROUPS
 	#define RESTINIO_PCRE2_REGEX_ENGINE_MAX_CAPTURE_GROUPS 20
 #endif
 
 //
-// pcre2_match_results_wrapper_t
+// match_results_t
 //
 
 //! A wrapper class for working with pcre match results.
-struct pcre2_match_results_wrapper_t final
+struct match_results_t final
 {
-	pcre2_match_results_wrapper_t()
+	match_results_t()
 	{
 		m_match_data = pcre2_match_data_create(
 			RESTINIO_PCRE2_REGEX_ENGINE_MAX_CAPTURE_GROUPS,
 			nullptr );
 	}
 
-	~pcre2_match_results_wrapper_t()
+	~match_results_t()
 	{
 		if( nullptr != m_match_data )
 			pcre2_match_data_free( m_match_data );
 	}
 
-	pcre2_match_results_wrapper_t( const pcre2_match_results_wrapper_t & ) = delete;
-	pcre2_match_results_wrapper_t( pcre2_match_results_wrapper_t && ) = delete;
-	const pcre2_match_results_wrapper_t & operator = ( const pcre2_match_results_wrapper_t & ) = delete;
-	pcre2_match_results_wrapper_t & operator = ( pcre2_match_results_wrapper_t && ) = delete;
+	match_results_t( const match_results_t & ) = delete;
+	match_results_t( match_results_t && ) = delete;
+	const match_results_t & operator = ( const match_results_t & ) = delete;
+	match_results_t & operator = ( match_results_t && ) = delete;
 
-	struct matched_item_descriptor_t
+	struct matched_item_descriptor_t final
 	{
 		matched_item_descriptor_t(
 			const char * str,
@@ -88,28 +91,28 @@ struct pcre2_match_results_wrapper_t final
 };
 
 //
-// pcre2_regex_wrapper_t
+// regex_t
 //
 
 //! A wrapper for using pcre regexes in express_router.
-class pcre2_regex_wrapper_t
+class regex_t final
 {
 	public:
-		pcre2_regex_wrapper_t() = default;
-		pcre2_regex_wrapper_t( const std::string & r, int options )
+		regex_t() = default;
+		regex_t( const std::string & r, int options )
 		{
 			compile( r, options );
 		}
 
-		pcre2_regex_wrapper_t( const pcre2_regex_wrapper_t & ) = delete;
-		const pcre2_regex_wrapper_t & operator = ( const pcre2_regex_wrapper_t & ) = delete;
+		regex_t( const regex_t & ) = delete;
+		const regex_t & operator = ( const regex_t & ) = delete;
 
-		pcre2_regex_wrapper_t( pcre2_regex_wrapper_t && rw )
+		regex_t( regex_t && rw )
 		{
 			(*this) = std::move( rw );
 		}
 
-		pcre2_regex_wrapper_t & operator = ( pcre2_regex_wrapper_t && rw )
+		regex_t & operator = ( regex_t && rw )
 		{
 			if( this != &rw )
 			{
@@ -120,7 +123,7 @@ class pcre2_regex_wrapper_t
 			return *this;
 		}
 
-		~pcre2_regex_wrapper_t()
+		~regex_t()
 		{
 			if( nullptr != m_route_regex )
 			{
@@ -144,25 +147,27 @@ class pcre2_regex_wrapper_t
 			int errorcode;
 
 			m_route_regex = pcre2_compile(
-				(const unsigned char*)r.data(),
+				reinterpret_cast< const unsigned char*>( r.data() ),
 				r.size(),
 				options,
 				&errorcode,
 				&erroroffset,
-				NULL );
+				nullptr );
 
 			if( nullptr == m_route_regex )
 			{
 				std::array< unsigned char, 256 > buffer;
 				(void)pcre2_get_error_message( errorcode, buffer.data(), buffer.size() );
 				throw exception_t{
-						fmt::format( 
-							"unable to compile regex \"{}\": {}", 
-							r, 
+						fmt::format(
+							"unable to compile regex \"{}\": {}",
+							r,
 							reinterpret_cast< const char * >( buffer.data() ) ) };
 			}
 		}
 };
+
+} /* namespace pcre2_details */
 
 //
 // pcre2_regex_engine_t
@@ -171,8 +176,8 @@ class pcre2_regex_wrapper_t
 //! Regex engine implementation for using with standard regex implementation.
 struct pcre2_regex_engine_t
 {
-	using compiled_regex_t = pcre2_regex_wrapper_t;
-	using match_results_t = pcre2_match_results_wrapper_t;
+	using compiled_regex_t = pcre2_details::regex_t;
+	using match_results_t = pcre2_details::match_results_t;
 	using matched_item_descriptor_t = match_results_t::matched_item_descriptor_t;
 
 	//! Create compiled regex object for a given route.

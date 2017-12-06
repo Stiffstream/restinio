@@ -19,19 +19,22 @@ namespace restinio
 namespace router
 {
 
+namespace pcre_details
+{
+
 // Max itemes that can be captured be pcre engine.
 #ifndef RESTINIO_PCRE_REGEX_ENGINE_MAX_CAPTURE_GROUPS
 	#define RESTINIO_PCRE_REGEX_ENGINE_MAX_CAPTURE_GROUPS 20
 #endif
 
 //
-// pcre_match_results_wrapper_t
+// match_results_t
 //
 
 //! A wrapper class for working with pcre match results.
-struct pcre_match_results_wrapper_t
+struct match_results_t final
 {
-	struct matched_item_descriptor_t
+	struct matched_item_descriptor_t final
 	{
 		matched_item_descriptor_t(
 			const char * str,
@@ -73,28 +76,28 @@ struct pcre_match_results_wrapper_t
 
 
 //
-// pcre_regex_wrapper_t
+// regex_t
 //
 
 //! A wrapper for using pcre regexes in express_router.
-class pcre_regex_wrapper_t
+class regex_t final
 {
 	public:
-		pcre_regex_wrapper_t() = default;
-		pcre_regex_wrapper_t( const std::string & r, int options )
+		regex_t() = default;
+		regex_t( const std::string & r, int options )
 		{
 			compile( r, options );
 		}
 
-		pcre_regex_wrapper_t( const pcre_regex_wrapper_t & ) = delete;
-		const pcre_regex_wrapper_t & operator = ( const pcre_regex_wrapper_t & ) = delete;
+		regex_t( const regex_t & ) = delete;
+		const regex_t & operator = ( const regex_t & ) = delete;
 
-		pcre_regex_wrapper_t( pcre_regex_wrapper_t && rw )
+		regex_t( regex_t && rw )
 		{
 			(*this) = std::move( rw );
 		}
 
-		pcre_regex_wrapper_t & operator = ( pcre_regex_wrapper_t && rw )
+		regex_t & operator = ( regex_t && rw )
 		{
 			if( this != &rw )
 			{
@@ -105,7 +108,7 @@ class pcre_regex_wrapper_t
 			return *this;
 		}
 
-		~pcre_regex_wrapper_t()
+		~regex_t()
 		{
 			if( nullptr != m_route_regex )
 			{
@@ -132,10 +135,15 @@ class pcre_regex_wrapper_t
 			if( nullptr == m_route_regex )
 			{
 				throw std::runtime_error{
-						fmt::format("unable to compile regex \"{}\": {}", r, compile_error ) };
+						fmt::format(
+							"unable to compile regex \"{}\": {}",
+							r,
+							compile_error ) };
 			}
 		}
 };
+
+} /* namespace pcre_details */
 
 //
 // pcre_regex_engine_t
@@ -144,8 +152,8 @@ class pcre_regex_wrapper_t
 //! Regex engine implementation for using with standard regex implementation.
 struct pcre_regex_engine_t
 {
-	using compiled_regex_t = pcre_regex_wrapper_t;
-	using match_results_t = pcre_match_results_wrapper_t;
+	using compiled_regex_t = pcre_details::regex_t;
+	using match_results_t = pcre_details::match_results_t;
 	using matched_item_descriptor_t = match_results_t::matched_item_descriptor_t;
 
 	//! Create compiled regex object for a given route.
