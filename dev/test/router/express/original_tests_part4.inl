@@ -1,628 +1,639 @@
-	// Test #67
+
+// Test #60 skipped
+// "/(.*)/"
+// null
+// [["/match/anything",["/match/anything","/match/anything"]]]
+
+// Test #61 skipped
+// "/\\/(\\d+)/"
+// null
+// [["/abc",null],["/123",["/123","123"]]]
+
+// Test #62 skipped
+// "/test,/\\/(\\d+)/"
+// null
+// [["/test",["/test",null]]]
+
+// Test #63 skipped
+// "/:test(\\d+),/(.*)/"
+// null
+// [["/123",["/123","123",null]],["/abc",["/abc",null,"/abc"]]]
+
+// Test #64 skipped
+// "/:test,/route/:test"
+// null
+// [["/test",["/test","test",null]],["/route/test",["/route/test",null,"test"]]]
+
+// Test #65 skipped
+// "/^\\/([^\\/]+)$/,/^\\/route\\/([^\\/]+)$/"
+// null
+// [["/test",["/test","test",null]],["/route/test",["/route/test",null,"test"]]]
+
+// Test #66 skipped
+// "/(?:.*)/"
+// null
+// [["/anything/you/want",["/anything/you/want"]]]
+
+// "/\\(testing\\)"
+// null
+// [["/testing",null],["/(testing)",["/(testing)"]]]
+TEST_CASE( "Original tests #67", "[path2regex][original][generated][n67]")
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			R"route(/\(testing\))route",
+			path2regex::options_t{} );
+
+	route_matcher_t
+		rm{
+			http_method_t::http_get,
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
+
 	{
-		// "/\\(testing\\)"
-		// null
-		// [["/testing",null],["/(testing)",["/(testing)"]]]
-		auto matcher_data =
-			path2regex::path2regex< route_params_t, regex_engine_t >(
-				R"route(/\(testing\))route",
-				path2regex::options_t{} );
-
-		route_matcher_t
-			rm{
-				http_method_t::http_get,
-				std::move( matcher_data.m_regex ),
-				std::move( matcher_data.m_param_appender_sequence ) };
-
 		route_params_t params;
+
 		REQUIRE_FALSE( rm.match_route( R"target(/testing)target", params ) );
-
-		{
-			params.reset();
-
-			REQUIRE( rm.match_route( R"target(/(testing))target", params ) );
-			REQUIRE( params.match() == R"match(/(testing))match" );
-
-			const auto & nps = params.named_parameters();
-			REQUIRE( nps.empty() );
-
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( ips.empty() );
-		}
-
 	}
 
-
-	// Test #68
 	{
-		// "/.+*?=^!:${}[]|"
-		// null
-		// [["/.+*?=^!:${}[]|",["/.+*?=^!:${}[]|"]]]
-		auto matcher_data =
-			path2regex::path2regex< route_params_t, regex_engine_t >(
-				R"route(/.+*?=^!:${}[]|)route",
-				path2regex::options_t{} );
-
-		route_matcher_t
-			rm{
-				http_method_t::http_get,
-				std::move( matcher_data.m_regex ),
-				std::move( matcher_data.m_param_appender_sequence ) };
-
 		route_params_t params;
-		{
-			params.reset();
 
-			REQUIRE( rm.match_route( R"target(/.+*?=^!:${}[]|)target", params ) );
-			REQUIRE( params.match() == R"match(/.+*?=^!:${}[]|)match" );
+		REQUIRE( rm.match_route( R"target(/(testing))target", params ) );
+		REQUIRE( params.match() == R"match(/(testing))match" );
 
-			const auto & nps = params.named_parameters();
-			REQUIRE( nps.empty() );
+		const auto & nps = params.named_parameters();
+		REQUIRE( nps.empty() );
 
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( ips.empty() );
-		}
-
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( ips.empty() );
 	}
 
+}
 
-	// Test #69
+// "/.+*?=^!:${}[]|"
+// null
+// [["/.+*?=^!:${}[]|",["/.+*?=^!:${}[]|"]]]
+TEST_CASE( "Original tests #68", "[path2regex][original][generated][n68]")
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			R"route(/.+*?=^!:${}[]|)route",
+			path2regex::options_t{} );
+
+	route_matcher_t
+		rm{
+			http_method_t::http_get,
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
+
 	{
-		// "/test\\/:uid(u\\d+)?:cid(c\\d+)?"
-		// null
-		// [["/test",null],["/test/",["/test/",null,null]],["/test/u123",["/test/u123","u123",null]],["/test/c123",["/test/c123",null,"c123"]]]
-		auto matcher_data =
-			path2regex::path2regex< route_params_t, regex_engine_t >(
-				R"route(/test\/:uid(u\d+)?:cid(c\d+)?)route",
-				path2regex::options_t{} );
-
-		route_matcher_t
-			rm{
-				http_method_t::http_get,
-				std::move( matcher_data.m_regex ),
-				std::move( matcher_data.m_param_appender_sequence ) };
-
 		route_params_t params;
+
+		REQUIRE( rm.match_route( R"target(/.+*?=^!:${}[]|)target", params ) );
+		REQUIRE( params.match() == R"match(/.+*?=^!:${}[]|)match" );
+
+		const auto & nps = params.named_parameters();
+		REQUIRE( nps.empty() );
+
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( ips.empty() );
+	}
+
+}
+
+// "/test\\/:uid(u\\d+)?:cid(c\\d+)?"
+// null
+// [["/test",null],["/test/",["/test/",null,null]],["/test/u123",["/test/u123","u123",null]],["/test/c123",["/test/c123",null,"c123"]]]
+TEST_CASE( "Original tests #69", "[path2regex][original][generated][n69]")
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			R"route(/test\/:uid(u\d+)?:cid(c\d+)?)route",
+			path2regex::options_t{} );
+
+	route_matcher_t
+		rm{
+			http_method_t::http_get,
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
+
+	{
+		route_params_t params;
+
 		REQUIRE_FALSE( rm.match_route( R"target(/test)target", params ) );
-
-		{
-			params.reset();
-
-			REQUIRE( rm.match_route( R"target(/test/)target", params ) );
-			REQUIRE( params.match() == R"match(/test/)match" );
-
-			const auto & nps = params.named_parameters();
-			REQUIRE( 2 == nps.size() );
-
-			REQUIRE( nps.count( "uid" ) > 0 );
-			REQUIRE( nps.at( "uid" ) == R"value()value" );
-
-			REQUIRE( nps.count( "cid" ) > 0 );
-			REQUIRE( nps.at( "cid" ) == R"value()value" );
-
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( ips.empty() );
-		}
-
-		{
-			params.reset();
-
-			REQUIRE( rm.match_route( R"target(/test/u123)target", params ) );
-			REQUIRE( params.match() == R"match(/test/u123)match" );
-
-			const auto & nps = params.named_parameters();
-			REQUIRE( 2 == nps.size() );
-
-			REQUIRE( nps.count( "uid" ) > 0 );
-			REQUIRE( nps.at( "uid" ) == R"value(u123)value" );
-
-			REQUIRE( nps.count( "cid" ) > 0 );
-			REQUIRE( nps.at( "cid" ) == R"value()value" );
-
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( ips.empty() );
-		}
-
-		{
-			params.reset();
-
-			REQUIRE( rm.match_route( R"target(/test/c123)target", params ) );
-			REQUIRE( params.match() == R"match(/test/c123)match" );
-
-			const auto & nps = params.named_parameters();
-			REQUIRE( 2 == nps.size() );
-
-			REQUIRE( nps.count( "uid" ) > 0 );
-			REQUIRE( nps.at( "uid" ) == R"value()value" );
-
-			REQUIRE( nps.count( "cid" ) > 0 );
-			REQUIRE( nps.at( "cid" ) == R"value(c123)value" );
-
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( ips.empty() );
-		}
-
 	}
 
-
-	// Test #70
 	{
-		// "/(apple-)?icon-:res(\\d+).png"
-		// null
-		// [["/icon-240.png",["/icon-240.png",null,"240"]],["/apple-icon-240.png",["/apple-icon-240.png","apple-","240"]]]
-		auto matcher_data =
-			path2regex::path2regex< route_params_t, regex_engine_t >(
-				R"route(/(apple-)?icon-:res(\d+).png)route",
-				path2regex::options_t{} );
-
-		route_matcher_t
-			rm{
-				http_method_t::http_get,
-				std::move( matcher_data.m_regex ),
-				std::move( matcher_data.m_param_appender_sequence ) };
-
 		route_params_t params;
-		{
-			params.reset();
 
-			REQUIRE( rm.match_route( R"target(/icon-240.png)target", params ) );
-			REQUIRE( params.match() == R"match(/icon-240.png)match" );
+		REQUIRE( rm.match_route( R"target(/test/)target", params ) );
+		REQUIRE( params.match() == R"match(/test/)match" );
 
-			const auto & nps = params.named_parameters();
-			REQUIRE( 1 == nps.size() );
+		const auto & nps = params.named_parameters();
+		REQUIRE( 2 == nps.size() );
+		REQUIRE( nps[0].first == R"key(uid)key" );
+		REQUIRE( nps[0].second == R"value()value" );
+		REQUIRE( nps[1].first == R"key(cid)key" );
+		REQUIRE( nps[1].second == R"value()value" );
 
-			REQUIRE( nps.count( "res" ) > 0 );
-			REQUIRE( nps.at( "res" ) == R"value(240)value" );
-
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( 1 == ips.size() );
-			REQUIRE( ips.at( 0 ) == R"value()value" );
-		}
-
-		{
-			params.reset();
-
-			REQUIRE( rm.match_route( R"target(/apple-icon-240.png)target", params ) );
-			REQUIRE( params.match() == R"match(/apple-icon-240.png)match" );
-
-			const auto & nps = params.named_parameters();
-			REQUIRE( 1 == nps.size() );
-
-			REQUIRE( nps.count( "res" ) > 0 );
-			REQUIRE( nps.at( "res" ) == R"value(240)value" );
-
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( 1 == ips.size() );
-			REQUIRE( ips.at( 0 ) == R"value(apple-)value" );
-		}
-
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( ips.empty() );
 	}
 
-
-	// Test #71
 	{
-		// "/:foo/:bar"
-		// null
-		// [["/match/route",["/match/route","match","route"]]]
-		auto matcher_data =
-			path2regex::path2regex< route_params_t, regex_engine_t >(
-				R"route(/:foo/:bar)route",
-				path2regex::options_t{} );
-
-		route_matcher_t
-			rm{
-				http_method_t::http_get,
-				std::move( matcher_data.m_regex ),
-				std::move( matcher_data.m_param_appender_sequence ) };
-
 		route_params_t params;
-		{
-			params.reset();
 
-			REQUIRE( rm.match_route( R"target(/match/route)target", params ) );
-			REQUIRE( params.match() == R"match(/match/route)match" );
+		REQUIRE( rm.match_route( R"target(/test/u123)target", params ) );
+		REQUIRE( params.match() == R"match(/test/u123)match" );
 
-			const auto & nps = params.named_parameters();
-			REQUIRE( 2 == nps.size() );
+		const auto & nps = params.named_parameters();
+		REQUIRE( 2 == nps.size() );
+		REQUIRE( nps[0].first == R"key(uid)key" );
+		REQUIRE( nps[0].second == R"value(u123)value" );
+		REQUIRE( nps[1].first == R"key(cid)key" );
+		REQUIRE( nps[1].second == R"value()value" );
 
-			REQUIRE( nps.count( "foo" ) > 0 );
-			REQUIRE( nps.at( "foo" ) == R"value(match)value" );
-
-			REQUIRE( nps.count( "bar" ) > 0 );
-			REQUIRE( nps.at( "bar" ) == R"value(route)value" );
-
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( ips.empty() );
-		}
-
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( ips.empty() );
 	}
 
-
-	// Test #72
 	{
-		// "/:foo(test\\)/bar"
-		// null
-		// []
-		auto matcher_data =
-			path2regex::path2regex< route_params_t, regex_engine_t >(
-				R"route(/:foo(test\)/bar)route",
-				path2regex::options_t{} );
-
-		route_matcher_t
-			rm{
-				http_method_t::http_get,
-				std::move( matcher_data.m_regex ),
-				std::move( matcher_data.m_param_appender_sequence ) };
-
 		route_params_t params;
+
+		REQUIRE( rm.match_route( R"target(/test/c123)target", params ) );
+		REQUIRE( params.match() == R"match(/test/c123)match" );
+
+		const auto & nps = params.named_parameters();
+		REQUIRE( 2 == nps.size() );
+		REQUIRE( nps[0].first == R"key(uid)key" );
+		REQUIRE( nps[0].second == R"value()value" );
+		REQUIRE( nps[1].first == R"key(cid)key" );
+		REQUIRE( nps[1].second == R"value(c123)value" );
+
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( ips.empty() );
 	}
 
+}
 
-	// Test #73
+// "/(apple-)?icon-:res(\\d+).png"
+// null
+// [["/icon-240.png",["/icon-240.png",null,"240"]],["/apple-icon-240.png",["/apple-icon-240.png","apple-","240"]]]
+TEST_CASE( "Original tests #70", "[path2regex][original][generated][n70]")
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			R"route(/(apple-)?icon-:res(\d+).png)route",
+			path2regex::options_t{} );
+
+	route_matcher_t
+		rm{
+			http_method_t::http_get,
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
+
 	{
-		// MANUAL FIX for pcre: [\w-.] is not strictly valid, so use [\w\-.] instead.
-		// "/:remote([\\w-.]+)/:user([\\w-]+)"
-		// null
-		// [["/endpoint/user",["/endpoint/user","endpoint","user"]],["/endpoint/user-name",["/endpoint/user-name","endpoint","user-name"]],["/foo.bar/user-name",["/foo.bar/user-name","foo.bar","user-name"]]]
-		auto matcher_data =
-			path2regex::path2regex< route_params_t, regex_engine_t >(
-				R"route(/:remote([\w\-.]+)/:user([\w-]+))route",
-				path2regex::options_t{} );
-
-		route_matcher_t
-			rm{
-				http_method_t::http_get,
-				std::move( matcher_data.m_regex ),
-				std::move( matcher_data.m_param_appender_sequence ) };
-
 		route_params_t params;
-		{
-			params.reset();
 
-			REQUIRE( rm.match_route( R"target(/endpoint/user)target", params ) );
-			REQUIRE( params.match() == R"match(/endpoint/user)match" );
+		REQUIRE( rm.match_route( R"target(/icon-240.png)target", params ) );
+		REQUIRE( params.match() == R"match(/icon-240.png)match" );
 
-			const auto & nps = params.named_parameters();
-			REQUIRE( 2 == nps.size() );
+		const auto & nps = params.named_parameters();
+		REQUIRE( 1 == nps.size() );
+		REQUIRE( nps[0].first == R"key(res)key" );
+		REQUIRE( nps[0].second == R"value(240)value" );
 
-			REQUIRE( nps.count( "remote" ) > 0 );
-			REQUIRE( nps.at( "remote" ) == R"value(endpoint)value" );
-
-			REQUIRE( nps.count( "user" ) > 0 );
-			REQUIRE( nps.at( "user" ) == R"value(user)value" );
-
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( ips.empty() );
-		}
-
-		{
-			params.reset();
-
-			REQUIRE( rm.match_route( R"target(/endpoint/user-name)target", params ) );
-			REQUIRE( params.match() == R"match(/endpoint/user-name)match" );
-
-			const auto & nps = params.named_parameters();
-			REQUIRE( 2 == nps.size() );
-
-			REQUIRE( nps.count( "remote" ) > 0 );
-			REQUIRE( nps.at( "remote" ) == R"value(endpoint)value" );
-
-			REQUIRE( nps.count( "user" ) > 0 );
-			REQUIRE( nps.at( "user" ) == R"value(user-name)value" );
-
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( ips.empty() );
-		}
-
-		{
-			params.reset();
-
-			REQUIRE( rm.match_route( R"target(/foo.bar/user-name)target", params ) );
-			REQUIRE( params.match() == R"match(/foo.bar/user-name)match" );
-
-			const auto & nps = params.named_parameters();
-			REQUIRE( 2 == nps.size() );
-
-			REQUIRE( nps.count( "remote" ) > 0 );
-			REQUIRE( nps.at( "remote" ) == R"value(foo.bar)value" );
-
-			REQUIRE( nps.count( "user" ) > 0 );
-			REQUIRE( nps.at( "user" ) == R"value(user-name)value" );
-
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( ips.empty() );
-		}
-
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( 1 == ips.size() );
+		REQUIRE( ips.at( 0 ) == R"value()value" );
 	}
 
-
-	// Test #74
 	{
-		// "/:foo\\?"
-		// null
-		// [["/route?",["/route?","route"]]]
-		auto matcher_data =
-			path2regex::path2regex< route_params_t, regex_engine_t >(
-				R"route(/:foo\?)route",
-				path2regex::options_t{} );
-
-		route_matcher_t
-			rm{
-				http_method_t::http_get,
-				std::move( matcher_data.m_regex ),
-				std::move( matcher_data.m_param_appender_sequence ) };
-
 		route_params_t params;
-		{
-			params.reset();
 
-			REQUIRE( rm.match_route( R"target(/route?)target", params ) );
-			REQUIRE( params.match() == R"match(/route?)match" );
+		REQUIRE( rm.match_route( R"target(/apple-icon-240.png)target", params ) );
+		REQUIRE( params.match() == R"match(/apple-icon-240.png)match" );
 
-			const auto & nps = params.named_parameters();
-			REQUIRE( 1 == nps.size() );
+		const auto & nps = params.named_parameters();
+		REQUIRE( 1 == nps.size() );
+		REQUIRE( nps[0].first == R"key(res)key" );
+		REQUIRE( nps[0].second == R"value(240)value" );
 
-			REQUIRE( nps.count( "foo" ) > 0 );
-			REQUIRE( nps.at( "foo" ) == R"value(route)value" );
-
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( ips.empty() );
-		}
-
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( 1 == ips.size() );
+		REQUIRE( ips.at( 0 ) == R"value(apple-)value" );
 	}
 
+}
 
-	// Test #75
+// "/:foo/:bar"
+// null
+// [["/match/route",["/match/route","match","route"]]]
+TEST_CASE( "Original tests #71", "[path2regex][original][generated][n71]")
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			R"route(/:foo/:bar)route",
+			path2regex::options_t{} );
+
+	route_matcher_t
+		rm{
+			http_method_t::http_get,
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
+
 	{
-		// "/:foo+baz"
-		// null
-		// [["/foobaz",["/foobaz","foo"]],["/foo/barbaz",["/foo/barbaz","foo/bar"]],["/baz",null]]
-		auto matcher_data =
-			path2regex::path2regex< route_params_t, regex_engine_t >(
-				R"route(/:foo+baz)route",
-				path2regex::options_t{} );
-
-		route_matcher_t
-			rm{
-				http_method_t::http_get,
-				std::move( matcher_data.m_regex ),
-				std::move( matcher_data.m_param_appender_sequence ) };
-
 		route_params_t params;
-		{
-			params.reset();
 
-			REQUIRE( rm.match_route( R"target(/foobaz)target", params ) );
-			REQUIRE( params.match() == R"match(/foobaz)match" );
+		REQUIRE( rm.match_route( R"target(/match/route)target", params ) );
+		REQUIRE( params.match() == R"match(/match/route)match" );
 
-			const auto & nps = params.named_parameters();
-			REQUIRE( 1 == nps.size() );
+		const auto & nps = params.named_parameters();
+		REQUIRE( 2 == nps.size() );
+		REQUIRE( nps[0].first == R"key(foo)key" );
+		REQUIRE( nps[0].second == R"value(match)value" );
+		REQUIRE( nps[1].first == R"key(bar)key" );
+		REQUIRE( nps[1].second == R"value(route)value" );
 
-			REQUIRE( nps.count( "foo" ) > 0 );
-			REQUIRE( nps.at( "foo" ) == R"value(foo)value" );
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( ips.empty() );
+	}
 
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( ips.empty() );
-		}
+}
 
-		{
-			params.reset();
+// "/:foo(test\\)/bar"
+// null
+// []
+TEST_CASE( "Original tests #72", "[path2regex][original][generated][n72]")
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			R"route(/:foo(test\)/bar)route",
+			path2regex::options_t{} );
 
-			REQUIRE( rm.match_route( R"target(/foo/barbaz)target", params ) );
-			REQUIRE( params.match() == R"match(/foo/barbaz)match" );
+	route_matcher_t
+		rm{
+			http_method_t::http_get,
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
 
-			const auto & nps = params.named_parameters();
-			REQUIRE( 1 == nps.size() );
+}
 
-			REQUIRE( nps.count( "foo" ) > 0 );
-			REQUIRE( nps.at( "foo" ) == R"value(foo/bar)value" );
+// "/:remote([\\w-.]+)/:user([\\w-]+)"
+// null
+// [["/endpoint/user",["/endpoint/user","endpoint","user"]],["/endpoint/user-name",["/endpoint/user-name","endpoint","user-name"]],["/foo.bar/user-name",["/foo.bar/user-name","foo.bar","user-name"]]]
+TEST_CASE( "Original tests #73", "[path2regex][original][generated][n73]")
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			R"route(/:remote([\w-.]+)/:user([\w-]+))route",
+			path2regex::options_t{} );
 
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( ips.empty() );
-		}
+	route_matcher_t
+		rm{
+			http_method_t::http_get,
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
+
+	{
+		route_params_t params;
+
+		REQUIRE( rm.match_route( R"target(/endpoint/user)target", params ) );
+		REQUIRE( params.match() == R"match(/endpoint/user)match" );
+
+		const auto & nps = params.named_parameters();
+		REQUIRE( 2 == nps.size() );
+		REQUIRE( nps[0].first == R"key(remote)key" );
+		REQUIRE( nps[0].second == R"value(endpoint)value" );
+		REQUIRE( nps[1].first == R"key(user)key" );
+		REQUIRE( nps[1].second == R"value(user)value" );
+
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( ips.empty() );
+	}
+
+	{
+		route_params_t params;
+
+		REQUIRE( rm.match_route( R"target(/endpoint/user-name)target", params ) );
+		REQUIRE( params.match() == R"match(/endpoint/user-name)match" );
+
+		const auto & nps = params.named_parameters();
+		REQUIRE( 2 == nps.size() );
+		REQUIRE( nps[0].first == R"key(remote)key" );
+		REQUIRE( nps[0].second == R"value(endpoint)value" );
+		REQUIRE( nps[1].first == R"key(user)key" );
+		REQUIRE( nps[1].second == R"value(user-name)value" );
+
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( ips.empty() );
+	}
+
+	{
+		route_params_t params;
+
+		REQUIRE( rm.match_route( R"target(/foo.bar/user-name)target", params ) );
+		REQUIRE( params.match() == R"match(/foo.bar/user-name)match" );
+
+		const auto & nps = params.named_parameters();
+		REQUIRE( 2 == nps.size() );
+		REQUIRE( nps[0].first == R"key(remote)key" );
+		REQUIRE( nps[0].second == R"value(foo.bar)value" );
+		REQUIRE( nps[1].first == R"key(user)key" );
+		REQUIRE( nps[1].second == R"value(user-name)value" );
+
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( ips.empty() );
+	}
+
+}
+
+// "/:foo\\?"
+// null
+// [["/route?",["/route?","route"]]]
+TEST_CASE( "Original tests #74", "[path2regex][original][generated][n74]")
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			R"route(/:foo\?)route",
+			path2regex::options_t{} );
+
+	route_matcher_t
+		rm{
+			http_method_t::http_get,
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
+
+	{
+		route_params_t params;
+
+		REQUIRE( rm.match_route( R"target(/route?)target", params ) );
+		REQUIRE( params.match() == R"match(/route?)match" );
+
+		const auto & nps = params.named_parameters();
+		REQUIRE( 1 == nps.size() );
+		REQUIRE( nps[0].first == R"key(foo)key" );
+		REQUIRE( nps[0].second == R"value(route)value" );
+
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( ips.empty() );
+	}
+
+}
+
+// "/:foo+baz"
+// null
+// [["/foobaz",["/foobaz","foo"]],["/foo/barbaz",["/foo/barbaz","foo/bar"]],["/baz",null]]
+TEST_CASE( "Original tests #75", "[path2regex][original][generated][n75]")
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			R"route(/:foo+baz)route",
+			path2regex::options_t{} );
+
+	route_matcher_t
+		rm{
+			http_method_t::http_get,
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
+
+	{
+		route_params_t params;
+
+		REQUIRE( rm.match_route( R"target(/foobaz)target", params ) );
+		REQUIRE( params.match() == R"match(/foobaz)match" );
+
+		const auto & nps = params.named_parameters();
+		REQUIRE( 1 == nps.size() );
+		REQUIRE( nps[0].first == R"key(foo)key" );
+		REQUIRE( nps[0].second == R"value(foo)value" );
+
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( ips.empty() );
+	}
+
+	{
+		route_params_t params;
+
+		REQUIRE( rm.match_route( R"target(/foo/barbaz)target", params ) );
+		REQUIRE( params.match() == R"match(/foo/barbaz)match" );
+
+		const auto & nps = params.named_parameters();
+		REQUIRE( 1 == nps.size() );
+		REQUIRE( nps[0].first == R"key(foo)key" );
+		REQUIRE( nps[0].second == R"value(foo/bar)value" );
+
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( ips.empty() );
+	}
+
+	{
+		route_params_t params;
 
 		REQUIRE_FALSE( rm.match_route( R"target(/baz)target", params ) );
-
 	}
 
+}
 
-	// Test #76
+// "/:pre?baz"
+// null
+// [["/foobaz",["/foobaz","foo"]],["/baz",["/baz",null]]]
+TEST_CASE( "Original tests #76", "[path2regex][original][generated][n76]")
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			R"route(/:pre?baz)route",
+			path2regex::options_t{} );
+
+	route_matcher_t
+		rm{
+			http_method_t::http_get,
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
+
 	{
-		// "/:pre?baz"
-		// null
-		// [["/foobaz",["/foobaz","foo"]],["/baz",["/baz",null]]]
-		auto matcher_data =
-			path2regex::path2regex< route_params_t, regex_engine_t >(
-				R"route(/:pre?baz)route",
-				path2regex::options_t{} );
-
-		route_matcher_t
-			rm{
-				http_method_t::http_get,
-				std::move( matcher_data.m_regex ),
-				std::move( matcher_data.m_param_appender_sequence ) };
-
 		route_params_t params;
-		{
-			params.reset();
 
-			REQUIRE( rm.match_route( R"target(/foobaz)target", params ) );
-			REQUIRE( params.match() == R"match(/foobaz)match" );
+		REQUIRE( rm.match_route( R"target(/foobaz)target", params ) );
+		REQUIRE( params.match() == R"match(/foobaz)match" );
 
-			const auto & nps = params.named_parameters();
-			REQUIRE( 1 == nps.size() );
+		const auto & nps = params.named_parameters();
+		REQUIRE( 1 == nps.size() );
+		REQUIRE( nps[0].first == R"key(pre)key" );
+		REQUIRE( nps[0].second == R"value(foo)value" );
 
-			REQUIRE( nps.count( "pre" ) > 0 );
-			REQUIRE( nps.at( "pre" ) == R"value(foo)value" );
-
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( ips.empty() );
-		}
-
-		{
-			params.reset();
-
-			REQUIRE( rm.match_route( R"target(/baz)target", params ) );
-			REQUIRE( params.match() == R"match(/baz)match" );
-
-			const auto & nps = params.named_parameters();
-			REQUIRE( 1 == nps.size() );
-
-			REQUIRE( nps.count( "pre" ) > 0 );
-			REQUIRE( nps.at( "pre" ) == R"value()value" );
-
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( ips.empty() );
-		}
-
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( ips.empty() );
 	}
 
-
-	// Test #77
 	{
-		// "/:foo\\(:bar?\\)"
-		// null
-		// [["/hello(world)",["/hello(world)","hello","world"]],["/hello()",["/hello()","hello",null]]]
-		auto matcher_data =
-			path2regex::path2regex< route_params_t, regex_engine_t >(
-				R"route(/:foo\(:bar?\))route",
-				path2regex::options_t{} );
-
-		route_matcher_t
-			rm{
-				http_method_t::http_get,
-				std::move( matcher_data.m_regex ),
-				std::move( matcher_data.m_param_appender_sequence ) };
-
 		route_params_t params;
-		{
-			params.reset();
 
-			REQUIRE( rm.match_route( R"target(/hello(world))target", params ) );
-			REQUIRE( params.match() == R"match(/hello(world))match" );
+		REQUIRE( rm.match_route( R"target(/baz)target", params ) );
+		REQUIRE( params.match() == R"match(/baz)match" );
 
-			const auto & nps = params.named_parameters();
-			REQUIRE( 2 == nps.size() );
+		const auto & nps = params.named_parameters();
+		REQUIRE( 1 == nps.size() );
+		REQUIRE( nps[0].first == R"key(pre)key" );
+		REQUIRE( nps[0].second == R"value()value" );
 
-			REQUIRE( nps.count( "foo" ) > 0 );
-			REQUIRE( nps.at( "foo" ) == R"value(hello)value" );
-
-			REQUIRE( nps.count( "bar" ) > 0 );
-			REQUIRE( nps.at( "bar" ) == R"value(world)value" );
-
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( ips.empty() );
-		}
-
-		{
-			params.reset();
-
-			REQUIRE( rm.match_route( R"target(/hello())target", params ) );
-			REQUIRE( params.match() == R"match(/hello())match" );
-
-			const auto & nps = params.named_parameters();
-			REQUIRE( 2 == nps.size() );
-
-			REQUIRE( nps.count( "foo" ) > 0 );
-			REQUIRE( nps.at( "foo" ) == R"value(hello)value" );
-
-			REQUIRE( nps.count( "bar" ) > 0 );
-			REQUIRE( nps.at( "bar" ) == R"value()value" );
-
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( ips.empty() );
-		}
-
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( ips.empty() );
 	}
 
+}
 
-	// Test #78
+// "/:foo\\(:bar?\\)"
+// null
+// [["/hello(world)",["/hello(world)","hello","world"]],["/hello()",["/hello()","hello",null]]]
+TEST_CASE( "Original tests #77", "[path2regex][original][generated][n77]")
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			R"route(/:foo\(:bar?\))route",
+			path2regex::options_t{} );
+
+	route_matcher_t
+		rm{
+			http_method_t::http_get,
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
+
 	{
-		// "/:postType(video|audio|text)(\\+.+)?"
-		// null
-		// [["/video",["/video","video",null]],["/video+test",["/video+test","video","+test"]],["/video+",null]]
-		auto matcher_data =
-			path2regex::path2regex< route_params_t, regex_engine_t >(
-				R"route(/:postType(video|audio|text)(\+.+)?)route",
-				path2regex::options_t{} );
-
-		route_matcher_t
-			rm{
-				http_method_t::http_get,
-				std::move( matcher_data.m_regex ),
-				std::move( matcher_data.m_param_appender_sequence ) };
-
 		route_params_t params;
-		{
-			params.reset();
 
-			REQUIRE( rm.match_route( R"target(/video)target", params ) );
-			REQUIRE( params.match() == R"match(/video)match" );
+		REQUIRE( rm.match_route( R"target(/hello(world))target", params ) );
+		REQUIRE( params.match() == R"match(/hello(world))match" );
 
-			const auto & nps = params.named_parameters();
-			REQUIRE( 1 == nps.size() );
+		const auto & nps = params.named_parameters();
+		REQUIRE( 2 == nps.size() );
+		REQUIRE( nps[0].first == R"key(foo)key" );
+		REQUIRE( nps[0].second == R"value(hello)value" );
+		REQUIRE( nps[1].first == R"key(bar)key" );
+		REQUIRE( nps[1].second == R"value(world)value" );
 
-			REQUIRE( nps.count( "postType" ) > 0 );
-			REQUIRE( nps.at( "postType" ) == R"value(video)value" );
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( ips.empty() );
+	}
 
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( 1 == ips.size() );
-			REQUIRE( ips.at( 0 ) == R"value()value" );
-		}
+	{
+		route_params_t params;
 
-		{
-			params.reset();
+		REQUIRE( rm.match_route( R"target(/hello())target", params ) );
+		REQUIRE( params.match() == R"match(/hello())match" );
 
-			REQUIRE( rm.match_route( R"target(/video+test)target", params ) );
-			REQUIRE( params.match() == R"match(/video+test)match" );
+		const auto & nps = params.named_parameters();
+		REQUIRE( 2 == nps.size() );
+		REQUIRE( nps[0].first == R"key(foo)key" );
+		REQUIRE( nps[0].second == R"value(hello)value" );
+		REQUIRE( nps[1].first == R"key(bar)key" );
+		REQUIRE( nps[1].second == R"value()value" );
 
-			const auto & nps = params.named_parameters();
-			REQUIRE( 1 == nps.size() );
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( ips.empty() );
+	}
 
-			REQUIRE( nps.count( "postType" ) > 0 );
-			REQUIRE( nps.at( "postType" ) == R"value(video)value" );
+}
 
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( 1 == ips.size() );
-			REQUIRE( ips.at( 0 ) == R"value(+test)value" );
-		}
+// "/:postType(video|audio|text)(\\+.+)?"
+// null
+// [["/video",["/video","video",null]],["/video+test",["/video+test","video","+test"]],["/video+",null]]
+TEST_CASE( "Original tests #78", "[path2regex][original][generated][n78]")
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			R"route(/:postType(video|audio|text)(\+.+)?)route",
+			path2regex::options_t{} );
+
+	route_matcher_t
+		rm{
+			http_method_t::http_get,
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
+
+	{
+		route_params_t params;
+
+		REQUIRE( rm.match_route( R"target(/video)target", params ) );
+		REQUIRE( params.match() == R"match(/video)match" );
+
+		const auto & nps = params.named_parameters();
+		REQUIRE( 1 == nps.size() );
+		REQUIRE( nps[0].first == R"key(postType)key" );
+		REQUIRE( nps[0].second == R"value(video)value" );
+
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( 1 == ips.size() );
+		REQUIRE( ips.at( 0 ) == R"value()value" );
+	}
+
+	{
+		route_params_t params;
+
+		REQUIRE( rm.match_route( R"target(/video+test)target", params ) );
+		REQUIRE( params.match() == R"match(/video+test)match" );
+
+		const auto & nps = params.named_parameters();
+		REQUIRE( 1 == nps.size() );
+		REQUIRE( nps[0].first == R"key(postType)key" );
+		REQUIRE( nps[0].second == R"value(video)value" );
+
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( 1 == ips.size() );
+		REQUIRE( ips.at( 0 ) == R"value(+test)value" );
+	}
+
+	{
+		route_params_t params;
 
 		REQUIRE_FALSE( rm.match_route( R"target(/video+)target", params ) );
-
 	}
 
+}
 
-	// Test #79
+// "/:foo"
+// null
+// [["/café",["/café","café"]]]
+TEST_CASE( "Original tests #79", "[path2regex][original][generated][n79]")
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			R"route(/:foo)route",
+			path2regex::options_t{} );
+
+	route_matcher_t
+		rm{
+			http_method_t::http_get,
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
+
 	{
-		// "/:foo"
-		// null
-		// [["/café",["/café","café"]]]
-		auto matcher_data =
-			path2regex::path2regex< route_params_t, regex_engine_t >(
-				R"route(/:foo)route",
-				path2regex::options_t{} );
-
-		route_matcher_t
-			rm{
-				http_method_t::http_get,
-				std::move( matcher_data.m_regex ),
-				std::move( matcher_data.m_param_appender_sequence ) };
-
 		route_params_t params;
-		{
-			params.reset();
 
-			REQUIRE( rm.match_route( R"target(/café)target", params ) );
-			REQUIRE( params.match() == R"match(/café)match" );
+		REQUIRE( rm.match_route( R"target(/café)target", params ) );
+		REQUIRE( params.match() == R"match(/café)match" );
 
-			const auto & nps = params.named_parameters();
-			REQUIRE( 1 == nps.size() );
+		const auto & nps = params.named_parameters();
+		REQUIRE( 1 == nps.size() );
+		REQUIRE( nps[0].first == R"key(foo)key" );
+		REQUIRE( nps[0].second == R"value(café)value" );
 
-			REQUIRE( nps.count( "foo" ) > 0 );
-			REQUIRE( nps.at( "foo" ) == R"value(café)value" );
-
-			const auto & ips = params.indexed_parameters();
-			REQUIRE( ips.empty() );
-		}
-
+		const auto & ips = params.indexed_parameters();
+		REQUIRE( ips.empty() );
 	}
+
+}

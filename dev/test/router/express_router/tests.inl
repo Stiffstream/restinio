@@ -20,20 +20,17 @@ TEST_CASE( "Simple named param" , "[express][simple][named_params]" )
 		return result;
 	};
 
-	route_params_t route_params{};
-	auto check_route_params = [ & ]{
-		const bool result =
-			!route_params.named_parameters().empty() &&
-			route_params.indexed_parameters().empty() &&
-			0 != route_params.named_parameters().count( "id" ) &&
-			route_params.named_parameters().at( "id" ) == "42";
-
-		route_params.reset();
-
-		return result;
-	};
-
 	express_router_t router;
+
+	route_params_t route_params{};
+
+	auto check_route_params = [ & ]{
+			REQUIRE_FALSE( route_params.named_parameters().empty() );
+			REQUIRE( route_params.indexed_parameters().empty() );
+			REQUIRE( route_params.named_parameters()[0].first =="id" );
+			REQUIRE( route_params.named_parameters()[0].second == "42" );
+			REQUIRE( route_params[ "id" ] == "42" );
+	};
 
 	router.http_get(
 		"/a-route/:id",
@@ -70,23 +67,22 @@ TEST_CASE( "Simple named param" , "[express][simple][named_params]" )
 
 	REQUIRE( request_rejected() == router( create_fake_request( "/xxx" ) ) );
 	REQUIRE( -1 == extract_last_handler_called() );
-	REQUIRE_FALSE( check_route_params() );
 
 	REQUIRE( request_accepted() == router( create_fake_request( "/a-route/42" ) ) );
 	REQUIRE( 0 == extract_last_handler_called() );
-	REQUIRE( check_route_params() );
+	check_route_params();
 
 	REQUIRE( request_accepted() == router( create_fake_request( "/b-route/42" ) ) );
 	REQUIRE( 1 == extract_last_handler_called() );
-	REQUIRE( check_route_params() );
+	check_route_params();
 
 	REQUIRE( request_accepted() == router( create_fake_request( "/c-route/42" ) ) );
 	REQUIRE( 2 == extract_last_handler_called() );
-	REQUIRE( check_route_params() );
+	check_route_params();
 
 	REQUIRE( request_accepted() == router( create_fake_request( "/d-route/42" ) ) );
 	REQUIRE( 3 == extract_last_handler_called() );
-	REQUIRE( check_route_params() );
+	check_route_params();
 }
 
 TEST_CASE( "Simple indexed param" , "[express][simple][indexed_params]" )
@@ -102,14 +98,9 @@ TEST_CASE( "Simple indexed param" , "[express][simple][indexed_params]" )
 
 	route_params_t route_params{};
 	auto check_route_params = [ & ]{
-		const bool result =
-			route_params.named_parameters().empty() &&
-			!route_params.indexed_parameters().empty() &&
-			route_params.indexed_parameters().at( 0 ) == "42";
-
-		route_params.reset();
-
-		return result;
+		REQUIRE( route_params.named_parameters().empty() );
+		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
+		REQUIRE( route_params.indexed_parameters()[ 0 ] == "42" );
 	};
 
 	express_router_t router;
@@ -149,23 +140,22 @@ TEST_CASE( "Simple indexed param" , "[express][simple][indexed_params]" )
 
 	REQUIRE( request_rejected() == router( create_fake_request( "/xxx" ) ) );
 	REQUIRE( -1 == extract_last_handler_called() );
-	REQUIRE_FALSE( check_route_params() );
 
 	REQUIRE( request_accepted() == router( create_fake_request( "/a-route/42/ending" ) ) );
 	REQUIRE( 0 == extract_last_handler_called() );
-	REQUIRE( check_route_params() );
+	check_route_params();
 
 	REQUIRE( request_accepted() == router( create_fake_request( "/b-route/42/ending" ) ) );
 	REQUIRE( 1 == extract_last_handler_called() );
-	REQUIRE( check_route_params() );
+	check_route_params();
 
 	REQUIRE( request_accepted() == router( create_fake_request( "/c-route/42/ending" ) ) );
 	REQUIRE( 2 == extract_last_handler_called() );
-	REQUIRE( check_route_params() );
+	check_route_params();
 
 	REQUIRE( request_accepted() == router( create_fake_request( "/d-route/42/ending" ) ) );
 	REQUIRE( 3 == extract_last_handler_called() );
-	REQUIRE( check_route_params() );
+	check_route_params();
 }
 
 TEST_CASE( "Http methods" , "[express][simple][http_methods]" )
@@ -235,7 +225,7 @@ TEST_CASE( "Http methods" , "[express][simple][http_methods]" )
 }
 
 
-TEST_CASE( "Many params" , "[express][named_params]" )
+TEST_CASE( "Many params" , "[express][named_params][indexed_params]" )
 {
 	int last_handler_called = -1;
 
@@ -244,7 +234,6 @@ TEST_CASE( "Many params" , "[express][named_params]" )
 		last_handler_called = -1;
 		return result;
 	};
-
 
 	route_params_t route_params{};
 
@@ -281,10 +270,10 @@ TEST_CASE( "Many params" , "[express][named_params]" )
 		const auto & ips = route_params.indexed_parameters();
 		REQUIRE( 0 == ips.size() );
 
-		REQUIRE( nps.at( "p1" ) == "717" );
-		REQUIRE( nps.at( "p2" ) == "abcd" );
-		REQUIRE( nps.at( "p3" ) == "99.AA" );
-		REQUIRE( nps.at( "opt" ) == "x" );
+		REQUIRE( route_params[ "p1" ] == "717" );
+		REQUIRE( route_params[ "p2" ] == "abcd" );
+		REQUIRE( route_params[ "p3" ] == "99.AA" );
+		REQUIRE( route_params[ "opt" ] == "x" );
 	}
 
 	REQUIRE( request_accepted() == router( create_fake_request( "/news/2017-04-01" ) ) );
@@ -297,9 +286,9 @@ TEST_CASE( "Many params" , "[express][named_params]" )
 		const auto & ips = route_params.indexed_parameters();
 		REQUIRE( 0 == ips.size() );
 
-		REQUIRE( nps.at( "year" ) == "2017" );
-		REQUIRE( nps.at( "month" ) == "04" );
-		REQUIRE( nps.at( "day" ) == "01" );
+		REQUIRE( route_params[ "year" ] == "2017" );
+		REQUIRE( route_params[ "month" ] == "04" );
+		REQUIRE( route_params[ "day" ] == "01" );
 	}
 
 	REQUIRE( request_accepted() == router( create_fake_request( "/events/2017-06-03" ) ) );
@@ -311,9 +300,9 @@ TEST_CASE( "Many params" , "[express][named_params]" )
 
 		const auto & ips = route_params.indexed_parameters();
 		REQUIRE( 3 == ips.size() );
-		REQUIRE( ips.at( 0 ) == "2017" );
-		REQUIRE( ips.at( 1 ) == "06" );
-		REQUIRE( ips.at( 2 ) == "03" );
+		REQUIRE( route_params[ 0 ] == "2017" );
+		REQUIRE( route_params[ 1 ] == "06" );
+		REQUIRE( route_params[ 2 ] == "03" );
 	}
 }
 

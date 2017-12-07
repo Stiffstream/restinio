@@ -15,4 +15,3 @@ MxxRu::Cpp::exe_target {
 	cpp_source( "part5.cpp" )
 	cpp_source( "main.cpp" )
 }
-

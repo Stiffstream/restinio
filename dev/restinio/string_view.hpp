@@ -40,7 +40,7 @@ namespace restinio
 #if defined( RESTINIO_SUPPORTS_STRING_VIEW )
 	#if defined( RESTINIO_HAS_STRING_VIEW )
 		using string_view_t = std::string_view;
-	#elif defined( JSON_DTO_HAS_EXPERIMENTAL_OPTIONAL )
+	#elif defined( RESTINIO_HAS_EXPERIMENTAL_STRING_VIEW )
 		using string_view_t = std::experimental::string_view;
 	#else
 		// In case nothing standard is available use string.

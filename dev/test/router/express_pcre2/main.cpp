@@ -18,16 +18,17 @@
 TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 {
 	{
-		auto mather_data =
-			path2regex::path2regex< route_params_t, regex_engine_t >(
+		auto matcher_data =
+			path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 				"/foo/:bar",
 				path2regex::options_t{} );
 
 		route_matcher_t
 			rm{
 				http_method_t::http_get,
-				std::move( mather_data.m_regex ),
-				std::move( mather_data.m_param_appender_sequence ) };
+				std::move( matcher_data.m_regex ),
+				std::move( matcher_data.m_named_params_buffer ),
+				std::move( matcher_data.m_param_appender_sequence ) };
 
 		route_params_t params;
 
@@ -38,23 +39,24 @@ TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 		REQUIRE( params.match() == "/foo/42" );
 		const auto & nps = params.named_parameters();
 		REQUIRE( nps.size() == 1 );
-		REQUIRE( nps.count( "bar" ) > 0 );
-		REQUIRE( nps.at( "bar" ) == "42" );
+		REQUIRE( nps[0].first == "bar" );
+		REQUIRE( nps[0].second == "42" );
 
 		REQUIRE( params.indexed_parameters().size() == 0 );
 	}
 
 	{
-		auto mather_data =
-			path2regex::path2regex< route_params_t, regex_engine_t >(
+		auto matcher_data =
+			path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 				"/a-route/:id",
 				path2regex::options_t{} );
 
 		route_matcher_t
 			rm{
 				http_method_t::http_get,
-				std::move( mather_data.m_regex ),
-				std::move( mather_data.m_param_appender_sequence ) };
+				std::move( matcher_data.m_regex ),
+				std::move( matcher_data.m_named_params_buffer ),
+				std::move( matcher_data.m_param_appender_sequence ) };
 
 		route_params_t params;
 
@@ -63,10 +65,9 @@ TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 
 		const auto & nps = params.named_parameters();
 		REQUIRE( nps.size() == 1 );
-		REQUIRE( nps.count( "id" ) > 0 );
-		REQUIRE( nps.at( "id" ) == "42" );
+		REQUIRE( nps[0].first == "id" );
+		REQUIRE( nps[0].second == "42" );
 
 		REQUIRE( params.indexed_parameters().size() == 0 );
 	}
-
 }

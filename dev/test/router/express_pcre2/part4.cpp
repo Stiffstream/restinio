@@ -6,9 +6,4 @@
 
 #include "usings.inl"
 
-TEST_CASE( "Original tests (part4)" , "[path2regex][original][generated][part4]" )
-{
-
 #include "../express/original_tests_part4.inl"
-
-}

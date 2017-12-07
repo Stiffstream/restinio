@@ -24,8 +24,16 @@ namespace router
 struct std_regex_engine_t
 {
 	using compiled_regex_t = std::regex;
-	using match_results_t = std::cmatch;
+	using match_results_t = std::vector< std::pair< std::size_t, size_t > >;
 	using matched_item_descriptor_t = match_results_t::value_type;
+
+	static constexpr std::size_t
+	max_capture_groups()
+	{
+		// The size of match results for standard regexes cannot be reserved
+		// and grows as needed, so no limits beforehand.
+		return std::numeric_limits< std::size_t >::max();
+	}
 
 	//! Create compiled regex object for a given route.
 	static auto
@@ -52,26 +60,39 @@ struct std_regex_engine_t
 		const compiled_regex_t & r,
 		match_results_t & match_results )
 	{
-		return
+		std::cmatch matches;
+		if(
 			std::regex_search(
 				target.data(),
 				target.data() + target.size(),
-				match_results,
-				r );
+				matches,
+				r ) )
+		{
+			std::transform(
+				matches.begin(),
+				matches.end(),
+				std::back_inserter( match_results ),
+				[ begin = target.data() ]( const auto & m ){
+					return matched_item_descriptor_t{ m.first - begin, m.second - begin };
+				} );
+
+			return true;
+		}
+		return false;
 	}
 
 	//! Get the beginning of a submatch.
 	static auto
-	start_str_piece( const matched_item_descriptor_t & m )
+	submatch_begin_pos( const matched_item_descriptor_t & m )
 	{
 		return m.first;
 	}
 
-	//! Get the size of a submatch.
+	//! Get the end of a submatch.
 	static auto
-	size_str_piece( const matched_item_descriptor_t & m )
+	submatch_end_pos( const matched_item_descriptor_t & m )
 	{
-		return m.second - m.first;
+		return m.second;
 	}
 };
 

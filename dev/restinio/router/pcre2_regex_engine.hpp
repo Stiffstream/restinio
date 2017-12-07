@@ -24,19 +24,17 @@ namespace router
 namespace pcre2_details
 {
 
-// Max itemes that can be captured be pcre2 engine.
-constexpr std::size_t max_capture_groups = 20;
-
 //
 // match_results_t
 //
 
 //! A wrapper class for working with pcre match results.
+template < typename Traits >
 struct match_results_t final
 {
 	match_results_t()
 	{
-		m_match_data = pcre2_match_data_create( max_capture_groups, nullptr );
+		m_match_data = pcre2_match_data_create( Traits::max_capture_groups, nullptr );
 	}
 
 	~match_results_t()
@@ -53,14 +51,14 @@ struct match_results_t final
 	struct matched_item_descriptor_t final
 	{
 		matched_item_descriptor_t(
-			const char * str,
-			std::size_t size )
-			:	m_str{ str }
-			,	m_size{ size }
+			PCRE2_SIZE begin,
+			PCRE2_SIZE end )
+			:	m_begin{ begin }
+			,	m_end{ end }
 		{}
 
-		const char * const m_str;
-		const std::size_t m_size;
+		PCRE2_SIZE m_begin;
+		PCRE2_SIZE m_end;
 	};
 
 	matched_item_descriptor_t
@@ -69,20 +67,13 @@ struct match_results_t final
 		PCRE2_SIZE * submatches = pcre2_get_ovector_pointer( m_match_data );
 
 		return matched_item_descriptor_t{
-				m_target + submatches[ 2 * i ],
-				static_cast< std::size_t >(
-					submatches[ 1 + 2 * i ] - submatches[ 2 * i ] ) };
+				submatches[ 2 * i ],
+				submatches[ 1 + 2 * i ] };
 	}
 
 	std::size_t size() const { return m_size; }
 
-	//! The beginning of the matched string.
-	/*!
-		Used for creating matched_item_descriptor_t instances.
-	*/
-	const char * m_target;
 	std::size_t m_size{ 0 };
-
 	pcre2_match_data * m_match_data;
 };
 
@@ -166,15 +157,36 @@ class regex_t final
 } /* namespace pcre2_details */
 
 //
+// pcre_traits_t
+//
+
+//! PCRE traits.
+template < std::size_t Max_Capture_Groups = 20, int Compile_Options = 0, int Match_Options = 0 >
+struct pcre2_traits_t
+{
+	static constexpr std::size_t max_capture_groups = Max_Capture_Groups;
+	static constexpr int compile_options = Compile_Options;
+	static constexpr int match_options = Match_Options;
+};
+
+//
 // pcre2_regex_engine_t
 //
 
-//! Regex engine implementation for using with standard regex implementation.
+//! Regex engine implementation for PCRE2.
+template < typename Traits = pcre2_traits_t<> >
 struct pcre2_regex_engine_t
 {
 	using compiled_regex_t = pcre2_details::regex_t;
-	using match_results_t = pcre2_details::match_results_t;
-	using matched_item_descriptor_t = match_results_t::matched_item_descriptor_t;
+	using match_results_t = pcre2_details::match_results_t< Traits >;
+	using matched_item_descriptor_t = typename  match_results_t::matched_item_descriptor_t;
+
+	// Max itemes that can be captured be pcre engine.
+	static constexpr std::size_t
+	max_capture_groups()
+	{
+		return Traits::max_capture_groups;
+	}
 
 	//! Create compiled regex object for a given route.
 	static auto
@@ -184,7 +196,7 @@ struct pcre2_regex_engine_t
 		//! Option for case sensativity.
 		bool is_case_sensative )
 	{
-		int options = 0;
+		int options = Traits::compile_options;
 
 		if( !is_case_sensative )
 		{
@@ -207,14 +219,13 @@ struct pcre2_regex_engine_t
 				(const unsigned char*)target.data(),
 				target.size(),
 				0, // startoffset
-				0, // options
+				Traits::match_options,
 				match_results.m_match_data,
 				nullptr );
 
 		if( rc > 0 )
 		{
 			match_results.m_size = rc;
-			match_results.m_target = target.data();
 			return true;
 		}
 
@@ -223,16 +234,16 @@ struct pcre2_regex_engine_t
 
 	//! Get the beginning of a submatch.
 	static auto
-	start_str_piece( const matched_item_descriptor_t & m )
+	submatch_begin_pos( const matched_item_descriptor_t & m )
 	{
-		return m.m_str;
+		return static_cast< std::size_t >( m.m_begin );
 	}
 
-	//! Get the size of a submatch.
+	//! Get the end of a submatch.
 	static auto
-	size_str_piece( const matched_item_descriptor_t & m )
+	submatch_end_pos( const matched_item_descriptor_t & m )
 	{
-		return m.m_size;
+		return static_cast< std::size_t >( m.m_end );
 	}
 };
 

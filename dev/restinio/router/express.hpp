@@ -22,31 +22,56 @@ namespace restinio
 namespace router
 {
 
+namespace impl
+{
+
+struct route_params_accessor_t;
+
+} /* namespace impl */
+
 //
 // route_params_t
 //
 
 //! Parameters extracted from route.
-class route_params_t
+class route_params_t final
 {
 	public:
-		route_params_t() = default;
-		route_params_t( route_params_t && ) = default;
+		using named_parameters_container_t =
+			std::vector< std::pair< string_view_t, string_view_t > >;
+		using indexed_parameters_container_t =
+			std::vector< string_view_t >;
 
-		route_params_t &
-		operator = ( route_params_t && ) = default;
-
-		//! Matched route.
-		//! \{
-		const auto &
-		match() const { return m_match; }
+	private:
+		friend class impl::route_params_accessor_t;
 
 		void
-		match( const char * str, std::size_t size )
+		match(
+			std::vector< char > request_target,
+			std::shared_ptr< std::string > key_names_buffer,
+			string_view_t match,
+			named_parameters_container_t named_parameters,
+			indexed_parameters_container_t indexed_parameters )
 		{
-			m_match.assign( str, size );
+			m_request_target = std::move( request_target );
+			m_key_names_buffer = std::move( key_names_buffer );
+			m_match = std::move( match );
+			m_named_parameters = std::move( named_parameters );
+			m_indexed_parameters = std::move( indexed_parameters );
 		}
-		//! \}
+
+	public:
+		route_params_t() = default;
+
+		route_params_t( route_params_t && ) = default;
+		route_params_t &operator = ( route_params_t && ) = default;
+
+		route_params_t( const route_params_t & ) = delete;
+		route_params_t & operator = ( const route_params_t & ) = delete;
+
+		//! Matched route.
+		const auto &
+		match() const { return m_match; }
 
 		const auto &
 		named_parameters()
@@ -54,10 +79,24 @@ class route_params_t
 			return m_named_parameters;
 		}
 
-		const std::string &
-		operator [] ( const std::string & key ) const
+		const string_view_t
+		operator [] ( string_view_t key ) const
 		{
-			return m_named_parameters.at( key );
+			const auto it =
+				std::find_if(
+					m_named_parameters.begin(),
+					m_named_parameters.end(),
+					[&]( const auto p ){
+						return key == p.first;
+					} );
+
+			if( m_named_parameters.end() == it )
+				throw exception_t{
+					fmt::format(
+						"invalid parameter name: {}",
+						std::string{ key.data(), key.size() } ) };
+
+			return it->second;
 		}
 
 		const auto &
@@ -66,48 +105,105 @@ class route_params_t
 			return m_indexed_parameters;
 		}
 
-		const std::string &
+		const string_view_t
 		operator [] ( std::size_t i ) const
 		{
+			if( i >= m_indexed_parameters.size() )
+				throw exception_t{ fmt::format( "invalid parameter index: {}", i ) };
+
 			return m_indexed_parameters.at( i );
 		}
 
-		void
-		add_indexed_param( const char * str, std::size_t size )
-		{
-			m_indexed_parameters.emplace_back( str, size );
-		}
+		// void
+		// add_indexed_param( const char * str, std::size_t size )
+		// {
+		// 	m_indexed_parameters.emplace_back( str, size );
+		// }
 
-		void
-		add_named_param( std::string key, const char * str, std::size_t size )
-		{
-			m_named_parameters[ std::move( key ) ] = std::string( str, size );
-		}
+		// void
+		// add_named_param( string_view_t key, const char * str, std::size_t size )
+		// {
+		// 	m_named_parameters[ key ] = std::string( str, size );
+		// }
 
-		void
-		reset()
-		{
-			m_match.clear();
-			m_prefix.clear();
-			m_suffix.clear();
-			m_named_parameters.clear();
-			m_indexed_parameters.clear();
-		}
+		// void
+		// reset()
+		// {
+		// 	m_match.clear();
+		// 	m_named_parameters.clear();
+		// 	m_indexed_parameters.clear();
+		// }
 
 	private:
-		std::string m_match;
-		std::string m_prefix;
-		std::string m_suffix;
+		//! A raw request
+		std::vector< char > m_request_target;
+		std::shared_ptr< std::string > m_key_names_buffer;
 
-		std::map< std::string, std::string > m_named_parameters;
-		std::vector< std::string > m_indexed_parameters;
+		string_view_t m_match;
+
+		named_parameters_container_t m_named_parameters;
+		indexed_parameters_container_t m_indexed_parameters;
 };
 
 namespace impl
 {
 
+//
+// route_params_accessor_t
+//
+
+//! Route params.
+struct route_params_accessor_t
+{
+	static void
+	match(
+		route_params_t & rp,
+		std::vector< char > request_target,
+		std::shared_ptr< std::string > key_names_buffer,
+		string_view_t match_,
+		route_params_t::named_parameters_container_t named_parameters,
+		route_params_t::indexed_parameters_container_t indexed_parameters )
+	{
+		rp.match(
+			std::move( request_target ),
+			std::move( key_names_buffer ),
+			std::move( match_ ),
+			std::move( named_parameters ),
+			std::move( indexed_parameters ) );
+	}
+};
+
+//
+// route_params_appender_t
+//
+
+struct route_params_appender_t
+{
+	route_params_appender_t(
+		route_params_t::named_parameters_container_t & named_parameters,
+		route_params_t::indexed_parameters_container_t & indexed_parameters )
+		:	m_named_parameters{ named_parameters }
+		,	m_indexed_parameters{ indexed_parameters }
+	{}
+
+	void
+	add_named_param( string_view_t key, string_view_t value )
+	{
+		m_named_parameters.emplace_back( key, value );
+	}
+
+	void
+	add_indexed_param( string_view_t value )
+	{
+		m_indexed_parameters.emplace_back( value );
+	}
+
+	route_params_t::named_parameters_container_t & m_named_parameters;
+	route_params_t::indexed_parameters_container_t & m_indexed_parameters;
+};
+
 using param_appender_sequence_t =
-	path2regex::param_appender_sequence_t< route_params_t >;
+	path2regex::param_appender_sequence_t< route_params_appender_t >;
 
 //
 // route_matcher_t
@@ -124,8 +220,10 @@ class route_matcher_t
 		route_matcher_t(
 			http_method_t method,
 			regex_t route_regex,
+			std::shared_ptr< std::string > named_params_buffer,
 			param_appender_sequence_t param_appender_sequence )
 			:	m_method{ method }
+			,	m_named_params_buffer{ std::move( named_params_buffer ) }
 			,	m_route_regex{ std::move( route_regex ) }
 			,	m_param_appender_sequence{ std::move( param_appender_sequence ) }
 		{}
@@ -146,9 +244,20 @@ class route_matcher_t
 			{
 				assert( m_param_appender_sequence.size() + 1 >= matches.size() );
 
-				parameters.match(
-					Regex_Engine::start_str_piece( matches[0] ),
-					Regex_Engine::size_str_piece( matches[0] ) );
+				// Data for route_params_t initialization.
+
+				std::vector< char >
+					captured_params{
+						request_target.data(),
+						request_target.data() + request_target.size() };
+
+				const string_view_t match{
+					captured_params.data() + Regex_Engine::submatch_begin_pos( matches[0] ),
+					Regex_Engine::submatch_end_pos( matches[0] ) -
+						Regex_Engine::submatch_begin_pos( matches[0] ) } ;
+
+				route_params_t::named_parameters_container_t named_parameters;
+				route_params_t::indexed_parameters_container_t indexed_parameters;
 
 				// Std regex and pcre engines handle
 				// trailing groups with empty values differently.
@@ -156,20 +265,35 @@ class route_matcher_t
 				// Pcre on the other hand does not.
 				// So the second for is for pushing empty values
 
+				route_params_appender_t param_appender{ named_parameters, indexed_parameters };
+
 				std::size_t i = 1;
 				for( ; i < matches.size(); ++i )
 				{
 					const auto & m = matches[ i ];
 					m_param_appender_sequence[ i - 1](
-						parameters,
-						Regex_Engine::start_str_piece( m ),
-						Regex_Engine::size_str_piece( m ) );
+						param_appender,
+						string_view_t{
+							captured_params.data() + Regex_Engine::submatch_begin_pos( m ),
+							Regex_Engine::submatch_end_pos( m ) -
+								Regex_Engine::submatch_begin_pos( m ) } );
 				}
 
 				for( ; i < m_param_appender_sequence.size() + 1; ++i )
 				{
-					m_param_appender_sequence[ i - 1 ]( parameters, "", 0 );
+					m_param_appender_sequence[ i - 1 ](
+						param_appender,
+						string_view_t{ captured_params.data(), 0 } );
 				}
+
+				// Init route parameters.
+				route_params_accessor_t::match(
+						parameters,
+						std::move( captured_params ),
+						m_named_params_buffer, // Do not move (it is used on each match).
+						std::move( match ),
+						std::move( named_parameters ),
+						std::move( indexed_parameters ) );
 
 				return true;
 			}
@@ -189,6 +313,7 @@ class route_matcher_t
 	private:
 		http_method_t m_method;
 		regex_t m_route_regex;
+		std::shared_ptr< std::string > m_named_params_buffer;
 		param_appender_sequence_t m_param_appender_sequence;
 };
 
@@ -215,7 +340,7 @@ template < typename Regex_Engine = std_regex_engine_t>
 class express_route_entry_t
 {
 		using matcher_init_data_t =
-			path2regex::impl::route_regex_matcher_data_t< route_params_t, Regex_Engine >;
+			path2regex::impl::route_regex_matcher_data_t< impl::route_params_appender_t, Regex_Engine >;
 		express_route_entry_t(
 			http_method_t method,
 			matcher_init_data_t matcher_data,
@@ -223,6 +348,7 @@ class express_route_entry_t
 			:	m_matcher{
 					method,
 					std::move( matcher_data.m_regex ),
+					std::move( matcher_data.m_named_params_buffer ),
 					std::move( matcher_data.m_param_appender_sequence ) }
 			,	m_handler{ std::move( handler ) }
 		{}
@@ -244,7 +370,7 @@ class express_route_entry_t
 			express_request_handler_t handler )
 			:	express_route_entry_t{
 					method,
-					path2regex::path2regex< route_params_t, Regex_Engine >(
+					path2regex::path2regex< impl::route_params_appender_t, Regex_Engine >(
 						route_path,
 						options ),
 					std::move( handler ) }
