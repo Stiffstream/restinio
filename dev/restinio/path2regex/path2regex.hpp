@@ -16,6 +16,10 @@
 #include <memory>
 #include <functional>
 
+#include <fmt/format.h>
+
+#include <restinio/exception.hpp>
+
 namespace restinio
 {
 
@@ -652,6 +656,14 @@ struct route_regex_matcher_data_t
 	using regex_t = typename Regex_Engine::compiled_regex_t;
 
 	regex_t m_regex;
+
+	//! Char buffer for holding named paramaters.
+	/*!
+		In order to store named parameters 'names' in a continous block of memory
+		and use them in param_appender_sequence items as string_view.
+	*/
+	std::shared_ptr< std::string > m_named_params_buffer;
+
 	param_appender_sequence_t< Param_Container > m_param_appender_sequence;
 };
 
@@ -662,43 +674,55 @@ struct route_regex_matcher_data_t
 //! Makes route regex matcher out of path tokens.
 template < typename Param_Container, typename Regex_Engine >
 auto
-tokens2regexp( const token_list_t< Param_Container > & tokens, const options_t & options )
+tokens2regexp(
+	const std::string & path,
+	const token_list_t< Param_Container > & tokens,
+	const options_t & options )
 {
 	route_regex_matcher_data_t< Param_Container, Regex_Engine > result;
-	std::string route;
-	auto & param_appender_sequence = result.m_param_appender_sequence;
-
-	for( const auto & t : tokens )
+	try
 	{
-		t->append_self_to( route, param_appender_sequence );
-	}
+		std::string route;
+		auto & param_appender_sequence = result.m_param_appender_sequence;
 
-	const auto & delimiter = escape_string( options.delimiter() );
-	const auto & ends_with = options.make_ends_with();
-
-	if( options.ending() )
-	{
-		if( !options.strict() )
+		for( const auto & t : tokens )
 		{
-			route += "(?:" + delimiter + ")?";
+			t->append_self_to( route, param_appender_sequence );
 		}
 
-		if( ends_with == "$" )
-			route += '$';
+		const auto & delimiter = escape_string( options.delimiter() );
+		const auto & ends_with = options.make_ends_with();
+
+		if( options.ending() )
+		{
+			if( !options.strict() )
+			{
+				route += "(?:" + delimiter + ")?";
+			}
+
+			if( ends_with == "$" )
+				route += '$';
+			else
+				route += "(?=" + ends_with + ")";
+		}
 		else
-			route += "(?=" + ends_with + ")";
+		{
+			if( !options.strict() )
+				route += "(?:" + delimiter + "(?=" + ends_with + "))?";
+
+			if( !tokens.empty() &&
+				!tokens.back()->is_end_delimited( options.delimiters() ) )
+				route += "(?=" + delimiter + "|" + ends_with + ")";
+		}
+
+		result.m_regex = Regex_Engine::compile_regex( "^" + route, options.sensitive() );
 	}
-	else
+	catch( const std::exception & ex )
 	{
-		if( !options.strict() )
-			route += "(?:" + delimiter + "(?=" + ends_with + "))?";
-
-		if( !tokens.empty() &&
-			!tokens.back()->is_end_delimited( options.delimiters() ) )
-			route += "(?=" + delimiter + "|" + ends_with + ")";
+		throw exception_t{
+			fmt::format( "unable to process route \"{}\": {}", path, ex.what() ) };
 	}
 
-	result.m_regex = Regex_Engine::compile_regex( "^" + route, options.sensitive() );
 	return result;
 }
 
@@ -716,6 +740,7 @@ path2regex(
 	const options_t & options )
 {
 	return impl::tokens2regexp< Param_Container, Regex_Engine >(
+			path,
 			impl::parse< Param_Container >( path, options ),
 			options );
 }
