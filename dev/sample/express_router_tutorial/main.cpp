@@ -19,7 +19,7 @@ template < typename RESP >
 RESP
 init_resp( RESP resp )
 {
-	resp.append_header( "Server", "RESTinio sample server /v.0.2" );
+	resp.append_header( "Server", "RESTinio sample server /v.0.4" );
 	resp.append_header_date_field()
 	.append_header( "Content-Type", "text/plain; charset=utf-8" );
 
