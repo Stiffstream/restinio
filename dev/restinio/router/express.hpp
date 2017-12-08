@@ -13,6 +13,8 @@
 
 #include <restinio/router/std_regex_engine.hpp>
 
+#include <restinio/utils/from_string.hpp>
+
 #include <map>
 #include <vector>
 
@@ -34,6 +36,18 @@ struct route_params_accessor_t;
 //
 
 //! Parameters extracted from route.
+/*!
+	Holds values of parameters extracted from route.
+
+	All values are stored as string views,
+	route_params_t instance owns bufers used by these views.
+	And that leads to following limittions:
+	once a copy of a string view is created it is
+	important to use it with respect to life time of route_params_t
+	instance to which this parameter bind belongs.
+	String view is valid during route_params_t
+	instance life time.
+*/
 class route_params_t final
 {
 	public:
@@ -69,17 +83,92 @@ class route_params_t final
 		route_params_t( const route_params_t & ) = delete;
 		route_params_t & operator = ( const route_params_t & ) = delete;
 
-		//! Matched route.
-		const auto &
-		match() const { return m_match; }
+		//
+		// parameter_bind_t
+		//
 
-		const auto &
-		named_parameters()
+		//! A bind to paramater.
+		class parameter_bind_t final
 		{
-			return m_named_parameters;
+				friend class route_params_t;
+			public:
+				std::string
+				str() const
+				{
+					return std::string{ m_parameter_data.data(), m_parameter_data.size() };
+				}
+
+				operator std::string () const
+				{
+					return str();
+				}
+
+				template < typename Value_Type >
+				Value_Type
+				as() const
+				{
+					return util::from_string< Value_Type >( m_parameter_data );
+				}
+
+				//! Some usefull opertors for typical use cases.
+				//! \{
+
+				bool operator == ( const char * str ) const
+				{
+					return m_parameter_data == str;
+				}
+
+				bool operator != ( const char * str ) const
+				{
+					return !( *this == str );
+				}
+
+				bool operator == ( const std::string & str ) const
+				{
+					return m_parameter_data == str;
+				}
+
+				bool operator != ( const std::string & str ) const
+				{
+					return m_parameter_data != str;
+				}
+				//! \}
+
+				parameter_bind_t( const parameter_bind_t & ) = delete;
+				const parameter_bind_t & operator = ( const parameter_bind_t & ) = delete;
+				parameter_bind_t & operator = ( parameter_bind_t && ) = delete;
+
+			private:
+				parameter_bind_t( string_view_t parameter_data )
+					:	m_parameter_data{ parameter_data }
+				{}
+
+				parameter_bind_t( parameter_bind_t && ) = default;
+
+				string_view_t m_parameter_data;
+		};
+
+		//! Access internal string view object of a parameter bind.
+		/*!
+			Gets the string_view object of a given parameter.
+
+			\note String view is valid during lifetime of
+			a given route_params_t instance.
+			If route_params_t instance is moved then all string views
+			remain valid during life time of a new route_params_t instance.
+		*/
+		static auto
+		access_string_view( const parameter_bind_t & p )
+		{
+			return p.m_parameter_data;
 		}
 
-		const string_view_t
+		//! Matched route.
+		const parameter_bind_t
+		match() const { return parameter_bind_t{ m_match }; }
+
+
+		const parameter_bind_t
 		operator [] ( string_view_t key ) const
 		{
 			const auto it =
@@ -96,7 +185,24 @@ class route_params_t final
 						"invalid parameter name: {}",
 						std::string{ key.data(), key.size() } ) };
 
-			return it->second;
+			return parameter_bind_t{ it->second };
+		}
+
+		const parameter_bind_t
+		operator [] ( std::size_t i ) const
+		{
+			if( i >= m_indexed_parameters.size() )
+				throw exception_t{ fmt::format( "invalid parameter index: {}", i ) };
+
+			return parameter_bind_t{ m_indexed_parameters.at( i ) };
+		}
+
+		//! Get values containers for all parameters.
+		//! \{
+		const auto &
+		named_parameters()
+		{
+			return m_named_parameters;
 		}
 
 		const auto &
@@ -104,44 +210,33 @@ class route_params_t final
 		{
 			return m_indexed_parameters;
 		}
-
-		const string_view_t
-		operator [] ( std::size_t i ) const
-		{
-			if( i >= m_indexed_parameters.size() )
-				throw exception_t{ fmt::format( "invalid parameter index: {}", i ) };
-
-			return m_indexed_parameters.at( i );
-		}
-
-		// void
-		// add_indexed_param( const char * str, std::size_t size )
-		// {
-		// 	m_indexed_parameters.emplace_back( str, size );
-		// }
-
-		// void
-		// add_named_param( string_view_t key, const char * str, std::size_t size )
-		// {
-		// 	m_named_parameters[ key ] = std::string( str, size );
-		// }
-
-		// void
-		// reset()
-		// {
-		// 	m_match.clear();
-		// 	m_named_parameters.clear();
-		// 	m_indexed_parameters.clear();
-		// }
+		//! \}
 
 	private:
-		//! A raw request
+		//! A raw request target.
+		/*!
+			All parameters values are defined as string views
+			refering parts of this beffer.
+
+			\note Vector is used here on purpose,
+			because if we consider std::string, then it has an issue
+			when SSO is applied. It is important that
+			parameters that refering buffer are valid after move operations with
+			the buffer. And std::strings with SSO applied cannot guarantee this.
+			Vector on the other hand gives this guarantee.
+		*/
 		std::vector< char > m_request_target;
+
+		//! Shared buffer for string_view of named parameterts names.
 		std::shared_ptr< std::string > m_key_names_buffer;
 
+		//! Matched pattern.
 		string_view_t m_match;
 
+		//! Named params.
 		named_parameters_container_t m_named_parameters;
+
+		//! Indexed params.
 		indexed_parameters_container_t m_indexed_parameters;
 };
 
@@ -177,29 +272,37 @@ struct route_params_accessor_t
 // route_params_appender_t
 //
 
-struct route_params_appender_t
+//! Helper class for gthering parameters from route.
+class route_params_appender_t
 {
-	route_params_appender_t(
-		route_params_t::named_parameters_container_t & named_parameters,
-		route_params_t::indexed_parameters_container_t & indexed_parameters )
-		:	m_named_parameters{ named_parameters }
-		,	m_indexed_parameters{ indexed_parameters }
-	{}
+	public:
+		route_params_appender_t(
+			route_params_t::named_parameters_container_t & named_parameters,
+			route_params_t::indexed_parameters_container_t & indexed_parameters )
+			:	m_named_parameters{ named_parameters }
+			,	m_indexed_parameters{ indexed_parameters }
+		{}
 
-	void
-	add_named_param( string_view_t key, string_view_t value )
-	{
-		m_named_parameters.emplace_back( key, value );
-	}
+		route_params_appender_t( const route_params_appender_t & ) = delete;
+		route_params_appender_t( route_params_appender_t && ) = delete;
+		const route_params_appender_t & operator = ( const route_params_appender_t & ) = delete;
+		route_params_appender_t & operator = ( route_params_appender_t && ) = delete;
 
-	void
-	add_indexed_param( string_view_t value )
-	{
-		m_indexed_parameters.emplace_back( value );
-	}
+		void
+		add_named_param( string_view_t key, string_view_t value )
+		{
+			m_named_parameters.emplace_back( key, value );
+		}
 
-	route_params_t::named_parameters_container_t & m_named_parameters;
-	route_params_t::indexed_parameters_container_t & m_indexed_parameters;
+		void
+		add_indexed_param( string_view_t value )
+		{
+			m_indexed_parameters.emplace_back( value );
+		}
+
+	private:
+		route_params_t::named_parameters_container_t & m_named_parameters;
+		route_params_t::indexed_parameters_container_t & m_indexed_parameters;
 };
 
 using param_appender_sequence_t =
@@ -217,6 +320,7 @@ class route_matcher_t
 		using regex_t = typename Regex_Engine::compiled_regex_t;
 		using match_results_t = typename Regex_Engine::match_results_t;
 
+		//! Creates matcher with a given parameters.
 		route_matcher_t(
 			http_method_t method,
 			regex_t route_regex,
@@ -231,6 +335,7 @@ class route_matcher_t
 		route_matcher_t() = default;
 		route_matcher_t( route_matcher_t && ) = default;
 
+		//! Try to match a given request target with this route.
 		bool
 		match_route(
 			const std::string & request_target,
@@ -259,14 +364,13 @@ class route_matcher_t
 				route_params_t::named_parameters_container_t named_parameters;
 				route_params_t::indexed_parameters_container_t indexed_parameters;
 
+				route_params_appender_t param_appender{ named_parameters, indexed_parameters };
+
 				// Std regex and pcre engines handle
 				// trailing groups with empty values differently.
 				// Std despite they are empty includes them in the list of match results;
 				// Pcre on the other hand does not.
 				// So the second for is for pushing empty values
-
-				route_params_appender_t param_appender{ named_parameters, indexed_parameters };
-
 				std::size_t i = 1;
 				for( ; i < matches.size(); ++i )
 				{
@@ -306,14 +410,20 @@ class route_matcher_t
 			const http_request_header_t & h,
 			route_params_t & parameters ) const
 		{
-			return m_method == h.method() &&
-					match_route( h.request_target(), parameters );
+			return m_method == h.method() && match_route( h.request_target(), parameters );
 		}
 
 	private:
+		//! HTTP method to match.
 		http_method_t m_method;
+
+		//! Regex of a given route.
 		regex_t m_route_regex;
+
+		//! Buffer for named parameters names string views.
 		std::shared_ptr< std::string > m_named_params_buffer;
+
+		//! Parameters values.
 		param_appender_sequence_t m_param_appender_sequence;
 };
 
