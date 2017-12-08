@@ -142,7 +142,6 @@ read_value( double v, const char * data, std::size_t size )
 }
 //! \}
 
-
 //! Get a value from string.
 template < typename Value_Type >
 Value_Type
@@ -161,6 +160,14 @@ inline std::string
 from_string< std::string >( const string_view_t & s )
 {
 	return std::string{ s.data(), s.size() };
+}
+
+//! Get a value from string.
+template < typename Value_Type >
+Value_Type
+from_string( const std::string & s )
+{
+	return from_string< Value_Type >( string_view_t{ s } );
 }
 
 } /* namespace utils */

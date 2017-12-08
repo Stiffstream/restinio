@@ -8,12 +8,15 @@
 
 #pragma once
 
-#include <restinio/path2regex/path2regex.hpp>
 #include <restinio/request_handler.hpp>
+#include <restinio/parameter_bind.hpp>
+
+#include <restinio/path2regex/path2regex.hpp>
 
 #include <restinio/router/std_regex_engine.hpp>
 
 #include <restinio/utils/from_string.hpp>
+#include <restinio/utils/percent_encoding.hpp>
 
 #include <map>
 #include <vector>
@@ -83,90 +86,9 @@ class route_params_t final
 		route_params_t( const route_params_t & ) = delete;
 		route_params_t & operator = ( const route_params_t & ) = delete;
 
-		//
-		// parameter_bind_t
-		//
-
-		//! A bind to paramater.
-		class parameter_bind_t final
-		{
-				friend class route_params_t;
-			public:
-				std::string
-				str() const
-				{
-					return std::string{ m_parameter_data.data(), m_parameter_data.size() };
-				}
-
-				operator std::string () const
-				{
-					return str();
-				}
-
-				template < typename Value_Type >
-				Value_Type
-				as() const
-				{
-					return utils::from_string< Value_Type >( m_parameter_data );
-				}
-
-				//! Some usefull opertors for typical use cases.
-				//! \{
-
-				bool operator == ( const char * str ) const
-				{
-					return m_parameter_data == str;
-				}
-
-				bool operator != ( const char * str ) const
-				{
-					return !( *this == str );
-				}
-
-				bool operator == ( const std::string & str ) const
-				{
-					return m_parameter_data == str;
-				}
-
-				bool operator != ( const std::string & str ) const
-				{
-					return m_parameter_data != str;
-				}
-				//! \}
-
-				parameter_bind_t( const parameter_bind_t & ) = delete;
-				const parameter_bind_t & operator = ( const parameter_bind_t & ) = delete;
-				parameter_bind_t & operator = ( parameter_bind_t && ) = delete;
-
-			private:
-				parameter_bind_t( string_view_t parameter_data )
-					:	m_parameter_data{ parameter_data }
-				{}
-
-				parameter_bind_t( parameter_bind_t && ) = default;
-
-				string_view_t m_parameter_data;
-		};
-
-		//! Access internal string view object of a parameter bind.
-		/*!
-			Gets the string_view object of a given parameter.
-
-			\note String view is valid during lifetime of
-			a given route_params_t instance.
-			If route_params_t instance is moved then all string views
-			remain valid during life time of a new route_params_t instance.
-		*/
-		static auto
-		access_string_view( const parameter_bind_t & p )
-		{
-			return p.m_parameter_data;
-		}
-
 		//! Matched route.
 		const parameter_bind_t
-		match() const { return parameter_bind_t{ m_match }; }
-
+		match() const { return parameter_bind_t( m_match ); }
 
 		const parameter_bind_t
 		operator [] ( string_view_t key ) const

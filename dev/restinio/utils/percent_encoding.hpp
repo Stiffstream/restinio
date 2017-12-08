@@ -12,6 +12,7 @@
 
 #include <fmt/format.h>
 
+#include <restinio/string_view.hpp>
 #include <restinio/exception.hpp>
 
 namespace restinio
@@ -76,7 +77,7 @@ extract_escaped_char( char c1,  char c2 )
 //! Percent encoding.
 //! \{
 inline std::string
-escape_percent_encoding( const std::string & data )
+escape_percent_encoding( const string_view_t data )
 {
 	std::string result;
 	result.reserve( data.size() );
@@ -94,7 +95,13 @@ escape_percent_encoding( const std::string & data )
 }
 
 inline std::string
-unescape_percent_encoding( const std::string & data )
+escape_percent_encoding( const std::string & data )
+{
+	return escape_percent_encoding( string_view_t{ data } );
+}
+
+inline std::string
+unescape_percent_encoding( const string_view_t data )
 {
 	std::string result;
 	result.reserve( data.size() );
@@ -142,6 +149,13 @@ unescape_percent_encoding( const std::string & data )
 	}
 	return result;
 }
+
+inline std::string
+unescape_percent_encoding( const std::string & data )
+{
+	return unescape_percent_encoding( string_view_t{ data } );
+}
+
 //! \}
 
 } /* namespace utils */
