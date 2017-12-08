@@ -11,6 +11,7 @@
 #include <iosfwd>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include <fmt/format.h>
 
