@@ -101,7 +101,7 @@ public :
 		auto resp = init_resp( req->create_response() );
 		try
 		{
-			auto author = restinio::unescape_percent_encoding( params[ "author" ] );
+			auto author = restinio::utils::unescape_percent_encoding( params[ "author" ] );
 
 			resp.set_body( "Books of " + author + ":\n" );
 

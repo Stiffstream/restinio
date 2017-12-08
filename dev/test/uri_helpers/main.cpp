@@ -25,7 +25,7 @@ TEST_CASE( "Escape percent encoding" , "[escape][percent_encoding]" )
 
 		std::string result;
 
-		REQUIRE_NOTHROW( result = restinio::escape_percent_encoding( input_data ) );
+		REQUIRE_NOTHROW( result = restinio::utils::escape_percent_encoding( input_data ) );
 
 		REQUIRE( expected_result == result );
 	}
@@ -43,7 +43,7 @@ TEST_CASE( "Escape percent encoding" , "[escape][percent_encoding]" )
 
 		std::string result;
 
-		REQUIRE_NOTHROW( result = restinio::escape_percent_encoding( input_data ) );
+		REQUIRE_NOTHROW( result = restinio::utils::escape_percent_encoding( input_data ) );
 
 		REQUIRE( expected_result == result );
 	}
@@ -61,7 +61,7 @@ TEST_CASE( "Unescape percent encoding" , "[unescape][percent_encoding]" )
 
 		std::string result;
 
-		REQUIRE_NOTHROW( result = restinio::unescape_percent_encoding( input_data ) );
+		REQUIRE_NOTHROW( result = restinio::utils::unescape_percent_encoding( input_data ) );
 
 		REQUIRE( expected_result == result );
 	}
@@ -79,7 +79,7 @@ TEST_CASE( "Unescape percent encoding" , "[unescape][percent_encoding]" )
 
 		std::string result;
 
-		REQUIRE_NOTHROW( result = restinio::unescape_percent_encoding( input_data ) );
+		REQUIRE_NOTHROW( result = restinio::utils::unescape_percent_encoding( input_data ) );
 
 		REQUIRE( expected_result == result );
 	}
@@ -98,7 +98,7 @@ TEST_CASE( "Unescape percent encoding" , "[unescape][percent_encoding]" )
 
 		std::string result;
 
-		REQUIRE_NOTHROW( result = restinio::unescape_percent_encoding( input_data ) );
+		REQUIRE_NOTHROW( result = restinio::utils::unescape_percent_encoding( input_data ) );
 
 		REQUIRE( expected_result == result );
 	}
@@ -112,7 +112,7 @@ TEST_CASE( "Unescape percent encoding" , "[unescape][percent_encoding]" )
 
 		std::string result;
 
-		REQUIRE_THROWS( result = restinio::unescape_percent_encoding( input_data ) );
+		REQUIRE_THROWS( result = restinio::utils::unescape_percent_encoding( input_data ) );
 	}
 
 	{
@@ -122,7 +122,7 @@ TEST_CASE( "Unescape percent encoding" , "[unescape][percent_encoding]" )
 
 		std::string result;
 
-		REQUIRE_THROWS( result = restinio::unescape_percent_encoding( input_data ) );
+		REQUIRE_THROWS( result = restinio::utils::unescape_percent_encoding( input_data ) );
 	}
 	{
 		const std::string input_data{
@@ -131,7 +131,7 @@ TEST_CASE( "Unescape percent encoding" , "[unescape][percent_encoding]" )
 
 		std::string result;
 
-		REQUIRE_THROWS( result = restinio::unescape_percent_encoding( input_data ) );
+		REQUIRE_THROWS( result = restinio::utils::unescape_percent_encoding( input_data ) );
 	}
 
 	{
@@ -140,7 +140,7 @@ TEST_CASE( "Unescape percent encoding" , "[unescape][percent_encoding]" )
 
 		std::string result;
 
-		REQUIRE_NOTHROW( result = restinio::unescape_percent_encoding( input_data ) );
+		REQUIRE_NOTHROW( result = restinio::utils::unescape_percent_encoding( input_data ) );
 		REQUIRE( expected_result == result );
 	}
 }
