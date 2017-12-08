@@ -19,7 +19,7 @@
 namespace restinio
 {
 
-namespace util
+namespace utils
 {
 
 //! Read int values.
@@ -163,6 +163,6 @@ from_string< std::string >( const string_view_t & s )
 	return std::string{ s.data(), s.size() };
 }
 
-} /* namespace util */
+} /* namespace utils */
 
 } /* namespace restinio */
