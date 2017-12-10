@@ -224,7 +224,6 @@ TEST_CASE( "Http methods" , "[express][simple][http_methods]" )
 	REQUIRE( http_method_t::http_put == extract_last_http_method() );
 }
 
-
 TEST_CASE( "Many params" , "[express][named_params][indexed_params]" )
 {
 	int last_handler_called = -1;
@@ -306,3 +305,91 @@ TEST_CASE( "Many params" , "[express][named_params][indexed_params]" )
 	}
 }
 
+TEST_CASE( "Non matched request handler" , "[express][non_matched_request_handler]" )
+{
+	int request_matched_type = -1; // -1 (uninitialized), 0 (not matched), 1 (matched).
+
+	express_router_t router;
+
+	router.http_delete(
+		"/",
+		[&]( auto , auto ){
+			request_matched_type = 1;
+			return request_accepted();
+		} );
+
+	router.http_get(
+		"/",
+		[&]( auto , auto ){
+			request_matched_type = 1;
+			return request_accepted();
+		} );
+
+	router.http_head(
+		"/",
+		[&]( auto , auto ){
+			request_matched_type = 1;
+			return request_accepted();
+		} );
+
+	router.http_post(
+		"/",
+		[&]( auto , auto ){
+			request_matched_type = 1;
+			return request_accepted();
+		} );
+
+	router.http_put(
+		"/",
+		[&]( auto , auto ){
+			request_matched_type = 1;
+			return request_accepted();
+		} );
+
+	router.non_matched_request_handler(
+		[&]( auto ){
+			request_matched_type = 0;
+			return request_accepted();
+		} );
+
+	REQUIRE( request_accepted() == router( create_fake_request( "/xxx", http_method_t::http_delete ) ) );
+	REQUIRE( request_matched_type == 0 );
+	request_matched_type = -1;
+
+	REQUIRE( request_accepted() == router( create_fake_request( "/xxx", http_method_t::http_get ) ) );
+	REQUIRE( request_matched_type == 0 );
+	request_matched_type = -1;
+
+	REQUIRE( request_accepted() == router( create_fake_request( "/xxx", http_method_t::http_head ) ) );
+	REQUIRE( request_matched_type == 0 );
+	request_matched_type = -1;
+
+	REQUIRE( request_accepted() == router( create_fake_request( "/xxx", http_method_t::http_post ) ) );
+	REQUIRE( request_matched_type == 0 );
+	request_matched_type = -1;
+
+	REQUIRE( request_accepted() == router( create_fake_request( "/xxx", http_method_t::http_put ) ) );
+	REQUIRE( request_matched_type == 0 );
+	request_matched_type = -1;
+
+	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_t::http_delete ) ) );
+	REQUIRE( request_matched_type == 1 );
+	request_matched_type = -1;
+
+
+	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_t::http_get ) ) );
+	REQUIRE( request_matched_type == 1 );
+	request_matched_type = -1;
+
+	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_t::http_head ) ) );
+	REQUIRE( request_matched_type == 1 );
+	request_matched_type = -1;
+
+	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_t::http_post ) ) );
+	REQUIRE( request_matched_type == 1 );
+	request_matched_type = -1;
+
+	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_t::http_put ) ) );
+	REQUIRE( request_matched_type == 1 );
+	request_matched_type = -1;
+}

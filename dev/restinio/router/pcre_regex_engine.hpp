@@ -203,6 +203,7 @@ struct pcre_regex_engine_t
 				match_results.m_submatches.data(),
 				match_results.m_submatches.size() );
 
+		// TODO: handle Errors
 		if( rc > 0 )
 		{
 			match_results.m_size = rc;

@@ -359,6 +359,13 @@ using express_request_handler_t =
 		std::function< request_handling_status_t( request_handle_t, route_params_t ) >;
 
 //
+// express_unmatched_request_handler_t
+//
+
+using non_matched_request_handler_t =
+		std::function< request_handling_status_t( request_handle_t ) >;
+
+//
 // express_route_entry_t
 //
 
@@ -472,6 +479,15 @@ class express_router_t
 				{
 					return entry.handle( std::move( req ), std::move( params ) );
 				}
+			}
+
+			// Here: none of the routes matches this handler.
+
+			if( m_non_matched_request_handler )
+			{
+				// If non matched request handler is set
+				// then call it.
+				return m_non_matched_request_handler( std::move( req ) );
 			}
 
 			return request_rejected();
@@ -623,11 +639,21 @@ class express_router_t
 		}
 		//! \}
 
+		//! Set handler for requests that don't match any route.
+		void
+		non_matched_request_handler( non_matched_request_handler_t nmrh )
+		{
+			m_non_matched_request_handler= std::move( nmrh );
+		}
+
 	private:
 		using route_entry_t = express_route_entry_t< Regex_Engine >;
 
 		//! A list of existing routes.
 		std::vector< route_entry_t > m_handlers;
+
+		//! Handler that is called for requests that don't match any route.
+		non_matched_request_handler_t m_non_matched_request_handler;
 };
 
 } /* namespace router */
