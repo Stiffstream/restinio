@@ -80,17 +80,32 @@ inline std::string
 escape_percent_encoding( const string_view_t data )
 {
 	std::string result;
-	result.reserve( data.size() );
+	const auto escaped_chars_count =
+		std::count_if(
+			data.begin(),
+			data.end(),
+			[]( auto c ){ return !impl::ordinary_char(c); } );
 
-	for( auto c : data )
+	if( 0 == escaped_chars_count )
 	{
-		if( impl::ordinary_char( c ) )
-			result += c;
-		else
+		// No escaped chars.
+		result.assign( data.data(), data.size() );
+	}
+	else
+	{
+		// Having escaped chars.
+		result.reserve( data.size() + 2*escaped_chars_count );
+		for( auto c : data )
 		{
-			result += fmt::format( "%{:02X}", c );
+			if( impl::ordinary_char( c ) )
+				result += c;
+			else
+			{
+				result += fmt::format( "%{:02X}", c );
+			}
 		}
 	}
+
 	return result;
 }
 
