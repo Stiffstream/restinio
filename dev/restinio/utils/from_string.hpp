@@ -12,6 +12,7 @@
 #include <string>
 #include <limits>
 #include <stdexcept>
+#include <algorithm>
 
 #include <fmt/format.h>
 
