@@ -37,12 +37,13 @@ TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 
 		REQUIRE( rm.match_route( "/foo/42", params ) );
 		REQUIRE( params.match() == "/foo/42" );
-		const auto & nps = params.named_parameters();
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( params );
 		REQUIRE( nps.size() == 1 );
 		REQUIRE( nps[0].first == "bar" );
 		REQUIRE( nps[0].second == "42" );
 
-		REQUIRE( params.indexed_parameters().size() == 0 );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
+		REQUIRE( ips.size() == 0 );
 	}
 
 	{
@@ -63,11 +64,12 @@ TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 		REQUIRE( rm.match_route( "/a-route/42", params ) );
 		REQUIRE( params.match() == "/a-route/42" );
 
-		const auto & nps = params.named_parameters();
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( params );
 		REQUIRE( nps.size() == 1 );
 		REQUIRE( nps[0].first == "id" );
 		REQUIRE( nps[0].second == "42" );
 
-		REQUIRE( params.indexed_parameters().size() == 0 );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
+		REQUIRE( ips.size() == 0 );
 	}
 }

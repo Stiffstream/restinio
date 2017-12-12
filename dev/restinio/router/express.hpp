@@ -119,21 +119,6 @@ class route_params_t final
 			return parameter_bind_t{ m_indexed_parameters.at( i ) };
 		}
 
-		//! Get values containers for all parameters.
-		//! \{
-		const auto &
-		named_parameters()
-		{
-			return m_named_parameters;
-		}
-
-		const auto &
-		indexed_parameters()
-		{
-			return m_indexed_parameters;
-		}
-		//! \}
-
 	private:
 		//! A raw request target.
 		/*!
@@ -169,9 +154,10 @@ namespace impl
 // route_params_accessor_t
 //
 
-//! Route params.
+//! Route params private internals accessor.
 struct route_params_accessor_t
 {
+	//! Init parameters with a matched route params.
 	static void
 	match(
 		route_params_t & rp,
@@ -188,6 +174,21 @@ struct route_params_accessor_t
 			std::move( named_parameters ),
 			std::move( indexed_parameters ) );
 	}
+
+	//! Get values containers for all parameters (used in unit tests).
+	//! \{
+	static const auto &
+	named_parameters( route_params_t & rp )
+	{
+		return rp.m_named_parameters;
+	}
+
+	static const auto &
+	indexed_parameters( route_params_t & rp )
+	{
+		return rp.m_indexed_parameters;
+	}
+	//! \}
 };
 
 //

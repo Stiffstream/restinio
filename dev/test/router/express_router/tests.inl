@@ -25,10 +25,13 @@ TEST_CASE( "Simple named param" , "[express][simple][named_params]" )
 	route_params_t route_params{};
 
 	auto check_route_params = [ & ]{
-			REQUIRE_FALSE( route_params.named_parameters().empty() );
-			REQUIRE( route_params.indexed_parameters().empty() );
-			REQUIRE( route_params.named_parameters()[0].first =="id" );
-			REQUIRE( route_params.named_parameters()[0].second == "42" );
+			const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( route_params );
+			const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( route_params );
+
+			REQUIRE_FALSE( nps.empty() );
+			REQUIRE( ips.empty() );
+			REQUIRE( nps[0].first =="id" );
+			REQUIRE( nps[0].second == "42" );
 			REQUIRE( route_params[ "id" ].as< std::string >() == "42" );
 			REQUIRE( route_params[ "id" ].as< std::uint8_t >() == 42 );
 			REQUIRE( route_params[ "id" ].as< std::int8_t >() == 42 );
@@ -95,7 +98,6 @@ TEST_CASE( "Simple named param" , "[express][simple][named_params]" )
 
 TEST_CASE( "Simple indexed param" , "[express][simple][indexed_params]" )
 {
-
 	int last_handler_called = -1;
 
 	auto extract_last_handler_called = [&]{
@@ -106,9 +108,14 @@ TEST_CASE( "Simple indexed param" , "[express][simple][indexed_params]" )
 
 	route_params_t route_params{};
 	auto check_route_params = [ & ]{
-		REQUIRE( route_params.named_parameters().empty() );
-		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-		REQUIRE( route_params.indexed_parameters()[ 0 ] == "42" );
+		const auto & nps =
+			restinio::router::impl::route_params_accessor_t::named_parameters( route_params );
+		const auto & ips =
+			restinio::router::impl::route_params_accessor_t::indexed_parameters( route_params );
+
+		REQUIRE( nps.empty() );
+		REQUIRE_FALSE( ips.empty() );
+		REQUIRE( ips[ 0 ] == "42" );
 	};
 
 	express_router_t router;
@@ -271,10 +278,10 @@ TEST_CASE( "Many params" , "[express][named_params][indexed_params]" )
 	REQUIRE( 0 == extract_last_handler_called() );
 
 	{
-		const auto & nps = route_params.named_parameters();
-		REQUIRE( 4 == route_params.named_parameters().size() );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( route_params );
+		REQUIRE( 4 == nps.size() );
 
-		const auto & ips = route_params.indexed_parameters();
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( route_params );
 		REQUIRE( 0 == ips.size() );
 
 		REQUIRE( route_params[ "p1" ] == "717" );
@@ -287,10 +294,10 @@ TEST_CASE( "Many params" , "[express][named_params][indexed_params]" )
 	REQUIRE( 1 == extract_last_handler_called() );
 
 	{
-		const auto & nps = route_params.named_parameters();
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( route_params );
 		REQUIRE( 3 == nps.size() );
 
-		const auto & ips = route_params.indexed_parameters();
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( route_params );
 		REQUIRE( 0 == ips.size() );
 
 		REQUIRE( route_params[ "year" ] == "2017" );
@@ -302,10 +309,10 @@ TEST_CASE( "Many params" , "[express][named_params][indexed_params]" )
 	REQUIRE( 2 == extract_last_handler_called() );
 
 	{
-		const auto & nps = route_params.named_parameters();
-		REQUIRE( 0 == route_params.named_parameters().size() );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( route_params );
+		REQUIRE( 0 == nps.size() );
 
-		const auto & ips = route_params.indexed_parameters();
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( route_params );
 		REQUIRE( 3 == ips.size() );
 		REQUIRE( route_params[ 0 ] == "2017" );
 		REQUIRE( route_params[ 1 ] == "06" );
@@ -422,10 +429,12 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 	{
 		REQUIRE( request_accepted() == router( create_fake_request( "/0/0" ) ) );
 
-		REQUIRE_FALSE( route_params.named_parameters().empty() );
-		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-		REQUIRE( route_params.named_parameters()[0].second == "0" );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( route_params );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( route_params );
+		REQUIRE_FALSE( nps.empty() );
+		REQUIRE_FALSE( ips.empty() );
+		REQUIRE( nps[0].first =="named_param" );
+		REQUIRE( nps[0].second == "0" );
 		REQUIRE( route_params[ "named_param" ] == "0" );
 		REQUIRE( route_params[ "named_param" ].as< std::uint8_t >() == 0 );
 		REQUIRE( route_params[ "named_param" ].as< std::int8_t >() == 0 );
@@ -451,10 +460,13 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 		using int_type_t = std::int8_t;
 		REQUIRE( request_accepted() == router( create_fake_request( "/-128/127" ) ) );
 
-		REQUIRE_FALSE( route_params.named_parameters().empty() );
-		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-		REQUIRE( route_params.named_parameters()[0].second == "-128" );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( route_params );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( route_params );
+
+		REQUIRE_FALSE( nps.empty() );
+		REQUIRE_FALSE( ips.empty() );
+		REQUIRE( nps[0].first =="named_param" );
+		REQUIRE( nps[0].second == "-128" );
 		REQUIRE( route_params[ "named_param" ] == "-128" );
 		REQUIRE( route_params[ "named_param" ].as< int_type_t >() == -128 );
 
@@ -462,12 +474,12 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 		REQUIRE( route_params[ 0 ].as< int_type_t >() == 127 );
 
 		REQUIRE( request_accepted() == router( create_fake_request( "/-129/128" ) ) );
-		REQUIRE_FALSE( route_params.named_parameters().empty() );
-		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-		REQUIRE( route_params.named_parameters()[0].second == "-129" );
+		REQUIRE_FALSE( nps.empty() );
+		REQUIRE_FALSE( ips.empty() );
+		REQUIRE( nps[0].first =="named_param" );
+		REQUIRE( nps[0].second == "-129" );
 		REQUIRE( route_params[ "named_param" ] == "-129" );
-		REQUIRE_THROWS( route_params[ "named_param" ].as< int_type_t >());
+		REQUIRE_THROWS( route_params[ "named_param" ].as< int_type_t >() );
 		REQUIRE( route_params[ 0 ] == "128" );
 		REQUIRE_THROWS( route_params[ 0 ].as< int_type_t >() );
 	}
@@ -478,10 +490,13 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 
 		REQUIRE( request_accepted() == router( create_fake_request( "/0/255" ) ) );
 
-		REQUIRE_FALSE( route_params.named_parameters().empty() );
-		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-		REQUIRE( route_params.named_parameters()[0].second == "0" );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( route_params );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( route_params );
+
+		REQUIRE_FALSE( nps.empty() );
+		REQUIRE_FALSE( ips.empty() );
+		REQUIRE( nps[0].first =="named_param" );
+		REQUIRE( nps[0].second == "0" );
 		REQUIRE( route_params[ "named_param" ] == "0" );
 		REQUIRE( route_params[ "named_param" ].as< int_type_t >() == 0 );
 
@@ -489,10 +504,10 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 		REQUIRE( route_params[ 0 ].as< int_type_t >() == 255 );
 
 		REQUIRE( request_accepted() == router( create_fake_request( "/-1/256" ) ) );
-		REQUIRE_FALSE( route_params.named_parameters().empty() );
-		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-		REQUIRE( route_params.named_parameters()[0].second == "-1" );
+		REQUIRE_FALSE( nps.empty() );
+		REQUIRE_FALSE( ips.empty() );
+		REQUIRE( nps[0].first =="named_param" );
+		REQUIRE( nps[0].second == "-1" );
 		REQUIRE( route_params[ "named_param" ] == "-1" );
 		REQUIRE_THROWS( route_params[ "named_param" ].as< int_type_t >());
 		REQUIRE( route_params[ 0 ] == "256" );
@@ -504,10 +519,13 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 		using int_type_t = std::int16_t;
 		REQUIRE( request_accepted() == router( create_fake_request( "/-32768/32767" ) ) );
 
-		REQUIRE_FALSE( route_params.named_parameters().empty() );
-		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-		REQUIRE( route_params.named_parameters()[0].second == "-32768" );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( route_params );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( route_params );
+
+		REQUIRE_FALSE( nps.empty() );
+		REQUIRE_FALSE( ips.empty() );
+		REQUIRE( nps[0].first =="named_param" );
+		REQUIRE( nps[0].second == "-32768" );
 		REQUIRE( route_params[ "named_param" ] == "-32768" );
 		REQUIRE( route_params[ "named_param" ].as< int_type_t >() == -32768 );
 
@@ -515,10 +533,10 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 		REQUIRE( route_params[ 0 ].as< int_type_t >() == 32767 );
 
 		REQUIRE( request_accepted() == router( create_fake_request( "/-32769/32768" ) ) );
-		REQUIRE_FALSE( route_params.named_parameters().empty() );
-		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-		REQUIRE( route_params.named_parameters()[0].second == "-32769" );
+		REQUIRE_FALSE( nps.empty() );
+		REQUIRE_FALSE( ips.empty() );
+		REQUIRE( nps[0].first =="named_param" );
+		REQUIRE( nps[0].second == "-32769" );
 		REQUIRE( route_params[ "named_param" ] == "-32769" );
 		REQUIRE_THROWS( route_params[ "named_param" ].as< int_type_t >());
 		REQUIRE( route_params[ 0 ] == "32768" );
@@ -531,10 +549,13 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 
 		REQUIRE( request_accepted() == router( create_fake_request( "/0/65535" ) ) );
 
-		REQUIRE_FALSE( route_params.named_parameters().empty() );
-		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-		REQUIRE( route_params.named_parameters()[0].second == "0" );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( route_params );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( route_params );
+
+		REQUIRE_FALSE( nps.empty() );
+		REQUIRE_FALSE( ips.empty() );
+		REQUIRE( nps[0].first =="named_param" );
+		REQUIRE( nps[0].second == "0" );
 		REQUIRE( route_params[ "named_param" ] == "0" );
 		REQUIRE( route_params[ "named_param" ].as< int_type_t >() == 0 );
 
@@ -542,10 +563,10 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 		REQUIRE( route_params[ 0 ].as< int_type_t >() == 65535 );
 
 		REQUIRE( request_accepted() == router( create_fake_request( "/-1/65536" ) ) );
-		REQUIRE_FALSE( route_params.named_parameters().empty() );
-		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-		REQUIRE( route_params.named_parameters()[0].second == "-1" );
+		REQUIRE_FALSE( nps.empty() );
+		REQUIRE_FALSE( ips.empty() );
+		REQUIRE( nps[0].first =="named_param" );
+		REQUIRE( nps[0].second == "-1" );
 		REQUIRE( route_params[ "named_param" ] == "-1" );
 		REQUIRE_THROWS( route_params[ "named_param" ].as< int_type_t >());
 		REQUIRE( route_params[ 0 ] == "65536" );
@@ -557,10 +578,13 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 		using int_type_t = std::int32_t;
 		REQUIRE( request_accepted() == router( create_fake_request( "/-2147483648/2147483647" ) ) );
 
-		REQUIRE_FALSE( route_params.named_parameters().empty() );
-		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-		REQUIRE( route_params.named_parameters()[0].second == "-2147483648" );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( route_params );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( route_params );
+
+		REQUIRE_FALSE( nps.empty() );
+		REQUIRE_FALSE( ips.empty() );
+		REQUIRE( nps[0].first =="named_param" );
+		REQUIRE( nps[0].second == "-2147483648" );
 		REQUIRE( route_params[ "named_param" ] == "-2147483648" );
 		REQUIRE( route_params[ "named_param" ].as< int_type_t >() == -2147483648 );
 
@@ -568,10 +592,10 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 		REQUIRE( route_params[ 0 ].as< int_type_t >() == 2147483647 );
 
 		REQUIRE( request_accepted() == router( create_fake_request( "/-2147483649/2147483648" ) ) );
-		REQUIRE_FALSE( route_params.named_parameters().empty() );
-		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-		REQUIRE( route_params.named_parameters()[0].second == "-2147483649" );
+		REQUIRE_FALSE( nps.empty() );
+		REQUIRE_FALSE( ips.empty() );
+		REQUIRE( nps[0].first =="named_param" );
+		REQUIRE( nps[0].second == "-2147483649" );
 		REQUIRE( route_params[ "named_param" ] == "-2147483649" );
 		REQUIRE_THROWS( route_params[ "named_param" ].as< int_type_t >());
 		REQUIRE( route_params[ 0 ] == "2147483648" );
@@ -584,10 +608,13 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 
 		REQUIRE( request_accepted() == router( create_fake_request( "/0/4294967295" ) ) );
 
-		REQUIRE_FALSE( route_params.named_parameters().empty() );
-		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-		REQUIRE( route_params.named_parameters()[0].second == "0" );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( route_params );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( route_params );
+
+		REQUIRE_FALSE( nps.empty() );
+		REQUIRE_FALSE( ips.empty() );
+		REQUIRE( nps[0].first =="named_param" );
+		REQUIRE( nps[0].second == "0" );
 		REQUIRE( route_params[ "named_param" ] == "0" );
 		REQUIRE( route_params[ "named_param" ].as< int_type_t >() == 0UL );
 
@@ -595,10 +622,10 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 		REQUIRE( route_params[ 0 ].as< int_type_t >() == 4294967295UL );
 
 		REQUIRE( request_accepted() == router( create_fake_request( "/-1/4294967296" ) ) );
-		REQUIRE_FALSE( route_params.named_parameters().empty() );
-		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-		REQUIRE( route_params.named_parameters()[0].second == "-1" );
+		REQUIRE_FALSE( nps.empty() );
+		REQUIRE_FALSE( ips.empty() );
+		REQUIRE( nps[0].first =="named_param" );
+		REQUIRE( nps[0].second == "-1" );
 		REQUIRE( route_params[ "named_param" ] == "-1" );
 		REQUIRE_THROWS( route_params[ "named_param" ].as< int_type_t >());
 		REQUIRE( route_params[ 0 ] == "4294967296" );
@@ -610,10 +637,13 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 		using int_type_t = std::int64_t;
 		REQUIRE( request_accepted() == router( create_fake_request( "/-9223372036854775808/9223372036854775807" ) ) );
 
-		REQUIRE_FALSE( route_params.named_parameters().empty() );
-		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-		REQUIRE( route_params.named_parameters()[0].second == "-9223372036854775808" );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( route_params );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( route_params );
+
+		REQUIRE_FALSE( nps.empty() );
+		REQUIRE_FALSE( ips.empty() );
+		REQUIRE( nps[0].first =="named_param" );
+		REQUIRE( nps[0].second == "-9223372036854775808" );
 		REQUIRE( route_params[ "named_param" ] == "-9223372036854775808" );
 
 		// REQUIRE( route_params[ "named_param" ].as< int_type_t >() == (-9223372036854775808LL) );
@@ -624,10 +654,10 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 		REQUIRE( route_params[ 0 ].as< int_type_t >() == 9223372036854775807LL );
 
 		REQUIRE( request_accepted() == router( create_fake_request( "/-9223372036854775809/9223372036854775808" ) ) );
-		REQUIRE_FALSE( route_params.named_parameters().empty() );
-		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-		REQUIRE( route_params.named_parameters()[0].second == "-9223372036854775809" );
+		REQUIRE_FALSE( nps.empty() );
+		REQUIRE_FALSE( ips.empty() );
+		REQUIRE( nps[0].first =="named_param" );
+		REQUIRE( nps[0].second == "-9223372036854775809" );
 		REQUIRE( route_params[ "named_param" ] == "-9223372036854775809" );
 		REQUIRE_THROWS( route_params[ "named_param" ].as< int_type_t >());
 		REQUIRE( route_params[ 0 ] == "9223372036854775808" );
@@ -640,10 +670,13 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 
 		REQUIRE( request_accepted() == router( create_fake_request( "/0/18446744073709551615" ) ) );
 
-		REQUIRE_FALSE( route_params.named_parameters().empty() );
-		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-		REQUIRE( route_params.named_parameters()[0].second == "0" );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( route_params );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( route_params );
+
+		REQUIRE_FALSE( nps.empty() );
+		REQUIRE_FALSE( ips.empty() );
+		REQUIRE( nps[0].first =="named_param" );
+		REQUIRE( nps[0].second == "0" );
 		REQUIRE( route_params[ "named_param" ] == "0" );
 		REQUIRE( route_params[ "named_param" ].as< int_type_t >() == 0ULL );
 
@@ -651,10 +684,10 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 		REQUIRE( route_params[ 0 ].as< int_type_t >() == 18446744073709551615ULL );
 
 		REQUIRE( request_accepted() == router( create_fake_request( "/-1/18446744073709551616" ) ) );
-		REQUIRE_FALSE( route_params.named_parameters().empty() );
-		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-		REQUIRE( route_params.named_parameters()[0].second == "-1" );
+		REQUIRE_FALSE( nps.empty() );
+		REQUIRE_FALSE( ips.empty() );
+		REQUIRE( nps[0].first =="named_param" );
+		REQUIRE( nps[0].second == "-1" );
 		REQUIRE( route_params[ "named_param" ] == "-1" );
 		REQUIRE_THROWS( route_params[ "named_param" ].as< int_type_t >());
 		REQUIRE( route_params[ 0 ] == "18446744073709551616" );
