@@ -605,56 +605,59 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 		REQUIRE_THROWS( route_params[ 0 ].as< int_type_t >() );
 	}
 
-	// SECTION( "int64" )
-	// {
-	// 	using int_type_t = std::int64_t;
-	// 	REQUIRE( request_accepted() == router( create_fake_request( "/-9223372036854775808/9223372036854775807" ) ) );
+	SECTION( "int64" )
+	{
+		using int_type_t = std::int64_t;
+		REQUIRE( request_accepted() == router( create_fake_request( "/-9223372036854775808/9223372036854775807" ) ) );
 
-	// 	REQUIRE_FALSE( route_params.named_parameters().empty() );
-	// 	REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-	// 	REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-	// 	REQUIRE( route_params.named_parameters()[0].second == "-9223372036854775808" );
-	// 	REQUIRE( route_params[ "named_param" ] == "-9223372036854775808" );
-	// 	REQUIRE( route_params[ "named_param" ].as< int_type_t >() == -9223372036854775808LL );
+		REQUIRE_FALSE( route_params.named_parameters().empty() );
+		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
+		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
+		REQUIRE( route_params.named_parameters()[0].second == "-9223372036854775808" );
+		REQUIRE( route_params[ "named_param" ] == "-9223372036854775808" );
 
-	// 	REQUIRE( route_params[ 0 ] == "9223372036854775807" );
-	// 	REQUIRE( route_params[ 0 ].as< int_type_t >() == 9223372036854775807LL );
+		// REQUIRE( route_params[ "named_param" ].as< int_type_t >() == (-9223372036854775808LL) );
+		// To suppress the warning: integer constant is so large that it is unsigned.
+		REQUIRE( route_params[ "named_param" ].as< int_type_t >() == std::numeric_limits<int_type_t>::min() );
 
-	// 	REQUIRE( request_accepted() == router( create_fake_request( "/-9223372036854775809/9223372036854775808" ) ) );
-	// 	REQUIRE_FALSE( route_params.named_parameters().empty() );
-	// 	REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-	// 	REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-	// 	REQUIRE( route_params.named_parameters()[0].second == "-9223372036854775809" );
-	// 	REQUIRE( route_params[ "named_param" ] == "-9223372036854775809" );
-	// 	REQUIRE_THROWS( route_params[ "named_param" ].as< int_type_t >());
-	// 	REQUIRE( route_params[ 0 ] == "9223372036854775808" );
-	// 	REQUIRE_THROWS( route_params[ 0 ].as< int_type_t >() );
-	// }
+		REQUIRE( route_params[ 0 ] == "9223372036854775807" );
+		REQUIRE( route_params[ 0 ].as< int_type_t >() == 9223372036854775807LL );
 
-	// SECTION( "uint64" )
-	// {
-	// 	using int_type_t = std::uint64_t;
+		REQUIRE( request_accepted() == router( create_fake_request( "/-9223372036854775809/9223372036854775808" ) ) );
+		REQUIRE_FALSE( route_params.named_parameters().empty() );
+		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
+		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
+		REQUIRE( route_params.named_parameters()[0].second == "-9223372036854775809" );
+		REQUIRE( route_params[ "named_param" ] == "-9223372036854775809" );
+		REQUIRE_THROWS( route_params[ "named_param" ].as< int_type_t >());
+		REQUIRE( route_params[ 0 ] == "9223372036854775808" );
+		REQUIRE_THROWS( route_params[ 0 ].as< int_type_t >() );
+	}
 
-	// 	REQUIRE( request_accepted() == router( create_fake_request( "/0/18446744073709551615" ) ) );
+	SECTION( "uint64" )
+	{
+		using int_type_t = std::uint64_t;
 
-	// 	REQUIRE_FALSE( route_params.named_parameters().empty() );
-	// 	REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-	// 	REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-	// 	REQUIRE( route_params.named_parameters()[0].second == "0" );
-	// 	REQUIRE( route_params[ "named_param" ] == "0" );
-	// 	REQUIRE( route_params[ "named_param" ].as< int_type_t >() == 0ULL );
+		REQUIRE( request_accepted() == router( create_fake_request( "/0/18446744073709551615" ) ) );
 
-	// 	REQUIRE( route_params[ 0 ] == "18446744073709551615" );
-	// 	REQUIRE( route_params[ 0 ].as< int_type_t >() == 18446744073709551615ULL );
+		REQUIRE_FALSE( route_params.named_parameters().empty() );
+		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
+		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
+		REQUIRE( route_params.named_parameters()[0].second == "0" );
+		REQUIRE( route_params[ "named_param" ] == "0" );
+		REQUIRE( route_params[ "named_param" ].as< int_type_t >() == 0ULL );
 
-	// 	REQUIRE( request_accepted() == router( create_fake_request( "/-1/18446744073709551616" ) ) );
-	// 	REQUIRE_FALSE( route_params.named_parameters().empty() );
-	// 	REQUIRE_FALSE( route_params.indexed_parameters().empty() );
-	// 	REQUIRE( route_params.named_parameters()[0].first =="named_param" );
-	// 	REQUIRE( route_params.named_parameters()[0].second == "-1" );
-	// 	REQUIRE( route_params[ "named_param" ] == "-1" );
-	// 	REQUIRE_THROWS( route_params[ "named_param" ].as< int_type_t >());
-	// 	REQUIRE( route_params[ 0 ] == "18446744073709551616" );
-	// 	REQUIRE_THROWS( route_params[ 0 ].as< int_type_t >() );
-	// }
+		REQUIRE( route_params[ 0 ] == "18446744073709551615" );
+		REQUIRE( route_params[ 0 ].as< int_type_t >() == 18446744073709551615ULL );
+
+		REQUIRE( request_accepted() == router( create_fake_request( "/-1/18446744073709551616" ) ) );
+		REQUIRE_FALSE( route_params.named_parameters().empty() );
+		REQUIRE_FALSE( route_params.indexed_parameters().empty() );
+		REQUIRE( route_params.named_parameters()[0].first =="named_param" );
+		REQUIRE( route_params.named_parameters()[0].second == "-1" );
+		REQUIRE( route_params[ "named_param" ] == "-1" );
+		REQUIRE_THROWS( route_params[ "named_param" ].as< int_type_t >());
+		REQUIRE( route_params[ 0 ] == "18446744073709551616" );
+		REQUIRE_THROWS( route_params[ 0 ].as< int_type_t >() );
+	}
 }
