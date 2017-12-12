@@ -10,10 +10,8 @@
 #include <string>
 #include <vector>
 #include <chrono>
-// #include <ctime>
-// #include <cstdlib>
-// #include <stdexcept>
-// #include <cctype>
+
+#include <boost/lexical_cast.hpp>
 
 #include <restinio/utils/from_string.hpp>
 
@@ -116,10 +114,27 @@ bench_intN( const cast_dataset_t< Integer > & data )
 	}
 }
 
+
 void bench_int8(){ bench_intN( ints8_data ); }
 void bench_uint8(){ bench_intN( uints8_data ); }
 void bench_int16(){ bench_intN( ints16_data ); }
 void bench_uint16(){ bench_intN( uints16_data ); }
+
+template < typename Integer >
+void
+boost_bench_intN( const cast_dataset_t< Integer > & data )
+{
+	for( int i = 0; i < iterations; ++i )
+	{
+		for( const auto & p : data )
+			if( p.m_int != boost::lexical_cast< Integer >( p.m_str ) );
+	}
+}
+
+void boost_bench_int8(){ boost_bench_intN( ints8_data ); }
+void boost_bench_uint8(){ boost_bench_intN( uints8_data ); }
+void boost_bench_int16(){ boost_bench_intN( ints16_data ); }
+void boost_bench_uint16(){ boost_bench_intN( uints16_data ); }
 
 
 int
@@ -131,6 +146,11 @@ main()
 	run_bench( "uint8", bench_uint8 );
 	run_bench( "int16", bench_int16 );
 	run_bench( "uint16", bench_uint16 );
+
+	// run_bench( "boost int8", boost_bench_int8 );
+	// run_bench( "boost uint8", boost_bench_uint8 );
+	run_bench( "boost int16", boost_bench_int16 );
+	run_bench( "boost uint16", boost_bench_uint16 );
 
 	return 0;
 }
