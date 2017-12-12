@@ -64,7 +64,7 @@ class route_params_t final
 
 		void
 		match(
-			std::vector< char > request_target,
+			std::unique_ptr< char[] > request_target,
 			std::shared_ptr< std::string > key_names_buffer,
 			string_view_t match,
 			named_parameters_container_t named_parameters,
@@ -125,14 +125,14 @@ class route_params_t final
 			All parameters values are defined as string views
 			refering parts of this beffer.
 
-			\note Vector is used here on purpose,
+			\note `std::unique_ptr< char[] >` is used here on purpose,
 			because if we consider std::string, then it has an issue
 			when SSO is applied. It is important that
 			parameters that refering buffer are valid after move operations with
 			the buffer. And std::strings with SSO applied cannot guarantee this.
 			Vector on the other hand gives this guarantee.
 		*/
-		std::vector< char > m_request_target;
+		std::unique_ptr< char[] > m_request_target;
 
 		//! Shared buffer for string_view of named parameterts names.
 		std::shared_ptr< std::string > m_key_names_buffer;
@@ -161,7 +161,7 @@ struct route_params_accessor_t
 	static void
 	match(
 		route_params_t & rp,
-		std::vector< char > request_target,
+		std::unique_ptr< char[] > request_target,
 		std::shared_ptr< std::string > key_names_buffer,
 		string_view_t match_,
 		route_params_t::named_parameters_container_t named_parameters,
@@ -274,13 +274,11 @@ class route_matcher_t
 
 				// Data for route_params_t initialization.
 
-				std::vector< char >
-					captured_params{
-						request_target.data(),
-						request_target.data() + request_target.size() };
+				std::unique_ptr< char[] > captured_params{ new char[ request_target.size() ] };
+				std::memcpy( captured_params.get(), request_target.data(), request_target.size() );
 
 				const string_view_t match{
-					captured_params.data() + Regex_Engine::submatch_begin_pos( matches[0] ),
+					captured_params.get() + Regex_Engine::submatch_begin_pos( matches[0] ),
 					Regex_Engine::submatch_end_pos( matches[0] ) -
 						Regex_Engine::submatch_begin_pos( matches[0] ) } ;
 
@@ -301,7 +299,7 @@ class route_matcher_t
 					m_param_appender_sequence[ i - 1](
 						param_appender,
 						string_view_t{
-							captured_params.data() + Regex_Engine::submatch_begin_pos( m ),
+							captured_params.get() + Regex_Engine::submatch_begin_pos( m ),
 							Regex_Engine::submatch_end_pos( m ) -
 								Regex_Engine::submatch_begin_pos( m ) } );
 				}
@@ -310,7 +308,7 @@ class route_matcher_t
 				{
 					m_param_appender_sequence[ i - 1 ](
 						param_appender,
-						string_view_t{ captured_params.data(), 0 } );
+						string_view_t{ captured_params.get(), 0 } );
 				}
 
 				// Init route parameters.
