@@ -18,6 +18,8 @@
 namespace restinio
 {
 
+class query_string_params_t;
+
 //
 // Forwrd declaration.
 //
@@ -46,6 +48,7 @@ string_view_t access_parameter_string_view( const parameter_bind_t & p );
 class parameter_bind_t final
 {
 		friend class router::route_params_t;
+		friend class query_string_params_t;
 		friend string_view_t access_parameter_string_view( const parameter_bind_t & p );
 	public:
 

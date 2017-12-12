@@ -145,7 +145,7 @@ unescape_percent_encoding( const string_view_t data )
 				fmt::format(
 					"invalid non-escaped char with code {:#02X} at pos: {}",
 					c,
-					data.data() - d ) };
+					d - data.data() ) };
 		}
 		else if( chars_to_handle >= 3 &&
 			impl::is_hexdigit( d[ 1 ] ) &&
@@ -163,6 +163,59 @@ unescape_percent_encoding( const string_view_t data )
 		}
 	}
 	return result;
+}
+
+inline std::size_t
+inplace_unescape_percent_encoding( char * data, std::size_t size )
+{
+	std::size_t result_size = size;
+	std::size_t chars_to_handle = size;
+	const char * d = data;
+	char * dest = data;
+
+	while( 0 < chars_to_handle )
+	{
+		char c = *d;
+		if( impl::ordinary_char( c ) )
+		{
+			// Skip.
+			*dest++ = c;
+			--chars_to_handle;
+			++d;
+		}
+		else if( '+' == c )
+		{
+			// Replace with space.
+			*dest++ = ' ';
+			--chars_to_handle;
+			++d;
+		}
+		else if( '%' != c )
+		{
+			throw exception_t{
+				fmt::format(
+					"invalid non-escaped char with code {:#02X} at pos: {}",
+					c,
+					d - data ) };
+		}
+		else if( chars_to_handle >= 3 &&
+			impl::is_hexdigit( d[ 1 ] ) &&
+			impl::is_hexdigit( d[ 2 ] ) )
+		{
+			*dest++ = impl::extract_escaped_char( d[ 1 ], d[ 2 ] );
+			chars_to_handle -= 3;
+			d += 3;
+			result_size -= 2; // 3 chars => 1 char.
+		}
+		else
+		{
+			throw exception_t{
+				fmt::format(
+					"invalid escape sequence at pos {}", d - data ) };
+		}
+	}
+
+	return result_size;
 }
 
 inline std::string
