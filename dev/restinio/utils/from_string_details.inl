@@ -294,12 +294,12 @@ parse_integer_no_checks(
 	if( apply_minus_sign )
 		while( data_begin != data_end )
 		{
-			result = result*10 - mapping_table[ *data_begin++ ];
+			result = result*10 - mapping_table[ static_cast< std::size_t >( *data_begin++ ) ];
 		}
 	else
 		while( data_begin != data_end )
 		{
-			result = result*10 + mapping_table[ *data_begin++ ];
+			result = result*10 + mapping_table[ static_cast< std::size_t >( *data_begin++ ) ];
 		}
 
 	return result;
@@ -318,7 +318,7 @@ parse_integer_no_checks(
 
 	while( data_begin != data_end )
 	{
-		result = result * 10 + mapping_table[ *data_begin++ ];
+		result = result * 10 + mapping_table[ static_cast< std::size_t >( *data_begin++ ) ];
 	}
 
 	return result;
@@ -348,7 +348,7 @@ parse_integer( const char * data_begin, const char * data_end )
 		++data_begin;
 	}
 
-	const auto representation_size = data_end - data_begin;
+	const auto representation_size = static_cast< std::size_t >( data_end - data_begin );
 
 	if( 0 == representation_size )
 		throw exception_t{ fmt::format( "invalid {} value: empty string", Traits::type_name() ) };
@@ -362,7 +362,10 @@ parse_integer( const char * data_begin, const char * data_end )
 
 	const std::uint8_t * const mapping_table = digits_mapping< std::uint8_t >();
 
-	if( std::any_of( data_begin, data_end, [&]( auto d ){ return 0xFF == mapping_table[ d ]; } ) )
+	if( std::any_of(
+			data_begin,
+			data_end,
+			[&]( auto d ){ return 0xFF == mapping_table[ static_cast< std::size_t >( d ) ]; } ) )
 	{
 		throw exception_t{
 			fmt::format( "invalid {} value: invalid digit", Traits::type_name() ) };
