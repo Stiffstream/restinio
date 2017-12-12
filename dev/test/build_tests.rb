@@ -11,7 +11,9 @@ MxxRu::Cpp::composite_target {
 	required_prj( "test/ref_qualifiers_settings/prj.ut.rb" )
 	required_prj( "test/buffers/prj.ut.rb" )
 	required_prj( "test/response_coordinator/prj.ut.rb" )
+	required_prj( "test/from_string/prj.ut.rb" )
 	required_prj( "test/uri_helpers/prj.ut.rb" )
+
 	if not $sanitizer_build or $sanitizer_build != 'thread_sanitizer'
 		required_prj( "test/socket_options/prj.ut.rb" )
 	end
@@ -56,13 +58,14 @@ MxxRu::Cpp::composite_target {
 	end
 
 	required_prj( "test/router/cmp_router_bench/prj.rb" )
-	# ================================================================
 
+	# ================================================================
 	required_prj( "test/encoders/prj.ut.rb" )
 
 	# ================================================================
 	# Benches for implementation tuning.
 	required_prj( "test/to_lower_bench/prj.rb" )
+
 	# ================================================================
 	# Websocket tests
 
