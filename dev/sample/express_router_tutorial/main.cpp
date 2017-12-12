@@ -50,7 +50,7 @@ auto server_handler()
 	router->http_get( "/single/:param", []( auto req, auto params ){
 		return
 			init_resp( req->create_response() )
-				.set_body( "GET request with single parameter: " + params[ "param" ].str() )
+				.set_body( "GET request with single parameter: " + params[ "param" ].as_string() )
 				.done();
 	} );
 
@@ -60,9 +60,9 @@ auto server_handler()
 			return
 				init_resp( req->create_response() )
 					.set_body( "POST request with many parameters:\n"
-						"year: "+ params[ "year" ].str() + "\n" +
-						"month: "+ params[ "month" ].str() + "\n" +
-						"day: "+ params[ "day" ].str() + "\n"
+						"year: "+ params[ "year" ].as_string() + "\n" +
+						"month: "+ params[ "month" ].as_string() + "\n" +
+						"day: "+ params[ "day" ].as_string() + "\n"
 						"body: " + req->body() )
 					.done();
 		} );
@@ -73,9 +73,9 @@ auto server_handler()
 			return
 				init_resp( req->create_response() )
 					.set_body( "POST request with indexed parameters:\n"
-						"#0: "+ params[ 0 ].str() + "\n" +
-						"#1: "+ params[ 1 ].str() + "\n" +
-						"#2: "+ params[ 2 ].str() + "\n" )
+						"#0: "+ params[ 0 ].as_string() + "\n" +
+						"#1: "+ params[ 1 ].as_string() + "\n" +
+						"#2: "+ params[ 2 ].as_string() + "\n" )
 					.done();
 		} );
 

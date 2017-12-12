@@ -119,6 +119,14 @@ from_string< std::string >( const string_view_t & s )
 	return std::string{ s.data(), s.size() };
 }
 
+//! Get a value from string_view.
+template <>
+inline string_view_t
+from_string< string_view_t >( const string_view_t & s )
+{
+	return s;
+}
+
 //! Get a value from string.
 template < typename Value_Type >
 Value_Type

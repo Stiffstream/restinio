@@ -48,24 +48,30 @@ class parameter_bind_t final
 		friend class router::route_params_t;
 		friend string_view_t access_parameter_string_view( const parameter_bind_t & p );
 	public:
-		// TODO: leave only "as< T >()"
-		std::string
-		str() const
-		{
-			return std::string{ m_parameter_data.data(), m_parameter_data.size() };
-		}
 
-		operator std::string () const
-		{
-			return str();
-		}
+		//! Cast parameter value to type.
+		/*!
+			Gets the string_view object of a given parameter.
 
-		//! Cast string value to type.
+			\note When getting parameter value as string_view
+			a copy of internal string_view object is returned.
+			And it is valid only during lifetime of
+			a given parameters-incapsulator.
+			If parameters-incapsulator is moved then all string views
+			remain valid during life time of a newly created parameters-incapsulator.
+		*/
 		template < typename Value_Type >
 		Value_Type
 		as() const
 		{
 			return utils::from_string< Value_Type >( m_parameter_data );
+		}
+
+		//! Sortcut for getting parameter as string.
+		std::string
+		as_string() const
+		{
+			return as< std::string >();
 		}
 
 		//! Some usefull opertors for typical use cases.
@@ -106,21 +112,6 @@ class parameter_bind_t final
 		string_view_t m_parameter_data;
 };
 
-//! Access internal string view object of a parameter bind.
-/*!
-	Gets the string_view object of a given parameter.
-
-	\note String view is valid during lifetime of
-	a given parameters-incapsulator.
-	If parameters-incapsulator is moved then all string views
-	remain valid during life time of a newly created parameters-incapsulator.
-*/
-inline string_view_t
-access_parameter_string_view( const parameter_bind_t & p )
-{
-	return p.m_parameter_data;
-}
-
 namespace utils
 {
 
@@ -128,14 +119,14 @@ namespace utils
 inline std::string
 escape_percent_encoding( const parameter_bind_t & p )
 {
-	return escape_percent_encoding( access_parameter_string_view( p ) );
+	return escape_percent_encoding( p.as< string_view_t >() );
 }
 
 //! Overload for unescape_percent_encoding with parameter_bind_t as parameter.
 inline std::string
 unescape_percent_encoding( const parameter_bind_t & p )
 {
-	return unescape_percent_encoding( access_parameter_string_view( p ) );
+	return unescape_percent_encoding( p.as< string_view_t >() );
 }
 //! \}
 

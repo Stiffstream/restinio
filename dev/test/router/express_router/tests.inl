@@ -29,7 +29,7 @@ TEST_CASE( "Simple named param" , "[express][simple][named_params]" )
 			REQUIRE( route_params.indexed_parameters().empty() );
 			REQUIRE( route_params.named_parameters()[0].first =="id" );
 			REQUIRE( route_params.named_parameters()[0].second == "42" );
-			REQUIRE( route_params[ "id" ] == "42" );
+			REQUIRE( route_params[ "id" ].as< std::string >() == "42" );
 			REQUIRE( route_params[ "id" ].as< std::uint8_t >() == 42 );
 			REQUIRE( route_params[ "id" ].as< std::int8_t >() == 42 );
 			REQUIRE( route_params[ "id" ].as< short >() == 42 );
