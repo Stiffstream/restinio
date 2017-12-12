@@ -85,6 +85,12 @@ cast_dataset_t< std::uint8_t > uints8_data;
 cast_dataset_t< std::int16_t > ints16_data;
 cast_dataset_t< std::uint16_t > uints16_data;
 
+cast_dataset_t< std::int32_t > ints32_data;
+cast_dataset_t< std::uint32_t > uints32_data;
+
+cast_dataset_t< std::int64_t > ints64_data;
+cast_dataset_t< std::uint64_t > uints64_data;
+
 void
 init_datasets( size_t n )
 {
@@ -94,6 +100,10 @@ init_datasets( size_t n )
 	uints8_data = create_ints< std::uint8_t >( n );
 	ints16_data = create_ints< std::int16_t >( n );
 	uints16_data = create_ints< std::uint16_t >( n );
+	ints32_data = create_ints< std::int32_t >( n );
+	uints32_data = create_ints< std::uint32_t >( n );
+	ints64_data = create_ints< std::int64_t >( n );
+	uints64_data = create_ints< std::uint64_t >( n );
 }
 
 #define RUN_CAST_BENCH( bench_func, tag ) \
@@ -114,11 +124,14 @@ bench_intN( const cast_dataset_t< Integer > & data )
 	}
 }
 
-
 void bench_int8(){ bench_intN( ints8_data ); }
 void bench_uint8(){ bench_intN( uints8_data ); }
 void bench_int16(){ bench_intN( ints16_data ); }
 void bench_uint16(){ bench_intN( uints16_data ); }
+void bench_int32(){ bench_intN( ints32_data ); }
+void bench_uint32(){ bench_intN( uints32_data ); }
+void bench_int64(){ bench_intN( ints64_data ); }
+void bench_uint64(){ bench_intN( uints64_data ); }
 
 template < typename Integer >
 void
@@ -135,6 +148,10 @@ void boost_bench_int8(){ boost_bench_intN( ints8_data ); }
 void boost_bench_uint8(){ boost_bench_intN( uints8_data ); }
 void boost_bench_int16(){ boost_bench_intN( ints16_data ); }
 void boost_bench_uint16(){ boost_bench_intN( uints16_data ); }
+void boost_bench_int32(){ boost_bench_intN( ints32_data ); }
+void boost_bench_uint32(){ boost_bench_intN( uints32_data ); }
+void boost_bench_int64(){ boost_bench_intN( ints64_data ); }
+void boost_bench_uint64(){ boost_bench_intN( uints64_data ); }
 
 
 int
@@ -146,11 +163,19 @@ main()
 	run_bench( "uint8", bench_uint8 );
 	run_bench( "int16", bench_int16 );
 	run_bench( "uint16", bench_uint16 );
+	run_bench( "int32", bench_int32 );
+	run_bench( "uint32", bench_uint32 );
+	run_bench( "int64", bench_int64 );
+	run_bench( "uint64", bench_uint64 );
 
 	// run_bench( "boost int8", boost_bench_int8 );
 	// run_bench( "boost uint8", boost_bench_uint8 );
 	run_bench( "boost int16", boost_bench_int16 );
 	run_bench( "boost uint16", boost_bench_uint16 );
+	run_bench( "boost int32", boost_bench_int32 );
+	run_bench( "boost uint32", boost_bench_uint32 );
+	run_bench( "boost int64", boost_bench_int64 );
+	run_bench( "boost uint64", boost_bench_uint64 );
 
 	return 0;
 }
