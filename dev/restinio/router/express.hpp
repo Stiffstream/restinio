@@ -90,16 +90,11 @@ class route_params_t final
 		const parameter_bind_t
 		match() const { return parameter_bind_t( m_match ); }
 
+		//! Get named parameter.
 		const parameter_bind_t
 		operator [] ( string_view_t key ) const
 		{
-			const auto it =
-				std::find_if(
-					m_named_parameters.begin(),
-					m_named_parameters.end(),
-					[&]( const auto p ){
-						return key == p.first;
-					} );
+			auto it = find_named_parameter( key );
 
 			if( m_named_parameters.end() == it )
 				throw exception_t{
@@ -110,6 +105,14 @@ class route_params_t final
 			return parameter_bind_t{ it->second };
 		}
 
+		//! Check parameter.
+		bool
+		has( string_view_t key ) const
+		{
+			return m_named_parameters.end() != find_named_parameter( key );
+		}
+
+		//! Get indexed parameter.
 		const parameter_bind_t
 		operator [] ( std::size_t i ) const
 		{
@@ -119,7 +122,25 @@ class route_params_t final
 			return parameter_bind_t{ m_indexed_parameters.at( i ) };
 		}
 
+		//! Get number of parameters.
+		//! \{
+		auto named_parameters_size() const { return m_named_parameters.size(); }
+		auto indexed_parameters_size() const { return m_indexed_parameters.size(); }
+		//! \}
+
 	private:
+		named_parameters_container_t::const_iterator
+		find_named_parameter( const string_view_t & key ) const
+		{
+			return
+				std::find_if(
+					m_named_parameters.begin(),
+					m_named_parameters.end(),
+					[&]( const auto p ){
+						return key == p.first;
+					} );
+		}
+
 		//! A raw request target.
 		/*!
 			All parameters values are defined as string views
