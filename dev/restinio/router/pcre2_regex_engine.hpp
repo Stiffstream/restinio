@@ -228,6 +228,17 @@ struct pcre2_regex_engine_t
 			match_results.m_size = rc;
 			return true;
 		}
+		else if( rc == 0 )
+		{
+			// This should not happen,
+			// because the number of groups is checked when creating route matcher.
+			throw exception_t{ "unexpected: not enough submatch vector size" };
+		}
+		if( PCRE2_ERROR_NOMATCH != rc )
+		{
+			throw exception_t{ fmt::format("pcre2 error: {}", rc ) };
+		}
+		// else PCRE2_ERROR_NOMATCH -- no match for this route
 
 		return false;
 	}
