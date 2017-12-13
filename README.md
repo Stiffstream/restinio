@@ -48,7 +48,7 @@ To use *RESTinio* it is necessary to have:
 * [asio](http://think-async.com/Asio) from [git repo](https://github.com/chriskohlhoff/asio.git), commit `d52b8164665e779f58e30d60e4ff9a8da1ce3c4a`;
 * [nodejs/http-parser](https://github.com/nodejs/http-parser) 2.7.1;
 * [fmtlib](http://fmtlib.net/latest/index.html) 4.0.0.
-* Optional: [SObjectizer](https://sourceforge.net/projects/sobjectizer/) 5.5.19.5;
+* Optional: [SObjectizer](https://sourceforge.net/projects/sobjectizer/) 5.5.20;
 
 For building samples, benchmarks and tests:
 
@@ -63,21 +63,21 @@ For building samples, benchmarks and tests:
 There are two ways of obtaining *RESTinio*.
 
 * Getting from
-[repository](https://bitbucket.org/sobjectizerteam/restinio-0.3).
+[repository](https://bitbucket.org/sobjectizerteam/restinio-0.4).
 In this case external dependencies must be obtained with Mxx_ru externals tool.
 * Getting
-[archive](https://bitbucket.org/sobjectizerteam/restinio-0.3/downloads/restinio-0.3.0-full.tar.bz2).
+[archive](https://bitbucket.org/sobjectizerteam/restinio-0.4/downloads/restinio-0.4.0-full.tar.bz2).
 Archive includes source code for all external dependencies.
 
 ### Cloning of hg repository
 
 ```
-hg clone https://bitbucket.org/sobjectizerteam/restinio-0.3
+hg clone https://bitbucket.org/sobjectizerteam/restinio-0.4
 ```
 
 And then:
 ```
-cd restinio-0.3
+cd restinio-0.4
 mxxruexternals
 ```
 to download and extract *RESTinio*'s dependencies.
@@ -89,10 +89,10 @@ See MxxRu::externals recipes for *RESTinio*
 
 ### Getting archive
 
-Choose the file fom [downloads page](https://bitbucket.org/sobjectizerteam/restinio-0.3/downloads/).
+Choose the file fom [downloads page](https://bitbucket.org/sobjectizerteam/restinio-0.4/downloads/).
 
 ```
-wget https://bitbucket.org/sobjectizerteam/restinio-0.3/downloads/<ARCHIVE>
+wget https://bitbucket.org/sobjectizerteam/restinio-0.4/downloads/<ARCHIVE>
 tar xjvf <ARCHIVE>
 cd <UNPACKED_DIR>
 ```
@@ -105,8 +105,8 @@ Building with CMake currently is provided for samples, tests and benches
 not depending on SObjectizer.
 To build them run the following commands:
 ```
-hg clone https://bitbucket.org/sobjectizerteam/restinio-0.3
-cd restinio-0.3
+hg clone https://bitbucket.org/sobjectizerteam/restinio-0.4
+cd restinio-0.4
 mxxruexternals
 cd dev
 mkdir cmake_build
@@ -118,7 +118,7 @@ make install
 
 Or, if getting sources from archive (*<ARCHIVE>*):
 ```
-wget https://bitbucket.org/sobjectizerteam/restinio-0.3/downloads/<ARCHIVE>
+wget https://bitbucket.org/sobjectizerteam/restinio-0.4/downloads/<ARCHIVE>
 tar xjvf <ARCHIVE>
 cd <UNPACKED_DIR>/dev
 mkdir cmake_build
@@ -133,8 +133,8 @@ While *RESTinio* is header-only library, samples, tests and benches require a bu
 
 Compiling with Mxx_ru:
 ```
-hg clone https://bitbucket.org/sobjectizerteam/restinio-0.3
-cd restinio-0.3
+hg clone https://bitbucket.org/sobjectizerteam/restinio-0.4
+cd restinio-0.4
 mxxruexternals
 cd dev
 ruby build.rb
