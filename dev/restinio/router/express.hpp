@@ -271,8 +271,8 @@ class route_matcher_t
 			std::shared_ptr< std::string > named_params_buffer,
 			param_appender_sequence_t param_appender_sequence )
 			:	m_method{ method }
-			,	m_named_params_buffer{ std::move( named_params_buffer ) }
 			,	m_route_regex{ std::move( route_regex ) }
+			,	m_named_params_buffer{ std::move( named_params_buffer ) }
 			,	m_param_appender_sequence{ std::move( param_appender_sequence ) }
 		{}
 

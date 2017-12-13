@@ -415,9 +415,6 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 
 	route_params_t route_params{};
 
-	auto check_route_params = [ & ]{
-	};
-
 	router.http_get(
 		"/:named_param/(.*)",
 		[&]( auto , auto p ){
