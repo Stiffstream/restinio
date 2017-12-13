@@ -42,11 +42,11 @@ namespace restinio
 		using string_view_t = std::string_view;
 	#elif defined( RESTINIO_HAS_EXPERIMENTAL_STRING_VIEW )
 		using string_view_t = std::experimental::string_view;
-	#else
-		#include "string_view.inl"
-		// In case nothing standard is available use string.
-		// using string_view_t = std::string;
 	#endif
+
+#else
+	// OUR STRING VIEW HERE.
+	#include "string_view.inl"
 #endif
 
 } /* namespace restinio */

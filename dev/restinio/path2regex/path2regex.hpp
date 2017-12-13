@@ -321,7 +321,7 @@ class string_view_buffer_storage_appender_t final
 		//! Appends a given name to buffer,
 		//! and returns a string view object within the context of a buffer.
 		string_view_t
-		append_name( const string_view_t name )
+		append_name( const std::string & name )
 		{
 			const auto n = name.size();
 			if( m_buffer.capacity() - m_buffer.size() < n )

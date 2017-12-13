@@ -81,7 +81,7 @@ class parameter_bind_t final
 		//! \{
 		bool operator == ( const char * str ) const
 		{
-			return m_parameter_data == str;
+			return m_parameter_data == string_view_t{ str };
 		}
 
 		bool operator != ( const char * str ) const
@@ -91,12 +91,12 @@ class parameter_bind_t final
 
 		bool operator == ( const std::string & str ) const
 		{
-			return m_parameter_data == str;
+			return m_parameter_data == string_view_t{ str.data(), str.size() };
 		}
 
 		bool operator != ( const std::string & str ) const
 		{
-			return m_parameter_data != str;
+			return !( *this == str );
 		}
 		//! \}
 

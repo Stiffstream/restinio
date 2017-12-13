@@ -122,7 +122,7 @@ class basic_string_view_t final
 		constexpr size_type
 		max_size() const noexcept
 		{
-			return std::numeric_limits::<size_type>::max();
+			return std::numeric_limits<size_type>::max();
 		}
 
 		constexpr bool
@@ -276,129 +276,129 @@ class basic_string_view_t final
 			return find( basic_string_view_t(s), pos );
 		}
 
-		constexpr size_type
-		rfind(
-			basic_string_view_t v, size_type pos = npos ) const noexcept
-		{
+		// constexpr size_type
+		// rfind(
+		// 	basic_string_view_t v, size_type pos = npos ) const noexcept
+		// {
 
-		}
+		// }
 
-		constexpr size_type
-		rfind(
-			Char c, size_type pos = npos ) const noexcept
-		{
-			rfind( basic_string_view_t(&c, 1), pos );
-		}
+		// constexpr size_type
+		// rfind(
+		// 	Char c, size_type pos = npos ) const noexcept
+		// {
+		// 	return rfind( basic_string_view_t(&c, 1), pos );
+		// }
 
-		constexpr size_type
-		rfind(
-			const Char* s, size_type pos, size_type count ) const
-		{
-			rfind( basic_string_view_t(s, count), pos );
-		}
+		// constexpr size_type
+		// rfind(
+		// 	const Char* s, size_type pos, size_type count ) const
+		// {
+		// 	return rfind( basic_string_view_t(s, count), pos );
+		// }
 
-		constexpr size_type
-		rfind(
-			const Char* s, size_type pos = npos ) const
-		{
-			rfind( basic_string_view_t(s), pos );
-		}
+		// constexpr size_type
+		// rfind(
+		// 	const Char* s, size_type pos = npos ) const
+		// {
+		// 	return rfind( basic_string_view_t(s), pos );
+		// }
 
-		constexpr size_type
-		find_first_of( basic_string_view_t v, size_type pos = 0 ) const noexcept
-		{
+		// constexpr size_type
+		// find_first_of( basic_string_view_t v, size_type pos = 0 ) const noexcept
+		// {
 
-		}
+		// }
 
-		constexpr size_type
-		find_first_of( Char c, size_type pos = 0 ) const noexcept
-		{
-			find_first_of( basic_string_view_t(&c, 1), pos );
-		}
+		// constexpr size_type
+		// find_first_of( Char c, size_type pos = 0 ) const noexcept
+		// {
+		// 	return find_first_of( basic_string_view_t(&c, 1), pos );
+		// }
 
-		constexpr size_type
-		find_first_of( const Char* s, size_type pos, size_type count ) const
-		{
-			find_first_of( basic_string_view_t(s, count), pos );
-		}
+		// constexpr size_type
+		// find_first_of( const Char* s, size_type pos, size_type count ) const
+		// {
+		// 	return find_first_of( basic_string_view_t(s, count), pos );
+		// }
 
-		constexpr size_type
-		find_first_of( const Char* s, size_type pos = 0 ) const
-		{
-			find_first_of( basic_string_view_t(s), pos );
-		}
+		// constexpr size_type
+		// find_first_of( const Char* s, size_type pos = 0 ) const
+		// {
+		// 	return find_first_of( basic_string_view_t(s), pos );
+		// }
 
-		constexpr size_type
-		find_last_of( basic_string_view_t v, size_type pos = npos ) const noexcept
-		{
+		// constexpr size_type
+		// find_last_of( basic_string_view_t v, size_type pos = npos ) const noexcept
+		// {
 
-		}
+		// }
 
-		constexpr size_type
-		find_last_of( Char c, size_type pos = npos ) const noexcept
-		{
-			find_last_of( basic_string_view_t(&c, 1), pos );
-		}
+		// constexpr size_type
+		// find_last_of( Char c, size_type pos = npos ) const noexcept
+		// {
+		// 	return find_last_of( basic_string_view_t(&c, 1), pos );
+		// }
 
-		constexpr size_type
-		find_last_of( const Char* s, size_type pos, size_type count ) const
-		{
-			find_last_of( basic_string_view_t(s, count), pos );
-		}
+		// constexpr size_type
+		// find_last_of( const Char* s, size_type pos, size_type count ) const
+		// {
+		// 	return find_last_of( basic_string_view_t(s, count), pos );
+		// }
 
-		constexpr size_type
-		find_last_of( const Char* s, size_type pos = npos ) const
-		{
-			find_last_of( basic_string_view_t(s), pos );
-		}
+		// constexpr size_type
+		// find_last_of( const Char* s, size_type pos = npos ) const
+		// {
+		// 	return find_last_of( basic_string_view_t(s), pos );
+		// }
 
-		constexpr size_type
-		find_first_not_of( basic_string_view_t v, size_type pos = 0 ) const noexcept
-		{
+		// constexpr size_type
+		// find_first_not_of( basic_string_view_t v, size_type pos = 0 ) const noexcept
+		// {
 
-		}
+		// }
 
-		constexpr size_type
-		find_first_not_of( Char c, size_type pos = 0 ) const noexcept
-		{
-			find_first_not_of( basic_string_view_t(&c, 1), pos );
-		}
+		// constexpr size_type
+		// find_first_not_of( Char c, size_type pos = 0 ) const noexcept
+		// {
+		// 	return find_first_not_of( basic_string_view_t(&c, 1), pos );
+		// }
 
-		constexpr size_type
-		find_first_not_of( const Char* s, size_type pos, size_type count ) const
-		{
-			find_first_not_of( basic_string_view_t(s, count), pos );
-		}
+		// constexpr size_type
+		// find_first_not_of( const Char* s, size_type pos, size_type count ) const
+		// {
+		// 	return find_first_not_of( basic_string_view_t(s, count), pos );
+		// }
 
-		constexpr size_type
-		find_first_not_of( const Char* s, size_type pos = 0 ) const
-		{
-			find_first_not_of( basic_string_view_t(s), pos );
-		}
+		// constexpr size_type
+		// find_first_not_of( const Char* s, size_type pos = 0 ) const
+		// {
+		// 	return find_first_not_of( basic_string_view_t(s), pos );
+		// }
 
-		constexpr size_type
-		find_last_not_of( basic_string_view_t v, size_type pos = npos ) const noexcept
-		{
+		// constexpr size_type
+		// find_last_not_of( basic_string_view_t v, size_type pos = npos ) const noexcept
+		// {
 
-		}
+		// }
 
-		constexpr size_type
-		find_last_not_of( Char c, size_type pos = npos ) const noexcept
-		{
-			find_last_not_of( basic_string_view_t(&c, 1), pos );
-		}
+		// constexpr size_type
+		// find_last_not_of( Char c, size_type pos = npos ) const noexcept
+		// {
+		// 	return find_last_not_of( basic_string_view_t(&c, 1), pos );
+		// }
 
-		constexpr size_type
-		find_last_not_of( const Char* s, size_type pos, size_type count ) const
-		{
-			find_last_not_of( basic_string_view_t(s, count), pos );
-		}
+		// constexpr size_type
+		// find_last_not_of( const Char* s, size_type pos, size_type count ) const
+		// {
+		// 	return find_last_not_of( basic_string_view_t(s, count), pos );
+		// }
 
-		constexpr size_type
-		find_last_not_of( const Char* s, size_type pos = npos ) const
-		{
-			find_last_not_of( basic_string_view_t(s), pos );
-		}
+		// constexpr size_type
+		// find_last_not_of( const Char* s, size_type pos = npos ) const
+		// {
+		// 	return find_last_not_of( basic_string_view_t(s), pos );
+		// }
 
 	private:
 
@@ -470,5 +470,11 @@ operator<<(
 		return o;
 }
 
-
 using string_view_t = basic_string_view_t< char >;
+
+// Extra cmp operators.
+inline bool operator == ( string_view_t sv, const char *s ) noexcept
+{
+	return sv == string_view_t{ s };
+}
+
