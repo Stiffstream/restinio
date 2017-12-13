@@ -7,6 +7,7 @@ add_subdirectory(express_router_tutorial)
 add_subdirectory(websocket)
 add_subdirectory(websocket_detailed)
 add_subdirectory(using_external_io_context)
+add_subdirectory(async_handling_with_sobjectizer)
 
 if ( OPENSSL_FOUND )
 	message("OpenSSL include dir: ${OPENSSL_INCLUDE_DIR}")

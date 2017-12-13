@@ -30,6 +30,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
+
 find_package(OpenSSL)
 find_package(PCRE)
 find_package(PCRE2)
@@ -40,12 +41,17 @@ ENDIF(PCRE2_FOUND)
 
 add_subdirectory(nodejs/http_parser)
 
+set(SOBJECTIZER_BUILD_STATIC ON)
+set(SOBJECTIZER_LIBS sobjectizer::StaticLib)
+add_subdirectory(so_5)
+
 enable_testing()
 add_subdirectory(test)
 
 if(WIN32)
 	configure_file(${CMAKE_SOURCE_DIR}/cmake/run_tests.bat ${CMAKE_BINARY_DIR} NEWLINE_STYLE WIN32)
 endif()
+
 
 add_subdirectory(sample)
 add_subdirectory(benches)
