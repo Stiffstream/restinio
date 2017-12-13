@@ -710,7 +710,8 @@ socket_options_setter and cleanup_func.
 
 When `http_server_t` instance is created all settings are checked to be properly instantiated.
 
-Refer to [server settings](#markdown-header-server-settings) and [restinio/settings.hpp](./dev/restinio/settings.hpp) for details.
+Refer to [server settings](#markdown-header-server-settings)
+and [restinio/settings.hpp](./dev/restinio/settings.hpp) for details.
 
 # Traits
 
@@ -755,7 +756,7 @@ class timer_guard_t
 ~~~~~
 
 To understand the ground idea behind timer managers it is needed to clarify on
-`tcp_connection_ctx_base_t` a weak pointer of whih is passed to
+`tcp_connection_ctx_base_t` a weak pointer of which is passed to
 `timer_guard_t::schedule_timeout_check_invocation()`. A class
 `tcp_connection_ctx_base_t` has a virtual method:
 ~~~~~
@@ -802,6 +803,7 @@ class timer_manager_t
     // ...
 
     // struct/class  timer_guard_t{ ... };
+    // or
     // using timer_guard_t = ...;
 
     // Create guard for connection.
@@ -820,7 +822,7 @@ struct factory_t
 
   auto create( asio::io_context & io_context ) const
   {
-    return std::make_shared< asio_timer_manager_t >( /* params */ );
+    return std::make_shared< timer_manager_t >( /* params */ );
   }
 };
 ~~~~~
