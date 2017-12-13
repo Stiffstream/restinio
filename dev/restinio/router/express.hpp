@@ -130,7 +130,7 @@ class route_params_t final
 
 	private:
 		named_parameters_container_t::const_iterator
-		find_named_parameter( const string_view_t & key ) const
+		find_named_parameter( string_view_t key ) const
 		{
 			return
 				std::find_if(
