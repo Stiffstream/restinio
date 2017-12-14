@@ -9,7 +9,6 @@
 #pragma once
 
 #include <restinio/request_handler.hpp>
-#include <restinio/parameter_bind.hpp>
 
 #include <restinio/path2regex/path2regex.hpp>
 
@@ -23,9 +22,6 @@
 
 namespace restinio
 {
-
-template < typename Value_Type >
-Value_Type get( const route_params_t & prarams, string_view_t key );
 
 namespace router
 {
@@ -90,14 +86,14 @@ class route_params_t final
 		route_params_t & operator = ( const route_params_t & ) = delete;
 
 		//! Matched route.
-		const parameter_bind_t
-		match() const { return parameter_bind_t( m_match ); }
+		string_view_t
+		match() const { return m_match; }
 
 		//! Get named parameter.
-		const parameter_bind_t
+		string_view_t
 		operator [] ( string_view_t key ) const
 		{
-			return parameter_bind_t{ find_named_parameter_with_check( key ).second };
+			return find_named_parameter_with_check( key ).second;
 		}
 
 		//! Check parameter.
@@ -108,13 +104,13 @@ class route_params_t final
 		}
 
 		//! Get indexed parameter.
-		const parameter_bind_t
+		string_view_t
 		operator [] ( std::size_t i ) const
 		{
 			if( i >= m_indexed_parameters.size() )
 				throw exception_t{ fmt::format( "invalid parameter index: {}", i ) };
 
-			return parameter_bind_t{ m_indexed_parameters.at( i ) };
+			return m_indexed_parameters.at( i );
 		}
 
 		//! Get number of parameters.
@@ -218,13 +214,6 @@ struct route_params_accessor_t
 	{
 		return rp.m_indexed_parameters;
 	}
-
-	string_view_t
-	find_named_parameter_with_check( const route_params_t & rp, string_view_t key )
-	{
-		return rp.find_named_parameter_with_check( key ).second;
-	}
-
 	//! \}
 };
 
@@ -273,7 +262,7 @@ using param_appender_sequence_t =
 //
 
 //! A matcher for a given path.
-template < typename Regex_Engine = std_regex_engine_t>
+template < typename Regex_Engine = std_regex_engine_t >
 class route_matcher_t
 {
 	public:
@@ -694,26 +683,20 @@ class express_router_t
 
 } /* namespace router */
 
+//! Cast named parameter value to a given type.
 template < typename Value_Type >
 Value_Type
-get( const route_params_t & params, string_view_t key )
+get( const router::route_params_t & params, string_view_t key )
 {
-	return
-		utils::from_string< Value_Type >(
-			route::impl::route_params_accessor_t::find_named_parameter_with_check(
-				params,
-				key ) );
+	return get< Value_Type >( params[ key ] );
 }
 
+//! Cast indexed parameter value to a given type.
 template < typename Value_Type >
 Value_Type
-get( const route_params_t & params, std::size_t key )
+get( const router::route_params_t & params, std::size_t index )
 {
-	return
-		utils::from_string< Value_Type >(
-			route::impl::route_params_accessor_t::find_named_parameter_with_check(
-				params,
-				key ) );
+	return get< Value_Type >( params[ index ] );
 }
 
 } /* namespace restinio */

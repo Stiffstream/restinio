@@ -53,7 +53,7 @@ auto server_handler()
 				.set_body(
 					fmt::format(
 						"GET request with single parameter: '{}'",
-						params[ "param" ].as< std::string >() ) )
+						params[ "param" ] ) )
 				.done();
 	} );
 
@@ -66,9 +66,9 @@ auto server_handler()
 						fmt::format(
 							"POST request with many parameters:\n"
 							"year: {}\nmonth: {}\nday: {}\nbody: {}",
-							params[ "year" ].as< std::string> (),
-							params[ "month" ].as< std::string> (),
-							params[ "day" ].as< std::string> (),
+							params[ "year" ],
+							params[ "month" ],
+							params[ "day" ],
 							req->body() ) )
 					.done();
 		} );
@@ -82,9 +82,9 @@ auto server_handler()
 						fmt::format(
 							"POST request with indexed parameters:\n"
 							"#0: '{}'\n#1: {}\n#2: '{}'",
-							params[ 0 ].as< std::string> (),
-							params[ 1 ].as< std::string> (),
-							params[ 2 ].as< std::string> () ) )
+							params[ 0 ],
+							params[ 1 ],
+							params[ 2 ] ) )
 					.done();
 		} );
 

@@ -9,6 +9,7 @@
 #pragma once
 
 #include <string>
+#include <iosfwd>
 
 #include <restinio/string_view.hpp>
 
@@ -131,3 +132,12 @@ unescape_percent_encoding( const parameter_bind_t & p )
 } /* namespace utils */
 
 } /* namespace restinio */
+
+inline std::ostream &
+operator << ( std::ostream & o, const restinio::parameter_bind_t & p )
+{
+	auto sv = restinio::get< restinio::string_view_t >( p );
+	o.write( sv.data(), sv.size() );
+	return o;
+}
+

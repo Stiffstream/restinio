@@ -58,25 +58,17 @@ class query_string_params_t final
 		const query_string_params_t & operator = ( const query_string_params_t & ) = delete;
 
 		//! Get parameter.
-		const parameter_bind_t
+		string_view_t
 		operator [] ( string_view_t key ) const
 		{
-			auto it = find_named_parameter( key );
-
-			if( m_parameters.end() == it )
-				throw exception_t{
-					fmt::format(
-						"invalid parameter name: {}",
-						std::string{ key.data(), key.size() } ) };
-
-			return parameter_bind_t{ it->second };
+			return find_parameter_with_check( key ).second;
 		}
 
 		//! Check parameter.
 		bool
 		has( string_view_t key ) const
 		{
-			return m_parameters.end() != find_named_parameter( key );
+			return m_parameters.end() != find_parameter( key );
 		}
 
 		//! Get the size of parameters.
@@ -84,7 +76,7 @@ class query_string_params_t final
 
 	private:
 		parameters_container_t::const_iterator
-		find_named_parameter( const string_view_t & key ) const
+		find_parameter( string_view_t key ) const
 		{
 			return
 				std::find_if(
@@ -95,10 +87,32 @@ class query_string_params_t final
 					} );
 		}
 
+		parameters_container_t::const_reference
+		find_parameter_with_check( string_view_t key ) const
+		{
+			auto it = find_parameter( key );
+
+			if( m_parameters.end() == it )
+				throw exception_t{
+					fmt::format(
+						"invalid parameter name: {}",
+						std::string{ key.data(), key.size() } ) };
+
+			return *it;
+		}
+
 		//! Shared buffer for string_view of named parameterts names.
 		std::unique_ptr< char[] > m_data_buffer;
 		parameters_container_t m_parameters;
 };
+
+//! Cast query string parameter to a given type.
+template < typename Value_Type >
+Value_Type
+get( const query_string_params_t & params, string_view_t key )
+{
+	return get< Value_Type >( params[ key ] );
+}
 
 inline query_string_params_t
 parse_query_string( const std::string & query_string )
