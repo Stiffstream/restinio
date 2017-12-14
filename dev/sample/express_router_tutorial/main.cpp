@@ -11,7 +11,6 @@
 #include <fmt/ostream.h>
 
 #include <restinio/all.hpp>
-
 namespace rr = restinio::router;
 using router_t = rr::express_router_t<>;
 
@@ -91,7 +90,7 @@ auto server_handler()
 	router->non_matched_request_handler(
 		[]( auto req ){
 			return
-				init_resp( req->create_response( 404, "Not found") )
+				req->create_response( 404, "Not found")
 					.connection_close()
 					.done();
 		} );

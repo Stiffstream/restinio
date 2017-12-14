@@ -487,6 +487,20 @@ class express_route_entry_t
 //
 
 //! Express.js style router.
+/*
+	Express routers acts as a request handler (it means it is a function-object
+	that can be called as a restinio request handler).
+	It aggregates several endpoint-handlers and picks one or none of them to handle the request.
+	The choice of the handler to execute depends on request target and HTTP method.
+	If router finds no handler matching the request then request is considered unmatched.
+	It is possible to set a handler for unmatched requests, otherwise router rejects the request and
+	RESTinio takes care of it.
+
+	There is a difference between ordinary restinio request handler
+	and the one that is used with experss router: express_request_handler_t.
+	The signature of a handlers that can be put in router
+	has an additional parameter -- a container with parameters extracted from URI (request target).
+*/
 template < typename Regex_Engine = std_regex_engine_t>
 class express_router_t
 {

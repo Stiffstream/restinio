@@ -1233,13 +1233,16 @@ of parameters that become available for handlers.
 For example the following code sets a handler with 2 parameters:
 ~~~~~
 ::c++
-  router.http_get(
-    R"(/article/:article_id/:page(\d+))",
-    []( auto req, auto params ){
-      const auto article_id = params[ "article_id" ].as<std::uint64_t>();
-      const auto page = params[ "page" ].as<short>();
-      // ...
-    } );
+using router_t = rr::express_router_t<>;
+auto router = std::make_unique< router_t >();
+
+router->http_get(
+  R"(/article/:article_id/:page(\d+))",
+  []( auto req, auto params ){
+    const auto article_id = restinio::cast_to<std::uint64_t>( params[ "article_id" ] );
+    const auto page = restinio::cast_to<short>( params[ "page" ] );
+    // ...
+  } );
 ~~~~~
 
 Note that express handler receives 2 parameters not only request handle
@@ -1262,14 +1265,15 @@ First let's assume that variable `router` is a pointer to express router.
 So that is how we add a request handler with a single parameter:
 ~~~~~
 ::c++
-
-  // GET request with single parameter.
-  router->http_get( "/single/:param", []( auto req, auto params ){
-    return
-      init_resp( req->create_response() )
-        .set_body( "GET request with single parameter: " + params[ "param" ] )
-        .done();
-  } );
+router->http_get( "/single/:param", []( auto req, auto params ){
+  return
+    init_resp( req->create_response() )
+      .set_body(
+        fmt::format(
+          "GET request with single parameter: '{}'",
+          params[ "param" ] ) )
+      .done();
+} );
 ~~~~~
 
 
@@ -1285,21 +1289,27 @@ But the following will not:
 * http://localhost/single/
 * http://localhost/single-param/123
 
+A helper function `init_resp` sets values foor 'Server', 'Date' and 'Content-Type' header fields
+and returns response builder.
+
 Let's use more parameters and assign a capture regex for them:
 ~~~~~
 ::c++
-  // POST request with several parameters.
-  router->http_post( R"(/many/:year(\d{4}).:month(\d{2}).:day(\d{2}))",
-    []( auto req, auto params ){
-      return
-        init_resp( req->create_response() )
-          .set_body( "POST request with many parameters:\n"
-            "year: "+ params[ "year" ] + "\n" +
-            "month: "+ params[ "month" ] + "\n" +
-            "day: "+ params[ "day" ] + "\n"
-            "body: " + req->body() )
-          .done();
-    } );
+// POST request with several parameters.
+router->http_post( R"(/many/:year(\d{4}).:month(\d{2}).:day(\d{2}))",
+  []( auto req, auto params ){
+    return
+      init_resp( req->create_response() )
+        .set_body(
+          fmt::format(
+            "POST request with many parameters:\n"
+            "year: {}\nmonth: {}\nday: {}\nbody: {}",
+            params[ "year" ],
+            params[ "month" ],
+            params[ "day" ],
+            req->body() ) )
+        .done();
+  } );
 ~~~~~
 
 The following requests will be routed to that handler:
@@ -1317,17 +1327,20 @@ But the following will not:
 Using indexed parameters is practically the same, just omit parameters names:
 ~~~~~
 ::c++
-  // GET request with indexed parameters.
-  router->http_get( R"(/indexed/([a-z]+)-(\d+)/(one|two|three))",
-    []( auto req, auto params ){
-      return
-        init_resp( req->create_response() )
-          .set_body( "POST request with indexed parameters:\n"
-            "#0: "+ params[ 0 ] + "\n" +
-            "#1: "+ params[ 1 ] + "\n" +
-            "#2: "+ params[ 2 ] + "\n" )
-          .done();
-    } );
+// GET request with indexed parameters.
+router->http_get( R"(/indexed/([a-z]+)-(\d+)/(one|two|three))",
+  []( auto req, auto params ){
+    return
+      init_resp( req->create_response() )
+        .set_body(
+          fmt::format(
+            "POST request with indexed parameters:\n"
+            "#0: '{}'\n#1: {}\n#2: '{}'",
+            params[ 0 ],
+            params[ 1 ],
+            params[ 2 ] ) )
+        .done();
+  } );
 ~~~~~
 
 The following requests will be routed to that handler:
@@ -1346,6 +1359,210 @@ See full [example](./dev/sample/express_router_tutorial/main.cpp)
 
 For details on `route_params_t` and `express_router_t` see
 [express.hpp](./dev/restinio/router/express.cpp).
+
+
+## Route parameters
+
+Route parameters are represented with `restinio::router::route_paramts_t`class.
+It holds named and indexed parameters.
+All parameters values are stored as `string_view` objects refering
+a buffer with a copy of a request target string. A key values for named parameters
+are also string_view objects refering a shared buffer-string
+provided by the route matcher entry.
+
+Values stored in `route_paramts_t` objects can be accessed
+with `operator[]` receiving `string_view` as its argument for named parameter
+and `std::size_t`.
+
+*Note*: when getting parameter value as string_view
+a copy of internal string_view object is returned,
+thus it refers to dta located in buffer owned by `route_params_t` instance.
+And such string_view is valid only during the lifetime of
+a given parameters object.
+`route_params_t` instance can be moved, and all string_view objects
+refering the buffer owned by route params remain valid during life time of a newly created object.
+
+### Casting parameters
+
+Each parameter is represented with a string_view,
+but often it is just a representation, for example, of a numeric type.
+For that purposes *RESTinio* contains helpful function:
+`restinio::cast_as<Value_Type>(string_view_t s)`.
+
+For example:
+~~~~~
+::c++
+router->http_get( R"(/:id{\d}/:tag([a-z0-9]+)/:year(\d{4}))",
+  []( auto req, auto params ){
+    const auto id = restinio::cast_to<std::uint64_t>( params[ "id" ] );
+    const auto tag = restinio::cast_to<std::string>( params[ "tag" ] );
+    const auto year = restinio::cast_to<short>( params[ "year" ] );
+    // ...
+  } );
+~~~~~
+
+Parameters can be casted to any type that support conversion.
+*RESTinio* supports conversion for the following types:
+
+* 8-,16-,32-,64-bit signed/unsigned integers;
+* float/double;
+* std::string.
+
+A custom cnversions can be added in one of two following ways:
+
+1. Define an appropriate `read_value` function in the same namespace as your custom type
+(ADL will be applied):
+~~~~~
+::c++
+namespace my_ns
+{
+  class my_type_t
+  {
+    // ...
+  };
+
+  void read_value( my_type_t & v, const char * data, std::size_t size )
+  {
+    // Set a a value of v.
+  }
+} /* namespace my_ns */
+~~~~~
+
+2. Define an appropriate `read_value` function in `restinio::utils` namespace:
+~~~~~
+::c++
+namespace restinio
+{
+  namespace utils
+  {
+    void read_value( my_ns::my_type_t & v, const char * data, std::size_t size )
+    {
+      // Set a a value of v.
+    }
+  } /* namespace utils */
+} /* namespace restinio */
+~~~~~
+
+### Note on string view
+
+*RESTinio* relies on `std::string_view` or `std::experimentl::string_view`
+if one of them available. Otherwise *RESTinio* uses its own
+string_view class. See [string_view.hpp](./dev/restinio/string_view.hpp) for details.
+
+## Non matched request handler
+
+For the cases when express-router defeined with certain routes finds no matching routes
+it is possible to set a special handler that catches all non matched requests.
+
+For example:
+~~~~~
+::c++
+router->non_matched_request_handler(
+  []( auto req ){
+    return
+      req->create_response( 404, "Not found")
+        .connection_close()
+        .done();
+  } );
+~~~~~
+
+
+## Regex engines
+
+For doing route matching express-router relies on regex.
+`express_router_t` defined as a template class :
+~~~~~
+::c++
+template < typename Regex_Engine = std_regex_engine_t>
+class express_router_t
+{
+  // ...
+};
+~~~~~
+
+Template argument `Regex_Engine` defines regex engine implementation.
+*RESTinio* comes with following predefined regex engines:
+
+* Based on regex provided by STL (default), see [std_regex_engine.hpp](./dev/restinio/router/std_regex_engine.hpp).
+* Based on [PCRE](https://www.pcre.org/original/doc/html/), see [pcre_regex_engine.hpp](./dev/restinio/router/pcre_regex_engine.hpp).
+* Based on [PCRE2](https://www.pcre.org/current/doc/html/), see [pcre2_regex_engine.hpp](./dev/restinio/router/pcre2_regex_engine.hpp).
+
+Tests and benchmarks for PCRE engines are built if build system (cmake or mxx_ru)
+considers them available.
+
+
+## Performance
+
+Performance of routing depends on at least the following things:
+
+* total number of routes;
+* distribution of routes and the order in which routes are added to router;
+* complexity of regexes used for mathing routes;
+
+It is hard to say what is the penalty in each case with its conditions.
+But a certain picture can be derived from benchmarks.
+And *RESTinio* contains such benchmarks for supported regex engines
+
+For standard regex engine there is a
+[express_router_bench](./dev/test/router/express_router_bench/main.cpp).
+For pcre: [1](./dev/test/router/express_router_pcre_bench/main.cpp) and
+[2](./dev/test/router/express_router_pcre2_bench/main.cpp).
+
+~~~~~
+# See usage:
+$ _test.router.express_router_bench -h
+
+# Sample: run server on port 8080, using 4 threads matching routes given in a file cmp_routes.txt.
+$ _test.router.express_router_bench -p 8080 -n 4 -r test/router/express_router_bench/cmp_routes.txt
+~~~~~
+
+A file that defines routes must contain lines in the following format:
+~~~~~
+(HTTP METHOD: GET|POST|...) (route path)
+~~~~~
+
+For example:
+~~~~~
+GET /users/:id(\d+)
+GET /users/:id(\d+)/visits
+POST /users/new
+GET /locations/:id(\d+)
+GET /locations/:id(\d+)/avg
+POST /locations/new
+GET /visits/:id(\d+)
+POST /visits/new
+~~~~~
+
+For measurement can be done with your tools.
+Or simply use [wrk](https://github.com/wg/wrk) tool:
+~~~~~
+::bash
+# Testing with cmp_routes.txt
+./wrk --latency -t 4 -c 256 -d 10 -s cmp_routes.lua http://127.0.0.1:8080/
+~~~~~
+
+where cmp_routes.lua is:
+~~~~~
+request = function()
+  local e = math.random(1, 100)
+
+  if e < 26 then
+    path = "/users/" .. math.random(1, 10000 )
+  elseif e < 51 then
+    path = "/locations/" .. math.random(1, 100000 )
+  elseif e < 71 then
+    path = "/visits/" .. math.random(1, 10000 )
+  elseif e < 86 then
+    path = "/users/" .. math.random(1, 10000 ) .. "/visits"
+  else
+    path = "/locations/" .. math.random(1, 10000 ) .. "/avg"
+  end
+
+  return wrk.format(nil, path)
+end
+~~~~~
+
+This script some how sets a distribution of generated request.
 
 # Using *restinio::run*
 
@@ -1921,12 +2138,11 @@ See full [sample](./dev/sample/hello_world_https/main.cpp) for details.
 |       Feature        | description | release  |
 |----------------------|-------------|----------|
 | Add cmake support for SObjectizer  | test and samples that depend on SObjectizer included to cmake scripts | 0.4.0 |
-| Express router (unmatched request handler) | A handler for non matched request can be set | 0.4.0 |
+| Express router (non matched request handler) | A handler for non matched request can be set | 0.4.0 |
 | Express router (route params casting) | Introducing parameter binds interface for working with route parameters that can be converted to a specific type (if conversion is available) | 0.4.0 |
 | Express router (route params using string_view) | Getting rid of using strings for storing parameters keys and values in `route_params_t` and using string_view (`std::string_view` if available) | 0.4.0 |
 | Express router (route dsl) | Update route to regex proccessing in order to stick with [path-to-regexp](https://github.com/pillarjs/path-to-regexp) project| 0.4.0 |
 | Express router (regex engine) | Introduce a concept of regex engine, so express router can run on pcre/pcre2 engines or the one provided by user | 0.4.0 |
-| Express router (regex engine) | Introduce a concept of regex engine, so express router can use pcre/pcre2 engines or the one provided by user | 0.4.0 |
 | Express router (benchmark) | Add a benchmark for testing performance on a given set of routes (described in file) | 0.4.0 |
 | Add benchmarks | Add restinio benchmarks to repository | 0.4.0 |
 | Timer manager concept | Redesign timers. Introduce a concept of timer manager, that substitutes former timer factory concept | 0.4.0 |

@@ -54,6 +54,7 @@ struct app_args_t
 		{
 			m_help = true;
 			std::cout << parser;
+			return;
 		}
 
 		if( arg_routes_file )
