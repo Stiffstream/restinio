@@ -14,7 +14,6 @@
 #include <fmt/format.h>
 
 #include <restinio/exception.hpp>
-#include <restinio/parameter_bind.hpp>
 #include <restinio/utils/percent_encoding.hpp>
 
 namespace restinio
