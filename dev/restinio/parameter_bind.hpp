@@ -28,7 +28,9 @@ namespace router
 class route_params_t;
 } /* namespace router */
 class parameter_bind_t;
-string_view_t access_parameter_string_view( const parameter_bind_t & p );
+
+template < typename Value_Type >
+Value_Type get( const parameter_bind_t & pb );
 
 //
 // parameter_bind_t
@@ -49,34 +51,9 @@ class parameter_bind_t final
 {
 		friend class router::route_params_t;
 		friend class query_string_params_t;
-		friend string_view_t access_parameter_string_view( const parameter_bind_t & p );
+		template < typename Value_Type > friend Value_Type get( const parameter_bind_t & pb );
+
 	public:
-
-		//! Cast parameter value to type.
-		/*!
-			Gets the string_view object of a given parameter.
-
-			\note When getting parameter value as string_view
-			a copy of internal string_view object is returned.
-			And it is valid only during lifetime of
-			a given parameters-incapsulator.
-			If parameters-incapsulator is moved then all string views
-			remain valid during life time of a newly created parameters-incapsulator.
-		*/
-		template < typename Value_Type >
-		Value_Type
-		as() const
-		{
-			return utils::from_string< Value_Type >( m_parameter_data );
-		}
-
-		//! Sortcut for getting parameter as string.
-		std::string
-		as_string() const
-		{
-			return as< std::string >();
-		}
-
 		//! Some usefull opertors for typical use cases.
 		//! \{
 		bool operator == ( const char * str ) const
@@ -115,6 +92,24 @@ class parameter_bind_t final
 		string_view_t m_parameter_data;
 };
 
+//! Cast parameter value to type.
+/*!
+	Gets the string_view object of a given parameter.
+
+	\note When getting parameter value as string_view
+	a copy of internal string_view object is returned.
+	And it is valid only during lifetime of
+	a given parameters-incapsulator.
+	If parameters-incapsulator is moved then all string views
+	remain valid during life time of a newly created parameters-incapsulator.
+*/
+template < typename Value_Type >
+Value_Type
+get( const parameter_bind_t & pb )
+{
+	return utils::from_string< Value_Type >( pb.m_parameter_data );
+}
+
 namespace utils
 {
 
@@ -122,14 +117,14 @@ namespace utils
 inline std::string
 escape_percent_encoding( const parameter_bind_t & p )
 {
-	return escape_percent_encoding( p.as< string_view_t >() );
+	return escape_percent_encoding( get< string_view_t >( p ) );
 }
 
 //! Overload for unescape_percent_encoding with parameter_bind_t as parameter.
 inline std::string
 unescape_percent_encoding( const parameter_bind_t & p )
 {
-	return unescape_percent_encoding( p.as< string_view_t >() );
+	return unescape_percent_encoding( get< string_view_t >( p ) );
 }
 //! \}
 

@@ -24,6 +24,9 @@
 namespace restinio
 {
 
+template < typename Value_Type >
+Value_Type get( const route_params_t & prarams, string_view_t key );
+
 namespace router
 {
 
@@ -94,15 +97,7 @@ class route_params_t final
 		const parameter_bind_t
 		operator [] ( string_view_t key ) const
 		{
-			auto it = find_named_parameter( key );
-
-			if( m_named_parameters.end() == it )
-				throw exception_t{
-					fmt::format(
-						"invalid parameter name: {}",
-						std::string{ key.data(), key.size() } ) };
-
-			return parameter_bind_t{ it->second };
+			return parameter_bind_t{ find_named_parameter_with_check( key ).second };
 		}
 
 		//! Check parameter.
@@ -139,6 +134,20 @@ class route_params_t final
 					[&]( const auto p ){
 						return key == p.first;
 					} );
+		}
+
+		named_parameters_container_t::const_reference
+		find_named_parameter_with_check( string_view_t key ) const
+		{
+			auto it = find_named_parameter( key );
+
+			if( m_named_parameters.end() == it )
+				throw exception_t{
+					fmt::format(
+						"invalid parameter name: {}",
+						std::string{ key.data(), key.size() } ) };
+
+			return *it;
 		}
 
 		//! A raw request target.
@@ -199,16 +208,23 @@ struct route_params_accessor_t
 	//! Get values containers for all parameters (used in unit tests).
 	//! \{
 	static const auto &
-	named_parameters( route_params_t & rp )
+	named_parameters( const route_params_t & rp )
 	{
 		return rp.m_named_parameters;
 	}
 
 	static const auto &
-	indexed_parameters( route_params_t & rp )
+	indexed_parameters( const route_params_t & rp )
 	{
 		return rp.m_indexed_parameters;
 	}
+
+	string_view_t
+	find_named_parameter_with_check( const route_params_t & rp, string_view_t key )
+	{
+		return rp.find_named_parameter_with_check( key ).second;
+	}
+
 	//! \}
 };
 
@@ -677,5 +693,27 @@ class express_router_t
 };
 
 } /* namespace router */
+
+template < typename Value_Type >
+Value_Type
+get( const route_params_t & params, string_view_t key )
+{
+	return
+		utils::from_string< Value_Type >(
+			route::impl::route_params_accessor_t::find_named_parameter_with_check(
+				params,
+				key ) );
+}
+
+template < typename Value_Type >
+Value_Type
+get( const route_params_t & params, std::size_t key )
+{
+	return
+		utils::from_string< Value_Type >(
+			route::impl::route_params_accessor_t::find_named_parameter_with_check(
+				params,
+				key ) );
+}
 
 } /* namespace restinio */

@@ -1203,18 +1203,27 @@ working hard on this topic and will be glad to hear any feedback from you.
 One of the reasons to create *RESTinio* was an ability to have
 [express](https://expressjs.com/)-like request handler router.
 
-Since v 0.2.1 *RESTinio* has a router based on idea borrowed
+Since v0.2.1 *RESTinio* has a router based on idea borrowed
 from [express](https://expressjs.com/) - a JavaScript framework.
+In v0.4 lots of improvements were made to make express router much better and practical.
 
-Routers acts as a request handler (it means it is a function-object
+In general one can implement a custom router. It just a special request handler
+that receives request from restinio as a usual handler and then selects
+a some kind of endpoint to do the final handling and may be adding some stuff to original request.
+Selection rules are up to router author.
+
+Express routers acts as a request handler (it means it is a function-object
 that can be called as a request handler).
-But router aggregates several handlers and picks one or none of them to handle the request.
+It aggregates several endpoint-handlers and picks one or none of them to handle the request.
 The choice of the handler to execute depends on request target and HTTP method.
-If router finds no handler matching request then it rejects it.
+If router finds no handler matching the request then request is considered unmatched.
+It is possible to set a handler for unmatched requests, otherwise router rejects the request and
+*RESTinio* takes care of it.
+
 There is a difference between ordinary restinio request handler
 and the one that is used with experss router and is bound to concrete endpoint.
 The signature of a handlers that can be put in router
-has an additional parameter -- a container with parameters extracted from URI.
+has an additional parameter -- a container with parameters extracted from URI (request target).
 
 Express router is defined by `express_router_t` class.
 Its implementation is inspired by
@@ -1227,8 +1236,8 @@ For example the following code sets a handler with 2 parameters:
   router.http_get(
     R"(/article/:article_id/:page(\d+))",
     []( auto req, auto params ){
-      const auto article_id = params[ "article_id" ];
-      auto page = std::to_string( params[ "page" ] );
+      const auto article_id = params[ "article_id" ].as<std::uint64_t>();
+      const auto page = params[ "page" ].as<short>();
       // ...
     } );
 ~~~~~
