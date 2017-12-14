@@ -159,6 +159,7 @@ main()
 {
 	init_datasets( 1000 );
 
+	std::cout << "RESTinio impl:" << std::endl;
 	run_bench( "int8", bench_int8 );
 	run_bench( "uint8", bench_uint8 );
 	run_bench( "int16", bench_int16 );
@@ -168,6 +169,7 @@ main()
 	run_bench( "int64", bench_int64 );
 	run_bench( "uint64", bench_uint64 );
 
+	std::cout << "\nBoost:" << std::endl;
 	// run_bench( "boost int8", boost_bench_int8 );
 	// run_bench( "boost uint8", boost_bench_uint8 );
 	run_bench( "boost int16", boost_bench_int16 );
