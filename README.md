@@ -1490,7 +1490,6 @@ Template argument `Regex_Engine` defines regex engine implementation.
 Tests and benchmarks for PCRE engines are built if build system (cmake or mxx_ru)
 considers them available.
 
-
 ## Performance
 
 Performance of routing depends on at least the following things:
@@ -1563,6 +1562,46 @@ end
 ~~~~~
 
 This script some how sets a distribution of generated request.
+
+### Benchmarks
+
+Of course express-router costs something in terms of performance.
+And the question is: on a given set of routes what is penalty
+of using express router compared to a nicely hardcoded routing for a given set of routes.
+
+For that purpose we implemented a hardcoded routing:
+[cmp_router_bench](./dev/testrouter/cmp_router_bench) having a route parser for the following routes:
+For example:
+~~~~~
+GET /users/:id(\d+)
+GET /users/:id(\d+)/visits
+POST /users/new
+GET /locations/:id(\d+)
+GET /locations/:id(\d+)/avg
+POST /locations/new
+GET /visits/:id(\d+)
+POST /visits/new
+~~~~~
+
+And we test it with the *express_router_bench*s described in previous section.
+[Wrk](https://github.com/wg/wrk) was used for generating load with
+the following params: `./wrk -t 4 -c 256 -d 10 -s cmp_routes.lua http://127.0.0.1:8080/`
+
+The results are the following
+
+| # of threads | hardcoded | express-router (std) | express-router (PCRE) | express-router (PCRE2) |
+|--------------|-----------|----------------------|-----------------------|------------------------|
+| 1 |   |-----------|----------------------|-----------------------|------------------------|
+| 2 |   |-----------|----------------------|-----------------------|------------------------|
+| 3 |   |-----------|----------------------|-----------------------|------------------------|
+| 4 |   |-----------|----------------------|-----------------------|------------------------|
+
+Benchmark environment:
+
+* CPU: 8x Intel(R) Core(TM) i7-6700K CPU @ 4.00GHz;
+* Memory: 16343MB;
+* Operating System: Ubuntu 16.04.2 LTS.
+* Compiler: gcc version 7.1.0 (Ubuntu 7.1.0-5ubuntu2~16.04)
 
 # Using *restinio::run*
 
