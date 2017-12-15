@@ -11,6 +11,7 @@
 #include <fmt/ostream.h>
 
 #include <restinio/all.hpp>
+
 namespace rr = restinio::router;
 using router_t = rr::express_router_t<>;
 
