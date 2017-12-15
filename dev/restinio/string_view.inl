@@ -280,7 +280,6 @@ class basic_string_view_t final
 		// rfind(
 		// 	basic_string_view_t v, size_type pos = npos ) const noexcept
 		// {
-
 		// }
 
 		// constexpr size_type
