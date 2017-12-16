@@ -12,7 +12,8 @@ class basic_string_view_t final
 		using reference = Char&;
 		using const_reference = const Char&;
 		using const_iterator = const Char*;
-		using iterator = const Char*;
+		using iterator = const const_iterator;
+		using const_reverse_iterator = std::reverse_iterator< const_iterator >;
 		using size_type = size_t;
 
 		static constexpr size_type npos = size_type(-1);
@@ -67,6 +68,30 @@ class basic_string_view_t final
 		cend() const noexcept
 		{
 			return m_str + m_size;
+		}
+
+		constexpr const_reverse_iterator
+		rbegin() const noexcept
+		{
+			return const_reverse_iterator( end() );
+		}
+
+		constexpr const_reverse_iterator
+		crbegin() const noexcept
+		{
+			return const_reverse_iterator( end() );
+		}
+
+		constexpr const_reverse_iterator
+		rend() const noexcept
+		{
+			return const_reverse_iterator( begin() );
+		}
+
+		constexpr const_reverse_iterator
+		crend() const noexcept
+		{
+			return const_reverse_iterator( begin() );
 		}
 
 
@@ -236,26 +261,16 @@ class basic_string_view_t final
 		constexpr size_type
 		find( basic_string_view_t v, size_type pos = 0 ) const
 		{
-			const size_type max_index = m_size - v.size();
+			if ( pos > size() )
+				return npos;
 
-			for( size_type i = pos; i <= max_index; ++i )
-			{
-				bool was_found = true;
-				for( size_type j = 0; j < v.size(); ++ j )
-				{
-					if( m_str[i+j] != v[j] )
-					{
-						was_found = false;
-						break;
-					}
-				}
-				if( was_found )
-				{
-					return i;
-				}
-			}
+			if ( v.empty() )
+				return pos;
 
-			return npos;
+			const_iterator iter = std::search(
+				this->cbegin() + pos, this->cend(), v.cbegin (), v.cend (), traits_type::eq );
+
+			return iter == this->cend () ? npos : std::distance( this->cbegin(), iter );
 		}
 
 		constexpr size_type
@@ -276,130 +291,203 @@ class basic_string_view_t final
 			return find( basic_string_view_t(s), pos );
 		}
 
-		// constexpr size_type
-		// rfind(
-		// 	basic_string_view_t v, size_type pos = npos ) const noexcept
-		// {
-		// }
+		constexpr size_type
+		rfind(
+			basic_string_view_t v, size_type pos = npos ) const noexcept
+		{
+			if ( size() < v.size() )
+				return npos;
 
-		// constexpr size_type
-		// rfind(
-		// 	Char c, size_type pos = npos ) const noexcept
-		// {
-		// 	return rfind( basic_string_view_t(&c, 1), pos );
-		// }
+			if ( pos > size() - v.size() )
+				pos = size() - v.size();
 
-		// constexpr size_type
-		// rfind(
-		// 	const Char* s, size_type pos, size_type count ) const
-		// {
-		// 	return rfind( basic_string_view_t(s, count), pos );
-		// }
+			if ( v.size() == 0u )
+				return pos;
 
-		// constexpr size_type
-		// rfind(
-		// 	const Char* s, size_type pos = npos ) const
-		// {
-		// 	return rfind( basic_string_view_t(s), pos );
-		// }
+			for ( const Char* cur = m_str + pos; ; --cur )
+			{
+				if ( traits_type::compare( cur, v.m_str, v.size() ) == 0 )
+					return cur - m_str;
 
-		// constexpr size_type
-		// find_first_of( basic_string_view_t v, size_type pos = 0 ) const noexcept
-		// {
+				if ( cur == m_str )
+					return npos;
+			}
+		}
 
-		// }
+		constexpr size_type
+		rfind(
+			Char c, size_type pos = npos ) const noexcept
+		{
+			return rfind( basic_string_view_t(&c, 1), pos );
+		}
 
-		// constexpr size_type
-		// find_first_of( Char c, size_type pos = 0 ) const noexcept
-		// {
-		// 	return find_first_of( basic_string_view_t(&c, 1), pos );
-		// }
+		constexpr size_type
+		rfind(
+			const Char* s, size_type pos, size_type count ) const
+		{
+			return rfind( basic_string_view_t(s, count), pos );
+		}
 
-		// constexpr size_type
-		// find_first_of( const Char* s, size_type pos, size_type count ) const
-		// {
-		// 	return find_first_of( basic_string_view_t(s, count), pos );
-		// }
+		constexpr size_type
+		rfind(
+			const Char* s, size_type pos = npos ) const
+		{
+			return rfind( basic_string_view_t(s), pos );
+		}
 
-		// constexpr size_type
-		// find_first_of( const Char* s, size_type pos = 0 ) const
-		// {
-		// 	return find_first_of( basic_string_view_t(s), pos );
-		// }
+		constexpr size_type
+		find_first_of( basic_string_view_t v, size_type pos = 0 ) const noexcept
+		{
+			if ( pos >= size() || v.size() == 0 )
+				return npos;
 
-		// constexpr size_type
-		// find_last_of( basic_string_view_t v, size_type pos = npos ) const noexcept
-		// {
+			const_iterator iter = std::find_first_of(
+				this->cbegin() + pos, this->cend(), v.cbegin(), v.cend(), traits_type::eq );
 
-		// }
+			return iter == this->cend() ? npos : std::distance ( this->cbegin(), iter );
+		}
 
-		// constexpr size_type
-		// find_last_of( Char c, size_type pos = npos ) const noexcept
-		// {
-		// 	return find_last_of( basic_string_view_t(&c, 1), pos );
-		// }
+		constexpr size_type
+		find_first_of( Char c, size_type pos = 0 ) const noexcept
+		{
+			return find_first_of( basic_string_view_t(&c, 1), pos );
+		}
 
-		// constexpr size_type
-		// find_last_of( const Char* s, size_type pos, size_type count ) const
-		// {
-		// 	return find_last_of( basic_string_view_t(s, count), pos );
-		// }
+		constexpr size_type
+		find_first_of( const Char* s, size_type pos, size_type count ) const
+		{
+			return find_first_of( basic_string_view_t(s, count), pos );
+		}
 
-		// constexpr size_type
-		// find_last_of( const Char* s, size_type pos = npos ) const
-		// {
-		// 	return find_last_of( basic_string_view_t(s), pos );
-		// }
+		constexpr size_type
+		find_first_of( const Char* s, size_type pos = 0 ) const
+		{
+			return find_first_of( basic_string_view_t(s), pos );
+		}
 
-		// constexpr size_type
-		// find_first_not_of( basic_string_view_t v, size_type pos = 0 ) const noexcept
-		// {
+		constexpr size_type
+		find_last_of( basic_string_view_t v, size_type pos = npos ) const noexcept
+		{
+			if ( v.size() == 0u )
+				return npos;
 
-		// }
+			if( pos >= size() )
+				pos = 0;
+			else
+				pos = size() - ( pos + 1 );
 
-		// constexpr size_type
-		// find_first_not_of( Char c, size_type pos = 0 ) const noexcept
-		// {
-		// 	return find_first_not_of( basic_string_view_t(&c, 1), pos );
-		// }
+			const_reverse_iterator iter = std::find_first_of(
+				this->crbegin() + pos,
+				this->crend(), v.cbegin(),
+				v.cend(),
+				traits_type::eq );
 
-		// constexpr size_type
-		// find_first_not_of( const Char* s, size_type pos, size_type count ) const
-		// {
-		// 	return find_first_not_of( basic_string_view_t(s, count), pos );
-		// }
+			return iter == this->crend() ? npos : reverse_distance( this->crbegin (), iter );
+		}
 
-		// constexpr size_type
-		// find_first_not_of( const Char* s, size_type pos = 0 ) const
-		// {
-		// 	return find_first_not_of( basic_string_view_t(s), pos );
-		// }
+		constexpr size_type
+		find_last_of( Char c, size_type pos = npos ) const noexcept
+		{
+			return find_last_of( basic_string_view_t(&c, 1), pos );
+		}
 
-		// constexpr size_type
-		// find_last_not_of( basic_string_view_t v, size_type pos = npos ) const noexcept
-		// {
+		constexpr size_type
+		find_last_of( const Char* s, size_type pos, size_type count ) const
+		{
+			return find_last_of( basic_string_view_t(s, count), pos );
+		}
 
-		// }
+		constexpr size_type
+		find_last_of( const Char* s, size_type pos = npos ) const
+		{
+			return find_last_of( basic_string_view_t(s), pos );
+		}
 
-		// constexpr size_type
-		// find_last_not_of( Char c, size_type pos = npos ) const noexcept
-		// {
-		// 	return find_last_not_of( basic_string_view_t(&c, 1), pos );
-		// }
+		constexpr size_type
+		find_first_not_of( basic_string_view_t v, size_type pos = 0 ) const noexcept
+		{
+			if (pos >= size() )
+				return npos;
 
-		// constexpr size_type
-		// find_last_not_of( const Char* s, size_type pos, size_type count ) const
-		// {
-		// 	return find_last_not_of( basic_string_view_t(s, count), pos );
-		// }
+			if (v.size()  == 0)
+				return pos;
 
-		// constexpr size_type
-		// find_last_not_of( const Char* s, size_type pos = npos ) const
-		// {
-		// 	return find_last_not_of( basic_string_view_t(s), pos );
-		// }
+			const_iterator iter = find_not_of ( this->cbegin () + pos, this->cend (), v );
+			return iter == this->cend () ? npos : std::distance ( this->cbegin (), iter );
+		}
+
+		constexpr size_type
+		find_first_not_of( Char c, size_type pos = 0 ) const noexcept
+		{
+			return find_first_not_of( basic_string_view_t(&c, 1), pos );
+		}
+
+		constexpr size_type
+		find_first_not_of( const Char* s, size_type pos, size_type count ) const
+		{
+			return find_first_not_of( basic_string_view_t(s, count), pos );
+		}
+
+		constexpr size_type
+		find_first_not_of( const Char* s, size_type pos = 0 ) const
+		{
+			return find_first_not_of( basic_string_view_t(s), pos );
+		}
+
+		constexpr size_type
+		find_last_not_of( basic_string_view_t v, size_type pos = npos ) const noexcept
+		{
+			if( pos >= size() )
+				pos = size() - 1;
+
+			if( v.size()  == 0u )
+				return pos;
+
+			pos = size() - ( pos + 1 );
+			const_reverse_iterator iter = find_not_of(
+				this->crbegin () + pos, this->crend (), v );
+
+			return iter == this->crend () ? npos : reverse_distance ( this->crbegin (), iter );
+		}
+
+		constexpr size_type
+		find_last_not_of( Char c, size_type pos = npos ) const noexcept
+		{
+			return find_last_not_of( basic_string_view_t(&c, 1), pos );
+		}
+
+		constexpr size_type
+		find_last_not_of( const Char* s, size_type pos, size_type count ) const
+		{
+			return find_last_not_of( basic_string_view_t(s, count), pos );
+		}
+
+		constexpr size_type
+		find_last_not_of( const Char* s, size_type pos = npos ) const
+		{
+			return find_last_not_of( basic_string_view_t(s), pos );
+		}
 
 	private:
+
+		template< typename Iter >
+		size_type
+		reverse_distance( Iter first, Iter last ) const noexcept
+		{
+			return size() - 1 - std::distance( first, last );
+		}
+
+		template< typename Iter >
+		Iter find_not_of( Iter first, Iter last, basic_string_view_t s ) const noexcept
+		{
+			for (; first != last ; ++first)
+			{
+				if ( 0 == traits_type::find( s.data(), s.size(), *first ) )
+					return first;
+			}
+
+			return last;
+		}
 
 		size_type
 		min_rcount( size_type pos, size_type count ) const
