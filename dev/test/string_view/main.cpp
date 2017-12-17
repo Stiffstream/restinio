@@ -227,11 +227,11 @@ TEST_CASE( "Test for operations" , "[string_view][operations]" )
 		string_view_t v5{"bcd"};
 		string_view_t v6{"bcdef"};
 
-		REQUIRE( v1.compare(v2) == -1 );
-		REQUIRE( v1.compare(v3) == 1 );
+		REQUIRE( v1.compare(v2) < 0 );
+		REQUIRE( v1.compare(v3) > 0 );
 		REQUIRE( v1.compare(v4) == 0 );
-		REQUIRE( v1.compare(v5) == 1 );
-		REQUIRE( v1.compare(v6) == -1 );
+		REQUIRE( v1.compare(v5) > 0 );
+		REQUIRE( v1.compare(v6) < 0 );
 	}
 
 	SECTION( "string_view_t::find()" )
