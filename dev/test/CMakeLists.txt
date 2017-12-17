@@ -12,6 +12,7 @@ add_subdirectory(handle_requests)
 add_subdirectory(http_pipelining)
 add_subdirectory(router)
 add_subdirectory(encoders)
+add_subdirectory(string_view)
 add_subdirectory(from_string)
 add_subdirectory(websocket)
 

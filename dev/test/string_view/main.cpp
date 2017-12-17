@@ -249,27 +249,44 @@ TEST_CASE( "Test for operations" , "[string_view][operations]" )
 
 	SECTION( "string_view_t::rfind()" )
 	{
+		string_view_t view = "This is a string";
 
+		REQUIRE( view.rfind("is") == 5 );
+		REQUIRE( view.rfind("is", 4) == 2 );
+		REQUIRE( view.rfind('s') == 10 );
+		REQUIRE( view.rfind('q') == string_view_t::npos );
 	}
 
 	SECTION( "string_view_t::find_first_of()" )
 	{
+		string_view_t view = "text of string view with some text";
 
+		REQUIRE( view.find_first_of("is") == 8 );
+		REQUIRE( view.find_first_of("os") == 5 );
 	}
 
 	SECTION( "string_view_t::find_last_of()" )
 	{
+		string_view_t view = "text of string view with some text";
 
+		REQUIRE( view.find_last_of("is") == 25 );
+		REQUIRE( view.find_last_of("os") == 26 );
 	}
 
 	SECTION( "string_view_t::find_first_not_of()" )
 	{
+		string_view_t view = "text of string view with some text";
 
+		REQUIRE( view.find_first_not_of("extofs") == 4 );
+		REQUIRE( view.find_first_not_of("tx") == 1 );
 	}
 
 	SECTION( "string_view_t::find_last_not_of()" )
 	{
+		string_view_t view = "text of string view with some text";
 
+		REQUIRE( view.find_last_not_of("extofs") == 29 );
+		REQUIRE( view.find_last_not_of("tx") == 31 );
 	}
 }
 
