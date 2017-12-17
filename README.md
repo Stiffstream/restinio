@@ -1524,11 +1524,14 @@ For example:
 ~~~~~
 GET /users/:id(\d+)
 GET /users/:id(\d+)/visits
+POST /users/:id(\d+)
 POST /users/new
 GET /locations/:id(\d+)
 GET /locations/:id(\d+)/avg
+POST /locations/:id(\d+)
 POST /locations/new
 GET /visits/:id(\d+)
+POST /visits/:id(\d+)
 POST /visits/new
 ~~~~~
 
@@ -1545,16 +1548,39 @@ where cmp_routes.lua is:
 request = function()
   local e = math.random(1, 100)
 
-  if e < 26 then
-    path = "/users/" .. math.random(1, 10000 )
-  elseif e < 51 then
-    path = "/locations/" .. math.random(1, 100000 )
-  elseif e < 71 then
-    path = "/visits/" .. math.random(1, 10000 )
-  elseif e < 86 then
-    path = "/users/" .. math.random(1, 10000 ) .. "/visits"
+  if e < 86 then
+    wrk.method = "GET"
+
+    if e < 21 then
+      path = "/users/" .. math.random(1, 10000 )
+    elseif e < 41 then
+      path = "/locations/" .. math.random(1, 100000 )
+    elseif e < 51 then
+      path = "/visits/" .. math.random(1, 10000 )
+    elseif e < 61 then
+      path = "/users/" .. math.random(1, 10000 ) .. "/visits"
+    else
+      path = "/locations/" .. math.random(1, 10000 ) .. "/avg"
+    end
+
   else
-    path = "/locations/" .. math.random(1, 10000 ) .. "/avg"
+    wrk.method = "POST"
+    wrk.body = "{}"
+    wrk.headers["Content-Type"] = "application/json"
+
+    if e < 89 then
+      path = "/users/" .. math.random(1, 10000 )
+    elseif e < 93 then
+      path = "/locations/" .. math.random(1, 100000 )
+    elseif e < 95 then
+      path = "/visits/" .. math.random(1, 100000 )
+    elseif e < 96 then
+      path = "/users/new"
+    elseif e < 98 then
+      path = "/visits/new"
+    else
+      path = "/locations/new"
+    end
   end
 
   return wrk.format(nil, path)
@@ -1585,16 +1611,16 @@ POST /visits/new
 
 And we test it with the *express_router_bench*s described in previous section.
 [Wrk](https://github.com/wg/wrk) was used for generating load with
-the following params: `./wrk -t 4 -c 256 -d 10 -s cmp_routes.lua http://127.0.0.1:8080/`
+the following params: `./wrk -t 4 -c 256 -d 30 -s cmp_routes.lua http://127.0.0.1:8080/`
 
 The results are the following
 
-| # of threads | hardcoded | express-router (std) | express-router (PCRE) | express-router (PCRE2) |
-|--------------|-----------|----------------------|-----------------------|------------------------|
-| 1 |   |-----------|----------------------|-----------------------|------------------------|
-| 2 |   |-----------|----------------------|-----------------------|------------------------|
-| 3 |   |-----------|----------------------|-----------------------|------------------------|
-| 4 |   |-----------|----------------------|-----------------------|------------------------|
+| # of threads  | hardcoded | express-router (std) | express-router (PCRE) | express-router (PCRE2) |
+|---------------|-----------|----------------------|-----------------------|------------------------|
+| 1             | 166831.47 | 123424.81 (73.98%)   | 148401.88 (88.95%)    | 142069.51 (85.16%)     |
+| 2             | 258360.2  | 200787.45 (77.72%)   | 242435.34 (93.84%)    | 226003.16 (87.48%)     |
+| 3             | 293823.26 | 235170.51 (80.04%)   | 269773.28 (91.81%)    | 258215.84 (87.88%)     |
+| 4             | 330288.48 | 259880.8 (78.68%)    | 301442.89 (91.27%)    | 291626.53 (88.29%)     |
 
 Benchmark environment:
 
