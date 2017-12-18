@@ -7,7 +7,7 @@ end
 
 MxxRu::git_externals :asio do |e|
   e.url 'https://github.com/chriskohlhoff/asio.git'
-  e.commit 'd52b8164665e779f58e30d60e4ff9a8da1ce3c4a'
+  e.commit '9229964dc1853b375077338cb398027a6dbbb148' # Dec 10 2017
 
   e.map_dir 'asio/include' => 'dev/asio'
 end
