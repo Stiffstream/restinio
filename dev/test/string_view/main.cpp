@@ -227,11 +227,11 @@ TEST_CASE( "Test for operations" , "[string_view][operations]" )
 		string_view_t v5{"bcd"};
 		string_view_t v6{"bcdef"};
 
-		REQUIRE( v1.compare(v2) == -1 );
-		REQUIRE( v1.compare(v3) == 1 );
+		REQUIRE( v1.compare(v2) < 0 );
+		REQUIRE( v1.compare(v3) > 0 );
 		REQUIRE( v1.compare(v4) == 0 );
-		REQUIRE( v1.compare(v5) == 1 );
-		REQUIRE( v1.compare(v6) == -1 );
+		REQUIRE( v1.compare(v5) > 0 );
+		REQUIRE( v1.compare(v6) < 0 );
 	}
 
 	SECTION( "string_view_t::find()" )
@@ -251,10 +251,12 @@ TEST_CASE( "Test for operations" , "[string_view][operations]" )
 	{
 		string_view_t view = "This is a string";
 
+		static constexpr auto notfound = string_view_t::npos;
+
 		REQUIRE( view.rfind("is") == 5 );
 		REQUIRE( view.rfind("is", 4) == 2 );
 		REQUIRE( view.rfind('s') == 10 );
-		REQUIRE( view.rfind('q') == string_view_t::npos );
+		REQUIRE( view.rfind('q') == notfound );
 	}
 
 	SECTION( "string_view_t::find_first_of()" )
