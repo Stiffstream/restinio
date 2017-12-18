@@ -259,7 +259,7 @@ class basic_string_view_t final
 		}
 
 		constexpr size_type
-		find( basic_string_view_t v, size_type pos = 0 ) const
+		find( basic_string_view_t v, size_type pos = 0 ) const noexcept
 		{
 			if ( pos > size() )
 				return npos;
@@ -274,7 +274,7 @@ class basic_string_view_t final
 		}
 
 		constexpr size_type
-		find( Char ch, size_type pos = 0 ) const
+		find( Char ch, size_type pos = 0 ) const noexcept
 		{
 				return find( basic_string_view_t(&ch, 1), pos );
 		}
@@ -554,7 +554,7 @@ operator<<(
 	basic_string_view_t <Char, Traits> v )
 {
 	o.write( v.data(), v.size() );
-		return o;
+	return o;
 }
 
 using string_view_t = basic_string_view_t< char >;
