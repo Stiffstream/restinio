@@ -48,7 +48,7 @@ To use *RESTinio* it is necessary to have:
 * [asio](http://think-async.com/Asio) from [git repo](https://github.com/chriskohlhoff/asio.git), commit `d52b8164665e779f58e30d60e4ff9a8da1ce3c4a`;
 * [nodejs/http-parser](https://github.com/nodejs/http-parser) 2.7.1;
 * [fmtlib](http://fmtlib.net/latest/index.html) 4.0.0.
-* Optional: [SObjectizer](https://sourceforge.net/projects/sobjectizer/) 5.5.19.5;
+* Optional: [SObjectizer](https://sourceforge.net/projects/sobjectizer/) 5.5.20;
 
 For building samples, benchmarks and tests:
 
@@ -63,21 +63,21 @@ For building samples, benchmarks and tests:
 There are two ways of obtaining *RESTinio*.
 
 * Getting from
-[repository](https://bitbucket.org/sobjectizerteam/restinio-0.3).
+[repository](https://bitbucket.org/sobjectizerteam/restinio-0.4).
 In this case external dependencies must be obtained with Mxx_ru externals tool.
 * Getting
-[archive](https://bitbucket.org/sobjectizerteam/restinio-0.3/downloads/restinio-0.3.0-full.tar.bz2).
+[archive](https://bitbucket.org/sobjectizerteam/restinio-0.4/downloads/restinio-0.4.0-full.tar.bz2).
 Archive includes source code for all external dependencies.
 
 ### Cloning of hg repository
 
 ```
-hg clone https://bitbucket.org/sobjectizerteam/restinio-0.3
+hg clone https://bitbucket.org/sobjectizerteam/restinio-0.4
 ```
 
 And then:
 ```
-cd restinio-0.3
+cd restinio-0.4
 mxxruexternals
 ```
 to download and extract *RESTinio*'s dependencies.
@@ -89,10 +89,10 @@ See MxxRu::externals recipes for *RESTinio*
 
 ### Getting archive
 
-Choose the file fom [downloads page](https://bitbucket.org/sobjectizerteam/restinio-0.3/downloads/).
+Choose the file fom [downloads page](https://bitbucket.org/sobjectizerteam/restinio-0.4/downloads/).
 
 ```
-wget https://bitbucket.org/sobjectizerteam/restinio-0.3/downloads/<ARCHIVE>
+wget https://bitbucket.org/sobjectizerteam/restinio-0.4/downloads/<ARCHIVE>
 tar xjvf <ARCHIVE>
 cd <UNPACKED_DIR>
 ```
@@ -105,8 +105,8 @@ Building with CMake currently is provided for samples, tests and benches
 not depending on SObjectizer.
 To build them run the following commands:
 ```
-hg clone https://bitbucket.org/sobjectizerteam/restinio-0.3
-cd restinio-0.3
+hg clone https://bitbucket.org/sobjectizerteam/restinio-0.4
+cd restinio-0.4
 mxxruexternals
 cd dev
 mkdir cmake_build
@@ -118,7 +118,7 @@ make install
 
 Or, if getting sources from archive (*<ARCHIVE>*):
 ```
-wget https://bitbucket.org/sobjectizerteam/restinio-0.3/downloads/<ARCHIVE>
+wget https://bitbucket.org/sobjectizerteam/restinio-0.4/downloads/<ARCHIVE>
 tar xjvf <ARCHIVE>
 cd <UNPACKED_DIR>/dev
 mkdir cmake_build
@@ -133,8 +133,8 @@ While *RESTinio* is header-only library, samples, tests and benches require a bu
 
 Compiling with Mxx_ru:
 ```
-hg clone https://bitbucket.org/sobjectizerteam/restinio-0.3
-cd restinio-0.3
+hg clone https://bitbucket.org/sobjectizerteam/restinio-0.4
+cd restinio-0.4
 mxxruexternals
 cd dev
 ruby build.rb
@@ -710,7 +710,8 @@ socket_options_setter and cleanup_func.
 
 When `http_server_t` instance is created all settings are checked to be properly instantiated.
 
-Refer to [server settings](#markdown-header-server-settings) and [restinio/settings.hpp](./dev/restinio/settings.hpp) for details.
+Refer to [server settings](#markdown-header-server-settings)
+and [restinio/settings.hpp](./dev/restinio/settings.hpp) for details.
 
 # Traits
 
@@ -755,7 +756,7 @@ class timer_guard_t
 ~~~~~
 
 To understand the ground idea behind timer managers it is needed to clarify on
-`tcp_connection_ctx_base_t` a weak pointer of whih is passed to
+`tcp_connection_ctx_base_t` a weak pointer of which is passed to
 `timer_guard_t::schedule_timeout_check_invocation()`. A class
 `tcp_connection_ctx_base_t` has a virtual method:
 ~~~~~
@@ -802,6 +803,7 @@ class timer_manager_t
     // ...
 
     // struct/class  timer_guard_t{ ... };
+    // or
     // using timer_guard_t = ...;
 
     // Create guard for connection.
@@ -820,7 +822,7 @@ struct factory_t
 
   auto create( asio::io_context & io_context ) const
   {
-    return std::make_shared< asio_timer_manager_t >( /* params */ );
+    return std::make_shared< timer_manager_t >( /* params */ );
   }
 };
 ~~~~~
@@ -1201,18 +1203,27 @@ working hard on this topic and will be glad to hear any feedback from you.
 One of the reasons to create *RESTinio* was an ability to have
 [express](https://expressjs.com/)-like request handler router.
 
-Since v 0.2.1 *RESTinio* has a router based on idea borrowed
+Since v0.2.1 *RESTinio* has a router based on idea borrowed
 from [express](https://expressjs.com/) - a JavaScript framework.
+In v0.4 lots of improvements were made to make express router much better and practical.
 
-Routers acts as a request handler (it means it is a function-object
+In general one can implement a custom router. It just a special request handler
+that receives request from restinio as a usual handler and then selects
+a some kind of endpoint to do the final handling and may be adding some stuff to original request.
+Selection rules are up to router author.
+
+Express routers acts as a request handler (it means it is a function-object
 that can be called as a request handler).
-But router aggregates several handlers and picks one or none of them to handle the request.
+It aggregates several endpoint-handlers and picks one or none of them to handle the request.
 The choice of the handler to execute depends on request target and HTTP method.
-If router finds no handler matching request then it rejects it.
+If router finds no handler matching the request then request is considered unmatched.
+It is possible to set a handler for unmatched requests, otherwise router rejects the request and
+*RESTinio* takes care of it.
+
 There is a difference between ordinary restinio request handler
 and the one that is used with experss router and is bound to concrete endpoint.
 The signature of a handlers that can be put in router
-has an additional parameter -- a container with parameters extracted from URI.
+has an additional parameter -- a container with parameters extracted from URI (request target).
 
 Express router is defined by `express_router_t` class.
 Its implementation is inspired by
@@ -1222,13 +1233,16 @@ of parameters that become available for handlers.
 For example the following code sets a handler with 2 parameters:
 ~~~~~
 ::c++
-  router.http_get(
-    R"(/article/:article_id/:page(\d+))",
-    []( auto req, auto params ){
-      const auto article_id = params[ "article_id" ];
-      auto page = std::to_string( params[ "page" ] );
-      // ...
-    } );
+using router_t = rr::express_router_t<>;
+auto router = std::make_unique< router_t >();
+
+router->http_get(
+  R"(/article/:article_id/:page(\d+))",
+  []( auto req, auto params ){
+    const auto article_id = restinio::cast_to<std::uint64_t>( params[ "article_id" ] );
+    const auto page = restinio::cast_to<short>( params[ "page" ] );
+    // ...
+  } );
 ~~~~~
 
 Note that express handler receives 2 parameters not only request handle
@@ -1251,14 +1265,15 @@ First let's assume that variable `router` is a pointer to express router.
 So that is how we add a request handler with a single parameter:
 ~~~~~
 ::c++
-
-  // GET request with single parameter.
-  router->http_get( "/single/:param", []( auto req, auto params ){
-    return
-      init_resp( req->create_response() )
-        .set_body( "GET request with single parameter: " + params[ "param" ] )
-        .done();
-  } );
+router->http_get( "/single/:param", []( auto req, auto params ){
+  return
+    init_resp( req->create_response() )
+      .set_body(
+        fmt::format(
+          "GET request with single parameter: '{}'",
+          params[ "param" ] ) )
+      .done();
+} );
 ~~~~~
 
 
@@ -1274,21 +1289,27 @@ But the following will not:
 * http://localhost/single/
 * http://localhost/single-param/123
 
+A helper function `init_resp` sets values foor 'Server', 'Date' and 'Content-Type' header fields
+and returns response builder.
+
 Let's use more parameters and assign a capture regex for them:
 ~~~~~
 ::c++
-  // POST request with several parameters.
-  router->http_post( R"(/many/:year(\d{4}).:month(\d{2}).:day(\d{2}))",
-    []( auto req, auto params ){
-      return
-        init_resp( req->create_response() )
-          .set_body( "POST request with many parameters:\n"
-            "year: "+ params[ "year" ] + "\n" +
-            "month: "+ params[ "month" ] + "\n" +
-            "day: "+ params[ "day" ] + "\n"
-            "body: " + req->body() )
-          .done();
-    } );
+// POST request with several parameters.
+router->http_post( R"(/many/:year(\d{4}).:month(\d{2}).:day(\d{2}))",
+  []( auto req, auto params ){
+    return
+      init_resp( req->create_response() )
+        .set_body(
+          fmt::format(
+            "POST request with many parameters:\n"
+            "year: {}\nmonth: {}\nday: {}\nbody: {}",
+            params[ "year" ],
+            params[ "month" ],
+            params[ "day" ],
+            req->body() ) )
+        .done();
+  } );
 ~~~~~
 
 The following requests will be routed to that handler:
@@ -1306,17 +1327,20 @@ But the following will not:
 Using indexed parameters is practically the same, just omit parameters names:
 ~~~~~
 ::c++
-  // GET request with indexed parameters.
-  router->http_get( R"(/indexed/([a-z]+)-(\d+)/(one|two|three))",
-    []( auto req, auto params ){
-      return
-        init_resp( req->create_response() )
-          .set_body( "POST request with indexed parameters:\n"
-            "#0: "+ params[ 0 ] + "\n" +
-            "#1: "+ params[ 1 ] + "\n" +
-            "#2: "+ params[ 2 ] + "\n" )
-          .done();
-    } );
+// GET request with indexed parameters.
+router->http_get( R"(/indexed/([a-z]+)-(\d+)/(one|two|three))",
+  []( auto req, auto params ){
+    return
+      init_resp( req->create_response() )
+        .set_body(
+          fmt::format(
+            "POST request with indexed parameters:\n"
+            "#0: '{}'\n#1: {}\n#2: '{}'",
+            params[ 0 ],
+            params[ 1 ],
+            params[ 2 ] ) )
+        .done();
+  } );
 ~~~~~
 
 The following requests will be routed to that handler:
@@ -1335,6 +1359,278 @@ See full [example](./dev/sample/express_router_tutorial/main.cpp)
 
 For details on `route_params_t` and `express_router_t` see
 [express.hpp](./dev/restinio/router/express.cpp).
+
+
+## Route parameters
+
+Route parameters are represented with `restinio::router::route_paramts_t`class.
+It holds named and indexed parameters.
+All parameters values are stored as `string_view` objects refering
+a buffer with a copy of a request target string. A key values for named parameters
+are also string_view objects refering a shared buffer-string
+provided by the route matcher entry.
+
+Values stored in `route_paramts_t` objects can be accessed
+with `operator[]` receiving `string_view` as its argument for named parameter
+and `std::size_t`.
+
+*Note*: when getting parameter value as string_view
+a copy of internal string_view object is returned,
+thus it refers to dta located in buffer owned by `route_params_t` instance.
+And such string_view is valid only during the lifetime of
+a given parameters object.
+`route_params_t` instance can be moved, and all string_view objects
+refering the buffer owned by route params remain valid during life time of a newly created object.
+
+### Casting parameters
+
+Each parameter is represented with a string_view,
+but often it is just a representation, for example, of a numeric type.
+For that purposes *RESTinio* contains helpful function:
+`restinio::cast_as<Value_Type>(string_view_t s)`.
+
+For example:
+~~~~~
+::c++
+router->http_get( R"(/:id{\d}/:tag([a-z0-9]+)/:year(\d{4}))",
+  []( auto req, auto params ){
+    const auto id = restinio::cast_to<std::uint64_t>( params[ "id" ] );
+    const auto tag = restinio::cast_to<std::string>( params[ "tag" ] );
+    const auto year = restinio::cast_to<short>( params[ "year" ] );
+    // ...
+  } );
+~~~~~
+
+Parameters can be casted to any type that support conversion.
+*RESTinio* supports conversion for the following types:
+
+* 8-,16-,32-,64-bit signed/unsigned integers;
+* float/double;
+* std::string.
+
+A custom cnversions can be added in one of two following ways:
+
+1. Define an appropriate `read_value` function in the same namespace as your custom type
+(ADL will be applied):
+~~~~~
+::c++
+namespace my_ns
+{
+  class my_type_t
+  {
+    // ...
+  };
+
+  void read_value( my_type_t & v, const char * data, std::size_t size )
+  {
+    // Set a a value of v.
+  }
+} /* namespace my_ns */
+~~~~~
+
+2. Define an appropriate `read_value` function in `restinio::utils` namespace:
+~~~~~
+::c++
+namespace restinio
+{
+  namespace utils
+  {
+    void read_value( my_ns::my_type_t & v, const char * data, std::size_t size )
+    {
+      // Set a a value of v.
+    }
+  } /* namespace utils */
+} /* namespace restinio */
+~~~~~
+
+### Note on string view
+
+*RESTinio* relies on `std::string_view` or `std::experimentl::string_view`
+if one of them available. Otherwise *RESTinio* uses its own
+string_view class. See [string_view.hpp](./dev/restinio/string_view.hpp) for details.
+
+## Non matched request handler
+
+For the cases when express-router defeined with certain routes finds no matching routes
+it is possible to set a special handler that catches all non matched requests.
+
+For example:
+~~~~~
+::c++
+router->non_matched_request_handler(
+  []( auto req ){
+    return
+      req->create_response( 404, "Not found")
+        .connection_close()
+        .done();
+  } );
+~~~~~
+
+
+## Regex engines
+
+For doing route matching express-router relies on regex.
+`express_router_t` defined as a template class :
+~~~~~
+::c++
+template < typename Regex_Engine = std_regex_engine_t>
+class express_router_t
+{
+  // ...
+};
+~~~~~
+
+Template argument `Regex_Engine` defines regex engine implementation.
+*RESTinio* comes with following predefined regex engines:
+
+* Based on regex provided by STL (default), see [std_regex_engine.hpp](./dev/restinio/router/std_regex_engine.hpp).
+* Based on [PCRE](https://www.pcre.org/original/doc/html/), see [pcre_regex_engine.hpp](./dev/restinio/router/pcre_regex_engine.hpp).
+* Based on [PCRE2](https://www.pcre.org/current/doc/html/), see [pcre2_regex_engine.hpp](./dev/restinio/router/pcre2_regex_engine.hpp).
+
+Tests and benchmarks for PCRE engines are built if build system (cmake or mxx_ru)
+considers them available.
+
+## Performance
+
+Performance of routing depends on at least the following things:
+
+* total number of routes;
+* distribution of routes and the order in which routes are added to router;
+* complexity of regexes used for mathing routes;
+
+It is hard to say what is the penalty in each case with its conditions.
+But a certain picture can be derived from benchmarks.
+And *RESTinio* contains such benchmarks for supported regex engines
+
+For standard regex engine there is a
+[express_router_bench](./dev/test/router/express_router_bench/main.cpp).
+For pcre: [1](./dev/test/router/express_router_pcre_bench/main.cpp) and
+[2](./dev/test/router/express_router_pcre2_bench/main.cpp).
+
+~~~~~
+# See usage:
+$ _test.router.express_router_bench -h
+
+# Sample: run server on port 8080, using 4 threads matching routes given in a file cmp_routes.txt.
+$ _test.router.express_router_bench -p 8080 -n 4 -r test/router/express_router_bench/cmp_routes.txt
+~~~~~
+
+A file that defines routes must contain lines in the following format:
+~~~~~
+(HTTP METHOD: GET|POST|...) (route path)
+~~~~~
+
+For example:
+~~~~~
+GET /users/:id(\d+)
+GET /users/:id(\d+)/visits
+POST /users/:id(\d+)
+POST /users/new
+GET /locations/:id(\d+)
+GET /locations/:id(\d+)/avg
+POST /locations/:id(\d+)
+POST /locations/new
+GET /visits/:id(\d+)
+POST /visits/:id(\d+)
+POST /visits/new
+~~~~~
+
+For measurement can be done with your tools.
+Or simply use [wrk](https://github.com/wg/wrk) tool:
+~~~~~
+::bash
+# Testing with cmp_routes.txt
+./wrk --latency -t 4 -c 256 -d 10 -s cmp_routes.lua http://127.0.0.1:8080/
+~~~~~
+
+where cmp_routes.lua is:
+~~~~~
+request = function()
+  local e = math.random(1, 100)
+
+  if e < 86 then
+    wrk.method = "GET"
+
+    if e < 21 then
+      path = "/users/" .. math.random(1, 10000 )
+    elseif e < 41 then
+      path = "/locations/" .. math.random(1, 100000 )
+    elseif e < 51 then
+      path = "/visits/" .. math.random(1, 10000 )
+    elseif e < 61 then
+      path = "/users/" .. math.random(1, 10000 ) .. "/visits"
+    else
+      path = "/locations/" .. math.random(1, 10000 ) .. "/avg"
+    end
+
+  else
+    wrk.method = "POST"
+    wrk.body = "{}"
+    wrk.headers["Content-Type"] = "application/json"
+
+    if e < 89 then
+      path = "/users/" .. math.random(1, 10000 )
+    elseif e < 93 then
+      path = "/locations/" .. math.random(1, 100000 )
+    elseif e < 95 then
+      path = "/visits/" .. math.random(1, 100000 )
+    elseif e < 96 then
+      path = "/users/new"
+    elseif e < 98 then
+      path = "/visits/new"
+    else
+      path = "/locations/new"
+    end
+  end
+
+  return wrk.format(nil, path)
+end
+~~~~~
+
+This script some how sets a distribution of generated request.
+
+### Benchmarks
+
+Of course express-router costs something in terms of performance.
+And the question is: on a given set of routes what is penalty
+of using express router compared to a nicely hardcoded routing for a given set of routes.
+
+For that purpose we implemented a hardcoded routing:
+[cmp_router_bench](./dev/testrouter/cmp_router_bench) having a route parser for the following routes:
+For example:
+~~~~~
+GET /users/:id(\d+)
+GET /users/:id(\d+)/visits
+POST /users/:id(\d+)
+POST /users/new
+GET /locations/:id(\d+)
+GET /locations/:id(\d+)/avg
+POST /locations/:id(\d+)
+POST /locations/new
+GET /visits/:id(\d+)
+POST /visits/:id(\d+)
+POST /visits/new
+~~~~~
+
+And we test it with the *express_router_bench*s described in previous section.
+[Wrk](https://github.com/wg/wrk) was used for generating load with
+the following params: `./wrk -t 4 -c 256 -d 30 -s cmp_routes.lua http://127.0.0.1:8080/`
+
+The results are the following
+
+| # of threads  | hardcoded | express-router (std) | express-router (PCRE) | express-router (PCRE2) |
+|---------------|-----------|----------------------|-----------------------|------------------------|
+| 1             | 166831.47 | 123424.81 (73.98%)   | 148401.88 (88.95%)    | 142069.51 (85.16%)     |
+| 2             | 258360.2  | 200787.45 (77.72%)   | 242435.34 (93.84%)    | 226003.16 (87.48%)     |
+| 3             | 293823.26 | 235170.51 (80.04%)   | 269773.28 (91.81%)    | 258215.84 (87.88%)     |
+| 4             | 330288.48 | 259880.8 (78.68%)    | 301442.89 (91.27%)    | 291626.53 (88.29%)     |
+
+Benchmark environment:
+
+* CPU: 8x Intel(R) Core(TM) i7-6700K CPU @ 4.00GHz;
+* Memory: 16343MB;
+* Operating System: Ubuntu 16.04.2 LTS.
+* Compiler: gcc version 7.1.0 (Ubuntu 7.1.0-5ubuntu2~16.04)
 
 # Using *restinio::run*
 
@@ -1910,12 +2206,11 @@ See full [sample](./dev/sample/hello_world_https/main.cpp) for details.
 |       Feature        | description | release  |
 |----------------------|-------------|----------|
 | Add cmake support for SObjectizer  | test and samples that depend on SObjectizer included to cmake scripts | 0.4.0 |
-| Express router (unmatched request handler) | A handler for non matched request can be set | 0.4.0 |
+| Express router (non matched request handler) | A handler for non matched request can be set | 0.4.0 |
 | Express router (route params casting) | Introducing parameter binds interface for working with route parameters that can be converted to a specific type (if conversion is available) | 0.4.0 |
 | Express router (route params using string_view) | Getting rid of using strings for storing parameters keys and values in `route_params_t` and using string_view (`std::string_view` if available) | 0.4.0 |
 | Express router (route dsl) | Update route to regex proccessing in order to stick with [path-to-regexp](https://github.com/pillarjs/path-to-regexp) project| 0.4.0 |
 | Express router (regex engine) | Introduce a concept of regex engine, so express router can run on pcre/pcre2 engines or the one provided by user | 0.4.0 |
-| Express router (regex engine) | Introduce a concept of regex engine, so express router can use pcre/pcre2 engines or the one provided by user | 0.4.0 |
 | Express router (benchmark) | Add a benchmark for testing performance on a given set of routes (described in file) | 0.4.0 |
 | Add benchmarks | Add restinio benchmarks to repository | 0.4.0 |
 | Timer manager concept | Redesign timers. Introduce a concept of timer manager, that substitutes former timer factory concept | 0.4.0 |

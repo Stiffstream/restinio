@@ -12,7 +12,12 @@
 constexpr std::uint16_t
 utest_default_port()
 {
+// Make it possible to run unit-tests for g++/clang in parallel.
+#if defined(__clang__)
+	return 8086;
+#else
 	return 8085;
+#endif
 }
 
 template < typename LAMBDA >

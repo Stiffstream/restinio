@@ -50,7 +50,10 @@ auto server_handler()
 	router->http_get( "/single/:param", []( auto req, auto params ){
 		return
 			init_resp( req->create_response() )
-				.set_body( "GET request with single parameter: " + params[ "param" ].as_string() )
+				.set_body(
+					fmt::format(
+						"GET request with single parameter: '{}'",
+						params[ "param" ] ) )
 				.done();
 	} );
 
@@ -59,11 +62,14 @@ auto server_handler()
 		[]( auto req, auto params ){
 			return
 				init_resp( req->create_response() )
-					.set_body( "POST request with many parameters:\n"
-						"year: "+ params[ "year" ].as_string() + "\n" +
-						"month: "+ params[ "month" ].as_string() + "\n" +
-						"day: "+ params[ "day" ].as_string() + "\n"
-						"body: " + req->body() )
+					.set_body(
+						fmt::format(
+							"POST request with many parameters:\n"
+							"year: {}\nmonth: {}\nday: {}\nbody: {}",
+							params[ "year" ],
+							params[ "month" ],
+							params[ "day" ],
+							req->body() ) )
 					.done();
 		} );
 
@@ -72,10 +78,21 @@ auto server_handler()
 		[]( auto req, auto params ){
 			return
 				init_resp( req->create_response() )
-					.set_body( "POST request with indexed parameters:\n"
-						"#0: "+ params[ 0 ].as_string() + "\n" +
-						"#1: "+ params[ 1 ].as_string() + "\n" +
-						"#2: "+ params[ 2 ].as_string() + "\n" )
+					.set_body(
+						fmt::format(
+							"POST request with indexed parameters:\n"
+							"#0: '{}'\n#1: {}\n#2: '{}'",
+							params[ 0 ],
+							params[ 1 ],
+							params[ 2 ] ) )
+					.done();
+		} );
+
+	router->non_matched_request_handler(
+		[]( auto req ){
+			return
+				req->create_response( 404, "Not found")
+					.connection_close()
 					.done();
 		} );
 

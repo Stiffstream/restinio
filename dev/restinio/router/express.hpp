@@ -9,7 +9,6 @@
 #pragma once
 
 #include <restinio/request_handler.hpp>
-#include <restinio/parameter_bind.hpp>
 
 #include <restinio/path2regex/path2regex.hpp>
 
@@ -87,22 +86,14 @@ class route_params_t final
 		route_params_t & operator = ( const route_params_t & ) = delete;
 
 		//! Matched route.
-		const parameter_bind_t
-		match() const { return parameter_bind_t( m_match ); }
+		string_view_t
+		match() const { return m_match; }
 
 		//! Get named parameter.
-		const parameter_bind_t
+		string_view_t
 		operator [] ( string_view_t key ) const
 		{
-			auto it = find_named_parameter( key );
-
-			if( m_named_parameters.end() == it )
-				throw exception_t{
-					fmt::format(
-						"invalid parameter name: {}",
-						std::string{ key.data(), key.size() } ) };
-
-			return parameter_bind_t{ it->second };
+			return find_named_parameter_with_check( key ).second;
 		}
 
 		//! Check parameter.
@@ -113,13 +104,13 @@ class route_params_t final
 		}
 
 		//! Get indexed parameter.
-		const parameter_bind_t
+		string_view_t
 		operator [] ( std::size_t i ) const
 		{
 			if( i >= m_indexed_parameters.size() )
 				throw exception_t{ fmt::format( "invalid parameter index: {}", i ) };
 
-			return parameter_bind_t{ m_indexed_parameters.at( i ) };
+			return m_indexed_parameters.at( i );
 		}
 
 		//! Get number of parameters.
@@ -130,7 +121,7 @@ class route_params_t final
 
 	private:
 		named_parameters_container_t::const_iterator
-		find_named_parameter( const string_view_t & key ) const
+		find_named_parameter( string_view_t key ) const
 		{
 			return
 				std::find_if(
@@ -139,6 +130,20 @@ class route_params_t final
 					[&]( const auto p ){
 						return key == p.first;
 					} );
+		}
+
+		named_parameters_container_t::const_reference
+		find_named_parameter_with_check( string_view_t key ) const
+		{
+			auto it = find_named_parameter( key );
+
+			if( m_named_parameters.end() == it )
+				throw exception_t{
+					fmt::format(
+						"invalid parameter name: {}",
+						std::string{ key.data(), key.size() } ) };
+
+			return *it;
 		}
 
 		//! A raw request target.
@@ -199,13 +204,13 @@ struct route_params_accessor_t
 	//! Get values containers for all parameters (used in unit tests).
 	//! \{
 	static const auto &
-	named_parameters( route_params_t & rp )
+	named_parameters( const route_params_t & rp )
 	{
 		return rp.m_named_parameters;
 	}
 
 	static const auto &
-	indexed_parameters( route_params_t & rp )
+	indexed_parameters( const route_params_t & rp )
 	{
 		return rp.m_indexed_parameters;
 	}
@@ -257,7 +262,7 @@ using param_appender_sequence_t =
 //
 
 //! A matcher for a given path.
-template < typename Regex_Engine = std_regex_engine_t>
+template < typename Regex_Engine = std_regex_engine_t >
 class route_matcher_t
 {
 	public:
@@ -482,6 +487,20 @@ class express_route_entry_t
 //
 
 //! Express.js style router.
+/*
+	Express routers acts as a request handler (it means it is a function-object
+	that can be called as a restinio request handler).
+	It aggregates several endpoint-handlers and picks one or none of them to handle the request.
+	The choice of the handler to execute depends on request target and HTTP method.
+	If router finds no handler matching the request then request is considered unmatched.
+	It is possible to set a handler for unmatched requests, otherwise router rejects the request and
+	RESTinio takes care of it.
+
+	There is a difference between ordinary restinio request handler
+	and the one that is used with experss router: express_request_handler_t.
+	The signature of a handlers that can be put in router
+	has an additional parameter -- a container with parameters extracted from URI (request target).
+*/
 template < typename Regex_Engine = std_regex_engine_t>
 class express_router_t
 {
@@ -677,5 +696,21 @@ class express_router_t
 };
 
 } /* namespace router */
+
+//! Cast named parameter value to a given type.
+template < typename Value_Type >
+Value_Type
+get( const router::route_params_t & params, string_view_t key )
+{
+	return get< Value_Type >( params[ key ] );
+}
+
+//! Cast indexed parameter value to a given type.
+template < typename Value_Type >
+Value_Type
+get( const router::route_params_t & params, std::size_t index )
+{
+	return get< Value_Type >( params[ index ] );
+}
 
 } /* namespace restinio */

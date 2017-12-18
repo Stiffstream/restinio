@@ -15,6 +15,51 @@
 
 #include <restinio/utils/from_string.hpp>
 
+// Adopted from https://github.com/quickfix/quickfix/blob/master/src/C%2B%2B/FieldConvertors.h
+using signed_int = std::int32_t;
+using unsigned_int = std::uint32_t;
+
+bool
+quickfix_convert(
+	std::string::const_iterator str,
+	std::string::const_iterator end,
+	signed_int & result )
+{
+	bool isNegative = false;
+
+	signed_int x = 0;
+
+	if( str == end )
+		return false;
+
+	if( *str == '-' )
+	{
+		isNegative = true;
+		if( ++str == end )
+			return false;
+	}
+
+	if( *str == '+' )
+	{
+		if( ++str == end )
+			return false;
+	}
+
+	do
+	{
+		const unsigned_int c = *str - '0';
+		if( c > 9 ) return false;
+		x = 10 * x + c;
+	} while ( ++str != end );
+
+	if( isNegative )
+		x = -unsigned_int(x);
+
+	result = x;
+	return true;
+}
+
+
 template < typename LAMBDA >
 void
 run_bench( const std::string & tag, LAMBDA lambda )
@@ -106,11 +151,6 @@ init_datasets( size_t n )
 	uints64_data = create_ints< std::uint64_t >( n );
 }
 
-#define RUN_CAST_BENCH( bench_func, tag ) \
-	run_bench( \
-		tag, \
-		[&]{ bench_func( str_set_1, str_set_2 ); } );
-
 constexpr std::size_t iterations = 1000;
 
 template < typename Integer >
@@ -120,7 +160,10 @@ bench_intN( const cast_dataset_t< Integer > & data )
 	for( int i = 0; i < iterations; ++i )
 	{
 		for( const auto & p : data )
-			if( p.m_int != restinio::utils::from_string< Integer >( p.m_str ) );
+		{
+			if( p.m_int != restinio::utils::from_string< Integer >( p.m_str ) )
+				throw std::runtime_error{ "bench_intN failed" };
+		}
 	}
 }
 
@@ -140,7 +183,10 @@ boost_bench_intN( const cast_dataset_t< Integer > & data )
 	for( int i = 0; i < iterations; ++i )
 	{
 		for( const auto & p : data )
-			if( p.m_int != boost::lexical_cast< Integer >( p.m_str ) );
+		{
+			if( p.m_int != boost::lexical_cast< Integer >( p.m_str ) )
+				throw std::runtime_error{ "boost_bench_intN failed" };
+		}
 	}
 }
 
@@ -154,28 +200,60 @@ void boost_bench_int64(){ boost_bench_intN( ints64_data ); }
 void boost_bench_uint64(){ boost_bench_intN( uints64_data ); }
 
 
+void
+quickfix_bench_int32()
+{
+	const auto & data = ints32_data;
+	for( int i = 0; i < iterations; ++i )
+	{
+		for( const auto & p : data )
+		{
+			signed_int v = 0;
+			quickfix_convert( p.m_str.begin(), p.m_str.end(), v );
+			if( p.m_int != v )
+			{
+				throw std::runtime_error{ "quickfix_bench_int32 failed" };
+			}
+		}
+	}
+}
+
+
 int
 main()
 {
-	init_datasets( 1000 );
+	try
+	{
+		init_datasets( 10000 );
 
-	run_bench( "int8", bench_int8 );
-	run_bench( "uint8", bench_uint8 );
-	run_bench( "int16", bench_int16 );
-	run_bench( "uint16", bench_uint16 );
-	run_bench( "int32", bench_int32 );
-	run_bench( "uint32", bench_uint32 );
-	run_bench( "int64", bench_int64 );
-	run_bench( "uint64", bench_uint64 );
+		std::cout << "RESTinio impl:" << std::endl;
+		run_bench( "int8", bench_int8 );
+		run_bench( "uint8", bench_uint8 );
+		run_bench( "int16", bench_int16 );
+		run_bench( "uint16", bench_uint16 );
+		run_bench( "int32", bench_int32 );
+		run_bench( "uint32", bench_uint32 );
+		run_bench( "int64", bench_int64 );
+		run_bench( "uint64", bench_uint64 );
 
-	// run_bench( "boost int8", boost_bench_int8 );
-	// run_bench( "boost uint8", boost_bench_uint8 );
-	run_bench( "boost int16", boost_bench_int16 );
-	run_bench( "boost uint16", boost_bench_uint16 );
-	run_bench( "boost int32", boost_bench_int32 );
-	run_bench( "boost uint32", boost_bench_uint32 );
-	run_bench( "boost int64", boost_bench_int64 );
-	run_bench( "boost uint64", boost_bench_uint64 );
+		std::cout << "\nBoost:" << std::endl;
+		// run_bench( "boost int8", boost_bench_int8 );
+		// run_bench( "boost uint8", boost_bench_uint8 );
+		run_bench( "boost int16", boost_bench_int16 );
+		run_bench( "boost uint16", boost_bench_uint16 );
+		run_bench( "boost int32", boost_bench_int32 );
+		run_bench( "boost uint32", boost_bench_uint32 );
+		run_bench( "boost int64", boost_bench_int64 );
+		run_bench( "boost uint64", boost_bench_uint64 );
+
+		std::cout << "\nquickfix:" << std::endl;
+		run_bench( "quickfix int32", quickfix_bench_int32 );
+
+	}
+	catch( const std::exception & ex )
+	{
+		std::cout << "Error: " << ex.what() << std::endl;
+	}
 
 	return 0;
 }

@@ -10,6 +10,7 @@
 #include <catch/catch.hpp>
 
 #include <restinio/uri_helpers.hpp>
+#include <restinio/cast_to.hpp>
 
 using namespace restinio;
 
@@ -257,10 +258,10 @@ TEST_CASE( "Parse query params" , "[parse_query_string]" )
 		REQUIRE( params.has( "fromDate" ) );
 		REQUIRE( params.has( "toAge" ) );
 		REQUIRE( params.has( "gender" ) );
-		REQUIRE( params[ "toDate" ].as< std::uint64_t >() == 815875200ULL );
-		REQUIRE( params[ "fromDate" ].as< std::uint64_t >() == 1133136000ULL );
-		REQUIRE( params[ "toAge" ].as< std::uint8_t >() == 38 );
-		REQUIRE( params[ "gender" ].as< std::string >() == "f" );
+		REQUIRE( restinio::cast_to< std::uint64_t >( params[ "toDate" ] ) == 815875200ULL );
+		REQUIRE( restinio::cast_to< std::uint64_t >( params[ "fromDate" ] ) == 1133136000ULL );
+		REQUIRE( restinio::cast_to< std::uint8_t >( params[ "toAge" ] ) == 38 );
+		REQUIRE( restinio::cast_to< std::string >( params[ "gender" ] ) == "f" );
 	}
 	{
 		const std::string
@@ -317,11 +318,11 @@ TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_string_multi_map
 		REQUIRE( 4 == params.size() );
 
 		REQUIRE( params.has( "toDate" ) );
-		REQUIRE( params[ "toDate" ].as< std::int32_t >() == 815875200L );
+		REQUIRE( restinio::cast_to< std::int32_t >(params[ "toDate" ] ) == 815875200L );
 		REQUIRE( params.has( "fromDate" ) );
-		REQUIRE( params[ "fromDate" ].as< std::uint32_t >() == 1133136000UL );
+		REQUIRE( restinio::cast_to< std::uint32_t >(params[ "fromDate" ] ) == 1133136000UL );
 		REQUIRE( params.has( "toAge" ) );
-		REQUIRE( params[ "toAge" ].as< std::int8_t >() == 38 );
+		REQUIRE( restinio::cast_to< std::int8_t >(params[ "toAge" ] ) == 38 );
 		REQUIRE( params.has( "gender" ) );
 		REQUIRE( params[ "gender" ] == "f" );
 	}
@@ -335,7 +336,7 @@ TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_string_multi_map
 		REQUIRE( 1 == params.size() );
 
 		REQUIRE( params.has( "country" ) );
-		REQUIRE( params[ "country" ].as< std::string >() == "\xD0\x9C\xD0\xB0\xD0\xBB\xD1\x8C\xD1\x82\xD0\xB0" );
+		REQUIRE( restinio::cast_to< std::string >( params[ "country" ] ) == "\xD0\x9C\xD0\xB0\xD0\xBB\xD1\x8C\xD1\x82\xD0\xB0" );
 	}
 
 	{
