@@ -1601,11 +1601,14 @@ For example:
 ~~~~~
 GET /users/:id(\d+)
 GET /users/:id(\d+)/visits
+POST /users/:id(\d+)
 POST /users/new
 GET /locations/:id(\d+)
 GET /locations/:id(\d+)/avg
+POST /locations/:id(\d+)
 POST /locations/new
 GET /visits/:id(\d+)
+POST /visits/:id(\d+)
 POST /visits/new
 ~~~~~
 
