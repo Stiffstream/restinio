@@ -190,7 +190,6 @@ class http_server_t
 				std::make_shared< connection_settings_t >(
 					std::forward< actual_settings_type >(settings),
 					impl::create_parser_settings(),
-					this->io_context(),
 					m_timer_manager );
 
 			m_acceptor =

@@ -46,7 +46,6 @@ struct connection_settings_t final
 	connection_settings_t(
 		Settings && settings,
 		http_parser_settings parser_settings,
-		asio::io_context & io_context,
 		timer_manager_handle_t timer_manager )
 		:	m_request_handler{ settings.request_handler() }
 		,	m_parser_settings{ parser_settings }

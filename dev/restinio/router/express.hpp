@@ -59,7 +59,7 @@ class route_params_t final
 			std::vector< string_view_t >;
 
 	private:
-		friend class impl::route_params_accessor_t;
+		friend struct impl::route_params_accessor_t;
 
 		void
 		match(
