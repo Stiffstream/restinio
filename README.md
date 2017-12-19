@@ -71,16 +71,31 @@ Archive includes source code for all external dependencies.
 
 ### Cloning of hg repository
 
+*RESTinio* is hosted on mercurial bitbucket repository.
+So you need [mercurial](https://en.wikipedia.org/wiki/Mercurial) to be installed.
+
+For mxxruexternals to work you need ruby with installed gem Mxx_ru.
+For getting dependencies with mxxruexternals you need the following additional packges
+to be installed: wget, tar, unzip, git.
+
+While on linux platform prepared for C++ development all of them
+most likely are already installed on windows it gets trickier.
+And there are 2 major options. The first one is to get restinio from archive with all required
+sources in it.
+And the second is to use Cygwin or MinGW environments with above mentioned packages installed.
+
+
+Get repository:
+
 ```
 hg clone https://bitbucket.org/sobjectizerteam/restinio-0.4
 ```
 
-And then:
+Get required external dependencies:
 ```
 cd restinio-0.4
 mxxruexternals
 ```
-to download and extract *RESTinio*'s dependencies.
 
 ### MxxRu::externals recipe
 
@@ -103,6 +118,7 @@ cd <UNPACKED_DIR>
 
 Building with CMake currently is provided for samples, tests and benches
 not depending on SObjectizer.
+
 To build them run the following commands:
 ```
 hg clone https://bitbucket.org/sobjectizerteam/restinio-0.4
@@ -146,8 +162,11 @@ ruby build.rb --mxx-cpp-release
 ruby build.rb --mxx-cpp-debug
 ```
 
-*NOTE.* It might be necessary to set up `MXX_RU_CPP_TOOLSET` environment variable,
+**NOTE.** It might be necessary to set up `MXX_RU_CPP_TOOLSET` environment variable,
 see Mxx_ru documentation for further details.
+
+**NOTE.** When building with mxx_ru using
+
 
 ### Dependencies default settings
 
