@@ -1616,7 +1616,7 @@ And we test it with the *express_router_bench*s described in previous section.
 [Wrk](https://github.com/wg/wrk) was used for generating load with
 the following params: `./wrk -t 4 -c 256 -d 30 -s cmp_routes.lua http://127.0.0.1:8080/`
 
-The results are the following
+The results are the following (2017.12.19)
 
 | # of threads  | hardcoded | express-router (std) | express-router (PCRE) | express-router (PCRE2) |
 |---------------|-----------|----------------------|-----------------------|------------------------|
