@@ -2,6 +2,8 @@
 
 [TOC]
 
+----------------------------------------------------------------------
+
 # What Is It?
 *RESTinio* is a header-only library for creating REST applications in c++.
 It helps to create http server that can handle requests asynchronously.
@@ -37,6 +39,8 @@ And a header-only design is a plus.
 
 And it happens that under such conditions you don't have a lot of options.
 So we have come up with *RESTinio*...
+
+----------------------------------------------------------------------
 
 # Obtain And Build
 
@@ -182,6 +186,8 @@ definition `HTTP_PARSER_STRICT=0` is applied;
 define is necessary;
 * for *RapidJSON* two definitions are necessary: `RAPIDJSON_HAS_STDSTRING` and
 `RAPIDJSON_HAS_CXX11_RVALUE_REFS`.
+
+----------------------------------------------------------------------
 
 # Getting started
 
@@ -481,6 +487,8 @@ and from this type `restinio::run()` function deduces the trats for its server.
 
 See also a full ([sample](./dev/sample/hello_world_basic/main.cpp)).
 
+----------------------------------------------------------------------
+
 # Basic idea
 
 When describing  *RESTinio* http server there are three abstractions
@@ -732,6 +740,8 @@ When `http_server_t` instance is created all settings are checked to be properly
 Refer to [server settings](#markdown-header-server-settings)
 and [restinio/settings.hpp](./dev/restinio/settings.hpp) for details.
 
+----------------------------------------------------------------------
+
 # Traits
 
 ## List of types that must be defined be *Traits*
@@ -933,6 +943,8 @@ eliminate overhead of `asio::strand`.
 `stream_socket_t` allows to customize underlying socket type,
 so it possible to create https server using identical interface (see [TLS support](#markdown-header-tls-support)).
 
+----------------------------------------------------------------------
+
 # Response builder
 
 Lets consider that we are at the point when response
@@ -1061,6 +1073,8 @@ and expects user to set body using chunks of data.
   }
 ~~~~~
 
+----------------------------------------------------------------------
+
 # Server settings
 
 ## Traits independent settings
@@ -1108,6 +1122,8 @@ request_handler( Params &&... params )
 | request_handler | `std::unique_ptr< request_handler_t >` `Params &&...` | Request handler. |
 | timer_manager | `Params &&...` | Timers manager (see [timer](#markdown-header-timer_manager_t)). |
 | logger | `Params &&...` | Logger (see [logger](#markdown-header-logger_t)). |
+
+----------------------------------------------------------------------
 
 # Cleanup function
 
@@ -1216,6 +1232,8 @@ hard one. During the work on RESTinio v.0.3 we have found one solution which
 seems to be working. But it could be not the best one. So if you have some
 troubles with it or have some ideas on this topic please let us know. We are
 working hard on this topic and will be glad to hear any feedback from you.
+
+----------------------------------------------------------------------
 
 # Express router
 
@@ -1651,6 +1669,8 @@ Benchmark environment:
 * Operating System: Ubuntu 16.04.2 LTS.
 * Compiler: gcc version 7.1.0 (Ubuntu 7.1.0-5ubuntu2~16.04)
 
+----------------------------------------------------------------------
+
 # Using *restinio::run*
 
 The simplest way of running *RESTinio* server is usage of `restinio::run` functions.
@@ -1709,6 +1729,8 @@ restinio::run(
     }));
 // The current thread will be blocked until RESTinio server finishes its work.
 ~~~~~
+
+----------------------------------------------------------------------
 
 # *RESTinio* context entities running on asio::io_context
 
@@ -1863,6 +1885,8 @@ restinio::http_server_t< traits_t >
         } ) };
 ~~~~~
 
+----------------------------------------------------------------------
+
 # Using external io_context
 
 *RESTinio* can run its logic on externals io_context.
@@ -1911,6 +1935,8 @@ Helper function `restinio::external_io_context()`
 create such io_context holder that passes to server only its reference.
 
 See also a full [sample](./dev/sample/using_external_io_context/main.cpp).
+
+----------------------------------------------------------------------
 
 # Buffers
 
@@ -1979,6 +2005,8 @@ For example `std::shared_ptr< std::string >` can be used.
 Such form of buffers was introduced for dealing with the cases
 when there are lots of parallel requests that must be served with the same response
 (or partly the same, so identical parts can be wrapped in shared buffers).
+
+----------------------------------------------------------------------
 
 # Websocket
 
@@ -2170,6 +2198,7 @@ int main()
 }
 ~~~~~
 
+----------------------------------------------------------------------
 
 # TLS support
 
@@ -2219,6 +2248,7 @@ restinio::run(
 
 See full [sample](./dev/sample/hello_world_https/main.cpp) for details.
 
+----------------------------------------------------------------------
 
 # Version history
 
@@ -2253,6 +2283,8 @@ See full [sample](./dev/sample/hello_world_https/main.cpp) for details.
 | Logging | Support for logging of internal server work. | 0.1.0 |
 | ASIO thread pool | Support ASIO running on a thread pool. | 0.1.0 |
 | IPv6 | IPv6 support. | 0.1.0 |
+
+----------------------------------------------------------------------
 
 # License
 
