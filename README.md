@@ -2255,10 +2255,11 @@ See full [sample](./dev/sample/hello_world_https/main.cpp) for details.
 |       Feature        | description | release  |
 |----------------------|-------------|----------|
 | Add cmake support for SObjectizer  | test and samples that depend on SObjectizer included to cmake scripts | 0.4.0 |
+| Improve query string params | Parsed parameters stored as string_view objects, thus requiring less space and less allocations | 0.4.0 |
 | Express router (non matched request handler) | A handler for non matched request can be set | 0.4.0 |
-| Express router (route params casting) | Introducing parameter binds interface for working with route parameters that can be converted to a specific type (if conversion is available) | 0.4.0 |
+| Express router (route params casting) | Introducing functions for converting route parameters to a specific type (if conversion is available) | 0.4.0 |
 | Express router (route params using string_view) | Getting rid of using strings for storing parameters keys and values in `route_params_t` and using string_view (`std::string_view` if available) | 0.4.0 |
-| Express router (route dsl) | Update route to regex proccessing in order to stick with [path-to-regexp](https://github.com/pillarjs/path-to-regexp) project| 0.4.0 |
+| Express router (route dsl) | Update route to regex processing in order to stick with [path-to-regexp](https://github.com/pillarjs/path-to-regexp) project| 0.4.0 |
 | Express router (regex engine) | Introduce a concept of regex engine, so express router can run on pcre/pcre2 engines or the one provided by user | 0.4.0 |
 | Express router (benchmark) | Add a benchmark for testing performance on a given set of routes (described in file) | 0.4.0 |
 | Add benchmarks | Add restinio benchmarks to repository | 0.4.0 |

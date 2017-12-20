@@ -73,6 +73,21 @@ class query_string_params_t final
 		//! Get the size of parameters.
 		auto size() const { return m_parameters.size(); }
 
+		//! Iterate parameters.
+		//! //{
+		parameters_container_t::const_iterator
+		begin() const
+		{
+			return m_parameters.begin();
+		}
+
+		parameters_container_t::const_iterator
+		end() const
+		{
+			return m_parameters.end();
+		}
+		//! //}
+
 	private:
 		parameters_container_t::const_iterator
 		find_parameter( string_view_t key ) const
