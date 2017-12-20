@@ -1,3 +1,24 @@
+/*
+	restinio
+*/
+
+/*!
+ * \file
+ * \brief Own implementation of C++17's string_view.
+ *
+ * \note
+ * This implementation is intended to be used with compilers without C++17 support.
+ */
+
+#pragma once
+
+#include <algorithm>
+#include <string>
+#include <ostream>
+
+namespace restinio
+{
+
 template<
 	typename Char,
 	typename Traits = std::char_traits<Char> >
@@ -579,4 +600,6 @@ inline bool operator == ( string_view_t sv, const char *s ) noexcept
 {
 	return sv == string_view_t{ s };
 }
+
+} /* namespace restinio */
 
