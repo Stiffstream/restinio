@@ -6,13 +6,12 @@
 	Echo server.
 */
 
-#include <string>
-#include <sstream>
+#include <restinio/string_view.inl>
 
 #define CATCH_CONFIG_MAIN
 #include <catch/catch.hpp>
 
-#include <restinio/string_view.inl>
+using restinio::string_view_t;
 
 TEST_CASE( "Test constructors" , "[string_view][constructor]" )
 {
