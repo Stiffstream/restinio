@@ -16,6 +16,18 @@
 #include <string>
 #include <ostream>
 
+#if defined(_MSC_VER) && (_MSC_VER <= 1900)
+	#define RESTINIO_WEAK_CONSTEXPR_SUPPORT
+	#pragma warning(push)
+	#pragma warning(disable: 4814)
+#endif
+
+#if defined(RESTINIO_WEAK_CONSTEXPR_SUPPORT)
+	#define RESTINIO_CONSTEXPR_METHOD
+#else
+	#define RESTINIO_CONSTEXPR_METHOD constexpr
+#endif
+
 namespace restinio
 {
 
@@ -180,20 +192,20 @@ class basic_string_view_t final
 
 		// Modifiers
 
-		constexpr void
+		RESTINIO_CONSTEXPR_METHOD void
 		remove_prefix( size_type n )
 		{
 			m_str += n;
 			m_size -= n;
 		}
 
-		constexpr void
+		RESTINIO_CONSTEXPR_METHOD void
 		remove_suffix(size_type n)
 		{
 			m_size -= n;
 		}
 
-		constexpr void
+		RESTINIO_CONSTEXPR_METHOD void
 		swap( basic_string_view_t & v ) noexcept
 		{
 			std::swap( m_str, v.m_str );
@@ -209,31 +221,31 @@ class basic_string_view_t final
 				throw std::out_of_range(
 					"Out of range in basic_string_view_t::copy() operation.");
 
-			auto rcount = min_rcount( pos, count );
+			const auto rcount = min_rcount( pos, count );
 			std::copy( m_str + pos, m_str + pos + rcount, dest );
 
 			return rcount;
 
 		}
 
-		constexpr basic_string_view_t
+		RESTINIO_CONSTEXPR_METHOD basic_string_view_t
 		substr( size_type pos = 0, size_type count = npos ) const
 		{
 			if( pos >= m_size )
 				throw std::out_of_range(
 					"Out of range in basic_string_view_t::substr() operation.");
 
-			auto rcount = min_rcount( pos, count );
+			const auto rcount = min_rcount( pos, count );
 
 			return basic_string_view_t( m_str + pos, rcount );
 		}
 
-		constexpr int
+		RESTINIO_CONSTEXPR_METHOD int
 		compare( basic_string_view_t v ) const noexcept
 		{
 			const size_type rlen = std::min( m_size, v.m_size );
 
-			auto res = traits_type::compare( data(), v.data(), rlen );
+			const auto res = traits_type::compare( data(), v.data(), rlen );
 
 			if( res != 0 )
 				return res;
@@ -280,17 +292,19 @@ class basic_string_view_t final
 			return substr( pos1, count1 ).compare( basic_string_view_t( s, count2 ) );
 		}
 
-		constexpr size_type
+		RESTINIO_CONSTEXPR_METHOD size_type
 		find( basic_string_view_t v, size_type pos = 0 ) const noexcept
 		{
-			if ( pos > size() )
+			if( pos > size() )
 				return npos;
 
-			if ( v.empty() )
+			if( v.empty() )
 				return pos;
 
-			const_iterator iter = std::search(
-				this->cbegin() + pos, this->cend(), v.cbegin (), v.cend (), traits_type::eq );
+			const const_iterator iter = std::search(
+				this->cbegin() + pos, this->cend(),
+				v.cbegin(), v.cend(),
+				traits_type::eq );
 
 			return iter == this->cend () ?  npos : distance( this->cbegin(), iter );
 		}
@@ -313,25 +327,25 @@ class basic_string_view_t final
 			return find( basic_string_view_t(s), pos );
 		}
 
-		constexpr size_type
+		RESTINIO_CONSTEXPR_METHOD size_type
 		rfind(
 			basic_string_view_t v, size_type pos = npos ) const noexcept
 		{
-			if ( size() < v.size() )
+			if( size() < v.size() )
 				return npos;
 
-			if ( pos > size() - v.size() )
+			if( pos > size() - v.size() )
 				pos = size() - v.size();
 
-			if ( v.size() == 0u )
+			if( v.size() == 0u )
 				return pos;
 
-			for ( const Char* cur = m_str + pos; ; --cur )
+			for( const Char* cur = m_str + pos; ; --cur )
 			{
-				if ( traits_type::compare( cur, v.m_str, v.size() ) == 0 )
+				if( traits_type::compare( cur, v.m_str, v.size() ) == 0 )
 					return static_cast<size_type>(cur - m_str);
 
-				if ( cur == m_str )
+				if( cur == m_str )
 					return npos;
 			}
 		}
@@ -357,14 +371,16 @@ class basic_string_view_t final
 			return rfind( basic_string_view_t(s), pos );
 		}
 
-		constexpr size_type
+		RESTINIO_CONSTEXPR_METHOD size_type
 		find_first_of( basic_string_view_t v, size_type pos = 0 ) const noexcept
 		{
 			if ( pos >= size() || v.size() == 0 )
 				return npos;
 
-			const_iterator iter = std::find_first_of(
-				this->cbegin() + pos, this->cend(), v.cbegin(), v.cend(), traits_type::eq );
+			const const_iterator iter = std::find_first_of(
+				this->cbegin() + pos, this->cend(),
+				v.cbegin(), v.cend(),
+				traits_type::eq );
 
 			return iter == this->cend() ? npos : distance( this->cbegin(), iter );
 		}
@@ -387,7 +403,7 @@ class basic_string_view_t final
 			return find_first_of( basic_string_view_t(s), pos );
 		}
 
-		constexpr size_type
+		RESTINIO_CONSTEXPR_METHOD size_type
 		find_last_of( basic_string_view_t v, size_type pos = npos ) const noexcept
 		{
 			if ( v.size() == 0u )
@@ -398,7 +414,7 @@ class basic_string_view_t final
 			else
 				pos = size() - ( pos + 1 );
 
-			const_reverse_iterator iter = std::find_first_of(
+			const const_reverse_iterator iter = std::find_first_of(
 				this->crbegin() + cast_to_difference_type(pos),
 				this->crend(), v.cbegin(),
 				v.cend(),
@@ -425,7 +441,7 @@ class basic_string_view_t final
 			return find_last_of( basic_string_view_t(s), pos );
 		}
 
-		constexpr size_type
+		RESTINIO_CONSTEXPR_METHOD size_type
 		find_first_not_of( basic_string_view_t v, size_type pos = 0 ) const noexcept
 		{
 			if (pos >= size() )
@@ -434,8 +450,10 @@ class basic_string_view_t final
 			if (v.size()  == 0)
 				return pos;
 
-			const_iterator iter = find_not_of ( this->cbegin () + pos, this->cend (), v );
-			return iter == this->cend () ? npos : distance( this->cbegin(), iter );
+			const const_iterator iter = find_not_of(
+					this->cbegin() + pos, this->cend(), v );
+
+			return iter == this->cend() ? npos : distance( this->cbegin(), iter );
 		}
 
 		constexpr size_type
@@ -456,7 +474,7 @@ class basic_string_view_t final
 			return find_first_not_of( basic_string_view_t(s), pos );
 		}
 
-		constexpr size_type
+		RESTINIO_CONSTEXPR_METHOD size_type
 		find_last_not_of( basic_string_view_t v, size_type pos = npos ) const noexcept
 		{
 			if( pos >= size() )
@@ -466,11 +484,11 @@ class basic_string_view_t final
 				return pos;
 
 			pos = size() - ( pos + 1 );
-			const_reverse_iterator iter = find_not_of(
+			const const_reverse_iterator iter = find_not_of(
 				this->crbegin() + cast_to_difference_type(pos),
 				this->crend(), v );
 
-			return iter == this->crend () ? npos : reverse_distance( this->crbegin (), iter );
+			return iter == this->crend() ? npos : reverse_distance( this->crbegin (), iter );
 		}
 
 		constexpr size_type
@@ -602,4 +620,13 @@ inline bool operator == ( string_view_t sv, const char *s ) noexcept
 }
 
 } /* namespace restinio */
+
+#if defined(_MSC_VER) && (_MSC_VER <= 1900)
+	#pragma warning(pop)
+#endif
+
+#undef RESTINIO_CONSTEXPR_METHOD
+#if defined(RESTINIO_WEAK_CONSTEXPR_SUPPORT)
+	#undef RESTINIO_WEAK_CONSTEXPR_SUPPORT
+#endif
 
