@@ -14,7 +14,8 @@ class basic_string_view_t final
 		using const_iterator = const Char*;
 		using iterator = const const_iterator;
 		using const_reverse_iterator = std::reverse_iterator< const_iterator >;
-		using size_type = size_t;
+		using size_type = std::size_t;
+		using difference_type = std::ptrdiff_t;
 
 		static constexpr size_type npos = size_type(-1);
 
@@ -270,7 +271,7 @@ class basic_string_view_t final
 			const_iterator iter = std::search(
 				this->cbegin() + pos, this->cend(), v.cbegin (), v.cend (), traits_type::eq );
 
-			return iter == this->cend () ? npos : std::distance( this->cbegin(), iter );
+			return iter == this->cend () ?  npos : distance( this->cbegin(), iter );
 		}
 
 		constexpr size_type
@@ -307,7 +308,7 @@ class basic_string_view_t final
 			for ( const Char* cur = m_str + pos; ; --cur )
 			{
 				if ( traits_type::compare( cur, v.m_str, v.size() ) == 0 )
-					return cur - m_str;
+					return static_cast<size_type>(cur - m_str);
 
 				if ( cur == m_str )
 					return npos;
@@ -344,7 +345,7 @@ class basic_string_view_t final
 			const_iterator iter = std::find_first_of(
 				this->cbegin() + pos, this->cend(), v.cbegin(), v.cend(), traits_type::eq );
 
-			return iter == this->cend() ? npos : std::distance ( this->cbegin(), iter );
+			return iter == this->cend() ? npos : distance( this->cbegin(), iter );
 		}
 
 		constexpr size_type
@@ -377,7 +378,7 @@ class basic_string_view_t final
 				pos = size() - ( pos + 1 );
 
 			const_reverse_iterator iter = std::find_first_of(
-				this->crbegin() + pos,
+				this->crbegin() + cast_to_difference_type(pos),
 				this->crend(), v.cbegin(),
 				v.cend(),
 				traits_type::eq );
@@ -413,7 +414,7 @@ class basic_string_view_t final
 				return pos;
 
 			const_iterator iter = find_not_of ( this->cbegin () + pos, this->cend (), v );
-			return iter == this->cend () ? npos : std::distance ( this->cbegin (), iter );
+			return iter == this->cend () ? npos : distance( this->cbegin(), iter );
 		}
 
 		constexpr size_type
@@ -445,9 +446,10 @@ class basic_string_view_t final
 
 			pos = size() - ( pos + 1 );
 			const_reverse_iterator iter = find_not_of(
-				this->crbegin () + pos, this->crend (), v );
+				this->crbegin() + cast_to_difference_type(pos),
+				this->crend(), v );
 
-			return iter == this->crend () ? npos : reverse_distance ( this->crbegin (), iter );
+			return iter == this->crend () ? npos : reverse_distance( this->crbegin (), iter );
 		}
 
 		constexpr size_type
@@ -470,11 +472,24 @@ class basic_string_view_t final
 
 	private:
 
+		static difference_type
+		cast_to_difference_type(size_type value) noexcept
+		{
+			return static_cast<difference_type>(value);
+		}
+
+		template< typename Iter >
+		static size_type
+		distance( Iter a, Iter b ) noexcept
+		{
+			return static_cast<size_type>(std::distance(a, b));
+		}
+
 		template< typename Iter >
 		size_type
 		reverse_distance( Iter first, Iter last ) const noexcept
 		{
-			return size() - 1 - std::distance( first, last );
+			return size() - 1 - distance( first, last );
 		}
 
 		template< typename Iter >
@@ -482,7 +497,7 @@ class basic_string_view_t final
 		{
 			for (; first != last ; ++first)
 			{
-				if ( 0 == traits_type::find( s.data(), s.size(), *first ) )
+				if( !traits_type::find( s.data(), s.size(), *first ) )
 					return first;
 			}
 
@@ -553,7 +568,7 @@ operator<<(
 	std::basic_ostream<Char, Traits>& o,
 	basic_string_view_t <Char, Traits> v )
 {
-	o.write( v.data(), v.size() );
+	o.write( v.data(), static_cast<std::streamsize>(v.size()) );
 	return o;
 }
 
