@@ -53,8 +53,6 @@ class so_timer_manager_t final
 		class timer_guard_t final
 		{
 			public:
-				using timeout_handler_t = std::function< void ( void ) >;
-
 				timer_guard_t(
 					so_5::environment_t & env,
 					so_5::mbox_t mbox,
