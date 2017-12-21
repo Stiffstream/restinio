@@ -8,8 +8,8 @@ primarily for asynchronous processing of HTTP-requests.
 
 # RESTinio By A Very Short Example
 
-Consider the task of writing a c++ application that must support some REST API,
-RESTinio represents our solution for that task. Currently it is in beta state.
+Consider the task of writing a C++ application that must support some REST API,
+RESTinio represents our solution for that task. Currently it is in stable beta state.
 Lets see how it feels like in simple cases:
 
 ~~~~~{.cpp}
@@ -32,7 +32,7 @@ Server runs on the main thread, and respond to all requests with hello-world
 message. Of course you got an access to the structure of a given HTTP request,
 and can do more stuff in request handler.
 
-# Features:
+# Features
 
 * Async request handling. Cannot get the response data immediately? That's ok,
   store request handle somewhere and/or pass it to another execution context
