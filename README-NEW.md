@@ -1,5 +1,3 @@
-[TOC]
-
 # What Is It?
 
 RESTinio is a header-only C++14 library that gives you an embedded
