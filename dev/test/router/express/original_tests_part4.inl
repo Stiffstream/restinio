@@ -300,7 +300,7 @@ TEST_CASE( "Original tests #72", "[path2regex][original][generated][n72]")
 {
 	auto matcher_data =
 		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
-			R"route(/:foo(test\)/bar)route",
+			R"route(/:foo\(test\)/bar)route",
 			path2regex::options_t{} );
 
 	route_matcher_t

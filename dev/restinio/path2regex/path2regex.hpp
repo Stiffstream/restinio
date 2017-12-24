@@ -558,6 +558,31 @@ constexpr std::size_t group_group_idx = 4;
 constexpr std::size_t group_modifier_idx = 5;
 //! \}
 
+//! Checks that string doesn't contain non-excaped brackets
+inline std::string
+check_no_unescaped_brackets( const std::string & str, std::size_t base_pos )
+{
+	auto pos = str.find( '(' );
+	if( std::string::npos != pos )
+	{
+		throw exception_t{
+			fmt::format(
+				"non-escaped bracket '(' at pos {}: may be unmatched group start",
+				base_pos + pos ) };
+	}
+
+	pos = str.find( ')' );
+	if( std::string::npos != pos )
+	{
+		throw exception_t{
+			fmt::format(
+				"non-escaped bracket ')' at pos {}: may be unmatched group finish",
+				base_pos + pos ) };
+	}
+
+	return str;
+}
+
 //
 // handle_param_token()
 //
@@ -664,7 +689,7 @@ parse( const std::string & route_str, const options_t & options )
 	if( token_it == token_end )
 	{
 		// Path is a single token.
-		path = route_str;
+		path = check_no_unescaped_brackets( route_str, 0 );
 	}
 
 	while( token_it != token_end )
@@ -673,7 +698,7 @@ parse( const std::string & route_str, const options_t & options )
 
 		assert( 6 == match.size() );
 
-		path += match.prefix();
+		path += check_no_unescaped_brackets( match.prefix(), match.position() );
 
 		const auto escaped = match[ group_escaped_idx ].str();
 		if( !escaped.empty() )
@@ -692,7 +717,11 @@ parse( const std::string & route_str, const options_t & options )
 
 		if( next_it == token_end )
 		{
-			path += match.suffix();
+			const std::string suffix{ match.suffix() };
+			path +=
+				check_no_unescaped_brackets(
+					suffix,
+					match.position() + match.length() - suffix.size() );
 		}
 
 		token_it = next_it;
