@@ -53,5 +53,24 @@ using single_thread_traits_t =
 
 using default_traits_t = traits_t< asio_timer_manager_t, null_logger_t >;
 
+/*!
+ * \brief Default traits for single-threaded HTTP-server.
+ *
+ * Uses default timer manager. And null logger.
+ *
+ * Usage example:
+ * \code
+ * struct my_traits : public restinio::default_single_thread_traits_t {
+ * 	using logger_t = my_special_single_threaded_logger_type;
+ * };
+ * \endcode
+ *
+ * \since
+ * v.0.4.0
+ */
+using default_single_thread_traits_t = single_thread_traits_t<
+		asio_timer_manager_t,
+		null_logger_t >;
+
 } /* namespace restinio */
 
