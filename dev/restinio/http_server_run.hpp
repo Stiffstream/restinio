@@ -63,7 +63,7 @@ public:
  * 	.request_handler(...) );
  * \endcode
  */
-template<typename Traits = default_traits_t>
+template<typename Traits = default_single_thread_traits_t>
 run_on_this_thread_settings_t<Traits>
 on_this_thread() { return run_on_this_thread_settings_t<Traits>{}; }
 
