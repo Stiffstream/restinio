@@ -4,11 +4,11 @@ RESTinio is a header-only C++14 library that gives you an embedded
 HTTP/Websocket server. It is based on standalone version of ASIO and targeted
 primarily for asynchronous processing of HTTP-requests.
 
-# RESTinio By A Very Short Example
+# A Very Basic Example Of RESTinio
 
 Consider the task of writing a C++ application that must support some REST API,
 RESTinio represents our solution for that task. Currently it is in stable beta state.
-Lets see how it feels like in simple cases:
+Lets see how it feels like in the simplest case:
 
 ~~~~~{.cpp}
 #include <iostream>
@@ -27,8 +27,8 @@ int main()
 ~~~~~
 
 Server runs on the main thread, and respond to all requests with hello-world
-message. Of course you got an access to the structure of a given HTTP request,
-and can do more stuff in request handler.
+message. Of course you've got an access to the structure of a given HTTP request,
+so you can apply a complex logic for handling requests.
 
 # Features
 
@@ -36,11 +36,12 @@ and can do more stuff in request handler.
   store request handle somewhere and/or pass it to another execution context
   and get back to it when the data is ready.
 * HTTP pipelining. Works well with async request handling.
+  It might increase your server throughput dramatically.
 * Timeout control. RESTinio can take care of bad connection that are like: send
-  "GET /" and then just wait.
+  "GET /" and then just stuck.
 * Response builders. Need chunked-encoded body - then RESTinio has a special
   response builder for you (obviously it is not the only builder).
-* ExpressJS-like request routing. 
+* ExpressJS-like request routing.
 * Supports TLS (HTTPS).
 * Basic websocket support. Simply restinio::websocket::basic::upgrade() the
   request handle and start websocket session on a corresponding connection.
