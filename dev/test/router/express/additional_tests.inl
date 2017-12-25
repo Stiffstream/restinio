@@ -60,24 +60,64 @@ TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 
 TEST_CASE( "Invalid path" , "[path2regex][invalid]" )
 {
-	auto try_to_reate = []( const std::string & r ){
+	auto try_to_create = []( const std::string & r ){
 		auto matcher_data =
 			path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 				r,
 				path2regex::options_t{} );
 	};
 
-	REQUIRE_THROWS( try_to_reate( R"(/:foo([123]+)" ) );
-	REQUIRE_THROWS( try_to_reate( R"(/:foo([123]+)))" ) );
+	REQUIRE_THROWS( try_to_create( R"(/:foo([123]+)" ) );
+	REQUIRE_THROWS( try_to_create( R"(/:foo([123]+)))" ) );
 
-	REQUIRE_THROWS( try_to_reate( R"(/([123]+)" ) );
-	REQUIRE_THROWS( try_to_reate( R"(/([123]+)))" ) );
+	REQUIRE_THROWS( try_to_create( R"(/([123]+)" ) );
+	REQUIRE_THROWS( try_to_create( R"(/([123]+)))" ) );
 
-	REQUIRE_THROWS( try_to_reate( R"(/:foo/:bar(\d+)" ) );
-	REQUIRE_THROWS( try_to_reate( R"(/:foo/:bar(\d+)))" ) );
+	REQUIRE_THROWS( try_to_create( R"(/:foo/:bar(\d+)" ) );
+	REQUIRE_THROWS( try_to_create( R"(/:foo/:bar(\d+)))" ) );
 
-	REQUIRE_THROWS( try_to_reate( R"(/([123]+)/(\d+)" ) );
-	REQUIRE_THROWS( try_to_reate( R"(/([123]+)/(\d+)))" ) );
+	REQUIRE_THROWS( try_to_create( R"(/([123]+)/(\d+)" ) );
+	REQUIRE_THROWS( try_to_create( R"(/([123]+)/(\d+)))" ) );
 
-	REQUIRE_THROWS( try_to_reate( R"(/:foo(?:[123]+)" ) );
+	REQUIRE_THROWS( try_to_create( R"(/:foo(?:[123]+)" ) );
+
+	try
+	{
+		try_to_create( R"route(/:foo(test\)/bar)route" );
+		REQUIRE( false );
+	}
+	catch( const restinio::exception_t & ex )
+	{
+		REQUIRE_THAT( ex.what(), Catch::Matchers::Contains( "pos 5:" ) );
+	}
+
+	try
+	{
+		try_to_create( R"route(/foo(test\)/bar)route" );
+		REQUIRE( false );
+	}
+	catch( const restinio::exception_t & ex )
+	{
+		REQUIRE_THAT( ex.what(), Catch::Matchers::Contains( "pos 4:" ) );
+	}
+
+	try
+	{
+		try_to_create( R"route(/:foo\(test)/bar)route" );
+		REQUIRE( false );
+	}
+	catch( const restinio::exception_t & ex )
+	{
+		REQUIRE_THAT( ex.what(), Catch::Matchers::Contains( "pos 11:" ) );
+	}
+
+	try
+	{
+		try_to_create( R"route(/foo\(test)/bar)route" );
+		REQUIRE( false );
+	}
+	catch( const restinio::exception_t & ex )
+	{
+		REQUIRE_THAT( ex.what(), Catch::Matchers::Contains( "pos 10:" ) );
+	}
 }

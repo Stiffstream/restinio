@@ -698,7 +698,8 @@ parse( const std::string & route_str, const options_t & options )
 
 		assert( 6 == match.size() );
 
-		path += check_no_unescaped_brackets( match.prefix(), match.position() );
+		const std::string prefix{ match.prefix() };
+		path += check_no_unescaped_brackets( prefix, match.position() - prefix.size() );
 
 		const auto escaped = match[ group_escaped_idx ].str();
 		if( !escaped.empty() )
@@ -721,7 +722,7 @@ parse( const std::string & route_str, const options_t & options )
 			path +=
 				check_no_unescaped_brackets(
 					suffix,
-					match.position() + match.length() - suffix.size() );
+					match.position() + match.length() );
 		}
 
 		token_it = next_it;
