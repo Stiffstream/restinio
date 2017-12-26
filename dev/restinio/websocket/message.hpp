@@ -122,7 +122,7 @@ status_code_from_bin( std::string data )
 	}
 
 	// TODO: make it ok.
-	return (status_code_t)result;
+	return static_cast<status_code_t>(result);
 }
 
 //

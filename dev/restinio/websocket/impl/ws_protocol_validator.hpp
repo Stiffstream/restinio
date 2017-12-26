@@ -122,14 +122,14 @@ struct unmasker_t
 
 	unmasker_t( uint32_t masking_key )
 	:	m_mask{
-			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 24 >(
+			{::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 24 >(
 				masking_key),
 			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 16 >(
 				masking_key),
 			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 8 >(
 				masking_key),
 			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 0 >(
-				masking_key) }
+				masking_key)} }
 	{
 	}
 
@@ -150,14 +150,14 @@ struct unmasker_t
 		m_processed_bytes_count = 0;
 
 		m_mask = mask_array_t{
-			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 24 >(
+			{::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 24 >(
 				masking_key),
 			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 16 >(
 				masking_key),
 			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 8 >(
 				masking_key),
 			::restinio::utils::impl::bitops::n_bits_from< std::uint8_t, 0 >(
-				masking_key) };
+				masking_key)} };
 
 	}
 
@@ -288,8 +288,8 @@ class ws_protocol_validator_t
 
 			for( size_t i = 0; i < size; ++i )
 			{
-				data[i] = process_payload_byte(
-					static_cast<std::uint8_t>(data[i]) );
+				data[i] = static_cast<char>(process_payload_byte(
+					static_cast<std::uint8_t>(data[i]) ));
 
 				if( m_validation_state != validation_state_t::payload_part_is_valid )
 					break;

@@ -36,9 +36,10 @@ using uint_type_t = std::uint_fast32_t;
 using bitset24_t = std::bitset<24>;
 
 inline bool
-is_base64_char( unsigned char c )
+is_base64_char( char c )
 {
-	return 1 == is_base64_char_lut< unsigned char >()[ c ];
+	return 1 == is_base64_char_lut< unsigned char >()[
+			static_cast<unsigned char>(c) ];
 }
 
 inline void
@@ -80,8 +81,9 @@ encode( const std::string & str )
 	const auto at = [&str](auto index) { return uch(str[index]); };
 
 	const auto alphabet_char = [](auto ch) {
-		return base64_alphabet< unsigned char >()[
-				static_cast<unsigned char>(ch) ];
+		return static_cast<char>(
+				base64_alphabet< unsigned char >()[
+						static_cast<unsigned char>(ch) ]);
 	};
 
 	const std::size_t group_size = 3u;

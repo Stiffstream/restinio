@@ -193,7 +193,7 @@ struct expected_data_t
 		if( m_loaded_data.size() == m_expected_size )
 			throw exception_t("Cannot add one more bytes to expected data.");
 
-		m_loaded_data.push_back(byte);
+		m_loaded_data.push_back(static_cast<raw_data_t::value_type>(byte));
 
 		return all_bytes_loaded();
 	}
@@ -237,7 +237,8 @@ write_number_to_big_endian_bytes( std::uint64_t& number, raw_data_t & data )
 	for( auto i = 0 ; i < Bytes ; ++i )
 	{
 		auto shift_value = (Bytes - i - 1) * 8;
-		data.push_back( (number >> shift_value) & 0xFF );
+		data.push_back( static_cast<raw_data_t::value_type>(
+				(number >> shift_value) & 0xFF) );
 	}
 }
 
@@ -521,7 +522,7 @@ write_message_details( const message_details_t & message )
 
 	byte |= static_cast< std::uint8_t> (message.m_opcode) & opcode_mask;
 
-	result.push_back( byte );
+	result.push_back( static_cast<raw_data_t::value_type>(byte) );
 
 	byte = 0x00;
 
@@ -533,13 +534,13 @@ write_message_details( const message_details_t & message )
 	if( length < websocket_short_ext_len_code )
 	{
 		byte |= length;
-		result.push_back( byte );
+		result.push_back( static_cast<raw_data_t::value_type>(byte) );
 	}
 	else if ( length == websocket_short_ext_len_code )
 	{
 		byte |= websocket_short_ext_len_code;
 
-		result.push_back( byte );
+		result.push_back( static_cast<raw_data_t::value_type>(byte) );
 
 		auto ext_len = message.m_ext_payload_len;
 
@@ -550,7 +551,7 @@ write_message_details( const message_details_t & message )
 	{
 		byte |= websocket_long_ext_len_code;
 
-		result.push_back( byte );
+		result.push_back( static_cast<raw_data_t::value_type>(byte) );
 
 		auto ext_len = message.m_ext_payload_len;
 

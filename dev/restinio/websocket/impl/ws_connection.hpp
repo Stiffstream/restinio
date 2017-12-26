@@ -73,7 +73,8 @@ class ws_outgoing_data_t
 			else
 			{
 				const auto begin_of_bunch = m_awaiting_buffers.begin();
-				const auto end_of_bunch = begin_of_bunch + max_buf_count;
+				const auto end_of_bunch = begin_of_bunch
+						+ static_cast<std::ptrdiff_t>(max_buf_count);
 				bufs.reserve( max_buf_count );
 				for( auto it = begin_of_bunch; it != end_of_bunch; ++it )
 				{
@@ -554,7 +555,7 @@ class ws_connection_t final
 						"[ws_connection:{}] start handling {} ({:#x})",
 						connection_id(),
 						opcode_to_string( md.m_opcode ),
-						(std::uint16_t)md.m_opcode );
+						static_cast<std::uint16_t>(md.m_opcode) );
 			} );
 
 			const auto validation_result =
@@ -892,7 +893,8 @@ class ws_connection_t final
 							return fmt::format(
 									"[ws_connection:{}] got close frame from peer, status: {}",
 									connection_id(),
-									(std::uint16_t)status_code_from_bin( m_input.m_payload ) );
+									static_cast<std::uint16_t>(
+											status_code_from_bin( m_input.m_payload )) );
 						} );
 
 						m_close_frame_to_user.disable();

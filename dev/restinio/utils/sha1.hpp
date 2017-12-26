@@ -404,10 +404,10 @@ to_string( const digest_t & what )
 
 	for( const auto c : what )
 	{
-		result.push_back( byte<24>(c) );
-		result.push_back( byte<16>(c) );
-		result.push_back( byte<8>(c) );
-		result.push_back( byte<0>(c) );
+		result.push_back( static_cast<char>(byte<24>(c)) );
+		result.push_back( static_cast<char>(byte<16>(c)) );
+		result.push_back( static_cast<char>(byte<8>(c)) );
+		result.push_back( static_cast<char>(byte<0>(c)) );
 	}
 
 	return result;
