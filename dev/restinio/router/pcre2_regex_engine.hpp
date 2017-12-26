@@ -136,7 +136,7 @@ class regex_t final
 			m_route_regex = pcre2_compile(
 				reinterpret_cast< const unsigned char*>( r.data() ),
 				r.size(),
-				options,
+				static_cast<unsigned int>(options),
 				&errorcode,
 				&erroroffset,
 				nullptr );
@@ -216,7 +216,7 @@ struct pcre2_regex_engine_t
 		const int rc =
 			pcre2_match(
 				r.pcre2_regex(),
-				(const unsigned char*)target.data(),
+				reinterpret_cast<const unsigned char*>(target.data()),
 				target.size(),
 				0, // startoffset
 				Traits::match_options,
@@ -225,7 +225,7 @@ struct pcre2_regex_engine_t
 
 		if( rc > 0 )
 		{
-			match_results.m_size = rc;
+			match_results.m_size = static_cast<std::size_t>(rc);
 			return true;
 		}
 		else if( rc == 0 )

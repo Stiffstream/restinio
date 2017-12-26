@@ -121,7 +121,7 @@ class regex_t final
 			const char* compile_error;
 			int eoffset;
 
-			m_route_regex = pcre_compile( r.c_str(), options, &compile_error, &eoffset, NULL );
+			m_route_regex = pcre_compile( r.c_str(), options, &compile_error, &eoffset, nullptr );
 			if( nullptr == m_route_regex )
 			{
 				throw std::runtime_error{
@@ -195,17 +195,17 @@ struct pcre_regex_engine_t
 		const int rc =
 			pcre_exec(
 				r.pcre_regex(),
-				0,
+				nullptr,
 				target.data(),
-				target.size(),
+				static_cast<int>(target.size()),
 				0, // startoffset
 				Traits::match_options,
 				match_results.m_submatches.data(),
-				match_results.m_submatches.size() );
+				static_cast<int>(match_results.m_submatches.size()) );
 
 		if( rc > 0 )
 		{
-			match_results.m_size = rc;
+			match_results.m_size = static_cast<std::size_t>(rc);
 			return true;
 		}
 		else if( rc == 0 )
