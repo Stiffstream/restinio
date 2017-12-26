@@ -244,7 +244,7 @@ class connection_t final
 		void operator = ( const connection_t & ) = delete;
 		void operator = ( connection_t && ) = delete;
 
-		~connection_t()
+		~connection_t() override
 		{
 			try
 			{
