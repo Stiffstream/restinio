@@ -156,6 +156,16 @@ class socket_type_dependent_settings_t
 protected :
 	~socket_type_dependent_settings_t() = default;
 
+public :
+	socket_type_dependent_settings_t(const socket_type_dependent_settings_t &) = default;
+	socket_type_dependent_settings_t(socket_type_dependent_settings_t &&) = default;
+
+	socket_type_dependent_settings_t &
+	operator=(const socket_type_dependent_settings_t &) = default;
+
+	socket_type_dependent_settings_t &
+	operator=(socket_type_dependent_settings_t &&) = delete;
+
 	// No extra settings by default.
 };
 
@@ -314,11 +324,15 @@ template<typename Derived, typename Traits>
 class basic_server_settings_t
 	:	public socket_type_dependent_settings_t< Derived, typename Traits::stream_socket_t >
 {
+		using base_type_t = socket_type_dependent_settings_t<
+				Derived, typename Traits::stream_socket_t>;
+
 	public:
 		basic_server_settings_t(
 			std::uint16_t port = 8080,
 			asio::ip::tcp protocol = asio::ip::tcp::v4() )
-			:	m_port{ port }
+			:	base_type_t{}
+			,	m_port{ port }
 			,	m_protocol{ protocol }
 		{}
 
