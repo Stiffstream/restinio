@@ -101,7 +101,7 @@ class alignas( std::max_align_t ) buffer_storage_t
 					[]( const void * p ){
 						const auto s = impl::buf_access< const char * >( p );
 						const auto n = impl::buf_access< std::size_t >(
-								(const char *)p + sizeof( const char *) );
+								static_cast<const char *>(p) + sizeof( const char *) );
 
 						return asio::const_buffer{ s, n };
 					} }
@@ -109,15 +109,17 @@ class alignas( std::max_align_t ) buffer_storage_t
 					[]( const void * src, void * dest ){
 						const char * s = impl::buf_access< const char * >( src );
 						const std::size_t n = impl::buf_access< std::size_t >(
-								(const char *)src + sizeof( const char *) );
+								static_cast<const char *>(src) + sizeof( const char *) );
 
 						impl::buf_access< const char * >( dest ) = s;
-						impl::buf_access< std::size_t >( (char *)dest + sizeof( const char *) ) = n;
+						impl::buf_access< std::size_t >(
+								static_cast<char *>(dest) + sizeof( const char *) ) = n;
 					} }
 		{
 			auto * p = m_storage.data();
 			impl::buf_access< const char * >( p ) = const_buf.m_str;
-			impl::buf_access< std::size_t >( (char *)p + sizeof( const char *) ) = const_buf.m_size;
+			impl::buf_access< std::size_t >(
+					static_cast<char *>(p) + sizeof( const char *) ) = const_buf.m_size;
 		}
 
 		buffer_storage_t( std::string str )

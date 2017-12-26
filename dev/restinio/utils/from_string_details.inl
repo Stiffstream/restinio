@@ -40,7 +40,7 @@ struct int8_parse_traits_t
 	digits_representation_max_size()
 	{
 		return 3;
-	};
+	}
 
 	static const char *
 	min_representation()
@@ -60,7 +60,7 @@ struct int8_parse_traits_t
 	{
 		static constexpr char r[] = "int8_t";
 		return r;
-	};
+	}
 };
 
 struct uint8_parse_traits_t
@@ -71,7 +71,7 @@ struct uint8_parse_traits_t
 	digits_representation_max_size()
 	{
 		return 3;
-	};
+	}
 
 	static const char *
 	min_representation()
@@ -91,7 +91,7 @@ struct uint8_parse_traits_t
 	{
 		static constexpr char r[] = "uint8_t";
 		return r;
-	};
+	}
 };
 
 struct int16_parse_traits_t
@@ -102,7 +102,7 @@ struct int16_parse_traits_t
 	digits_representation_max_size()
 	{
 		return 5;
-	};
+	}
 
 	static const char *
 	min_representation()
@@ -122,7 +122,7 @@ struct int16_parse_traits_t
 	{
 		static constexpr char r[] = "int16_t";
 		return r;
-	};
+	}
 };
 
 struct uint16_parse_traits_t
@@ -133,7 +133,7 @@ struct uint16_parse_traits_t
 	digits_representation_max_size()
 	{
 		return 5;
-	};
+	}
 
 	static const char *
 	min_representation()
@@ -153,7 +153,7 @@ struct uint16_parse_traits_t
 	{
 		static constexpr char r[] = "uint16_t";
 		return r;
-	};
+	}
 };
 
 struct int32_parse_traits_t
@@ -164,7 +164,7 @@ struct int32_parse_traits_t
 	digits_representation_max_size()
 	{
 		return 10;
-	};
+	}
 
 	static const char *
 	min_representation()
@@ -184,7 +184,7 @@ struct int32_parse_traits_t
 	{
 		static constexpr char r[] = "int32_t";
 		return r;
-	};
+	}
 };
 
 struct uint32_parse_traits_t
@@ -195,7 +195,7 @@ struct uint32_parse_traits_t
 	digits_representation_max_size()
 	{
 		return 10;
-	};
+	}
 
 	static const char *
 	min_representation()
@@ -215,7 +215,7 @@ struct uint32_parse_traits_t
 	{
 		static constexpr char r[] = "uint32_t";
 		return r;
-	};
+	}
 };
 
 struct int64_parse_traits_t
@@ -226,7 +226,7 @@ struct int64_parse_traits_t
 	digits_representation_max_size()
 	{
 		return 19;
-	};
+	}
 
 	static const char *
 	min_representation()
@@ -246,7 +246,7 @@ struct int64_parse_traits_t
 	{
 		static constexpr char r[] = "int64_t";
 		return r;
-	};
+	}
 };
 
 struct uint64_parse_traits_t
@@ -257,7 +257,7 @@ struct uint64_parse_traits_t
 	digits_representation_max_size()
 	{
 		return 20;
-	};
+	}
 
 	static const char *
 	min_representation()
@@ -277,7 +277,7 @@ struct uint64_parse_traits_t
 	{
 		static constexpr char r[] = "uint64_t";
 		return r;
-	};
+	}
 };
 
 template < typename Integer >

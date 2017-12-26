@@ -80,11 +80,11 @@ inline std::string
 escape_percent_encoding( const string_view_t data )
 {
 	std::string result;
-	const auto escaped_chars_count =
-		std::count_if(
-			data.begin(),
-			data.end(),
-			[]( auto c ){ return !impl::ordinary_char(c); } );
+	const auto escaped_chars_count = static_cast<std::size_t>(
+			std::count_if(
+					data.begin(),
+					data.end(),
+					[]( auto c ){ return !impl::ordinary_char(c); } ));
 
 	if( 0 == escaped_chars_count )
 	{

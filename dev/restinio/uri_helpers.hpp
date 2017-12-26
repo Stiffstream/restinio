@@ -25,8 +25,8 @@ namespace impl
 inline const char *
 modified_memchr( int chr , const char * from, const char * to )
 {
-	const char * result =
-		static_cast< const char * >( std::memchr( from, chr, to - from ) );
+	const char * result = static_cast< const char * >(
+			std::memchr( from, chr, static_cast<std::size_t>(to - from) ) );
 
 	return result ? result : to;
 }
@@ -145,10 +145,12 @@ parse_query_string( const std::string & query_string )
 		// Skip '?'.
 		++query_remainder;
 
-		const std::size_t params_offset = std::distance( very_first_pos, query_remainder );
+		const auto params_offset = static_cast<std::size_t>(
+				std::distance( very_first_pos, query_remainder ));
 
 		{
-			const auto data_size = query_end - query_remainder;
+			const auto data_size = static_cast<std::size_t>(
+					query_end - query_remainder);
 			data_buffer.reset( new char[ data_size] );
 			std::memcpy( data_buffer.get(), query_remainder, data_size );
 
@@ -171,10 +173,10 @@ parse_query_string( const std::string & query_string )
 						"invalid format of key-value pairs in query_string: {}, "
 						"no '=' symbol starting from position {}",
 						query_string,
-						params_offset +
+						params_offset + static_cast<std::size_t>(
 							std::distance(
 								static_cast<const char *>( data_buffer.get() ),
-								query_remainder) ) };
+								query_remainder) )) };
 			}
 
 			const char * const amp_symbol_or_end =

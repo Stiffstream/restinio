@@ -221,7 +221,7 @@ class options_t
 		{
 			std::string result;
 
-			for( const auto e : m_ends_with )
+			for( const auto & e : m_ends_with )
 			{
 				if( !e.empty() )
 				{
@@ -699,7 +699,8 @@ parse( const std::string & route_str, const options_t & options )
 		assert( 6 == match.size() );
 
 		const std::string prefix{ match.prefix() };
-		path += check_no_unescaped_brackets( prefix, match.position() - prefix.size() );
+		path += check_no_unescaped_brackets( prefix,
+				static_cast<std::size_t>(match.position()) - prefix.size() );
 
 		const auto escaped = match[ group_escaped_idx ].str();
 		if( !escaped.empty() )
@@ -722,7 +723,7 @@ parse( const std::string & route_str, const options_t & options )
 			path +=
 				check_no_unescaped_brackets(
 					suffix,
-					match.position() + match.length() );
+					static_cast<std::size_t>(match.position() + match.length()) );
 		}
 
 		token_it = next_it;
