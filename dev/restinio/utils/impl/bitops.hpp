@@ -24,7 +24,7 @@ template< typename T >
 constexpr T mask( unsigned bits_to_extract )
 {
 	return bits_to_extract <= 1u ? T{1} :
-		((mask<T>(bits_to_extract-1) << 1) | T{1});
+		static_cast<T>((mask<T>(bits_to_extract-1) << 1) | T{1});
 }
 
 template< typename T >
