@@ -13,7 +13,7 @@
 #include <string>
 #include <cstring>
 
-#include <asio/buffer.hpp>
+#include <restinio/asio_include.hpp>
 
 #include <restinio/exception.hpp>
 
@@ -92,7 +92,7 @@ class alignas( std::max_align_t ) buffer_storage_t
 
 		buffer_storage_t()
 			:	m_accessor{
-					[]( const void * ){ return asio::const_buffer{ nullptr, 0 }; } }
+					[]( const void * ){ return asio_ns::const_buffer{ nullptr, 0 }; } }
 			,	m_move{ []( const void * , void * ){} }
 		{}
 
@@ -103,7 +103,7 @@ class alignas( std::max_align_t ) buffer_storage_t
 						const auto n = impl::buf_access< std::size_t >(
 								static_cast<const char *>(p) + sizeof( const char *) );
 
-						return asio::const_buffer{ s, n };
+						return asio_ns::const_buffer{ s, n };
 					} }
 			,	m_move{
 					[]( const void * src, void * dest ){
@@ -126,7 +126,7 @@ class alignas( std::max_align_t ) buffer_storage_t
 			:	m_accessor{
 					[]( const void * p ){
 						const auto & s = impl::buf_access< std::string >( p );
-						return asio::const_buffer{ s.data(), s.size() };
+						return asio_ns::const_buffer{ s.data(), s.size() };
 					} }
 			,	m_move{
 					[]( const void * src, void * dest ){
@@ -192,7 +192,7 @@ class alignas( std::max_align_t ) buffer_storage_t
 			destroy_stored_buffer();
 		}
 
-		asio::const_buffer
+		asio_ns::const_buffer
 		buf() const
 		{
 			assert( nullptr != m_accessor );
@@ -210,7 +210,7 @@ class alignas( std::max_align_t ) buffer_storage_t
 
 		alignas( std::max_align_t ) std::array< char, impl::needed_storage_max_size > m_storage;
 
-		using buffer_accessor_func_t = asio::const_buffer (*)( const void * );
+		using buffer_accessor_func_t = asio_ns::const_buffer (*)( const void * );
 		using buffer_move_func_t = void (*)( const void *, void * );
 		using buffer_destructor_func_t = void (*)( void * );
 
@@ -225,7 +225,7 @@ class alignas( std::max_align_t ) buffer_storage_t
 		{
 			return []( const void * p ){
 				const auto & v = impl::buf_access< std::shared_ptr< T > >( p );
-				return asio::const_buffer{ v->data(), v->size() };
+				return asio_ns::const_buffer{ v->data(), v->size() };
 			};
 		}
 

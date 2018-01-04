@@ -12,7 +12,7 @@
 #include <tuple>
 #include <utility>
 
-#include <asio.hpp>
+#include <restinio/asio_include.hpp>
 
 #include <restinio/exception.hpp>
 #include <restinio/request_handler.hpp>
@@ -182,7 +182,7 @@ public :
 class acceptor_options_t
 {
 	public:
-		acceptor_options_t( asio::ip::tcp::acceptor & acceptor )
+		acceptor_options_t( asio_ns::ip::tcp::acceptor & acceptor )
 			:	m_acceptor{ acceptor }
 		{}
 
@@ -197,7 +197,7 @@ class acceptor_options_t
 
 		template< typename Option >
 		void
-		set_option( const Option & option, asio::error_code & ec )
+		set_option( const Option & option, asio_ns::error_code & ec )
 		{
 			m_acceptor.set_option( option, ec );
 		}
@@ -211,14 +211,14 @@ class acceptor_options_t
 
 		template< typename Option >
 		void
-		get_option( Option & option, asio::error_code & ec )
+		get_option( Option & option, asio_ns::error_code & ec )
 		{
 			m_acceptor.get_option( option, ec );
 		}
 		//! \}
 
 	private:
-		asio::ip::tcp::acceptor & m_acceptor;
+		asio_ns::ip::tcp::acceptor & m_acceptor;
 };
 
 using acceptor_options_setter_t = std::function< void ( acceptor_options_t & ) >;
@@ -229,7 +229,7 @@ create_default_unique_object_instance< acceptor_options_setter_t >()
 {
 	return std::make_unique< acceptor_options_setter_t >(
 		[]( acceptor_options_t & options ){
-			options.set_option( asio::ip::tcp::acceptor::reuse_address( true ) );
+			options.set_option( asio_ns::ip::tcp::acceptor::reuse_address( true ) );
 		} );
 }
 
@@ -248,7 +248,7 @@ class socket_options_t
 	public:
 		socket_options_t(
 			//! A reference on the most base class with interface of setting options.
-			asio::basic_socket< asio::ip::tcp > & socket )
+			asio_ns::basic_socket< asio_ns::ip::tcp > & socket )
 			:	m_socket{ socket }
 		{}
 
@@ -263,7 +263,7 @@ class socket_options_t
 
 		template< typename Option >
 		void
-		set_option( const Option & option, asio::error_code & ec )
+		set_option( const Option & option, asio_ns::error_code & ec )
 		{
 			m_socket.set_option( option, ec );
 		}
@@ -277,7 +277,7 @@ class socket_options_t
 
 		template< typename Option >
 		void
-		get_option( Option & option, asio::error_code & ec )
+		get_option( Option & option, asio_ns::error_code & ec )
 		{
 			m_socket.get_option( option, ec );
 		}
@@ -285,7 +285,7 @@ class socket_options_t
 
 	private:
 		//! A reference on the most base class with interface of setting options.
-		asio::basic_socket< asio::ip::tcp > & m_socket;
+		asio_ns::basic_socket< asio_ns::ip::tcp > & m_socket;
 };
 
 using socket_options_setter_t = std::function< void ( socket_options_t & ) >;
@@ -330,7 +330,7 @@ class basic_server_settings_t
 	public:
 		basic_server_settings_t(
 			std::uint16_t port = 8080,
-			asio::ip::tcp protocol = asio::ip::tcp::v4() )
+			asio_ns::ip::tcp protocol = asio_ns::ip::tcp::v4() )
 			:	base_type_t{}
 			,	m_port{ port }
 			,	m_protocol{ protocol }
@@ -358,19 +358,19 @@ class basic_server_settings_t
 		}
 
 		Derived &
-		protocol( asio::ip::tcp p ) &
+		protocol( asio_ns::ip::tcp p ) &
 		{
 			m_protocol = p;
 			return reference_to_derived();
 		}
 
 		Derived &&
-		protocol( asio::ip::tcp p ) &&
+		protocol( asio_ns::ip::tcp p ) &&
 		{
 			return std::move( this->protocol( p ) );
 		}
 
-		asio::ip::tcp
+		asio_ns::ip::tcp
 		protocol() const
 		{
 			return m_protocol;
@@ -787,7 +787,7 @@ class basic_server_settings_t
 		//! Server endpoint.
 		//! \{
 		std::uint16_t m_port;
-		asio::ip::tcp m_protocol;
+		asio_ns::ip::tcp m_protocol;
 		std::string m_address;
 		//! \}
 

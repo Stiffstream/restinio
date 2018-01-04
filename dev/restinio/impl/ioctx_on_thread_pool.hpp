@@ -2,7 +2,7 @@
 
 #include <thread>
 
-#include <asio.hpp>
+#include <restinio/asio_include.hpp>
 
 #include <restinio/exception.hpp>
 
@@ -13,7 +13,7 @@ namespace impl
 {
 
 /*
- * Helper class for creating asio::io_context and running it
+ * Helper class for creating io_context and running it
  * (via `io_context::run()`) on a thread pool.
  *
  * \note class is not thread-safe (except `io_context()` method).
@@ -56,7 +56,7 @@ class ioctx_on_thread_pool_t
 			{
 				for( auto & t : m_pool )
 					t = std::thread( [this] {
-						asio::io_context::work work( m_io_context );
+						asio_ns::io_context::work work( m_io_context );
 						m_io_context.run();
 					} );
 
@@ -98,13 +98,13 @@ class ioctx_on_thread_pool_t
 		bool
 		started() const { return status_t::started == m_status; }
 
-		asio::io_context &
+		asio_ns::io_context &
 		io_context() { return m_io_context; }
 
 	private:
 		enum class status_t : std::uint8_t { stopped, started };
 
-		asio::io_context m_io_context;
+		asio_ns::io_context m_io_context;
 		std::vector< std::thread > m_pool;
 		status_t m_status;
 };

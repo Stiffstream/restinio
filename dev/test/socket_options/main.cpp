@@ -9,8 +9,6 @@
 #define CATCH_CONFIG_MAIN
 #include <catch/catch.hpp>
 
-#include <asio.hpp>
-
 #include <restinio/all.hpp>
 
 #include <test/common/utest_logger.hpp>
@@ -48,7 +46,7 @@ TEST_CASE( "Socket options" , "[socket][options]" )
 					} )
 				.socket_options_setter(
 					[&socket_options_setter_was_called]( auto options ){
-						asio::ip::tcp::no_delay no_delay{ true };
+						restinio::asio_ns::ip::tcp::no_delay no_delay{ true };
 						options.set_option( no_delay );
 						socket_options_setter_was_called = true;
 					} );

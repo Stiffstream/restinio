@@ -9,8 +9,6 @@
 #define CATCH_CONFIG_MAIN
 #include <catch/catch.hpp>
 
-#include <asio.hpp>
-
 #include <restinio/all.hpp>
 #include <restinio/tls.hpp>
 
@@ -49,7 +47,7 @@ TEST_CASE( "Socket_options TLS" , "[socket][options][tls]" )
 					} )
 				.socket_options_setter(
 					[&socket_options_setter_was_called]( auto options ){
-						asio::ip::tcp::no_delay no_delay{ true };
+						restinio::asio_ns::ip::tcp::no_delay no_delay{ true };
 						options.set_option( no_delay );
 						socket_options_setter_was_called = true;
 					} );
@@ -65,7 +63,7 @@ TEST_CASE( "Socket_options TLS" , "[socket][options][tls]" )
 			// Ensure we get connected:
 			std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
-			socket.shutdown( asio::ip::tcp::socket::shutdown_both );
+			socket.shutdown( restinio::asio_ns::ip::tcp::socket::shutdown_both );
 			socket.close(); // Close without doing anything.
 
 			//! Ensure we closed.

@@ -14,15 +14,15 @@
 using namespace restinio;
 
 std::size_t
-size( const asio::const_buffer & b )
+size( const restinio::asio_ns::const_buffer & b )
 {
-	return asio::buffer_size( b );
+	return restinio::asio_ns::buffer_size( b );
 }
 
 const void *
-address( const asio::const_buffer & b )
+address( const restinio::asio_ns::const_buffer & b )
 {
-	return asio::buffer_cast< const void * >( b );
+	return restinio::asio_ns::buffer_cast< const void * >( b );
 }
 
 TEST_CASE( "buffers on c-string" , "[buffers][c-string]" )
@@ -552,7 +552,7 @@ TEST_CASE(
 	"[buffers][empty]" )
 {
 	buffer_storage_t x;
-	asio::const_buffer b;
+	restinio::asio_ns::const_buffer b;
 	REQUIRE_NOTHROW( b = x.buf() );
 	REQUIRE( 0 == size( b ) );
 	REQUIRE( nullptr == address( b ) );

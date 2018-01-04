@@ -9,8 +9,6 @@
 #define CATCH_CONFIG_MAIN
 #include <catch/catch.hpp>
 
-#include <asio.hpp>
-
 #include <restinio/all.hpp>
 
 #include <test/common/utest_logger.hpp>
@@ -34,7 +32,7 @@ TEST_CASE( "start-stop" , "[stop]" )
 					[]( auto ){ return restinio::request_rejected(); } );
 		} };
 
-	asio::post( http_server.io_context(),
+	restinio::asio_ns::post( http_server.io_context(),
 		[&] {
 			REQUIRE_NOTHROW( http_server.open_sync() );
 			REQUIRE_NOTHROW( http_server.close_sync() );
@@ -60,7 +58,7 @@ TEST_CASE( "start-stop-stop" , "[stop]" )
 					[]( auto ){ return restinio::request_rejected(); } );
 		} };
 
-	asio::post( http_server.io_context(),
+	restinio::asio_ns::post( http_server.io_context(),
 		[&] {
 			REQUIRE_NOTHROW( http_server.open_sync() );
 			REQUIRE_NOTHROW( http_server.close_sync() );
@@ -87,7 +85,7 @@ TEST_CASE( "start-start-stop" , "[stop]" )
 					[]( auto ){ return restinio::request_rejected(); } );
 		} };
 
-	asio::post( http_server.io_context(),
+	restinio::asio_ns::post( http_server.io_context(),
 		[&] {
 			REQUIRE_NOTHROW( http_server.open_sync() );
 			REQUIRE_NOTHROW( http_server.open_sync() );

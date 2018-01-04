@@ -115,7 +115,7 @@ class ws_t
 
 				// Create header serialize it and append to bufs .
 				impl::message_details_t details{
-					final, opcode, asio::buffer_size( payload.buf() ) };
+					final, opcode, asio_ns::buffer_size( payload.buf() ) };
 
 				bufs.emplace_back(
 					impl::write_message_details( details ) );

@@ -146,15 +146,15 @@ run(
 	using server_t = http_server_t<Traits>;
 
 	// Use current thread to run.
-	asio::io_context io_context;
+	asio_ns::io_context io_context;
 
 	server_t server{
 		restinio::external_io_context( io_context ),
 		std::forward<settings_t>(settings) };
 
-	asio::signal_set break_signals{ server.io_context(), SIGINT };
+	asio_ns::signal_set break_signals{ server.io_context(), SIGINT };
 	break_signals.async_wait(
-		[&]( const asio::error_code & ec, int ){
+		[&]( const asio_ns::error_code & ec, int ){
 			if( !ec )
 			{
 				server.close_async(
@@ -191,9 +191,9 @@ run( run_on_thread_pool_settings_t<Traits> && settings )
 		restinio::external_io_context( pool.io_context() ),
 		std::forward<settings_t>(settings) };
 
-	asio::signal_set break_signals{ server.io_context(), SIGINT };
+	asio_ns::signal_set break_signals{ server.io_context(), SIGINT };
 	break_signals.async_wait(
-		[&]( const asio::error_code & ec, int ){
+		[&]( const asio_ns::error_code & ec, int ){
 			if( !ec )
 			{
 				server.close_async(

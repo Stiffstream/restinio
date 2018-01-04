@@ -22,7 +22,7 @@ namespace restinio
 //
 // io_context_shared_ptr_t
 //
-using io_context_shared_ptr_t = std::shared_ptr< asio::io_context >;
+using io_context_shared_ptr_t = std::shared_ptr< asio_ns::io_context >;
 
 //
 // io_context_holder_t
@@ -64,7 +64,7 @@ public :
 inline io_context_holder_t
 own_io_context()
 {
-	return { std::make_shared< asio::io_context >() };
+	return { std::make_shared< asio_ns::io_context >() };
 }
 
 //
@@ -84,12 +84,12 @@ own_io_context()
  * \endcode
  */
 inline io_context_holder_t
-external_io_context( asio::io_context & ctx )
+external_io_context( asio_ns::io_context & ctx )
 {
-	return { std::shared_ptr< asio::io_context >(
+	return { std::shared_ptr< asio_ns::io_context >(
 			std::addressof(ctx),
 			// Empty deleter.
-			[]( asio::io_context * ){} )
+			[]( asio_ns::io_context * ){} )
 	};
 }
 
@@ -227,7 +227,7 @@ class http_server_t
 		}
 
 		//! Get io_context on which server runs.
-		asio::io_context &
+		asio_ns::io_context &
 		io_context()
 		{
 			return *m_io_context;
@@ -245,7 +245,7 @@ class http_server_t
 			Server_Open_Ok_CB && open_ok_cb,
 			Server_Open_Error_CB && open_err_cb )
 		{
-			asio::post(
+			asio_ns::post(
 				m_acceptor->get_open_close_operations_executor(),
 				[ this,
 					ok_cb = std::move( open_ok_cb ),
@@ -291,7 +291,7 @@ class http_server_t
 			Server_Close_Ok_CB && close_ok_cb,
 			Server_Close_Error_CB && close_err_cb )
 		{
-			asio::post(
+			asio_ns::post(
 				m_acceptor->get_open_close_operations_executor(),
 				[ this,
 					ok_cb = std::move( close_ok_cb ),

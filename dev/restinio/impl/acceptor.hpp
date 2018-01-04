@@ -43,7 +43,7 @@ class socket_supplier_t
 			//! Server settings.
 			Settings & settings,
 			//! A context the server runs on.
-			asio::io_context & io_context )
+			asio_ns::io_context & io_context )
 			:	m_io_context{ io_context }
 		{
 			m_sockets.reserve( settings.concurrent_accepts_count() );
@@ -83,7 +83,7 @@ class socket_supplier_t
 
 	private:
 		//! io_context for sockets to run on.
-		asio::io_context & m_io_context;
+		asio_ns::io_context & m_io_context;
 
 		//! A temporary socket for receiving new connections.
 		//! \note Must never be empty.
@@ -113,7 +113,7 @@ class acceptor_t final
 		acceptor_t(
 			Settings & settings,
 			//! ASIO io_context to run on.
-			asio::io_context & io_context,
+			asio_ns::io_context & io_context,
 			//! Connection factory.
 			connection_factory_shared_ptr_t connection_factory,
 			//! Logger.
@@ -144,7 +144,7 @@ class acceptor_t final
 				return;
 			}
 
-			asio::ip::tcp::endpoint ep{ m_protocol, m_port };
+			asio_ns::ip::tcp::endpoint ep{ m_protocol, m_port };
 
 			if( !m_address.empty() )
 			{
@@ -154,7 +154,7 @@ class acceptor_t final
 				else if( addr == "ip6-localhost" )
 					addr = "::1";
 
-				ep.address( asio::ip::address::from_string( addr ) );
+				ep.address( asio_ns::ip::address::from_string( addr ) );
 			}
 
 			try
@@ -173,7 +173,7 @@ class acceptor_t final
 				}
 
 				m_acceptor.bind( ep );
-				m_acceptor.listen( asio::socket_base::max_connections );
+				m_acceptor.listen( asio_ns::socket_base::max_connections );
 
 				// Call accept connections routine.
 				for( std::size_t i = 0; i< this->cuncurrent_accept_sockets_count(); ++i )
@@ -236,7 +236,7 @@ class acceptor_t final
 		{
 			m_acceptor.async_accept(
 				this->socket( i ).lowest_layer(),
-				asio::bind_executor(
+				asio_ns::bind_executor(
 					get_executor(),
 					[ i, ctx = this->shared_from_this() ]( const auto & ec ){
 						if( !ec )
@@ -274,7 +274,7 @@ class acceptor_t final
 
 				if( m_separate_accept_and_create_connect )
 				{
-					asio::post(
+					asio_ns::post(
 						get_executor(),
 						std::move( create_and_init_connection ) );
 				}
@@ -318,18 +318,18 @@ class acceptor_t final
 		//! Server endpoint.
 		//! \{
 		const std::uint16_t m_port;
-		const asio::ip::tcp m_protocol;
+		const asio_ns::ip::tcp m_protocol;
 		const std::string m_address;
 		//! \}
 
 		//! Server port listener and connection receiver routine.
 		//! \{
 		std::unique_ptr< acceptor_options_setter_t > m_acceptor_options_setter;
-		asio::ip::tcp::acceptor m_acceptor;
+		asio_ns::ip::tcp::acceptor m_acceptor;
 		//! \}
 
 		//! Asio executor.
-		asio::executor m_executor;
+		asio_ns::executor m_executor;
 		strand_t m_open_close_operations_executor;
 
 		//! Do separate an accept operation and connection instantiation.

@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <asio.hpp>
+#include <restinio/asio_include.hpp>
 
 #include <nodejs/http_parser/http_parser.h>
 
@@ -170,7 +170,7 @@ struct connection_input_t
 template < typename Connection, typename Start_Read_CB, typename Failed_CB >
 void
 prepare_connection_and_start_read(
-	asio::ip::tcp::socket & ,
+	asio_ns::ip::tcp::socket & ,
 	Connection & ,
 	Start_Read_CB start_read_cb,
 	Failed_CB )
@@ -273,7 +273,7 @@ class connection_t final
 					// Start reading request.
 					wait_for_http_message();
 				},
-				[ & ]( const asio::error_code & ec ){
+				[ & ]( const asio_ns::error_code & ec ){
 					trigger_error_and_close( [&]{
 						return fmt::format(
 								"[connection:{}] prepare connection error: {}",
@@ -359,17 +359,17 @@ class connection_t final
 
 			m_socket.async_read_some(
 				m_input.m_buf.make_asio_buffer(),
-				asio::bind_executor(
+				asio_ns::bind_executor(
 					this->get_executor(),
 					[ this, ctx = shared_from_this() ](
-						const asio::error_code & ec,
+						const asio_ns::error_code & ec,
 						std::size_t length ){
 						after_read( ec, length );
 					} ) );
 		}
 
 		inline void
-		after_read( const std::error_code & ec, std::size_t length )
+		after_read( const asio_ns::error_code & ec, std::size_t length )
 		{
 			if( !ec )
 			{
@@ -388,9 +388,9 @@ class connection_t final
 			{
 				// Well, if it is actually an error
 				// then close connection.
-				if( ec != asio::error::operation_aborted )
+				if( !error_is_operation_aborted( ec ) )
 				{
-					if ( ec != asio::error::eof || 0 != m_input.m_parser.nread )
+					if ( !error_is_eof( ec ) || 0 != m_input.m_parser.nread )
 						trigger_error_and_close( [&]{
 							return fmt::format(
 									"[connection:{}] read socket error: {}; "
@@ -670,7 +670,7 @@ class connection_t final
 			buffers_container_t bufs ) override
 		{
 			//! Run write message on io_context loop if possible.
-			asio::dispatch(
+			asio_ns::dispatch(
 				this->get_executor(),
 				[ this,
 					request_id,
@@ -804,7 +804,7 @@ class connection_t final
 						} );
 
 						// Reading new requests is useless.
-						asio::error_code ignored_ec;
+						asio_ns::error_code ignored_ec;
 						m_socket.cancel( ignored_ec );
 					}
 					else
@@ -818,17 +818,17 @@ class connection_t final
 					}
 
 					// There is somethig to write.
-					asio::async_write(
+					asio_ns::async_write(
 						m_socket,
 						bufs,
-						asio::bind_executor(
+						asio_ns::bind_executor(
 							this->get_executor(),
 							[ this,
 								ctx = shared_from_this(),
 								should_keep_alive = !m_response_coordinator.closed(),
 								init_read_after_this_write =
 									full_before && !full_after ]
-								( const asio::error_code & ec, std::size_t written ){
+								( const asio_ns::error_code & ec, std::size_t written ){
 									after_write(
 										ec,
 										written,
@@ -880,7 +880,7 @@ class connection_t final
 		//! Handle write response finished.
 		inline void
 		after_write(
-			const std::error_code & ec,
+			const asio_ns::error_code & ec,
 			std::size_t written,
 			bool should_keep_alive,
 			bool should_init_read_after_this_write )
@@ -942,7 +942,7 @@ class connection_t final
 			}
 			else
 			{
-				if( ec != asio::error::operation_aborted )
+				if( !error_is_operation_aborted( ec ) )
 				{
 					trigger_error_and_close( [&]{
 						return fmt::format(
@@ -970,9 +970,9 @@ class connection_t final
 						connection_id() );
 			} );
 
-			asio::error_code ignored_ec;
+			asio_ns::error_code ignored_ec;
 			m_socket.shutdown(
-				asio::ip::tcp::socket::shutdown_both,
+				asio_ns::ip::tcp::socket::shutdown_both,
 				ignored_ec );
 			m_socket.close();
 		}
@@ -1022,7 +1022,7 @@ class connection_t final
 		virtual void
 		check_timeout( tcp_connection_ctx_handle_t & self ) override
 		{
-			asio::dispatch(
+			asio_ns::dispatch(
 				this->get_executor(),
 				[ ctx = std::move( self ) ]{
 					cast_to_self( *ctx ).check_timeout_impl();
