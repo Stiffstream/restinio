@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 SET(CMAKE_CXX_STANDARD 14)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option( RESTINIO_BUILD_TLS_SAMPLES "Build with tls samples." ON )
+# option(RESTINIO_USE_BOOST_ASIO "Build using boost::asio [default: OFF]." OFF )
 
 if ("x${CMAKE_CXX_COMPILER_ID}" MATCHES "xGNU"
 		OR "x${CMAKE_CXX_COMPILER_ID}" MATCHES "xClang"

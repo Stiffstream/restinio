@@ -8,7 +8,7 @@
 
 #pragma once
 
-#if !defined(RESTINIO_USES_BOOST_ASIO)
+#if !defined(RESTINIO_USE_BOOST_ASIO)
 
 // RESTinio uses stand-alone version of asio.
 #include <asio.hpp>

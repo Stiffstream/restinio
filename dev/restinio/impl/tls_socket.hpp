@@ -8,7 +8,7 @@
 
 #include <restinio/asio_include.hpp>
 
-#if !defined(RESTINIO_USES_BOOST_ASIO)
+#if !defined(RESTINIO_USE_BOOST_ASIO)
   #include <asio/ssl.hpp>
 #else
   #include <boost/asio/ssl.hpp>

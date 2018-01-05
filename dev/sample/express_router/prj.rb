@@ -4,7 +4,7 @@ MxxRu::Cpp::exe_target {
 
   target 'sample.express_router'
 
-  if ENV.has_key?("RESTINIO_USES_BOOST_ASIO") and ENV["RESTINIO_USES_BOOST_ASIO"] == "1"
+  if ENV.has_key?("RESTINIO_USE_BOOST_ASIO") and ENV["RESTINIO_USE_BOOST_ASIO"] == "1"
     # Add boost libs:
     lib_static( 'boost_system' )
   else
