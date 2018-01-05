@@ -1,9 +1,13 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.1)
 
 SET(CMAKE_CXX_STANDARD 14)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# option(RESTINIO_USE_BOOST_ASIO "Build using boost::asio [default: OFF]." OFF )
+set(RESTINIO_USE_BOOST_ASIO "none" CACHE STRING "Use boost version of ASIO")
+
+set(RESTINIO_USE_BOOST_ASIO_VALUES "none;static;shared")
+
+set_property(CACHE RESTINIO_USE_BOOST_ASIO PROPERTY STRINGS ${RESTINIO_USE_BOOST_ASIO_VALUES})
 
 if ("x${CMAKE_CXX_COMPILER_ID}" MATCHES "xGNU"
 		OR "x${CMAKE_CXX_COMPILER_ID}" MATCHES "xClang"
@@ -16,8 +20,14 @@ else ()
 	message(FATAL_ERROR "Your C++ compiler (ID: '${CMAKE_CXX_COMPILER_ID}') not supported.")
 endif ()
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/asio/include)
-add_definitions(-DASIO_STANDALONE -DASIO_HAS_STD_CHRONO -DASIO_DISABLE_STD_STRING_VIEW)
+if ( RESTINIO_USE_BOOST_ASIO MATCHES "none" )
+	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/asio/include)
+	add_definitions(-DASIO_STANDALONE -DASIO_HAS_STD_CHRONO -DASIO_DISABLE_STD_STRING_VIEW)
+else ()
+	if ( RESTINIO_USE_BOOST_ASIO MATCHES "shared" )
+	else ()
+	endif ()
+endif ()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/fmt)
 add_definitions(-DFMT_HEADER_ONLY)

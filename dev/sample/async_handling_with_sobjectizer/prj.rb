@@ -4,9 +4,13 @@ MxxRu::Cpp::exe_target {
 
   target 'sample.async_handling_with_sobjectizer'
 
-  if ENV.has_key?("RESTINIO_USE_BOOST_ASIO") and ENV["RESTINIO_USE_BOOST_ASIO"] == "1"
+  if ENV.has_key?("RESTINIO_USE_BOOST_ASIO")
     # Add boost libs:
-    lib_static( 'boost_system' )
+    if ENV["RESTINIO_USE_BOOST_ASIO"] == "shared"
+      lib_shared( 'boost_system' )
+    else
+      lib_static( 'boost_system' )
+    end
   else
     required_prj 'asio_mxxru/prj.rb'
   end
