@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.3)
 
 SET(CMAKE_CXX_STANDARD 14)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,9 +24,16 @@ if ( RESTINIO_USE_BOOST_ASIO MATCHES "none" )
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/asio/include)
 	add_definitions(-DASIO_STANDALONE -DASIO_HAS_STD_CHRONO -DASIO_DISABLE_STD_STRING_VIEW)
 else ()
+	set(Boost_USE_MULTITHREADED ON)
 	if ( RESTINIO_USE_BOOST_ASIO MATCHES "shared" )
+		set(Boost_USE_STATIC_LIBS OFF)
 	else ()
+		set(Boost_USE_STATIC_LIBS ON)
 	endif ()
+
+	find_package(Boost 1.66.0 REQUIRED COMPONENTS system)
+	include_directories( ${Boost_INCLUDE_DIRS} )
+	add_definitions( -DRESTINIO_USE_BOOST_ASIO )
 endif ()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/fmt)
@@ -61,7 +68,6 @@ add_subdirectory(test)
 if(WIN32)
 	configure_file(${CMAKE_SOURCE_DIR}/cmake/run_tests.bat ${CMAKE_BINARY_DIR} NEWLINE_STYLE WIN32)
 endif()
-
 
 add_subdirectory(sample)
 add_subdirectory(benches)

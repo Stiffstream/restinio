@@ -14,4 +14,8 @@ if(WIN32)
 	target_link_libraries(${UNITTEST} wsock32 ws2_32)
 endif()
 
+if( NOT (RESTINIO_USE_BOOST_ASIO STREQUAL "none") )
+	target_link_libraries(${UNITTEST} ${Boost_LIBRARIES} )
+endif()
+
 add_test(NAME ${UNITTEST} COMMAND ${SO_5_TEST_LAUNCHER} ${UNITTEST})

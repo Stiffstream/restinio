@@ -8,4 +8,8 @@ endif()
 
 target_link_libraries(${SAMPLE} ${SOBJECTIZER_LIBS})
 
+if( NOT (RESTINIO_USE_BOOST_ASIO STREQUAL "none") )
+	target_link_libraries(${SAMPLE} ${Boost_LIBRARIES} )
+endif()
+
 install(TARGETS ${SAMPLE} DESTINATION bin)

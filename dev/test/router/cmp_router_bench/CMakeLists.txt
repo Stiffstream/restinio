@@ -1,5 +1,5 @@
-set(TEST_BENCH _test.router.express_router_bench)
-add_executable(${TEST_BENCH} main.cpp)
+set(TEST_BENCH _test.router.cmp_router_bench)
+add_executable(${TEST_BENCH} main.cpp route_parser.cpp)
 target_link_libraries(${TEST_BENCH} nodejs_http_parser)
 
 if(WIN32)
