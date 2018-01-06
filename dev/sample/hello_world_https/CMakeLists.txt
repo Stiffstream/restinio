@@ -1,19 +1,5 @@
 set(SAMPLE sample.hello_world_https)
-
-add_executable(${SAMPLE} main.cpp)
-target_link_libraries(${SAMPLE} nodejs_http_parser)
-
-target_link_libraries(${SAMPLE} ${OPENSSL_LIBRARIES})
-
-if(WIN32)
-	target_link_libraries(${SAMPLE} wsock32 ws2_32)
-endif()
-
-if( NOT (RESTINIO_USE_BOOST_ASIO STREQUAL "none") )
-	target_link_libraries(${SAMPLE} ${Boost_LIBRARIES} )
-endif()
-
-install(TARGETS ${SAMPLE} DESTINATION bin)
+include(${CMAKE_SOURCE_DIR}/cmake/sample.cmake)
 
 # Put pem files in bin dir:
 install(FILES dh2048.pem key.pem server.pem DESTINATION bin)
