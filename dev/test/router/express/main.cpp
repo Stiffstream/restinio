@@ -11,7 +11,7 @@
 
 #include <iterator>
 
-#include <restinio/router/express.hpp>
+#include <restinio/all.hpp>
 
 #include "usings.inl"
 

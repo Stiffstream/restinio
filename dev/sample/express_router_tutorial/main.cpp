@@ -1,9 +1,10 @@
 #include <iostream>
 
+#include <restinio/all.hpp>
+
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
-#include <restinio/all.hpp>
 
 namespace rr = restinio::router;
 using router_t = rr::express_router_t<>;

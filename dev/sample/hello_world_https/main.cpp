@@ -1,10 +1,11 @@
 #include <iostream>
 
+#include <restinio/all.hpp>
+#include <restinio/tls.hpp>
+
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
-#include <restinio/all.hpp>
-#include <restinio/tls.hpp>
 
 template < typename RESP >
 RESP

@@ -1,11 +1,11 @@
 #include <iostream>
 
+#include <restinio/all.hpp>
+
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
 #include <json_dto/pub.hpp>
-
-#include <restinio/all.hpp>
 
 struct book_t
 {

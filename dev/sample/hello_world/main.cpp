@@ -1,9 +1,9 @@
 #include <iostream>
 
+#include <restinio/all.hpp>
+
 #include <fmt/format.h>
 #include <fmt/ostream.h>
-
-#include <restinio/all.hpp>
 
 template < typename RESP >
 RESP

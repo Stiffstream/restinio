@@ -1,11 +1,11 @@
 #include <iostream>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-
 #include <restinio/all.hpp>
 #include <restinio/tls.hpp>
 #include <restinio/websocket/websocket.hpp>
+
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 using router_t = restinio::router::express_router_t<>;
 

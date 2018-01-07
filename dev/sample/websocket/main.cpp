@@ -1,11 +1,10 @@
 #include <iostream>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-
 #include <restinio/all.hpp>
 #include <restinio/websocket/websocket.hpp>
 
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 namespace rr = restinio::router;
 using router_t = rr::express_router_t<>;
