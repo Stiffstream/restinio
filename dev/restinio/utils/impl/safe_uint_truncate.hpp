@@ -42,6 +42,19 @@ struct safe_uint64_to_size_t<false> {
 	truncate(std::uint64_t v) { return static_cast<std::size_t>(v); }
 };
 
+/*!
+ * \brief Helper function for truncating uint64 to std::size_t with
+ * exception if that truncation will lead to data loss.
+ *
+ * A check of \a v is performed only if std::size_t has less capacity
+ * than std::uint64_t (for example on 32-bit systems).
+ *
+ * \throw std::runtime_error if the value of \a v can't truncated to
+ * std::size_t without loss of data.
+ *
+ * \since
+ * v.0.4.1
+ */
 inline std::size_t
 uint64_to_size_t(std::uint64_t v)
 {
