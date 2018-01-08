@@ -20,6 +20,8 @@
 #include <restinio/websocket/impl/ws_parser.hpp>
 #include <restinio/websocket/impl/ws_protocol_validator.hpp>
 
+#include <restinio/utils/impl/safe_uint_truncate.hpp>
+
 namespace restinio
 {
 
@@ -596,7 +598,9 @@ class ws_connection_t final
 		void
 		handle_parsed_and_valid_header( const message_details_t & md )
 		{
-			auto payload_length = md.payload_len();
+			const auto payload_length =
+					restinio::utils::impl::uint64_to_size_t(md.payload_len());
+
 			m_input.m_payload.resize( payload_length );
 
 			if( payload_length == 0 )
@@ -607,9 +611,7 @@ class ws_connection_t final
 			else
 			{
 				const auto payload_part_size =
-					std::min(
-						m_input.m_buf.length(),
-						payload_length );
+							std::min( m_input.m_buf.length(), payload_length );
 
 				std::memcpy(
 					&m_input.m_payload.front(),

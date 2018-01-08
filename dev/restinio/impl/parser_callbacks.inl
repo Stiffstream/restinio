@@ -99,7 +99,9 @@ restinio_headers_complete_cb( http_parser * parser )
 				reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
 					parser->data );
 
-			ctx->m_body.reserve( parser->content_length );
+			ctx->m_body.reserve(
+					::restinio::utils::impl::uint64_to_size_t(
+							parser->content_length) );
 		}
 		catch( const std::exception & )
 		{
