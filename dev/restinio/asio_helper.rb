@@ -10,6 +10,35 @@ module RestinioAsioHelper
 		'14'=>"msvc-14.0"
 	}
 
+	def self.read_version_from_version_hpp( fpath )
+		bv = nil
+		begin
+			File.open( fpath, "r") do |fin|
+				fin.each_line do |line|
+					if /#define\sBOOST_VERSION (?<bv>\d+)\s*$/ =~ line
+						# //  BOOST_VERSION % 100 is the patch level
+						# //  BOOST_VERSION / 100 % 1000 is the minor version
+						# //  BOOST_VERSION / 100000 is the major version
+						# #define BOOST_VERSION 106600 
+						bv = bv.to_i
+						break
+					end
+				end
+			end
+			if bv.nil?
+				raise "unable to find BOOST_VERSION definition in #{fpath}"
+			end
+		rescue => e 
+			raise "unable to get boost version from #{fpath}: #{e}"
+		end
+
+		if bv < 106600
+			raise "boost version must be at least 106600"
+		end
+
+		bv
+	end
+
 	@@boost_root = nil
 
 	def self.detect_boost_root
@@ -27,43 +56,42 @@ module RestinioAsioHelper
 		@@boost_root
 	end
 
+	def self.find_boost_ver_based_on_include_dirs
+		# Check BOOST_ROOT/BOOSTROOT env variables
+		bv = nil
+		include_dirs = ENV[ "INCLUDE" ]
+		if include_dirs
+			include_dirs.split(";").each{ |d| 
+				version_filename = File.join( d, "boost/version.hpp" )
+				if File.exists?( version_filename )
+					bv = read_version_from_version_hpp( version_filename )
+					@@boost_in_include_dirs=d
+					break;
+				end
+			}
+		end
+
+		if bv.nil?
+			raise "Boost not found in inclide directories: " +
+				"based on search for <include_dir>/boost/version.hpp"
+		end
+
+		bv
+	end
+
 	@@boost_ver = nil
 
 	def self.detect_boost_ver
 		if @@boost_ver.nil?
 			if "" != self.detect_boost_root
 				version_filename = File.join( self.detect_boost_root, "boost", "version.hpp" )
-				bv = nil
-
-				begin
-					File.open( version_filename, "r") do |fin|
-						fin.each_line do |line|
-							if /#define\sBOOST_VERSION (?<bv>\d+)\s*$/ =~ line
-								# //  BOOST_VERSION % 100 is the patch level
-								# //  BOOST_VERSION / 100 % 1000 is the minor version
-								# //  BOOST_VERSION / 100000 is the major version
-								# #define BOOST_VERSION 106600 
-								bv = bv.to_i
-								break
-							end
-						end
-					end
-					if bv.nil?
-						raise "unable to find BOOST_VERSION definition"
-					end
-				rescue => e 
-					raise "unable to get boost version from #{version_filename}: #{e}"
-				end
-
-				if bv < 106600
-					raise "boost version must be at least 106600"
-				end
-
-				version = [bv / 100000, bv / 100 % 1000 ]
-				@@boost_ver = "#{version[0]}_#{version[1]}"
+				bv = read_version_from_version_hpp( version_filename )
 			else
-				@@boost_ver = "1_66"
+				bv = self.find_boost_ver_based_on_include_dirs
 			end
+
+			version = [bv / 100000, bv / 100 % 1000 ]
+			@@boost_ver = "#{version[0]}_#{version[1]}"
 		end
 		
 		@@boost_ver
@@ -123,15 +151,22 @@ module RestinioAsioHelper
 				
 				# Tricky naming on windows:
 
-				libs = [self.get_msvc_name( 'boost_system', target_prj ) ]
+				if 'vc' == target_prj.toolset.name
+					libs = [self.get_msvc_name( 'boost_system', target_prj ) ]
 
-				if self.detect_boost_root
-					libdir = "lib#{self.detect_bits(target_prj)}-#{@@msvc_libs_dir_tag[target_prj.toolset.tag( "ver_hi" )]}"
-					target_prj.lib_path( File.join( self.detect_boost_root, libdir ) )
-					target_prj.include_path( self.detect_boost_root )
+					if self.detect_boost_root
+						libdir = "lib#{self.detect_bits(target_prj)}-#{@@msvc_libs_dir_tag[target_prj.toolset.tag( "ver_hi" )]}"
+						target_prj.lib_path( File.join( self.detect_boost_root, libdir ) )
+						target_prj.include_path( self.detect_boost_root )
+					end
+
+					libs.each{|lib| target_prj.lib( lib ) }
+				elsif 'gcc' == toolset.name
+
+					raise "gcc toolset (win) not supported yet"
+				else
+					raise "only vc/gcc toolsets are supported on windows"
 				end
-
-				libs.each{|lib| target_prj.lib( lib ) }
 			else
 				# Add boost libs:
 				if ENV["RESTINIO_USE_BOOST_ASIO"] == "shared"
