@@ -212,7 +212,7 @@ struct timer_manager1_t
 			:	m_is_default_constructed{ false }
 		{}
 
-		auto create( asio::io_context & )
+		auto create( asio_ns::io_context & )
 		{
 			return std::make_shared< timer_manager1_t >( m_is_default_constructed );
 		}
@@ -228,7 +228,7 @@ struct timer_manager2_t
 		factory_t( int )
 		{}
 
-		auto create( asio::io_context & )
+		auto create( asio_ns::io_context & )
 		{
 			return std::make_shared< timer_manager2_t >();
 		}
@@ -247,7 +247,7 @@ TEST_CASE( "Timer factory" , "[settings][timer_factory]" )
 
 		settings_t s{};
 
-		asio::io_context io_context;
+		asio_ns::io_context io_context;
 
 		REQUIRE( s.timer_factory()->create(io_context)->m_is_default_constructed );
 
@@ -292,7 +292,7 @@ TEST_CASE( "Acceptor options" , "[settings][acceptor_options]" )
 
 	acceptor_option_setter = s.acceptor_options_setter();
 	restinio::acceptor_options_t
-		acceptor_options{ *static_cast< asio::ip::tcp::acceptor * >( nullptr ) };
+		acceptor_options{ *static_cast< asio_ns::ip::tcp::acceptor * >( nullptr ) };
 
 	(*acceptor_option_setter)( acceptor_options );
 
@@ -316,7 +316,7 @@ TEST_CASE( "Socket options" , "[settings][socket_options]" )
 
 	socket_option_setter = s.socket_options_setter();
 	restinio::socket_options_t
-		socket_options{ *static_cast< asio::ip::tcp::socket * >( nullptr ) };
+		socket_options{ *static_cast< asio_ns::ip::tcp::socket * >( nullptr ) };
 
 	(*socket_option_setter)( socket_options );
 

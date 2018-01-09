@@ -10,7 +10,7 @@
 
 #include <vector>
 
-#include <asio.hpp>
+#include <restinio/asio_include.hpp>
 
 #include <restinio/buffers.hpp>
 
@@ -30,8 +30,8 @@ struct raw_resp_output_ctx_t
 	static constexpr auto
 	max_iov_len()
 	{
-		using len_t = decltype( asio::detail::max_iov_len );
-		return std::min< len_t >( asio::detail::max_iov_len, 64 );
+		using len_t = decltype( asio_ns::detail::max_iov_len );
+		return std::min< len_t >( asio_ns::detail::max_iov_len, 64 );
 	}
 
 	raw_resp_output_ctx_t()
@@ -40,7 +40,7 @@ struct raw_resp_output_ctx_t
 		m_bufs.reserve( max_iov_len() );
 	}
 
-	const std::vector< asio::const_buffer > &
+	const std::vector< asio_ns::const_buffer > &
 	create_bufs()
 	{
 		for( const auto & buf : m_bufs )
@@ -88,7 +88,7 @@ struct raw_resp_output_ctx_t
 		bool m_transmitting{ false };
 
 		//! Asio buffers.
-		std::vector< asio::const_buffer > m_asio_bufs;
+		std::vector< asio_ns::const_buffer > m_asio_bufs;
 
 		//! Real buffers with data.
 		buffers_container_t m_bufs;

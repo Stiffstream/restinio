@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <asio.hpp>
+#include <restinio/asio_include.hpp>
 
 #include <so_5/all.hpp>
 
@@ -125,7 +125,7 @@ class so_timer_manager_t final
 			{}
 
 			auto
-			create( asio::io_context & ) const
+			create( asio_ns::io_context & ) const
 			{
 				return std::make_shared< so_timer_manager_t >( m_env, m_mbox, m_check_period );
 			}

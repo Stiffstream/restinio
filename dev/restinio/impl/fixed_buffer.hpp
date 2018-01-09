@@ -10,7 +10,7 @@
 
 #include <vector>
 
-#include <asio.hpp>
+#include <restinio/asio_include.hpp>
 
 namespace restinio
 {
@@ -40,7 +40,7 @@ class fixed_buffer_t
 		auto
 		make_asio_buffer()
 		{
-			return asio::buffer( m_buf.data(), m_buf.size() );
+			return asio_ns::buffer( m_buf.data(), m_buf.size() );
 		}
 
 		//! Mark how many bytes were obtained.

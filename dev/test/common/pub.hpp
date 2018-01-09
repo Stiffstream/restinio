@@ -1,7 +1,9 @@
 #pragma once
 
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
-#include <asio.hpp>
+#include <restinio/asio_include.hpp>
 
 #include <string>
 #include <thread>
@@ -27,15 +29,15 @@ do_with_socket(
 	const std::string & addr = "127.0.0.1",
 	std::uint16_t port = utest_default_port() )
 {
-	asio::io_context io_context;
-	asio::ip::tcp::socket socket{ io_context };
+	restinio::asio_ns::io_context io_context;
+	restinio::asio_ns::ip::tcp::socket socket{ io_context };
 
-	asio::ip::tcp::resolver resolver{ io_context };
-	asio::ip::tcp::resolver::query
-		query{ asio::ip::tcp::v4(), addr, std::to_string( port ) };
-	asio::ip::tcp::resolver::iterator iterator = resolver.resolve( query );
+	restinio::asio_ns::ip::tcp::resolver resolver{ io_context };
+	restinio::asio_ns::ip::tcp::resolver::query
+		query{ restinio::asio_ns::ip::tcp::v4(), addr, std::to_string( port ) };
+	restinio::asio_ns::ip::tcp::resolver::iterator iterator = resolver.resolve( query );
 
-	asio::connect( socket, iterator );
+	restinio::asio_ns::connect( socket, iterator );
 
 	lambda( socket, io_context );
 	socket.close();
@@ -51,24 +53,24 @@ do_request(
 	do_with_socket(
 		[ & ]( auto & socket, auto & /*io_context*/ ){
 
-			asio::streambuf b;
+			restinio::asio_ns::streambuf b;
 			std::ostream req_stream(&b);
 			req_stream << request;
-			asio::write( socket, b );
+			restinio::asio_ns::write( socket, b );
 
 			std::ostringstream sout;
-			asio::streambuf response_stream;
-			asio::read_until( socket, response_stream, "\r\n\r\n" );
+			restinio::asio_ns::streambuf response_stream;
+			restinio::asio_ns::read_until( socket, response_stream, "\r\n\r\n" );
 
 			sout << &response_stream;
 
 			// Read until EOF, writing data to output as we go.
-			asio::error_code error;
-			while( asio::read( socket, response_stream, asio::transfer_at_least(1), error) )
+			restinio::asio_ns::error_code error;
+			while( restinio::asio_ns::read( socket, response_stream, restinio::asio_ns::transfer_at_least(1), error) )
 				sout << &response_stream;
 
-			if ( error != asio::error::eof )
-				throw asio::system_error(error);
+			if ( !restinio::error_is_eof( error ) )
+				throw std::runtime_error{ fmt::format( "read error: {}", error ) };
 
 			result = sout.str();
 		},
@@ -100,7 +102,7 @@ public:
 
 		// Ensure server was started:
 		std::promise< void > p;
-		asio::post(
+		restinio::asio_ns::post(
 			m_server.io_context(),
 			[&]{
 				p.set_value();
@@ -111,7 +113,7 @@ public:
 	void
 	stop_and_join()
 	{
-		asio::post(
+		restinio::asio_ns::post(
 			m_server.io_context(),
 			[&]{
 				m_server.close_sync();

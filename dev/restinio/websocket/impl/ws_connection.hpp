@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <asio.hpp>
+#include <restinio/asio_include.hpp>
 
 #include <nodejs/http_parser/http_parser.h>
 
@@ -206,7 +206,7 @@ class ws_connection_t final
 		virtual void
 		shutdown() override
 		{
-			asio::dispatch(
+			asio_ns::dispatch(
 				this->get_executor(),
 				[ this, ctx = shared_from_this() ](){
 					try
@@ -236,7 +236,7 @@ class ws_connection_t final
 		virtual void
 		kill() override
 		{
-			asio::dispatch(
+			asio_ns::dispatch(
 				this->get_executor(),
 				[ this, ctx = shared_from_this() ](){
 					try
@@ -271,7 +271,7 @@ class ws_connection_t final
 			ws_weak_handle_t wswh{ wsh };
 
 			// Run write message on io_context loop (direct invocation if possible).
-			asio::dispatch(
+			asio_ns::dispatch(
 				this->get_executor(),
 				[ this, ctx = shared_from_this(), wswh = std::move( wswh ) ](){
 					try
@@ -305,7 +305,7 @@ class ws_connection_t final
 			bool is_close_frame ) override
 		{
 			//! Run write message on io_context loop if possible.
-			asio::dispatch(
+			asio_ns::dispatch(
 				this->get_executor(),
 				[ this,
 					actual_bufs = std::move( bufs ),
@@ -353,9 +353,9 @@ class ws_connection_t final
 								connection_id() );
 					} );
 
-					asio::error_code ignored_ec;
+					asio_ns::error_code ignored_ec;
 					m_socket.shutdown(
-						asio::ip::tcp::socket::shutdown_both,
+						asio_ns::ip::tcp::socket::shutdown_both,
 						ignored_ec );
 					m_socket.close();
 				} );
@@ -466,10 +466,10 @@ class ws_connection_t final
 
 			m_socket.async_read_some(
 				m_input.m_buf.make_asio_buffer(),
-				asio::bind_executor(
+				asio_ns::bind_executor(
 					this->get_executor(),
 					[ this, ctx = shared_from_this() ](
-						const asio::error_code & ec,
+						const asio_ns::error_code & ec,
 						std::size_t length ){
 							try
 							{
@@ -491,7 +491,7 @@ class ws_connection_t final
 
 		//! Handle read error (reading header or payload)
 		void
-		handle_read_error( const char * desc, const std::error_code & ec )
+		handle_read_error( const char * desc, const asio_ns::error_code & ec )
 		{
 			// Assume that connection is lost.
 			trigger_error_and_close(
@@ -508,7 +508,7 @@ class ws_connection_t final
 		//! Handle read operation result, when reading header.
 		void
 		after_read_header(
-			const std::error_code & ec,
+			const asio_ns::error_code & ec,
 			std::size_t length )
 		{
 			if( !ec )
@@ -657,15 +657,15 @@ class ws_connection_t final
 			bool do_validate_payload_and_call_msg_handler = true )
 		{
 			m_socket.async_read_some(
-				asio::buffer( payload_data, length_remaining ),
-				asio::bind_executor(
+				asio_ns::buffer( payload_data, length_remaining ),
+				asio_ns::bind_executor(
 					this->get_executor(),
 					[ this,
 						ctx = shared_from_this(),
 						payload_data,
 						length_remaining,
 						do_validate_payload_and_call_msg_handler ](
-						const asio::error_code & ec,
+						const asio_ns::error_code & ec,
 						std::size_t length ){
 
 							try
@@ -696,7 +696,7 @@ class ws_connection_t final
 		after_read_payload(
 			char * payload_data,
 			std::size_t length_remaining,
-			const std::error_code & ec,
+			const asio_ns::error_code & ec,
 			std::size_t length,
 			bool do_validate_payload_and_call_msg_handler = true )
 		{
@@ -960,7 +960,7 @@ class ws_connection_t final
 				} );
 		}
 
-		//! Implementation of writing data performed on the asio::io_context.
+		//! Implementation of writing data performed on the asio_ns::io_context.
 		void
 		write_data_impl( buffers_container_t bufs, bool is_close_frame )
 		{
@@ -1023,14 +1023,14 @@ class ws_connection_t final
 					guard_write_operation();
 
 					// There is somethig to write.
-					asio::async_write(
+					asio_ns::async_write(
 						m_socket,
 						bufs,
-						asio::bind_executor(
+						asio_ns::bind_executor(
 							this->get_executor(),
 							[ this,
 								ctx = shared_from_this() ]
-								( const asio::error_code & ec, std::size_t written ){
+								( const asio_ns::error_code & ec, std::size_t written ){
 									try
 									{
 										after_write( ec, written );
@@ -1054,7 +1054,7 @@ class ws_connection_t final
 		//! Handle write response finished.
 		inline void
 		after_write(
-			const std::error_code & ec,
+			const asio_ns::error_code & ec,
 			std::size_t written )
 		{
 			if( !ec )
@@ -1106,7 +1106,7 @@ class ws_connection_t final
 		virtual void
 		check_timeout( tcp_connection_ctx_handle_t & self ) override
 		{
-			asio::dispatch(
+			asio_ns::dispatch(
 				this->get_executor(),
 				[ ctx = std::move( self ) ]{
 					cast_to_self( *ctx ).check_timeout_impl();

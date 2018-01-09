@@ -106,7 +106,7 @@ struct tester_timer_manager_t
 		using tagged_object_t::tagged_object_t;
 
 		auto
-		create( asio::io_context & )
+		create( restinio::asio_ns::io_context & )
 		{
 			return std::make_shared< tester_timer_manager_t >();
 		}
@@ -129,7 +129,7 @@ TEST_CASE( "Ref-qualifiers" , "[settings][ref_qualifiers]" )
 	auto check_params =
 		[ & ]( server_settings_t settings ){
 			REQUIRE( 4242 == settings.port() );
-			REQUIRE( asio::ip::tcp::v6() == settings.protocol() );
+			REQUIRE( restinio::asio_ns::ip::tcp::v6() == settings.protocol() );
 			REQUIRE( std::string{ "127.0.0.1" } == settings.address() );
 			REQUIRE( 2017 == settings.buffer_size() );
 			REQUIRE( std::chrono::seconds( 120 ) == settings.read_next_http_message_timelimit() );
@@ -144,7 +144,7 @@ TEST_CASE( "Ref-qualifiers" , "[settings][ref_qualifiers]" )
 			{
 				auto acceptor_option_setter = settings.acceptor_options_setter();
 				restinio::acceptor_options_t
-					acceptor_options{ *static_cast< asio::ip::tcp::acceptor * >( nullptr ) };
+					acceptor_options{ *static_cast< restinio::asio_ns::ip::tcp::acceptor * >( nullptr ) };
 
 				(*acceptor_option_setter)( acceptor_options );
 			}
@@ -154,7 +154,7 @@ TEST_CASE( "Ref-qualifiers" , "[settings][ref_qualifiers]" )
 			{
 				auto socket_option_setter = settings.socket_options_setter();
 				restinio::socket_options_t
-					socket_options{ *static_cast< asio::ip::tcp::socket * >( nullptr ) };
+					socket_options{ *static_cast< restinio::asio_ns::ip::tcp::socket * >( nullptr ) };
 
 				(*socket_option_setter)( socket_options );
 			}
@@ -168,7 +168,7 @@ TEST_CASE( "Ref-qualifiers" , "[settings][ref_qualifiers]" )
 	check_params(
 		server_settings_t{}
 			.port( 4242 )
-			.protocol( asio::ip::tcp::v6() )
+			.protocol( restinio::asio_ns::ip::tcp::v6() )
 			.address( "127.0.0.1" )
 			.buffer_size( 2017 )
 			.read_next_http_message_timelimit( std::chrono::seconds( 120 ) )

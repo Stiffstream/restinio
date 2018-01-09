@@ -11,7 +11,7 @@
 #include <memory>
 #include <chrono>
 
-#include <asio.hpp>
+#include <restinio/asio_include.hpp>
 
 #include <restinio/timer_common.hpp>
 
@@ -28,7 +28,7 @@ class asio_timer_manager_t final
 {
 	public:
 		asio_timer_manager_t(
-			asio::io_context & io_context,
+			asio_ns::io_context & io_context,
 			std::chrono::steady_clock::duration check_period )
 			:	m_io_context{ io_context }
 			,	m_check_period{ check_period }
@@ -39,7 +39,7 @@ class asio_timer_manager_t final
 		{
 			public:
 				timer_guard_t(
-					asio::io_context & io_context,
+					asio_ns::io_context & io_context,
 					std::chrono::steady_clock::duration check_period )
 					:	m_operation_timer{ io_context }
 					,	m_check_period{ check_period }
@@ -70,7 +70,7 @@ class asio_timer_manager_t final
 				}
 
 			private:
-				asio::steady_timer m_operation_timer;
+				asio_ns::steady_timer m_operation_timer;
 				const std::chrono::steady_clock::duration m_check_period;
 			//! \}
 		};
@@ -98,14 +98,14 @@ class asio_timer_manager_t final
 			{}
 
 			auto
-			create( asio::io_context & io_context ) const
+			create( asio_ns::io_context & io_context ) const
 			{
 				return std::make_shared< asio_timer_manager_t >( io_context, m_check_period );
 			}
 		};
 
 	private:
-		asio::io_context & m_io_context;
+		asio_ns::io_context & m_io_context;
 		const std::chrono::steady_clock::duration m_check_period;
 };
 

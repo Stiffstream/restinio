@@ -9,8 +9,6 @@
 #define CATCH_CONFIG_MAIN
 #include <catch/catch.hpp>
 
-#include <asio.hpp>
-
 #include <restinio/all.hpp>
 
 #include <test/common/utest_logger.hpp>
@@ -71,7 +69,7 @@ TEST_CASE( "Slow transmit" , "[slow_trunsmit]" )
 		for( const auto c : request )
 		{
 			REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( &c, 1 ) )
+				restinio::asio_ns::write( socket, restinio::asio_ns::buffer( &c, 1 ) )
 				);
 			std::this_thread::sleep_for( std::chrono::milliseconds( 2 ) );
 		}
@@ -79,7 +77,7 @@ TEST_CASE( "Slow transmit" , "[slow_trunsmit]" )
 		std::array< char, 1024 > data;
 
 		socket.async_read_some(
-			asio::buffer( data.data(), data.size() ),
+			restinio::asio_ns::buffer( data.data(), data.size() ),
 			[ & ]( auto ec, std::size_t length ){
 
 				REQUIRE( 0 != length );

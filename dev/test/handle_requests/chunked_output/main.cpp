@@ -13,8 +13,6 @@
 
 #include <catch/catch.hpp>
 
-#include <asio.hpp>
-
 #include <restinio/all.hpp>
 
 #include <test/common/utest_logger.hpp>

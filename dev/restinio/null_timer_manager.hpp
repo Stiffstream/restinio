@@ -10,7 +10,7 @@
 
 #include <chrono>
 
-#include <asio.hpp>
+#include <restinio/asio_include.hpp>
 
 #include <restinio/timer_common.hpp>
 
@@ -55,7 +55,7 @@ struct null_timer_manager_t final
 	struct factory_t final
 	{
 		auto
-		create( asio::io_context & ) const
+		create( asio_ns::io_context & ) const
 		{
 			return std::make_shared< null_timer_manager_t >();
 		}

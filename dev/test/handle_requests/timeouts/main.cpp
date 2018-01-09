@@ -9,8 +9,6 @@
 #define CATCH_CONFIG_MAIN
 #include <catch/catch.hpp>
 
-#include <asio.hpp>
-
 #include <restinio/all.hpp>
 
 #include <test/common/utest_logger.hpp>
@@ -64,13 +62,13 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 
 			std::array< char, 64 > data;
 
-			asio::error_code error;
+			restinio::asio_ns::error_code error;
 
 			size_t length = // sock.read_some(asio::buffer(data), error);
-				asio::read( socket, asio::buffer(data), error );
+				restinio::asio_ns::read( socket, restinio::asio_ns::buffer(data), error );
 
 			REQUIRE( 0 == length );
-			REQUIRE( error == asio::error::eof );
+			REQUIRE( error == restinio::asio_ns::error::eof );
 		} );
 	}
 
@@ -81,19 +79,19 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 			const std::string a_part_of_request{ "GET / HTT" };
 
 			REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( a_part_of_request ) )
+				restinio::asio_ns::write( socket, restinio::asio_ns::buffer( a_part_of_request ) )
 				);
 
 			std::this_thread::sleep_for( std::chrono::milliseconds( 6 ) );
 
 			std::array< char, 64 > data;
-			asio::error_code error;
+			restinio::asio_ns::error_code error;
 
 			size_t length = // sock.read_some(asio::buffer(data), error);
-				asio::read( socket, asio::buffer(data), error );
+				restinio::asio_ns::read( socket, restinio::asio_ns::buffer(data), error );
 
 			REQUIRE( 0 == length );
-			REQUIRE( error == asio::error::eof );
+			REQUIRE( error == restinio::asio_ns::error::eof );
 		} );
 	}
 
@@ -110,19 +108,19 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 				"\r" }; // '\n' is missing
 
 			REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( a_part_of_request ) )
+				restinio::asio_ns::write( socket, restinio::asio_ns::buffer( a_part_of_request ) )
 				);
 
 			std::this_thread::sleep_for( std::chrono::milliseconds( 6 ) );
 
 			std::array< char, 64 > data;
-			asio::error_code error;
+			restinio::asio_ns::error_code error;
 
 			size_t length = // sock.read_some(asio::buffer(data), error);
-				asio::read( socket, asio::buffer(data), error );
+				restinio::asio_ns::read( socket, restinio::asio_ns::buffer(data), error );
 
 			REQUIRE( 0 == length );
-			REQUIRE( error == asio::error::eof );
+			REQUIRE( error == restinio::asio_ns::error::eof );
 		} );
 	}
 
@@ -171,18 +169,18 @@ TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
 			"\r\n" };
 
 		REQUIRE_NOTHROW(
-			asio::write( socket, asio::buffer( request ) )
+			restinio::asio_ns::write( socket, restinio::asio_ns::buffer( request ) )
 			);
 
 		std::array< char, 1024 > data;
 
 		socket.async_read_some(
-			asio::buffer( data ),
+			restinio::asio_ns::buffer( data ),
 			[ & ]( auto ec, std::size_t length ){
 
 				REQUIRE( 0 == length );
 				REQUIRE( ec );
-				REQUIRE( ec == asio::error::eof );
+				REQUIRE( ec == restinio::asio_ns::error::eof );
 			} );
 
 		io_context.run();

@@ -25,10 +25,17 @@ auto create_request_handler( std::string tag )
 
 int main()
 {
+	// Since RESTinio supports both stand-alone ASIO and boost::ASIO
+	// we specify an alias for a concrete asio namesace.
+	// That's makes it possible to compile the code in both cases.
+	// Typicaly only one of ASIO variants would be used,
+	// and so only asio::* or only boost::asio::* would be applied.
+	namespace asio_ns = restinio::asio_ns;
+
 	try
 	{
 		// External io_context.
-		asio::io_context io_context;
+		asio_ns::io_context io_context;
 
 		using server_t = restinio::http_server_t<>;
 		using settings_t = restinio::server_settings_t<>;
@@ -47,9 +54,9 @@ int main()
 				.address( "localhost" )
 				.request_handler( create_request_handler( "server2" ) ) };
 
-		asio::signal_set break_signals{ io_context, SIGINT };
+		asio_ns::signal_set break_signals{ io_context, SIGINT };
 		break_signals.async_wait(
-			[&]( const asio::error_code & ec, int ){
+			[&]( const asio_ns::error_code & ec, int ){
 				if( !ec )
 				{
 					srv1.close_sync();
@@ -57,7 +64,7 @@ int main()
 				}
 			} );
 
-		asio::post( io_context, [&]{
+		asio_ns::post( io_context, [&]{
 			srv1.open_sync();
 			srv2.open_sync();
 		} );

@@ -180,7 +180,7 @@ class response_builder_t< restinio_controlled_output_t > final
 		self_type_t &
 		set_body( buffer_storage_t body )
 		{
-			auto size = asio::buffer_size( body.buf() );
+			auto size = asio_ns::buffer_size( body.buf() );
 			return set_body_impl( body, size );
 		}
 
@@ -189,7 +189,7 @@ class response_builder_t< restinio_controlled_output_t > final
 		self_type_t &
 		append_body( buffer_storage_t body_part )
 		{
-			auto size = asio::buffer_size( body_part.buf() );
+			auto size = asio_ns::buffer_size( body_part.buf() );
 			return append_body_impl( body_part, size );
 		}
 		//! \}
@@ -301,7 +301,7 @@ class response_builder_t< user_controlled_output_t > final
 		self_type_t &
 		set_body( buffer_storage_t body )
 		{
-			auto size = asio::buffer_size( body.buf() );
+			auto size = asio_ns::buffer_size( body.buf() );
 			return set_body_impl( body, size );
 		}
 		//! \}
@@ -311,7 +311,7 @@ class response_builder_t< user_controlled_output_t > final
 		self_type_t &
 		append_body( buffer_storage_t body_part )
 		{
-			auto size = asio::buffer_size( body_part.buf() );
+			auto size = asio_ns::buffer_size( body_part.buf() );
 
 			if( 0 == size )
 				return *this;
@@ -486,7 +486,7 @@ class response_builder_t< chunked_output_t > final
 		auto &
 		append_chunk( buffer_storage_t chunk )
 		{
-			auto size = asio::buffer_size( chunk.buf() );
+			auto size = asio_ns::buffer_size( chunk.buf() );
 
 			if( 0 != size )
 				m_chunks.emplace_back( std::move( chunk ) );
@@ -618,7 +618,7 @@ class response_builder_t< chunked_output_t > final
 				bufs.emplace_back(
 					fmt::format(
 						format_string,
-						asio::buffer_size( chunk.buf() ) ) );
+						asio_ns::buffer_size( chunk.buf() ) ) );
 
 				// Now include "\r\n"-ending for a previous chunk to format string.
 				format_string = "\r\n{:X}\r\n";

@@ -1,15 +1,9 @@
-#include <type_traits>
 #include <iostream>
-#include <chrono>
-#include <memory>
 
-#include <asio.hpp>
-#include <asio/ip/tcp.hpp>
+#include <restinio/all.hpp>
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
-
-#include <restinio/all.hpp>
 
 template < typename RESP >
 RESP

@@ -9,8 +9,6 @@
 #define CATCH_CONFIG_MAIN
 #include <catch/catch.hpp>
 
-#include <asio.hpp>
-
 #include <so_5/all.hpp>
 #include <restinio/all.hpp>
 #include <restinio/websocket/websocket.hpp>
@@ -252,7 +250,7 @@ fragmented_send( Socket & socket, void * buf, std::size_t n )
 	const auto * b = static_cast< std::uint8_t * >( buf );
 	while( n-- )
 	{
-		asio::write( socket, asio::buffer( b++, 1 ) );
+		restinio::asio_ns::write( socket, restinio::asio_ns::buffer( b++, 1 ) );
 		if( 0 < n )
 			std::this_thread::sleep_for( std::chrono::milliseconds( n ) );
 	}
@@ -265,15 +263,15 @@ TEST_CASE( "Simple echo" , "[ws_connection][echo][normal_close]" )
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
 			REQUIRE_NOTHROW(
-				asio::write(
-					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
 			std::array< std::uint8_t, 1024 > data;
 
 			std::size_t len{ 0 };
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 
 			std::vector< std::uint8_t > msg_frame =
@@ -282,7 +280,7 @@ TEST_CASE( "Simple echo" , "[ws_connection][echo][normal_close]" )
 			SECTION( "simple msg_frame")
 			{
 				REQUIRE_NOTHROW(
-					asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
+					restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), msg_frame.size() ) )
 				);
 			}
 			SECTION( "fragmentated msg_frame")
@@ -293,7 +291,7 @@ TEST_CASE( "Simple echo" , "[ws_connection][echo][normal_close]" )
 			}
 
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 
 			REQUIRE( 7 == len );
@@ -309,12 +307,12 @@ TEST_CASE( "Simple echo" , "[ws_connection][echo][normal_close]" )
 				{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xe8 };
 
 			REQUIRE_NOTHROW(
-				asio::write(
-					socket, asio::buffer( close_frame.data(), close_frame.size() ) )
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( close_frame.data(), close_frame.size() ) )
 			);
 
 			REQUIRE_NOTHROW(
-					len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+					len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 				);
 			REQUIRE( 4 == len );
 			REQUIRE( 0x88 == data[ 0 ] );
@@ -322,10 +320,10 @@ TEST_CASE( "Simple echo" , "[ws_connection][echo][normal_close]" )
 			REQUIRE( 0x03 == data[ 2 ] );
 			REQUIRE( 0xe8 == data[ 3 ] );
 
-			asio::error_code ec;
-			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			restinio::asio_ns::error_code ec;
+			len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ), ec );
 			REQUIRE( ec );
-			REQUIRE( asio::error::eof == ec.value() );
+			REQUIRE( restinio::asio_ns::error::eof == ec.value() );
 
 		} );
 
@@ -341,15 +339,15 @@ TEST_CASE( "Ping" , "[ws_connection][ping][normal_close]" )
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
 			REQUIRE_NOTHROW(
-				asio::write(
-					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
 			std::array< std::uint8_t, 1024 > data;
 
 			std::size_t len{ 0 };
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 
 			std::vector< std::uint8_t > msg_frame =
@@ -359,7 +357,7 @@ TEST_CASE( "Ping" , "[ws_connection][ping][normal_close]" )
 			SECTION( "simple msg_frame")
 			{
 				REQUIRE_NOTHROW(
-					asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
+					restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), msg_frame.size() ) )
 				);
 			}
 			SECTION( "fragmentated msg_frame")
@@ -370,7 +368,7 @@ TEST_CASE( "Ping" , "[ws_connection][ping][normal_close]" )
 			}
 
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 
 			REQUIRE( 6 == len );
@@ -385,12 +383,12 @@ TEST_CASE( "Ping" , "[ws_connection][ping][normal_close]" )
 				{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xe8 };
 
 			REQUIRE_NOTHROW(
-				asio::write(
-					socket, asio::buffer( close_frame.data(), close_frame.size() ) )
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( close_frame.data(), close_frame.size() ) )
 			);
 
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 			REQUIRE( 4 == len );
 			REQUIRE( 0x88 == data[ 0 ] );
@@ -398,10 +396,10 @@ TEST_CASE( "Ping" , "[ws_connection][ping][normal_close]" )
 			REQUIRE( 0x03 == data[ 2 ] );
 			REQUIRE( 0xe8 == data[ 3 ] );
 
-			asio::error_code ec;
-			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			restinio::asio_ns::error_code ec;
+			len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ), ec );
 			REQUIRE( ec );
-			REQUIRE( asio::error::eof == ec.value() );
+			REQUIRE( restinio::asio_ns::error::eof == ec.value() );
 		} );
 
 	sobj.stop_and_join();
@@ -417,15 +415,15 @@ TEST_CASE( "Close" , "[ws_connection][close][normal_close]" )
 		[&]( auto & socket, auto & /*io_context*/ ){
 
 			REQUIRE_NOTHROW(
-				asio::write(
-					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
 			std::array< std::uint8_t, 1024 > data;
 
 			std::size_t len{ 0 };
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 
 			std::vector< std::uint8_t > msg_frame =
@@ -435,7 +433,7 @@ TEST_CASE( "Close" , "[ws_connection][close][normal_close]" )
 			SECTION( "simple msg_frame")
 			{
 				REQUIRE_NOTHROW(
-					asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
+					restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), msg_frame.size() ) )
 				);
 			}
 			SECTION( "fragmentated msg_frame")
@@ -446,7 +444,7 @@ TEST_CASE( "Close" , "[ws_connection][close][normal_close]" )
 			}
 
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 
 			REQUIRE( 4 == len );
@@ -459,15 +457,15 @@ TEST_CASE( "Close" , "[ws_connection][close][normal_close]" )
 				{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xe8 };
 
 			REQUIRE_NOTHROW(
-				asio::write(
-					socket, asio::buffer( close_frame.data(), close_frame.size() ) )
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( close_frame.data(), close_frame.size() ) )
 			);
 
-			asio::error_code ec;
-			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			restinio::asio_ns::error_code ec;
+			len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ), ec );
 			REQUIRE( 0 == len );
 			REQUIRE( ec );
-			REQUIRE( asio::error::eof == ec.value() );
+			REQUIRE( restinio::asio_ns::error::eof == ec.value() );
 		} );
 
 	sobj.stop_and_join();
@@ -483,15 +481,15 @@ TEST_CASE( "Shutdown" , "[ws_connection][shutdown][normal_close]" )
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
 			REQUIRE_NOTHROW(
-				asio::write(
-					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
 			std::array< std::uint8_t, 1024 > data;
 
 			std::size_t len{ 0 };
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 
 			std::vector< std::uint8_t > msg_frame =
@@ -500,11 +498,11 @@ TEST_CASE( "Shutdown" , "[ws_connection][shutdown][normal_close]" )
 					  0x0A ^ 'd', 0xB0 ^ 'o', 0x0C ^ 'w', 0xD0 ^ 'n' };
 
 			REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
+				restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), msg_frame.size() ) )
 			);
 
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 
 			REQUIRE( 4 == len );
@@ -519,8 +517,8 @@ TEST_CASE( "Shutdown" , "[ws_connection][shutdown][normal_close]" )
 			SECTION( "simple close_frame")
 			{
 				REQUIRE_NOTHROW(
-					asio::write(
-						socket, asio::buffer( close_frame.data(), close_frame.size() ) )
+					restinio::asio_ns::write(
+						socket, restinio::asio_ns::buffer( close_frame.data(), close_frame.size() ) )
 				);
 			}
 			SECTION( "fragmentated close_frame")
@@ -530,11 +528,11 @@ TEST_CASE( "Shutdown" , "[ws_connection][shutdown][normal_close]" )
 				);
 			}
 
-			asio::error_code ec;
-			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			restinio::asio_ns::error_code ec;
+			len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ), ec );
 			REQUIRE( 0 == len );
 			REQUIRE( ec );
-			REQUIRE( asio::error::eof == ec.value() );
+			REQUIRE( restinio::asio_ns::error::eof == ec.value() );
 		} );
 
 	sobj.stop_and_join();
@@ -550,15 +548,15 @@ TEST_CASE( "Kill" , "[ws_connection][kill][abnormal_close]" )
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
 			REQUIRE_NOTHROW(
-					asio::write(
-						socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+					restinio::asio_ns::write(
+						socket, restinio::asio_ns::buffer( upgrade_request.data(), upgrade_request.size() ) )
 				);
 
 			std::array< std::uint8_t, 1024 > data;
 
 			std::size_t len{ 0 };
 			REQUIRE_NOTHROW(
-					len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+					len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 				);
 
 			std::vector< std::uint8_t > msg_frame =
@@ -568,7 +566,7 @@ TEST_CASE( "Kill" , "[ws_connection][kill][abnormal_close]" )
 			SECTION( "simple msg_frame")
 			{
 				REQUIRE_NOTHROW(
-						asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
+						restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), msg_frame.size() ) )
 					);
 			}
 			SECTION( "fragmentated msg_frame")
@@ -578,11 +576,11 @@ TEST_CASE( "Kill" , "[ws_connection][kill][abnormal_close]" )
 				);
 			}
 
-			asio::error_code ec;
-			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			restinio::asio_ns::error_code ec;
+			len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ), ec );
 			REQUIRE( 0 == len );
 			REQUIRE( ec );
-			REQUIRE( asio::error::eof == ec.value() );
+			REQUIRE( restinio::asio_ns::error::eof == ec.value() );
 		} );
 
 	sobj.stop_and_join();
@@ -597,15 +595,15 @@ TEST_CASE( "Invalid header", "[ws_connection][error_close]" )
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
 			REQUIRE_NOTHROW(
-				asio::write(
-					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
 			std::array< std::uint8_t, 1024 > data;
 
 			std::size_t len{ 0 };
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 
 			std::vector< std::uint8_t > msg_frame;
@@ -633,12 +631,12 @@ TEST_CASE( "Invalid header", "[ws_connection][error_close]" )
 			}
 
 			REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
+				restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), msg_frame.size() ) )
 			);
 
 			// Validation would fail, close frame in return.
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 			REQUIRE( 4 == len );
 			REQUIRE( 0x88 == data[ 0 ] );
@@ -646,10 +644,10 @@ TEST_CASE( "Invalid header", "[ws_connection][error_close]" )
 			REQUIRE( (1002 >> 8) == data[ 2 ] );
 			REQUIRE( (1002 & 0xFF) == data[ 3 ] );
 
-			asio::error_code ec;
-			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			restinio::asio_ns::error_code ec;
+			len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ), ec );
 			REQUIRE( ec );
-			REQUIRE( asio::error::eof == ec.value() );
+			REQUIRE( restinio::asio_ns::error::eof == ec.value() );
 		} );
 
 	sobj.stop_and_join();
@@ -665,15 +663,15 @@ TEST_CASE( "Invalid payload" , "[ws_connection][error_close]" )
 		[&]( auto & socket, auto & /*io_context*/ ){
 
 			REQUIRE_NOTHROW(
-				asio::write(
-					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
 			std::array< std::uint8_t, 1024 > data;
 
 			std::size_t len{ 0 };
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 
 			std::vector< std::uint8_t > msg_frame =
@@ -682,7 +680,7 @@ TEST_CASE( "Invalid payload" , "[ws_connection][error_close]" )
 			SECTION( "simple msg_frame")
 			{
 				REQUIRE_NOTHROW(
-					asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
+					restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), msg_frame.size() ) )
 				);
 			}
 			SECTION( "fragmentated msg_frame")
@@ -694,7 +692,7 @@ TEST_CASE( "Invalid payload" , "[ws_connection][error_close]" )
 
 			// Validation would fail, so no data in return.
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 			REQUIRE( 4 == len );
 
@@ -708,14 +706,14 @@ TEST_CASE( "Invalid payload" , "[ws_connection][error_close]" )
 				{ 0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xef };
 
 			REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( close_frame.data(), close_frame.size() ) )
+				restinio::asio_ns::write( socket, restinio::asio_ns::buffer( close_frame.data(), close_frame.size() ) )
 			);
 
-			asio::error_code ec;
-			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			restinio::asio_ns::error_code ec;
+			len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ), ec );
 			REQUIRE( 0 == len );
 			REQUIRE( ec );
-			REQUIRE( asio::error::eof == ec.value() );
+			REQUIRE( restinio::asio_ns::error::eof == ec.value() );
 		} );
 
 	sobj.stop_and_join();
@@ -731,15 +729,15 @@ TEST_CASE( "Connection lost" , "[ws_connection][error_close][connection_lost]" )
 		[&]( auto & socket, auto & /*io_context*/ ){
 
 			REQUIRE_NOTHROW(
-				asio::write(
-					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
 			std::array< std::uint8_t, 1024 > data;
 
 			std::size_t len{ 0 };
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 
 			std::vector< std::uint8_t > msg_frame =
@@ -754,31 +752,31 @@ TEST_CASE( "Connection lost" , "[ws_connection][error_close][connection_lost]" )
 			SECTION( "after header first byte")
 			{
 				REQUIRE_NOTHROW(
-					asio::write( socket, asio::buffer( msg_frame.data(), 1 ) )
+					restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), 1 ) )
 				);
 			}
 			SECTION( "after header second byte")
 			{
 				REQUIRE_NOTHROW(
-					asio::write( socket, asio::buffer( msg_frame.data(), 2 ) )
+					restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), 2 ) )
 				);
 			}
 			SECTION( "in the middle of mask")
 			{
 				REQUIRE_NOTHROW(
-					asio::write( socket, asio::buffer( msg_frame.data(), 4 ) )
+					restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), 4 ) )
 				);
 			}
 			SECTION( "after mask before payload")
 			{
 				REQUIRE_NOTHROW(
-					asio::write( socket, asio::buffer( msg_frame.data(), 6 ) )
+					restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), 6 ) )
 				);
 			}
 			SECTION( "in the middle of the payload")
 			{
 				REQUIRE_NOTHROW(
-					asio::write( socket, asio::buffer( msg_frame.data(), 8 ) )
+					restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), 8 ) )
 				);
 			}
 
@@ -801,15 +799,15 @@ TEST_CASE( "Invalid opcode" , "[ws_connection][error_close]" )
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
 			REQUIRE_NOTHROW(
-				asio::write(
-					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
 			std::array< std::uint8_t, 1024 > data;
 
 			std::size_t len{ 0 };
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 
 			std::vector< std::uint8_t > msg_frame;
@@ -875,12 +873,12 @@ TEST_CASE( "Invalid opcode" , "[ws_connection][error_close]" )
 			}
 
 			REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
+				restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), msg_frame.size() ) )
 			);
 
 			// Validation would fail, close frame in return.
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 			REQUIRE( 4 == len );
 			REQUIRE( 0x88 == data[ 0 ] );
@@ -888,10 +886,10 @@ TEST_CASE( "Invalid opcode" , "[ws_connection][error_close]" )
 			REQUIRE( (1002 >> 8) == data[ 2 ] );
 			REQUIRE( (1002 & 0xFF) == data[ 3 ] );
 
-			asio::error_code ec;
-			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			restinio::asio_ns::error_code ec;
+			len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ), ec );
 			REQUIRE( ec );
-			REQUIRE( asio::error::eof == ec.value() );
+			REQUIRE( restinio::asio_ns::error::eof == ec.value() );
 		} );
 
 	sobj.stop_and_join();
@@ -906,15 +904,15 @@ TEST_CASE( "Invalid payload, close on first err 1" , "[ws_connection][echo][norm
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
 			REQUIRE_NOTHROW(
-				asio::write(
-					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
 			std::array< std::uint8_t, 1024 > data;
 
 			std::size_t len{ 0 };
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 
 			std::vector< std::uint8_t > msg_frame =
@@ -948,16 +946,16 @@ TEST_CASE( "Invalid payload, close on first err 1" , "[ws_connection][echo][norm
 			msg_frame[ indx ] = 0xFF ^ 0xAA;
 
 			REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( msg_frame.data(), indx ) )
+				restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), indx ) )
 			);
 
 			// Now error:
 			REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( msg_frame.data() + indx, 1 ) )
+				restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data() + indx, 1 ) )
 			);
 
 			REQUIRE_NOTHROW(
-					len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+					len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 				);
 			REQUIRE( 4 == len );
 			REQUIRE( 0x88 == data[ 0 ] );
@@ -968,7 +966,7 @@ TEST_CASE( "Invalid payload, close on first err 1" , "[ws_connection][echo][norm
 			if( indx != msg_frame.size() )
 			{
 				REQUIRE_NOTHROW(
-					asio::write( socket, asio::buffer( msg_frame.data() + indx + 1, msg_frame.size() - indx - 1 ) )
+					restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data() + indx + 1, msg_frame.size() - indx - 1 ) )
 				);
 			}
 
@@ -976,14 +974,14 @@ TEST_CASE( "Invalid payload, close on first err 1" , "[ws_connection][echo][norm
 				{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xef };
 
 			REQUIRE_NOTHROW(
-				asio::write(
-					socket, asio::buffer( close_frame.data(), close_frame.size() ) )
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( close_frame.data(), close_frame.size() ) )
 			);
 
-			asio::error_code ec;
-			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			restinio::asio_ns::error_code ec;
+			len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ), ec );
 			REQUIRE( ec );
-			REQUIRE( asio::error::eof == ec.value() );
+			REQUIRE( restinio::asio_ns::error::eof == ec.value() );
 		} );
 
 	sobj.stop_and_join();
@@ -999,15 +997,15 @@ TEST_CASE( "Invalid payload, close on first err 2", "[ws_connection][echo][norma
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
 			REQUIRE_NOTHROW(
-				asio::write(
-					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
 			std::array< std::uint8_t, 1024 > data;
 
 			std::size_t len{ 0 };
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 
 			std::vector< std::uint8_t > msg_frame =
@@ -1041,16 +1039,16 @@ TEST_CASE( "Invalid payload, close on first err 2", "[ws_connection][echo][norma
 			unsigned char c = 0xFF ^ 0xAA;
 
 			REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( msg_frame.data(), indx ) )
+				restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), indx ) )
 			);
 
 			// Now error:
 			REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( &c, 1 ) )
+				restinio::asio_ns::write( socket, restinio::asio_ns::buffer( &c, 1 ) )
 			);
 
 			REQUIRE_NOTHROW(
-					len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+					len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 				);
 			REQUIRE( 4 == len );
 			REQUIRE( 0x88 == data[ 0 ] );
@@ -1061,27 +1059,27 @@ TEST_CASE( "Invalid payload, close on first err 2", "[ws_connection][echo][norma
 			if( indx != msg_frame.size() )
 			{
 				REQUIRE_NOTHROW(
-					asio::write( socket, asio::buffer( msg_frame.data() + indx + 1, msg_frame.size() - indx - 1 ) )
+					restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data() + indx + 1, msg_frame.size() - indx - 1 ) )
 				);
 			}
 
 			// Send one more text-frame (valid one).
 			REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
+				restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), msg_frame.size() ) )
 			);
 
 			std::vector< std::uint8_t > close_frame =
 				{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xef };
 
 			REQUIRE_NOTHROW(
-				asio::write(
-					socket, asio::buffer( close_frame.data(), close_frame.size() ) )
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( close_frame.data(), close_frame.size() ) )
 			);
 
-			asio::error_code ec;
-			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			restinio::asio_ns::error_code ec;
+			len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ), ec );
 			REQUIRE( ec );
-			REQUIRE( asio::error::eof == ec.value() );
+			REQUIRE( restinio::asio_ns::error::eof == ec.value() );
 		} );
 
 	sobj.stop_and_join();
@@ -1098,15 +1096,15 @@ TEST_CASE( "Invalid payload, close on first err 3", "[ws_connection][echo][norma
 	do_with_socket(
 		[&]( auto & socket, auto & /*io_context*/ ){
 			REQUIRE_NOTHROW(
-				asio::write(
-					socket, asio::buffer( upgrade_request.data(), upgrade_request.size() ) )
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( upgrade_request.data(), upgrade_request.size() ) )
 			);
 
 			std::array< std::uint8_t, 1024 > data;
 
 			std::size_t len{ 0 };
 			REQUIRE_NOTHROW(
-				len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 			);
 
 			std::vector< std::uint8_t > msg_frame =
@@ -1140,16 +1138,16 @@ TEST_CASE( "Invalid payload, close on first err 3", "[ws_connection][echo][norma
 			msg_frame[ indx ] = 0xFF ^ 0xAA;
 
 			REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( msg_frame.data(), indx ) )
+				restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), indx ) )
 			);
 
 			// Now error:
 			REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( msg_frame.data() + indx, 1 ) )
+				restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data() + indx, 1 ) )
 			);
 
 			REQUIRE_NOTHROW(
-					len = socket.read_some( asio::buffer( data.data(), data.size() ) )
+					len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
 				);
 			REQUIRE( 4 == len );
 			REQUIRE( 0x88 == data[ 0 ] );
@@ -1160,27 +1158,27 @@ TEST_CASE( "Invalid payload, close on first err 3", "[ws_connection][echo][norma
 			if( indx != msg_frame.size() )
 			{
 				REQUIRE_NOTHROW(
-					asio::write( socket, asio::buffer( msg_frame.data() + indx + 1, msg_frame.size() - indx - 1 ) )
+					restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data() + indx + 1, msg_frame.size() - indx - 1 ) )
 				);
 			}
 
 			// Send one more text-frame (invalid one).
 			REQUIRE_NOTHROW(
-				asio::write( socket, asio::buffer( msg_frame.data(), msg_frame.size() ) )
+				restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), msg_frame.size() ) )
 			);
 
 			std::vector< std::uint8_t > close_frame =
 				{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xef };
 
 			REQUIRE_NOTHROW(
-				asio::write(
-					socket, asio::buffer( close_frame.data(), close_frame.size() ) )
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( close_frame.data(), close_frame.size() ) )
 			);
 
-			asio::error_code ec;
-			len = socket.read_some( asio::buffer( data.data(), data.size() ), ec );
+			restinio::asio_ns::error_code ec;
+			len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ), ec );
 			REQUIRE( ec );
-			REQUIRE( asio::error::eof == ec.value() );
+			REQUIRE( restinio::asio_ns::error::eof == ec.value() );
 		} );
 
 	sobj.stop_and_join();

@@ -10,8 +10,6 @@
 #define CATCH_CONFIG_MAIN
 #include <catch/catch.hpp>
 
-#include <asio.hpp>
-
 #include <restinio/all.hpp>
 #include <restinio/websocket/websocket.hpp>
 
@@ -62,7 +60,8 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 					} );
 		} };
 
-	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_work_thread_for_server_t<http_server_t> other_thread{http_server};
+
 	other_thread.run();
 
 	std::string response;
@@ -77,12 +76,19 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 		"User-Agent: unit-test\r\n"
 		"\r\n";
 
+	std::cout << "!!!! 1" << std::endl;
+
 	REQUIRE_NOTHROW( response = do_request( request_str ) );
+
+	std::cout << "!!!! 2" << std::endl;
+
 
 	REQUIRE_THAT( response, Catch::StartsWith( "HTTP/1.1 101 Switching Protocols" ) );
 	REQUIRE_THAT( response, Catch::Contains( "Connection: Upgrade" ) );
 	REQUIRE_THAT( response, Catch::Contains( "Sec-WebSocket-Accept:" ) );
 	REQUIRE_THAT( response, Catch::Contains( "Upgrade: websocket" ) );
 
+	std::cout << "!!!! 3" << std::endl;
 	other_thread.stop_and_join();
+	std::cout << "!!!! 4" << std::endl;
 }

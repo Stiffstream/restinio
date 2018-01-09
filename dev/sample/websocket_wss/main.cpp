@@ -1,17 +1,11 @@
-#include <type_traits>
 #include <iostream>
-#include <chrono>
-#include <memory>
-
-#include <asio.hpp>
-#include <asio/ip/tcp.hpp>
-
-#include <fmt/format.h>
-#include <fmt/ostream.h>
 
 #include <restinio/all.hpp>
 #include <restinio/tls.hpp>
 #include <restinio/websocket/websocket.hpp>
+
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 using router_t = restinio::router::express_router_t<>;
 
@@ -82,16 +76,23 @@ int main( int argc, char const *argv[] )
 
 	try
 	{
-		asio::ssl::context tls_context{ asio::ssl::context::sslv23 };
+		// Since RESTinio supports both stand-alone ASIO and boost::ASIO
+		// we specify an alias for a concrete asio namesace.
+		// That's makes it possible to compile the code in both cases.
+		// Typicaly only one of ASIO variants would be used,
+		// and so only asio::* or only boost::asio::* would be applied.
+		namespace asio_ns = restinio::asio_ns;
+
+		asio_ns::ssl::context tls_context{ asio_ns::ssl::context::sslv23 };
 		tls_context.set_options(
-			asio::ssl::context::default_workarounds
-			| asio::ssl::context::no_sslv2
-			| asio::ssl::context::single_dh_use );
+			asio_ns::ssl::context::default_workarounds
+			| asio_ns::ssl::context::no_sslv2
+			| asio_ns::ssl::context::single_dh_use );
 
 		tls_context.use_certificate_chain_file( certs_dir + "/wss_server.pem" );
 		tls_context.use_private_key_file(
 			certs_dir + "/wss_key.pem",
-			asio::ssl::context::pem );
+			asio_ns::ssl::context::pem );
 		tls_context.use_tmp_dh_file( certs_dir + "/wss_dh2048.pem" );
 
 		ws_registry_t registry;

@@ -34,8 +34,8 @@ make_string( const BUF & buf )
 {
 	return
 		std::string{
-			asio::buffer_cast< const char * >( buf.buf() ),
-			asio::buffer_size( buf.buf() ) };
+			asio_ns::buffer_cast< const char * >( buf.buf() ),
+			asio_ns::buffer_size( buf.buf() ) };
 }
 
 buffers_container_t

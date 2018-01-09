@@ -1,18 +1,11 @@
-#include <type_traits>
 #include <iostream>
-#include <chrono>
-#include <memory>
-#include <vector>
 
-#include <asio.hpp>
-#include <asio/ip/tcp.hpp>
+#include <restinio/all.hpp>
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
 #include <json_dto/pub.hpp>
-
-#include <restinio/all.hpp>
 
 struct book_t
 {

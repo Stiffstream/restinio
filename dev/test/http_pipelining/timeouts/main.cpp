@@ -14,8 +14,6 @@
 
 #include <catch/catch.hpp>
 
-#include <asio.hpp>
-
 #include <restinio/all.hpp>
 
 #include <test/common/utest_logger.hpp>
@@ -93,18 +91,18 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 		const auto started_at = std::chrono::steady_clock::now();
 
 		REQUIRE_NOTHROW(
-			asio::write( socket, asio::buffer( pipelinedrequests ) )
+			restinio::asio_ns::write( socket, restinio::asio_ns::buffer( pipelinedrequests ) )
 			);
 
 		std::array< char, 1024 > data;
 
 		socket.async_read_some(
-			asio::buffer( data ),
+			restinio::asio_ns::buffer( data ),
 			[ & ]( auto ec, std::size_t length ){
 
 				REQUIRE( 0 == length );
 				REQUIRE( ec );
-				REQUIRE( ec == asio::error::eof );
+				REQUIRE( ec == restinio::asio_ns::error::eof );
 			} );
 		io_context.run();
 

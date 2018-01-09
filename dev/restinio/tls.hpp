@@ -8,8 +8,6 @@
 
 #pragma once
 
-#include <asio/ssl.hpp>
-
 #include <restinio/traits.hpp>
 #include <restinio/impl/tls_socket.hpp>
 
@@ -26,7 +24,7 @@ template <
 		typename Timer_Factory,
 		typename Logger,
 		typename Request_Handler = default_request_handler_t,
-		typename Strand = asio::strand< asio::executor > >
+		typename Strand = asio_ns::strand< asio_ns::executor > >
 using tls_traits_t = traits_t< Timer_Factory, Logger, Request_Handler, Strand, tls_socket_t >;
 
 //
@@ -55,10 +53,10 @@ prepare_connection_and_start_read(
 	Failed_CB failed_cb )
 {
 	socket.async_handshake(
-		asio::ssl::stream_base::server,
+		asio_ns::ssl::stream_base::server,
 		[ start_read_cb = std::move( start_read_cb ),
 			failed_cb = std::move( failed_cb ),
-			con = con.shared_from_this() ]( const asio::error_code & ec ){
+			con = con.shared_from_this() ]( const asio_ns::error_code & ec ){
 			if( !ec )
 				start_read_cb();
 			else
@@ -87,7 +85,7 @@ public:
 
 		Settings &
 		tls_context(
-			asio::ssl::context context ) &
+			asio_ns::ssl::context context ) &
 		{
 			m_tls_context = std::move( context );
 			return upcast_reference();
@@ -95,15 +93,15 @@ public:
 
 		Settings &&
 		tls_context(
-			asio::ssl::context context ) &&
+			asio_ns::ssl::context context ) &&
 		{
 			return std::move( this->tls_context( std::move( context ) ) );
 		}
 
-		asio::ssl::context
+		asio_ns::ssl::context
 		tls_context()
 		{
-			return asio::ssl::context{ std::move( m_tls_context ) };
+			return asio_ns::ssl::context{ std::move( m_tls_context ) };
 		}
 
 	private:
@@ -113,7 +111,7 @@ public:
 			return static_cast< Settings & >( *this );
 		}
 
-		asio::ssl::context m_tls_context{ asio::ssl::context::sslv23 };
+		asio_ns::ssl::context m_tls_context{ asio_ns::ssl::context::sslv23 };
 };
 
 namespace impl
@@ -131,8 +129,8 @@ class socket_supplier_t< tls_socket_t >
 		template < typename Settings >
 		socket_supplier_t(
 			Settings & settings,
-			asio::io_context & io_context )
-			:	m_tls_context{ std::make_shared< asio::ssl::context >( settings.tls_context() ) }
+			asio_ns::io_context & io_context )
+			:	m_tls_context{ std::make_shared< asio_ns::ssl::context >( settings.tls_context() ) }
 			,	m_io_context{ io_context }
 		{
 			m_sockets.reserve( settings.concurrent_accepts_count() );
@@ -172,8 +170,8 @@ class socket_supplier_t< tls_socket_t >
 		}
 
 	private:
-		std::shared_ptr< asio::ssl::context > m_tls_context;
-		asio::io_context & m_io_context;
+		std::shared_ptr< asio_ns::ssl::context > m_tls_context;
+		asio_ns::io_context & m_io_context;
 		std::vector< tls_socket_t > m_sockets;
 };
 
