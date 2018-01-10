@@ -43,6 +43,11 @@ buf_access( const void * p )
 constexpr std::size_t needed_storage_max_size =
 	sizeof( std::string ) > sizeof( std::shared_ptr< std::string > ) ?
 		sizeof( std::string ) : sizeof( std::shared_ptr< std::string > );
+
+constexpr std::size_t buffer_storage_align =
+	alignof(std::string) > alignof(std::shared_ptr<std::string>) ?
+		alignof(std::string) : alignof(std::shared_ptr<std::string>);
+
 } /* namespace impl */
 
 //
@@ -83,7 +88,7 @@ const_buffer( const char * str )
 //
 
 //! Class for storing the buffers used for streaming body (request/response).
-class alignas( std::max_align_t ) buffer_storage_t
+class alignas( impl::buffer_storage_align ) buffer_storage_t
 {
 		//! Get size of storage.
 	public:
@@ -208,7 +213,8 @@ class alignas( std::max_align_t ) buffer_storage_t
 				(*m_destructor)( m_storage.data() );
 		}
 
-		alignas( std::max_align_t ) std::array< char, impl::needed_storage_max_size > m_storage;
+		alignas(impl::buffer_storage_align)
+		std::array< char, impl::needed_storage_max_size > m_storage;
 
 		using buffer_accessor_func_t = asio_ns::const_buffer (*)( const void * );
 		using buffer_move_func_t = void (*)( const void *, void * );
