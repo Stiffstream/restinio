@@ -229,7 +229,7 @@ module RestinioAsioHelper
 		end
 
 		if MxxRu::Cpp::RUNTIME_DEBUG == target_prj.mxx_runtime_mode
-			flags += "gd"
+			flags += "d"
 		end
 
 		if "" != flags
