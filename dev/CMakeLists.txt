@@ -23,6 +23,14 @@ endif ()
 if ( RESTINIO_USE_BOOST_ASIO MATCHES "none" )
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/asio/include)
 	add_definitions(-DASIO_STANDALONE -DASIO_HAS_STD_CHRONO -DASIO_DISABLE_STD_STRING_VIEW)
+
+	# Try to find boost for boost regex.
+	set(Boost_USE_MULTITHREADED ON)
+	find_package(Boost COMPONENTS regex)
+	if ( Boost_FOUND )
+		include_directories( ${Boost_INCLUDE_DIRS} )
+	endif ()
+
 else ()
 	set(Boost_USE_MULTITHREADED ON)
 	if ( RESTINIO_USE_BOOST_ASIO MATCHES "shared" )
@@ -31,7 +39,7 @@ else ()
 		set(Boost_USE_STATIC_LIBS ON)
 	endif ()
 
-	find_package(Boost 1.66.0 REQUIRED COMPONENTS system)
+	find_package(Boost 1.66.0 REQUIRED COMPONENTS system regex)
 	include_directories( ${Boost_INCLUDE_DIRS} )
 	add_definitions( -DRESTINIO_USE_BOOST_ASIO )
 endif ()

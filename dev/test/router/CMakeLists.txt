@@ -15,3 +15,11 @@ if ( PCRE2_FOUND )
 	add_subdirectory(express_router_pcre2_bench)
 endif ()
 
+if ( Boost_FOUND )
+	add_subdirectory(express_boost_regex)
+	add_subdirectory(express_router_boost_regex)
+	add_subdirectory(express_router_boost_regex_bench)
+endif ()
+
+
+

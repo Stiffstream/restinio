@@ -15,7 +15,7 @@ if(WIN32)
 endif()
 
 if( NOT (RESTINIO_USE_BOOST_ASIO STREQUAL "none") )
-	target_link_libraries(${BENCH} ${Boost_LIBRARIES} )
+	target_link_libraries(${BENCH} ${Boost_SYSTEM_LIBRARY} )
 endif()
 
 install(TARGETS ${BENCH} DESTINATION bin)

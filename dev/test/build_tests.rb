@@ -61,8 +61,8 @@ MxxRu::Cpp::composite_target {
 
 	if RestinioBoostHelper.has_boost(toolset)
 		required_prj( "test/router/express_boost_regex/prj.ut.rb" )
-		# required_prj( "test/router/express_router_pcre2/prj.ut.rb" )
-		# required_prj( "test/router/express_router_pcre2_bench/prj.rb" )
+		required_prj( "test/router/express_router_boost_regex/prj.ut.rb" )
+		# required_prj( "test/router/express_router_boost_regex_bench/prj.rb" )
 	end
 
 	required_prj( "test/router/cmp_router_bench/prj.rb" )
