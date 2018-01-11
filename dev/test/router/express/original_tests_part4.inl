@@ -312,14 +312,14 @@ TEST_CASE( "Original tests #72", "[path2regex][original][generated][n72]")
 
 }
 
-// "/:remote([\\w-.]+)/:user([\\w-]+)"
+// "/:remote([\\w\\-\\.]+)/:user([\\w\\-]+)"
 // null
 // [["/endpoint/user",["/endpoint/user","endpoint","user"]],["/endpoint/user-name",["/endpoint/user-name","endpoint","user-name"]],["/foo.bar/user-name",["/foo.bar/user-name","foo.bar","user-name"]]]
 TEST_CASE( "Original tests #73", "[path2regex][original][generated][n73]")
 {
 	auto matcher_data =
 		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
-			R"route(/:remote([\w-.]+)/:user([\w-]+))route",
+			R"route(/:remote([\w\-\.]+)/:user([\w\-]+))route",
 			path2regex::options_t{} );
 
 	route_matcher_t

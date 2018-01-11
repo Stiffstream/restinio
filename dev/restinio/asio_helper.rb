@@ -1,264 +1,23 @@
-require File.join( File.dirname(__FILE__), 'lib_finder.rb' )
+require File.join( File.dirname(__FILE__), 'boost_helper.rb' )
 
 # Helper functions for searching for external libs.
 module RestinioAsioHelper
-	@@msvc_libs_vc_tag = {
-		'15'=>"vc141-mt",
-		'14'=>"vc140-mt"
-	}
 
-	@@msvc_libs_dir_tag = {
-		'15'=>"msvc-14.1",
-		'14'=>"msvc-14.0"
-	}
 
-	def self.read_version_from_version_hpp( fpath )
-		bv = nil
-		begin
-			File.open( fpath, "r") do |fin|
-				fin.each_line do |line|
-					if /#define\sBOOST_VERSION (?<bv>\d+)\s*$/ =~ line
-						# #define BOOST_VERSION 106600 
-						bv = bv.to_i
-						break
-					end
-				end
-			end
-			if bv.nil?
-				raise "unable to find BOOST_VERSION definition in #{fpath}"
-			end
-		rescue => e 
-			raise "unable to get boost version from #{fpath}: #{e}"
-		end
+	def self.attach_boost_asio_msvc( target_prj )
+		libs = [ RestinioBoostHelper.get_msvc_name( 'boost_system', target_prj ) ]
 
-		if bv < 106600
-			raise "boost version must be at least 106600"
-		end
-
-		bv
-	end
-
-	@@boost_root = nil
-
-	def self.detect_boost_root
-		# Check BOOST_ROOT/BOOSTROOT env variables
-		if @@boost_root.nil?
-			if ENV.has_key? "BOOST_ROOT"
-				@@boost_root = ENV[ "BOOST_ROOT" ]
-			elsif ENV.has_key? "BOOSTROOT"
-				@@boost_root = ENV[ "BOOSTROOT" ]
-			else
-				@@boost_root = ""
-			end
-		end
-
-		@@boost_root
-	end
-
-	def self.get_include_dirs_msvc
-		if( ENV[ "INCLUDE" ] )
-			ENV[ "INCLUDE" ].split(";")
-		else
-			[]
-		end
-	end
-
-	def self.get_include_dirs_gcc( toolset )
-		File.open( 'fake_cpp_file_for_detect_include_dir.cpp', "w" ){}
-
-		dirs = []
-		IO.popen( "#{toolset.cpp_compiler_name} -E -x c++ - -v 2>&1 < fake_cpp_file_for_detect_include_dir.cpp", :err => [:child, :out] ) do |io|
-			collect_dirs = false
-			io.each_line do |line|
-				if /\#include \<\.\.\.\> search starts here\:/ =~ line
-					collect_dirs = true
-				elsif /End of search list\./ =~ line
-					collect_dirs = false
-				elsif collect_dirs
-					dirs << line.strip
-				end
-			end
-		end
-
-		File.delete( 'fake_cpp_file_for_detect_include_dir.cpp' )
-
-		dirs
-	end
-
-	def self.find_boost_ver_based_on_include_dirs( toolset )
-		# Check BOOST_ROOT/BOOSTROOT env variables
-		bv = nil
-		include_dirs = []
-		if "msvc" == toolset.name
-			include_dirs = self.get_include_dirs_msvc
-		elsif "gcc" == toolset.name
-			include_dirs = self.get_include_dirs_gcc( toolset )
-		end
-
-		include_dirs.each do |d| 
-			version_filename = File.join( d, "boost/version.hpp" )
-			if File.exists?( version_filename )
-				bv = read_version_from_version_hpp( version_filename )
-				@@boost_in_include_dirs=d
-				break;
-			end
-		end
-
-		if bv.nil?
-			raise "Boost not found in inclide directories: " +
-				"based on search for <include_dir>/boost/version.hpp"
-		end
-
-		bv
-	end
-
-	@@boost_ver = nil
-
-	def self.detect_boost_ver( toolset )
-		if @@boost_ver.nil?
-			if "" != self.detect_boost_root
-				version_filename = File.join( self.detect_boost_root, "boost", "version.hpp" )
-				bv = read_version_from_version_hpp( version_filename )
-			else
-				bv = self.find_boost_ver_based_on_include_dirs( toolset )
-			end
-
-			# //  BOOST_VERSION % 100 is the patch level
-			# //  BOOST_VERSION / 100 % 1000 is the minor version
-			# //  BOOST_VERSION / 100000 is the major version
-			@@boost_ver = "#{bv / 100000}_#{bv / 100 % 1000}"
-			if 0 != bv % 100
-				@@boost_ver += "_#{bv % 100}"
-			end
-		end
-		
-		@@boost_ver
-	end
-
-	def self.detect_bits( target_prj )
-		bits = "32"
-
-		if "msvc" == target_prj.toolset.name
-			if "x64" == target_prj.toolset.make_identification_string[-3..-1]
-				bits = "64"
-			end
-		else
-			if target_prj.toolset.make_identification_string.include? "x86_64"
-				bits = "64"
-			end
-		end
-
-		bits
-	end
-
-	def self.get_msvc_name( lib_name, target_prj )
-		# create name like:
-		# boost_system-vc141-mt-gd-x64-1_66.lib
-		# boost_system-vc141-mt-x64-1_66.lib
-		# libboost_system-vc141-mt-gd-x64-1_66.lib
-		# libboost_system-vc141-mt-sgd-x64-1_66.lib
-		# libboost_system-vc141-mt-s-x64-1_66.lib
-		# libboost_system-vc141-mt-x64-1_66.lib
-
-		vc_ver = target_prj.toolset.tag( "ver_hi" )
-
-		if not @@msvc_libs_vc_tag.has_key?( vc_ver )
-			raise "current msvc toolset is not supported: must be vc14, vc15"
-		end
-
-		flags = ""
-
-		if ENV["RESTINIO_USE_BOOST_ASIO"] == "shared"
-			lib_name =  "#{lib_name}-#{@@msvc_libs_vc_tag[ vc_ver ]}"
-		else
-			lib_name =  "lib#{lib_name}-#{@@msvc_libs_vc_tag[ vc_ver ]}"
-
-			if MxxRu::Cpp::RTL_STATIC == target_prj.mxx_rtl_mode
-				flags += "s"
-			end
-		end
-
-		if MxxRu::Cpp::RUNTIME_DEBUG == target_prj.mxx_runtime_mode
-			flags += "gd"
-		end
-
-		if "" != flags
-			lib_name += "-#{flags}"
-		end
-
-		"#{lib_name}-x#{self.detect_bits(target_prj)}-#{self.detect_boost_ver(target_prj.toolset)}"
-	end
-
-	@@gcc_version_tag = nil
-	def self.detect_gcc_version_tag( toolset )
-		if @@gcc_version_tag.nil?
-			IO.popen( "#{toolset.cpp_compiler_name} -v 2>&1", :err => [:child, :out] ) do |io|
-				io.each_line do |line|
-					if /^gcc version (?<v1>\d+)\.(?<v2>\d+)/ =~ line
-						@@gcc_version_tag = "mgw#{v1}#{v2}"
-					end
-				end
-			end
-			if @@gcc_version_tag.nil?
-				raise "unable to detect gcc version"
-			end
-		end
-		@@gcc_version_tag
-	end
-
-	def self.get_gcc_name( lib_name, target_prj )
-		# create name like:
-		# boost_system-mgw71-mt-d-x32-1_66.a
-		# boost_system-mgw71-mt-d-x64-1_66.a
-		# boost_system-mgw71-mt-d-x64-1_66.dll.a
-		# boost_system-mgw71-mt-sd-x32-1_66.a
-		# boost_system-mgw71-mt-sd-x64-1_66.a
-		# boost_system-mgw71-mt-s-x32-1_66.a
-		# boost_system-mgw71-mt-s-x64-1_66.a
-		# boost_system-mgw71-mt-x32-1_66.a
-		# boost_system-mgw71-mt-x64-1_66.a
-		# boost_system-mgw71-mt-x64-1_66.dll.a
-
-		gcc_ver = detect_gcc_version_tag( target_prj.toolset )
-
-		lib_name =  "#{lib_name}-#{gcc_ver}-mt"
-		flags = ""
-
-		if ENV["RESTINIO_USE_BOOST_ASIO"] == "static" and MxxRu::Cpp::RTL_STATIC == target_prj.mxx_rtl_mode
-			flags += "s"
-		end
-
-		if MxxRu::Cpp::RUNTIME_DEBUG == target_prj.mxx_runtime_mode
-			flags += "d"
-		end
-
-		if "" != flags
-			lib_name += "-#{flags}"
-		end
-
-		lib_name = "#{lib_name}-x#{self.detect_bits(target_prj)}-#{self.detect_boost_ver(target_prj.toolset)}"
-
-		if ENV["RESTINIO_USE_BOOST_ASIO"] == "shared"
-			lib_name+= ".dll"
-		end
-		
-		lib_name
-	end
-
-	def self.attach_propper_asio_msvc( target_prj )
-		libs = [ self.get_msvc_name( 'boost_system', target_prj ) ]
-
-		if self.detect_boost_root
-			libdir = "lib#{self.detect_bits(target_prj)}-#{@@msvc_libs_dir_tag[target_prj.toolset.tag( "ver_hi" )]}"
-			target_prj.lib_path( File.join( self.detect_boost_root, libdir ) )
-			target_prj.include_path( self.detect_boost_root )
+		if RestinioBoostHelper.detect_boost_root
+			libdir = "lib#{RestinioBoostHelper.detect_bits(target_prj)}-#{@@msvc_libs_dir_tag[target_prj.toolset.tag( "ver_hi" )]}"
+			target_prj.lib_path( File.join( RestinioBoostHelper.detect_boost_root, libdir ) )
+			target_prj.include_path( RestinioBoostHelper.detect_boost_root )
 		end
 
 		libs.each{|lib| target_prj.lib( lib ) }
 	end
 
-	def self.attach_propper_asio_win_gcc( target_prj )
-		libs = [ self.get_gcc_name( 'boost_system', target_prj ) ]
+	def self.attach_boost_asio_win_gcc( target_prj )
+		libs = [ RestinioBoostHelper.get_gcc_name( 'boost_system', target_prj ) ]
 		libs.each{|lib| target_prj.lib( lib ) }
 	end
 
@@ -266,18 +25,23 @@ module RestinioAsioHelper
 	def self.attach_propper_asio( target_prj )
 		if ENV.has_key?("RESTINIO_USE_BOOST_ASIO")
 			# Boost::ASIO must be used.
+			bv = RestinioBoostHelper.detect_boost_ver( target_prj.toolset )
+			if bv[1] < 106600
+				raise "boost asio of version #{bv[0]} not supported"
+			end
+
 			if 'mswin' == target_prj.toolset.tag( 'target_os' )
-				
+
 				# Tricky naming on windows:
 
 				if 'vc' == target_prj.toolset.name
-					self.attach_propper_asio_msvc( target_prj )
+					self.attach_boost_asio_msvc( target_prj )
 				elsif 'gcc' == target_prj.toolset.name
-					self.attach_propper_asio_win_gcc( target_prj )
+					self.attach_boost_asio_win_gcc( target_prj )
 				else
 					raise "only vc/gcc toolsets are supported on windows"
 				end
-			else # Not mswin
+			else # Not mswin (linux)
 				# Add boost libs:
 				if ENV["RESTINIO_USE_BOOST_ASIO"] == "shared"
 					target_prj.lib_shared( 'boost_system' )
