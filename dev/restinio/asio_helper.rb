@@ -6,13 +6,6 @@ module RestinioAsioHelper
 
 	def self.attach_boost_asio_msvc( target_prj )
 		libs = [ RestinioBoostHelper.get_msvc_name( 'boost_system', target_prj ) ]
-
-		if RestinioBoostHelper.detect_boost_root
-			libdir = "lib#{RestinioBoostHelper.detect_bits(target_prj)}-#{@@msvc_libs_dir_tag[target_prj.toolset.tag( "ver_hi" )]}"
-			target_prj.lib_path( File.join( RestinioBoostHelper.detect_boost_root, libdir ) )
-			target_prj.include_path( RestinioBoostHelper.detect_boost_root )
-		end
-
 		libs.each{|lib| target_prj.lib( lib ) }
 	end
 

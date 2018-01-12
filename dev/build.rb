@@ -1,5 +1,6 @@
 #!/usr/bin/ruby
 require 'mxx_ru/cpp'
+require 'restinio/boost_helper.rb'
 
 MxxRu::Cpp::composite_target( MxxRu::BUILD_ROOT ) {
 
@@ -24,6 +25,10 @@ MxxRu::Cpp::composite_target( MxxRu::BUILD_ROOT ) {
 			global_obj_placement MxxRu::Cpp::PrjAwareRuntimeSubdirObjPlacement.new(
 				'target', MxxRu::Cpp::PrjAwareRuntimeSubdirObjPlacement::USE_COMPILER_ID )
 		end
+	end
+
+	if "mswin" == toolset.tag( "target_os" ) && 'vc' == toolset.name && "" != RestinioBoostHelper.detect_boost_root
+		RestinioBoostHelper.add_boost_root_path_msvc( self )
 	end
 
 	required_prj 'test/build_tests.rb'

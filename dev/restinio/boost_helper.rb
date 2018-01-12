@@ -46,13 +46,20 @@ module RestinioBoostHelper
 			else
 				@@boost_root = ""
 			end
+
 		end
 
 		@@boost_root
 	end
 
+	def self.add_boost_root_path_msvc( target_prj )
+		libdir = "lib#{detect_bits(target_prj)}-#{@@msvc_libs_dir_tag[target_prj.toolset.tag( "ver_hi" )]}"
+		target_prj.global_linker_option( "/LIBPATH:\"#{File.join( detect_boost_root, libdir )}\"" )
+		target_prj.global_include_path( detect_boost_root )
+	end
+
 	def self.get_include_dirs_msvc
-		if( ENV[ "INCLUDE" ] )
+		if ENV[ "INCLUDE" ]
 			ENV[ "INCLUDE" ].split(";")
 		else
 			[]
@@ -85,7 +92,7 @@ module RestinioBoostHelper
 		# Check BOOST_ROOT/BOOSTROOT env variables
 		bv = nil
 		include_dirs = []
-		if "msvc" == toolset.name
+		if "vc" == toolset.name
 			include_dirs = self.get_include_dirs_msvc
 		elsif "gcc" == toolset.name
 			include_dirs = self.get_include_dirs_gcc( toolset )
@@ -144,7 +151,6 @@ module RestinioBoostHelper
 				@has_boost = false
 			end
 		end
-
 		@has_boost
 	end
 
@@ -152,7 +158,7 @@ module RestinioBoostHelper
 	def self.detect_bits( target_prj )
 		bits = "32"
 
-		if "msvc" == target_prj.toolset.name
+		if "vc" == target_prj.toolset.name
 			if "x64" == target_prj.toolset.make_identification_string[-3..-1]
 				bits = "64"
 			end

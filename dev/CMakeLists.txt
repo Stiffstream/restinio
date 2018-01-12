@@ -40,6 +40,7 @@ else ()
 	endif ()
 
 	find_package(Boost 1.66.0 REQUIRED COMPONENTS system regex)
+
 	include_directories( ${Boost_INCLUDE_DIRS} )
 	add_definitions( -DRESTINIO_USE_BOOST_ASIO )
 endif ()
