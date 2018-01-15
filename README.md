@@ -10,7 +10,7 @@ Consider the task of writing a C++ application that must support some REST API,
 RESTinio represents our solution for that task. Currently it is in stable beta state.
 Lets see how it feels like in the simplest case:
 
-~~~~~{.cpp}
+```C++
 #include <iostream>
 #include <restinio/all.hpp>
 int main()
@@ -24,7 +24,7 @@ int main()
         }));
     return 0;
 }
-~~~~~
+```
 
 Server runs on the main thread, and respond to all requests with hello-world
 message. Of course you've got an access to the structure of a given HTTP request,
