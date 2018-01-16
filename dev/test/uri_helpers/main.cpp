@@ -238,21 +238,18 @@ TEST_CASE( "In-place unescape percent encoding" , "[unescape][percent_encoding][
 	}
 }
 
-TEST_CASE( "Parse query params" , "[parse_query_string]" )
+TEST_CASE( "Parse query params" , "[parse_query]" )
 {
 	{
 		const std::string
-			uri{ "/locations/25/avg?"
-				"toDate=815875200&"
+			query{ "toDate=815875200&"
 				"fromDate=1133136000&"
 				"toAge=38&"
 				"gender=f" };
 
-		auto params = restinio::parse_query_string( uri );
-
+		auto params = restinio::parse_query( query );
 
 		REQUIRE( 4 == params.size() );
-
 
 		REQUIRE( params.has( "toDate" ) );
 		REQUIRE( params.has( "fromDate" ) );
@@ -265,10 +262,9 @@ TEST_CASE( "Parse query params" , "[parse_query_string]" )
 	}
 	{
 		const std::string
-			uri{ "/users/36/visits?"
-				"country=%D0%9C%D0%B0%D0%BB%D1%8C%D1%82%D0%B0" };
+			query{ "country=%D0%9C%D0%B0%D0%BB%D1%8C%D1%82%D0%B0" };
 
-		auto params = restinio::parse_query_string( uri );
+		auto params = restinio::parse_query( query );
 
 		REQUIRE( 1 == params.size() );
 
@@ -278,10 +274,9 @@ TEST_CASE( "Parse query params" , "[parse_query_string]" )
 
 	{
 		const std::string
-			uri{ "/users/36/visits?"
-				"my%20name=my%20value" };
+			query{ "my%20name=my%20value" };
 
-		auto params = restinio::parse_query_string( uri );
+		auto params = restinio::parse_query( query );
 
 		REQUIRE( 1 == params.size() );
 
@@ -290,11 +285,9 @@ TEST_CASE( "Parse query params" , "[parse_query_string]" )
 	}
 
 	{
-		const std::string
-			uri{ "/users/36/visits?"
-				"k1=v1&k2=v2#fragment=value" };
+		const std::string query{ "k1=v1&k2=v2" };
 
-		auto params = restinio::parse_query_string( uri );
+		auto params = restinio::parse_query( query );
 
 		REQUIRE( 2 == params.size() );
 
@@ -303,17 +296,16 @@ TEST_CASE( "Parse query params" , "[parse_query_string]" )
 	}
 }
 
-TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_string_multi_map]" )
+TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_multi_map]" )
 {
 	{
 		const std::string
-			uri{ "/locations/25/avg?"
-				"toDate=815875200&"
+			query{ "toDate=815875200&"
 				"fromDate=1133136000&"
 				"toAge=38&"
 				"gender=f" };
 
-		auto params = restinio::parse_query_string( uri );
+		auto params = restinio::parse_query( query );
 
 		REQUIRE( 4 == params.size() );
 
@@ -328,10 +320,9 @@ TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_string_multi_map
 	}
 	{
 		const std::string
-			uri{ "/users/36/visits?"
-				"country=%D0%9C%D0%B0%D0%BB%D1%8C%D1%82%D0%B0" };
+			query{ "country=%D0%9C%D0%B0%D0%BB%D1%8C%D1%82%D0%B0" };
 
-		auto params = restinio::parse_query_string( uri );
+		auto params = restinio::parse_query( query );
 
 		REQUIRE( 1 == params.size() );
 
@@ -341,10 +332,9 @@ TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_string_multi_map
 
 	{
 		const std::string
-			uri{ "/users/36/visits?"
-				"my%20name=my%20value" };
+			query{ "my%20name=my%20value" };
 
-		auto params = restinio::parse_query_string( uri );
+		auto params = restinio::parse_query( query );
 
 		REQUIRE( 1 == params.size() );
 
@@ -353,11 +343,9 @@ TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_string_multi_map
 	}
 
 	{
-		const std::string
-			uri{ "/users/36/visits?"
-				"k1=v1&k2=v2#fragment=value" };
+		const std::string query{ "k1=v1&k2=v2" };
 
-		auto params = restinio::parse_query_string( uri );
+		auto params = restinio::parse_query( query );
 
 		REQUIRE( 2 == params.size() );
 

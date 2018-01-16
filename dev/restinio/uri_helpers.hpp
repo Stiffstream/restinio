@@ -12,6 +12,7 @@
 #include <unordered_map>
 
 #include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include <restinio/exception.hpp>
 #include <restinio/utils/percent_encoding.hpp>
@@ -128,8 +129,12 @@ get( const query_string_params_t & params, string_view_t key )
 	return get< Value_Type >( params[ key ] );
 }
 
+//! Parse query key-value parts.
+/*!
+	\deprecated Obsolete in v.4.1.0. Use restinio::parse_query() instead.
+*/
 inline query_string_params_t
-parse_query_string( const std::string & query_string )
+parse_query_string( string_view_t query_string )
 {
 	const char * const very_first_pos = query_string.data();
 	const char * query_remainder = very_first_pos;
@@ -160,6 +165,80 @@ parse_query_string( const std::string & query_string )
 		}
 
 		query_end = impl::modified_memchr( '#', query_remainder, query_end );
+
+		while( query_end > query_remainder )
+		{
+			const char * const eq_symbol =
+				impl::modified_memchr( '=', query_remainder, query_end );
+
+			if( query_end == eq_symbol )
+			{
+				throw exception_t{
+					fmt::format(
+						"invalid format of key-value pairs in query_string: {}, "
+						"no '=' symbol starting from position {}",
+						query_string,
+						params_offset + static_cast<std::size_t>(
+							std::distance(
+								static_cast<const char *>( data_buffer.get() ),
+								query_remainder) )) };
+			}
+
+			const char * const amp_symbol_or_end =
+				impl::modified_memchr( '&', eq_symbol + 1, query_end );
+
+			// Handle next pair of parameters found.
+			string_view_t key{
+							query_remainder,
+							utils::inplace_unescape_percent_encoding(
+								const_cast< char * >( query_remainder ), // Legal: we are refering buffer.
+								static_cast< std::size_t >(
+									std::distance( query_remainder, eq_symbol ) ) ) };
+
+			string_view_t value{
+							eq_symbol + 1,
+							utils::inplace_unescape_percent_encoding(
+								const_cast< char * >( eq_symbol + 1 ), // Legal: we are refering buffer.
+								static_cast< std::size_t >(
+									std::distance( eq_symbol + 1, amp_symbol_or_end ) ) ) };
+
+			parameters.emplace_back( std::move( key ), std::move( value ) );
+
+			query_remainder = amp_symbol_or_end + 1;
+		}
+	}
+
+	return query_string_params_t{ std::move( data_buffer ), std::move( parameters ) };
+}
+
+//! Parse query key-value parts.
+inline query_string_params_t
+parse_query(
+	//! Query part of the request target.
+	string_view_t query_string )
+{
+	const char * const very_first_pos = query_string.data();
+	const char * query_remainder = very_first_pos;
+	const char * query_end = query_remainder + query_string.size();
+
+	std::unique_ptr< char[] > data_buffer;
+	query_string_params_t::parameters_container_t parameters;
+
+	if( query_end > query_remainder )
+	{
+		const auto params_offset = static_cast<std::size_t>(
+				std::distance( very_first_pos, query_remainder ));
+
+		{
+			const auto data_size = static_cast<std::size_t>(
+					query_end - query_remainder);
+			data_buffer.reset( new char[ data_size] );
+			std::memcpy( data_buffer.get(), query_remainder, data_size );
+
+			// Work with created buffer:
+			query_remainder = data_buffer.get();
+			query_end = query_remainder + data_size;
+		}
 
 		while( query_end > query_remainder )
 		{
