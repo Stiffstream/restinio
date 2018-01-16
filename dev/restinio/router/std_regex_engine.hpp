@@ -56,15 +56,15 @@ struct std_regex_engine_t
 	//! Wrapper function for matching logic invokation.
 	static auto
 	try_match(
-		const std::string & target,
+		string_view_t target_path,
 		const compiled_regex_t & r,
 		match_results_t & match_results )
 	{
 		std::cmatch matches;
 		if(
 			std::regex_search(
-				target.data(),
-				target.data() + target.size(),
+				target_path.begin(),
+				target_path.end(),
 				matches,
 				r ) )
 		{
@@ -72,7 +72,7 @@ struct std_regex_engine_t
 				matches.begin(),
 				matches.end(),
 				std::back_inserter( match_results ),
-				[ begin = target.data() ]( const auto & m ){
+				[ begin = target_path.data() ]( const auto & m ){
 					return matched_item_descriptor_t{ m.first - begin, m.second - begin };
 				} );
 

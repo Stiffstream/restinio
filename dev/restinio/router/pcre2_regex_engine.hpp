@@ -209,15 +209,15 @@ struct pcre2_regex_engine_t
 	//! Wrapper function for matching logic invokation.
 	static auto
 	try_match(
-		const std::string & target,
+		string_view_t target_path,
 		const compiled_regex_t & r,
 		match_results_t & match_results )
 	{
 		const int rc =
 			pcre2_match(
 				r.pcre2_regex(),
-				reinterpret_cast<const unsigned char*>(target.data()),
-				target.size(),
+				reinterpret_cast< const unsigned char* >( target_path.data() ),
+				target_path.size(),
 				0, // startoffset
 				Traits::match_options,
 				match_results.m_match_data,

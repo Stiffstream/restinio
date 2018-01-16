@@ -188,7 +188,7 @@ struct pcre_regex_engine_t
 	//! Wrapper function for matching logic invokation.
 	static auto
 	try_match(
-		const std::string & target,
+		string_view_t target_path,
 		const compiled_regex_t & r,
 		match_results_t & match_results )
 	{
@@ -196,12 +196,12 @@ struct pcre_regex_engine_t
 			pcre_exec(
 				r.pcre_regex(),
 				nullptr,
-				target.data(),
-				static_cast<int>(target.size()),
+				target_path.data(),
+				static_cast< int >( target_path.size() ),
 				0, // startoffset
 				Traits::match_options,
 				match_results.m_submatches.data(),
-				static_cast<int>(match_results.m_submatches.size()) );
+				static_cast< int >( match_results.m_submatches.size() ) );
 
 		if( rc > 0 )
 		{

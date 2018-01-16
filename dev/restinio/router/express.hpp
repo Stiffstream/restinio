@@ -287,12 +287,12 @@ class route_matcher_t
 		//! Try to match a given request target with this route.
 		bool
 		match_route(
-			const std::string & request_target,
+			string_view_t target_path,
 			route_params_t & parameters ) const
 		{
 			match_results_t matches;
 			if( Regex_Engine::try_match(
-					request_target,
+					target_path,
 					m_route_regex,
 					matches ) )
 			{
@@ -300,8 +300,8 @@ class route_matcher_t
 
 				// Data for route_params_t initialization.
 
-				std::unique_ptr< char[] > captured_params{ new char[ request_target.size() ] };
-				std::memcpy( captured_params.get(), request_target.data(), request_target.size() );
+				std::unique_ptr< char[] > captured_params{ new char[ target_path.size() ] };
+				std::memcpy( captured_params.get(), target_path.data(), target_path.size() );
 
 				const string_view_t match{
 					captured_params.get() + Regex_Engine::submatch_begin_pos( matches[0] ),
@@ -357,7 +357,7 @@ class route_matcher_t
 			const http_request_header_t & h,
 			route_params_t & parameters ) const
 		{
-			return m_method == h.method() && match_route( h.request_target(), parameters );
+			return m_method == h.method() && match_route( h.path(), parameters );
 		}
 
 	private:

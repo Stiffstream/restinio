@@ -1167,10 +1167,11 @@ struct http_request_header_t final
 
 		http_request_header_t(
 			http_method_t method,
-			std::string request_target )
+			std::string request_target_ )
 			:	m_method{ method }
-			,	m_request_target{ std::move( request_target ) }
-		{}
+		{
+			request_target( std::move( request_target_ ) );
+		}
 
 		http_method_t
 		method() const
