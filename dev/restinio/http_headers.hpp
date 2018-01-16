@@ -18,6 +18,7 @@
 #include <nodejs/http_parser/http_parser.h>
 
 #include <restinio/exception.hpp>
+#include <restinio/string_view.hpp>
 
 namespace restinio
 {
@@ -1152,6 +1153,15 @@ method_to_string( http_method_t m )
 struct http_request_header_t final
 	:	public http_header_common_t
 {
+		static std::size_t
+		memchr_helper( int chr , const char * from, std::size_t size )
+		{
+			const char * result = static_cast< const char * >(
+					std::memchr( from, chr, size ) );
+
+			return result ? (result - from) : size;
+		}
+
 	public:
 		http_request_header_t() = default;
 
@@ -1176,16 +1186,97 @@ struct http_request_header_t final
 
 		void
 		request_target( std::string t )
-		{ m_request_target.assign( std::move( t ) ); }
+		{
+			m_request_target.assign( std::move( t ) );
+
+			m_fragment_separator_pos =
+				memchr_helper( '#', m_request_target.data(), m_request_target.size() );
+
+			m_query_separator_pos =
+				memchr_helper( '?', m_request_target.data(), m_fragment_separator_pos );
+		}
+
+		//! Request URL-structure.
+		//! \{
+
+		//! Get the path part of the request URL.
+		/*!
+			If request target is `/weather/temperature?from=2012-01-01&to=2012-01-10`,
+			then function returns string view on '/weather/temperature' part.
+		*/
+		string_view_t
+		path() const
+		{
+			return string_view_t{ m_request_target.data(), m_query_separator_pos };
+		}
+
+		//! Get the query part of the request URL.
+		/*!
+			If request target is `/weather/temperature?from=2012-01-01&to=2012-01-10`,
+			then function returns string view on 'from=2012-01-01&to=2012-01-10' part.
+		*/
+		string_view_t
+		query() const
+		{
+			return
+				m_fragment_separator_pos == m_query_separator_pos ?
+				string_view_t{ nullptr, 0 } :
+				string_view_t{
+					m_request_target.data() + m_query_separator_pos + 1,
+					m_fragment_separator_pos - m_query_separator_pos - 1 };
+		}
+
+
+		//! Get the fragment part of the request URL.
+		/*!
+			If request target is `/sobjectizerteam/json_dto-0.2#markdown-header-what-is-json_dto`,
+			then function returns string view on 'markdown-header-what-is-json_dto' part.
+		*/
+		string_view_t
+		fragment() const
+		{
+			return
+				m_request_target.size() == m_fragment_separator_pos ?
+				string_view_t{ nullptr, 0 } :
+				string_view_t{
+					m_request_target.data() + m_fragment_separator_pos + 1,
+					m_request_target.size() - m_fragment_separator_pos - 1 };
+		}
+		//! \}
 
 		//! Helpfull function for using in parser callback.
 		void
 		append_request_target( const char * at, size_t length )
-		{ m_request_target.append( at, length ); }
+		{
+			if( m_request_target.size() == m_fragment_separator_pos )
+			{
+				// If fragment separator hadn't  already appeared,
+				// search for it in a new block.
+
+				const auto fragment_separator_pos_inc =
+					memchr_helper( '#', at, length );
+
+				m_fragment_separator_pos += fragment_separator_pos_inc;
+
+				if( m_request_target.size() == m_query_separator_pos )
+				{
+					// If request separator hadn't already appeared,
+					// search for it in a new block.
+					m_query_separator_pos +=
+						memchr_helper( '?', at, fragment_separator_pos_inc );
+				}
+			}
+			// Else fragment separator appeared
+			// (req separator is either already defined or does not exist)
+
+			m_request_target.append( at, length );
+		}
 
 	private:
 		http_method_t m_method{ http_method_get() };
 		std::string m_request_target;
+		std::size_t m_query_separator_pos{ 0 };
+		std::size_t m_fragment_separator_pos{ 0 };
 };
 
 //

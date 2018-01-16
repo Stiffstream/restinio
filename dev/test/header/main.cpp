@@ -495,3 +495,132 @@ TEST_CASE( "Connection" , "[header][connection]" )
 	}
 }
 
+
+TEST_CASE( "Query" , "[header][query string][query path]" )
+{
+	auto append = []( http_request_header_t & h, const std::string & part ){
+		h.append_request_target( part.data(), part.size() );
+	};
+	// Default.
+	http_request_header_t h;
+
+	h.request_target( "/sobjectizerteam" );
+
+	REQUIRE( h.request_target() == "/sobjectizerteam" );
+	REQUIRE( h.path() == "/sobjectizerteam" );
+	REQUIRE( h.query() == "" );
+	REQUIRE( h.fragment() == "" );
+
+	append( h, "/json_dto-0.2" );
+
+	REQUIRE( h.request_target() == "/sobjectizerteam/json_dto-0.2" );
+	REQUIRE( h.path() == "/sobjectizerteam/json_dto-0.2" );
+	REQUIRE( h.query() == "" );
+	REQUIRE( h.fragment() == "" );
+
+
+
+	append( h, "#markdown-header" );
+
+	REQUIRE( h.request_target() == "/sobjectizerteam/json_dto-0.2#markdown-header" );
+	REQUIRE( h.path() == "/sobjectizerteam/json_dto-0.2" );
+	REQUIRE( h.query() == "" );
+	REQUIRE( h.fragment() == "markdown-header" );
+
+	append( h, "-what-is-json_dto" );
+
+	REQUIRE( h.request_target() == "/sobjectizerteam/json_dto-0.2#markdown-header-what-is-json_dto" );
+	REQUIRE( h.path() == "/sobjectizerteam/json_dto-0.2" );
+	REQUIRE( h.query() == "" );
+	REQUIRE( h.fragment() == "markdown-header-what-is-json_dto" );
+
+
+	h.request_target( "/sobjectizerteam/json_dto-0.2#markdown-header-what-is-json_dto" );
+	REQUIRE( h.request_target() == "/sobjectizerteam/json_dto-0.2#markdown-header-what-is-json_dto" );
+
+	REQUIRE( h.path() == "/sobjectizerteam/json_dto-0.2" );
+	REQUIRE( h.query() == "" );
+	REQUIRE( h.fragment() == "markdown-header-what-is-json_dto" );
+
+
+	h.request_target( "/sobjectizerteam/json_dto-0.2?#" );
+	REQUIRE( h.request_target() == "/sobjectizerteam/json_dto-0.2?#" );
+
+	REQUIRE( h.path() == "/sobjectizerteam/json_dto-0.2" );
+	REQUIRE( h.query() == "" );
+	REQUIRE( h.fragment() == "" );
+
+	h.request_target( "/sobjectizerteam/json_dto-0.2" );
+	REQUIRE( h.request_target() == "/sobjectizerteam/json_dto-0.2" );
+	REQUIRE( h.path() == "/sobjectizerteam/json_dto-0.2" );
+	REQUIRE( h.query() == "" );
+	REQUIRE( h.fragment() == "" );
+
+	append( h, "?" );
+	REQUIRE( h.request_target() == "/sobjectizerteam/json_dto-0.2?" );
+	REQUIRE( h.path() == "/sobjectizerteam/json_dto-0.2" );
+	REQUIRE( h.query() == "" );
+	REQUIRE( h.fragment() == "" );
+
+	append( h, "#" );
+	REQUIRE( h.request_target() == "/sobjectizerteam/json_dto-0.2?#" );
+	REQUIRE( h.path() == "/sobjectizerteam/json_dto-0.2" );
+	REQUIRE( h.query() == "" );
+	REQUIRE( h.fragment() == "" );
+
+	append( h, "123" );
+	REQUIRE( h.request_target() == "/sobjectizerteam/json_dto-0.2?#123" );
+	REQUIRE( h.path() == "/sobjectizerteam/json_dto-0.2" );
+	REQUIRE( h.query() == "" );
+	REQUIRE( h.fragment() == "123" );
+
+
+	h.request_target( "/weather/temperature?from=2012-01-01&to=2012-01-10" );
+	REQUIRE( h.request_target() == "/weather/temperature?from=2012-01-01&to=2012-01-10" );
+	REQUIRE( h.path() == "/weather/temperature" );
+	REQUIRE( h.query() == "from=2012-01-01&to=2012-01-10" );
+	REQUIRE( h.fragment() == "" );
+
+	h.request_target( "/weather/temperature" );
+	append( h, "?" );
+	append( h, "from=2012-01-01" );
+	append( h, "&" );
+	append( h, "to=2012-01-10" );
+	REQUIRE( h.request_target() == "/weather/temperature?from=2012-01-01&to=2012-01-10" );
+	REQUIRE( h.path() == "/weather/temperature" );
+	REQUIRE( h.query() == "from=2012-01-01&to=2012-01-10" );
+	REQUIRE( h.fragment() == "" );
+
+	h.request_target( "/weather/temperature" );
+	append( h, "?" );
+	append( h, "from=2012-01-01" );
+	append( h, "&" );
+	append( h, "to=2012-01-10" );
+	append( h, "#" );
+	append( h, "Celsius" );
+	REQUIRE( h.request_target() == "/weather/temperature?from=2012-01-01&to=2012-01-10#Celsius" );
+	REQUIRE( h.path() == "/weather/temperature" );
+	REQUIRE( h.query() == "from=2012-01-01&to=2012-01-10" );
+	REQUIRE( h.fragment() == "Celsius" );
+
+
+	h.request_target( "/weather/temperature#Celsius?from=2012-01-01&to=2012-01-10" );
+	REQUIRE( h.request_target() == "/weather/temperature#Celsius?from=2012-01-01&to=2012-01-10" );
+	REQUIRE( h.path() == "/weather/temperature" );
+	REQUIRE( h.query() == "" );
+	REQUIRE( h.fragment() == "Celsius?from=2012-01-01&to=2012-01-10" );
+
+	h.request_target( "/weather" );
+	append( h, "/temperature" );
+	append( h, "#" );
+	append( h, "Celsius" );
+	append( h, "?" );
+	append( h, "from=2012-01-01" );
+	append( h, "&" );
+	append( h, "to=2012-01-10" );
+	REQUIRE( h.request_target() == "/weather/temperature#Celsius?from=2012-01-01&to=2012-01-10" );
+	REQUIRE( h.path() == "/weather/temperature" );
+	REQUIRE( h.query() == "" );
+	REQUIRE( h.fragment() == "Celsius?from=2012-01-01&to=2012-01-10" );
+}
+
