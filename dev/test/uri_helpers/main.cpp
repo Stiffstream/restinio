@@ -241,7 +241,7 @@ TEST_CASE( "In-place unescape percent encoding" , "[unescape][percent_encoding][
 TEST_CASE( "Parse query params" , "[parse_query]" )
 {
 	{
-		const std::string
+		const restinio::string_view_t
 			query{ "toDate=815875200&"
 				"fromDate=1133136000&"
 				"toAge=38&"
@@ -261,7 +261,7 @@ TEST_CASE( "Parse query params" , "[parse_query]" )
 		REQUIRE( restinio::cast_to< std::string >( params[ "gender" ] ) == "f" );
 	}
 	{
-		const std::string
+		const restinio::string_view_t
 			query{ "country=%D0%9C%D0%B0%D0%BB%D1%8C%D1%82%D0%B0" };
 
 		auto params = restinio::parse_query( query );
@@ -273,7 +273,7 @@ TEST_CASE( "Parse query params" , "[parse_query]" )
 	}
 
 	{
-		const std::string
+		const restinio::string_view_t
 			query{ "my%20name=my%20value" };
 
 		auto params = restinio::parse_query( query );
@@ -285,7 +285,7 @@ TEST_CASE( "Parse query params" , "[parse_query]" )
 	}
 
 	{
-		const std::string query{ "k1=v1&k2=v2" };
+		const restinio::string_view_t query{ "k1=v1&k2=v2" };
 
 		auto params = restinio::parse_query( query );
 
@@ -299,7 +299,7 @@ TEST_CASE( "Parse query params" , "[parse_query]" )
 TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_multi_map]" )
 {
 	{
-		const std::string
+		const restinio::string_view_t
 			query{ "toDate=815875200&"
 				"fromDate=1133136000&"
 				"toAge=38&"
@@ -319,7 +319,7 @@ TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_multi_map]" )
 		REQUIRE( params[ "gender" ] == "f" );
 	}
 	{
-		const std::string
+		const restinio::string_view_t
 			query{ "country=%D0%9C%D0%B0%D0%BB%D1%8C%D1%82%D0%B0" };
 
 		auto params = restinio::parse_query( query );
@@ -331,7 +331,7 @@ TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_multi_map]" )
 	}
 
 	{
-		const std::string
+		const restinio::string_view_t
 			query{ "my%20name=my%20value" };
 
 		auto params = restinio::parse_query( query );
@@ -343,7 +343,7 @@ TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_multi_map]" )
 	}
 
 	{
-		const std::string query{ "k1=v1&k2=v2" };
+		const restinio::string_view_t query{ "k1=v1&k2=v2" };
 
 		auto params = restinio::parse_query( query );
 
