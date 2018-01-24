@@ -23,25 +23,17 @@ namespace restinio
 namespace impl
 {
 
-//! Helper function to get the reference on expected type out of `void*`.
-template < typename T >
-T &
-buf_access( void * p )
-{
-	T * sp = reinterpret_cast< T * >( p );
-	return *sp;
-}
-
-template < typename T >
-const T &
-buf_access( const void * p )
-{
-	const T * sp = reinterpret_cast< const T * >( p );
-	return *sp;
-}
-
-
-//! Interface for a buffer entity.
+//! Inernaml interface for a buffer entity.
+/*!
+	Having a condition to put heterogeneous buffer sequences in vector
+	to transfer them from builders to connection context,
+	Internal buffers are the pieces incapsulating various buffers
+	implementation that fit into a fixed memory space.
+	That's makes it possible to fit any of them in a binary
+	buffer that resides in buffer_storage_t.
+	While different descendant might vary in size
+	size of buffer_storage_t remains the same, so it can be used in a vector.
+*/
 class buf_iface_t
 {
 	public:
@@ -184,8 +176,10 @@ class shared_dataszeable_buf_t final : public buf_iface_t
 		shared_ptr_t m_buf_ptr;
 };
 
+
 constexpr std::size_t buffer_storage_align = alignof( buf_iface_t );
 
+//! An amount of memory tha is to be enough to hold any possible buffer entity.
 constexpr std::size_t needed_storage_max_size =
 	std::max< std::size_t >( {
 		sizeof( empty_buf_t ),
