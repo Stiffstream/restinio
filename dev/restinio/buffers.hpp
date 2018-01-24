@@ -148,22 +148,22 @@ class string_buf_t final : public buf_iface_t
 
 //! Buffer entity based on shared_ptr of data-sizeable entity.
 template < typename T >
-class shared_dataszeable_buf_t final : public buf_iface_t
+class shared_datasizeable_buf_t final : public buf_iface_t
 {
 	public:
 		using shared_ptr_t = std::shared_ptr< T >;
 
-		shared_dataszeable_buf_t() = delete;
+		shared_datasizeable_buf_t() = delete;
 
-		shared_dataszeable_buf_t( shared_ptr_t buf_ptr )
+		shared_datasizeable_buf_t( shared_ptr_t buf_ptr )
 			:	m_buf_ptr{ std::move( buf_ptr ) }
 		{}
 
-		shared_dataszeable_buf_t( const shared_dataszeable_buf_t & ) = delete;
-		const shared_dataszeable_buf_t & operator = ( const shared_dataszeable_buf_t & ) = delete;
+		shared_datasizeable_buf_t( const shared_datasizeable_buf_t & ) = delete;
+		const shared_datasizeable_buf_t & operator = ( const shared_datasizeable_buf_t & ) = delete;
 
-		shared_dataszeable_buf_t( shared_dataszeable_buf_t && ) = default; // allow only explicit move.
-		shared_dataszeable_buf_t & operator = ( shared_dataszeable_buf_t && ) = delete;
+		shared_datasizeable_buf_t( shared_datasizeable_buf_t && ) = default; // allow only explicit move.
+		shared_datasizeable_buf_t & operator = ( shared_datasizeable_buf_t && ) = delete;
 
 		//! Implement buf_iface_t.
 		//! \{
@@ -174,7 +174,7 @@ class shared_dataszeable_buf_t final : public buf_iface_t
 
 		virtual void move_to( void * storage ) override
 		{
-			new( storage ) shared_dataszeable_buf_t{ std::move( *this ) };
+			new( storage ) shared_datasizeable_buf_t{ std::move( *this ) };
 		}
 		//! \}
 
@@ -191,7 +191,7 @@ constexpr std::size_t needed_storage_max_size =
 		sizeof( empty_buf_t ),
 		sizeof( const_buf_t ),
 		sizeof( string_buf_t ),
-		sizeof( shared_dataszeable_buf_t< std::string > ) } );
+		sizeof( shared_datasizeable_buf_t< std::string > ) } );
 
 } /* namespace impl */
 
@@ -272,7 +272,7 @@ class alignas( impl::buffer_storage_align ) buffer_storage_t
 			if( !sp )
 				throw exception_t{ "empty shared_ptr cannot be used as buffer" };
 
-			new( m_storage.data() ) impl::shared_dataszeable_buf_t< T >{ std::move( sp ) };
+			new( m_storage.data() ) impl::shared_datasizeable_buf_t< T >{ std::move( sp ) };
 		}
 
 		buffer_storage_t( buffer_storage_t && b )
