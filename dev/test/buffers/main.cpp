@@ -16,13 +16,13 @@ using namespace restinio;
 std::size_t
 size( const restinio::asio_ns::const_buffer & b )
 {
-	return restinio::asio_ns::buffer_size( b );
+	return b.size();
 }
 
 const void *
 address( const restinio::asio_ns::const_buffer & b )
 {
-	return restinio::asio_ns::buffer_cast< const void * >( b );
+	return b.data();
 }
 
 TEST_CASE( "buffers on c-string" , "[buffers][c-string]" )
@@ -152,10 +152,6 @@ TEST_CASE( "buffers on custom" , "[buffers][custom]" )
 			REQUIRE( 0 == memcmp( address( buf ), s1, size( buf ) ) );
 
 			bs = std::move( bs2 );
-
-			buf = bs2.buf();
-			REQUIRE( size( buf ) == 22 );
-			REQUIRE( 0 == memcmp( address( buf ), s1, size( buf ) ) );
 		}
 
 
