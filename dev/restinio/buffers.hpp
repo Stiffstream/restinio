@@ -44,7 +44,13 @@ class buf_iface_t
 		//! \note storage must have a sufficient space and proper alignment.
 		virtual void move_to( void * storage ) = 0;
 
-		virtual ~buf_iface_t() {}
+		buf_iface_t() = default;
+		buf_iface_t( const buf_iface_t & ) = default;
+		buf_iface_t( buf_iface_t && ) = default;
+		const buf_iface_t & operator = ( const buf_iface_t & ) = delete;
+		buf_iface_t & operator = ( buf_iface_t && ) = delete;
+
+		virtual ~buf_iface_t() = default;
 };
 
 //! Empty buffer entity.
@@ -179,7 +185,7 @@ class shared_dataszeable_buf_t final : public buf_iface_t
 
 constexpr std::size_t buffer_storage_align = alignof( buf_iface_t );
 
-//! An amount of memory tha is to be enough to hold any possible buffer entity.
+//! An amount of memory that is to be enough to hold any possible buffer entity.
 constexpr std::size_t needed_storage_max_size =
 	std::max< std::size_t >( {
 		sizeof( empty_buf_t ),
@@ -299,8 +305,8 @@ class alignas( impl::buffer_storage_align ) buffer_storage_t
 		void
 		destroy_stored_buffer()
 		{
-			using buf_iface_t = impl::buf_iface_t;
-			get_buf()->~buf_iface_t();
+			using dtor_buf_iface_t = impl::buf_iface_t;
+			get_buf()->~dtor_buf_iface_t();
 		}
 
 		//! Access buf item.
