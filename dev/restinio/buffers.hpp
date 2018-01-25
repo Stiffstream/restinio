@@ -42,7 +42,7 @@ class buf_iface_t
 
 		//! Move this buffer enitity to a given location.
 		//! \note storage must have a sufficient space and proper alignment.
-		virtual void move_to( void * storage ) = 0;
+		virtual void relocate_to( void * storage ) = 0;
 
 		buf_iface_t() = default;
 		buf_iface_t( const buf_iface_t & ) = default;
@@ -72,7 +72,7 @@ class empty_buf_t final : public buf_iface_t
 			return asio_ns::const_buffer{ nullptr, 0 };
 		}
 
-		virtual void move_to( void * storage ) override
+		virtual void relocate_to( void * storage ) override
 		{
 			new( storage ) empty_buf_t{};
 		}
@@ -103,7 +103,7 @@ class const_buf_t final : public buf_iface_t
 			return asio_ns::const_buffer{ m_data, m_size };
 		}
 
-		virtual void move_to( void * storage ) override
+		virtual void relocate_to( void * storage ) override
 		{
 			new( storage ) const_buf_t{ std::move( *this ) };
 		}
@@ -136,7 +136,7 @@ class string_buf_t final : public buf_iface_t
 			return asio_ns::const_buffer{ m_buf.data(), m_buf.size() };
 		}
 
-		virtual void move_to( void * storage ) override
+		virtual void relocate_to( void * storage ) override
 		{
 			new( storage ) string_buf_t{ std::move( *this ) };
 		}
@@ -172,7 +172,7 @@ class shared_datasizeable_buf_t final : public buf_iface_t
 			return asio_ns::const_buffer{ m_buf_ptr->data(), m_buf_ptr->size() };
 		}
 
-		virtual void move_to( void * storage ) override
+		virtual void relocate_to( void * storage ) override
 		{
 			new( storage ) shared_datasizeable_buf_t{ std::move( *this ) };
 		}
@@ -277,7 +277,7 @@ class alignas( impl::buffer_storage_align ) buffer_storage_t
 
 		buffer_storage_t( buffer_storage_t && b )
 		{
-			b.get_buf()->move_to( m_storage.data() );
+			b.get_buf()->relocate_to( m_storage.data() );
 		}
 
 		void
@@ -286,7 +286,7 @@ class alignas( impl::buffer_storage_align ) buffer_storage_t
 			if( this != &b )
 			{
 				destroy_stored_buffer();
-				b.get_buf()->move_to( m_storage.data() );
+				b.get_buf()->relocate_to( m_storage.data() );
 			}
 		}
 
