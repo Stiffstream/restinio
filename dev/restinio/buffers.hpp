@@ -12,6 +12,7 @@
 #include <array>
 #include <string>
 #include <cstring>
+#include <type_traits>
 
 #include <restinio/asio_include.hpp>
 
@@ -183,7 +184,12 @@ class shared_datasizeable_buf_t final : public buf_iface_t
 };
 
 
-constexpr std::size_t buffer_storage_align = alignof( buf_iface_t );
+constexpr std::size_t buffer_storage_align =
+	std::max< std::size_t >( {
+		alignof( empty_buf_t ),
+		alignof( const_buf_t ),
+		alignof( string_buf_t ),
+		alignof( shared_datasizeable_buf_t< std::string > ) } );
 
 //! An amount of memory that is to be enough to hold any possible buffer entity.
 constexpr std::size_t needed_storage_max_size =
@@ -242,24 +248,24 @@ class alignas( impl::buffer_storage_align ) buffer_storage_t
 
 		buffer_storage_t()
 		{
-			new( m_storage.data() ) impl::empty_buf_t{};
+			new( &m_storage ) impl::empty_buf_t{};
 		}
 
 		buffer_storage_t( const_buffer_t const_buf )
 		{
-			new( m_storage.data() ) impl::const_buf_t{ const_buf.m_str, const_buf.m_size };
+			new( &m_storage ) impl::const_buf_t{ const_buf.m_str, const_buf.m_size };
 		}
 
 		buffer_storage_t( std::string str )
 		{
-			new( m_storage.data() ) impl::string_buf_t{ std::move( str ) };
+			new( &m_storage ) impl::string_buf_t{ std::move( str ) };
 		}
 
 		buffer_storage_t( const char * str )
 		{
 			// We can't be sure whether it is valid to consider
 			// data pointed by str a const buffer, so we make a strin copy here.
-			new( m_storage.data() ) impl::string_buf_t{ std::string{ str } };
+			new( &m_storage ) impl::string_buf_t{ std::string{ str } };
 		}
 
 		template < typename T >
@@ -272,12 +278,12 @@ class alignas( impl::buffer_storage_align ) buffer_storage_t
 			if( !sp )
 				throw exception_t{ "empty shared_ptr cannot be used as buffer" };
 
-			new( m_storage.data() ) impl::shared_datasizeable_buf_t< T >{ std::move( sp ) };
+			new( &m_storage ) impl::shared_datasizeable_buf_t< T >{ std::move( sp ) };
 		}
 
 		buffer_storage_t( buffer_storage_t && b )
 		{
-			b.get_buf()->relocate_to( m_storage.data() );
+			b.get_buf()->relocate_to( &m_storage );
 		}
 
 		void
@@ -286,7 +292,7 @@ class alignas( impl::buffer_storage_align ) buffer_storage_t
 			if( this != &b )
 			{
 				destroy_stored_buffer();
-				b.get_buf()->relocate_to( m_storage.data() );
+				b.get_buf()->relocate_to( &m_storage );
 			}
 		}
 
@@ -313,16 +319,20 @@ class alignas( impl::buffer_storage_align ) buffer_storage_t
 		//! \{
 		const impl::buf_iface_t * get_buf() const
 		{
-			return reinterpret_cast< const impl::buf_iface_t * >( m_storage.data() );
+			return reinterpret_cast< const impl::buf_iface_t * >( &m_storage );
 		}
 
 		impl::buf_iface_t * get_buf()
 		{
-			return reinterpret_cast< impl::buf_iface_t * >( m_storage.data() );
+			return reinterpret_cast< impl::buf_iface_t * >( &m_storage );
 		}
 
-		alignas( impl::buffer_storage_align )
-		std::array< char, impl::needed_storage_max_size > m_storage;
+		using storage_t =
+			std::aligned_storage_t<
+				impl::needed_storage_max_size,
+				impl::buffer_storage_align >;
+
+		storage_t m_storage;
 		//! \}
 };
 
