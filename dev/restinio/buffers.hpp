@@ -239,37 +239,50 @@ const_buffer( const char * str )
 //
 
 //! Class for storing the buffers used for streaming body (request/response).
-class alignas( impl::buffer_storage_align ) buffer_storage_t
+class buffer_storage_t
 {
 		//! Get size of storage.
 	public:
+
+		//! Write mode that defines write operation.
+		enum class write_mode_t
+		{
+			//! Buffer is simple ptr-size buffer
+			trivial_write,
+			//! Buffer implicates custom write operation.
+			custom_write
+		};
+
 		buffer_storage_t( const buffer_storage_t & ) = delete;
 		buffer_storage_t & operator = ( const buffer_storage_t & ) = delete;
 
 		buffer_storage_t()
+			:	m_write_mode{ write_mode_t::trivial_write }
 		{
 			new( &m_storage ) impl::empty_buf_t{};
 		}
 
 		buffer_storage_t( const_buffer_t const_buf )
+			:	m_write_mode{ write_mode_t::trivial_write }
 		{
 			new( &m_storage ) impl::const_buf_t{ const_buf.m_str, const_buf.m_size };
 		}
 
 		buffer_storage_t( std::string str )
+			:	m_write_mode{ write_mode_t::trivial_write }
 		{
 			new( &m_storage ) impl::string_buf_t{ std::move( str ) };
 		}
 
 		buffer_storage_t( const char * str )
-		{
 			// We can't be sure whether it is valid to consider
-			// data pointed by str a const buffer, so we make a strin copy here.
-			new( &m_storage ) impl::string_buf_t{ std::string{ str } };
-		}
+			// data pointed by str a const buffer, so we make a string copy here.
+			:	buffer_storage_t{ std::string{ str } }
+		{}
 
 		template < typename T >
 		buffer_storage_t( std::shared_ptr< T > sp )
+			:	m_write_mode{ write_mode_t::trivial_write }
 		{
 			static_assert(
 				sizeof( std::shared_ptr< T > ) <= impl::needed_storage_max_size,
@@ -282,6 +295,7 @@ class alignas( impl::buffer_storage_align ) buffer_storage_t
 		}
 
 		buffer_storage_t( buffer_storage_t && b )
+			:	m_write_mode{ b.m_write_mode }
 		{
 			b.get_buf()->relocate_to( &m_storage );
 		}
@@ -292,6 +306,7 @@ class alignas( impl::buffer_storage_align ) buffer_storage_t
 			if( this != &b )
 			{
 				destroy_stored_buffer();
+				m_write_mode = b.m_write_mode;
 				b.get_buf()->relocate_to( &m_storage );
 			}
 		}
@@ -299,6 +314,12 @@ class alignas( impl::buffer_storage_align ) buffer_storage_t
 		~buffer_storage_t()
 		{
 			destroy_stored_buffer();
+		}
+
+		write_mode_t
+		write_mode() const
+		{
+			return m_write_mode;
 		}
 
 		asio_ns::const_buffer
@@ -314,6 +335,8 @@ class alignas( impl::buffer_storage_align ) buffer_storage_t
 			using dtor_buf_iface_t = impl::buf_iface_t;
 			get_buf()->~dtor_buf_iface_t();
 		}
+
+		write_mode_t m_write_mode;
 
 		//! Access buf item.
 		//! \{
