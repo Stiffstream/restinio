@@ -220,7 +220,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		REQUIRE_FALSE( coordinator.closed() );
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::none ==
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 0UL == out_bufs.size() );
 
@@ -247,7 +248,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #1: <nothing>
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 3UL == out_bufs.size() );
 		REQUIRE( make_string( out_bufs[ 0UL ] ) == "a" );
@@ -273,7 +275,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #1: "X", "Y", "Z"
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 3UL == out_bufs.size() );
 		REQUIRE( make_string( out_bufs[ 0UL ] ) == "A" );
@@ -284,7 +287,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #1: "X", "Y", "Z"
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::none ==
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 0UL == out_bufs.size() );
 
@@ -325,7 +329,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #1: "X", "Y", "Z", "LAST", "PARTS"
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 5UL, out_bufs ) );
 		REQUIRE( 5UL == out_bufs.size() );
 		REQUIRE( make_string( out_bufs[ 0UL ] ) == "LAST" );
@@ -353,7 +358,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #2: <nothing>
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 5UL, out_bufs ) );
 		REQUIRE( 2UL == out_bufs.size() );
 		REQUIRE( make_string( out_bufs[ 0UL ] ) == "LAST" );
@@ -457,7 +463,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// Only bufs for #0 response mast be presented:
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
@@ -470,7 +477,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #3: ["3a", "3b", "3c"] * 2*4
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::none ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
@@ -510,7 +518,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #3: ["3a", "3b", "3c"] * 2*4
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -525,7 +534,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #3: ["3a", "3b", "3c"] * 2*4
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::none ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -547,7 +557,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #3: ["3a", "3b", "3c"] * 2*4
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 4UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -558,7 +569,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #3: ["3a", "3b", "3c"] * 2*4
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 16UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -638,7 +650,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #6: ["6a", "6b", "6c"] * 2*4
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -665,7 +678,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 			make_buffers( { "NO", "WAY" } ) ) );
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -692,7 +706,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #6: ["6a", "6b", "6c"] * 2*4
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -704,7 +719,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// EMPTY
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::none ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -812,7 +828,8 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 		// Only bufs for #0 response mast be presented:
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
@@ -829,7 +846,8 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 			make_buffers( { "LAST", " ", "PARTS" } ) ) );
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -916,7 +934,8 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 		// Only bufs for #0 response mast be presented:
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
@@ -933,7 +952,8 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 			make_buffers( { "LAST", " ", "PARTS" } ) ) );
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 24UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -945,7 +965,8 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 			"1a1b1c1a1b1c1a1b1c1a1b1c1a1b1c1a1b1c1a1b1c" );
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			popped_buffers_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 24UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );

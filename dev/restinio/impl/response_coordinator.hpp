@@ -166,6 +166,18 @@ class response_context_table_t
 		std::size_t m_elements_exists{0};
 };
 
+//! Popped buffers write operation type.
+enum class popped_buffers_type_t
+{
+	//! Nothing to write.
+	none,
+	//! Popped buffers must be written trivially
+	trivial_write_operation,
+
+	//! Popped buffer implicates custom write operation.
+	custom_write_operation
+};
+
 //
 // response_coordinator_t
 //
@@ -270,8 +282,7 @@ class response_coordinator_t
 			}
 		}
 
-		//! Get ready to send buffers
-		void
+		popped_buffers_type_t
 		pop_ready_buffers(
 			//! The maximum count of buffers to obtain.
 			unsigned int max_buf_count,
@@ -283,11 +294,40 @@ class response_coordinator_t
 					"unable to prepare output buffers, "
 					"response coordinator is closed" };
 
+			// popped_buffers_type_t result = popped_buffers_type_t::none;
+
+			// Check for custom write operation.
+			if( !m_context_table.empty() )
+			{
+				auto & current_ctx = m_context_table.front();
+
+				if( 0 !=  current_ctx.m_bufs.size() &&
+					buffer_storage_t::write_mode_t::custom_write ==
+						current_ctx.m_bufs.front().write_mode() )
+				{
+					// First buffer to send implicates custom write operation.
+					bufs.emplace_back( std::move( current_ctx.m_bufs.front() ) );
+					current_ctx.m_bufs.erase( std::begin( current_ctx.m_bufs ) );
+					return popped_buffers_type_t::custom_write_operation;
+				}
+			}
+
+			return pop_ready_buffers_trivial( max_buf_count, bufs );
+		}
+
+	private:
+		//! Get ready to send buffers (trivial only).
+		popped_buffers_type_t
+		pop_ready_buffers_trivial(
+			//! The maximum count of buffers to obtain.
+			unsigned int max_buf_count,
+			//! Receiver for buffers.
+			buffers_container_t & bufs )
+		{
 			// Select buffers one by one while
 			// it is possible to follow the order of the data
 			// that must be sent to client
 			// and buf count not exceed max_buf_count.
-
 			while(
 				0 != max_buf_count &&
 				!m_context_table.empty() )
@@ -298,20 +338,29 @@ class response_coordinator_t
 						static_cast<decltype(max_buf_count)>( current_ctx.m_bufs.size() ),
 						max_buf_count );
 
-				max_buf_count -= bufs_to_get_from_current_context;
-
 				const auto extracted_bufs_begin = std::begin( current_ctx.m_bufs );
 				auto extracted_bufs_end = extracted_bufs_begin;
 				std::advance(
 					extracted_bufs_end,
 					bufs_to_get_from_current_context );
 
-				std::for_each(
-					extracted_bufs_begin,
-					extracted_bufs_end,
-					[ & ]( auto & buf ){
-						bufs.emplace_back( std::move( buf ) );
-					} );
+				for( auto it = extracted_bufs_begin; it != extracted_bufs_end; ++it )
+				{
+					if( buffer_storage_t::write_mode_t::trivial_write == it->write_mode() )
+					{
+						bufs.emplace_back( std::move( *it ) );
+						--max_buf_count;
+					}
+					else
+					{
+						// Meet custom write buffer,
+						// so to break selection algo we set
+						// the following:
+						max_buf_count = 0; // we got all the buffers possible.
+						extracted_bufs_end = it; // that buffer will be considered as the end one.
+						break; // exit for.
+					}
+				}
 
 				if( current_ctx.m_bufs.end() == extracted_bufs_end )
 				{
@@ -359,9 +408,12 @@ class response_coordinator_t
 						extracted_bufs_end );
 				}
 			}
+
+			return bufs.empty() ?
+				popped_buffers_type_t::none :
+				popped_buffers_type_t::trivial_write_operation;
 		}
 
-	private:
 		//! Counter for asigining id to new requests.
 		request_id_t m_request_id_counter{ 0 };
 
