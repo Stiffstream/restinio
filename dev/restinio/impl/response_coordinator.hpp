@@ -166,18 +166,6 @@ class response_context_table_t
 		std::size_t m_elements_exists{0};
 };
 
-//! Popped buffers write operation type.
-enum class popped_buffers_type_t
-{
-	//! Nothing to write.
-	none,
-	//! Popped buffers must be written trivially
-	trivial_write_operation,
-
-	//! Popped buffer implicates custom write operation.
-	custom_write_operation
-};
-
 //
 // response_coordinator_t
 //
@@ -282,7 +270,7 @@ class response_coordinator_t
 			}
 		}
 
-		popped_buffers_type_t
+		output_buffers_type_t
 		pop_ready_buffers(
 			//! The maximum count of buffers to obtain.
 			unsigned int max_buf_count,
@@ -294,7 +282,7 @@ class response_coordinator_t
 					"unable to prepare output buffers, "
 					"response coordinator is closed" };
 
-			// popped_buffers_type_t result = popped_buffers_type_t::none;
+			// output_buffers_type_t result = output_buffers_type_t::none;
 
 			// Check for custom write operation.
 			if( !m_context_table.empty() )
@@ -308,7 +296,7 @@ class response_coordinator_t
 					// First buffer to send implicates custom write operation.
 					bufs.emplace_back( std::move( current_ctx.m_bufs.front() ) );
 					current_ctx.m_bufs.erase( std::begin( current_ctx.m_bufs ) );
-					return popped_buffers_type_t::custom_write_operation;
+					return output_buffers_type_t::custom_write_operation;
 				}
 			}
 
@@ -317,7 +305,7 @@ class response_coordinator_t
 
 	private:
 		//! Get ready to send buffers (trivial only).
-		popped_buffers_type_t
+		output_buffers_type_t
 		pop_ready_buffers_trivial(
 			//! The maximum count of buffers to obtain.
 			unsigned int max_buf_count,
@@ -410,8 +398,8 @@ class response_coordinator_t
 			}
 
 			return bufs.empty() ?
-				popped_buffers_type_t::none :
-				popped_buffers_type_t::trivial_write_operation;
+				output_buffers_type_t::none :
+				output_buffers_type_t::trivial_write_operation;
 		}
 
 		//! Counter for asigining id to new requests.

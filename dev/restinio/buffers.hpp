@@ -199,6 +199,23 @@ constexpr std::size_t needed_storage_max_size =
 		sizeof( string_buf_t ),
 		sizeof( shared_datasizeable_buf_t< std::string > ) } );
 
+//
+// output_buffers_type_t
+//
+
+//! Popped buffers write operation type.
+enum class output_buffers_type_t
+{
+	//! Popped buffers must be written trivially
+	trivial_write_operation,
+
+	//! Popped buffer implicates custom write operation.
+	custom_write_operation,
+
+	//! Nothing to write.
+	none
+};
+
 } /* namespace impl */
 
 //

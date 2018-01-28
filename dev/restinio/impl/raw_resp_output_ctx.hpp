@@ -72,15 +72,11 @@ struct raw_resp_output_ctx_t
 		pop_ready_buffers() member function.
 	*/
 	template < class Ready_Buffers_Source >
-	bool
+	output_buffers_type_t
 	obtain_bufs(
 		Ready_Buffers_Source & ready_buffers_source )
 	{
-		ready_buffers_source.pop_ready_buffers(
-			max_iov_len(),
-			m_bufs );
-
-		return !m_bufs.empty();
+		return ready_buffers_source.pop_ready_buffers( max_iov_len(), m_bufs );
 	}
 
 	private:
