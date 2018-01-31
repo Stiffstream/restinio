@@ -669,7 +669,7 @@ class connection_t final
 			//! Resp output flag.
 			response_output_flags_t response_output_flags,
 			//! parts of a response.
-			buffers_container_t bufs ) override
+			writable_items_container_t bufs ) override
 		{
 			//! Run write message on io_context loop if possible.
 			asio_ns::dispatch(
@@ -706,7 +706,7 @@ class connection_t final
 			//! Resp output flag.
 			response_output_flags_t response_output_flags,
 			//! parts of a response.
-			buffers_container_t bufs )
+			writable_items_container_t bufs )
 		{
 			if( !m_socket.is_open() )
 			{
@@ -788,17 +788,17 @@ class connection_t final
 
 				switch( m_resp_out_ctx.obtain_bufs( m_response_coordinator ) )
 				{
-					case output_buffers_type_t::trivial_write_operation:
+					case writable_item_type_t::trivial_write_operation:
 						// Here: and there is smth trivial to write.
 						handle_trivial_write_operation( response_coordinator_full_before );
 						break;
 
-					case output_buffers_type_t::custom_write_operation:
+					case writable_item_type_t::file_write_operation:
 						// Here: and there is custom write operation to start.
-						handle_custom_write_operation( response_coordinator_full_before );
+						handle_file_write_operation( response_coordinator_full_before );
 						break;
 
-					case output_buffers_type_t::none:
+					case writable_item_type_t::none:
 						handle_nothing_to_write();
 				}
 			}
@@ -861,7 +861,7 @@ class connection_t final
 		}
 
 		void
-		handle_custom_write_operation( bool response_coordinator_full_before )
+		handle_file_write_operation( bool response_coordinator_full_before )
 		{
 			// TODO: handle custom write operation.
 		}

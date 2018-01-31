@@ -72,7 +72,7 @@ struct raw_resp_output_ctx_t
 		pop_ready_buffers() member function.
 	*/
 	template < class Ready_Buffers_Source >
-	output_buffers_type_t
+	writable_item_type_t
 	obtain_bufs(
 		Ready_Buffers_Source & ready_buffers_source )
 	{
@@ -87,7 +87,7 @@ struct raw_resp_output_ctx_t
 		std::vector< asio_ns::const_buffer > m_asio_bufs;
 
 		//! Real buffers with data.
-		buffers_container_t m_bufs;
+		writable_items_container_t m_bufs;
 };
 
 } /* namespace impl */

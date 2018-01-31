@@ -178,7 +178,7 @@ class response_builder_t< restinio_controlled_output_t > final
 
 		//! Set body.
 		self_type_t &
-		set_body( buffer_storage_t body )
+		set_body( writable_item_t body )
 		{
 			auto size = asio_ns::buffer_size( body.buf() );
 			return set_body_impl( body, size );
@@ -187,7 +187,7 @@ class response_builder_t< restinio_controlled_output_t > final
 		//! Append body.
 		//! \{
 		self_type_t &
-		append_body( buffer_storage_t body_part )
+		append_body( writable_item_t body_part )
 		{
 			auto size = asio_ns::buffer_size( body_part.buf() );
 			return append_body_impl( body_part, size );
@@ -212,7 +212,7 @@ class response_builder_t< restinio_controlled_output_t > final
 				if_neccessary_reserve_first_element_for_header();
 
 				m_response_parts[ 0 ] =
-					buffer_storage_t{ impl::create_header_string( m_header ) };
+					writable_item_t{ impl::create_header_string( m_header ) };
 
 				conn->write_response_parts(
 					m_request_id,
@@ -225,7 +225,7 @@ class response_builder_t< restinio_controlled_output_t > final
 
 	private:
 		self_type_t &
-		set_body_impl( buffer_storage_t & body, std::size_t body_size )
+		set_body_impl( writable_item_t & body, std::size_t body_size )
 		{
 			if_neccessary_reserve_first_element_for_header();
 
@@ -244,7 +244,7 @@ class response_builder_t< restinio_controlled_output_t > final
 		}
 
 		self_type_t &
-		append_body_impl( buffer_storage_t & body_part, std::size_t append_size )
+		append_body_impl( writable_item_t & body_part, std::size_t append_size )
 		{
 			if_neccessary_reserve_first_element_for_header();
 			m_response_parts.emplace_back( std::move( body_part ) );
@@ -263,7 +263,7 @@ class response_builder_t< restinio_controlled_output_t > final
 		}
 
 		std::size_t m_body_size{ 0 };
-		buffers_container_t m_response_parts;
+		writable_items_container_t m_response_parts;
 };
 
 struct user_controlled_output_t {};
@@ -299,7 +299,7 @@ class response_builder_t< user_controlled_output_t > final
 		//! Set body (part).
 		//! \{
 		self_type_t &
-		set_body( buffer_storage_t body )
+		set_body( writable_item_t body )
 		{
 			auto size = asio_ns::buffer_size( body.buf() );
 			return set_body_impl( body, size );
@@ -309,7 +309,7 @@ class response_builder_t< user_controlled_output_t > final
 		//! Append body.
 		//! \{
 		self_type_t &
-		append_body( buffer_storage_t body_part )
+		append_body( writable_item_t body_part )
 		{
 			auto size = asio_ns::buffer_size( body_part.buf() );
 
@@ -367,7 +367,7 @@ class response_builder_t< user_controlled_output_t > final
 				if_neccessary_reserve_first_element_for_header();
 
 				m_response_parts[ 0 ] =
-					buffer_storage_t{ impl::create_header_string( m_header ) };
+					writable_item_t{ impl::create_header_string( m_header ) };
 
 				conn->write_response_parts(
 					m_request_id,
@@ -391,7 +391,7 @@ class response_builder_t< user_controlled_output_t > final
 		}
 
 		self_type_t &
-		set_body_impl( buffer_storage_t & body, std::size_t body_size )
+		set_body_impl( writable_item_t & body, std::size_t body_size )
 		{
 			if_neccessary_reserve_first_element_for_header();
 
@@ -412,7 +412,7 @@ class response_builder_t< user_controlled_output_t > final
 		}
 
 		self_type_t &
-		append_body_impl( buffer_storage_t & body_part )
+		append_body_impl( writable_item_t & body_part )
 		{
 			if_neccessary_reserve_first_element_for_header();
 
@@ -448,7 +448,7 @@ class response_builder_t< user_controlled_output_t > final
 			For this type of output it contains a part of a body.
 			On each flush it is cleared.
 		*/
-		buffers_container_t m_response_parts;
+		writable_items_container_t m_response_parts;
 };
 
 struct chunked_output_t {};
@@ -484,7 +484,7 @@ class response_builder_t< chunked_output_t > final
 		//! Append current chunk.
 		//! \{
 		auto &
-		append_chunk( buffer_storage_t chunk )
+		append_chunk( writable_item_t chunk )
 		{
 			auto size = asio_ns::buffer_size( chunk.buf() );
 
@@ -586,10 +586,10 @@ class response_builder_t< chunked_output_t > final
 			}
 		}
 
-		buffers_container_t
+		writable_items_container_t
 		create_bufs( bool add_zero_chunk )
 		{
-			buffers_container_t bufs;
+			writable_items_container_t bufs;
 
 			std::size_t reserve_size = 2 * m_chunks.size() + 1;
 
@@ -658,7 +658,7 @@ class response_builder_t< chunked_output_t > final
 		bool m_should_keep_alive_when_header_was_sent{ true };
 
 		//! Chunks accumulator.
-		buffers_container_t m_chunks;
+		writable_items_container_t m_chunks;
 };
 
 } /* namespace restinio */

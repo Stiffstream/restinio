@@ -24,6 +24,28 @@ namespace restinio
 namespace impl
 {
 
+//
+// writable_base_t
+//
+
+//! A base class fora writable items.
+class writable_base_t
+{
+	public:
+		writable_base_t() = default;
+		writable_base_t( const writable_base_t & ) = default;
+		writable_base_t( writable_base_t && ) = default;
+		const writable_base_t & operator = ( const writable_base_t & ) = delete;
+		writable_base_t & operator = ( writable_base_t && ) = delete;
+
+		virtual ~writable_base_t()
+		{}
+
+		//! Move this buffer enitity to a given location.
+		//! \note storage must have a sufficient space and proper alignment.
+		virtual void relocate_to( void * storage ) = 0;
+};
+
 //! Inernaml interface for a buffer entity.
 /*!
 	Having a condition to put heterogeneous buffer sequences in vector
@@ -31,27 +53,15 @@ namespace impl
 	Internal buffers are the pieces incapsulating various buffers
 	implementation that fit into a fixed memory space.
 	That's makes it possible to fit any of them in a binary
-	buffer that resides in buffer_storage_t.
+	buffer that resides in writable_item_t.
 	While different descendant might vary in size
-	size of buffer_storage_t remains the same, so it can be used in a vector.
+	size of writable_item_t remains the same, so it can be used in a vector.
 */
-class buf_iface_t
+class buf_iface_t : public writable_base_t
 {
 	public:
 		//! Get asio buf entity.
 		virtual asio_ns::const_buffer buffer() const = 0;
-
-		//! Move this buffer enitity to a given location.
-		//! \note storage must have a sufficient space and proper alignment.
-		virtual void relocate_to( void * storage ) = 0;
-
-		buf_iface_t() = default;
-		buf_iface_t( const buf_iface_t & ) = default;
-		buf_iface_t( buf_iface_t && ) = default;
-		const buf_iface_t & operator = ( const buf_iface_t & ) = delete;
-		buf_iface_t & operator = ( buf_iface_t && ) = delete;
-
-		virtual ~buf_iface_t() = default;
 };
 
 //! Empty buffer entity.
@@ -199,23 +209,6 @@ constexpr std::size_t needed_storage_max_size =
 		sizeof( string_buf_t ),
 		sizeof( shared_datasizeable_buf_t< std::string > ) } );
 
-//
-// output_buffers_type_t
-//
-
-//! Popped buffers write operation type.
-enum class output_buffers_type_t
-{
-	//! Popped buffers must be written trivially
-	trivial_write_operation,
-
-	//! Popped buffer implicates custom write operation.
-	custom_write_operation,
-
-	//! Nothing to write.
-	none
-};
-
 } /* namespace impl */
 
 //
@@ -252,54 +245,61 @@ const_buffer( const char * str )
 //! \}
 
 //
-// buffer_storage_t
+// writable_item_type_t
+//
+
+//! Popped buffers write operation type.
+enum class writable_item_type_t
+{
+	//! Item is a buffer and must be written trivially
+	trivial_write_operation,
+
+	//! Item is a sendfile operation and implicates file write operation.
+	file_write_operation,
+
+	//! Nothing to write.
+	none
+};
+
+//
+// writable_item_t
 //
 
 //! Class for storing the buffers used for streaming body (request/response).
-class buffer_storage_t
+class writable_item_t
 {
 		//! Get size of storage.
 	public:
+		writable_item_t( const writable_item_t & ) = delete;
+		writable_item_t & operator = ( const writable_item_t & ) = delete;
 
-		//! Write mode that defines write operation.
-		enum class write_mode_t
-		{
-			//! Buffer is simple ptr-size buffer
-			trivial_write,
-			//! Buffer implicates custom write operation.
-			custom_write
-		};
-
-		buffer_storage_t( const buffer_storage_t & ) = delete;
-		buffer_storage_t & operator = ( const buffer_storage_t & ) = delete;
-
-		buffer_storage_t()
-			:	m_write_mode{ write_mode_t::trivial_write }
+		writable_item_t()
+			:	m_write_type{ writable_item_type_t::trivial_write_operation }
 		{
 			new( &m_storage ) impl::empty_buf_t{};
 		}
 
-		buffer_storage_t( const_buffer_t const_buf )
-			:	m_write_mode{ write_mode_t::trivial_write }
+		writable_item_t( const_buffer_t const_buf )
+			:	m_write_type{ writable_item_type_t::trivial_write_operation }
 		{
 			new( &m_storage ) impl::const_buf_t{ const_buf.m_str, const_buf.m_size };
 		}
 
-		buffer_storage_t( std::string str )
-			:	m_write_mode{ write_mode_t::trivial_write }
+		writable_item_t( std::string str )
+			:	m_write_type{ writable_item_type_t::trivial_write_operation }
 		{
 			new( &m_storage ) impl::string_buf_t{ std::move( str ) };
 		}
 
-		buffer_storage_t( const char * str )
+		writable_item_t( const char * str )
 			// We can't be sure whether it is valid to consider
 			// data pointed by str a const buffer, so we make a string copy here.
-			:	buffer_storage_t{ std::string{ str } }
+			:	writable_item_t{ std::string{ str } }
 		{}
 
 		template < typename T >
-		buffer_storage_t( std::shared_ptr< T > sp )
-			:	m_write_mode{ write_mode_t::trivial_write }
+		writable_item_t( std::shared_ptr< T > sp )
+			:	m_write_type{ writable_item_type_t::trivial_write_operation }
 		{
 			static_assert(
 				sizeof( std::shared_ptr< T > ) <= impl::needed_storage_max_size,
@@ -311,32 +311,32 @@ class buffer_storage_t
 			new( &m_storage ) impl::shared_datasizeable_buf_t< T >{ std::move( sp ) };
 		}
 
-		buffer_storage_t( buffer_storage_t && b )
-			:	m_write_mode{ b.m_write_mode }
+		writable_item_t( writable_item_t && b )
+			:	m_write_type{ b.m_write_type }
 		{
 			b.get_buf()->relocate_to( &m_storage );
 		}
 
 		void
-		operator = ( buffer_storage_t && b )
+		operator = ( writable_item_t && b )
 		{
 			if( this != &b )
 			{
 				destroy_stored_buffer();
-				m_write_mode = b.m_write_mode;
+				m_write_type = b.m_write_type;
 				b.get_buf()->relocate_to( &m_storage );
 			}
 		}
 
-		~buffer_storage_t()
+		~writable_item_t()
 		{
 			destroy_stored_buffer();
 		}
 
-		write_mode_t
-		write_mode() const
+		writable_item_type_t
+		write_type() const
 		{
-			return m_write_mode;
+			return m_write_type;
 		}
 
 		asio_ns::const_buffer
@@ -349,11 +349,11 @@ class buffer_storage_t
 		void
 		destroy_stored_buffer()
 		{
-			using dtor_buf_iface_t = impl::buf_iface_t;
-			get_buf()->~dtor_buf_iface_t();
+			using dtor_writable_base_t = impl::writable_base_t;
+			get_buf()->~dtor_writable_base_t();
 		}
 
-		write_mode_t m_write_mode;
+		writable_item_type_t m_write_type;
 
 		//! Access buf item.
 		//! \{
@@ -376,10 +376,18 @@ class buffer_storage_t
 		//! \}
 };
 
+//! Back compatibility.
+//! \deprecated Obsolete in v.4.2.0. Use writable_item_t instead.
+// using buffer_storage_t = writable_item_t;
+
 //
-// buffers_container_t
+// writable_items_container_t
 //
 
-using buffers_container_t = std::vector< buffer_storage_t >;
+using writable_items_container_t = std::vector< writable_item_t >;
+
+//! Back compatibility.
+//! \deprecated Obsolete in v.4.2.0. Use writable_item_t instead.
+// using buffers_container_t = writable_items_container_t;
 
 } /* namespace restinio */

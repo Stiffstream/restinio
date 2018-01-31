@@ -38,11 +38,11 @@ make_string( const BUF & buf )
 			asio_ns::buffer_size( buf.buf() ) };
 }
 
-buffers_container_t
+writable_items_container_t
 make_buffers(
 	std::vector< std::string > v )
 {
-	buffers_container_t result;
+	writable_items_container_t result;
 	result.reserve( v.size() );
 
 	for( auto & s : v )
@@ -201,7 +201,7 @@ TEST_CASE( "response_context_table" , "[response_context][response_context_table
 
 TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 {
-	buffers_container_t out_bufs;
+	writable_items_container_t out_bufs;
 	auto concat_bufs =
 		[ & ](){
 			std::string res;
@@ -221,7 +221,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::none ==
+			writable_item_type_t::none ==
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 0UL == out_bufs.size() );
 
@@ -249,7 +249,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::trivial_write_operation ==
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 3UL == out_bufs.size() );
 		REQUIRE( make_string( out_bufs[ 0UL ] ) == "a" );
@@ -276,7 +276,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::trivial_write_operation ==
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 3UL == out_bufs.size() );
 		REQUIRE( make_string( out_bufs[ 0UL ] ) == "A" );
@@ -288,7 +288,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::none ==
+			writable_item_type_t::none ==
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 0UL == out_bufs.size() );
 
@@ -330,7 +330,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::trivial_write_operation ==
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 5UL, out_bufs ) );
 		REQUIRE( 5UL == out_bufs.size() );
 		REQUIRE( make_string( out_bufs[ 0UL ] ) == "LAST" );
@@ -359,7 +359,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::trivial_write_operation ==
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 5UL, out_bufs ) );
 		REQUIRE( 2UL == out_bufs.size() );
 		REQUIRE( make_string( out_bufs[ 0UL ] ) == "LAST" );
@@ -464,7 +464,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::trivial_write_operation ==
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
@@ -478,7 +478,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::none ==
+			writable_item_type_t::none ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
@@ -519,7 +519,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::trivial_write_operation ==
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -535,7 +535,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::none ==
+			writable_item_type_t::none ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -558,7 +558,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::trivial_write_operation ==
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 4UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -570,7 +570,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::trivial_write_operation ==
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 16UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -651,7 +651,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::trivial_write_operation ==
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -679,7 +679,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::trivial_write_operation ==
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -707,7 +707,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::trivial_write_operation ==
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -720,7 +720,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::none ==
+			writable_item_type_t::none ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -760,7 +760,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connection_close]" )
 {
-	buffers_container_t out_bufs;
+	writable_items_container_t out_bufs;
 	auto concat_bufs =
 		[ & ](){
 			std::string res;
@@ -829,7 +829,7 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::trivial_write_operation ==
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
@@ -847,7 +847,7 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::trivial_write_operation ==
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -935,7 +935,7 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::trivial_write_operation ==
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
@@ -953,7 +953,7 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::trivial_write_operation ==
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 24UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -966,7 +966,7 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 
 		out_bufs.clear();
 		REQUIRE(
-			output_buffers_type_t::trivial_write_operation ==
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 24UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );

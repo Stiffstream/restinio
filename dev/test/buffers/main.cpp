@@ -29,8 +29,8 @@ TEST_CASE( "buffers on c-string" , "[buffers][c-string]" )
 {
 	const char * s1 = "0123456789";
 
-	buffer_storage_t bs{ const_buffer( s1 ) };
-	REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs.write_mode() );
+	writable_item_t bs{ const_buffer( s1 ) };
+	REQUIRE( writable_item_type_t::trivial_write_operation == bs.write_type() );
 
 	auto buf = bs.buf();
 
@@ -38,16 +38,16 @@ TEST_CASE( "buffers on c-string" , "[buffers][c-string]" )
 	REQUIRE( size( buf ) == 10 );
 
 	static const char s2[] = "012345678901234567890123456789";
-	bs = buffer_storage_t{ const_buffer( s2 ) };
-	REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs.write_mode() );
+	bs = writable_item_t{ const_buffer( s2 ) };
+	REQUIRE( writable_item_type_t::trivial_write_operation == bs.write_type() );
 
 	buf = bs.buf();
 	REQUIRE( address( buf ) == (void*)s2 );
 	REQUIRE( size( buf ) == 30 );
 
 	const char * s3 = "qweasdzxcrtyfghvbnuiojklm,.";
-	bs = buffer_storage_t{ const_buffer( s3, 8 ) };
-	REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs.write_mode() );
+	bs = writable_item_t{ const_buffer( s3, 8 ) };
+	REQUIRE( writable_item_type_t::trivial_write_operation == bs.write_type() );
 
 	buf = bs.buf();
 	REQUIRE( address( buf ) == (void*)s3 );
@@ -59,8 +59,8 @@ TEST_CASE( "buffers on std::string" , "[buffers][std::string]" )
 	const char * s1 = "0123456789";
 	std::string str1{ s1 };
 
-	buffer_storage_t bs{ std::move( str1 ) };
-	REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs.write_mode() );
+	writable_item_t bs{ std::move( str1 ) };
+	REQUIRE( writable_item_type_t::trivial_write_operation == bs.write_type() );
 
 	auto buf = bs.buf();
 
@@ -70,8 +70,8 @@ TEST_CASE( "buffers on std::string" , "[buffers][std::string]" )
 	const char * s2 = "012345678901234567890123456789";
 	std::string str2{ s2 };
 
-	bs = buffer_storage_t{ std::move( str2 ) };
-	REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs.write_mode() );
+	bs = writable_item_t{ std::move( str2 ) };
+	REQUIRE( writable_item_type_t::trivial_write_operation == bs.write_type() );
 
 	buf = bs.buf();
 	REQUIRE( size( buf ) == 30 );
@@ -81,8 +81,8 @@ TEST_CASE( "buffers on std::string" , "[buffers][std::string]" )
 	const char * s3 = "\0x00\0x00\0x00" "012345678901234567890123456789 012345678901234567890123456789";
 	std::string str3{ s3, 64};
 
-	bs = buffer_storage_t{ std::move( str3 ) };
-	REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs.write_mode() );
+	bs = writable_item_t{ std::move( str3 ) };
+	REQUIRE( writable_item_type_t::trivial_write_operation == bs.write_type() );
 
 	buf = bs.buf();
 	REQUIRE( size( buf ) == 64 );
@@ -93,8 +93,8 @@ TEST_CASE( "buffers on shared pointer" , "[buffers][std::shared_ptr]" )
 {
 	auto str1 = std::make_shared< std::string >( "01234567890123456789xy");
 
-	buffer_storage_t bs{ str1 };
-	REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs.write_mode() );
+	writable_item_t bs{ str1 };
+	REQUIRE( writable_item_type_t::trivial_write_operation == bs.write_type() );
 
 	auto buf = bs.buf();
 
@@ -102,8 +102,8 @@ TEST_CASE( "buffers on shared pointer" , "[buffers][std::shared_ptr]" )
 	REQUIRE( address( buf ) == (void*)str1->data() );
 
 	auto str2 = std::make_shared< std::string >( "0123456789 0123456789 0123456789 0123456789" );
-	bs = buffer_storage_t{ str2 };
-	REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs.write_mode() );
+	bs = writable_item_t{ str2 };
+	REQUIRE( writable_item_type_t::trivial_write_operation == bs.write_type() );
 
 	buf = bs.buf();
 	REQUIRE( size( buf ) == str2->size() );
@@ -142,8 +142,8 @@ TEST_CASE( "buffers on custom" , "[buffers][custom]" )
 
 		REQUIRE( 1 == bufs_count );
 
-		buffer_storage_t bs{ std::move( custom ) };
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs.write_mode() );
+		writable_item_t bs{ std::move( custom ) };
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs.write_type() );
 		REQUIRE( 1 == bufs_count );
 
 		auto buf = bs.buf();
@@ -151,8 +151,8 @@ TEST_CASE( "buffers on custom" , "[buffers][custom]" )
 		REQUIRE( 0 == memcmp( address( buf ), s1, size( buf ) ) );
 
 		{
-			buffer_storage_t bs2{ std::move( bs ) };
-			REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs2.write_mode() );
+			writable_item_t bs2{ std::move( bs ) };
+			REQUIRE( writable_item_type_t::trivial_write_operation == bs2.write_type() );
 
 			REQUIRE( 1 == bufs_count );
 
@@ -161,7 +161,7 @@ TEST_CASE( "buffers on custom" , "[buffers][custom]" )
 			REQUIRE( 0 == memcmp( address( buf ), s1, size( buf ) ) );
 
 			bs = std::move( bs2 );
-			REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs.write_mode() );
+			REQUIRE( writable_item_type_t::trivial_write_operation == bs.write_type() );
 		}
 
 
@@ -170,8 +170,8 @@ TEST_CASE( "buffers on custom" , "[buffers][custom]" )
 		custom = std::make_shared< custom_buffer_t >( bufs_count, s2 );
 		REQUIRE( 2 == bufs_count );
 
-		bs = buffer_storage_t{ custom };
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs.write_mode() );
+		bs = writable_item_t{ custom };
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs.write_type() );
 		REQUIRE( 1 == bufs_count );
 
 		buf = bs.buf();
@@ -187,17 +187,17 @@ TEST_CASE(
 	"[buffers][std::string][c-string]" )
 {
 	{
-		buffer_storage_t bs1;
-		buffer_storage_t bs2;
+		writable_item_t bs1;
+		writable_item_t bs2;
 
 		auto s1 = "01234567890123456789xy";
 		const char * s2 = "abc";
 		std::string str2 = { s2 };
 
-		bs1 = buffer_storage_t{ const_buffer( s1 ) };
-		bs2 = buffer_storage_t{ std::move( str2 ) };
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs1.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs2.write_mode() );
+		bs1 = writable_item_t{ const_buffer( s1 ) };
+		bs2 = writable_item_t{ std::move( str2 ) };
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs1.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs2.write_type() );
 
 		auto buf1 = bs1.buf();
 		auto buf2 = bs2.buf();
@@ -208,16 +208,16 @@ TEST_CASE(
 		REQUIRE( size( buf2 ) == std::strlen( s2 ) );
 		REQUIRE( 0 == memcmp( address( buf2 ), s2, size( buf2 ) )  );
 
-		buffer_storage_t bs3;
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs3.write_mode() );
+		writable_item_t bs3;
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs3.write_type() );
 
 		bs3 = std::move( bs1 );
 		bs1 = std::move( bs2 );
 		bs2 = std::move( bs3 );
 
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs1.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs2.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs3.write_mode() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs1.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs2.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs3.write_type() );
 
 		buf1 = bs1.buf();
 		buf2 = bs2.buf();
@@ -229,21 +229,21 @@ TEST_CASE(
 		REQUIRE( address( buf2 ) == (void*)s1 );
 	}
 	{
-		buffer_storage_t bs1;
-		buffer_storage_t bs2;
+		writable_item_t bs1;
+		writable_item_t bs2;
 
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs1.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs2.write_mode() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs1.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs2.write_type() );
 
 		auto s1 = "01234567890123456789xy 01234567890123456789xy 01234567890123456789xy";
 		const char * s2 = "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef";
 		std::string str2 = { s2 };
 
-		bs1 = buffer_storage_t{ const_buffer( s1 ) };
-		bs2 = buffer_storage_t{ std::move( str2 ) };
+		bs1 = writable_item_t{ const_buffer( s1 ) };
+		bs2 = writable_item_t{ std::move( str2 ) };
 
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs1.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs2.write_mode() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs1.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs2.write_type() );
 
 		auto buf1 = bs1.buf();
 		auto buf2 = bs2.buf();
@@ -254,16 +254,16 @@ TEST_CASE(
 		REQUIRE( size( buf2 ) == std::strlen( s2 ) );
 		REQUIRE( 0 == memcmp( address( buf2 ), s2, size( buf2 ) )  );
 
-		buffer_storage_t bs3;
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs3.write_mode() );
+		writable_item_t bs3;
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs3.write_type() );
 
 		bs3 = std::move( bs1 );
 		bs1 = std::move( bs2 );
 		bs2 = std::move( bs3 );
 
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs1.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs2.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs3.write_mode() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs1.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs2.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs3.write_type() );
 
 		buf1 = bs1.buf();
 		buf2 = bs2.buf();
@@ -281,17 +281,17 @@ TEST_CASE(
 	"[buffers][std::shared_ptr][std::string]" )
 {
 	{
-		buffer_storage_t bs1;
-		buffer_storage_t bs2;
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs1.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs2.write_mode() );
+		writable_item_t bs1;
+		writable_item_t bs2;
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs1.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs2.write_type() );
 
 		auto str1 = std::make_shared< std::string >( "01234567890123456789xy" );
 		const char * s2 = "abc";
 		std::string str2 = { s2 };
 
-		bs1 = buffer_storage_t{ str1 };
-		bs2 = buffer_storage_t{ std::move( str2 ) };
+		bs1 = writable_item_t{ str1 };
+		bs2 = writable_item_t{ std::move( str2 ) };
 
 		auto buf1 = bs1.buf();
 		auto buf2 = bs2.buf();
@@ -302,16 +302,16 @@ TEST_CASE(
 		REQUIRE( size( buf2 ) == std::strlen( s2 ) );
 		REQUIRE( 0 == memcmp( address( buf2 ), s2, size( buf2 ) )  );
 
-		buffer_storage_t bs3;
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs3.write_mode() );
+		writable_item_t bs3;
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs3.write_type() );
 
 		bs3 = std::move( bs1 );
 		bs1 = std::move( bs2 );
 		bs2 = std::move( bs3 );
 
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs1.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs2.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs3.write_mode() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs1.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs2.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs3.write_type() );
 
 		buf1 = bs1.buf();
 		buf2 = bs2.buf();
@@ -324,10 +324,10 @@ TEST_CASE(
 	}
 
 	{
-		buffer_storage_t bs1;
-		buffer_storage_t bs2;
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs1.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs2.write_mode() );
+		writable_item_t bs1;
+		writable_item_t bs2;
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs1.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs2.write_type() );
 
 		auto str1 = std::make_shared< std::string >(
 			"01234567890123456789xy01234567890123456789xy01234567890123456789xy" );
@@ -335,8 +335,8 @@ TEST_CASE(
 		const char * s2 = "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef";
 		std::string str2 = { s2 };
 
-		bs1 = buffer_storage_t{ str1 };
-		bs2 = buffer_storage_t{ std::move( str2 ) };
+		bs1 = writable_item_t{ str1 };
+		bs2 = writable_item_t{ std::move( str2 ) };
 
 		auto buf1 = bs1.buf();
 		auto buf2 = bs2.buf();
@@ -347,16 +347,16 @@ TEST_CASE(
 		REQUIRE( size( buf2 ) == std::strlen( s2 ) );
 		REQUIRE( 0 == memcmp( address( buf2 ), s2, size( buf2 ) )  );
 
-		buffer_storage_t bs3;
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs3.write_mode() );
+		writable_item_t bs3;
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs3.write_type() );
 
 		bs3 = std::move( bs1 );
 		bs1 = std::move( bs2 );
 		bs2 = std::move( bs3 );
 
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs1.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs2.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs3.write_mode() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs1.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs2.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs3.write_type() );
 
 		buf1 = bs1.buf();
 		buf2 = bs2.buf();
@@ -375,10 +375,10 @@ TEST_CASE(
 {
 	int bufs_count = 0;
 	{
-		buffer_storage_t bs1;
-		buffer_storage_t bs2;
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs1.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs2.write_mode() );
+		writable_item_t bs1;
+		writable_item_t bs2;
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs1.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs2.write_type() );
 
 		auto str1 = std::make_shared< custom_buffer_t >( bufs_count, "custom" );
 		REQUIRE( 1 == bufs_count );
@@ -386,13 +386,13 @@ TEST_CASE(
 		const char * s2 = "abc";
 		std::string str2 = { s2 };
 
-		bs1 = buffer_storage_t{ str1 };
+		bs1 = writable_item_t{ str1 };
 		REQUIRE( 1 == bufs_count );
 
-		bs2 = buffer_storage_t{ std::move( str2 ) };
+		bs2 = writable_item_t{ std::move( str2 ) };
 
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs1.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs2.write_mode() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs1.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs2.write_type() );
 
 		auto buf1 = bs1.buf();
 		auto buf2 = bs2.buf();
@@ -403,8 +403,8 @@ TEST_CASE(
 		REQUIRE( size( buf2 ) == std::strlen( s2 ) );
 		REQUIRE( 0 == memcmp( address( buf2 ), s2, size( buf2 ) )  );
 
-		buffer_storage_t bs3;
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs3.write_mode() );
+		writable_item_t bs3;
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs3.write_type() );
 
 		bs3 = std::move( bs1 );
 		REQUIRE( 1 == bufs_count );
@@ -413,9 +413,9 @@ TEST_CASE(
 		bs2 = std::move( bs3 );
 		REQUIRE( 1 == bufs_count );
 
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs1.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs2.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs3.write_mode() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs1.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs2.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs3.write_type() );
 
 		buf1 = bs1.buf();
 		buf2 = bs2.buf();
@@ -430,10 +430,10 @@ TEST_CASE(
 	REQUIRE( 0 == bufs_count );
 
 	{
-		buffer_storage_t bs1;
-		buffer_storage_t bs2;
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs1.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs2.write_mode() );
+		writable_item_t bs1;
+		writable_item_t bs2;
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs1.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs2.write_type() );
 
 		auto str1 = std::make_shared< custom_buffer_t >(
 			bufs_count, "customcustomcustomcustomcustomcustomcustomcustomcustom" );
@@ -442,13 +442,13 @@ TEST_CASE(
 		const char * s2 = "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef";
 		std::string str2 = { s2 };
 
-		bs1 = buffer_storage_t{ str1 };
+		bs1 = writable_item_t{ str1 };
 		REQUIRE( 1 == bufs_count );
 
-		bs2 = buffer_storage_t{ std::move( str2 ) };
+		bs2 = writable_item_t{ std::move( str2 ) };
 
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs1.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs2.write_mode() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs1.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs2.write_type() );
 
 		auto buf1 = bs1.buf();
 		auto buf2 = bs2.buf();
@@ -459,8 +459,8 @@ TEST_CASE(
 		REQUIRE( size( buf2 ) == std::strlen( s2 ) );
 		REQUIRE( 0 == memcmp( address( buf2 ), s2, size( buf2 ) )  );
 
-		buffer_storage_t bs3;
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs3.write_mode() );
+		writable_item_t bs3;
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs3.write_type() );
 
 		bs3 = std::move( bs1 );
 		REQUIRE( 1 == bufs_count );
@@ -468,9 +468,9 @@ TEST_CASE(
 		REQUIRE( 1 == bufs_count );
 		bs2 = std::move( bs3 );
 		REQUIRE( 1 == bufs_count );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs1.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs2.write_mode() );
-		REQUIRE( buffer_storage_t::write_mode_t::trivial_write == bs3.write_mode() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs1.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs2.write_type() );
+		REQUIRE( writable_item_type_t::trivial_write_operation == bs3.write_type() );
 
 		buf1 = bs1.buf();
 		buf2 = bs2.buf();
@@ -491,7 +491,7 @@ TEST_CASE(
 {
 	int bufs_count = 0;
 	{
-		std::vector< buffer_storage_t > v;
+		std::vector< writable_item_t > v;
 
 		v.reserve( 4 );
 
@@ -556,7 +556,7 @@ TEST_CASE(
 		}
 
 		{
-			std::vector< buffer_storage_t > w{ std::move( v ) };
+			std::vector< writable_item_t > w{ std::move( v ) };
 
 			for( std::size_t i = 0; i < w.size(); ++i )
 			{
@@ -597,25 +597,25 @@ TEST_CASE(
 	"buffers in shared_ptr exceptions" ,
 	"[buffers][std::shared_ptr][exception]" )
 {
-	buffer_storage_t x;
+	writable_item_t x;
 	std::shared_ptr< std::string > b1;
 	std::shared_ptr< custom_buffer_t > b2;
 
-	REQUIRE_THROWS( x = buffer_storage_t{ b1 } );
-	REQUIRE_THROWS( x = buffer_storage_t{ b2 } );
+	REQUIRE_THROWS( x = writable_item_t{ b1 } );
+	REQUIRE_THROWS( x = writable_item_t{ b2 } );
 }
 
 TEST_CASE(
 	"empty (default constructed) buffers" ,
 	"[buffers][empty]" )
 {
-	buffer_storage_t x;
+	writable_item_t x;
 	restinio::asio_ns::const_buffer b;
 	REQUIRE_NOTHROW( b = x.buf() );
 	REQUIRE( 0 == size( b ) );
 	REQUIRE( nullptr == address( b ) );
 
-	buffer_storage_t y;
+	writable_item_t y;
 	y = std::move( x );
 
 	REQUIRE_NOTHROW( b = y.buf() );

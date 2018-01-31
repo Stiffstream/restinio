@@ -45,7 +45,7 @@ struct response_context_t
 	request_id_t m_request_id{ 0 };
 
 	//! Unsent responses parts.
-	buffers_container_t m_bufs;
+	writable_items_container_t m_bufs;
 
 	//! Total used bufs, historical count of bufs used to send this response.
 	std::size_t m_total_bufs_count{ 0 };
@@ -228,7 +228,7 @@ class response_coordinator_t
 			//! Resp output flag.
 			response_output_flags_t response_output_flags,
 			//! The parts of response.
-			buffers_container_t bufs )
+			writable_items_container_t bufs )
 		{
 			// Nothing to do if already closed response emitted.
 			if( closed() )
@@ -270,19 +270,17 @@ class response_coordinator_t
 			}
 		}
 
-		output_buffers_type_t
+		writable_item_type_t
 		pop_ready_buffers(
 			//! The maximum count of buffers to obtain.
 			unsigned int max_buf_count,
 			//! Receiver for buffers.
-			buffers_container_t & bufs )
+			writable_items_container_t & bufs )
 		{
 			if( closed() )
 				throw exception_t{
 					"unable to prepare output buffers, "
 					"response coordinator is closed" };
-
-			// output_buffers_type_t result = output_buffers_type_t::none;
 
 			// Check for custom write operation.
 			if( !m_context_table.empty() )
@@ -290,13 +288,13 @@ class response_coordinator_t
 				auto & current_ctx = m_context_table.front();
 
 				if( 0 !=  current_ctx.m_bufs.size() &&
-					buffer_storage_t::write_mode_t::custom_write ==
-						current_ctx.m_bufs.front().write_mode() )
+					writable_item_type_t::file_write_operation ==
+						current_ctx.m_bufs.front().write_type() )
 				{
 					// First buffer to send implicates custom write operation.
 					bufs.emplace_back( std::move( current_ctx.m_bufs.front() ) );
 					current_ctx.m_bufs.erase( std::begin( current_ctx.m_bufs ) );
-					return output_buffers_type_t::custom_write_operation;
+					return writable_item_type_t::file_write_operation;
 				}
 			}
 
@@ -305,12 +303,12 @@ class response_coordinator_t
 
 	private:
 		//! Get ready to send buffers (trivial only).
-		output_buffers_type_t
+		writable_item_type_t
 		pop_ready_buffers_trivial(
 			//! The maximum count of buffers to obtain.
 			unsigned int max_buf_count,
 			//! Receiver for buffers.
-			buffers_container_t & bufs )
+			writable_items_container_t & bufs )
 		{
 			// Select buffers one by one while
 			// it is possible to follow the order of the data
@@ -334,7 +332,7 @@ class response_coordinator_t
 
 				for( auto it = extracted_bufs_begin; it != extracted_bufs_end; ++it )
 				{
-					if( buffer_storage_t::write_mode_t::trivial_write == it->write_mode() )
+					if( writable_item_type_t::trivial_write_operation == it->write_type() )
 					{
 						bufs.emplace_back( std::move( *it ) );
 						--max_buf_count;
@@ -398,8 +396,8 @@ class response_coordinator_t
 			}
 
 			return bufs.empty() ?
-				output_buffers_type_t::none :
-				output_buffers_type_t::trivial_write_operation;
+				writable_item_type_t::none :
+				writable_item_type_t::trivial_write_operation;
 		}
 
 		//! Counter for asigining id to new requests.
