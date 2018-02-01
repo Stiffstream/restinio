@@ -62,28 +62,6 @@ class buf_iface_t : public writable_base_t
 	public:
 		//! Get asio buf entity.
 		virtual asio_ns::const_buffer buffer() const = 0;
-<<<<<<< local
-
-		//! Start running custo write operation.
-		virtual void
-		run_custom_write_operation(
-			//! An executor to wrap all calls happening on asio loop.
-			asio_ns::executor executor,
-			 ) = 0;
-
-		//! Move this buffer enitity to a given location.
-		//! \note storage must have a sufficient space and proper alignment.
-		virtual void relocate_to( void * storage ) = 0;
-
-		buf_iface_t() = default;
-		buf_iface_t( const buf_iface_t & ) = default;
-		buf_iface_t( buf_iface_t && ) = default;
-		const buf_iface_t & operator = ( const buf_iface_t & ) = delete;
-		buf_iface_t & operator = ( buf_iface_t && ) = delete;
-
-		virtual ~buf_iface_t() = default;
-=======
->>>>>>> other
 };
 
 //! Empty buffer entity.
