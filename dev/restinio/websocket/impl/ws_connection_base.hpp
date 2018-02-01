@@ -57,7 +57,7 @@ class ws_connection_base_t
 		//! Write pieces of outgoing data.
 		virtual void
 		write_data(
-			buffers_container_t bufs,
+			writable_items_container_t bufs,
 			bool is_close_frame ) = 0;
 };
 

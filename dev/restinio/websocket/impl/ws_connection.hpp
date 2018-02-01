@@ -34,8 +34,6 @@ namespace basic
 namespace impl
 {
 
-using output_buffers_type_t = ::restinio::impl::output_buffers_type_t;
-
 //! Max possible size of websocket frame header (a part before payload).
 constexpr size_t
 websocket_header_max_size()
@@ -53,7 +51,7 @@ class ws_outgoing_data_t
 	public:
 		//! Add buffers to queue.
 		void
-		append( buffers_container_t bufs )
+		append( writable_items_container_t bufs )
 		{
 			if( m_awaiting_buffers.empty() )
 			{
@@ -67,20 +65,20 @@ class ws_outgoing_data_t
 			}
 		}
 
-		output_buffers_type_t
+		writable_item_type_t
 		pop_ready_buffers(
 			std::size_t max_buf_count,
-			buffers_container_t & bufs )
+			writable_items_container_t & bufs )
 		{
 			if( m_awaiting_buffers.empty() )
-				return output_buffers_type_t::none;
+				return writable_item_type_t::none;
 
-			auto result = output_buffers_type_t::trivial_write_operation;
+			auto result = writable_item_type_t::trivial_write_operation;
 
-			if( buffer_storage_t::write_mode_t::custom_write ==
-				m_awaiting_buffers.front().write_mode() )
+			if( writable_item_type_t::file_write_operation ==
+				m_awaiting_buffers.front().write_type() )
 			{
-				result = output_buffers_type_t::custom_write_operation;
+				result = writable_item_type_t::file_write_operation;
 				max_buf_count = 1;
 			}
 
@@ -106,7 +104,7 @@ class ws_outgoing_data_t
 
 	private:
 		//! A queue of buffers.
-		buffers_container_t m_awaiting_buffers;
+		writable_items_container_t m_awaiting_buffers;
 };
 
 //
@@ -318,7 +316,7 @@ class ws_connection_t final
 		//! Write pieces of outgoing data.
 		virtual void
 		write_data(
-			buffers_container_t bufs,
+			writable_items_container_t bufs,
 			bool is_close_frame ) override
 		{
 			//! Run write message on io_context loop if possible.
@@ -401,7 +399,7 @@ class ws_connection_t final
 		void
 		send_close_frame_to_peer( std::string payload )
 		{
-			buffers_container_t bufs;
+			writable_items_container_t bufs;
 			bufs.reserve( 2 );
 
 			bufs.emplace_back(
@@ -979,7 +977,7 @@ class ws_connection_t final
 
 		//! Implementation of writing data performed on the asio_ns::io_context.
 		void
-		write_data_impl( buffers_container_t bufs, bool is_close_frame )
+		write_data_impl( writable_items_container_t bufs, bool is_close_frame )
 		{
 			if( !m_socket.is_open() )
 			{
@@ -1026,17 +1024,17 @@ class ws_connection_t final
 
 				switch( m_resp_out_ctx.obtain_bufs( m_awaiting_buffers ) )
 				{
-					case output_buffers_type_t::trivial_write_operation:
+					case writable_item_type_t::trivial_write_operation:
 						// Here: and there is smth trivial to write.
 						handle_trivial_write_operation();
 						break;
 
-					case output_buffers_type_t::custom_write_operation:
+					case writable_item_type_t::file_write_operation:
 						// Here: and there is custom write operation to start.
 						handle_custom_write_operation();
 						break;
 
-					case output_buffers_type_t::none:
+					case writable_item_type_t::none:
 						;/* Do nothing.*/
 				}
 			}

@@ -106,11 +106,11 @@ class ws_t
 		send_message(
 			bool final,
 			opcode_t opcode,
-			buffer_storage_t payload )
+			writable_item_t payload )
 		{
 			if( m_ws_connection_handle )
 			{
-				buffers_container_t bufs;
+				writable_items_container_t bufs;
 				bufs.reserve( 2 );
 
 				// Create header serialize it and append to bufs .
@@ -152,7 +152,7 @@ class ws_t
 			send_message(
 				msg.is_final(),
 				msg.opcode(),
-				buffer_storage_t{ std::move(msg.payload()) } );
+				writable_item_t{ std::move(msg.payload()) } );
 		}
 
 	private:
@@ -239,7 +239,7 @@ upgrade(
 			std::move( upgrade_internals.m_strand ),
 			std::move( ws_message_handler ) );
 
-	buffers_container_t upgrade_response_bufs;
+	writable_items_container_t upgrade_response_bufs;
 	{
 		http_response_header_t upgrade_response_header{ 101, "Switching Protocols" };
 		upgrade_response_header.swap_fields( upgrade_response_header_fields );
