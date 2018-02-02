@@ -15,8 +15,8 @@
 #include <type_traits>
 
 #include <restinio/asio_include.hpp>
-
 #include <restinio/exception.hpp>
+#include <restinio/sendfile.hpp>
 
 namespace restinio
 {
@@ -29,6 +29,16 @@ namespace impl
 //
 
 //! A base class fora writable items.
+/*!
+	Having a condition to put heterogeneous writable-items sequence in vector
+	and to transfer it from builders to connection context,
+	internal writable-items are the pieces incapsulating various
+	implementation that fit into a fixed memory space.
+	That's makes it possible to fit any of them in a binary
+	buffer that resides in writable_item_t.
+	While different descendants might vary in size
+	size of writable_item_t remains the same, so it can be used in a vector.
+*/
 class writable_base_t
 {
 	public:
@@ -44,19 +54,12 @@ class writable_base_t
 		//! Move this buffer enitity to a given location.
 		//! \note storage must have a sufficient space and proper alignment.
 		virtual void relocate_to( void * storage ) = 0;
+
+		//! Get the size of a writable piece of data.
+		virtual std::size_t size() const = 0;
 };
 
-//! Inernaml interface for a buffer entity.
-/*!
-	Having a condition to put heterogeneous buffer sequences in vector
-	to transfer them from builders to connection context,
-	Internal buffers are the pieces incapsulating various buffers
-	implementation that fit into a fixed memory space.
-	That's makes it possible to fit any of them in a binary
-	buffer that resides in writable_item_t.
-	While different descendant might vary in size
-	size of writable_item_t remains the same, so it can be used in a vector.
-*/
+//! Inernaml interface for a buffer-like entity.
 class buf_iface_t : public writable_base_t
 {
 	public:
@@ -76,8 +79,6 @@ class empty_buf_t final : public buf_iface_t
 		empty_buf_t( empty_buf_t && ) = default; // allow only explicit move.
 		empty_buf_t & operator = ( empty_buf_t && ) = delete;
 
-		//! Implement buf_iface_t.
-		//! \{
 		virtual asio_ns::const_buffer buffer() const override
 		{
 			return asio_ns::const_buffer{ nullptr, 0 };
@@ -87,7 +88,8 @@ class empty_buf_t final : public buf_iface_t
 		{
 			new( storage ) empty_buf_t{};
 		}
-		//! \}
+
+		virtual std::size_t size() const override { return  0; }
 };
 
 //! Buffer entity for const buffer.
@@ -107,8 +109,6 @@ class const_buf_t final : public buf_iface_t
 		const_buf_t( const_buf_t && ) = default; // allow only explicit move.
 		const_buf_t & operator = ( const_buf_t && ) = delete;
 
-		//! Implement buf_iface_t.
-		//! \{
 		virtual asio_ns::const_buffer buffer() const override
 		{
 			return asio_ns::const_buffer{ m_data, m_size };
@@ -118,7 +118,8 @@ class const_buf_t final : public buf_iface_t
 		{
 			new( storage ) const_buf_t{ std::move( *this ) };
 		}
-		//! \}
+
+		virtual std::size_t size() const override { return  m_size; }
 
 	private:
 		const void * m_data;
@@ -140,8 +141,6 @@ class string_buf_t final : public buf_iface_t
 		string_buf_t( string_buf_t && ) = default; // allow only explicit move.
 		string_buf_t & operator = ( string_buf_t && ) = delete;
 
-		//! Implement buf_iface_t.
-		//! \{
 		virtual asio_ns::const_buffer buffer() const override
 		{
 			return asio_ns::const_buffer{ m_buf.data(), m_buf.size() };
@@ -151,7 +150,8 @@ class string_buf_t final : public buf_iface_t
 		{
 			new( storage ) string_buf_t{ std::move( *this ) };
 		}
-		//! \}
+
+		virtual std::size_t size() const override { return  m_buf.size(); }
 
 	private:
 		std::string m_buf;
@@ -176,8 +176,6 @@ class shared_datasizeable_buf_t final : public buf_iface_t
 		shared_datasizeable_buf_t( shared_datasizeable_buf_t && ) = default; // allow only explicit move.
 		shared_datasizeable_buf_t & operator = ( shared_datasizeable_buf_t && ) = delete;
 
-		//! Implement buf_iface_t.
-		//! \{
 		virtual asio_ns::const_buffer buffer() const override
 		{
 			return asio_ns::const_buffer{ m_buf_ptr->data(), m_buf_ptr->size() };
@@ -187,19 +185,59 @@ class shared_datasizeable_buf_t final : public buf_iface_t
 		{
 			new( storage ) shared_datasizeable_buf_t{ std::move( *this ) };
 		}
-		//! \}
+
+		virtual std::size_t size() const override { return  m_buf_ptr->size(); }
 
 	private:
 		shared_ptr_t m_buf_ptr;
 };
 
+//
+// sendfile_write_operation_t
+//
+
+//! Send file operation wrapper.
+struct sendfile_write_operation_t : public writable_base_t
+{
+	public:
+		sendfile_write_operation_t() = delete;
+
+		sendfile_write_operation_t( sendfile_options_t && sf_opts )
+			:	m_sendfile_options{ std::make_unique< sendfile_options_t >( std::move( sf_opts ) ) }
+		{}
+
+		sendfile_write_operation_t( const sendfile_write_operation_t & ) = delete;
+		const sendfile_write_operation_t & operator = ( const sendfile_write_operation_t & ) = delete;
+		sendfile_write_operation_t( sendfile_write_operation_t && ) = default;
+		sendfile_write_operation_t & operator = ( sendfile_write_operation_t && ) = default;
+
+		virtual void relocate_to( void * storage ) override
+		{
+			new( storage ) sendfile_write_operation_t{ std::move( *this ) };
+		}
+
+		virtual std::size_t size() const override
+		{
+			return m_sendfile_options ? m_sendfile_options->size() : 0;
+		}
+
+		const sendfile_options_t &
+		sendfile_options() const
+		{
+			return *m_sendfile_options;
+		}
+
+	private:
+		std::unique_ptr< sendfile_options_t > m_sendfile_options;
+};
 
 constexpr std::size_t buffer_storage_align =
 	std::max< std::size_t >( {
 		alignof( empty_buf_t ),
 		alignof( const_buf_t ),
 		alignof( string_buf_t ),
-		alignof( shared_datasizeable_buf_t< std::string > ) } );
+		alignof( shared_datasizeable_buf_t< std::string > ),
+		alignof( sendfile_write_operation_t ) } );
 
 //! An amount of memory that is to be enough to hold any possible buffer entity.
 constexpr std::size_t needed_storage_max_size =
@@ -207,7 +245,8 @@ constexpr std::size_t needed_storage_max_size =
 		sizeof( empty_buf_t ),
 		sizeof( const_buf_t ),
 		sizeof( string_buf_t ),
-		sizeof( shared_datasizeable_buf_t< std::string > ) } );
+		sizeof( shared_datasizeable_buf_t< std::string > ),
+		sizeof( sendfile_write_operation_t ) } );
 
 } /* namespace impl */
 
@@ -311,10 +350,16 @@ class writable_item_t
 			new( &m_storage ) impl::shared_datasizeable_buf_t< T >{ std::move( sp ) };
 		}
 
+		writable_item_t( sendfile_options_t sf_opts )
+			:	m_write_type{ writable_item_type_t::file_write_operation }
+		{
+			new( &m_storage ) impl::sendfile_write_operation_t{ std::move( sf_opts ) };
+		}
+
 		writable_item_t( writable_item_t && b )
 			:	m_write_type{ b.m_write_type }
 		{
-			b.get_buf()->relocate_to( &m_storage );
+			b.get_writable_base()->relocate_to( &m_storage );
 		}
 
 		void
@@ -324,7 +369,7 @@ class writable_item_t
 			{
 				destroy_stored_buffer();
 				m_write_type = b.m_write_type;
-				b.get_buf()->relocate_to( &m_storage );
+				b.get_writable_base()->relocate_to( &m_storage );
 			}
 		}
 
@@ -339,10 +384,22 @@ class writable_item_t
 			return m_write_type;
 		}
 
+		std::size_t
+		size() const
+		{
+			return get_writable_base()->size();
+		}
+
 		asio_ns::const_buffer
 		buf() const
 		{
 			return get_buf()->buffer();
+		}
+
+		const sendfile_options_t &
+		sendfile_options() const
+		{
+			return get_sfwo()->sendfile_options();
 		}
 
 	private:
@@ -355,6 +412,19 @@ class writable_item_t
 
 		writable_item_type_t m_write_type;
 
+		//! Access writable_base_t item.
+		//! \{
+		const impl::writable_base_t * get_writable_base() const
+		{
+			return reinterpret_cast< const impl::writable_base_t * >( &m_storage );
+		}
+
+		impl::writable_base_t * get_writable_base()
+		{
+			return reinterpret_cast< impl::writable_base_t * >( &m_storage );
+		}
+		//! \}
+
 		//! Access buf item.
 		//! \{
 		const impl::buf_iface_t * get_buf() const
@@ -366,6 +436,20 @@ class writable_item_t
 		{
 			return reinterpret_cast< impl::buf_iface_t * >( &m_storage );
 		}
+		//! \}
+
+		//! Access sendfile_write_operation_t item.
+		//! \{
+		const impl::sendfile_write_operation_t * get_sfwo() const
+		{
+			return reinterpret_cast< const impl::sendfile_write_operation_t * >( &m_storage );
+		}
+
+		impl::sendfile_write_operation_t * get_sfwo()
+		{
+			return reinterpret_cast< impl::sendfile_write_operation_t * >( &m_storage );
+		}
+		//! \}
 
 		using storage_t =
 			std::aligned_storage_t<
@@ -373,7 +457,6 @@ class writable_item_t
 				impl::buffer_storage_align >;
 
 		storage_t m_storage;
-		//! \}
 };
 
 //! Back compatibility.
