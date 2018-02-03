@@ -181,7 +181,7 @@ class response_builder_t< restinio_controlled_output_t > final
 		self_type_t &
 		set_body( writable_item_t body )
 		{
-			auto size = asio_ns::buffer_size( body.buf() );
+			auto size = body.size();
 			return set_body_impl( body, size );
 		}
 
@@ -190,7 +190,7 @@ class response_builder_t< restinio_controlled_output_t > final
 		self_type_t &
 		append_body( writable_item_t body_part )
 		{
-			auto size = asio_ns::buffer_size( body_part.buf() );
+			auto size = body_part.size();
 			return append_body_impl( body_part, size );
 		}
 		//! \}
@@ -302,7 +302,7 @@ class response_builder_t< user_controlled_output_t > final
 		self_type_t &
 		set_body( writable_item_t body )
 		{
-			auto size = asio_ns::buffer_size( body.buf() );
+			auto size = body.size();
 			return set_body_impl( body, size );
 		}
 		//! \}
@@ -312,7 +312,7 @@ class response_builder_t< user_controlled_output_t > final
 		self_type_t &
 		append_body( writable_item_t body_part )
 		{
-			auto size = asio_ns::buffer_size( body_part.buf() );
+			auto size = body_part.size();
 
 			if( 0 == size )
 				return *this;
@@ -487,7 +487,7 @@ class response_builder_t< chunked_output_t > final
 		auto &
 		append_chunk( writable_item_t chunk )
 		{
-			auto size = asio_ns::buffer_size( chunk.buf() );
+			auto size = chunk.size();
 
 			if( 0 != size )
 				m_chunks.emplace_back( std::move( chunk ) );

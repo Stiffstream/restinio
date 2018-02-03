@@ -24,7 +24,7 @@
 #include <restinio/impl/fixed_buffer.hpp>
 #include <restinio/impl/raw_resp_output_ctx.hpp>
 #include <restinio/impl/executor_wrapper.hpp>
-#include <restinio/impl/file_write_operation.hpp>
+#include <restinio/impl/sendfile_operation.hpp>
 
 #include <restinio/utils/impl/safe_uint_truncate.hpp>
 
@@ -787,16 +787,23 @@ class connection_t final
 				const bool response_coordinator_full_before =
 					m_response_coordinator.is_full();
 
-				switch( m_resp_out_ctx.obtain_bufs( m_response_coordinator ) )
+				const auto obtain_bufs_result = m_resp_out_ctx.obtain_bufs( m_response_coordinator );
+				// Check if all response cells busy:
+				const bool response_coordinator_full_after = m_response_coordinator.is_full();
+
+				const bool init_read_after_this_write =
+						response_coordinator_full_before && !response_coordinator_full_after;
+
+				switch( obtain_bufs_result )
 				{
 					case writable_item_type_t::trivial_write_operation:
 						// Here: and there is smth trivial to write.
-						handle_trivial_write_operation( response_coordinator_full_before );
+						handle_trivial_write_operation( init_read_after_this_write );
 						break;
 
 					case writable_item_type_t::file_write_operation:
 						// Here: and there is custom write operation to start.
-						handle_file_write_operation( response_coordinator_full_before );
+						handle_file_write_operation( init_read_after_this_write );
 						break;
 
 					case writable_item_type_t::none:
@@ -806,7 +813,7 @@ class connection_t final
 		}
 
 		void
-		handle_trivial_write_operation( bool response_coordinator_full_before )
+		handle_trivial_write_operation( bool init_read_after_this_write )
 		{
 			// Remember if all response cells were busy:
 			const bool response_coordinator_full_after = m_response_coordinator.is_full();
@@ -848,8 +855,7 @@ class connection_t final
 					[ this,
 						ctx = shared_from_this(),
 						should_keep_alive = !m_response_coordinator.closed(),
-						init_read_after_this_write =
-							response_coordinator_full_before && !response_coordinator_full_after ]
+						init_read_after_this_write ]
 						( const asio_ns::error_code & ec, std::size_t written ){
 							after_write(
 								ec,
@@ -862,9 +868,30 @@ class connection_t final
 		}
 
 		void
-		handle_file_write_operation( bool response_coordinator_full_before )
+		handle_file_write_operation( bool init_read_after_this_write )
 		{
+			// Remember if all response cells were busy:
+			const bool response_coordinator_full_after = m_response_coordinator.is_full();
+
 			// TODO: handle custom write operation.
+			m_resp_out_ctx.start_sendfile_operation(
+				this->get_executor(),
+				m_socket,
+				[ this,
+					ctx = shared_from_this(),
+					should_keep_alive = !m_response_coordinator.closed(),
+					init_read_after_this_write ]
+					( const asio_ns::error_code & ec, std::size_t written ){
+
+							// TODO: sendfile
+							after_write(
+								ec,
+								written,
+								should_keep_alive,
+								init_read_after_this_write );
+					});
+
+			// guard_sendfile_operation();
 		}
 
 		void

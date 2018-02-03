@@ -20,6 +20,21 @@ namespace restinio
 namespace impl
 {
 
+//
+// sendfile_operation_runner_base_t
+//
+
+class sendfile_operation_runner_base_t
+	:	public std::enable_shared_from_this< sendfile_operation_runner_base_t >
+{
+	public:
+		virtual void
+		init_next_write() = 0;
+};
+
+using sendfile_operation_runner_shared_ptr_t = std::shared_ptr< sendfile_operation_runner_base_t >;
+
+
 using after_sendfile_cb_t = std::function< void ( const asio_ns::error_code & , std::size_t ) >;
 
 //
@@ -28,8 +43,8 @@ using after_sendfile_cb_t = std::function< void ( const asio_ns::error_code & , 
 
 //! A runner of sendfile operation
 template < typename Socket >
-class sendfile_operation_runner_t
-	:	public std::enable_shared_from_this< sendfile_operation_runner_t< Socket > >
+class sendfile_operation_runner_t final
+	:	public sendfile_operation_runner_base_t
 {
 	public:
 		sendfile_operation_runner_t(
@@ -40,7 +55,7 @@ class sendfile_operation_runner_t
 			:	m_file_descriptor{ sf_opts.file_descriptor() }
 			,	m_next_write_offset{ sf_opts.offset() }
 			,	m_remained_size{ sf_opts.size() }
-			,	m_chunk_size{ sf_opts.m_chunk_size() }
+			,	m_chunk_size{ sf_opts.chunk_size() }
 			,	m_expires_after{ std::chrono::steady_clock::now() + sf_opts.timelimit() }
 			,	m_executor{ std::move( executor )}
 			,	m_socket{ socket }
@@ -49,8 +64,8 @@ class sendfile_operation_runner_t
 
 		auto expires_after() const { return m_expires_after; }
 
-		void
-		init_next_write()
+		virtual void
+		init_next_write() override
 		{
 			asio_ns::error_code ec;
 
@@ -70,37 +85,50 @@ class sendfile_operation_runner_t
 				// Try the system call.
 				errno = 0;
 				auto n =
-					sendfile(
+					::sendfile(
 						m_socket.native_handle(),
 						m_file_descriptor,
 						&m_next_write_offset,
 						std::min< file_size_t >( m_remained_size, m_chunk_size ) );
 
-				if( -1 == n )
-				{
-					if( errno == EAGAIN )
-					{
+				auto wait_write_is_possible =
+					[&]{
 						// We have to wait for the socket to become ready again.
 						m_socket.async_wait(
 							asio_ns::ip::tcp::socket::wait_write,
 							asio_ns::bind_executor(
 								m_executor,
-								[ ctx = this->enable_shared_from_this() ]( const asio_ns::error_code & ec ){
-									if( ec || 0 == ctx->m_remained_size )
+								[ this, ctx = this->shared_from_this() ]
+								( const asio_ns::error_code & ec ){
+									if( ec || 0 == m_remained_size )
 									{
-										ctx->m_after_sendfile_cb( ec, ctx->m_transfered_size );
+										m_after_sendfile_cb( ec, m_transfered_size );
 									}
 									else
 									{
-										ctx->init_next_write();
+										init_next_write();
 									}
 								} ) );
+					};
+
+				if( -1 == n )
+				{
+					if( errno == EAGAIN )
+					{
+						wait_write_is_possible();
 					}
 					else
 					{
 						ec = asio_ns::error_code{ errno, asio_ns::error::get_system_category() };
 						m_after_sendfile_cb( ec, m_transfered_size );
 					}
+
+					break;
+				}
+				else if( 0 == n )
+				{
+					wait_write_is_possible();
+					break;
 				}
 				else
 				{

@@ -187,4 +187,16 @@ class sendfile_options_t
 		std::chrono::steady_clock::duration m_timelimit{ std::chrono::steady_clock::duration::zero() };
 };
 
+inline sendfile_options_t
+sendfile( const char * file_path )
+{
+	return sendfile_options_t{ file_path };
+}
+
+inline sendfile_options_t
+sendfile( const std::string & file_path )
+{
+	return sendfile( file_path.c_str() );
+}
+
 } /* namespace restinio */

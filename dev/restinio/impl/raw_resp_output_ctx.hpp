@@ -13,6 +13,7 @@
 #include <restinio/asio_include.hpp>
 
 #include <restinio/buffers.hpp>
+#include <restinio/impl/sendfile_operation.hpp>
 
 namespace restinio
 {
@@ -60,6 +61,36 @@ struct raw_resp_output_ctx_t
 		m_transmitting = false;
 	}
 
+	template< typename Socket >
+	void
+	start_sendfile_operation(
+		asio_ns::executor executor,
+		Socket & socket,
+		after_sendfile_cb_t after_sendfile_cb )
+	{
+		assert( !m_sendfile_operation );
+		assert( 1 == m_bufs.size() );
+
+		m_sendfile_operation =
+			std::make_shared< sendfile_operation_runner_t< Socket > >(
+				m_bufs.front().sendfile_options(),
+				std::move( executor ),
+				socket,
+				std::move( after_sendfile_cb ) );
+
+		m_sendfile_operation->init_next_write();
+		m_transmitting = true;
+	}
+
+	void
+	finish_sendfile_operation()
+	{
+		assert( m_sendfile_operation );
+		m_sendfile_operation.reset();
+		m_bufs.resize( 0 );
+		m_transmitting = false;
+	}
+
 	bool
 	transmitting() const
 	{
@@ -88,6 +119,8 @@ struct raw_resp_output_ctx_t
 
 		//! Real buffers with data.
 		writable_items_container_t m_bufs;
+
+		sendfile_operation_runner_shared_ptr_t m_sendfile_operation;
 };
 
 } /* namespace impl */
