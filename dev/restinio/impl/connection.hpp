@@ -24,6 +24,7 @@
 #include <restinio/impl/fixed_buffer.hpp>
 #include <restinio/impl/raw_resp_output_ctx.hpp>
 #include <restinio/impl/executor_wrapper.hpp>
+#include <restinio/impl/file_write_operation.hpp>
 
 #include <restinio/utils/impl/safe_uint_truncate.hpp>
 
