@@ -42,6 +42,7 @@ int main( int argc, const char * argv[] )
 									.append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
 									.set_body(
 										restinio::sendfile( argv[ 1 ] )
+											.offset_and_size( 0, 20 )
 											.chunk_size( 1024 ) )
 									.done();
 

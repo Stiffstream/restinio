@@ -857,9 +857,22 @@ class connection_t final
 						should_keep_alive = !m_response_coordinator.closed(),
 						init_read_after_this_write ]
 						( const asio_ns::error_code & ec, std::size_t written ){
+
+							// Release buffers.
+							m_resp_out_ctx.done();
+
+							if( !ec )
+							{
+								m_logger.trace( [&]{
+									return fmt::format(
+											"[connection:{}] outgoing data was sent: {} bytes",
+											connection_id(),
+											written );
+								} );
+							}
+
 							after_write(
 								ec,
-								written,
 								should_keep_alive,
 								init_read_after_this_write );
 					} ) );
@@ -883,12 +896,24 @@ class connection_t final
 					init_read_after_this_write ]
 					( const asio_ns::error_code & ec, std::size_t written ){
 
-							// TODO: sendfile
-							after_write(
-								ec,
-								written,
-								should_keep_alive,
-								init_read_after_this_write );
+						// Release sendfile operation.
+						m_resp_out_ctx.finish_sendfile_operation();
+
+						if( !ec )
+						{
+							m_logger.trace( [&]{
+								return fmt::format(
+										"[connection:{}] outgoing data was sent (sendfile): {} bytes",
+										connection_id(),
+										written );
+							} );
+						}
+
+						// TODO: sendfile
+						after_write(
+							ec,
+							should_keep_alive,
+							init_read_after_this_write );
 					});
 
 			// guard_sendfile_operation();
@@ -939,22 +964,11 @@ class connection_t final
 		inline void
 		after_write(
 			const asio_ns::error_code & ec,
-			std::size_t written,
 			bool should_keep_alive,
 			bool should_init_read_after_this_write )
 		{
 			if( !ec )
 			{
-				// Release buffers.
-				m_resp_out_ctx.done();
-
-				m_logger.trace( [&]{
-					return fmt::format(
-							"[connection:{}] outgoing data was sent: {} bytes",
-							connection_id(),
-							written );
-				} );
-
 				if( should_keep_alive )
 				{
 					m_logger.trace( [&]{
