@@ -21,6 +21,11 @@ restinio::request_handling_status_t handler(restinio::request_handle_t req)
 	return restinio::request_rejected();
 }
 
+using http_server_traits_t =
+	restinio::traits_t<
+		restinio::asio_timer_manager_t,
+		restinio::shared_ostream_logger_t >;
+
 int main( int argc, const char * argv[] )
 {
 	try
@@ -28,7 +33,8 @@ int main( int argc, const char * argv[] )
 		if( 2 == argc )
 		{
 			restinio::run(
-				restinio::on_thread_pool( std::thread::hardware_concurrency() )
+				restinio::on_thread_pool< http_server_traits_t >(
+							std::thread::hardware_concurrency() )
 					.port( 8080 )
 					.address( "localhost" )
 					.request_handler(

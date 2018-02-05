@@ -61,12 +61,12 @@ struct raw_resp_output_ctx_t
 		m_transmitting = false;
 	}
 
-	template< typename Socket >
+	template< typename Socket, typename After_Write_CB >
 	void
 	start_sendfile_operation(
 		asio_ns::executor executor,
 		Socket & socket,
-		after_sendfile_cb_t after_sendfile_cb )
+		After_Write_CB && after_sendfile_cb )
 	{
 		assert( !m_sendfile_operation );
 		assert( 1 == m_bufs.size() );

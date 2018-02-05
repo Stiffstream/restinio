@@ -815,9 +815,6 @@ class connection_t final
 		void
 		handle_trivial_write_operation( bool init_read_after_this_write )
 		{
-			// Remember if all response cells were busy:
-			const bool response_coordinator_full_after = m_response_coordinator.is_full();
-
 			// Asio buffers (param for async write):
 			auto & bufs = m_resp_out_ctx.create_bufs();
 
@@ -883,38 +880,58 @@ class connection_t final
 		void
 		handle_file_write_operation( bool init_read_after_this_write )
 		{
-			// Remember if all response cells were busy:
-			const bool response_coordinator_full_after = m_response_coordinator.is_full();
+			if( m_response_coordinator.closed() )
+			{
+				m_logger.trace( [&]{
+					return fmt::format(
+							"[connection:{}] sending resp file data with "
+							"connection-close attribute ",
+							connection_id() );
+				} );
 
-			// TODO: handle custom write operation.
+				// Reading new requests is useless.
+				asio_ns::error_code ignored_ec;
+				m_socket.cancel( ignored_ec );
+			}
+			else
+			{
+				m_logger.trace( [&]{
+					return fmt::format(
+						"[connection:{}] sending resp file data",
+						connection_id() );
+				} );
+			}
+
 			m_resp_out_ctx.start_sendfile_operation(
 				this->get_executor(),
 				m_socket,
-				[ this,
-					ctx = shared_from_this(),
-					should_keep_alive = !m_response_coordinator.closed(),
-					init_read_after_this_write ]
-					( const asio_ns::error_code & ec, std::size_t written ){
+				asio_ns::bind_executor(
+					this->get_executor(),
+					[ this,
+						ctx = shared_from_this(),
+						should_keep_alive = !m_response_coordinator.closed(),
+						init_read_after_this_write ]
+						( const asio_ns::error_code & ec, std::size_t written ){
 
-						// Release sendfile operation.
-						m_resp_out_ctx.finish_sendfile_operation();
+							// Release sendfile operation.
+							m_resp_out_ctx.finish_sendfile_operation();
 
-						if( !ec )
-						{
-							m_logger.trace( [&]{
-								return fmt::format(
-										"[connection:{}] outgoing data was sent (sendfile): {} bytes",
-										connection_id(),
-										written );
-							} );
-						}
+							if( !ec )
+							{
+								m_logger.trace( [&]{
+									return fmt::format(
+											"[connection:{}] file data was sent: {} bytes",
+											connection_id(),
+											written );
+								} );
+							}
 
-						// TODO: sendfile
-						after_write(
-							ec,
-							should_keep_alive,
-							init_read_after_this_write );
-					});
+							// TODO: sendfile
+							after_write(
+								ec,
+								should_keep_alive,
+								init_read_after_this_write );
+						} ) );
 
 			// guard_sendfile_operation();
 		}
