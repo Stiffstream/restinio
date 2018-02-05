@@ -120,7 +120,7 @@ struct raw_resp_output_ctx_t
 		//! Real buffers with data.
 		writable_items_container_t m_bufs;
 
-		sendfile_operation_runner_shared_ptr_t m_sendfile_operation;
+		sendfile_operation_shared_ptr_t m_sendfile_operation;
 };
 
 } /* namespace impl */

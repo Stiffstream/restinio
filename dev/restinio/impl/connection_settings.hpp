@@ -44,10 +44,12 @@ struct connection_settings_t final
 
 	template < typename Settings >
 	connection_settings_t(
+		asio_ns::io_context & io_context,
 		Settings && settings,
 		http_parser_settings parser_settings,
 		timer_manager_handle_t timer_manager )
-		:	m_request_handler{ settings.request_handler() }
+		:	m_io_context{ io_context }
+		,	m_request_handler{ settings.request_handler() }
 		,	m_parser_settings{ parser_settings }
 		,	m_buffer_size{ settings.buffer_size() }
 		,	m_read_next_http_message_timelimit{
@@ -63,6 +65,9 @@ struct connection_settings_t final
 		if( !m_timer_manager )
 			throw exception_t{ "timer manager not set" };
 	}
+
+	//! Server execution context.
+	asio_ns::io_context & m_io_context;
 
 	//! Request handler factory.
 	std::unique_ptr< request_handler_t > m_request_handler;
@@ -99,6 +104,7 @@ struct connection_settings_t final
 	}
 
 	private:
+
 		//! Timer factory for timout guards.
 		timer_manager_handle_t m_timer_manager;
 };

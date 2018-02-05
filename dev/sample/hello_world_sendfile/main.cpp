@@ -40,7 +40,9 @@ int main( int argc, const char * argv[] )
 									.append_header( restinio::http_field::server, "RESTinio hello world server" )
 									.append_header_date_field()
 									.append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
-									.set_body( restinio::sendfile( argv[ 1 ] ) )
+									.set_body(
+										restinio::sendfile( argv[ 1 ] )
+											.chunk_size( 1024 ) )
 									.done();
 
 								return restinio::request_accepted();

@@ -188,6 +188,7 @@ class http_server_t
 
 			auto conn_settings =
 				std::make_shared< connection_settings_t >(
+					this->io_context(),
 					std::forward< actual_settings_type >(settings),
 					impl::create_parser_settings(),
 					m_timer_manager );

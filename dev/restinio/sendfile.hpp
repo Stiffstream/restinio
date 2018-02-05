@@ -37,25 +37,21 @@ using file_size_t = size_t;
 */
 class sendfile_options_t
 {
+		friend sendfile_options_t sendfile( file_descriptor_t , file_size_t , file_size_t );
+
+		sendfile_options_t(
+			file_descriptor_t fd,
+			file_size_t file_total_size,
+			file_size_t chunk_size )
+			:	m_file_descriptor{ fd }
+			,	m_file_total_size{ file_total_size }
+			,	m_offset{ 0 }
+			,	m_size{ file_total_size }
+			,	m_chunk_size{ chunk_size }
+			,	m_timelimit{ std::chrono::steady_clock::duration::zero() }
+		{}
+
 	public:
-		sendfile_options_t( const char * filename )
-		{
-			m_file_descriptor = open( filename, O_RDONLY );
-
-			if( -1 == m_file_descriptor )
-			{
-				throw exception_t{
-					fmt::format( "unable to openfile '{}': {}", filename, strerror( errno ) ) };
-			}
-
-			struct stat file_stat;
-			fstat( m_file_descriptor, &file_stat );
-
-			m_size = m_file_total_size = file_stat.st_size;
-
-			// TODO: mb use st_blksize for default chunk size?
-		}
-
 		sendfile_options_t( const sendfile_options_t & ) = delete;
 		const sendfile_options_t & operator = ( const sendfile_options_t & ) = delete;
 
@@ -150,7 +146,7 @@ class sendfile_options_t
 		sendfile_options_t &
 		timelimit( std::chrono::steady_clock::duration timelimit_ ) &
 		{
-			m_timelimit = std::min( timelimit_, std::chrono::steady_clock::duration::zero() );
+			m_timelimit = std::max( timelimit_, std::chrono::steady_clock::duration::zero() );
 			return *this;
 		}
 
@@ -168,17 +164,17 @@ class sendfile_options_t
 		}
 
 	private:
-		file_descriptor_t m_file_descriptor{ -1 };
+		file_descriptor_t m_file_descriptor;
 		file_size_t m_file_total_size;
 
 		//! Data.
 		//! \{
-		file_offset_t m_offset{ 0 };
-		file_size_t m_size{ 0 }; // Zero means to the end of file.
+		file_offset_t m_offset;
+		file_size_t m_size; // Zero means to the end of file.
 		//! \}
 
 		//! A prefered chunk size for a single write call.
-		file_size_t m_chunk_size = 16 * 1024 * 1024;
+		file_size_t m_chunk_size;
 
 		//! Timelimit for writing all the given data.
 		/*!
@@ -187,16 +183,43 @@ class sendfile_options_t
 		std::chrono::steady_clock::duration m_timelimit{ std::chrono::steady_clock::duration::zero() };
 };
 
+//! Default chunk size for sendfile operation.
+constexpr file_size_t sendfile_default_chunk_size = 16 * 1024 * 1024;
+
+//! Create sendfile optionswith a given file and its given size.
+/*!
+	\note Parameters are not checked and are trusted as is.
+*/
 inline sendfile_options_t
-sendfile( const char * file_path )
+sendfile(
+	file_descriptor_t fd,
+	file_size_t total_file_size,
+	file_size_t chunk_size = sendfile_default_chunk_size )
 {
-	return sendfile_options_t{ file_path };
+	return sendfile_options_t{ fd, total_file_size, chunk_size };
 }
 
 inline sendfile_options_t
-sendfile( const std::string & file_path )
+sendfile( const char * file_path, file_size_t chunk_size = sendfile_default_chunk_size )
 {
-	return sendfile( file_path.c_str() );
+	file_descriptor_t file_descriptor = open( file_path, O_RDONLY );
+
+	if( -1 == file_descriptor )
+	{
+		throw exception_t{
+			fmt::format( "unable to openfile '{}': {}", file_path, strerror( errno ) ) };
+	}
+
+	struct stat64 file_stat;
+	fstat64( file_descriptor, &file_stat );
+
+	return sendfile( file_descriptor, file_stat.st_size, chunk_size );
+}
+
+inline sendfile_options_t
+sendfile( const std::string & file_path, file_size_t chunk_size = sendfile_default_chunk_size )
+{
+	return sendfile( file_path.c_str(), chunk_size );
 }
 
 } /* namespace restinio */
