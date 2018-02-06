@@ -287,26 +287,31 @@ class response_coordinator_t
 			{
 				auto & current_ctx = m_context_table.front();
 
-				if( 0 !=  current_ctx.m_bufs.size() &&
+				if( 0 != current_ctx.m_bufs.size() &&
 					writable_item_type_t::file_write_operation ==
 						current_ctx.m_bufs.front().write_type() )
 				{
-					// First buffer to send implicates custom write operation.
-					bufs.emplace_back( std::move( current_ctx.m_bufs.front() ) );
-					current_ctx.m_bufs.erase( std::begin( current_ctx.m_bufs ) );
+					// First buffer to send implicates file write operation.
 
-					if( response_parts_attr_t::final_parts ==
-						current_ctx.m_response_output_flags.m_response_parts )
+					if( 1 == current_ctx.m_bufs.size() &&
+						response_parts_attr_t::final_parts ==
+							current_ctx.m_response_output_flags.m_response_parts )
 					{
-						// Response for currently first tracked
-						// request is completed.
-						m_context_table.pop_response_context();
+						bufs = std::move( current_ctx.m_bufs );
 
 						// Set close flag.
 						m_connection_closed_response_occured =
 							response_connection_attr_t::connection_close ==
-								current_ctx.m_response_output_flags
-									.m_response_connection;
+									current_ctx.m_response_output_flags.m_response_connection;
+
+						// Response for currently first tracked
+						// request is completed.
+						m_context_table.pop_response_context();
+					}
+					else
+					{
+						bufs.emplace_back( std::move( current_ctx.m_bufs.front() ) );
+						current_ctx.m_bufs.erase( std::begin( current_ctx.m_bufs ) );
 					}
 					return writable_item_type_t::file_write_operation;
 				}
@@ -373,19 +378,21 @@ class response_coordinator_t
 					if( response_parts_attr_t::final_parts ==
 						current_ctx.m_response_output_flags.m_response_parts )
 					{
+						m_connection_closed_response_occured =
+							response_connection_attr_t::connection_close ==
+								current_ctx.m_response_output_flags.m_response_connection;
+
 						// Response for currently first tracked
 						// request is completed.
 						m_context_table.pop_response_context();
 
-						if( response_connection_attr_t::connection_close ==
-							current_ctx.m_response_output_flags.m_response_connection )
+						if( m_connection_closed_response_occured )
 						{
 							// Not only the response is complete
 							// but it has a connection-close property.
 							// So the response coordinator must
 							// stop its work.
 
-							m_connection_closed_response_occured = true;
 							break;
 						}
 					}
