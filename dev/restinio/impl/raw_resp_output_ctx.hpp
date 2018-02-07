@@ -71,15 +71,16 @@ struct raw_resp_output_ctx_t
 		assert( !m_sendfile_operation );
 		assert( 1 == m_bufs.size() );
 
-		m_sendfile_operation =
+		auto sendfile_operation =
 			std::make_shared< sendfile_operation_runner_t< Socket > >(
 				m_bufs.front().sendfile_options(),
 				std::move( executor ),
 				socket,
 				std::move( after_sendfile_cb ) );
 
-		m_sendfile_operation->init_next_write();
+		m_sendfile_operation = std::move( sendfile_operation );
 		m_transmitting = true;
+		m_sendfile_operation->start();
 	}
 
 	void

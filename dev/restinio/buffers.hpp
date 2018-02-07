@@ -407,7 +407,7 @@ class writable_item_t
 		destroy_stored_buffer()
 		{
 			using dtor_writable_base_t = impl::writable_base_t;
-			get_buf()->~dtor_writable_base_t();
+			get_writable_base()->~dtor_writable_base_t();
 		}
 
 		writable_item_type_t m_write_type;

@@ -28,8 +28,13 @@ namespace restinio
 	{
 		return ec == asio_ns::error::eof;
 	}
-	//! \}
 
+	namespace asio_ec
+	{
+		constexpr auto  eof = asio_ns::error::eof;
+	} /* namespace err */
+
+	//! \}
 } /* namespace restinio */
 
 #else
@@ -55,6 +60,12 @@ namespace restinio
 	{
 		return ec == asio_ns::error::misc_errors::eof;
 	}
+
+
+	namespace asio_ec
+	{
+		constexpr auto  eof = asio_ns::error::misc_errors::eof
+	} /* namespace err */
 
 
 } /* namespace restinio */

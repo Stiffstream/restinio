@@ -23,7 +23,7 @@ namespace restinio
 {
 
 using file_descriptor_t = int;
-using file_offset_t = off64_t;
+using file_offset_t = off_t;
 using file_size_t = size_t;
 
 //
