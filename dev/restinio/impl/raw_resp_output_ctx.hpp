@@ -92,6 +92,13 @@ struct raw_resp_output_ctx_t
 		m_transmitting = false;
 	}
 
+	auto
+	sendfile_timelimit()
+	{
+		assert( 1 == m_bufs.size() );
+		return m_bufs.front().sendfile_options().timelimit();
+	}
+
 	bool
 	transmitting() const
 	{

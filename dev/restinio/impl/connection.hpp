@@ -777,7 +777,6 @@ class connection_t final
 		{
 			assert( !m_response_coordinator.closed() );
 
-
 			if( !m_resp_out_ctx.transmitting() )
 			{
 				// Here: not writing anything to socket, so
@@ -902,6 +901,8 @@ class connection_t final
 				} );
 			}
 
+			guard_sendfile_operation();
+
 			m_resp_out_ctx.start_sendfile_operation(
 				this->get_executor(),
 				m_socket,
@@ -933,7 +934,6 @@ class connection_t final
 								init_read_after_this_write );
 						} ) );
 
-			// guard_sendfile_operation();
 		}
 
 		void
@@ -1243,6 +1243,25 @@ class connection_t final
 			schedule_operation_timeout_callback(
 				m_settings->m_write_http_response_timelimit,
 				&connection_t::handle_write_response_timeout );
+		}
+
+
+		void
+		handle_sendfile_timeout()
+		{
+			handle_xxx_timeout( "writing response (sendfile)" );
+		}
+
+		void
+		guard_sendfile_operation()
+		{
+			const auto timelimit =
+				std::chrono::steady_clock::duration::zero() == m_resp_out_ctx.sendfile_timelimit() ?
+					m_settings->m_write_http_response_timelimit : m_resp_out_ctx.sendfile_timelimit();
+
+			schedule_operation_timeout_callback(
+				timelimit,
+				&connection_t::handle_sendfile_timeout );
 		}
 		//! \}
 

@@ -40,6 +40,7 @@ MxxRu::Cpp::composite_target {
 	required_prj( "test/http_pipelining/sequence/prj.ut.rb" )
 	required_prj( "test/http_pipelining/timeouts/prj.ut.rb" )
 
+	required_prj( "test/sendfile/prj.ut.rb" )
 
 	# ================================================================
 	# Express router
