@@ -24,7 +24,7 @@ using file_size_t = size_t;
 inline file_descriptor_t
 open_file( const char * file_path, open_file_errh_t err_handling )
 {
-	file_descriptor_t file_descriptor = open( file_path, O_RDONLY )
+	file_descriptor_t file_descriptor = open( file_path, O_RDONLY );
 
 	if( null_file_descriptor == file_descriptor )
 	{

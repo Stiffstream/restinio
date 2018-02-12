@@ -12,6 +12,8 @@
 #include <chrono>
 
 #include <fmt/format.h>
+
+#include <restinio/string_view.hpp>
 #include <restinio/exception.hpp>
 
 
@@ -37,8 +39,8 @@ enum class open_file_errh_t
 
 #if defined( _MSC_VER )
 	#include "sendfile_defs_win.hpp"
-// #elif (defined( __clang__ ) || defined( __GNUC__ )) && !defined(__WIN32__)
-// 	#include "sendfile_defs_posix.hpp"
+#elif (defined( __clang__ ) || defined( __GNUC__ )) && !defined(__WIN32__)
+	#include "sendfile_defs_posix.hpp"
 #else
 	#include "sendfile_defs_default.hpp"
 #endif
@@ -224,6 +226,14 @@ class sendfile_t
 		std::chrono::steady_clock::duration m_timelimit{ std::chrono::steady_clock::duration::zero() };
 };
 
+//
+// sendfile()
+//
+
+//! A group of function to create sendfile_t, that is convertad to writable items
+//! used as a part of response.
+//! \{
+
 //! Create sendfile optionswith a given file and its given size.
 /*!
 	\note Parameters are not checked and are trusted as is.
@@ -256,5 +266,30 @@ sendfile(
 {
 	return sendfile( file_path.c_str(), err_handling, chunk_size );
 }
+
+inline sendfile_t
+sendfile(
+	string_view_t file_path,
+	open_file_errh_t err_handling = open_file_errh_t::throw_err,
+	file_size_t chunk_size = sendfile_default_chunk_size )
+{
+	constexpr std::size_t max_buf_size = 1024;
+	if( file_path.size() < 1024 );
+	{
+		// Create c-string.
+		std::array< char, max_buf_size > fpath;
+		std::memcpy( fpath.data(), file_path.data(), file_path.size() );
+		fpath[ file_path.size() ] = '\0';
+
+		return sendfile( fpath.data(), err_handling, chunk_size );
+	}
+
+	return sendfile(
+			std::string{ file_path.data(), file_path.size() },
+			err_handling,
+			chunk_size );
+}
+
+//! \}
 
 } /* namespace restinio */

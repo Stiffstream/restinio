@@ -21,7 +21,7 @@ restinio::request_handling_status_t handler( restinio::request_handle_t req )
 	return restinio::request_rejected();
 }
 
-int main()
+int main( int argc, char const *argv[] )
 {
 	try
 	{
