@@ -231,8 +231,7 @@ int main( int argc, char const *argv[] )
 
 		restinio::run(
 			restinio::on_this_thread< traits_t >()
-				// .address( "localhost" )
-				.address( "0.0.0.0" )
+				.address( "localhost" )
 				.port( args.m_port )
 				.request_handler( server_handler( args.m_root_dir ) )
 				.read_next_http_message_timelimit( 10s )
