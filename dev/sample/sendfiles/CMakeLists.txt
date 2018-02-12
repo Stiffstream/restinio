@@ -1,2 +1,2 @@
-set(SAMPLE sample.express_router_tutorial)
+set(SAMPLE sample.sendfiles)
 include(${CMAKE_SOURCE_DIR}/cmake/sample.cmake)
