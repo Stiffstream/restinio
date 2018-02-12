@@ -53,10 +53,10 @@ make_buffers(
 }
 
 writable_items_container_t
-make_buffers( sendfile_options_t sf_opts )
+make_buffers( sendfile_t sf )
 {
 	writable_items_container_t result;
-	result.emplace_back( std::move( sf_opts ) );
+	result.emplace_back( std::move( sf ) );
 	return result;
 }
 
@@ -1034,7 +1034,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_close() },
-			make_buffers( restinio::sendfile( -1 /* fake not real */, 1024 ) ) ) );
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor /* fake not real */, 1024 ) ) ) );
 
 		REQUIRE_FALSE( coordinator.closed() );
 
@@ -1053,7 +1053,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 1UL == out_bufs.size() );
 
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_options() );
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
 
 		REQUIRE( coordinator.closed() );
 	}
@@ -1078,7 +1078,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_keep_alive() },
-			make_buffers( restinio::sendfile( -1 /* fake not real */, 1024 ) ) ) );
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor /* fake not real */, 1024 ) ) ) );
 
 		out_bufs.clear();
 		REQUIRE(
@@ -1097,7 +1097,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 1UL == out_bufs.size() );
 
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_options() );
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
 
 		REQUIRE_FALSE( coordinator.closed() );
 	}
@@ -1122,21 +1122,21 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_close() },
-			make_buffers( restinio::sendfile( -1 /* fake not real */, 1024 ) ) ) );
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor /* fake not real */, 1024 ) ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_close() },
-			make_buffers( restinio::sendfile( -1 /* fake not real */, 2048 ) ) ) );
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor /* fake not real */, 2048 ) ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_close() },
-			make_buffers( restinio::sendfile( -1 /* fake not real */, 4096 ) ) ) );
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor /* fake not real */, 4096 ) ) ) );
 
 		out_bufs.clear();
 		REQUIRE(
@@ -1154,7 +1154,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 		REQUIRE( 1UL == out_bufs.size() );
 		REQUIRE_FALSE( coordinator.closed() );
 
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_options() );
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
 		REQUIRE( out_bufs[ 0UL ].size() == 1024 );
 		REQUIRE_FALSE( coordinator.closed() );
 
@@ -1165,7 +1165,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 		REQUIRE( 1UL == out_bufs.size() );
 		REQUIRE_FALSE( coordinator.closed() );
 
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_options() );
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
 		REQUIRE( out_bufs[ 0UL ].size() == 2048 );
 		REQUIRE_FALSE( coordinator.closed() );
 
@@ -1176,7 +1176,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 1UL == out_bufs.size() );
 
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_options() );
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
 		REQUIRE( out_bufs[ 0UL ].size() == 4096 );
 		REQUIRE( coordinator.closed() );
 	}
@@ -1201,21 +1201,21 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_close() },
-			make_buffers( restinio::sendfile( -1 /* fake not real */, 1024 ) ) ) );
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor /* fake not real */, 1024 ) ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_close() },
-			make_buffers( restinio::sendfile( -1 /* fake not real */, 2048 ) ) ) );
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor /* fake not real */, 2048 ) ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_close() },
-			make_buffers( restinio::sendfile( -1 /* fake not real */, 4096 ) ) ) );
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor /* fake not real */, 4096 ) ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
@@ -1240,7 +1240,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 		REQUIRE( 1UL == out_bufs.size() );
 		REQUIRE_FALSE( coordinator.closed() );
 
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_options() );
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
 		REQUIRE( out_bufs[ 0UL ].size() == 1024 );
 		REQUIRE_FALSE( coordinator.closed() );
 
@@ -1251,7 +1251,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 		REQUIRE( 1UL == out_bufs.size() );
 		REQUIRE_FALSE( coordinator.closed() );
 
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_options() );
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
 		REQUIRE( out_bufs[ 0UL ].size() == 2048 );
 		REQUIRE_FALSE( coordinator.closed() );
 
@@ -1262,7 +1262,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 1UL == out_bufs.size() );
 
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_options() );
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
 		REQUIRE( out_bufs[ 0UL ].size() == 4096 );
 		REQUIRE_FALSE( coordinator.closed() );
 
@@ -1308,7 +1308,7 @@ TEST_CASE( "response_coordinator sendfile 2" , "[response_coordinator][sendfile]
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_close() },
-			make_buffers( restinio::sendfile( -1 /* fake not real */, 1024 ) ) ) );
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor /* fake not real */, 1024 ) ) ) );
 
 		// Previous response goes with connection close flag
 		// So it would not be selected.
@@ -1317,7 +1317,7 @@ TEST_CASE( "response_coordinator sendfile 2" , "[response_coordinator][sendfile]
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_close() },
-			make_buffers( restinio::sendfile( -1 /* fake not real */, 2048 ) ) ) );
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor /* fake not real */, 2048 ) ) ) );
 
 		REQUIRE_FALSE( coordinator.closed() );
 
@@ -1336,7 +1336,7 @@ TEST_CASE( "response_coordinator sendfile 2" , "[response_coordinator][sendfile]
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 1UL == out_bufs.size() );
 
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_options() );
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
 
 		REQUIRE( coordinator.closed() );
 
@@ -1367,7 +1367,7 @@ TEST_CASE( "response_coordinator sendfile 2" , "[response_coordinator][sendfile]
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			make_buffers( restinio::sendfile( -1 /* fake not real */, 1024 ) ) ) );
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor /* fake not real */, 1024 ) ) ) );
 
 		// Previous response goes with connection close flag
 		// So it would not be selected.
@@ -1376,7 +1376,7 @@ TEST_CASE( "response_coordinator sendfile 2" , "[response_coordinator][sendfile]
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_keep_alive() },
-			make_buffers( restinio::sendfile( -1 /* fake not real */, 2048 ) ) ) );
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor /* fake not real */, 2048 ) ) ) );
 
 		REQUIRE_FALSE( coordinator.closed() );
 
@@ -1394,7 +1394,7 @@ TEST_CASE( "response_coordinator sendfile 2" , "[response_coordinator][sendfile]
 			writable_item_type_t::file_write_operation ==
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 1UL == out_bufs.size() );
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_options() );
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
 		REQUIRE( out_bufs[ 0UL ].size() == 1024 );
 
 		REQUIRE_FALSE( coordinator.closed() );
@@ -1404,7 +1404,7 @@ TEST_CASE( "response_coordinator sendfile 2" , "[response_coordinator][sendfile]
 			writable_item_type_t::file_write_operation ==
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 1UL == out_bufs.size() );
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_options() );
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
 		REQUIRE( out_bufs[ 0UL ].size() == 2048 );
 
 		out_bufs.clear();

@@ -202,8 +202,8 @@ struct sendfile_write_operation_t : public writable_base_t
 	public:
 		sendfile_write_operation_t() = delete;
 
-		sendfile_write_operation_t( sendfile_options_t && sf_opts )
-			:	m_sendfile_options{ std::make_unique< sendfile_options_t >( std::move( sf_opts ) ) }
+		sendfile_write_operation_t( sendfile_t && sf_opts )
+			:	m_sendfile_options{ std::make_unique< sendfile_t >( std::move( sf_opts ) ) }
 		{}
 
 		sendfile_write_operation_t( const sendfile_write_operation_t & ) = delete;
@@ -221,14 +221,14 @@ struct sendfile_write_operation_t : public writable_base_t
 			return m_sendfile_options ? m_sendfile_options->size() : 0;
 		}
 
-		const sendfile_options_t &
+		const sendfile_t &
 		sendfile_options() const
 		{
 			return *m_sendfile_options;
 		}
 
 	private:
-		std::unique_ptr< sendfile_options_t > m_sendfile_options;
+		std::unique_ptr< sendfile_t > m_sendfile_options;
 };
 
 constexpr std::size_t buffer_storage_align =
@@ -350,7 +350,7 @@ class writable_item_t
 			new( &m_storage ) impl::shared_datasizeable_buf_t< T >{ std::move( sp ) };
 		}
 
-		writable_item_t( sendfile_options_t sf_opts )
+		writable_item_t( sendfile_t sf_opts )
 			:	m_write_type{ writable_item_type_t::file_write_operation }
 		{
 			new( &m_storage ) impl::sendfile_write_operation_t{ std::move( sf_opts ) };
@@ -396,8 +396,8 @@ class writable_item_t
 			return get_buf()->buffer();
 		}
 
-		const sendfile_options_t &
-		sendfile_options() const
+		const sendfile_t &
+		sendfile_operation() const
 		{
 			return get_sfwo()->sendfile_options();
 		}

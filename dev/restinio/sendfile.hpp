@@ -8,38 +8,61 @@
 
 #pragma once
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
 #include <string>
 #include <chrono>
 
 #include <fmt/format.h>
-
 #include <restinio/exception.hpp>
+
 
 namespace restinio
 {
 
-using file_descriptor_t = int;
-using file_offset_t = off_t;
-using file_size_t = size_t;
+//! Strategy for handling openfile error
+enum class open_file_errh_t
+{
+	ignore_err,
+	throw_err
+};
+
+} /* namespace restinio */
+
+
+/*
+	Defenitions for:
+		file_descriptor_t
+		file_offset_t
+		file_size_t
+*/
+
+#if defined( _MSC_VER )
+	#include "sendfile_defs_win.hpp"
+// #elif (defined( __clang__ ) || defined( __GNUC__ )) && !defined(__WIN32__)
+// 	#include "sendfile_defs_posix.hpp"
+#else
+	#include "sendfile_defs_default.hpp"
+#endif
+
+namespace restinio
+{
+
+//! Default chunk size for sendfile operation.
+constexpr file_size_t sendfile_default_chunk_size = 16 * 1024 * 1024;
 
 //
-// sendfile_options_t
+// sendfile_t
 //
 
-//! Send file write operation settings.
+//! Send file write operation description.
 /*!
 	Class gives a fluen-interface for setting various parameters
 	for performin send file operation.
 */
-class sendfile_options_t
+class sendfile_t
 {
-		friend sendfile_options_t sendfile( file_descriptor_t , file_size_t , file_size_t );
+		friend sendfile_t sendfile( file_descriptor_t , file_size_t , file_size_t );
 
-		sendfile_options_t(
+		sendfile_t(
 			file_descriptor_t fd,
 			file_size_t file_total_size,
 			file_size_t chunk_size )
@@ -52,15 +75,15 @@ class sendfile_options_t
 		{}
 
 	public:
-		sendfile_options_t( const sendfile_options_t & ) = delete;
-		const sendfile_options_t & operator = ( const sendfile_options_t & ) = delete;
+		sendfile_t( const sendfile_t & ) = delete;
+		const sendfile_t & operator = ( const sendfile_t & ) = delete;
 
-		sendfile_options_t( sendfile_options_t && sf_opts )
+		sendfile_t( sendfile_t && sf_opts )
 		{
 			*this = std::move( sf_opts );
 		}
 
-		sendfile_options_t & operator = ( sendfile_options_t && sf_opts )
+		sendfile_t & operator = ( sendfile_t && sf_opts )
 		{
 			if( this != &sf_opts )
 			{
@@ -71,19 +94,22 @@ class sendfile_options_t
 				m_chunk_size = sf_opts.m_chunk_size;
 				m_timelimit = sf_opts.m_timelimit;
 
-				sf_opts.m_file_descriptor = -1;
+				sf_opts.m_file_descriptor = null_file_descriptor;
 			}
 
 			return *this;
 		}
 
-		~sendfile_options_t()
+		~sendfile_t()
 		{
-			if( -1 != m_file_descriptor )
+			if( is_valid() )
 			{
-				close( m_file_descriptor );
+				close_file( m_file_descriptor );
 			}
 		}
+
+		//! Check if file is valid.
+		bool is_valid() const { return null_file_descriptor != m_file_descriptor; }
 
 		auto offset() const { return m_offset; }
 		auto size() const { return m_size; }
@@ -91,11 +117,13 @@ class sendfile_options_t
 		//! Set file offset and size.
 		//! \{
 
-		sendfile_options_t &
+		sendfile_t &
 		offset_and_size(
 			file_offset_t offset_,
 			file_size_t size_ = std::numeric_limits< file_size_t >::max() ) &
 		{
+			check_file_is_valid();
+
 			if( offset_ > m_file_total_size )
 			{
 				throw exception_t{
@@ -111,7 +139,7 @@ class sendfile_options_t
 			return *this;
 		}
 
-		sendfile_options_t &&
+		sendfile_t &&
 		offset_and_size(
 			file_offset_t offset_,
 			file_size_t size_ = std::numeric_limits< file_size_t >::max() ) &&
@@ -125,14 +153,16 @@ class sendfile_options_t
 
 		//! Set prefered chunk size to use in  write operation.
 		//! \{
-		sendfile_options_t &
+		sendfile_t &
 		chunk_size( file_size_t chunk_size_ ) &
 		{
+			check_file_is_valid();
+
 			m_chunk_size = chunk_size_;
 			return *this;
 		}
 
-		sendfile_options_t &&
+		sendfile_t &&
 		chunk_size( file_size_t chunk_size_ ) &&
 		{
 			return std::move( this->chunk_size( chunk_size_ ) );
@@ -143,14 +173,16 @@ class sendfile_options_t
 
 		//! Set timelimit on  write operation.
 		//! \{
-		sendfile_options_t &
+		sendfile_t &
 		timelimit( std::chrono::steady_clock::duration timelimit_ ) &
 		{
+			check_file_is_valid();
+
 			m_timelimit = std::max( timelimit_, std::chrono::steady_clock::duration::zero() );
 			return *this;
 		}
 
-		sendfile_options_t &&
+		sendfile_t &&
 		timelimit( std::chrono::steady_clock::duration timelimit_ ) &&
 		{
 			return std::move( this->timelimit( timelimit_ ) );
@@ -164,13 +196,22 @@ class sendfile_options_t
 		}
 
 	private:
+		void
+		check_file_is_valid() const
+		{
+			if( !is_valid() )
+			{
+				throw exception_t{ "invalid file descriptor" };
+			}
+		}
+
 		file_descriptor_t m_file_descriptor;
 		file_size_t m_file_total_size;
 
 		//! Data.
 		//! \{
 		file_offset_t m_offset;
-		file_size_t m_size; // Zero means to the end of file.
+		file_size_t m_size;
 		//! \}
 
 		//! A prefered chunk size for a single write call.
@@ -183,43 +224,37 @@ class sendfile_options_t
 		std::chrono::steady_clock::duration m_timelimit{ std::chrono::steady_clock::duration::zero() };
 };
 
-//! Default chunk size for sendfile operation.
-constexpr file_size_t sendfile_default_chunk_size = 16 * 1024 * 1024;
-
 //! Create sendfile optionswith a given file and its given size.
 /*!
 	\note Parameters are not checked and are trusted as is.
 */
-inline sendfile_options_t
+inline sendfile_t
 sendfile(
 	file_descriptor_t fd,
 	file_size_t total_file_size,
 	file_size_t chunk_size = sendfile_default_chunk_size )
 {
-	return sendfile_options_t{ fd, total_file_size, chunk_size };
+	return sendfile_t{ fd, total_file_size, chunk_size };
 }
 
-inline sendfile_options_t
-sendfile( const char * file_path, file_size_t chunk_size = sendfile_default_chunk_size )
+inline sendfile_t
+sendfile(
+	const char * file_path,
+	open_file_errh_t err_handling = open_file_errh_t::throw_err,
+	file_size_t chunk_size = sendfile_default_chunk_size )
 {
-	file_descriptor_t file_descriptor = open( file_path, O_RDONLY );
+	const file_descriptor_t file_descriptor = open_file( file_path, err_handling );
 
-	if( -1 == file_descriptor )
-	{
-		throw exception_t{
-			fmt::format( "unable to openfile '{}': {}", file_path, strerror( errno ) ) };
-	}
-
-	struct stat64 file_stat;
-	fstat64( file_descriptor, &file_stat );
-
-	return sendfile( file_descriptor, file_stat.st_size, chunk_size );
+	return sendfile( file_descriptor, size_of_file( file_descriptor, err_handling) , chunk_size );
 }
 
-inline sendfile_options_t
-sendfile( const std::string & file_path, file_size_t chunk_size = sendfile_default_chunk_size )
+inline sendfile_t
+sendfile(
+	const std::string & file_path,
+	open_file_errh_t err_handling = open_file_errh_t::throw_err,
+	file_size_t chunk_size = sendfile_default_chunk_size )
 {
-	return sendfile( file_path.c_str(), chunk_size );
+	return sendfile( file_path.c_str(), err_handling, chunk_size );
 }
 
 } /* namespace restinio */

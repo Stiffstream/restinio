@@ -73,7 +73,7 @@ struct raw_resp_output_ctx_t
 
 		auto sendfile_operation =
 			std::make_shared< sendfile_operation_runner_t< Socket > >(
-				m_bufs.front().sendfile_options(),
+				m_bufs.front().sendfile_operation(),
 				std::move( executor ),
 				socket,
 				std::move( after_sendfile_cb ) );
@@ -96,7 +96,7 @@ struct raw_resp_output_ctx_t
 	sendfile_timelimit()
 	{
 		assert( 1 == m_bufs.size() );
-		return m_bufs.front().sendfile_options().timelimit();
+		return m_bufs.front().sendfile_operation().timelimit();
 	}
 
 	bool
