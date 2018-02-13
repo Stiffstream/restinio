@@ -195,7 +195,6 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 				{
 					m_remained_size -= n;
 					m_transfered_size += n;
-					m_next_write_offset += n;
 				}
 
 				// Loop around to try calling sendfile again.
