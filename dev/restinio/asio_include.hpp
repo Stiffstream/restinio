@@ -37,7 +37,6 @@ namespace restinio
 	//! \}
 } /* namespace restinio */
 
-
 	#if defined(ASIO_HAS_WINDOWS_OVERLAPPED_PTR)
 		// Define feature macro with the same name for stand-alone and boost asio.
 		#define RESTINIO_ASIO_HAS_WINDOWS_OVERLAPPED_PTR
