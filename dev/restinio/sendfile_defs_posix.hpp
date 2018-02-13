@@ -16,7 +16,7 @@ namespace restinio
 {
 
 using file_descriptor_t = int;
-constexpr file_descriptor_t null_file_descriptor = -1;
+constexpr file_descriptor_t null_file_descriptor(){ return -1; }
 using file_offset_t = off_t;
 using file_size_t = size_t;
 
@@ -26,7 +26,7 @@ open_file( const char * file_path, open_file_errh_t err_handling )
 {
 	file_descriptor_t file_descriptor = open( file_path, O_RDONLY );
 
-	if( null_file_descriptor == file_descriptor )
+	if( null_file_descriptor() == file_descriptor )
 	{
 		if( open_file_errh_t::throw_err == err_handling )
 		{
@@ -41,7 +41,7 @@ open_file( const char * file_path, open_file_errh_t err_handling )
 inline file_size_t
 size_of_file( file_descriptor_t fd, open_file_errh_t err_handling )
 {
-	if( null_file_descriptor == fd )
+	if( null_file_descriptor() == fd )
 		return 0;
 
 	struct stat64 file_stat;

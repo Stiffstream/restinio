@@ -37,6 +37,12 @@ namespace restinio
 	//! \}
 } /* namespace restinio */
 
+
+	#if defined(ASIO_HAS_WINDOWS_OVERLAPPED_PTR)
+		// Define feature macro with the same name for stand-alone and boost asio.
+		#define RESTINIO_ASIO_HAS_WINDOWS_OVERLAPPED_PTR
+	#endif
+
 #else
 
 // RESTinio uses boost::asio.
@@ -67,7 +73,11 @@ namespace restinio
 		constexpr auto  eof = asio_ns::error::misc_errors::eof
 	} /* namespace err */
 
-
 } /* namespace restinio */
+
+	#if defined(BOOST_ASIO_HAS_WINDOWS_OVERLAPPED_PTR)
+		// Define feature macro with the same name for stand-alone and boost asio.
+		#define RESTINIO_ASIO_HAS_WINDOWS_OVERLAPPED_PTR
+	#endif
 
 #endif

@@ -6,7 +6,7 @@
 	sendfile routine.
 */
 
-#include <sys/sendfile.h>
+#include <cstdio>
 
 namespace restinio
 {

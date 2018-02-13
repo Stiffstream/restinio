@@ -10,6 +10,7 @@
 
 #include <string>
 #include <chrono>
+#include <array>
 
 #include <fmt/format.h>
 
@@ -96,7 +97,7 @@ class sendfile_t
 				m_chunk_size = sf_opts.m_chunk_size;
 				m_timelimit = sf_opts.m_timelimit;
 
-				sf_opts.m_file_descriptor = null_file_descriptor;
+				sf_opts.m_file_descriptor = null_file_descriptor();
 			}
 
 			return *this;
@@ -111,7 +112,7 @@ class sendfile_t
 		}
 
 		//! Check if file is valid.
-		bool is_valid() const { return null_file_descriptor != m_file_descriptor; }
+		bool is_valid() const { return null_file_descriptor() != m_file_descriptor; }
 
 		auto offset() const { return m_offset; }
 		auto size() const { return m_size; }
