@@ -85,7 +85,7 @@ auto server_handler()
 
 	// GET request with indexed parameters.
 	router->http_get( R"(/query/params)",
-		[]( auto req, auto params ){
+		[]( auto req, auto ){
 
 			std::ostringstream sout;
 			sout << "GET request with query params:\n";

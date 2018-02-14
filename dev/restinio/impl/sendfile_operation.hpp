@@ -24,6 +24,8 @@ class sendfile_operation_base_t
 	:	public std::enable_shared_from_this< sendfile_operation_base_t >
 {
 	public:
+		virtual ~sendfile_operation_base_t() = default;
+
 		virtual void
 		start() = 0;
 };

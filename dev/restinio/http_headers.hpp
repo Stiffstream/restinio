@@ -1159,7 +1159,7 @@ struct http_request_header_t final
 			const char * result = static_cast< const char * >(
 					std::memchr( from, chr, size ) );
 
-			return result ? (result - from) : size;
+			return result ? static_cast< std::size_t >( result - from ) : size;
 		}
 
 	public:

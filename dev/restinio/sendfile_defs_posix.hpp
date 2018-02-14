@@ -54,7 +54,7 @@ size_of_file( file_descriptor_t fd, open_file_errh_t err_handling )
 			return 0;
 	}
 
-	return file_stat.st_size;
+	return static_cast< file_size_t >( file_stat.st_size );
 }
 
 //! Close file by its descriptor proxy function.

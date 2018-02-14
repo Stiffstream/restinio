@@ -127,7 +127,7 @@ class sendfile_t
 		{
 			check_file_is_valid();
 
-			if( offset_ > m_file_total_size )
+			if( static_cast< file_size_t >( offset_ ) > m_file_total_size )
 			{
 				throw exception_t{
 					fmt::format(
@@ -137,7 +137,10 @@ class sendfile_t
 			}
 
 			m_offset = offset_;
-			m_size = std::min< file_size_t >( m_file_total_size - offset_, size_ );
+			m_size =
+				std::min< file_size_t >(
+					m_file_total_size - static_cast< file_size_t >( offset_ ),
+					size_ );
 
 			return *this;
 		}

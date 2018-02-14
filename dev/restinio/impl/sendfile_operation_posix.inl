@@ -128,17 +128,19 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 		void
 		init_next_write()
 		{
-			asio_ns::error_code ec;
-
-			if( !m_socket.native_non_blocking() )
 			{
-				m_socket.native_non_blocking( true, ec );
-			}
+				asio_ns::error_code ec;
 
-			if( ec )
-			{
-				m_after_sendfile_cb( ec, m_transfered_size );
-				return;
+				if( !m_socket.native_non_blocking() )
+				{
+					m_socket.native_non_blocking( true, ec );
+				}
+
+				if( ec )
+				{
+					m_after_sendfile_cb( ec, m_transfered_size );
+					return;
+				}
 			}
 
 			while( true )
@@ -180,7 +182,7 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 					}
 					else
 					{
-						ec = asio_ns::error_code{ errno, asio_ns::error::get_system_category() };
+						const asio_ns::error_code ec{ errno, asio_ns::error::get_system_category() };
 						m_after_sendfile_cb( ec, m_transfered_size );
 					}
 
@@ -193,8 +195,8 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 				}
 				else
 				{
-					m_remained_size -= n;
-					m_transfered_size += n;
+					m_remained_size -= static_cast< file_size_t >( n );
+					m_transfered_size += static_cast< file_size_t >( n );
 				}
 
 				// Loop around to try calling sendfile again.
