@@ -275,7 +275,7 @@ sendfile(
 	file_size_t chunk_size = sendfile_default_chunk_size )
 {
 	constexpr std::size_t max_buf_size = 1024;
-	if( file_path.size() < 1024 );
+	if( file_path.size() < 1024 )
 	{
 		// Create c-string.
 		std::array< char, max_buf_size > fpath;
