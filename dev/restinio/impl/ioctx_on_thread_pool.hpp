@@ -56,7 +56,9 @@ class ioctx_on_thread_pool_t
 			{
 				for( auto & t : m_pool )
 					t = std::thread( [this] {
-						asio_ns::io_context::work work( m_io_context );
+						asio::executor_work_guard< asio::io_context::executor_type >
+							work{ asio::make_work_guard( m_io_context ) };
+
 						m_io_context.run();
 					} );
 
