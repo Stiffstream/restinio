@@ -402,6 +402,46 @@ TEST_CASE( "sendfile chunks" , "[sendfile][chunk]" )
 				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBBCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\n" ) );
 	}
 
+	{
+		const std::string request{
+				"GET /f1/1 HTTP/1.0\r\n"
+				"From: unit-test\r\n"
+				"User-Agent: unit-test\r\n"
+				"Content-Type: application/x-www-form-urlencoded\r\n"
+				"Connection: close\r\n"
+				"\r\n"
+		};
+
+		std::string response;
+		REQUIRE_NOTHROW( response = do_request( request ) );
+
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::EndsWith(
+				"0123456789\n"
+				"FILE1\n"
+				"0123456789\n" ) );
+	}
+
+	{
+		const std::string request{
+				"GET /f2/1 HTTP/1.0\r\n"
+				"From: unit-test\r\n"
+				"User-Agent: unit-test\r\n"
+				"Content-Type: application/x-www-form-urlencoded\r\n"
+				"Connection: close\r\n"
+				"\r\n"
+		};
+
+		std::string response;
+		REQUIRE_NOTHROW( response = do_request( request ) );
+
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::EndsWith(
+				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBBCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\n" ) );
+	}
+
 	other_thread.stop_and_join();
 }
 

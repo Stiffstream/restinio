@@ -183,6 +183,7 @@ struct app_args_t
 {
 	bool m_help{ false };
 	std::uint16_t m_port{ 8080 };
+	std::size_t m_pool_size{ 1 };
 	std::string m_root_dir{ "." };
 
 	app_args_t( int argc, const char * argv[] )
@@ -193,6 +194,11 @@ struct app_args_t
 		args::ValueFlag< std::uint16_t > arg_port(
 				parser, "port", "tcp port to run server on (default: 8080)",
 				{ 'p', "port" } );
+
+		args::ValueFlag< std::size_t > arg_pool_size(
+				parser, "size",
+				"The size of a thread pool to run the server",
+				{ 'n', "thread-pool-size" } );
 
 		args::ValueFlag< std::string > arg_root_dir(
 				parser, "root", "server root dir (default: '.')",
@@ -210,6 +216,10 @@ struct app_args_t
 
 		if( arg_port )
 			m_port = args::get( arg_port );
+
+		if( arg_pool_size )
+			m_pool_size = args::get( arg_pool_size );
+
 		if( arg_root_dir )
 			m_root_dir = args::get( arg_root_dir );
 	}
@@ -226,11 +236,11 @@ int main( int argc, char const *argv[] )
 		using traits_t =
 			restinio::traits_t<
 				restinio::asio_timer_manager_t,
-				restinio::single_threaded_ostream_logger_t,
+				restinio::null_logger_t,
 				router_t >;
 
 		restinio::run(
-			restinio::on_this_thread< traits_t >()
+			restinio::on_thread_pool< traits_t >( args.m_pool_size )
 				.address( "localhost" )
 				.port( args.m_port )
 				.request_handler( server_handler( args.m_root_dir ) )
