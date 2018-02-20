@@ -61,7 +61,8 @@ class a_http_server_t :	public so_5::agent_t
 		}
 
 	private:
-		restinio::impl::ioctx_on_thread_pool_t m_ioctx_pool;
+		restinio::impl::ioctx_on_thread_pool_t<
+				restinio::impl::own_io_context_for_thread_pool_t > m_ioctx_pool;
 		restinio::http_server_t< Traits > m_server;
 };
 
