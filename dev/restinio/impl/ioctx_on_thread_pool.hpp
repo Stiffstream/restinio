@@ -12,24 +12,80 @@ namespace restinio
 namespace impl
 {
 
-/*
+/*!
+ * \brief A class for holding actual instance of Asio's io_context.
+ *
+ * \note
+ * This class is intended to be used as template argument for
+ * ioctx_on_thread_pool_t template.
+ *
+ * \since
+ * v.0.4.2
+ */
+class own_io_context_for_thread_pool_t
+{
+	asio_ns::io_context m_ioctx;
+
+public:
+	own_io_context_for_thread_pool_t() {}
+
+	//! Get access to io_context object.
+	auto & io_context() { return m_ioctx; }
+};
+
+/*!
+ * \brief A class for holding a reference to external Asio's io_context.
+ *
+ * \note
+ * This class is intended to be used as template argument for
+ * ioctx_on_thread_pool_t template.
+ *
+ * \since
+ * v.0.4.2
+ */
+class external_io_context_for_thread_pool_t
+{
+	asio_ns::io_context & m_ioctx;
+
+public:
+	//! Initializing constructor.
+	external_io_context_for_thread_pool_t(
+		//! External io_context to be used.
+		asio_ns::io_context & ioctx )
+		:	m_ioctx{ ioctx }
+	{}
+
+	//! Get access to io_context object.
+	auto & io_context() { return m_ioctx; }
+};
+
+/*!
  * Helper class for creating io_context and running it
  * (via `io_context::run()`) on a thread pool.
  *
  * \note class is not thread-safe (except `io_context()` method).
  * Expected usage scenario is to start and stop it on the same thread.
+ *
+ * \tparam Io_Context_Holder A type which actually holds io_context object
+ * or a reference to an external io_context object.
  */
+template< typename Io_Context_Holder >
 class ioctx_on_thread_pool_t
 {
 	public:
 		ioctx_on_thread_pool_t( const ioctx_on_thread_pool_t & ) = delete;
 		ioctx_on_thread_pool_t( ioctx_on_thread_pool_t && ) = delete;
 
+		template< typename... Io_Context_Holder_Ctor_Args >
 		ioctx_on_thread_pool_t(
 			// Pool size.
 			//FIXME: better to use not_null from gsl.
-			std::size_t pool_size )
-			:	m_pool( pool_size )
+			std::size_t pool_size,
+			// Optional arguments for Io_Context_Holder instance.
+			Io_Context_Holder_Ctor_Args && ...ioctx_holder_args )
+			:	m_ioctx_holder{
+					std::forward<Io_Context_Holder_Ctor_Args>(ioctx_holder_args)... }
+			,	m_pool( pool_size )
 			,	m_status( status_t::stopped )
 		{}
 
@@ -68,7 +124,7 @@ class ioctx_on_thread_pool_t
 			}
 			catch( const std::exception & )
 			{
-				m_io_context.stop();
+				io_context().stop();
 				for( auto & t : m_pool )
 					if( t.joinable() )
 						t.join();
@@ -80,7 +136,7 @@ class ioctx_on_thread_pool_t
 		{
 			if( started() )
 			{
-				m_io_context.stop();
+				io_context().stop();
 			}
 		}
 
@@ -101,12 +157,12 @@ class ioctx_on_thread_pool_t
 		started() const { return status_t::started == m_status; }
 
 		asio_ns::io_context &
-		io_context() { return m_io_context; }
+		io_context() { return m_ioctx_holder.io_context(); }
 
 	private:
 		enum class status_t : std::uint8_t { stopped, started };
 
-		asio_ns::io_context m_io_context;
+		Io_Context_Holder m_ioctx_holder;
 		std::vector< std::thread > m_pool;
 		status_t m_status;
 };
