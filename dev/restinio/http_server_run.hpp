@@ -228,7 +228,10 @@ run( run_on_thread_pool_settings_t<Traits> && settings )
 	using settings_t = run_on_thread_pool_settings_t<Traits>;
 	using server_t = http_server_t<Traits>;
 
-	impl::ioctx_on_thread_pool_t pool( settings.pool_size() );
+	using thread_pool_t = impl::ioctx_on_thread_pool_t<
+			impl::own_io_context_for_thread_pool_t >;
+
+	thread_pool_t pool( settings.pool_size() );
 
 	server_t server{
 		restinio::external_io_context( pool.io_context() ),
