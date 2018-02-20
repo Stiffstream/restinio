@@ -220,18 +220,25 @@ run(
 	run( io_context, std::move(settings) );
 }
 
-//! Helper function for running http server until ctrl+c is hit.
-template<typename Traits>
-inline void
-run( run_on_thread_pool_settings_t<Traits> && settings )
+namespace impl {
+
+/*!
+ * \brief An implementation of run-function for thread pool case.
+ *
+ * This function receives an already created thread pool object and
+ * creates and runs http-server on this thread pool.
+ *
+ * \since
+ * v.0.4.2
+ */
+template<typename Io_Context_Holder, typename Traits>
+void
+run(
+	ioctx_on_thread_pool_t<Io_Context_Holder> & pool,
+	run_on_thread_pool_settings_t<Traits> && settings )
 {
 	using settings_t = run_on_thread_pool_settings_t<Traits>;
 	using server_t = http_server_t<Traits>;
-
-	using thread_pool_t = impl::ioctx_on_thread_pool_t<
-			impl::own_io_context_for_thread_pool_t >;
-
-	thread_pool_t pool( settings.pool_size() );
 
 	server_t server{
 		restinio::external_io_context( pool.io_context() ),
@@ -261,6 +268,70 @@ run( run_on_thread_pool_settings_t<Traits> && settings )
 
 	pool.start();
 	pool.wait();
+}
+
+} /* namespace impl */
+
+//! Helper function for running http server until ctrl+c is hit.
+/*!
+ * This function creates its own instance of Asio's io_context and
+ * uses it exclusively.
+ *
+ * Usage example:
+ * \code
+ * restinio::run(
+ * 		restinio::on_thread_pool<my_traits>(4)
+ * 			.port(8080)
+ * 			.address("localhost")
+ * 			.request_handler([](auto req) {...}));
+ * \endcode
+ */
+template<typename Traits>
+inline void
+run( run_on_thread_pool_settings_t<Traits> && settings )
+{
+	using thread_pool_t = impl::ioctx_on_thread_pool_t<
+			impl::own_io_context_for_thread_pool_t >;
+
+	thread_pool_t pool( settings.pool_size() );
+
+	impl::run( pool, std::move(settings) );
+}
+
+//! Helper function for running http server until ctrl+c is hit.
+/*!
+ * Can be useful when RESTinio server should be run on the user's
+ * own io_context instance.
+ *
+ * For example:
+ * \code
+ * asio::io_context iosvc;
+ * ... // iosvc used by user.
+ * restinio::run(iosvc,
+ * 		restinio::on_thread_pool<my_traits>(4)
+ * 			.port(8080)
+ * 			.address("localhost")
+ * 			.request_handler([](auto req) {...}));
+ * \endcode
+ *
+ * \since
+ * v.0.4.2
+ */
+template<typename Traits>
+inline void
+run(
+	//! Asio's io_context to be used.
+	//! Note: this reference should remain valid until RESTinio server finished.
+	asio::io_context & ioctx,
+	//! Settings for that server instance.
+	run_on_thread_pool_settings_t<Traits> && settings )
+{
+	using thread_pool_t = impl::ioctx_on_thread_pool_t<
+			impl::external_io_context_for_thread_pool_t >;
+
+	thread_pool_t pool{ settings.pool_size(), ioctx };
+
+	impl::run( pool, std::move(settings) );
 }
 
 } /* namespace restinio */
