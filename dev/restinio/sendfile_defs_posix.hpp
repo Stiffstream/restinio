@@ -12,6 +12,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include <iostream>
+
 namespace restinio
 {
 
@@ -44,8 +46,8 @@ size_of_file( file_descriptor_t fd, open_file_errh_t err_handling )
 	if( null_file_descriptor() == fd )
 		return 0;
 
-	struct stat64 file_stat;
-	if( 0 != fstat64( fd, &file_stat ) )
+	struct stat file_stat;
+	if( 0 != fstat( fd, &file_stat ) )
 	{
 		if( open_file_errh_t::throw_err == err_handling )
 			throw exception_t{

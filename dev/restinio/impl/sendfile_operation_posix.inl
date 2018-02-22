@@ -6,7 +6,11 @@
 	sendfile routine.
 */
 
-#include <sys/sendfile.h>
+#if defined(__unix__) || ( defined(__APPLE__) && defined __MACH__ )
+	#include <sys/uio.h>
+#elif
+	#include <sys/sendfile.h>
+#endif
 
 namespace restinio
 {
@@ -147,13 +151,6 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 			{
 				// Try the system call.
 				errno = 0;
-				auto n =
-					::sendfile(
-						m_socket.native_handle(),
-						m_file_descriptor,
-						&m_next_write_offset,
-						std::min< file_size_t >( m_remained_size, m_chunk_size ) );
-
 				auto wait_write_is_possible =
 					[&]{
 						// We have to wait for the socket to become ready again.
@@ -173,6 +170,47 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 									}
 								} ) );
 					};
+
+				if( 0 == m_remained_size )
+				{
+					// We are done.
+					wait_write_is_possible();
+					break;
+				}
+
+#if defined(__unix__) || ( defined(__APPLE__) && defined __MACH__ )
+
+			// FreeBSD sendfile signature:
+			// sendfile(int fd, int s, off_t offset, size_t nbytes,
+	 		//			struct	sf_hdtr	*hdtr, off_t *sbytes, int flags);
+			// https://www.freebsd.org/cgi/man.cgi?query=sendfile
+				std::cout
+					<< "std::min< file_size_t >( m_remained_size, m_chunk_size ) = "
+					<< std::min< file_size_t >( m_remained_size, m_chunk_size ) << std::endl;
+
+				off_t n{ 0 };
+				auto rc =
+					::sendfile(
+						m_file_descriptor,
+						m_socket.native_handle(),
+						m_next_write_offset,
+						std::min< file_size_t >( m_remained_size, m_chunk_size ),
+						nullptr, // struct	sf_hdtr	*hdtr
+						&n, // sbytes
+						// Is 16 a reasonable constant here.
+						SF_FLAGS( 16, SF_NOCACHE ) );
+
+				if( -1 == rc )
+					n = -1;
+#elif
+				auto n =
+					::sendfile(
+						m_socket.native_handle(),
+						m_file_descriptor,
+						&m_next_write_offset,
+						std::min< file_size_t >( m_remained_size, m_chunk_size ) );
+#endif
+
 
 				if( -1 == n )
 				{
@@ -195,8 +233,18 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 				}
 				else
 				{
+#if defined(__unix__) || ( defined(__APPLE__) && defined __MACH__ )
+					m_next_write_offset += n;
+#endif
 					m_remained_size -= static_cast< file_size_t >( n );
 					m_transfered_size += static_cast< file_size_t >( n );
+
+					// if( 0 == m_remained_size )
+					// {
+					// 	// We are done:
+					// 	wait_write_is_possible();
+					// 	break;
+					// }
 				}
 
 				// Loop around to try calling sendfile again.
