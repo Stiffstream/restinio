@@ -6,9 +6,9 @@
 	sendfile routine.
 */
 
-#if defined(__unix__) || ( defined(__APPLE__) && defined __MACH__ )
+#if ( defined(__unix__) && !defined(__linux__) ) || ( defined(__APPLE__) && defined __MACH__ )
 	#include <sys/uio.h>
-#elif
+#else
 	#include <sys/sendfile.h>
 #endif
 
@@ -178,15 +178,11 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 					break;
 				}
 
-#if defined(__unix__) || ( defined(__APPLE__) && defined __MACH__ )
-
-			// FreeBSD sendfile signature:
-			// sendfile(int fd, int s, off_t offset, size_t nbytes,
-	 		//			struct	sf_hdtr	*hdtr, off_t *sbytes, int flags);
-			// https://www.freebsd.org/cgi/man.cgi?query=sendfile
-				std::cout
-					<< "std::min< file_size_t >( m_remained_size, m_chunk_size ) = "
-					<< std::min< file_size_t >( m_remained_size, m_chunk_size ) << std::endl;
+#if ( defined(__unix__) && !defined(__linux__) ) || ( defined(__APPLE__) && defined __MACH__ )
+				// FreeBSD sendfile signature:
+				// int sendfile(int fd, int s, off_t offset, size_t nbytes,
+				//			struct sf_hdtr	*hdtr, off_t *sbytes, int flags);
+				// https://www.freebsd.org/cgi/man.cgi?query=sendfile
 
 				off_t n{ 0 };
 				auto rc =
@@ -200,9 +196,19 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 						// Is 16 a reasonable constant here.
 						SF_FLAGS( 16, SF_NOCACHE ) );
 
+				// Shift the number of bytes successfully sent.
+				m_next_write_offset += n;
+
 				if( -1 == rc )
+				{
+					// On FreeBSD in case of error it is still
+					// possible that some bytes had been sent.
+					m_remained_size -= static_cast< file_size_t >( n );
+					m_transfered_size += static_cast< file_size_t >( n );
+
 					n = -1;
-#elif
+				}
+#else
 				auto n =
 					::sendfile(
 						m_socket.native_handle(),
@@ -211,10 +217,9 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 						std::min< file_size_t >( m_remained_size, m_chunk_size ) );
 #endif
 
-
 				if( -1 == n )
 				{
-					if( errno == EAGAIN )
+					if( errno == EAGAIN || errno == EINTR )
 					{
 						wait_write_is_possible();
 					}
@@ -233,18 +238,8 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 				}
 				else
 				{
-#if defined(__unix__) || ( defined(__APPLE__) && defined __MACH__ )
-					m_next_write_offset += n;
-#endif
 					m_remained_size -= static_cast< file_size_t >( n );
 					m_transfered_size += static_cast< file_size_t >( n );
-
-					// if( 0 == m_remained_size )
-					// {
-					// 	// We are done:
-					// 	wait_write_is_possible();
-					// 	break;
-					// }
 				}
 
 				// Loop around to try calling sendfile again.
