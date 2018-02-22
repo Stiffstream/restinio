@@ -20,7 +20,7 @@ restinio::request_handling_status_t handler( restinio::request_handle_t req )
 		else
 		{
 			sout << "Query params ("<< qp.size() << "):\n";
-			// p is a pair of string_view_t, so copy is cheap.
+
 			for( const auto p : qp )
 			{
 				sout << "'"<< p.first << "' => "<<  p.second << "'\n";
