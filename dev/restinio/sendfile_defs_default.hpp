@@ -40,7 +40,7 @@ open_file( const char * file_path, open_file_errh_t err_handling )
 
 //! Get file size.
 inline file_size_t
-size_of_file( file_descriptor_t fd, open_file_errh_t err_handling )
+size_of_file( file_descriptor_t fd, open_file_errh_t /*err_handling*/ )
 {
 	file_size_t fsize = 0;
 

@@ -60,7 +60,7 @@ struct std_regex_engine_t
 		const compiled_regex_t & r,
 		match_results_t & match_results )
 	{
-		std::cmatch matches;
+		std::match_results<string_view_t::iterator> matches;
 		if(
 			std::regex_search(
 				target_path.begin(),
@@ -72,7 +72,7 @@ struct std_regex_engine_t
 				matches.begin(),
 				matches.end(),
 				std::back_inserter( match_results ),
-				[ begin = target_path.data() ]( const auto & m ){
+				[ begin = target_path.begin() ]( const auto & m ){
 					return matched_item_descriptor_t{ m.first - begin, m.second - begin };
 				} );
 
