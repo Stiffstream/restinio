@@ -233,20 +233,23 @@ int main( int argc, char const *argv[] )
 	{
 		const app_args_t args{ argc, argv };
 
-		using traits_t =
-			restinio::traits_t<
-				restinio::asio_timer_manager_t,
-				restinio::null_logger_t,
-				router_t >;
+		if( !args.m_help )
+		{
+			using traits_t =
+				restinio::traits_t<
+					restinio::asio_timer_manager_t,
+					restinio::null_logger_t,
+					router_t >;
 
-		restinio::run(
-			restinio::on_thread_pool< traits_t >( args.m_pool_size )
-				.address( "localhost" )
-				.port( args.m_port )
-				.request_handler( server_handler( args.m_root_dir ) )
-				.read_next_http_message_timelimit( 10s )
-				.write_http_response_timelimit( 1s )
-				.handle_request_timeout( 1s ) );
+			restinio::run(
+				restinio::on_thread_pool< traits_t >( args.m_pool_size )
+					.address( "localhost" )
+					.port( args.m_port )
+					.request_handler( server_handler( args.m_root_dir ) )
+					.read_next_http_message_timelimit( 10s )
+					.write_http_response_timelimit( 1s )
+					.handle_request_timeout( 1s ) );
+		}
 	}
 	catch( const std::exception & ex )
 	{
