@@ -246,8 +246,13 @@ class response_builder_t< restinio_controlled_output_t > final
 		append_body_impl( writable_item_t & body_part, std::size_t append_size )
 		{
 			if_neccessary_reserve_first_element_for_header();
-			m_response_parts.emplace_back( std::move( body_part ) );
-			m_body_size += append_size;
+
+			if( 0 < append_size )
+			{
+					m_response_parts.emplace_back( std::move( body_part ) );
+					m_body_size += append_size;
+			}
+
 			return *this;
 		}
 

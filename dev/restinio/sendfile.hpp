@@ -28,6 +28,17 @@ enum class open_file_errh_t
 	throw_err
 };
 
+// Helper function to throw errors when wirking with files.
+template< typename Error_Message_Builder >
+inline void
+throw_or_ignore( open_file_errh_t err_handling, Error_Message_Builder && err_msg_builder )
+{
+	if( open_file_errh_t::throw_err == err_handling )
+	{
+		throw exception_t{ err_msg_builder() };
+	}
+}
+
 } /* namespace restinio */
 
 
@@ -38,13 +49,13 @@ enum class open_file_errh_t
 		file_size_t
 */
 
-#if defined( _MSC_VER )
-	#include "sendfile_defs_win.hpp"
-#elif (defined( __clang__ ) || defined( __GNUC__ )) && !defined(__WIN32__)
-	#include "sendfile_defs_posix.hpp"
-#else
+// #if defined( _MSC_VER )
+// 	#include "sendfile_defs_win.hpp"
+// #elif (defined( __clang__ ) || defined( __GNUC__ )) && !defined(__WIN32__)
+// 	#include "sendfile_defs_posix.hpp"
+// #else
 	#include "sendfile_defs_default.hpp"
-#endif
+// #endif
 
 namespace restinio
 {

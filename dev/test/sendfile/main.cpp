@@ -544,7 +544,22 @@ TEST_CASE( "sendfile with invalid descriptor with " , "[sendfile][error][is_vali
 	const std::string dir{ "test/sendfile/" };
 
 	router->http_get(
-		R"(/)",
+		R"(/1)",
+		[ & ]( auto req, auto ){
+			const std::string fname = "must_not_exist_file_name";
+			auto sf = restinio::sendfile( fname, restinio::open_file_errh_t::ignore_err );
+
+			return
+				req->create_response()
+					.append_header( "Server", "RESTinio Benchmark" )
+					.append_header_date_field()
+					.append_header( "Content-Type", "text/plain; charset=utf-8" )
+					.set_body( std::move( sf ) )
+					.done();
+		} );
+
+	router->http_get(
+		R"(/2)",
 		[ & ]( auto req, auto ){
 			const std::string fname = "must_not_exist_file_name";
 			auto sf = restinio::sendfile( fname, restinio::open_file_errh_t::ignore_err );
@@ -555,6 +570,53 @@ TEST_CASE( "sendfile with invalid descriptor with " , "[sendfile][error][is_vali
 					.append_header_date_field()
 					.append_header( "Content-Type", "text/plain; charset=utf-8" )
 					.append_body( std::move( sf ) )
+					.done();
+		} );
+
+	router->http_get(
+		R"(/3)",
+		[ & ]( restinio::request_handle_t req, auto ){
+			const std::string fname = "must_not_exist_file_name";
+			auto sf = restinio::sendfile( fname, restinio::open_file_errh_t::ignore_err );
+
+			return
+				req->create_response< restinio::user_controlled_output_t >()
+					.append_header( "Server", "RESTinio Benchmark" )
+					.append_header_date_field()
+					.append_header( "Content-Type", "text/plain; charset=utf-8" )
+					.set_body( std::move( sf ) )
+					.set_content_length( 0 )
+					.done();
+		} );
+
+	router->http_get(
+		R"(/4)",
+		[ & ]( restinio::request_handle_t req, auto ){
+			const std::string fname = "must_not_exist_file_name";
+			auto sf = restinio::sendfile( fname, restinio::open_file_errh_t::ignore_err );
+
+			return
+				req->create_response< restinio::user_controlled_output_t >()
+					.append_header( "Server", "RESTinio Benchmark" )
+					.append_header_date_field()
+					.append_header( "Content-Type", "text/plain; charset=utf-8" )
+					.append_body( std::move( sf ) )
+					.set_content_length( 0 )
+					.done();
+		} );
+
+	router->http_get(
+		R"(/5)",
+		[ & ]( restinio::request_handle_t req, auto ){
+			const std::string fname = "must_not_exist_file_name";
+			auto sf = restinio::sendfile( fname, restinio::open_file_errh_t::ignore_err );
+
+			return
+				req->create_response< restinio::chunked_output_t >()
+					.append_header( "Server", "RESTinio Benchmark" )
+					.append_header_date_field()
+					.append_header( "Content-Type", "text/plain; charset=utf-8" )
+					.append_chunk( std::move( sf ) )
 					.done();
 		} );
 
@@ -580,7 +642,7 @@ TEST_CASE( "sendfile with invalid descriptor with " , "[sendfile][error][is_vali
 
 	{
 		const std::string request{
-				"GET / HTTP/1.0\r\n"
+				"GET /1 HTTP/1.0\r\n"
 				"From: unit-test\r\n"
 				"User-Agent: unit-test\r\n"
 				"Content-Type: application/x-www-form-urlencoded\r\n"
@@ -594,6 +656,78 @@ TEST_CASE( "sendfile with invalid descriptor with " , "[sendfile][error][is_vali
 		REQUIRE_THAT(
 			response,
 			Catch::Matchers::Contains( "Content-Length: 0\r\n" ) );
+	}
+
+	{
+		const std::string request{
+				"GET /2 HTTP/1.0\r\n"
+				"From: unit-test\r\n"
+				"User-Agent: unit-test\r\n"
+				"Content-Type: application/x-www-form-urlencoded\r\n"
+				"Connection: close\r\n"
+				"\r\n"
+		};
+
+		std::string response;
+		REQUIRE_NOTHROW( response = do_request( request ) );
+
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "Content-Length: 0\r\n" ) );
+	}
+
+	{
+		const std::string request{
+				"GET /3 HTTP/1.0\r\n"
+				"From: unit-test\r\n"
+				"User-Agent: unit-test\r\n"
+				"Content-Type: application/x-www-form-urlencoded\r\n"
+				"Connection: close\r\n"
+				"\r\n"
+		};
+
+		std::string response;
+		REQUIRE_NOTHROW( response = do_request( request ) );
+
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "Content-Length: 0\r\n" ) );
+	}
+
+	{
+		const std::string request{
+				"GET /4 HTTP/1.0\r\n"
+				"From: unit-test\r\n"
+				"User-Agent: unit-test\r\n"
+				"Content-Type: application/x-www-form-urlencoded\r\n"
+				"Connection: close\r\n"
+				"\r\n"
+		};
+
+		std::string response;
+		REQUIRE_NOTHROW( response = do_request( request ) );
+
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "Content-Length: 0\r\n" ) );
+	}
+
+	{
+		const std::string request{
+				"GET /5 HTTP/1.0\r\n"
+				"From: unit-test\r\n"
+				"User-Agent: unit-test\r\n"
+				"Content-Type: application/x-www-form-urlencoded\r\n"
+				"Connection: close\r\n"
+				"\r\n"
+		};
+
+		std::string response;
+		REQUIRE_NOTHROW( response = do_request( request ) );
+
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::EndsWith( "\r\n\r\n0\r\n\r\n" ) );
 	}
 
 	other_thread.stop_and_join();

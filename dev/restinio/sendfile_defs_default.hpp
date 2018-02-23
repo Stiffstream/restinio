@@ -13,6 +13,7 @@
 namespace restinio
 {
 
+
 using file_descriptor_t = std::FILE*;
 constexpr file_descriptor_t null_file_descriptor(){ return nullptr; }
 using file_offset_t = std::size_t;
@@ -27,12 +28,9 @@ open_file( const char * file_path, open_file_errh_t err_handling )
 
 	if( null_file_descriptor() == file_descriptor )
 	{
-		if( open_file_errh_t::throw_err == err_handling )
-		{
-			throw exception_t{
-				fmt::format( "unable to openfile '{}'", file_path ) };
-		}
-		// else ignore
+		throw_or_ignore(
+			err_handling,
+			[&]{ return fmt::format( "std::fopen failed: '{}'", file_path );} );
 	}
 
 	return file_descriptor;
@@ -47,9 +45,27 @@ size_of_file( file_descriptor_t fd, open_file_errh_t err_handling )
 	if( null_file_descriptor() != fd )
 	{
 		// Obtain file size:
-		std::fseek( fd , 0 , SEEK_END );
-		fsize = std::ftell( fd );
-		std::rewind( fd );
+		if( 0 == std::fseek( fd , 0 , SEEK_END ) )
+		{
+			const auto end_pos = std::ftell( fd );
+			if( -1 != end_pos )
+			{
+				fsize = static_cast< file_size_t >( end_pos );
+				std::rewind( fd );
+			}
+			else
+			{
+				throw_or_ignore(
+					err_handling,
+					[]{ return "std::ftell failed"; } );
+			}
+		}
+		else
+		{
+			throw_or_ignore(
+				err_handling,
+				[]{ return "std::fseek failed"; } );
+		}
 	}
 
 	return fsize;

@@ -71,9 +71,19 @@ struct raw_resp_output_ctx_t
 		assert( !m_sendfile_operation );
 		assert( 1 == m_bufs.size() );
 
+		const auto & sf_op = m_bufs.front().sendfile_operation();
+
+		assert( sf_op.is_valid() );
+
+		if( !sf_op.is_valid() )
+		{
+			// This must never happen.
+			throw exception_t{ "invalid file descriptor in sendfile operation." };
+		}
+
 		auto sendfile_operation =
 			std::make_shared< sendfile_operation_runner_t< Socket > >(
-				m_bufs.front().sendfile_operation(),
+				sf_op,
 				std::move( executor ),
 				socket,
 				std::move( after_sendfile_cb ) );
