@@ -598,3 +598,19 @@ TEST_CASE( "sendfile with invalid descriptor with " , "[sendfile][error][is_vali
 
 	other_thread.stop_and_join();
 }
+
+TEST_CASE( "sendfile_chunk_size_guarded_value_t " , "[chunk_size_guarded_value]" )
+{
+	{
+		restinio::sendfile_chunk_size_guarded_value_t chunk( 42 );
+		REQUIRE( chunk.value() == 42 );
+	}
+	{
+		restinio::sendfile_chunk_size_guarded_value_t chunk( 0 );
+		REQUIRE( chunk.value() == restinio::sendfile_default_chunk_size );
+	}
+	{
+		restinio::sendfile_chunk_size_guarded_value_t chunk( restinio::sendfile_max_chunk_size + 10 );
+		REQUIRE( chunk.value() == restinio::sendfile_max_chunk_size );
+	}
+}

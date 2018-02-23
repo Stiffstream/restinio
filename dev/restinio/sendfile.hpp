@@ -52,6 +52,51 @@ namespace restinio
 //! Default chunk size for sendfile operation.
 constexpr file_size_t sendfile_default_chunk_size = 16 * 1024 * 1024;
 
+//! Maximum size of a chunk
+constexpr file_size_t sendfile_max_chunk_size = 1024 * 1024 * 1024;
+
+//
+// sendfile_chunk_size_guarded_value_t
+//
+
+//! A guard class for setting chunk size.
+/*!
+	Ensures that the value of chunk size is at least 1 and at most sendfile_max_chunk_size.
+*/
+struct sendfile_chunk_size_guarded_value_t
+{
+		static file_size_t
+		clarify_chunk_size( file_size_t chunk_size_value )
+		{
+			if( 0 == chunk_size_value )
+				return sendfile_default_chunk_size;
+
+			if( sendfile_max_chunk_size < chunk_size_value )
+				return sendfile_max_chunk_size;
+
+			return chunk_size_value;
+		}
+
+	public:
+		sendfile_chunk_size_guarded_value_t( file_size_t chunk_size_value )
+			:	m_chunk_size{ clarify_chunk_size( chunk_size_value ) }
+		{}
+
+		sendfile_chunk_size_guarded_value_t( const sendfile_chunk_size_guarded_value_t & ) noexcept = default;
+		sendfile_chunk_size_guarded_value_t( sendfile_chunk_size_guarded_value_t && ) noexcept = default;
+		const sendfile_chunk_size_guarded_value_t & operator = ( const sendfile_chunk_size_guarded_value_t & ) = delete;
+		sendfile_chunk_size_guarded_value_t & operator = ( sendfile_chunk_size_guarded_value_t && ) = delete;
+
+		file_size_t
+		value( ) const
+		{
+			return m_chunk_size;
+		}
+
+	private:
+		const file_size_t m_chunk_size;
+};
+
 //
 // sendfile_t
 //
@@ -68,12 +113,12 @@ class sendfile_t
 		sendfile_t(
 			file_descriptor_t fd,
 			file_size_t file_total_size,
-			file_size_t chunk_size )
+			sendfile_chunk_size_guarded_value_t chunk )
 			:	m_file_descriptor{ fd }
 			,	m_file_total_size{ file_total_size }
 			,	m_offset{ 0 }
 			,	m_size{ file_total_size }
-			,	m_chunk_size{ chunk_size }
+			,	m_chunk_size{ chunk.value() }
 			,	m_timelimit{ std::chrono::steady_clock::duration::zero() }
 		{}
 
@@ -81,12 +126,12 @@ class sendfile_t
 		sendfile_t( const sendfile_t & ) = delete;
 		const sendfile_t & operator = ( const sendfile_t & ) = delete;
 
-		sendfile_t( sendfile_t && sf_opts )
+		sendfile_t( sendfile_t && sf_opts ) noexcept
 		{
 			*this = std::move( sf_opts );
 		}
 
-		sendfile_t & operator = ( sendfile_t && sf_opts )
+		sendfile_t & operator = ( sendfile_t && sf_opts ) noexcept
 		{
 			if( this != &sf_opts )
 			{
@@ -122,35 +167,35 @@ class sendfile_t
 
 		sendfile_t &
 		offset_and_size(
-			file_offset_t offset_,
-			file_size_t size_ = std::numeric_limits< file_size_t >::max() ) &
+			file_offset_t offset_value,
+			file_size_t size_value = std::numeric_limits< file_size_t >::max() ) &
 		{
 			check_file_is_valid();
 
-			if( static_cast< file_size_t >( offset_ ) > m_file_total_size )
+			if( static_cast< file_size_t >( offset_value ) > m_file_total_size )
 			{
 				throw exception_t{
 					fmt::format(
 						"invalid file offset: {}, while file size is {}",
-						offset_,
+						offset_value,
 						m_file_total_size ) };
 			}
 
-			m_offset = offset_;
+			m_offset = offset_value;
 			m_size =
 				std::min< file_size_t >(
-					m_file_total_size - static_cast< file_size_t >( offset_ ),
-					size_ );
+					m_file_total_size - static_cast< file_size_t >( offset_value ),
+					size_value );
 
 			return *this;
 		}
 
 		sendfile_t &&
 		offset_and_size(
-			file_offset_t offset_,
-			file_size_t size_ = std::numeric_limits< file_size_t >::max() ) &&
+			file_offset_t offset_value,
+			file_size_t size_value = std::numeric_limits< file_size_t >::max() ) &&
 		{
-			return std::move( this->offset_and_size( offset_, size_ ) );
+			return std::move( this->offset_and_size( offset_value, size_value ) );
 		}
 		//! \}
 
@@ -160,18 +205,18 @@ class sendfile_t
 		//! Set prefered chunk size to use in  write operation.
 		//! \{
 		sendfile_t &
-		chunk_size( file_size_t chunk_size_ ) &
+		chunk_size( sendfile_chunk_size_guarded_value_t chunk ) &
 		{
 			check_file_is_valid();
 
-			m_chunk_size = chunk_size_;
+			m_chunk_size = chunk.value();
 			return *this;
 		}
 
 		sendfile_t &&
-		chunk_size( file_size_t chunk_size_ ) &&
+		chunk_size( sendfile_chunk_size_guarded_value_t chunk ) &&
 		{
-			return std::move( this->chunk_size( chunk_size_ ) );
+			return std::move( this->chunk_size( chunk ) );
 		}
 		//! \}
 
@@ -180,18 +225,18 @@ class sendfile_t
 		//! Set timelimit on  write operation.
 		//! \{
 		sendfile_t &
-		timelimit( std::chrono::steady_clock::duration timelimit_ ) &
+		timelimit( std::chrono::steady_clock::duration timelimit_value ) &
 		{
 			check_file_is_valid();
 
-			m_timelimit = std::max( timelimit_, std::chrono::steady_clock::duration::zero() );
+			m_timelimit = std::max( timelimit_value, std::chrono::steady_clock::duration::zero() );
 			return *this;
 		}
 
 		sendfile_t &&
-		timelimit( std::chrono::steady_clock::duration timelimit_ ) &&
+		timelimit( std::chrono::steady_clock::duration timelimit_value ) &&
 		{
-			return std::move( this->timelimit( timelimit_ ) );
+			return std::move( this->timelimit( timelimit_value ) );
 		}
 		//! \}
 
