@@ -108,9 +108,7 @@ class base_response_builder_t
 				"%a, %d %b %Y %H:%M:%S GMT",
 				&tpoint );
 
-			m_header.set_field(
-				std::string{ "Date" },
-				buf.data() );
+			m_header.set_field( http_field_t::date, buf.data() );
 
 			return upcast_reference();
 		}
