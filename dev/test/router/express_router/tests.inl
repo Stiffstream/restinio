@@ -583,7 +583,7 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 		REQUIRE( nps[0].first =="named_param" );
 		REQUIRE( nps[0].second == "-2147483648" );
 		REQUIRE( route_params[ "named_param" ] == "-2147483648" );
-		REQUIRE( restinio::cast_to< int_type_t >( route_params[ "named_param" ] ) == -2147483648 );
+		REQUIRE( restinio::cast_to< int_type_t >( route_params[ "named_param" ] ) == -int_type_t{2147483647}-1 );
 
 		REQUIRE( route_params[ 0 ] == "2147483647" );
 		REQUIRE( restinio::cast_to< int_type_t >( route_params[ 0 ] ) == 2147483647 );

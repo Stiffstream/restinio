@@ -45,6 +45,8 @@ class sendfile_operation_runner_base_t
 	:	public sendfile_operation_base_t
 {
 	public:
+		sendfile_operation_runner_base_t() = delete;
+
 		sendfile_operation_runner_base_t(
 			const sendfile_t & sf,
 			asio_ns::executor executor,

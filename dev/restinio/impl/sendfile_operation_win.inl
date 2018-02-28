@@ -28,6 +28,11 @@ class sendfile_operation_runner_t final
 	public:
 		using base_type_t = sendfile_operation_runner_base_t< Socket >;
 
+		sendfile_operation_runner_t( const sendfile_operation_runner_t & ) = delete;
+		sendfile_operation_runner_t( sendfile_operation_runner_t && ) = delete;
+		const sendfile_operation_runner_t & operator = ( const sendfile_operation_runner_t & ) = delete;
+		sendfile_operation_runner_t & operator = ( sendfile_operation_runner_t && ) = delete;
+
 		// Reuse construstors from base.
 		using base_type_t::base_type_t;
 
@@ -124,6 +129,11 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 	public:
 		using base_type_t = sendfile_operation_runner_base_t< asio_ns::ip::tcp::socket >;
 
+		sendfile_operation_runner_t( const sendfile_operation_runner_t & ) = delete;
+		sendfile_operation_runner_t( sendfile_operation_runner_t && ) = delete;
+		const sendfile_operation_runner_t & operator = ( const sendfile_operation_runner_t & ) = delete;
+		sendfile_operation_runner_t & operator = ( sendfile_operation_runner_t && ) = delete;
+
 		// Reuse construstors from base.
 		using base_type_t::base_type_t;
 
@@ -165,17 +175,10 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 					} ) };
 					
 				// Set offset.
-				union {
-					struct {
-						DWORD Offset;
-						DWORD OffsetHigh;
-						};
-					std::uint64_t offset64;
-				} offset;
-
-				offset.offset64 = m_next_write_offset;
-				overlapped.get()->Offset = offset.Offset;
-				overlapped.get()->OffsetHigh = offset.OffsetHigh;
+				overlapped.get()->Offset = 
+					static_cast< DWORD >( m_next_write_offset & 0xFFFFFFFFULL );
+				overlapped.get()->OffsetHigh = 
+					static_cast< DWORD >( (m_next_write_offset>>32) & 0xFFFFFFFFULL );
 
 				// Amount of data to transfer.
 				const auto desired_size =
@@ -186,7 +189,7 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 					::TransmitFile(
 						m_socket.native_handle(),
 				  		m_file_handle.native_handle(), 
-				  		desired_size, 
+				  		static_cast< DWORD >( desired_size ), 
 				  		0, 
 				  		overlapped.get(), 
 				  		0, 
@@ -200,7 +203,7 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 					// The operation completed immediately, so a completion notification needs
 					// to be posted. When complete() is called, ownership of the OVERLAPPED-
 					// derived object passes to the io_context.
-					asio::error_code ec(last_error, asio::error::get_system_category() );
+					asio::error_code ec( static_cast<int>( last_error ), asio::error::get_system_category() );
 					overlapped.complete( ec, 0 );
 				}
 				else

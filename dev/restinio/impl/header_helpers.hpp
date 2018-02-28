@@ -24,7 +24,7 @@ namespace impl
 
 //! Compile time c-string length.
 template< std::size_t N >
-std::size_t
+inline std::size_t
 ct_string_len( const char (&)[N] )
 {
 	return N-1;

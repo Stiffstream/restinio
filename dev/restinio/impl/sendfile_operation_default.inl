@@ -26,8 +26,14 @@ class sendfile_operation_runner_t final
 	public:
 		using base_type_t = sendfile_operation_runner_base_t< Socket >;
 
+		sendfile_operation_runner_t( const sendfile_operation_runner_t & ) = delete;
+		sendfile_operation_runner_t( sendfile_operation_runner_t && ) = delete;
+		const sendfile_operation_runner_t & operator = ( const sendfile_operation_runner_t & ) = delete;
+		sendfile_operation_runner_t & operator = ( sendfile_operation_runner_t && ) = delete;
+
 		// Reuse construstors from base.
 		using base_type_t::base_type_t;
+
 
 		virtual void
 		start() override
