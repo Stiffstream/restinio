@@ -1,6 +1,7 @@
 syntax: glob
 
 .externals
+tmp
 dev/tmp
 dev/target
 dev/target_*

@@ -32,7 +32,12 @@ class sendfile_operation_runner_t final
 		virtual void
 		start() override
 		{
-			const auto n = std::fseek( this->m_file_descriptor, this->m_next_write_offset, SEEK_SET );
+			const auto n =
+				std::fseek(
+					this->m_file_descriptor,
+					this->m_next_write_offset,
+					SEEK_SET );
+
 			if( 0 == n )
 			{
 				this->init_next_write();

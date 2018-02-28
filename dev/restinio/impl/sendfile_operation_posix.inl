@@ -6,7 +6,7 @@
 	sendfile routine.
 */
 
-#if ( defined(__unix__) && !defined(__linux__) ) || ( defined(__APPLE__) && defined __MACH__ )
+#if defined( RESTINIO_BSD_TARGET )
 	#include <sys/uio.h>
 #else
 	#include <sys/sendfile.h>
@@ -178,7 +178,7 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 					break;
 				}
 
-#if ( defined(__unix__) && !defined(__linux__) ) || ( defined(__APPLE__) && defined __MACH__ )
+#if defined( RESTINIO_BSD_TARGET )
 				// FreeBSD sendfile signature:
 				// int sendfile(int fd, int s, off_t offset, size_t nbytes,
 				//			struct sf_hdtr	*hdtr, off_t *sbytes, int flags);
@@ -190,7 +190,8 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 						m_file_descriptor,
 						m_socket.native_handle(),
 						m_next_write_offset,
-						std::min< file_size_t >( m_remained_size, m_chunk_size ),
+						static_cast< size_t >(
+							std::min< file_size_t >( m_remained_size, m_chunk_size ) ),
 						nullptr, // struct	sf_hdtr	*hdtr
 						&n, // sbytes
 						// Is 16 a reasonable constant here.
@@ -210,7 +211,7 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 				}
 #else
 				auto n =
-					::sendfile(
+					::sendfile64(
 						m_socket.native_handle(),
 						m_file_descriptor,
 						&m_next_write_offset,

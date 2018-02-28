@@ -83,11 +83,11 @@ class sendfile_operation_runner_base_t
 	Concrete implementations.
 */
 
-// #if defined( _MSC_VER )
-// 	#include "sendfile_operation_win.inl"
-// #elif (defined( __clang__ ) || defined( __GNUC__ )) && !defined(__WIN32__)
-// 	#include "sendfile_operation_posix.inl"
-// #else
+#if defined( _MSC_VER )
+	#include "sendfile_operation_win.inl"
+#elif (defined( __clang__ ) || defined( __GNUC__ )) && !defined(__WIN32__)
+	#include "sendfile_operation_posix.inl"
+#else
 	#include "sendfile_operation_default.inl"
-// #endif
+#endif
 

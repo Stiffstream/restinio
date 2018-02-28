@@ -22,26 +22,22 @@ using file_size_t = std::size_t;
 
 //! Open file.
 inline file_descriptor_t
-open_file( const char * file_path, open_file_errh_t err_handling )
+open_file( const char * file_path )
 {
 	file_descriptor_t file_descriptor =
-		::CreateFile( 
-			file_path, 
-			GENERIC_READ, 
-			0, 
-			0, 
-			OPEN_EXISTING, 
-			FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, 
+		::CreateFile(
+			file_path,
+			GENERIC_READ,
+			0,
+			0,
+			OPEN_EXISTING,
+			FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
 			0 );
 
 	if( null_file_descriptor() == file_descriptor )
 	{
-		if( open_file_errh_t::throw_err == err_handling )
-		{
-			throw exception_t{
-				fmt::format( "unable to openfile '{}': error({})", file_path, GetLastError() ) };
-		}
-		// else ignore
+		throw exception_t{
+			fmt::format( "unable to openfile '{}': error({})", file_path, GetLastError() ) };
 	}
 
 	return file_descriptor;
@@ -49,7 +45,7 @@ open_file( const char * file_path, open_file_errh_t err_handling )
 
 //! Get file size.
 inline file_size_t
-size_of_file( file_descriptor_t fd, open_file_errh_t err_handling )
+size_of_file( file_descriptor_t fd )
 {
 	file_size_t fsize = 0;
 

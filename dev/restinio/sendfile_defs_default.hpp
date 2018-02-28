@@ -16,21 +16,19 @@ namespace restinio
 
 using file_descriptor_t = std::FILE*;
 constexpr file_descriptor_t null_file_descriptor(){ return nullptr; }
-using file_offset_t = std::size_t;
-using file_size_t = std::size_t;
 
+using file_offset_t = std::int64_t;
+using file_size_t = std::uint64_t;
 
 //! Open file.
 inline file_descriptor_t
-open_file( const char * file_path, open_file_errh_t err_handling )
+open_file( const char * file_path )
 {
 	file_descriptor_t file_descriptor = std::fopen( file_path, "rb" );
 
 	if( null_file_descriptor() == file_descriptor )
 	{
-		throw_or_ignore(
-			err_handling,
-			[&]{ return fmt::format( "std::fopen failed: '{}'", file_path );} );
+		throw exception_t{ fmt::format( "std::fopen failed: '{}'", file_path ) };
 	}
 
 	return file_descriptor;
@@ -38,7 +36,7 @@ open_file( const char * file_path, open_file_errh_t err_handling )
 
 //! Get file size.
 inline file_size_t
-size_of_file( file_descriptor_t fd, open_file_errh_t err_handling )
+size_of_file( file_descriptor_t fd )
 {
 	file_size_t fsize = 0;
 
@@ -55,16 +53,12 @@ size_of_file( file_descriptor_t fd, open_file_errh_t err_handling )
 			}
 			else
 			{
-				throw_or_ignore(
-					err_handling,
-					[]{ return "std::ftell failed"; } );
+				throw exception_t{ "std::ftell failed" };
 			}
 		}
 		else
 		{
-			throw_or_ignore(
-				err_handling,
-				[]{ return "std::fseek failed"; } );
+			throw exception_t{ "std::fseek failed" };
 		}
 	}
 

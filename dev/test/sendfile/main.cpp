@@ -14,6 +14,12 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+TEST_CASE( "sendfile offset/size representation" , "[sendfile]" )
+{
+	REQUIRE( 8 == sizeof( restinio::file_offset_t ) );
+	REQUIRE( 8 == sizeof( restinio::file_size_t ) );
+}
+
 TEST_CASE( "simple sendfile" , "[sendfile]" )
 {
 	using http_server_t =
@@ -537,200 +543,21 @@ TEST_CASE( "sendfile errors" , "[sendfile][error]" )
 
 TEST_CASE( "sendfile with invalid descriptor with " , "[sendfile][error][is_valid]" )
 {
-	using router_t = restinio::router::express_router_t<>;
-
-	auto router = std::make_unique< router_t >();
-
-	const std::string dir{ "test/sendfile/" };
-
-	router->http_get(
-		R"(/1)",
-		[ & ]( auto req, auto ){
-			const std::string fname = "must_not_exist_file_name";
-			auto sf = restinio::sendfile( fname, restinio::open_file_errh_t::ignore_err );
-
-			return
-				req->create_response()
-					.append_header( "Server", "RESTinio Benchmark" )
-					.append_header_date_field()
-					.append_header( "Content-Type", "text/plain; charset=utf-8" )
-					.set_body( std::move( sf ) )
-					.done();
-		} );
-
-	router->http_get(
-		R"(/2)",
-		[ & ]( auto req, auto ){
-			const std::string fname = "must_not_exist_file_name";
-			auto sf = restinio::sendfile( fname, restinio::open_file_errh_t::ignore_err );
-
-			return
-				req->create_response()
-					.append_header( "Server", "RESTinio Benchmark" )
-					.append_header_date_field()
-					.append_header( "Content-Type", "text/plain; charset=utf-8" )
-					.append_body( std::move( sf ) )
-					.done();
-		} );
-
-	router->http_get(
-		R"(/3)",
-		[ & ]( restinio::request_handle_t req, auto ){
-			const std::string fname = "must_not_exist_file_name";
-			auto sf = restinio::sendfile( fname, restinio::open_file_errh_t::ignore_err );
-
-			return
-				req->create_response< restinio::user_controlled_output_t >()
-					.append_header( "Server", "RESTinio Benchmark" )
-					.append_header_date_field()
-					.append_header( "Content-Type", "text/plain; charset=utf-8" )
-					.set_body( std::move( sf ) )
-					.set_content_length( 0 )
-					.done();
-		} );
-
-	router->http_get(
-		R"(/4)",
-		[ & ]( restinio::request_handle_t req, auto ){
-			const std::string fname = "must_not_exist_file_name";
-			auto sf = restinio::sendfile( fname, restinio::open_file_errh_t::ignore_err );
-
-			return
-				req->create_response< restinio::user_controlled_output_t >()
-					.append_header( "Server", "RESTinio Benchmark" )
-					.append_header_date_field()
-					.append_header( "Content-Type", "text/plain; charset=utf-8" )
-					.append_body( std::move( sf ) )
-					.set_content_length( 0 )
-					.done();
-		} );
-
-	router->http_get(
-		R"(/5)",
-		[ & ]( restinio::request_handle_t req, auto ){
-			const std::string fname = "must_not_exist_file_name";
-			auto sf = restinio::sendfile( fname, restinio::open_file_errh_t::ignore_err );
-
-			return
-				req->create_response< restinio::chunked_output_t >()
-					.append_header( "Server", "RESTinio Benchmark" )
-					.append_header_date_field()
-					.append_header( "Content-Type", "text/plain; charset=utf-8" )
-					.append_chunk( std::move( sf ) )
-					.done();
-		} );
-
-	using http_server_t =
-		restinio::http_server_t<
-			restinio::traits_t<
-				restinio::asio_timer_manager_t,
-				utest_logger_t,
-				router_t > >;
-
-	http_server_t http_server{
-		restinio::own_io_context(),
-		[&]( auto & settings ){
-			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
-				.request_handler( std::move( router ) );
-		}
-	};
-
-	other_work_thread_for_server_t<http_server_t> other_thread{ http_server };
-	other_thread.run();
-
 	{
-		const std::string request{
-				"GET /1 HTTP/1.0\r\n"
-				"From: unit-test\r\n"
-				"User-Agent: unit-test\r\n"
-				"Content-Type: application/x-www-form-urlencoded\r\n"
-				"Connection: close\r\n"
-				"\r\n"
-		};
+		const std::string fname = "must_not_exist_file_name";
 
-		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
-
-		REQUIRE_THAT(
-			response,
-			Catch::Matchers::Contains( "Content-Length: 0\r\n" ) );
+		REQUIRE_THROWS( restinio::sendfile( fname ) );
 	}
 
 	{
-		const std::string request{
-				"GET /2 HTTP/1.0\r\n"
-				"From: unit-test\r\n"
-				"User-Agent: unit-test\r\n"
-				"Content-Type: application/x-www-form-urlencoded\r\n"
-				"Connection: close\r\n"
-				"\r\n"
-		};
+		const std::string fname = "test/sendfile/f1.txt";
+		auto accept_moved = []( restinio::sendfile_t sf ){ REQUIRE( sf.is_valid() ); };
+		auto sf = restinio::sendfile( fname );
 
-		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
-
-		REQUIRE_THAT(
-			response,
-			Catch::Matchers::Contains( "Content-Length: 0\r\n" ) );
+		accept_moved( std::move( sf ) );
+		REQUIRE_FALSE( sf.is_valid() );
 	}
 
-	{
-		const std::string request{
-				"GET /3 HTTP/1.0\r\n"
-				"From: unit-test\r\n"
-				"User-Agent: unit-test\r\n"
-				"Content-Type: application/x-www-form-urlencoded\r\n"
-				"Connection: close\r\n"
-				"\r\n"
-		};
-
-		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
-
-		REQUIRE_THAT(
-			response,
-			Catch::Matchers::Contains( "Content-Length: 0\r\n" ) );
-	}
-
-	{
-		const std::string request{
-				"GET /4 HTTP/1.0\r\n"
-				"From: unit-test\r\n"
-				"User-Agent: unit-test\r\n"
-				"Content-Type: application/x-www-form-urlencoded\r\n"
-				"Connection: close\r\n"
-				"\r\n"
-		};
-
-		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
-
-		REQUIRE_THAT(
-			response,
-			Catch::Matchers::Contains( "Content-Length: 0\r\n" ) );
-	}
-
-	{
-		const std::string request{
-				"GET /5 HTTP/1.0\r\n"
-				"From: unit-test\r\n"
-				"User-Agent: unit-test\r\n"
-				"Content-Type: application/x-www-form-urlencoded\r\n"
-				"Connection: close\r\n"
-				"\r\n"
-		};
-
-		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
-
-		REQUIRE_THAT(
-			response,
-			Catch::Matchers::EndsWith( "\r\n\r\n0\r\n\r\n" ) );
-	}
-
-	other_thread.stop_and_join();
 }
 
 TEST_CASE( "sendfile_chunk_size_guarded_value_t " , "[chunk_size_guarded_value]" )

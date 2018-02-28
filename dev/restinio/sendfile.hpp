@@ -17,31 +17,6 @@
 #include <restinio/string_view.hpp>
 #include <restinio/exception.hpp>
 
-
-namespace restinio
-{
-
-//! Strategy for handling openfile error
-enum class open_file_errh_t
-{
-	ignore_err,
-	throw_err
-};
-
-// Helper function to throw errors when wirking with files.
-template< typename Error_Message_Builder >
-inline void
-throw_or_ignore( open_file_errh_t err_handling, Error_Message_Builder && err_msg_builder )
-{
-	if( open_file_errh_t::throw_err == err_handling )
-	{
-		throw exception_t{ err_msg_builder() };
-	}
-}
-
-} /* namespace restinio */
-
-
 /*
 	Defenitions for:
 		file_descriptor_t
@@ -49,13 +24,13 @@ throw_or_ignore( open_file_errh_t err_handling, Error_Message_Builder && err_msg
 		file_size_t
 */
 
-// #if defined( _MSC_VER )
-// 	#include "sendfile_defs_win.hpp"
-// #elif (defined( __clang__ ) || defined( __GNUC__ )) && !defined(__WIN32__)
-// 	#include "sendfile_defs_posix.hpp"
-// #else
+#if defined( _MSC_VER )
+	#include "sendfile_defs_win.hpp"
+#elif (defined( __clang__ ) || defined( __GNUC__ )) && !defined(__WIN32__)
+	#include "sendfile_defs_posix.hpp"
+#else
 	#include "sendfile_defs_default.hpp"
-// #endif
+#endif
 
 namespace restinio
 {
@@ -137,25 +112,22 @@ class sendfile_t
 		sendfile_t( const sendfile_t & ) = delete;
 		const sendfile_t & operator = ( const sendfile_t & ) = delete;
 
-		sendfile_t( sendfile_t && sf_opts ) noexcept
+		sendfile_t(
+			sendfile_t && sf ) noexcept
+			:	m_file_descriptor{ sf.m_file_descriptor }
+			,	m_file_total_size{ sf.m_file_total_size }
+			,	m_offset{ sf.m_offset }
+			,	m_size{ sf.m_size }
+			,	m_chunk_size{ sf.m_chunk_size }
+			,	m_timelimit{ sf.m_timelimit }
 		{
-			*this = std::move( sf_opts );
+			sf.m_file_descriptor = null_file_descriptor();
 		}
 
-		sendfile_t & operator = ( sendfile_t && sf_opts ) noexcept
+		sendfile_t & operator = ( sendfile_t && sf ) noexcept
 		{
-			if( this != &sf_opts )
-			{
-				m_file_descriptor = sf_opts.m_file_descriptor;
-				m_file_total_size = sf_opts.m_file_total_size;
-				m_offset = sf_opts.m_offset;
-				m_size = sf_opts.m_size;
-				m_chunk_size = sf_opts.m_chunk_size;
-				m_timelimit = sf_opts.m_timelimit;
-
-				sf_opts.m_file_descriptor = null_file_descriptor();
-			}
-
+			sendfile_t tmp{ std::move( sf ) };
+			swap( tmp );
 			return *this;
 		}
 
@@ -167,10 +139,30 @@ class sendfile_t
 			}
 		}
 
+		void
+		swap( sendfile_t & sf ) noexcept
+		{
+			if( this != &sf )
+			{
+				std::swap( m_file_descriptor, sf.m_file_descriptor );
+				std::swap( m_file_total_size, sf.m_file_total_size );
+				std::swap( m_offset, sf.m_offset );
+				std::swap( m_size, sf.m_size );
+				std::swap( m_chunk_size, sf.m_chunk_size );
+				std::swap( m_timelimit, sf.m_timelimit );
+			}
+		}
+
 		//! Check if file is valid.
 		bool is_valid() const { return null_file_descriptor() != m_file_descriptor; }
 
+		//! Get total file size.
+		auto file_total_size() const { return m_file_total_size; }
+
+		//! Get offset of data to write.
 		auto offset() const { return m_offset; }
+
+		//! Get size of data to write.
 		auto size() const { return m_size; }
 
 		//! Set file offset and size.
@@ -286,6 +278,12 @@ class sendfile_t
 		std::chrono::steady_clock::duration m_timelimit{ std::chrono::steady_clock::duration::zero() };
 };
 
+inline void
+swap( sendfile_t & sf_opts1, sendfile_t & sf_opts2 ) noexcept
+{
+	sf_opts1.swap( sf_opts2 );
+}
+
 //
 // sendfile()
 //
@@ -310,43 +308,29 @@ sendfile(
 inline sendfile_t
 sendfile(
 	const char * file_path,
-	open_file_errh_t err_handling = open_file_errh_t::throw_err,
 	file_size_t chunk_size = sendfile_default_chunk_size )
 {
-	const file_descriptor_t file_descriptor = open_file( file_path, err_handling );
+	const file_descriptor_t file_descriptor = open_file( file_path );
 
-	return sendfile( file_descriptor, size_of_file( file_descriptor, err_handling) , chunk_size );
+	return sendfile( file_descriptor, size_of_file( file_descriptor ) , chunk_size );
 }
 
 inline sendfile_t
 sendfile(
 	const std::string & file_path,
-	open_file_errh_t err_handling = open_file_errh_t::throw_err,
 	file_size_t chunk_size = sendfile_default_chunk_size )
 {
-	return sendfile( file_path.c_str(), err_handling, chunk_size );
+	return sendfile( file_path.c_str(), chunk_size );
 }
 
 inline sendfile_t
 sendfile(
 	string_view_t file_path,
-	open_file_errh_t err_handling = open_file_errh_t::throw_err,
 	file_size_t chunk_size = sendfile_default_chunk_size )
 {
-	constexpr std::size_t max_buf_size = 1024;
-	if( file_path.size() < 1024 )
-	{
-		// Create c-string.
-		std::array< char, max_buf_size > fpath;
-		std::memcpy( fpath.data(), file_path.data(), file_path.size() );
-		fpath[ file_path.size() ] = '\0';
-
-		return sendfile( fpath.data(), err_handling, chunk_size );
-	}
-
-	return sendfile(
+	return
+		sendfile(
 			std::string{ file_path.data(), file_path.size() },
-			err_handling,
 			chunk_size );
 }
 

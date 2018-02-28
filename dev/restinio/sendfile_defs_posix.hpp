@@ -17,43 +17,57 @@
 namespace restinio
 {
 
+#if ( defined(__unix__) && !defined(__linux__) ) || ( defined(__APPLE__) && defined __MACH__ )
+	#define RESTINIO_BSD_TARGET
+#endif
+
+
 using file_descriptor_t = int;
 constexpr file_descriptor_t null_file_descriptor(){ return -1; }
-using file_offset_t = off_t;
-using file_size_t = size_t;
+
+using file_offset_t = std::int64_t;
+using file_size_t = std::uint64_t;
 
 //! Open file.
 inline file_descriptor_t
-open_file( const char * file_path, open_file_errh_t err_handling )
+open_file( const char * file_path)
 {
-	file_descriptor_t file_descriptor = open( file_path, O_RDONLY );
-
+#if defined( RESTINIO_BSD_TARGET )
+	file_descriptor_t file_descriptor = ::open( file_path, O_RDONLY );
+#else
+	file_descriptor_t file_descriptor = ::open( file_path, O_RDONLY | O_LARGEFILE );
+#endif
 	if( null_file_descriptor() == file_descriptor )
 	{
-		if( open_file_errh_t::throw_err == err_handling )
-		{
-			throw exception_t{
-				fmt::format( "unable to openfile '{}': {}", file_path, strerror( errno ) ) };
-		}
+		throw exception_t{
+			fmt::format( "unable to openfile '{}': {}", file_path, strerror( errno ) ) };
 	}
 	return file_descriptor;
 }
 
 //! Get file size.
 inline file_size_t
-size_of_file( file_descriptor_t fd, open_file_errh_t err_handling )
+size_of_file( file_descriptor_t fd )
 {
 	if( null_file_descriptor() == fd )
-		return 0;
-
-	struct stat file_stat;
-	if( 0 != fstat( fd, &file_stat ) )
 	{
-		if( open_file_errh_t::throw_err == err_handling )
-			throw exception_t{
-				fmt::format( "unable to get file size : {}", strerror( errno ) ) };
-		else
-			return 0;
+		throw exception_t{ "invalid file descriptor" };
+	}
+
+#if defined( RESTINIO_BSD_TARGET )
+	struct stat file_stat;
+
+	const auto fstat_rc = ::fstat( fd, &file_stat );
+#else
+	struct stat64 file_stat;
+
+	const auto fstat_rc = fstat64( fd, &file_stat );
+#endif
+
+	if( 0 != fstat_rc )
+	{
+		throw exception_t{
+			fmt::format( "unable to get file size : {}", strerror( errno ) ) };
 	}
 
 	return static_cast< file_size_t >( file_stat.st_size );

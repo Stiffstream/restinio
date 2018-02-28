@@ -117,13 +117,10 @@ auto server_handler( const std::string & root_dir )
 					server_root_dir +
 						std::string{ path.data(), path.size() };
 
-				auto sf =
-					restinio::sendfile(
-						file_path,
-						restinio::open_file_errh_t::ignore_err );
-
-				if( sf.is_valid() )
+				try
 				{
+					auto sf = restinio::sendfile( file_path );
+
 					return
 						req->create_response()
 							.append_header_date_field()
@@ -135,8 +132,9 @@ auto server_handler( const std::string & root_dir )
 								content_type_by_file_extention( params[ "ext" ] ) )
 							.set_body( std::move( sf ) )
 							.done();
+
 				}
-				else
+				catch( const std::exception & )
 				{
 					return
 						req->create_response( 404, "Not Found" )
