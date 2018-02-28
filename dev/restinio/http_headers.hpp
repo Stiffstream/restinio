@@ -1099,7 +1099,7 @@ http_method_unknown()
 
 //! Map nodejs http method to http_method_t.
 inline http_method_t
-http_method_from_nodejs( unsigned int m )
+http_method_from_nodejs( int m )
 {
 	auto method = http_method_t::http_unknown;
 
