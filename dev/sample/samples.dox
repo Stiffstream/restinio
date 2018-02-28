@@ -1,0 +1,34 @@
+/*!
+ * \example sample/async_handling_with_sobjectizer/main.cpp
+ *
+ * \example sample/express_router/main.cpp
+ *
+ * \example sample/express_router_tutorial/main.cpp
+ *
+ * \example sample/hello_world/main.cpp
+ *
+ * \example sample/hello_world_basic/main.cpp
+ *
+ * \example sample/hello_world_delayed/main.cpp
+ *
+ * \example sample/hello_world_https/main.cpp
+ *
+ * \example sample/hello_world_minimal/main.cpp
+ *
+ * \example sample/hello_world_sendfile/main.cpp
+ *
+ * \example sample/query_string_params/main.cpp
+ *
+ * \example sample/sendfiles/main.cpp
+ *
+ * \example sample/using_external_io_context/main.cpp
+ *
+ * \example sample/websocket/main.cpp
+ *
+ * \example sample/websocket_detailed/main.cpp
+ *
+ * \example sample/websocket_wss/main.cpp
+ */
+// vim:ft=cpp.doxygen
+
+
