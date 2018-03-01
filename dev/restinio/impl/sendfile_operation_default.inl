@@ -50,12 +50,9 @@ class sendfile_operation_runner_t final
 			}
 			else
 			{
-				const asio_ns::error_code
-					ec{
-						std::ferror( this->m_file_descriptor ),
-						asio_ns::error::get_system_category() };
-
-				this->m_after_sendfile_cb( ec, this->m_transfered_size );
+				this->m_after_sendfile_cb( 
+					make_error_code( std::ferror( this->m_file_descriptor ) ),
+				 	this->m_transfered_size );
 				return;
 			}
 		}
@@ -75,12 +72,9 @@ class sendfile_operation_runner_t final
 
 			if( desired_size != n )
 			{
-				const asio_ns::error_code
-					ec{
-						std::ferror( this->m_file_descriptor ),
-						asio_ns::error::get_system_category() };
-
-				this->m_after_sendfile_cb( ec, this->m_transfered_size );
+				this->m_after_sendfile_cb( 
+					make_error_code( std::ferror( this->m_file_descriptor ) ), 
+					this->m_transfered_size );
 			}
 			else
 			{

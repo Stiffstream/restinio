@@ -79,6 +79,13 @@ class sendfile_operation_runner_base_t
 		after_sendfile_cb_t m_after_sendfile_cb;
 };
 
+template<typename Error_Type>
+auto 
+make_error_code( const Error_Type & e )
+{
+   return asio_ns::error_code{ static_cast<int>(e), asio_ns::error::get_system_category() };
+}
+
 } /* namespace restinio */
 
 /*

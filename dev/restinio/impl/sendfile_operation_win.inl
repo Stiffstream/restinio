@@ -68,8 +68,9 @@ class sendfile_operation_runner_t final
 									init_next_write( len );
 								else
 								{
-									const asio_ns::error_code ec{ asio_ec::eof, asio_ns::error::get_system_category() };
-									this->m_after_sendfile_cb( ec, this->m_transfered_size );
+									this->m_after_sendfile_cb( 
+										make_error_code( asio_ec::eof ), 
+										this->m_transfered_size );
 								}
 							}
 							else
@@ -203,8 +204,7 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 					// The operation completed immediately, so a completion notification needs
 					// to be posted. When complete() is called, ownership of the OVERLAPPED-
 					// derived object passes to the io_context.
-					asio::error_code ec( static_cast<int>( last_error ), asio::error::get_system_category() );
-					overlapped.complete( ec, 0 );
+					overlapped.complete( make_error_code( last_error ) , 0 );
 				}
 				else
 				{
