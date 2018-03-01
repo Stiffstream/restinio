@@ -63,8 +63,8 @@ struct std_regex_engine_t
 		std::cmatch matches;
 		if(
 			std::regex_search(
-				target_path.begin(),
-				target_path.end(),
+				target_path.data(),
+				target_path.data() + target_path.size(),
 				matches,
 				r ) )
 		{
@@ -72,7 +72,7 @@ struct std_regex_engine_t
 				matches.begin(),
 				matches.end(),
 				std::back_inserter( match_results ),
-				[ begin = target_path.begin() ]( const auto & m ){
+				[ begin = target_path.data() ]( const auto & m ){
 					return matched_item_descriptor_t{ m.first - begin, m.second - begin };
 				} );
 
