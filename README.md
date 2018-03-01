@@ -1,4 +1,4 @@
-# What Is It?
+# What Is RESTinio?
 
 RESTinio is a header-only C++14 library that gives you an embedded
 HTTP/Websocket server. It is based on standalone version of ASIO and targeted
