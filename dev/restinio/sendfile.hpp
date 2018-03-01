@@ -36,7 +36,7 @@ namespace restinio
 {
 
 //! Default chunk size for sendfile operation.
-constexpr file_size_t sendfile_default_chunk_size = 16 * 1024 * 1024;
+constexpr file_size_t sendfile_default_chunk_size = 1024 * 1024;
 
 //! Maximum size of a chunk
 constexpr file_size_t sendfile_max_chunk_size = 1024 * 1024 * 1024;
