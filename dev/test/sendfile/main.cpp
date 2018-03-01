@@ -298,7 +298,7 @@ TEST_CASE( "sendfile offsets_and_size" , "[sendfile][offset][size]" )
 	{
 		const std::string single_string{ "SENDILE 012345678901234567890123456789012345678901234567890123456789\n" };
 
-		for( std::size_t n = 0; n < 3301; n+= 100 )
+		for( std::size_t n = 0; n < 3301; n+= 300 )
 			for( std::size_t i = 0; i < single_string.size(); ++i )
 			{
 				const std::string request{
