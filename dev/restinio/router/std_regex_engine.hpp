@@ -60,7 +60,7 @@ struct std_regex_engine_t
 		const compiled_regex_t & r,
 		match_results_t & match_results )
 	{
-		std::match_results<string_view_t::iterator> matches;
+		std::cmatch matches;
 		if(
 			std::regex_search(
 				target_path.begin(),
