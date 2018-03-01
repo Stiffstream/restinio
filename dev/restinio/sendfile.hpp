@@ -310,9 +310,22 @@ sendfile(
 	const char * file_path,
 	file_size_t chunk_size = sendfile_default_chunk_size )
 {
-	const file_descriptor_t file_descriptor = open_file( file_path );
+	const file_descriptor_t fd = open_file( file_path );
 
-	return sendfile( file_descriptor, size_of_file( file_descriptor ) , chunk_size );
+	file_size_t total_file_size;
+
+	try
+	{
+		total_file_size = size_of_file( fd );
+	}
+	catch( ... )
+	{
+		// Close the file as there is no owner after rethrow.
+		close_file( fd );
+		throw;
+	}
+
+	return sendfile( fd, total_file_size , chunk_size );
 }
 
 inline sendfile_t
