@@ -17,8 +17,8 @@ namespace restinio
 
 using file_descriptor_t = HANDLE;
 constexpr file_descriptor_t null_file_descriptor(){ return INVALID_HANDLE_VALUE; }
-using file_offset_t = std::size_t;
-using file_size_t = std::size_t;
+using file_offset_t = std::uint64_t;
+using file_size_t = std::uint64_t;
 
 //! Open file.
 inline file_descriptor_t
@@ -51,8 +51,12 @@ size_of_file( file_descriptor_t fd )
 
 	if( null_file_descriptor() != fd )
 	{
+		LARGE_INTEGER file_size;
 		// Obtain file size:
-		fsize = GetFileSize( fd, NULL );
+		if( GetFileSizeEx( fd, &file_size ) )
+		{
+			fsize = static_cast< file_size_t >( file_size.QuadPart );
+		}
 	}
 
 	return fsize;
