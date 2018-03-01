@@ -45,7 +45,7 @@ class basic_string_view_t final
 		using reference = Char&;
 		using const_reference = const Char&;
 		using const_iterator = const Char*;
-		using iterator = const const_iterator;
+		using iterator = const_iterator;
 		using const_reverse_iterator = std::reverse_iterator< const_iterator >;
 		using size_type = std::size_t;
 		using difference_type = std::ptrdiff_t;
