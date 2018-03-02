@@ -161,7 +161,7 @@ inline void
 run(
 	//! Asio's io_context to be used.
 	//! Note: this reference should remain valid until RESTinio server finished.
-	asio::io_context & ioctx,
+	asio_ns::io_context & ioctx,
 	//! Settings for that server instance.
 	run_on_this_thread_settings_t<Traits> && settings )
 {
@@ -322,7 +322,7 @@ inline void
 run(
 	//! Asio's io_context to be used.
 	//! Note: this reference should remain valid until RESTinio server finished.
-	asio::io_context & ioctx,
+	asio_ns::io_context & ioctx,
 	//! Settings for that server instance.
 	run_on_thread_pool_settings_t<Traits> && settings )
 {
