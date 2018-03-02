@@ -68,7 +68,7 @@ public :
 	auto on_book_get(
 		restinio::request_handle_t req, rr::route_params_t params )
 	{
-		const auto booknum = restinio::cast_to< std::size_t >( params[ "booknum" ] );
+		const auto booknum = restinio::cast_to< std::uint32_t >( params[ "booknum" ] );
 
 		auto resp = init_resp( req->create_response() );
 
@@ -137,7 +137,7 @@ public :
 	auto on_book_update(
 		restinio::request_handle_t req, rr::route_params_t params )
 	{
-		const auto booknum = restinio::cast_to< std::size_t >( params[ "booknum" ] );
+		const auto booknum = restinio::cast_to< std::uint32_t >( params[ "booknum" ] );
 
 		auto resp = init_resp( req->create_response() );
 
@@ -166,7 +166,7 @@ public :
 	auto on_book_delete(
 		restinio::request_handle_t req, rr::route_params_t params )
 	{
-		const auto booknum = restinio::cast_to< std::size_t >( params[ "booknum" ] );
+		const auto booknum = restinio::cast_to< std::uint32_t >( params[ "booknum" ] );
 
 		auto resp = init_resp( req->create_response() );
 

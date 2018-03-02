@@ -17,8 +17,10 @@
 namespace restinio
 {
 
-#if ( defined(__unix__) && !defined(__linux__) ) || ( defined(__APPLE__) && defined __MACH__ )
-	#define RESTINIO_BSD_TARGET
+#if defined( __FreeBSD__ )
+	#define RESTINIO_FREEBSD_TARGET
+#elif defined(__APPLE__) && defined( __MACH__ )
+	#define RESTINIO_MACOS_TARGET
 #endif
 
 
@@ -32,7 +34,7 @@ using file_size_t = std::uint64_t;
 inline file_descriptor_t
 open_file( const char * file_path)
 {
-#if defined( RESTINIO_BSD_TARGET )
+#if defined( RESTINIO_FREEBSD_TARGET ) || defined( RESTINIO_MACOS_TARGET )
 	file_descriptor_t file_descriptor = ::open( file_path, O_RDONLY );
 #else
 	file_descriptor_t file_descriptor = ::open( file_path, O_RDONLY | O_LARGEFILE );
@@ -54,7 +56,7 @@ size_of_file( file_descriptor_t fd )
 		throw exception_t{ "invalid file descriptor" };
 	}
 
-#if defined( RESTINIO_BSD_TARGET )
+#if defined( RESTINIO_FREEBSD_TARGET ) || defined( RESTINIO_MACOS_TARGET )
 	struct stat file_stat;
 
 	const auto fstat_rc = ::fstat( fd, &file_stat );

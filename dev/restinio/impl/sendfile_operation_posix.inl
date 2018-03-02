@@ -6,7 +6,7 @@
 	sendfile routine.
 */
 
-#if defined( RESTINIO_BSD_TARGET )
+#if defined( RESTINIO_FREEBSD_TARGET ) || defined( RESTINIO_MACOS_TARGET )
 	#include <sys/uio.h>
 #else
 	#include <sys/sendfile.h>
@@ -188,7 +188,7 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 					break;
 				}
 
-#if defined( RESTINIO_BSD_TARGET )
+#if defined( RESTINIO_FREEBSD_TARGET )
 				// FreeBSD sendfile signature:
 				// int sendfile(int fd, int s, off_t offset, size_t nbytes,
 				//			struct sf_hdtr	*hdtr, off_t *sbytes, int flags);
@@ -212,8 +212,36 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 
 				if( -1 == rc )
 				{
-					// On FreeBSD in case of error it is still
-					// possible that some bytes had been sent.
+					// It is still possible that some bytes had been sent.
+					m_remained_size -= static_cast< file_size_t >( n );
+					m_transfered_size += static_cast< file_size_t >( n );
+
+					n = -1;
+				}
+#elif defined( RESTINIO_MACOS_TARGET )
+				// macOS sendfile signature:
+				// in sendfile(int fd, int s, off_t offset,
+				//				off_t *len, struct sf_hdtr *hdtr, int flags);
+
+				off_t n =
+					static_cast< off_t >(
+						std::min< file_size_t >( m_remained_size, m_chunk_size ) );
+
+				auto rc =
+					::sendfile(
+						m_file_descriptor,
+						m_socket.native_handle(),
+						m_next_write_offset,
+						&n,
+						nullptr, // struct	sf_hdtr	*hdtr
+						0 );
+
+				// Shift the number of bytes successfully sent.
+				m_next_write_offset += n;
+
+				if( -1 == rc )
+				{
+					// It is still possible that some bytes had been sent.
 					m_remained_size -= static_cast< file_size_t >( n );
 					m_transfered_size += static_cast< file_size_t >( n );
 

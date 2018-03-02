@@ -69,7 +69,7 @@ namespace restinio
 
 	namespace asio_ec
 	{
-		constexpr auto  eof = asio_ns::error::misc_errors::eof;
+		constexpr auto eof = asio_ns::error::misc_errors::eof;
 	} /* namespace err */
 
 } /* namespace restinio */

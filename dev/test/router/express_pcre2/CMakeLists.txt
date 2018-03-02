@@ -8,4 +8,4 @@ set(UNITTEST_SRCFILES
 	main.cpp )
 include(${CMAKE_SOURCE_DIR}/cmake/unittest.cmake)
 
-target_link_libraries(${UNITTEST} ${PCRE2_LIBRARIES})
+target_link_libraries(${UNITTEST} ${PCRE2_LIBRARY})
