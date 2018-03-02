@@ -47,9 +47,10 @@ constexpr file_size_t sendfile_max_chunk_size = 1024 * 1024 * 1024;
 
 //! A guard class for setting chunk size.
 /*!
-	Ensures that the value of chunk size is at least 1 and at most sendfile_max_chunk_size.
+	If chunk_size_value does not fit in [1, sendfile_max_chunk_size].
+	interval then it is shrinked to fit in the interval.
 */
-struct sendfile_chunk_size_guarded_value_t
+class sendfile_chunk_size_guarded_value_t
 {
 		static file_size_t
 		clarify_chunk_size( file_size_t chunk_size_value )
@@ -68,11 +69,6 @@ struct sendfile_chunk_size_guarded_value_t
 			:	m_chunk_size{ clarify_chunk_size( chunk_size_value ) }
 		{}
 
-		sendfile_chunk_size_guarded_value_t( const sendfile_chunk_size_guarded_value_t & ) noexcept = default;
-		sendfile_chunk_size_guarded_value_t( sendfile_chunk_size_guarded_value_t && ) noexcept = default;
-		const sendfile_chunk_size_guarded_value_t & operator = ( const sendfile_chunk_size_guarded_value_t & ) = delete;
-		sendfile_chunk_size_guarded_value_t & operator = ( sendfile_chunk_size_guarded_value_t && ) = delete;
-
 		file_size_t
 		value( ) const
 		{
@@ -84,23 +80,96 @@ struct sendfile_chunk_size_guarded_value_t
 };
 
 //
+// file_descriptor_holder_t
+//
+
+//! Wrapper class for working with native file handler.
+/*
+	Class is responsible for managing file descriptor as resource.
+*/
+class file_descriptor_holder_t
+{
+	public:
+		friend void
+		swap( file_descriptor_holder_t & left, file_descriptor_holder_t & right ) noexcept
+		{
+			if( &left != &right )
+			{
+				using std::swap;
+				swap( left.m_file_descriptor, right.m_file_descriptor );
+			}
+		}
+
+		file_descriptor_holder_t( file_descriptor_t fd )
+			:	m_file_descriptor{ fd }
+		{}
+
+		file_descriptor_holder_t( const file_descriptor_holder_t & ) = delete;
+		const file_descriptor_holder_t & operator = ( const file_descriptor_holder_t & ) = delete;
+
+		file_descriptor_holder_t( file_descriptor_holder_t && fdh ) noexcept
+			:	m_file_descriptor{ fdh.m_file_descriptor }
+		{
+			fdh.release();
+		}
+
+		file_descriptor_holder_t & operator = ( file_descriptor_holder_t && fdh ) noexcept
+		{
+			if( this != &fdh )
+			{
+				file_descriptor_holder_t tmp{ std::move( fdh ) };
+				swap( *this, tmp );
+			}
+			return *this;
+		}
+
+		~file_descriptor_holder_t()
+		{
+			if( is_valid() )
+				close_file( m_file_descriptor );
+		}
+
+		//! Check if file descriptor is valid.
+		bool is_valid() const noexcept
+		{
+			return null_file_descriptor() != m_file_descriptor;
+		}
+
+		//Get file descriptor.
+		file_descriptor_t fd() const noexcept
+		{
+			return m_file_descriptor;
+		}
+
+		// Release stored descriptor.
+		void release() noexcept
+		{
+			m_file_descriptor = null_file_descriptor();
+		}
+
+	private:
+		//! Target file descriptor.
+		file_descriptor_t m_file_descriptor;
+};
+
+//
 // sendfile_t
 //
 
 //! Send file write operation description.
 /*!
 	Class gives a fluen-interface for setting various parameters
-	for performin send file operation.
+	for performing send file operation.
 */
 class sendfile_t
 {
-		friend sendfile_t sendfile( file_descriptor_t , file_size_t , file_size_t );
+		friend sendfile_t sendfile( file_descriptor_holder_t , file_size_t , file_size_t );
 
 		sendfile_t(
-			file_descriptor_t fd,
+			file_descriptor_holder_t fdh,
 			file_size_t file_total_size,
 			sendfile_chunk_size_guarded_value_t chunk )
-			:	m_file_descriptor{ fd }
+			:	m_file_descriptor{ std::move( fdh ) }
 			,	m_file_total_size{ file_total_size }
 			,	m_offset{ 0 }
 			,	m_size{ file_total_size }
@@ -109,61 +178,54 @@ class sendfile_t
 		{}
 
 	public:
+		friend void swap( sendfile_t & left, sendfile_t & right ) noexcept
+		{
+			if( &left != &right )
+			{
+				using std::swap;
+				std::swap( left.m_file_descriptor, right.m_file_descriptor );
+				std::swap( left.m_file_total_size, right.m_file_total_size );
+				std::swap( left.m_offset, right.m_offset );
+				std::swap( left.m_size, right.m_size );
+				std::swap( left.m_chunk_size, right.m_chunk_size );
+				std::swap( left.m_timelimit, right.m_timelimit );
+			}
+		}
+
 		sendfile_t( const sendfile_t & ) = delete;
 		const sendfile_t & operator = ( const sendfile_t & ) = delete;
 
-		sendfile_t(
-			sendfile_t && sf ) noexcept
-			:	m_file_descriptor{ sf.m_file_descriptor }
+		sendfile_t( sendfile_t && sf ) noexcept
+			:	m_file_descriptor{ std::move( sf.m_file_descriptor ) }
 			,	m_file_total_size{ sf.m_file_total_size }
 			,	m_offset{ sf.m_offset }
 			,	m_size{ sf.m_size }
 			,	m_chunk_size{ sf.m_chunk_size }
 			,	m_timelimit{ sf.m_timelimit }
-		{
-			sf.m_file_descriptor = null_file_descriptor();
-		}
+		{}
 
 		sendfile_t & operator = ( sendfile_t && sf ) noexcept
 		{
-			sendfile_t tmp{ std::move( sf ) };
-			swap( tmp );
+			if( this != &sf )
+			{
+				sendfile_t tmp{ std::move( sf ) };
+				swap( *this, tmp );
+			}
+
 			return *this;
 		}
 
-		~sendfile_t()
-		{
-			if( is_valid() )
-			{
-				close_file( m_file_descriptor );
-			}
-		}
-
-		void
-		swap( sendfile_t & sf ) noexcept
-		{
-			if( this != &sf )
-			{
-				std::swap( m_file_descriptor, sf.m_file_descriptor );
-				std::swap( m_file_total_size, sf.m_file_total_size );
-				std::swap( m_offset, sf.m_offset );
-				std::swap( m_size, sf.m_size );
-				std::swap( m_chunk_size, sf.m_chunk_size );
-				std::swap( m_timelimit, sf.m_timelimit );
-			}
-		}
-
 		//! Check if file is valid.
-		bool is_valid() const { return null_file_descriptor() != m_file_descriptor; }
+		bool is_valid() const noexcept { return m_file_descriptor.is_valid(); }
 
 		//! Get total file size.
-		auto file_total_size() const { return m_file_total_size; }
+		auto file_total_size() const noexcept { return m_file_total_size; }
 
 		//! Get offset of data to write.
-		auto offset() const { return m_offset; }
+		auto offset() const noexcept { return m_offset; }
 
 		//! Get size of data to write.
-		auto size() const { return m_size; }
+		auto size() const noexcept { return m_size; }
 
 		//! Set file offset and size.
 		//! \{
@@ -223,7 +285,7 @@ class sendfile_t
 		}
 		//! \}
 
-		auto timelimit() const { return m_timelimit; }
+		auto timelimit() const noexcept { return m_timelimit; }
 
 		//! Set timelimit on  write operation.
 		//! \{
@@ -244,9 +306,9 @@ class sendfile_t
 		//! \}
 
 		file_descriptor_t
-		file_descriptor() const
+		file_descriptor() const noexcept
 		{
-			return m_file_descriptor;
+			return m_file_descriptor.fd();
 		}
 
 	private:
@@ -259,7 +321,7 @@ class sendfile_t
 			}
 		}
 
-		file_descriptor_t m_file_descriptor;
+		file_descriptor_holder_t m_file_descriptor;
 		file_size_t m_file_total_size;
 
 		//! Data.
@@ -278,12 +340,6 @@ class sendfile_t
 		std::chrono::steady_clock::duration m_timelimit{ std::chrono::steady_clock::duration::zero() };
 };
 
-inline void
-swap( sendfile_t & sf_opts1, sendfile_t & sf_opts2 ) noexcept
-{
-	sf_opts1.swap( sf_opts2 );
-}
-
 //
 // sendfile()
 //
@@ -298,11 +354,11 @@ swap( sendfile_t & sf_opts1, sendfile_t & sf_opts2 ) noexcept
 */
 inline sendfile_t
 sendfile(
-	file_descriptor_t fd,
+	file_descriptor_holder_t fd,
 	file_size_t total_file_size,
 	file_size_t chunk_size = sendfile_default_chunk_size )
 {
-	return sendfile_t{ fd, total_file_size, chunk_size };
+	return sendfile_t{ std::move( fd ), total_file_size, chunk_size };
 }
 
 inline sendfile_t
@@ -310,22 +366,11 @@ sendfile(
 	const char * file_path,
 	file_size_t chunk_size = sendfile_default_chunk_size )
 {
-	const file_descriptor_t fd = open_file( file_path );
+	file_descriptor_holder_t fd{ open_file( file_path ) };
 
-	file_size_t total_file_size;
+	auto total_file_size = size_of_file( fd.fd() );
 
-	try
-	{
-		total_file_size = size_of_file( fd );
-	}
-	catch( ... )
-	{
-		// Close the file as there is no owner after rethrow.
-		close_file( fd );
-		throw;
-	}
-
-	return sendfile( fd, total_file_size , chunk_size );
+	return sendfile( std::move( fd ), total_file_size , chunk_size );
 }
 
 inline sendfile_t

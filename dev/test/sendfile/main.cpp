@@ -555,6 +555,7 @@ TEST_CASE( "sendfile with invalid descriptor with " , "[sendfile][error][is_vali
 		auto sf = restinio::sendfile( fname );
 
 		accept_moved( std::move( sf ) );
+
 		REQUIRE_FALSE( sf.is_valid() );
 	}
 
