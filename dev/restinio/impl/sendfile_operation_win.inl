@@ -49,7 +49,7 @@ class sendfile_operation_runner_t final
 				std::min< file_size_t >( this->m_remained_size, this->m_chunk_size );
 
 			this->m_file_handle.async_read_some_at(
-				this->m_next_write_offset, 
+				this->m_next_write_offset,
 				asio_ns::buffer(
 					this->m_buffer.get(),
 					static_cast< std::size_t >( desired_size ) ),
@@ -62,14 +62,14 @@ class sendfile_operation_runner_t final
 							{
 								m_after_sendfile_cb( ec, m_transfered_size );
 							}
-							if( !ec ) 
+							if( !ec )
 							{
 								if( 0 != len )
 									init_next_write( len );
 								else
 								{
-									this->m_after_sendfile_cb( 
-										make_error_code( asio_ec::eof ), 
+									this->m_after_sendfile_cb(
+										make_error_code( asio_ec::eof ),
 										this->m_transfered_size );
 								}
 							}
@@ -118,7 +118,7 @@ class sendfile_operation_runner_t final
 
 	private:
 		std::unique_ptr< char[] > m_buffer{ new char [ this->m_chunk_size ] };
-		asio_ns::windows::random_access_handle 
+		asio_ns::windows::random_access_handle
 			m_file_handle{ this->m_socket.get_executor().context(), this->m_file_descriptor };
 };
 
@@ -148,7 +148,7 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 		init_next_write()
 		{
 
-			asio_ns::windows::overlapped_ptr overlapped{ 
+			asio_ns::windows::overlapped_ptr overlapped{
 				m_socket.get_executor().context(),
 				asio_ns::bind_executor(
 					m_executor,
@@ -174,11 +174,11 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 							m_after_sendfile_cb( ec, m_transfered_size );
 						}
 					} ) };
-					
+
 				// Set offset.
-				overlapped.get()->Offset = 
+				overlapped.get()->Offset =
 					static_cast< DWORD >( m_next_write_offset & 0xFFFFFFFFULL );
-				overlapped.get()->OffsetHigh = 
+				overlapped.get()->OffsetHigh =
 					static_cast< DWORD >( (m_next_write_offset>>32) & 0xFFFFFFFFULL );
 
 				// Amount of data to transfer.
@@ -186,15 +186,15 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 					std::min< file_size_t >( this->m_remained_size, this->m_chunk_size );
 
 				// Initiate the TransmitFile operation.
-				BOOL ok = 
+				BOOL ok =
 					::TransmitFile(
 						m_socket.native_handle(),
-				  		m_file_handle.native_handle(), 
-				  		static_cast< DWORD >( desired_size ), 
-				  		0, 
-				  		overlapped.get(), 
-				  		0, 
-				  		0 );
+						m_file_handle.native_handle(),
+						static_cast< DWORD >( desired_size ),
+						0,
+						overlapped.get(),
+						0,
+						0 );
 
 				DWORD last_error = ::GetLastError();
 
@@ -216,7 +216,7 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 
 	private:
 		std::unique_ptr< char[] > m_buffer{ new char [ m_chunk_size ] };
-		asio_ns::windows::random_access_handle 
+		asio_ns::windows::random_access_handle
 			m_file_handle{ m_socket.get_executor().context(), m_file_descriptor };
 };
 
