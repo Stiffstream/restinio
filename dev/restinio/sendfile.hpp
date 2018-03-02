@@ -93,11 +93,8 @@ class file_descriptor_holder_t
 		friend void
 		swap( file_descriptor_holder_t & left, file_descriptor_holder_t & right ) noexcept
 		{
-			if( &left != &right )
-			{
-				using std::swap;
-				swap( left.m_file_descriptor, right.m_file_descriptor );
-			}
+			using std::swap;
+			swap( left.m_file_descriptor, right.m_file_descriptor );
 		}
 
 		file_descriptor_holder_t( file_descriptor_t fd )
@@ -180,16 +177,13 @@ class sendfile_t
 	public:
 		friend void swap( sendfile_t & left, sendfile_t & right ) noexcept
 		{
-			if( &left != &right )
-			{
-				using std::swap;
-				std::swap( left.m_file_descriptor, right.m_file_descriptor );
-				std::swap( left.m_file_total_size, right.m_file_total_size );
-				std::swap( left.m_offset, right.m_offset );
-				std::swap( left.m_size, right.m_size );
-				std::swap( left.m_chunk_size, right.m_chunk_size );
-				std::swap( left.m_timelimit, right.m_timelimit );
-			}
+			using std::swap;
+			std::swap( left.m_file_descriptor, right.m_file_descriptor );
+			std::swap( left.m_file_total_size, right.m_file_total_size );
+			std::swap( left.m_offset, right.m_offset );
+			std::swap( left.m_size, right.m_size );
+			std::swap( left.m_chunk_size, right.m_chunk_size );
+			std::swap( left.m_timelimit, right.m_timelimit );
 		}
 
 		sendfile_t( const sendfile_t & ) = delete;
