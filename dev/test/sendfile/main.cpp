@@ -558,7 +558,6 @@ TEST_CASE( "sendfile with invalid descriptor with " , "[sendfile][error][is_vali
 
 		REQUIRE_FALSE( sf.is_valid() );
 	}
-
 }
 
 TEST_CASE( "sendfile_chunk_size_guarded_value_t " , "[chunk_size_guarded_value]" )

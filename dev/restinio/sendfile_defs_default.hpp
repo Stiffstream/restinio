@@ -46,6 +46,11 @@ size_of_file( file_descriptor_t fd )
 		if( 0 == std::fseek( fd , 0 , SEEK_END ) )
 		{
 			const auto end_pos = std::ftell( fd );
+
+			static_assert(
+				sizeof( end_pos ) == sizeof(file_size_t),
+				"Different values width are not allowed" );
+
 			if( -1 != end_pos )
 			{
 				fsize = static_cast< file_size_t >( end_pos );
