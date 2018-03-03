@@ -14,6 +14,7 @@
 
 #include <fmt/format.h>
 
+#include <restinio/asio_include.hpp>
 #include <restinio/string_view.hpp>
 #include <restinio/exception.hpp>
 
