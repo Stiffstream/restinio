@@ -38,6 +38,8 @@ template <
 using single_thread_tls_traits_t =
 	tls_traits_t< Timer_Factory, Logger, Request_Handler, noop_strand_t >;
 
+using default_tls_traits_t = tls_traits_t< asio_timer_manager_t, null_logger_t >;
+
 //
 // prepare_connection_and_start_read()
 //

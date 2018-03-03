@@ -41,7 +41,12 @@ class sendfile_operation_runner_t final
 		virtual void
 		start() override
 		{
+#if defined( RESTINIO_FREEBSD_TARGET ) || defined( RESTINIO_MACOS_TARGET )
 			auto const n = ::lseek( this->m_file_descriptor, this->m_next_write_offset, SEEK_SET );
+#else
+			auto const n = ::lseek64( this->m_file_descriptor, this->m_next_write_offset, SEEK_SET );
+#endif
+
 			if( static_cast< off_t >( -1 ) != n )
 			{
 				this->init_next_write();

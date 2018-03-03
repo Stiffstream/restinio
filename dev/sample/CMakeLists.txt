@@ -19,5 +19,6 @@ if ( OPENSSL_FOUND )
 	message("OpenSSL libraries: ${OPENSSL_LIBRARIES}")
 
 	add_subdirectory(hello_world_https)
+	add_subdirectory(hello_world_sendfile_https)
 	add_subdirectory(websocket_wss)
 endif ()
