@@ -144,7 +144,7 @@ void run_server( const app_args_t & args )
 						}
 						catch( const std::exception & ex )
 						{
-							req->create_response( 404, "Not Found" )
+							return req->create_response( 404, "Not Found" )
 								.append_header_date_field()
 								.done();
 						}
@@ -175,11 +175,6 @@ int main( int argc, const char * argv[] )
 			{
 				run_server< restinio::default_traits_t >( args );
 			}
-		}
-		else
-		{
-			std::cout << "Usage: hello_world_sendfile filepath" << std::endl;
-			return 1;
 		}
 	}
 	catch( const std::exception & ex )
