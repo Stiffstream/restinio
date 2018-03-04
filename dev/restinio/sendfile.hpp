@@ -53,6 +53,12 @@ constexpr file_size_t sendfile_max_chunk_size = 1024 * 1024 * 1024;
 */
 class sendfile_chunk_size_guarded_value_t
 {
+		//! Checks chunk_size_value and returns a value in [1, sendfile_max_chunk_size].
+		/*
+			- If chunk_size_value is zero returns 1.
+			- If chunk_size_value is greater than sendfile_max_chunk_size returns sendfile_max_chunk_size.
+			- Otherwise returns chunk_size_value itself.
+		*/
 		static file_size_t
 		clarify_chunk_size( file_size_t chunk_size_value )
 		{
@@ -66,10 +72,12 @@ class sendfile_chunk_size_guarded_value_t
 		}
 
 	public:
+
 		sendfile_chunk_size_guarded_value_t( file_size_t chunk_size_value )
 			:	m_chunk_size{ clarify_chunk_size( chunk_size_value ) }
 		{}
 
+		//! Get the valid value of a chunk size.
 		file_size_t
 		value( ) const
 		{
@@ -77,6 +85,7 @@ class sendfile_chunk_size_guarded_value_t
 		}
 
 	private:
+		//! Valid value of the chunk size.
 		const file_size_t m_chunk_size;
 };
 
@@ -91,6 +100,7 @@ class sendfile_chunk_size_guarded_value_t
 class file_descriptor_holder_t
 {
 	public:
+		//! Swap two descriptors
 		friend void
 		swap( file_descriptor_holder_t & left, file_descriptor_holder_t & right ) noexcept
 		{
@@ -98,12 +108,18 @@ class file_descriptor_holder_t
 			swap( left.m_file_descriptor, right.m_file_descriptor );
 		}
 
+		//! Init constructor.
 		file_descriptor_holder_t( file_descriptor_t fd )
 			:	m_file_descriptor{ fd }
 		{}
 
+		/** @name Copy semantics
+		 * @brief Not allowed.
+		*/
+		///@{
 		file_descriptor_holder_t( const file_descriptor_holder_t & ) = delete;
 		const file_descriptor_holder_t & operator = ( const file_descriptor_holder_t & ) = delete;
+		///@}
 
 		file_descriptor_holder_t( file_descriptor_holder_t && fdh ) noexcept
 			:	m_file_descriptor{ fdh.m_file_descriptor }
@@ -187,9 +203,18 @@ class sendfile_t
 			std::swap( left.m_timelimit, right.m_timelimit );
 		}
 
+		/** @name Copy semantics
+		 * @brief Not allowed.
+		*/
+		///@{
 		sendfile_t( const sendfile_t & ) = delete;
 		const sendfile_t & operator = ( const sendfile_t & ) = delete;
+		///@}
 
+		/** @name Move semantics
+		 * @brief After move sf prameter becomes invalid.
+		*/
+		///@{
 		sendfile_t( sendfile_t && sf ) noexcept
 			:	m_file_descriptor{ std::move( sf.m_file_descriptor ) }
 			,	m_file_total_size{ sf.m_file_total_size }
@@ -209,6 +234,7 @@ class sendfile_t
 
 			return *this;
 		}
+		///@}
 
 		//! Check if file is valid.
 		bool is_valid() const noexcept { return m_file_descriptor.is_valid(); }
@@ -222,9 +248,16 @@ class sendfile_t
 		//! Get size of data to write.
 		auto size() const noexcept { return m_size; }
 
-		//! Set file offset and size.
-		//! \{
-
+		/** @name Set file offset and size.
+		 * @brief Tries to set offset parameter to offset_value and size to size value.
+		 *
+		 * If sendfile_t object is invalid then exception is thrown.
+		 *
+		 * If offset_value is a valid offset within current file then ofsett is
+		 * set to new value. The size might be shrinked so to represent at most
+		 * the length of file from a given offset.
+		*/
+		///@{
 		sendfile_t &
 		offset_and_size(
 			file_offset_t offset_value,
@@ -257,13 +290,17 @@ class sendfile_t
 		{
 			return std::move( this->offset_and_size( offset_value, size_value ) );
 		}
-		//! \}
+		///@}
+
 
 
 		auto chunk_size() const { return m_chunk_size; }
 
-		//! Set prefered chunk size to use in  write operation.
-		//! \{
+		/** @name Set prefered chunk size to use in  write operation.
+		 * @brief Set the maximum possible size of the portion of data
+		 * to be send at a single write file operation (from file to socket).
+		*/
+		///@{
 		sendfile_t &
 		chunk_size( sendfile_chunk_size_guarded_value_t chunk ) &
 		{
@@ -273,17 +310,22 @@ class sendfile_t
 			return *this;
 		}
 
+		//! Set prefered chunk size to use in  write operation.
 		sendfile_t &&
 		chunk_size( sendfile_chunk_size_guarded_value_t chunk ) &&
 		{
 			return std::move( this->chunk_size( chunk ) );
 		}
-		//! \}
+		///@}
 
 		auto timelimit() const noexcept { return m_timelimit; }
 
-		//! Set timelimit on  write operation.
-		//! \{
+		//!
+		/** @name Set timelimit on  write operation..
+		 * @brief Set the maximum dureation of this sendfile operation
+		 * (the whole thing, not just a single iteration).
+		*/
+		///@{
 		sendfile_t &
 		timelimit( std::chrono::steady_clock::duration timelimit_value ) &
 		{
