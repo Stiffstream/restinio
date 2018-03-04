@@ -85,7 +85,7 @@ class a_server_t
 										req->header().connection() )
 									{
 										++g_message_handled;
-										so_5::send< upgrade_request_t >( mbox, req );
+										so_5::send< upgrade_request_t >( mbox, std::move( req ) );
 
 										return restinio::request_accepted();
 									}

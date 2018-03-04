@@ -670,6 +670,7 @@ class connection_t final
 					} );
 				}
 			}
+
 			// Else 2 cases:
 			// 1. request is handled asynchronously, so
 			// what happens next depends on handling.
@@ -677,6 +678,9 @@ class connection_t final
 			// of a connection was already determined.
 			//
 			// In both cases: here do nothing.
+			// We can't even do read-only access because upgrade handling might take place
+			// in distinct execution context
+			// Son no even log messages here.
 		}
 
 		//! Write parts for specified request.
