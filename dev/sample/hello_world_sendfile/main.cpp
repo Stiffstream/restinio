@@ -145,6 +145,7 @@ void run_server( const app_args_t & args )
 						catch( const std::exception & ex )
 						{
 							return req->create_response( 404, "Not Found" )
+								.connection_close()
 								.append_header_date_field()
 								.done();
 						}
