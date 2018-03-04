@@ -62,6 +62,8 @@ class tcp_connection_ctx_base_t
 
 //! Alias for http connection handle.
 using tcp_connection_ctx_handle_t = std::shared_ptr< tcp_connection_ctx_base_t >;
+
+//! Alias for http connection weak handle.
 using tcp_connection_ctx_weak_handle_t = std::weak_ptr< tcp_connection_ctx_base_t >;
 
 } /* namespace restinio */

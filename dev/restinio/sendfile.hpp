@@ -4,6 +4,8 @@
 
 /*!
 	Sendfile routine.
+
+	@since v.0.4.3
 */
 
 #pragma once
@@ -37,9 +39,11 @@ namespace restinio
 {
 
 //! Default chunk size for sendfile operation.
+//! @since v.0.4.3
 constexpr file_size_t sendfile_default_chunk_size = 1024 * 1024;
 
 //! Maximum size of a chunk
+//! @since v.0.4.3
 constexpr file_size_t sendfile_max_chunk_size = 1024 * 1024 * 1024;
 
 //
@@ -50,6 +54,8 @@ constexpr file_size_t sendfile_max_chunk_size = 1024 * 1024 * 1024;
 /*!
 	If chunk_size_value does not fit in [1, sendfile_max_chunk_size].
 	interval then it is shrinked to fit in the interval.
+
+	@since v.0.4.3
 */
 class sendfile_chunk_size_guarded_value_t
 {
@@ -96,6 +102,8 @@ class sendfile_chunk_size_guarded_value_t
 //! Wrapper class for working with native file handler.
 /*
 	Class is responsible for managing file descriptor as resource.
+
+	@since v.0.4.3
 */
 class file_descriptor_holder_t
 {
@@ -113,7 +121,7 @@ class file_descriptor_holder_t
 			:	m_file_descriptor{ fd }
 		{}
 
-		/** @name Copy semantics
+		/** @name Copy semantics.
 		 * @brief Not allowed.
 		*/
 		///@{
@@ -174,6 +182,8 @@ class file_descriptor_holder_t
 /*!
 	Class gives a fluen-interface for setting various parameters
 	for performing send file operation.
+
+	@since v.0.4.3
 */
 class sendfile_t
 {
@@ -203,7 +213,7 @@ class sendfile_t
 			std::swap( left.m_timelimit, right.m_timelimit );
 		}
 
-		/** @name Copy semantics
+		/** @name Copy semantics.
 		 * @brief Not allowed.
 		*/
 		///@{
@@ -211,7 +221,7 @@ class sendfile_t
 		const sendfile_t & operator = ( const sendfile_t & ) = delete;
 		///@}
 
-		/** @name Move semantics
+		/** @name Move semantics.
 		 * @brief After move sf prameter becomes invalid.
 		*/
 		///@{
@@ -320,7 +330,6 @@ class sendfile_t
 
 		auto timelimit() const noexcept { return m_timelimit; }
 
-		//!
 		/** @name Set timelimit on  write operation..
 		 * @brief Set the maximum dureation of this sendfile operation
 		 * (the whole thing, not just a single iteration).
@@ -340,8 +349,9 @@ class sendfile_t
 		{
 			return std::move( this->timelimit( timelimit_value ) );
 		}
-		//! \}
+		///@}
 
+		//! Get the file descriptor of a given sendfile operation.
 		file_descriptor_t
 		file_descriptor() const noexcept
 		{
@@ -349,6 +359,7 @@ class sendfile_t
 		}
 
 	private:
+		//! Check if stored file descriptor is valid, and throws if it is not.
 		void
 		check_file_is_valid() const
 		{
@@ -358,14 +369,15 @@ class sendfile_t
 			}
 		}
 
+		//! Native file descriptor.
 		file_descriptor_holder_t m_file_descriptor;
+		//! The size of the file.
 		file_size_t m_file_total_size;
 
-		//! Data.
-		//! \{
+		//! Data offset within the file.
 		file_offset_t m_offset;
+		//! The size of data portion in file.
 		file_size_t m_size;
-		//! \}
 
 		//! A prefered chunk size for a single write call.
 		file_size_t m_chunk_size;
@@ -381,18 +393,19 @@ class sendfile_t
 // sendfile()
 //
 
-//! A group of function to create sendfile_t, that is convertad to writable items
-//! used as a part of response.
-//! \{
-
-//! Create sendfile optionswith a given file and its given size.
-/*!
-	\note Parameters are not checked and are trusted as is.
+/** @name Functions for creating sendfile_t objects.
+ * @brief A group of function to create sendfile_t, that is convertad to writable items
+ * used as a part of response.
+ * @since v.0.4.3
 */
+///@{
 inline sendfile_t
 sendfile(
+	//! Native file descriptor.
 	file_descriptor_holder_t fd,
+	//! Total file size.
 	file_size_t total_file_size,
+	//! The max size of a data to be send on a single iteration.
 	file_size_t chunk_size = sendfile_default_chunk_size )
 {
 	return sendfile_t{ std::move( fd ), total_file_size, chunk_size };
@@ -400,7 +413,9 @@ sendfile(
 
 inline sendfile_t
 sendfile(
+	//! Path to file.
 	const char * file_path,
+	//! The max size of a data to be send on a single iteration.
 	file_size_t chunk_size = sendfile_default_chunk_size )
 {
 	file_descriptor_holder_t fd{ open_file( file_path ) };
@@ -412,7 +427,9 @@ sendfile(
 
 inline sendfile_t
 sendfile(
+	//! Path to file.
 	const std::string & file_path,
+	//! The max size of a data to be send on a single iteration.
 	file_size_t chunk_size = sendfile_default_chunk_size )
 {
 	return sendfile( file_path.c_str(), chunk_size );
@@ -420,7 +437,9 @@ sendfile(
 
 inline sendfile_t
 sendfile(
+	//! Path to file.
 	string_view_t file_path,
+	//! The max size of a data to be send on a single iteration.
 	file_size_t chunk_size = sendfile_default_chunk_size )
 {
 	return
@@ -428,7 +447,6 @@ sendfile(
 			std::string{ file_path.data(), file_path.size() },
 			chunk_size );
 }
-
-//! \}
+///@}
 
 } /* namespace restinio */

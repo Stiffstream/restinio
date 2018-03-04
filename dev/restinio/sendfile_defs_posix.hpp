@@ -3,7 +3,9 @@
 */
 
 /*!
-	Sendfile routine.
+	Sendfile routine definitions (posix implementation).
+
+	@since v.0.4.3
 */
 
 #pragma once
@@ -23,12 +25,24 @@ namespace restinio
 	#define RESTINIO_MACOS_TARGET
 #endif
 
-
+/** @name Aliases for sendfile operation.
+ */
+///@{
 using file_descriptor_t = int;
-constexpr file_descriptor_t null_file_descriptor(){ return -1; }
-
 using file_offset_t = std::int64_t;
 using file_size_t = std::uint64_t;
+///@}
+
+/** @name File operations.
+ * @brief A minimal set of file operations.
+ *
+ * Incapsulates details of native API for a set of file operations neccessary
+ * for sendfile_t class implementation.
+ */
+///@{
+
+//! Get file descriptor which stands for null.
+constexpr file_descriptor_t null_file_descriptor(){ return -1; }
 
 //! Open file.
 inline file_descriptor_t
@@ -75,11 +89,12 @@ size_of_file( file_descriptor_t fd )
 	return static_cast< file_size_t >( file_stat.st_size );
 }
 
-//! Close file by its descriptor proxy function.
+//! Close file by its descriptor.
 inline void
 close_file( file_descriptor_t fd )
 {
 	::close( fd );
 }
+///@}
 
 } /* namespace restinio */
