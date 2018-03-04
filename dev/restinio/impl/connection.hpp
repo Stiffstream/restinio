@@ -157,6 +157,9 @@ struct connection_input_t
 	connection_upgrade_stage_t m_connection_upgrade_stage{
 		connection_upgrade_stage_t::none };
 
+	//! Flag to track whether read operation is performed now.
+	bool m_read_operation_is_running{ false };
+
 	//! Prepare parser for reading new http-message.
 	void
 	reset_parser()
@@ -354,21 +357,35 @@ class connection_t final
 		inline void
 		consume_message()
 		{
-			m_logger.trace( [&]{
-				return fmt::format(
-						"[connection:{}] continue reading request",
-						connection_id() );
-			} );
+			if( !m_input.m_read_operation_is_running )
+			{
+				m_logger.trace( [&]{
+					return fmt::format(
+							"[connection:{}] continue reading request",
+							connection_id() );
+				} );
 
-			m_socket.async_read_some(
-				m_input.m_buf.make_asio_buffer(),
-				asio_ns::bind_executor(
-					this->get_executor(),
-					[ this, ctx = shared_from_this() ](
-						const asio_ns::error_code & ec,
-						std::size_t length ){
-						after_read( ec, length );
-					} ) );
+
+				m_input.m_read_operation_is_running = true;
+				m_socket.async_read_some(
+					m_input.m_buf.make_asio_buffer(),
+					asio_ns::bind_executor(
+						this->get_executor(),
+						[ this, ctx = shared_from_this() ](
+							const asio_ns::error_code & ec,
+							std::size_t length ){
+							m_input.m_read_operation_is_running = false;
+							after_read( ec, length );
+						} ) );
+			}
+			else
+			{
+				m_logger.trace( [&]{
+					return fmt::format(
+							"[connection:{}] skip read operation: already running",
+							connection_id() );
+				} );
+			}
 		}
 
 		inline void
