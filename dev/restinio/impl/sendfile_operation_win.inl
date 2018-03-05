@@ -33,8 +33,13 @@ class sendfile_operation_runner_t final
 		const sendfile_operation_runner_t & operator = ( const sendfile_operation_runner_t & ) = delete;
 		sendfile_operation_runner_t & operator = ( sendfile_operation_runner_t && ) = delete;
 
-		// Reuse construstors from base.
-		using base_type_t::base_type_t;
+		sendfile_operation_runner_t(
+			const sendfile_t & sf,
+			asio_ns::executor executor,
+			Socket & socket,
+			after_sendfile_cb_t after_sendfile_cb )
+			:	base_type_t{ sf, std::move( executor), socket, std::move( after_sendfile_cb ) }
+		{}
 
 		virtual void
 		start() override
@@ -58,9 +63,9 @@ class sendfile_operation_runner_t final
 						[ this, ctx = this->shared_from_this() ]
 						( const asio_ns::error_code & ec, std::size_t len ){
 
-							if( ec || 0 == m_remained_size )
+							if( ec || 0 == this->m_remained_size )
 							{
-								m_after_sendfile_cb( ec, m_transfered_size );
+								this->m_after_sendfile_cb( ec, this->m_transfered_size );
 							}
 							if( !ec )
 							{
@@ -135,8 +140,13 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 		const sendfile_operation_runner_t & operator = ( const sendfile_operation_runner_t & ) = delete;
 		sendfile_operation_runner_t & operator = ( sendfile_operation_runner_t && ) = delete;
 
-		// Reuse construstors from base.
-		using base_type_t::base_type_t;
+		sendfile_operation_runner_t(
+			const sendfile_t & sf,
+			asio_ns::executor executor,
+			asio_ns::ip::tcp::socket & socket,
+			after_sendfile_cb_t after_sendfile_cb )
+			:	base_type_t{ sf, std::move( executor), socket, std::move( after_sendfile_cb ) }
+		{}
 
 		virtual void
 		start() override

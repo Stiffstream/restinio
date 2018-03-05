@@ -33,7 +33,7 @@ using file_size_t = std::uint64_t;
  */
 ///@{
 //! Get file descriptor which stands for null.
-constexpr file_descriptor_t null_file_descriptor(){ return INVALID_HANDLE_VALUE; }
+inline file_descriptor_t null_file_descriptor(){ return INVALID_HANDLE_VALUE; }
 
 //! Open file.
 inline file_descriptor_t

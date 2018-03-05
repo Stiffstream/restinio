@@ -27,7 +27,7 @@
 		file_size_t
 */
 
-#if defined( _MSC_VER )
+#if defined( _MSC_VER ) || defined(__MINGW32__)
 	#include "sendfile_defs_win.hpp"
 #elif (defined( __clang__ ) || defined( __GNUC__ )) && !defined(__WIN32__)
 	#include "sendfile_defs_posix.hpp"

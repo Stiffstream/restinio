@@ -92,7 +92,7 @@ make_error_code( const Error_Type & e )
 	Concrete implementations.
 */
 
-#if defined( _MSC_VER )
+#if defined( _MSC_VER ) || defined( __MINGW32__ )
 	#include "sendfile_operation_win.inl"
 #elif (defined( __clang__ ) || defined( __GNUC__ )) && !defined(__WIN32__)
 	#include "sendfile_operation_posix.inl"
