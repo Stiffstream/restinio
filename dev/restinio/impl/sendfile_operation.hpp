@@ -33,7 +33,8 @@ class sendfile_operation_base_t
 using sendfile_operation_shared_ptr_t = std::shared_ptr< sendfile_operation_base_t >;
 
 //! Callback type for invokation when sendfile operation completes.
-using after_sendfile_cb_t = std::function< void ( const asio_ns::error_code & , std::size_t ) >;
+using after_sendfile_cb_t =
+	std::function< void ( const asio_ns::error_code & , file_size_t ) >;
 
 //
 // sendfile_operation_runner_base_t
@@ -80,7 +81,7 @@ class sendfile_operation_runner_base_t
 };
 
 template<typename Error_Type>
-auto 
+auto
 make_error_code( const Error_Type & e )
 {
    return asio_ns::error_code{ static_cast<int>(e), asio_ns::error::get_system_category() };

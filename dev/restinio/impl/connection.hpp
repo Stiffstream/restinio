@@ -933,7 +933,7 @@ class connection_t final
 						ctx = shared_from_this(),
 						should_keep_alive = !m_response_coordinator.closed(),
 						init_read_after_this_write ]
-						( const asio_ns::error_code & ec, std::size_t written ){
+						( const asio_ns::error_code & ec, file_size_t written ){
 
 							// Release sendfile operation.
 							m_resp_out_ctx.finish_sendfile_operation();
@@ -945,6 +945,16 @@ class connection_t final
 											"[connection:{}] file data was sent: {} bytes",
 											connection_id(),
 											written );
+								} );
+							}
+							else
+							{
+								m_logger.error( [&]{
+									return fmt::format(
+											"[connection:{}] send file data error: {} ({}) bytes",
+											connection_id(),
+											ec.value(),
+											ec.message() );
 								} );
 							}
 
