@@ -24,7 +24,7 @@ namespace impl
 
 //! Compile time c-string length.
 template< std::size_t N >
-std::size_t
+inline std::size_t
 ct_string_len( const char (&)[N] )
 {
 	return N-1;
@@ -172,7 +172,7 @@ create_not_implemented_resp()
 		"Content-Length: 0\r\n"
 		"\r\n";
 
-	buffers_container_t result;
+	writable_items_container_t result;
 	result.emplace_back( raw_501_response );
 	return result;
 }
@@ -186,7 +186,7 @@ create_timeout_resp()
 		"Content-Length: 0\r\n"
 		"\r\n";
 
-	buffers_container_t result;
+	writable_items_container_t result;
 	result.emplace_back( raw_504_response );
 	return result;
 }

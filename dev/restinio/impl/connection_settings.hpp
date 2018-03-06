@@ -99,6 +99,7 @@ struct connection_settings_t final
 	}
 
 	private:
+
 		//! Timer factory for timout guards.
 		timer_manager_handle_t m_timer_manager;
 };

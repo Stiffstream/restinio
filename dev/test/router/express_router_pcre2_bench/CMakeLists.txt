@@ -1,6 +1,6 @@
 set(TEST_BENCH _test.router.express_router_pcre2_bench)
 add_executable(${TEST_BENCH} main.cpp)
-target_link_libraries(${TEST_BENCH} nodejs_http_parser ${PCRE2_LIBRARIES})
+target_link_libraries(${TEST_BENCH} nodejs_http_parser ${PCRE2_LIBRARY})
 
 if(WIN32)
 	target_link_libraries(${TEST_BENCH} wsock32 ws2_32)

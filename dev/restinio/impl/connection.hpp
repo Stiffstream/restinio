@@ -24,6 +24,7 @@
 #include <restinio/impl/fixed_buffer.hpp>
 #include <restinio/impl/raw_resp_output_ctx.hpp>
 #include <restinio/impl/executor_wrapper.hpp>
+#include <restinio/impl/sendfile_operation.hpp>
 
 #include <restinio/utils/impl/safe_uint_truncate.hpp>
 
@@ -155,6 +156,9 @@ struct connection_input_t
 	//! Connection upgrade request stage.
 	connection_upgrade_stage_t m_connection_upgrade_stage{
 		connection_upgrade_stage_t::none };
+
+	//! Flag to track whether read operation is performed now.
+	bool m_read_operation_is_running{ false };
 
 	//! Prepare parser for reading new http-message.
 	void
@@ -353,21 +357,35 @@ class connection_t final
 		inline void
 		consume_message()
 		{
-			m_logger.trace( [&]{
-				return fmt::format(
-						"[connection:{}] continue reading request",
-						connection_id() );
-			} );
+			if( !m_input.m_read_operation_is_running )
+			{
+				m_logger.trace( [&]{
+					return fmt::format(
+							"[connection:{}] continue reading request",
+							connection_id() );
+				} );
 
-			m_socket.async_read_some(
-				m_input.m_buf.make_asio_buffer(),
-				asio_ns::bind_executor(
-					this->get_executor(),
-					[ this, ctx = shared_from_this() ](
-						const asio_ns::error_code & ec,
-						std::size_t length ){
-						after_read( ec, length );
-					} ) );
+
+				m_input.m_read_operation_is_running = true;
+				m_socket.async_read_some(
+					m_input.m_buf.make_asio_buffer(),
+					asio_ns::bind_executor(
+						this->get_executor(),
+						[ this, ctx = shared_from_this() ](
+							const asio_ns::error_code & ec,
+							std::size_t length ){
+							m_input.m_read_operation_is_running = false;
+							after_read( ec, length );
+						} ) );
+			}
+			else
+			{
+				m_logger.trace( [&]{
+					return fmt::format(
+							"[connection:{}] skip read operation: already running",
+							connection_id() );
+				} );
+			}
 		}
 
 		inline void
@@ -652,6 +670,7 @@ class connection_t final
 					} );
 				}
 			}
+
 			// Else 2 cases:
 			// 1. request is handled asynchronously, so
 			// what happens next depends on handling.
@@ -659,6 +678,9 @@ class connection_t final
 			// of a connection was already determined.
 			//
 			// In both cases: here do nothing.
+			// We can't even do read-only access because upgrade handling might take place
+			// in distinct execution context
+			// Son no even log messages here.
 		}
 
 		//! Write parts for specified request.
@@ -669,7 +691,7 @@ class connection_t final
 			//! Resp output flag.
 			response_output_flags_t response_output_flags,
 			//! parts of a response.
-			buffers_container_t bufs ) override
+			writable_items_container_t bufs ) override
 		{
 			//! Run write message on io_context loop if possible.
 			asio_ns::dispatch(
@@ -706,7 +728,7 @@ class connection_t final
 			//! Resp output flag.
 			response_output_flags_t response_output_flags,
 			//! parts of a response.
-			buffers_container_t bufs )
+			writable_items_container_t bufs )
 		{
 			if( !m_socket.is_open() )
 			{
@@ -776,105 +798,212 @@ class connection_t final
 		{
 			assert( !m_response_coordinator.closed() );
 
-			// Remember if all response cells were busy.
-			const auto full_before = m_response_coordinator.is_full();
-
 			if( !m_resp_out_ctx.transmitting() )
 			{
 				// Here: not writing anything to socket, so
 				// write operation can be initiated.
 
-				if( m_resp_out_ctx.obtain_bufs( m_response_coordinator ) )
+				// Remember if all response cells were busy.
+				const bool response_coordinator_full_before =
+					m_response_coordinator.is_full();
+
+				const auto obtain_bufs_result = m_resp_out_ctx.obtain_bufs( m_response_coordinator );
+				// Check if all response cells busy:
+				const bool response_coordinator_full_after = m_response_coordinator.is_full();
+
+				const bool init_read_after_this_write =
+						response_coordinator_full_before && !response_coordinator_full_after;
+
+				switch( obtain_bufs_result )
 				{
-					// Here: and there is smth to write.
+					case writable_item_type_t::trivial_write_operation:
+						// Here: and there is smth trivial to write.
+						handle_trivial_write_operation( init_read_after_this_write );
+						break;
 
-					// Remember if all response cells were busy:
-					const auto full_after = m_response_coordinator.is_full();
+					case writable_item_type_t::file_write_operation:
+						// Here: and there is custom write operation to start.
+						handle_file_write_operation( init_read_after_this_write );
+						break;
 
-					// Asio buffers (param for async write):
-					auto & bufs = m_resp_out_ctx.create_bufs();
-
-					if( m_response_coordinator.closed() )
-					{
-						m_logger.trace( [&]{
-							return fmt::format(
-									"[connection:{}] sending resp data with "
-									"connection-close attribute "
-									"buf count: {}",
-									connection_id(),
-									bufs.size() );
-						} );
-
-						// Reading new requests is useless.
-						asio_ns::error_code ignored_ec;
-						m_socket.cancel( ignored_ec );
-					}
-					else
-					{
-						m_logger.trace( [&]{
-							return fmt::format(
-								"[connection:{}] sending resp data, "
-								"buf count: {}",
-								connection_id(),
-								bufs.size() ); } );
-					}
-
-					// There is somethig to write.
-					asio_ns::async_write(
-						m_socket,
-						bufs,
-						asio_ns::bind_executor(
-							this->get_executor(),
-							[ this,
-								ctx = shared_from_this(),
-								should_keep_alive = !m_response_coordinator.closed(),
-								init_read_after_this_write =
-									full_before && !full_after ]
-								( const asio_ns::error_code & ec, std::size_t written ){
-									after_write(
-										ec,
-										written,
-										should_keep_alive,
-										init_read_after_this_write );
-							} ) );
-
-					guard_write_operation();
+					case writable_item_type_t::none:
+						handle_nothing_to_write();
 				}
-				else if( m_response_coordinator.closed() )
-				{
-					// Bufs empty but there happened to
-					// be a response context marked as complete
-					// (final_parts) and having connection-close attr.
-					// It is because `init_write_if_necessary()`
-					// is called only under `!m_response_coordinator.closed()`
-					// conditio, so if no bufs were obtained
-					// and response coordinator is closed means
-					// that a first response stored by
-					// response coordinator was marked as complete
-					// without data.
+			}
+		}
 
-					m_logger.trace( [&]{
-						return fmt::format(
-							"[connection:{}] last sent response was marked "
-							"as complete",
-							connection_id() ); } );
-					close();
+		void
+		handle_trivial_write_operation( bool init_read_after_this_write )
+		{
+			// Asio buffers (param for async write):
+			auto & bufs = m_resp_out_ctx.create_bufs();
+
+			if( m_response_coordinator.closed() )
+			{
+				m_logger.trace( [&]{
+					return fmt::format(
+							"[connection:{}] sending resp data with "
+							"connection-close attribute "
+							"buf count: {}",
+							connection_id(),
+							bufs.size() );
+				} );
+
+				// Reading new requests is useless.
+				asio_ns::error_code ignored_ec;
+				m_socket.cancel( ignored_ec );
+			}
+			else
+			{
+				m_logger.trace( [&]{
+					return fmt::format(
+						"[connection:{}] sending resp data, "
+						"buf count: {}",
+						connection_id(),
+						bufs.size() ); } );
+			}
+
+			// There is somethig to write.
+			asio_ns::async_write(
+				m_socket,
+				bufs,
+				asio_ns::bind_executor(
+					this->get_executor(),
+					[ this,
+						ctx = shared_from_this(),
+						should_keep_alive = !m_response_coordinator.closed(),
+						init_read_after_this_write ]
+						( const asio_ns::error_code & ec, std::size_t written ){
+
+							// Release buffers.
+							m_resp_out_ctx.done();
+
+							if( !ec )
+							{
+								m_logger.trace( [&]{
+									return fmt::format(
+											"[connection:{}] outgoing data was sent: {} bytes",
+											connection_id(),
+											written );
+								} );
+							}
+
+							after_write(
+								ec,
+								should_keep_alive,
+								init_read_after_this_write );
+					} ) );
+
+			guard_write_operation();
+		}
+
+		void
+		handle_file_write_operation( bool init_read_after_this_write )
+		{
+			if( m_response_coordinator.closed() )
+			{
+				m_logger.trace( [&]{
+					return fmt::format(
+							"[connection:{}] sending resp file data with "
+							"connection-close attribute ",
+							connection_id() );
+				} );
+
+				// Reading new requests is useless.
+				asio_ns::error_code ignored_ec;
+				m_socket.cancel( ignored_ec );
+			}
+			else
+			{
+				m_logger.trace( [&]{
+					return fmt::format(
+						"[connection:{}] sending resp file data",
+						connection_id() );
+				} );
+			}
+
+			guard_sendfile_operation();
+
+			m_resp_out_ctx.start_sendfile_operation(
+				this->get_executor(),
+				m_socket,
+				asio_ns::bind_executor(
+					this->get_executor(),
+					[ this,
+						ctx = shared_from_this(),
+						should_keep_alive = !m_response_coordinator.closed(),
+						init_read_after_this_write ]
+						( const asio_ns::error_code & ec, file_size_t written ){
+
+							// Release sendfile operation.
+							m_resp_out_ctx.finish_sendfile_operation();
+
+							if( !ec )
+							{
+								m_logger.trace( [&]{
+									return fmt::format(
+											"[connection:{}] file data was sent: {} bytes",
+											connection_id(),
+											written );
+								} );
+							}
+							else
+							{
+								m_logger.error( [&]{
+									return fmt::format(
+											"[connection:{}] send file data error: {} ({}) bytes",
+											connection_id(),
+											ec.value(),
+											ec.message() );
+								} );
+							}
+
+							// TODO: sendfile
+							after_write(
+								ec,
+								should_keep_alive,
+								init_read_after_this_write );
+						} ) );
+
+		}
+
+		void
+		handle_nothing_to_write()
+		{
+			if( m_response_coordinator.closed() )
+			{
+				// Bufs empty but there happened to
+				// be a response context marked as complete
+				// (final_parts) and having connection-close attr.
+				// It is because `init_write_if_necessary()`
+				// is called only under `!m_response_coordinator.closed()`
+				// conditio, so if no bufs were obtained
+				// and response coordinator is closed means
+				// that a first response stored by
+				// response coordinator was marked as complete
+				// without data.
+
+				m_logger.trace( [&]{
+					return fmt::format(
+						"[connection:{}] last sent response was marked "
+						"as complete",
+						connection_id() ); } );
+				close();
+			}
+			else
+			{
+				// Not writing anything, so need to deal with timouts.
+				if( m_response_coordinator.empty() )
+				{
+					// No requests in processing.
+					// So set read next request timeout.
+					guard_read_operation();
 				}
 				else
 				{
-					// Not writing anything, so need to deal with timouts.
-					if( m_response_coordinator.empty() )
-					{
-						// No requests in processing.
-						// So set read next request timeout.
-						guard_read_operation();
-					}
-					else
-					{
-						// Have requests in process.
-						// So take control over request handling.
-						guard_request_handling_operation();
-					}
+					// Have requests in process.
+					// So take control over request handling.
+					guard_request_handling_operation();
 				}
 			}
 		}
@@ -883,22 +1012,11 @@ class connection_t final
 		inline void
 		after_write(
 			const asio_ns::error_code & ec,
-			std::size_t written,
 			bool should_keep_alive,
 			bool should_init_read_after_this_write )
 		{
 			if( !ec )
 			{
-				// Release buffers.
-				m_resp_out_ctx.done();
-
-				m_logger.trace( [&]{
-					return fmt::format(
-							"[connection:{}] outgoing data was sent: {} bytes",
-							connection_id(),
-							written );
-				} );
-
 				if( should_keep_alive )
 				{
 					m_logger.trace( [&]{
@@ -1156,6 +1274,25 @@ class connection_t final
 			schedule_operation_timeout_callback(
 				m_settings->m_write_http_response_timelimit,
 				&connection_t::handle_write_response_timeout );
+		}
+
+
+		void
+		handle_sendfile_timeout()
+		{
+			handle_xxx_timeout( "writing response (sendfile)" );
+		}
+
+		void
+		guard_sendfile_operation()
+		{
+			const auto timelimit =
+				std::chrono::steady_clock::duration::zero() == m_resp_out_ctx.sendfile_timelimit() ?
+					m_settings->m_write_http_response_timelimit : m_resp_out_ctx.sendfile_timelimit();
+
+			schedule_operation_timeout_callback(
+				timelimit,
+				&connection_t::handle_sendfile_timeout );
 		}
 		//! \}
 

@@ -109,7 +109,7 @@ void create_main_coop(
 	coop.make_agent< a_http_server_t< traits_t > >( std::move( settings ) );
 }
 
-int main(int argc, char const *argv[] )
+int main( int argc, char const *argv[] )
 {
 	try
 	{

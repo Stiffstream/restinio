@@ -40,7 +40,7 @@ class connection_base_t
 			//! Resp output flag.
 			response_output_flags_t response_output_flags,
 			//! parts of a response.
-			buffers_container_t bufs ) = 0;
+			writable_items_container_t bufs ) = 0;
 };
 
 //! Alias for http connection handle.

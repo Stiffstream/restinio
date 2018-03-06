@@ -1,6 +1,7 @@
 syntax: glob
 
 .externals
+tmp
 dev/tmp
 dev/target
 dev/target_*
@@ -17,6 +18,7 @@ dev/json_dto
 dev/args
 dev/catch
 dev/cmake_build*
+dev/doc/*
 o/*
 ./wiki
 *.sublime-project

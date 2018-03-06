@@ -38,17 +38,25 @@ make_string( const BUF & buf )
 			asio_ns::buffer_size( buf.buf() ) };
 }
 
-buffers_container_t
+writable_items_container_t
 make_buffers(
 	std::vector< std::string > v )
 {
-	buffers_container_t result;
+	writable_items_container_t result;
 	result.reserve( v.size() );
 
 	for( auto & s : v )
 	{
 		result.emplace_back( std::move( s ) );
 	}
+	return result;
+}
+
+writable_items_container_t
+make_buffers( sendfile_t sf )
+{
+	writable_items_container_t result;
+	result.emplace_back( std::move( sf ) );
 	return result;
 }
 
@@ -201,7 +209,7 @@ TEST_CASE( "response_context_table" , "[response_context][response_context_table
 
 TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 {
-	buffers_container_t out_bufs;
+	writable_items_container_t out_bufs;
 	auto concat_bufs =
 		[ & ](){
 			std::string res;
@@ -220,7 +228,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		REQUIRE_FALSE( coordinator.closed() );
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::none ==
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 0UL == out_bufs.size() );
 
@@ -247,7 +256,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #1: <nothing>
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 3UL == out_bufs.size() );
 		REQUIRE( make_string( out_bufs[ 0UL ] ) == "a" );
@@ -273,7 +283,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #1: "X", "Y", "Z"
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 3UL == out_bufs.size() );
 		REQUIRE( make_string( out_bufs[ 0UL ] ) == "A" );
@@ -284,7 +295,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #1: "X", "Y", "Z"
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::none ==
 			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 		REQUIRE( 0UL == out_bufs.size() );
 
@@ -325,7 +337,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #1: "X", "Y", "Z", "LAST", "PARTS"
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 5UL, out_bufs ) );
 		REQUIRE( 5UL == out_bufs.size() );
 		REQUIRE( make_string( out_bufs[ 0UL ] ) == "LAST" );
@@ -353,7 +366,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #2: <nothing>
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 5UL, out_bufs ) );
 		REQUIRE( 2UL == out_bufs.size() );
 		REQUIRE( make_string( out_bufs[ 0UL ] ) == "LAST" );
@@ -457,7 +471,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// Only bufs for #0 response mast be presented:
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
@@ -470,7 +485,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #3: ["3a", "3b", "3c"] * 2*4
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::none ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
@@ -510,7 +526,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #3: ["3a", "3b", "3c"] * 2*4
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -525,7 +542,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #3: ["3a", "3b", "3c"] * 2*4
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::none ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -547,7 +565,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #3: ["3a", "3b", "3c"] * 2*4
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 4UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -558,7 +577,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #3: ["3a", "3b", "3c"] * 2*4
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 16UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -638,7 +658,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #6: ["6a", "6b", "6c"] * 2*4
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -665,7 +686,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 			make_buffers( { "NO", "WAY" } ) ) );
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -692,7 +714,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// #6: ["6a", "6b", "6c"] * 2*4
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -704,7 +727,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		// EMPTY
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::none ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -744,7 +768,7 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 
 TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connection_close]" )
 {
-	buffers_container_t out_bufs;
+	writable_items_container_t out_bufs;
 	auto concat_bufs =
 		[ & ](){
 			std::string res;
@@ -812,7 +836,8 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 		// Only bufs for #0 response mast be presented:
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
@@ -829,7 +854,8 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 			make_buffers( { "LAST", " ", "PARTS" } ) ) );
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -916,7 +942,8 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 		// Only bufs for #0 response mast be presented:
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
@@ -933,7 +960,8 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 			make_buffers( { "LAST", " ", "PARTS" } ) ) );
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 24UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -945,7 +973,8 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 			"1a1b1c1a1b1c1a1b1c1a1b1c1a1b1c1a1b1c1a1b1c" );
 
 		out_bufs.clear();
-		CHECK_NOTHROW(
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
 			coordinator.pop_ready_buffers( 24UL, out_bufs ) );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -976,5 +1005,411 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 			coordinator.pop_ready_buffers( 64UL, out_bufs ) );
 
 		REQUIRE( coordinator.closed() );
+	}
+}
+
+TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][size1]" )
+{
+	//
+	// response_coordinator with 1 item.
+	//
+
+	{
+		// close after sendfile.
+		writable_items_container_t out_bufs;
+		response_coordinator_t coordinator{ 1 };
+
+		auto req_id = coordinator.register_new_request();
+		REQUIRE( coordinator.is_full() );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_close() },
+			make_buffers( { "header1", "header2", "header3" } ) ) );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_close() },
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor() /* fake not real */, 1024 ) ) ) );
+
+		REQUIRE_FALSE( coordinator.closed() );
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+		REQUIRE( 3UL == out_bufs.size() );
+		REQUIRE( make_string( out_bufs[ 0UL ] ) == "header1" );
+		REQUIRE( make_string( out_bufs[ 1UL ] ) == "header2" );
+		REQUIRE( make_string( out_bufs[ 2UL ] ) == "header3" );
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::file_write_operation ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+		REQUIRE( 1UL == out_bufs.size() );
+
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
+
+		REQUIRE( coordinator.closed() );
+	}
+
+	{
+		// keep-alive after sendfile.
+		writable_items_container_t out_bufs;
+		response_coordinator_t coordinator{ 1 };
+
+		auto req_id = coordinator.register_new_request();
+		REQUIRE( coordinator.is_full() );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
+			make_buffers( { "header1", "header2", "header3" } ) ) );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor() /* fake not real */, 1024 ) ) ) );
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+		REQUIRE( 3UL == out_bufs.size() );
+		REQUIRE( make_string( out_bufs[ 0UL ] ) == "header1" );
+		REQUIRE( make_string( out_bufs[ 1UL ] ) == "header2" );
+		REQUIRE( make_string( out_bufs[ 2UL ] ) == "header3" );
+
+		REQUIRE_FALSE( coordinator.closed() );
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::file_write_operation ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+		REQUIRE( 1UL == out_bufs.size() );
+
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
+
+		REQUIRE_FALSE( coordinator.closed() );
+	}
+
+	{
+		// several sendfiles and close.
+		writable_items_container_t out_bufs;
+		response_coordinator_t coordinator{ 1 };
+
+		auto req_id = coordinator.register_new_request();
+		REQUIRE( coordinator.is_full() );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_close() },
+			make_buffers( { "header1", "header2", "header3" } ) ) );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_close() },
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor() /* fake not real */, 1024 ) ) ) );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_close() },
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor() /* fake not real */, 2048 ) ) ) );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_close() },
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor() /* fake not real */, 4096 ) ) ) );
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+		REQUIRE( 3UL == out_bufs.size() );
+		REQUIRE( make_string( out_bufs[ 0UL ] ) == "header1" );
+		REQUIRE( make_string( out_bufs[ 1UL ] ) == "header2" );
+		REQUIRE( make_string( out_bufs[ 2UL ] ) == "header3" );
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::file_write_operation ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+		REQUIRE( 1UL == out_bufs.size() );
+		REQUIRE_FALSE( coordinator.closed() );
+
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
+		REQUIRE( out_bufs[ 0UL ].size() == 1024 );
+		REQUIRE_FALSE( coordinator.closed() );
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::file_write_operation ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+		REQUIRE( 1UL == out_bufs.size() );
+		REQUIRE_FALSE( coordinator.closed() );
+
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
+		REQUIRE( out_bufs[ 0UL ].size() == 2048 );
+		REQUIRE_FALSE( coordinator.closed() );
+
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::file_write_operation ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+		REQUIRE( 1UL == out_bufs.size() );
+
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
+		REQUIRE( out_bufs[ 0UL ].size() == 4096 );
+		REQUIRE( coordinator.closed() );
+	}
+
+	{
+		// several sendfiles trivial buf and keep-alive.
+		writable_items_container_t out_bufs;
+		response_coordinator_t coordinator{ 1 };
+
+		auto req_id = coordinator.register_new_request();
+		REQUIRE( coordinator.is_full() );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_close() },
+			make_buffers( { "header1", "header2", "header3" } ) ) );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_close() },
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor() /* fake not real */, 1024 ) ) ) );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_close() },
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor() /* fake not real */, 2048 ) ) ) );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_close() },
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor() /* fake not real */, 4096 ) ) ) );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_close() },
+			make_buffers( { "END", "OF", "RESPONSE" } ) ) );
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+		REQUIRE( 3UL == out_bufs.size() );
+		REQUIRE( make_string( out_bufs[ 0UL ] ) == "header1" );
+		REQUIRE( make_string( out_bufs[ 1UL ] ) == "header2" );
+		REQUIRE( make_string( out_bufs[ 2UL ] ) == "header3" );
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::file_write_operation ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+		REQUIRE( 1UL == out_bufs.size() );
+		REQUIRE_FALSE( coordinator.closed() );
+
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
+		REQUIRE( out_bufs[ 0UL ].size() == 1024 );
+		REQUIRE_FALSE( coordinator.closed() );
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::file_write_operation ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+		REQUIRE( 1UL == out_bufs.size() );
+		REQUIRE_FALSE( coordinator.closed() );
+
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
+		REQUIRE( out_bufs[ 0UL ].size() == 2048 );
+		REQUIRE_FALSE( coordinator.closed() );
+
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::file_write_operation ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+		REQUIRE( 1UL == out_bufs.size() );
+
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
+		REQUIRE( out_bufs[ 0UL ].size() == 4096 );
+		REQUIRE_FALSE( coordinator.closed() );
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+		REQUIRE( 3UL == out_bufs.size() );
+		REQUIRE( make_string( out_bufs[ 0UL ] ) == "END" );
+		REQUIRE( make_string( out_bufs[ 1UL ] ) == "OF" );
+		REQUIRE( make_string( out_bufs[ 2UL ] ) == "RESPONSE" );
+		REQUIRE( coordinator.closed() );
+	}
+}
+
+TEST_CASE( "response_coordinator sendfile 2" , "[response_coordinator][sendfile][sizeN]" )
+{
+	//
+	// response_coordinator with N item.
+	//
+
+	{
+		// first response goes with connection close flag.
+		// 2 sequential sendfile writables for distinct requests.
+		writable_items_container_t out_bufs;
+		response_coordinator_t coordinator{ 2 };
+
+		request_id_t req_id[ 2 ];
+		req_id[0] = coordinator.register_new_request();
+		REQUIRE_FALSE( coordinator.is_full() );
+		req_id[1] = coordinator.register_new_request();
+		REQUIRE( coordinator.is_full() );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id[0],
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_close() },
+			make_buffers( { "header1", "header2", "header3" } ) ) );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id[0],
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_close() },
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor() /* fake not real */, 1024 ) ) ) );
+
+		// Previous response goes with connection close flag
+		// So it would not be selected.
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id[1],
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_close() },
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor() /* fake not real */, 2048 ) ) ) );
+
+		REQUIRE_FALSE( coordinator.closed() );
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+		REQUIRE( 3UL == out_bufs.size() );
+		REQUIRE( make_string( out_bufs[ 0UL ] ) == "header1" );
+		REQUIRE( make_string( out_bufs[ 1UL ] ) == "header2" );
+		REQUIRE( make_string( out_bufs[ 2UL ] ) == "header3" );
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::file_write_operation ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+		REQUIRE( 1UL == out_bufs.size() );
+
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
+
+		REQUIRE( coordinator.closed() );
+
+		out_bufs.clear();
+		CHECK_THROWS( coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+	}
+
+	{
+		// 2 sequential sendfile writables for distinct requests.
+		writable_items_container_t out_bufs;
+		response_coordinator_t coordinator{ 2 };
+
+		request_id_t req_id[ 2 ];
+		req_id[0] = coordinator.register_new_request();
+		REQUIRE_FALSE( coordinator.is_full() );
+		req_id[1] = coordinator.register_new_request();
+		REQUIRE( coordinator.is_full() );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id[0],
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
+			make_buffers( { "header1", "header2", "header3" } ) ) );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id[0],
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor() /* fake not real */, 1024 ) ) ) );
+
+		// Previous response goes with connection close flag
+		// So it would not be selected.
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id[1],
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_keep_alive() },
+			make_buffers( restinio::sendfile( restinio::null_file_descriptor() /* fake not real */, 2048 ) ) ) );
+
+		REQUIRE_FALSE( coordinator.closed() );
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::trivial_write_operation ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+		REQUIRE( 3UL == out_bufs.size() );
+		REQUIRE( make_string( out_bufs[ 0UL ] ) == "header1" );
+		REQUIRE( make_string( out_bufs[ 1UL ] ) == "header2" );
+		REQUIRE( make_string( out_bufs[ 2UL ] ) == "header3" );
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::file_write_operation ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+		REQUIRE( 1UL == out_bufs.size() );
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
+		REQUIRE( out_bufs[ 0UL ].size() == 1024 );
+
+		REQUIRE_FALSE( coordinator.closed() );
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::file_write_operation ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+		REQUIRE( 1UL == out_bufs.size() );
+		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
+		REQUIRE( out_bufs[ 0UL ].size() == 2048 );
+
+		out_bufs.clear();
+		REQUIRE(
+			writable_item_type_t::none ==
+			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
 	}
 }

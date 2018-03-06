@@ -128,6 +128,12 @@ class tls_socket_t
 			return m_socket->async_handshake( std::forward< Args >( args )... );
 		}
 
+		auto &
+		get_io_context()
+		{
+			return m_socket->get_io_context();
+		}
+
 	private:
 		context_handle_t m_context;
 		std::unique_ptr< socket_t > m_socket;

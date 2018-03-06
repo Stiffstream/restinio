@@ -63,8 +63,8 @@ struct std_regex_engine_t
 		std::cmatch matches;
 		if(
 			std::regex_search(
-				target_path.begin(),
-				target_path.end(),
+				target_path.data(),
+				target_path.data() + target_path.size(),
 				matches,
 				r ) )
 		{

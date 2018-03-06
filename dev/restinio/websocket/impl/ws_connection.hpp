@@ -51,7 +51,7 @@ class ws_outgoing_data_t
 	public:
 		//! Add buffers to queue.
 		void
-		append( buffers_container_t bufs )
+		append( writable_items_container_t bufs )
 		{
 			if( m_awaiting_buffers.empty() )
 			{
@@ -65,18 +65,31 @@ class ws_outgoing_data_t
 			}
 		}
 
-		void
+		writable_item_type_t
 		pop_ready_buffers(
 			std::size_t max_buf_count,
-			buffers_container_t & bufs )
+			writable_items_container_t & bufs )
 		{
+			if( m_awaiting_buffers.empty() )
+				return writable_item_type_t::none;
+
+			auto result = writable_item_type_t::trivial_write_operation;
+
+			if( writable_item_type_t::file_write_operation ==
+				m_awaiting_buffers.front().write_type() )
+			{
+				result = writable_item_type_t::file_write_operation;
+				max_buf_count = 1;
+			}
+
 			if( max_buf_count >= m_awaiting_buffers.size() )
 				bufs = std::move( m_awaiting_buffers );
 			else
 			{
 				const auto begin_of_bunch = m_awaiting_buffers.begin();
 				const auto end_of_bunch = begin_of_bunch
-						+ static_cast<std::ptrdiff_t>(max_buf_count);
+						+ static_cast< std::ptrdiff_t >( max_buf_count );
+
 				bufs.reserve( max_buf_count );
 				for( auto it = begin_of_bunch; it != end_of_bunch; ++it )
 				{
@@ -85,11 +98,13 @@ class ws_outgoing_data_t
 
 				m_awaiting_buffers.erase( begin_of_bunch, end_of_bunch );
 			}
+
+			return result;
 		}
 
 	private:
 		//! A queue of buffers.
-		buffers_container_t m_awaiting_buffers;
+		writable_items_container_t m_awaiting_buffers;
 };
 
 //
@@ -301,7 +316,7 @@ class ws_connection_t final
 		//! Write pieces of outgoing data.
 		virtual void
 		write_data(
-			buffers_container_t bufs,
+			writable_items_container_t bufs,
 			bool is_close_frame ) override
 		{
 			//! Run write message on io_context loop if possible.
@@ -384,7 +399,7 @@ class ws_connection_t final
 		void
 		send_close_frame_to_peer( std::string payload )
 		{
-			buffers_container_t bufs;
+			writable_items_container_t bufs;
 			bufs.reserve( 2 );
 
 			bufs.emplace_back(
@@ -962,7 +977,7 @@ class ws_connection_t final
 
 		//! Implementation of writing data performed on the asio_ns::io_context.
 		void
-		write_data_impl( buffers_container_t bufs, bool is_close_frame )
+		write_data_impl( writable_items_container_t bufs, bool is_close_frame )
 		{
 			if( !m_socket.is_open() )
 			{
@@ -1006,49 +1021,71 @@ class ws_connection_t final
 			{
 				// Here: not writing anything to socket, so
 				// write operation can be initiated.
-				if( m_resp_out_ctx.obtain_bufs( m_awaiting_buffers ) )
+
+				switch( m_resp_out_ctx.obtain_bufs( m_awaiting_buffers ) )
 				{
-					// Here: and there is smth to write.
+					case writable_item_type_t::trivial_write_operation:
+						// Here: and there is smth trivial to write.
+						handle_trivial_write_operation();
+						break;
 
-					// Asio buffers (param for async write):
-					auto & bufs = m_resp_out_ctx.create_bufs();
+					case writable_item_type_t::file_write_operation:
+						// Here: and there is custom write operation to start.
+						handle_custom_write_operation();
+						break;
 
-					m_logger.trace( [&]{
-						return fmt::format(
-							"[ws_connection:{}] sending data, "
-							"buf count: {}",
-							connection_id(),
-							bufs.size() ); } );
-
-					guard_write_operation();
-
-					// There is somethig to write.
-					asio_ns::async_write(
-						m_socket,
-						bufs,
-						asio_ns::bind_executor(
-							this->get_executor(),
-							[ this,
-								ctx = shared_from_this() ]
-								( const asio_ns::error_code & ec, std::size_t written ){
-									try
-									{
-										after_write( ec, written );
-									}
-									catch( const std::exception & ex )
-									{
-										trigger_error_and_close(
-											status_code_t::unexpected_condition,
-											[&]{
-												return fmt::format(
-													"[ws_connection:{}] after write callback error: {}",
-													connection_id(),
-													ex.what() );
-											} );
-									}
-							} ) );
+					case writable_item_type_t::none:
+						;/* Do nothing.*/
 				}
 			}
+		}
+
+		void
+		handle_trivial_write_operation()
+		{
+			// Asio buffers (param for async write):
+			auto & bufs = m_resp_out_ctx.create_bufs();
+
+			m_logger.trace( [&]{
+				return fmt::format(
+					"[ws_connection:{}] sending data, "
+					"buf count: {}",
+					connection_id(),
+					bufs.size() ); } );
+
+			guard_write_operation();
+
+			// There is somethig to write.
+			asio_ns::async_write(
+				m_socket,
+				bufs,
+				asio_ns::bind_executor(
+					this->get_executor(),
+					[ this,
+						ctx = shared_from_this() ]
+						( const asio_ns::error_code & ec, std::size_t written ){
+							try
+							{
+								after_write( ec, written );
+							}
+							catch( const std::exception & ex )
+							{
+								trigger_error_and_close(
+									status_code_t::unexpected_condition,
+									[&]{
+										return fmt::format(
+											"[ws_connection:{}] after write callback error: {}",
+											connection_id(),
+											ex.what() );
+									} );
+							}
+					} ) );
+		}
+
+		void
+		handle_custom_write_operation()
+		{
+			// TODO: handle custom write operation.
 		}
 
 		//! Handle write response finished.

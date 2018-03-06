@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 
 #include <restinio/all.hpp>
 
@@ -74,11 +75,41 @@ auto server_handler()
 				init_resp( req->create_response() )
 					.set_body(
 						fmt::format(
-							"POST request with indexed parameters:\n"
+							"GET request with indexed parameters:\n"
 							"#0: '{}'\n#1: {}\n#2: '{}'",
 							params[ 0 ],
 							params[ 1 ],
 							params[ 2 ] ) )
+					.done();
+		} );
+
+	// GET request with indexed parameters.
+	router->http_get( R"(/query/params)",
+		[]( auto req, auto ){
+
+			std::ostringstream sout;
+			sout << "GET request with query params:\n";
+
+			// Query params.
+			const auto qp = restinio::parse_query( req->header().query() );
+
+			if( 0 == qp.size() )
+			{
+				sout << "No query parameters.";
+			}
+			else
+			{
+				sout << "Query params ("<< qp.size() << "):\n";
+				// p is a pair of string_view_t, so copy is cheap.
+				for( const auto p : qp )
+				{
+					sout << "'"<< p.first << "' => "<<  p.second << "'\n";
+				}
+			}
+
+			return
+				init_resp( req->create_response() )
+					.set_body( sout.str() )
 					.done();
 		} );
 

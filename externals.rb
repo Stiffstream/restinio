@@ -32,7 +32,7 @@ MxxRu::arch_externals :nodejs_http_parser_mxxru do |e|
 end
 
 MxxRu::arch_externals :fmt do |e|
-  e.url 'https://github.com/fmtlib/fmt/archive/4.0.0.zip'
+  e.url 'https://github.com/fmtlib/fmt/archive/4.1.0.zip'
 
   e.map_dir 'fmt' => 'dev/fmt'
 end
@@ -68,7 +68,7 @@ MxxRu::arch_externals :args do |e|
 end
 
 MxxRu::arch_externals :catch do |e|
-  e.url 'https://github.com/catchorg/Catch2/archive/v2.0.1.zip'
+  e.url 'https://github.com/catchorg/Catch2/archive/v2.1.0.zip'
 
   e.map_file 'single_include/catch.hpp' => 'dev/catch/*'
 end

@@ -112,8 +112,10 @@ class ioctx_on_thread_pool_t
 			{
 				for( auto & t : m_pool )
 					t = std::thread( [this] {
-						asio_ns::io_context::work work( io_context() );
-						io_context().run();
+						asio_ns::executor_work_guard< asio_ns::io_context::executor_type >
+							work{ asio_ns::make_work_guard( m_ioctx_holder.io_context() ) };
+
+						m_ioctx_holder.io_context().run();
 					} );
 
 				// When all thread started successfully
