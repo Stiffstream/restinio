@@ -32,7 +32,11 @@
 #elif (defined( __clang__ ) || defined( __GNUC__ )) && !defined(__WIN32__)
 	#include "sendfile_defs_posix.hpp"
 #else
-	#include "sendfile_defs_default.hpp"
+	#if defined (RESTINIO_ENABLE_SENDFILE_DEFAULT_IMPL)
+		#include "sendfile_defs_default.hpp"
+	#else
+		#error "Sendfile not supported, to enable default implementation define RESTINIO_ENABLE_SENDFILE_DEFAULT_IMPL macro"
+	#endif
 #endif
 
 namespace restinio
