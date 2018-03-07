@@ -66,7 +66,7 @@ struct raw_resp_output_ctx_t
 	start_sendfile_operation(
 		asio_ns::executor executor,
 		Socket & socket,
-		After_Write_CB && after_sendfile_cb )
+		After_Write_CB after_sendfile_cb )
 	{
 		assert( !m_sendfile_operation );
 		assert( 1 == m_bufs.size() );

@@ -1104,7 +1104,7 @@ class connection_t final
 		*/
 		template< typename Message_Builder >
 		void
-		trigger_error_and_close( Message_Builder && msg_builder )
+		trigger_error_and_close( Message_Builder msg_builder )
 		{
 			m_logger.error( std::move( msg_builder ) );
 
