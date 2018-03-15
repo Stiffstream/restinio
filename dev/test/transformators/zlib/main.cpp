@@ -194,10 +194,29 @@ create_random_text( std::size_t n, std::size_t repeat_max = 1 )
 	return result;
 }
 
+std::string
+create_random_binary( std::size_t n, std::size_t repeat_max = 1 )
+{
+	std::string result;
+	result.reserve( n );
+
+	while( 0 != n-- )
+	{
+		const unsigned char c = std::rand() % 256;
+		std::size_t repeats = 1 + std::min< std::size_t >( n, std::rand() % repeat_max );
+
+		result.append( repeats, c );
+	}
+
+	return result;
+}
+
 
 TEST_CASE( "compress deflate" , "[zlib][compress][deflate]" )
 {
 	namespace rt = restinio::transformator;
+
+	std::srand( std::time( nullptr ) );
 
 	{
 		rt::zlib_t z{ rt::deflate_compress() };
@@ -219,30 +238,59 @@ TEST_CASE( "compress deflate" , "[zlib][compress][deflate]" )
 	}
 
 	{
-		rt::zlib_t z{
-					rt::deflate_compress()
-						.reserve_buffer_size( 2048 + 512 )
-						.window_bits( 9 )
-						.mem_level( 1 ) };
-
 		const std::size_t chunk_size = 1024;
-		const std::size_t chunk_count = 32;
+		const std::size_t chunk_count = 128;
 
-		const auto input_data = create_random_text( chunk_size * chunk_count, 5 );
-
-		for( std::size_t i = 0; i < chunk_count; ++i )
+		struct test_setting_t
 		{
-			const restinio::string_view_t
-				chunk{ input_data.data() + i * chunk_size, chunk_size };
-			z.write( chunk );
-			z.flush();
+			std::size_t m_reserve_buffer_size{ 1024UL * (1UL << (std::rand() % 11UL) ) };
+			std::size_t m_repeats_level{ 1 + std::rand() % 42UL };
+			int m_data_gen{ std::rand() % 2 };
+			int m_do_flush{ std::rand() % 2 };
+			int m_window_bits{ 9 + (std::rand() % (MAX_WBITS - 8) ) };
+			int m_mem_level{ 1 + (std::rand() % ( MAX_MEM_LEVEL ) )};
+		};
+
+		unsigned int tests_count = 1000;
+
+		while( 0 != tests_count-- )
+		{
+			test_setting_t ts;
+			// std::cout << "tests_count = " << tests_count
+			// 	<< "; ts = "
+			// 		<< "{" << ts.m_reserve_buffer_size
+			// 		<< "," << ts.m_repeats_level
+			// 		<< "," << ts.m_data_gen
+			// 		<< "," << ts.m_do_flush
+			// 		<< "," << ts.m_window_bits
+			// 		<< "," << ts.m_mem_level
+			// 		<< "}" << std::endl;
+
+			const std::string input_data =
+				ts.m_data_gen == 0 ?
+					create_random_text( chunk_size * chunk_count, ts.m_repeats_level ) :
+					create_random_binary( chunk_size * chunk_count, ts.m_repeats_level );
+
+			rt::zlib_t z{
+				rt::deflate_compress()
+					.reserve_buffer_size( ts.m_reserve_buffer_size + 512 )
+					.window_bits( ts.m_window_bits )
+					.mem_level( ts.m_mem_level ) };
+
+			for( std::size_t i = 0; i < chunk_count; ++i )
+			{
+				const restinio::string_view_t
+					chunk{ input_data.data() + i * chunk_size, chunk_size };
+				z.write( chunk );
+
+				if( ts.m_do_flush ) z.flush();
+			}
+
+			z.complete();
+			const auto out_size = z.output_size();
+			const auto out_data = z.givaway_output();
+			REQUIRE( out_size == out_data.size() );
+			REQUIRE( 10 < out_data.size() );
 		}
-
-		z.complete();
-
-		const auto out_size = z.output_size();
-		const auto out_data = z.givaway_output();
-		REQUIRE( out_size == out_data.size() );
-		REQUIRE( 10 < out_data.size() );
 	}
 }
