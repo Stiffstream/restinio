@@ -436,7 +436,7 @@ class ws_connection_t final
 		void
 		trigger_error_and_close(
 			status_code_t status,
-			MSG_BUILDER && msg_builder )
+			MSG_BUILDER msg_builder )
 		{
 			m_logger.error( std::move( msg_builder ) );
 			call_close_handler_if_necessary( status );
