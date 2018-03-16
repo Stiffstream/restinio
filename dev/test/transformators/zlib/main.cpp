@@ -173,22 +173,22 @@ std::string
 create_random_text( std::size_t n, std::size_t repeat_max = 1 )
 {
 	restinio::string_view_t symbols{
-		" \t\r\n"
+		// " \t\r\n"
 		"0123456789"
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 		"abcdefghijklmnopqrstuvwxyz"
-		",.;:'\"!@#$%^&*~-+\\/"
+		// ",.;:'\"!@#$%^&*~-+\\/"
 		"<>{}()"};
 
 	std::string result;
 	result.reserve( n );
 
-	while( 0 != n-- )
+	while( 0 != n )
 	{
 		const char c = symbols[ std::rand() % symbols.size() ];
-		std::size_t repeats = 1 + std::min< std::size_t >( n, std::rand() % repeat_max );
-
+		std::size_t repeats = 1 + std::min< std::size_t >( n - 1, std::rand() % repeat_max );
 		result.append( repeats, c );
+		n -= repeats;
 	}
 
 	return result;
@@ -200,46 +200,55 @@ create_random_binary( std::size_t n, std::size_t repeat_max = 1 )
 	std::string result;
 	result.reserve( n );
 
-	while( 0 != n-- )
+	while( 0 != n )
 	{
 		const unsigned char c = std::rand() % 256;
-		std::size_t repeats = 1 + std::min< std::size_t >( n, std::rand() % repeat_max );
-
+		std::size_t repeats = 1 + std::min< std::size_t >( n - 1, std::rand() % repeat_max );
 		result.append( repeats, c );
+		n -= repeats;
 	}
 
 	return result;
 }
 
-
-TEST_CASE( "compress deflate" , "[zlib][compress][deflate]" )
+TEST_CASE( "deflate" , "[zlib][compress][decompress][deflate]" )
 {
 	namespace rt = restinio::transformator;
 
 	std::srand( std::time( nullptr ) );
 
 	{
-		rt::zlib_t z{ rt::deflate_compress() };
+		rt::zlib_t zc{ rt::deflate_compress() };
 
-		restinio::string_view_t
+		std::string
 			input_data{
 				"The zlib compression library provides "
 				"in-memory compression and decompression functions, "
 				"including integrity checks of the uncompressed data." };
 
-		z.write( input_data );
-		z.write( input_data );
-		z.complete();
+		REQUIRE_NOTHROW( zc.write( input_data ) );
+		REQUIRE_NOTHROW( zc.write( input_data ) );
+		REQUIRE_NOTHROW( zc.complete() );
 
-		const auto out_size = z.output_size();
-		const auto out_data = z.givaway_output();
+		const auto out_size = zc.output_size();
+		const auto out_data = zc.givaway_output();
 		REQUIRE( out_size == out_data.size() );
 		REQUIRE( 10 < out_data.size() );
+
+		rt::zlib_t zd{ rt::deflate_decompress() };
+
+		REQUIRE_NOTHROW( zd.write( out_data ) );
+		REQUIRE_NOTHROW( zd.complete() );
+
+		const auto decompression_out_size = zd.output_size();
+		const auto decompression_out_data = zd.givaway_output();
+		REQUIRE( decompression_out_size == decompression_out_data.size() );
+		REQUIRE( decompression_out_data == input_data+input_data );
 	}
 
 	{
 		const std::size_t chunk_size = 1024;
-		const std::size_t chunk_count = 128;
+		const std::size_t chunk_count = 1;
 
 		struct test_setting_t
 		{
@@ -271,7 +280,7 @@ TEST_CASE( "compress deflate" , "[zlib][compress][deflate]" )
 					create_random_text( chunk_size * chunk_count, ts.m_repeats_level ) :
 					create_random_binary( chunk_size * chunk_count, ts.m_repeats_level );
 
-			rt::zlib_t z{
+			rt::zlib_t zc{
 				rt::deflate_compress()
 					.reserve_buffer_size( ts.m_reserve_buffer_size + 512 )
 					.window_bits( ts.m_window_bits )
@@ -281,16 +290,169 @@ TEST_CASE( "compress deflate" , "[zlib][compress][deflate]" )
 			{
 				const restinio::string_view_t
 					chunk{ input_data.data() + i * chunk_size, chunk_size };
-				z.write( chunk );
 
-				if( ts.m_do_flush ) z.flush();
+				REQUIRE_NOTHROW( zc.write( chunk ) );
+
+				if( ts.m_do_flush ) zc.flush();
 			}
 
-			z.complete();
-			const auto out_size = z.output_size();
-			const auto out_data = z.givaway_output();
+			REQUIRE_NOTHROW( zc.complete() );
+			const auto out_size = zc.output_size();
+			const auto out_data = zc.givaway_output();
 			REQUIRE( out_size == out_data.size() );
 			REQUIRE( 10 < out_data.size() );
+
+			rt::zlib_t zd{
+				rt::deflate_decompress()
+					.reserve_buffer_size( ts.m_reserve_buffer_size + 512 )
+					.window_bits( ts.m_window_bits )
+					.mem_level( ts.m_mem_level ) };
+
+			for(
+				const char* buf = out_data.data();
+				buf < out_data.data() + out_data.size();
+				buf += chunk_size )
+			{
+				const restinio::string_view_t
+					chunk{
+						buf,
+						std::min< std::size_t >(
+							chunk_size,
+							out_data.size() - (buf - out_data.data() ) ) };
+
+				REQUIRE_NOTHROW( zd.write( chunk ) );
+
+				if( ts.m_do_flush ) zd.flush();
+			}
+
+			zd.complete();
+			const auto decompression_out_size = zd.output_size();
+			const auto decompression_out_data = zd.givaway_output();
+			REQUIRE( decompression_out_size == decompression_out_data.size() );
+			REQUIRE( decompression_out_data == input_data );
+		}
+	}
+}
+
+TEST_CASE( "gzip" , "[zlib][compress][decompress][gzip]" )
+{
+	namespace rt = restinio::transformator;
+
+	std::srand( std::time( nullptr ) );
+
+	{
+		rt::zlib_t zc{ rt::gzip_compress() };
+
+		std::string
+			input_data{
+				"The zlib compression library provides "
+				"in-memory compression and decompression functions, "
+				"including integrity checks of the uncompressed data." };
+
+		REQUIRE_NOTHROW( zc.write( input_data ) );
+		REQUIRE_NOTHROW( zc.write( input_data ) );
+		REQUIRE_NOTHROW( zc.complete() );
+
+		const auto out_size = zc.output_size();
+		const auto out_data = zc.givaway_output();
+		REQUIRE( out_size == out_data.size() );
+		REQUIRE( 10 < out_data.size() );
+
+		rt::zlib_t zd{ rt::gzip_decompress() };
+
+		REQUIRE_NOTHROW( zd.write( out_data ) );
+		REQUIRE_NOTHROW( zd.complete() );
+
+		const auto decompression_out_size = zd.output_size();
+		const auto decompression_out_data = zd.givaway_output();
+		REQUIRE( decompression_out_size == decompression_out_data.size() );
+		REQUIRE( decompression_out_data == input_data+input_data );
+	}
+
+	{
+		const std::size_t chunk_size = 1024;
+		const std::size_t chunk_count = 1;
+
+		struct test_setting_t
+		{
+			std::size_t m_reserve_buffer_size{ 1024UL * (1UL << (std::rand() % 11UL) ) };
+			std::size_t m_repeats_level{ 1 + std::rand() % 42UL };
+			int m_data_gen{ std::rand() % 2 };
+			int m_do_flush{ std::rand() % 2 };
+			int m_window_bits{ 9 + (std::rand() % (MAX_WBITS - 8) ) };
+			int m_mem_level{ 1 + (std::rand() % ( MAX_MEM_LEVEL ) )};
+		};
+
+		unsigned int tests_count = 1000;
+
+		while( 0 != tests_count-- )
+		{
+			test_setting_t ts;
+			// std::cout << "tests_count = " << tests_count
+			// 	<< "; ts = "
+			// 		<< "{" << ts.m_reserve_buffer_size
+			// 		<< "," << ts.m_repeats_level
+			// 		<< "," << ts.m_data_gen
+			// 		<< "," << ts.m_do_flush
+			// 		<< "," << ts.m_window_bits
+			// 		<< "," << ts.m_mem_level
+			// 		<< "}" << std::endl;
+
+			const std::string input_data =
+				ts.m_data_gen == 0 ?
+					create_random_text( chunk_size * chunk_count, ts.m_repeats_level ) :
+					create_random_binary( chunk_size * chunk_count, ts.m_repeats_level );
+
+			rt::zlib_t zc{
+				rt::gzip_compress()
+					.reserve_buffer_size( ts.m_reserve_buffer_size + 512 )
+					.window_bits( ts.m_window_bits )
+					.mem_level( ts.m_mem_level ) };
+
+			for( std::size_t i = 0; i < chunk_count; ++i )
+			{
+				const restinio::string_view_t
+					chunk{ input_data.data() + i * chunk_size, chunk_size };
+
+				REQUIRE_NOTHROW( zc.write( chunk ) );
+
+				if( ts.m_do_flush ) zc.flush();
+			}
+
+			REQUIRE_NOTHROW( zc.complete() );
+			const auto out_size = zc.output_size();
+			const auto out_data = zc.givaway_output();
+			REQUIRE( out_size == out_data.size() );
+			REQUIRE( 10 < out_data.size() );
+
+			rt::zlib_t zd{
+				rt::gzip_decompress()
+					.reserve_buffer_size( ts.m_reserve_buffer_size + 512 )
+					.window_bits( ts.m_window_bits )
+					.mem_level( ts.m_mem_level ) };
+
+			for(
+				const char* buf = out_data.data();
+				buf < out_data.data() + out_data.size();
+				buf += chunk_size )
+			{
+				const restinio::string_view_t
+					chunk{
+						buf,
+						std::min< std::size_t >(
+							chunk_size,
+							out_data.size() - (buf - out_data.data() ) ) };
+
+				REQUIRE_NOTHROW( zd.write( chunk ) );
+
+				if( ts.m_do_flush ) zd.flush();
+			}
+
+			zd.complete();
+			const auto decompression_out_size = zd.output_size();
+			const auto decompression_out_data = zd.givaway_output();
+			REQUIRE( decompression_out_size == decompression_out_data.size() );
+			REQUIRE( decompression_out_data == input_data );
 		}
 	}
 }

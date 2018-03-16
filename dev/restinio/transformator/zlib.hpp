@@ -487,7 +487,7 @@ class zlib_t
 				}
 				else
 				{
-					throw exception_t{ "not implemented" };
+					write_decompress_impl( Z_NO_FLUSH );
 				}
 			}
 		}
@@ -508,7 +508,7 @@ class zlib_t
 			}
 			else
 			{
-				throw exception_t{ "not implemented" };
+				write_decompress_impl( Z_SYNC_FLUSH );
 			}
 		}
 
@@ -525,7 +525,7 @@ class zlib_t
 			}
 			else
 			{
-				throw exception_t{ "not implemented" };
+				write_decompress_impl( Z_FINISH );
 			}
 		}
 
@@ -573,24 +573,32 @@ class zlib_t
 				m_out_buffer.size() + m_params.reserve_buffer_size() );
 		}
 
+		auto
+		prepare_out_buffer()
+		{
+			m_zlib_stream.next_out =
+				reinterpret_cast< Bytef* >(
+					const_cast< char* >( m_out_buffer.data() + m_write_pos ) );
+
+			const auto provided_out_buffer_size =
+				m_out_buffer.size() - m_write_pos;
+			m_zlib_stream.avail_out =
+				static_cast<uInt>( provided_out_buffer_size );
+
+			return provided_out_buffer_size;
+		}
+
 		//! Handle incoming data for compression operation.
 		/*
 			Data and its size must be already in
-			`m_zlib_stream.next_in`, `m_zlib_stream.avail_in` is provided in
+			`m_zlib_stream.next_in`, `m_zlib_stream.avail_in`.
 		*/
 		void
 		write_compress_impl( int flush )
 		{
 			while( true )
 			{
-				m_zlib_stream.next_out =
-					reinterpret_cast< Bytef* >(
-						const_cast< char* >( m_out_buffer.data() + m_write_pos ) );
-
-				const auto provided_out_buffer_size =
-					m_out_buffer.size() - m_write_pos;
-				m_zlib_stream.avail_out =
-					static_cast<uInt>( provided_out_buffer_size );
+				const auto provided_out_buffer_size = prepare_out_buffer();
 
 				int operation_result = deflate( &m_zlib_stream, flush );
 
@@ -598,10 +606,63 @@ class zlib_t
 						Z_BUF_ERROR == operation_result ||
 						( Z_STREAM_END == operation_result && Z_FINISH == flush ) ) )
 				{
+					const char * err_msg = "<no error desc>";
+					if( m_zlib_stream.msg )
+						err_msg = m_zlib_stream.msg;
+
 					throw exception_t{
 						fmt::format(
-							"unexpected result of deflate() (zlib): {}",
-							operation_result ) };
+							"unexpected result of deflate() (zlib): {}, {}",
+							operation_result,
+							err_msg ) };
+				}
+
+				m_write_pos += provided_out_buffer_size - m_zlib_stream.avail_out;
+
+				if( 0 == m_zlib_stream.avail_out && Z_STREAM_END != operation_result )
+				{
+					// Looks like not all the output was obtained.
+					// There is a minor chance that it just happened to
+					// occupy exactly the same space that was available,
+					// in that case it would go for a one redundant call to deflate.
+					inc_buffer();
+					continue;
+				}
+
+				if( 0 == m_zlib_stream.avail_in )
+				{
+					// All the input was consumed.
+					break;
+				}
+			}
+		}
+
+		//! Handle incoming data for decompression operation.
+		/*
+			Data and its size must be already in
+			`m_zlib_stream.next_in`, `m_zlib_stream.avail_in`.
+		*/
+		void
+		write_decompress_impl( int flush )
+		{
+			while( true )
+			{
+				const auto provided_out_buffer_size = prepare_out_buffer();
+
+				int operation_result = inflate( &m_zlib_stream, flush );
+				if( !( Z_OK == operation_result ||
+						Z_BUF_ERROR == operation_result ||
+						Z_STREAM_END == operation_result ) )
+				{
+					const char * err_msg = "<no error desc>";
+					if( m_zlib_stream.msg )
+						err_msg = m_zlib_stream.msg;
+
+					throw exception_t{
+						fmt::format(
+							"unexpected result of inflate() (zlib): {}, {}",
+							operation_result,
+							err_msg ) };
 				}
 
 				m_write_pos += provided_out_buffer_size - m_zlib_stream.avail_out;
