@@ -248,7 +248,7 @@ TEST_CASE( "deflate" , "[zlib][compress][decompress][deflate]" )
 
 	{
 		const std::size_t chunk_size = 1024;
-		const std::size_t chunk_count = 1;
+		const std::size_t chunk_count = 128;
 
 		struct test_setting_t
 		{
@@ -260,7 +260,7 @@ TEST_CASE( "deflate" , "[zlib][compress][decompress][deflate]" )
 			int m_mem_level{ 1 + (std::rand() % ( MAX_MEM_LEVEL ) )};
 		};
 
-		unsigned int tests_count = 1000;
+		unsigned int tests_count = 250;
 
 		while( 0 != tests_count-- )
 		{
@@ -371,7 +371,7 @@ TEST_CASE( "gzip" , "[zlib][compress][decompress][gzip]" )
 
 	{
 		const std::size_t chunk_size = 1024;
-		const std::size_t chunk_count = 1;
+		const std::size_t chunk_count = 128;
 
 		struct test_setting_t
 		{
@@ -383,7 +383,7 @@ TEST_CASE( "gzip" , "[zlib][compress][decompress][gzip]" )
 			int m_mem_level{ 1 + (std::rand() % ( MAX_MEM_LEVEL ) )};
 		};
 
-		unsigned int tests_count = 1000;
+		unsigned int tests_count = 250;
 
 		while( 0 != tests_count-- )
 		{
@@ -454,5 +454,119 @@ TEST_CASE( "gzip" , "[zlib][compress][decompress][gzip]" )
 			REQUIRE( decompression_out_size == decompression_out_data.size() );
 			REQUIRE( decompression_out_data == input_data );
 		}
+	}
+}
+
+TEST_CASE( "complete" , "[zlib][compress][decompress][commplete]" )
+{
+	namespace rt = restinio::transformator;
+
+	std::srand( std::time( nullptr ) );
+
+	{
+		rt::zlib_t zc{ rt::gzip_compress() };
+		REQUIRE_FALSE( zc.is_completed() );
+
+		std::string
+			input_data{
+				"The zlib compression library provides "
+				"in-memory compression and decompression functions, "
+				"including integrity checks of the uncompressed data." };
+
+		REQUIRE_NOTHROW( zc.write( input_data ) );
+		REQUIRE_FALSE( zc.is_completed() );
+
+		REQUIRE_NOTHROW( zc.flush() );
+		REQUIRE_FALSE( zc.is_completed() );
+
+		REQUIRE_NOTHROW( zc.write( input_data ) );
+		REQUIRE_FALSE( zc.is_completed() );
+
+		REQUIRE_NOTHROW( zc.complete() );
+		REQUIRE( zc.is_completed() );
+		REQUIRE_THROWS( zc.complete() );
+		REQUIRE( zc.is_completed() );
+
+		const auto out_size = zc.output_size();
+		const auto out_data = zc.givaway_output();
+		REQUIRE( out_size == out_data.size() );
+
+		rt::zlib_t zd{ rt::gzip_decompress() };
+		REQUIRE_FALSE( zd.is_completed() );
+
+		REQUIRE_NOTHROW( zd.write( out_data.substr(0, out_data.size()/2 ) ) );
+		REQUIRE_FALSE( zd.is_completed() );
+
+		REQUIRE_NOTHROW( zd.flush() );
+		REQUIRE_FALSE( zd.is_completed() );
+
+		REQUIRE_NOTHROW( zd.write( out_data.substr( out_data.size()/2 ) ) );
+		REQUIRE_FALSE( zd.is_completed() );
+
+		REQUIRE_NOTHROW( zd.complete() );
+		REQUIRE( zd.is_completed() );
+		REQUIRE_THROWS( zd.complete() );
+		REQUIRE( zd.is_completed() );
+
+		const auto decompression_out_size = zd.output_size();
+		const auto decompression_out_data = zd.givaway_output();
+		REQUIRE( decompression_out_size == decompression_out_data.size() );
+		REQUIRE( decompression_out_data == input_data + input_data );
+	}
+}
+
+TEST_CASE( "take output" , "[zlib][compress][decompress][output]" )
+{
+	namespace rt = restinio::transformator;
+
+	std::srand( std::time( nullptr ) );
+
+	{
+		rt::zlib_t zc{ rt::gzip_compress() };
+		REQUIRE_FALSE( zc.is_completed() );
+
+		std::string
+			input_data{
+				"The zlib compression library provides "
+				"in-memory compression and decompression functions, "
+				"including integrity checks of the uncompressed data." };
+
+		std::string out_data;
+		REQUIRE_NOTHROW( zc.write( input_data ) );
+		REQUIRE_NOTHROW( out_data += zc.givaway_output() );
+		REQUIRE_NOTHROW( zc.givaway_output() == "" );
+
+		REQUIRE_NOTHROW( zc.flush() );
+		REQUIRE_NOTHROW( out_data += zc.givaway_output() );
+		REQUIRE_NOTHROW( zc.givaway_output() == "" );
+
+		REQUIRE_NOTHROW( zc.write( input_data ) );
+		REQUIRE_NOTHROW( out_data += zc.givaway_output() );
+		REQUIRE_NOTHROW( zc.givaway_output() == "" );
+
+		REQUIRE_NOTHROW( zc.complete() );
+		REQUIRE_NOTHROW( out_data += zc.givaway_output() );
+		REQUIRE_NOTHROW( zc.givaway_output() == "" );
+
+		rt::zlib_t zd{ rt::gzip_decompress() };
+		std::string decompression_out_data;
+
+		REQUIRE_NOTHROW( zd.write( out_data.substr(0, out_data.size()/2 ) ) );
+		REQUIRE_NOTHROW( decompression_out_data += zd.givaway_output() );
+		REQUIRE_NOTHROW( zd.givaway_output() == "" );
+
+		REQUIRE_NOTHROW( zd.flush() );
+		REQUIRE_NOTHROW( decompression_out_data += zd.givaway_output() );
+		REQUIRE_NOTHROW( zd.givaway_output() == "" );
+
+		REQUIRE_NOTHROW( zd.write( out_data.substr( out_data.size()/2 ) ) );
+		REQUIRE_NOTHROW( decompression_out_data += zd.givaway_output() );
+		REQUIRE_NOTHROW( zd.givaway_output() == "" );
+
+		REQUIRE_NOTHROW( zd.complete() );
+		REQUIRE_NOTHROW( decompression_out_data += zd.givaway_output() );
+		REQUIRE_NOTHROW( zd.givaway_output() == "" );
+
+		REQUIRE( decompression_out_data == input_data + input_data );
 	}
 }

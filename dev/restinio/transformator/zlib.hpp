@@ -473,6 +473,8 @@ class zlib_t
 		void
 		write( string_view_t sv )
 		{
+			check_operation_is_not_completed();
+
 			if( 0 < sv.size() )
 			{
 				// const Bytef* x = reinterpret_cast< const Bytef* >( sv.data() );
@@ -499,6 +501,8 @@ class zlib_t
 		void
 		flush()
 		{
+			check_operation_is_not_completed();
+
 			m_zlib_stream.next_in = nullptr;
 			m_zlib_stream.avail_in = static_cast< uInt >( 0 );
 
@@ -516,6 +520,8 @@ class zlib_t
 		void
 		complete()
 		{
+			check_operation_is_not_completed();
+
 			m_zlib_stream.next_in = nullptr;
 			m_zlib_stream.avail_in = static_cast< uInt >( 0 );
 
@@ -527,6 +533,8 @@ class zlib_t
 			{
 				write_decompress_impl( Z_FINISH );
 			}
+
+			m_operation_is_complete = true;
 		}
 
 		//! Get current output.
@@ -565,7 +573,19 @@ class zlib_t
 		//! Get current output size.
 		auto output_size() const { return m_write_pos; }
 
+		//! Is operation complete?
+		bool is_completed() const { return m_operation_is_complete; }
+
 	private:
+		//! Checks completion flag and throws if operation is is already completed.
+		void
+		check_operation_is_not_completed() const
+		{
+			if( is_completed() )
+				throw exception_t{ "zlib operation is already completed" };
+		}
+
+		//! Increment internal buffer for receiving output.
 		void
 		inc_buffer()
 		{
@@ -573,6 +593,7 @@ class zlib_t
 				m_out_buffer.size() + m_params.reserve_buffer_size() );
 		}
 
+		//! Prepare out buffer for receiving data.
 		auto
 		prepare_out_buffer()
 		{
@@ -702,6 +723,8 @@ class zlib_t
 		std::string m_out_buffer;
 		//! Next write pos in out buffer.
 		std::size_t m_write_pos{ 0 };
+
+		bool m_operation_is_complete{ false };
 };
 
 } /* namespace transformator */
