@@ -23,12 +23,15 @@
 namespace restinio
 {
 
-namespace transformator
+namespace transforms
+{
+
+namespace zlib
 {
 
 //! Default reserve buffer size for zlib transformator.
 //! @since v.0.4.4
-constexpr std::size_t default_zlib_output_reserve_buffer_size = 256 * 1024;
+constexpr std::size_t default_output_reserve_buffer_size = 256 * 1024;
 
 /** @name Default values for zlib tuning parameters.
  * @brief Constants are defined with values provided by zlib.
@@ -36,20 +39,20 @@ constexpr std::size_t default_zlib_output_reserve_buffer_size = 256 * 1024;
  * @since v.0.4.4
 */
 ///@{
-constexpr int default_zlib_window_bits = MAX_WBITS;
-constexpr int default_zlib_mem_level = MAX_MEM_LEVEL;
-constexpr int default_zlib_strategy = Z_DEFAULT_STRATEGY;
+constexpr int default_window_bits = MAX_WBITS;
+constexpr int default_mem_level = MAX_MEM_LEVEL;
+constexpr int default_strategy = Z_DEFAULT_STRATEGY;
 ///@}
 
 //
-// zlib_settings_t
+// params_t
 //
 
 //! Parameters of performing data transformation with zlib.
 /*
 	@since v.0.4.4
 */
-class zlib_params_t
+class params_t
 {
 	public:
 		//! Types of transformation.
@@ -73,11 +76,11 @@ class zlib_params_t
 		//! Init constructor.
 		/*!
 			It's better to use special functions to cunstruct
-			initial zlib_params_t, see:
+			initial params_t, see:
 			deflate_compress(), deflate_decompress(),
 			gzip_compress(), gzip_decompress(),
 		*/
-		zlib_params_t(
+		params_t(
 			//! Operation: compress or decompress.
 			operation_t op,
 			//! Foramt: deflate or gzip.
@@ -108,7 +111,7 @@ class zlib_params_t
 
 			\note Makes sense only for compression operation.
 		*/
-		zlib_params_t &
+		params_t &
 		level( int level_value ) &
 		{
 			if( level_value < -1 || level_value > 9 )
@@ -126,7 +129,7 @@ class zlib_params_t
 		}
 
 		//! Set compression level.
-		zlib_params_t &&
+		params_t &&
 		level( int level_value ) &&
 		{
 			return std::move( this->level( level_value ) );
@@ -143,7 +146,7 @@ class zlib_params_t
 			value of windows beats. See https://zlib.net/manual.html
 			inflateInit2() description for details.
 		*/
-		zlib_params_t &
+		params_t &
 		window_bits( int window_bits_value ) &
 		{
 			// From https://zlib.net/manual.html:
@@ -182,7 +185,7 @@ class zlib_params_t
 		}
 
 		//! Set window_bits.
-		zlib_params_t &&
+		params_t &&
 		window_bits( int window_bits_value ) &&
 		{
 			return std::move( this->window_bits( window_bits_value ) );
@@ -200,7 +203,7 @@ class zlib_params_t
 
 			\note Makes sense only for compression operation.
 		*/
-		zlib_params_t &
+		params_t &
 		mem_level( int mem_level_value ) &
 		{
 			if( mem_level_value < 1 || mem_level_value > MAX_MEM_LEVEL )
@@ -219,7 +222,7 @@ class zlib_params_t
 		}
 
 		//! Set compression mem_level.
-		zlib_params_t &&
+		params_t &&
 		mem_level( int mem_level_value ) &&
 		{
 			return std::move( this->mem_level( mem_level_value ) );
@@ -237,7 +240,7 @@ class zlib_params_t
 
 			\note Makes sense only for compression operation.
 		*/
-		zlib_params_t &
+		params_t &
 		strategy( int strategy_value ) &
 		{
 			if( Z_DEFAULT_STRATEGY != strategy_value &&
@@ -266,7 +269,7 @@ class zlib_params_t
 		}
 
 		//! Set compression strategy.
-		zlib_params_t &&
+		params_t &&
 		strategy( int strategy_value ) &&
 		{
 			return std::move( this->strategy( strategy_value ) );
@@ -283,7 +286,7 @@ class zlib_params_t
 		std::size_t reserve_buffer_size() const { return m_reserve_buffer_size; }
 
 		//! Set the size initially reserved for buffer.
-		zlib_params_t &
+		params_t &
 		reserve_buffer_size( std::size_t size ) &
 		{
 			if( size < 10UL )
@@ -297,7 +300,7 @@ class zlib_params_t
 		}
 
 		//! Set the size initially reserved for buffer.
-		zlib_params_t &&
+		params_t &&
 		reserve_buffer_size( std::size_t size ) &&
 		{
 			return std::move( this->reserve_buffer_size( size ) );
@@ -305,7 +308,7 @@ class zlib_params_t
 
 	private:
 		//! Get the reference to self.
-		zlib_params_t & reference_to_self() { return *this; }
+		params_t & reference_to_self() { return *this; }
 
 		//! Transformation type.
 		operation_t m_operation;
@@ -319,65 +322,65 @@ class zlib_params_t
 		*/
 		int m_level;
 
-		int m_window_bits{ default_zlib_window_bits };
-		int m_mem_level{ default_zlib_mem_level };
-		int m_strategy{ default_zlib_strategy };
+		int m_window_bits{ default_window_bits };
+		int m_mem_level{ default_mem_level };
+		int m_strategy{ default_strategy };
 
 		//! Size initially reserved for buffer.
-		std::size_t m_reserve_buffer_size{ default_zlib_output_reserve_buffer_size };
+		std::size_t m_reserve_buffer_size{ default_output_reserve_buffer_size };
 };
 
 /** @name Create parameters for zlib transformators.
- * @brief A set of function helping to create zlib_params_t objects
+ * @brief A set of function helping to create params_t objects
  * ommiting some verbose deteils.
  *
  * Instead of writing something like this:
  * \code
- * zlib_params_t params{
- *     restinio::transformators::zlib_params_t::operation_t::compress,
- *     restinio::transformators::zlib_params_t::format_t::gzip,
+ * params_t params{
+ *     restinio::transformators::params_t::operation_t::compress,
+ *     restinio::transformators::params_t::format_t::gzip,
  *     -1 };
  * \endcode
  * It is better to write the following:
  * \code
- * zlib_params_t params = restinio::transformators::gzip_compress();
+ * params_t params = restinio::transformators::gzip_compress();
  * \endcode
  *
  * @since v.0.4.4
 */
 ///@{
-inline zlib_params_t
+inline params_t
 deflate_compress( int level = -1 )
 {
-	return zlib_params_t{
-			zlib_params_t::operation_t::compress,
-			zlib_params_t::format_t::deflate,
+	return params_t{
+			params_t::operation_t::compress,
+			params_t::format_t::deflate,
 			level };
 }
 
-inline zlib_params_t
+inline params_t
 deflate_decompress()
 {
-	return zlib_params_t{
-			zlib_params_t::operation_t::decompress,
-			zlib_params_t::format_t::deflate };
+	return params_t{
+			params_t::operation_t::decompress,
+			params_t::format_t::deflate };
 }
 
-inline zlib_params_t
+inline params_t
 gzip_compress( int level = -1)
 {
-	return zlib_params_t{
-			zlib_params_t::operation_t::compress,
-			zlib_params_t::format_t::gzip,
+	return params_t{
+			params_t::operation_t::compress,
+			params_t::format_t::gzip,
 			level };
 }
 
-inline zlib_params_t
+inline params_t
 gzip_decompress()
 {
-	return zlib_params_t{
-			zlib_params_t::operation_t::decompress,
-			zlib_params_t::format_t::gzip };
+	return params_t{
+			params_t::operation_t::decompress,
+			params_t::format_t::gzip };
 }
 ///@}
 
@@ -394,7 +397,7 @@ gzip_decompress()
 class zlib_t
 {
 	public:
-		zlib_t( const zlib_params_t & params )
+		zlib_t( const params_t & params )
 			:	m_params{ params }
 		{
 			// Setting allocator stuff before initializing
@@ -409,12 +412,12 @@ class zlib_t
 			// Compression.
 			auto current_window_bits = m_params.window_bits();
 
-			if( zlib_params_t::format_t::gzip == m_params.format() )
+			if( params_t::format_t::gzip == m_params.format() )
 			{
 				current_window_bits += 16;
 			}
 
-			if( zlib_params_t::operation_t::compress == m_params.operation() )
+			if( params_t::operation_t::compress == m_params.operation() )
 			{
 
 				// zlib format.
@@ -458,7 +461,7 @@ class zlib_t
 		{
 			if( m_zlib_stream_initialized )
 			{
-				if( zlib_params_t::operation_t::compress == m_params.operation() )
+				if( params_t::operation_t::compress == m_params.operation() )
 				{
 					deflateEnd( &m_zlib_stream );
 				}
@@ -493,7 +496,7 @@ class zlib_t
 
 				m_zlib_stream.avail_in = static_cast< uInt >( sv.size() );
 
-				if( zlib_params_t::operation_t::compress == m_params.operation() )
+				if( params_t::operation_t::compress == m_params.operation() )
 				{
 					write_compress_impl( Z_NO_FLUSH );
 				}
@@ -516,7 +519,7 @@ class zlib_t
 			m_zlib_stream.next_in = nullptr;
 			m_zlib_stream.avail_in = static_cast< uInt >( 0 );
 
-			if( zlib_params_t::operation_t::compress == m_params.operation() )
+			if( params_t::operation_t::compress == m_params.operation() )
 			{
 				write_compress_impl( Z_SYNC_FLUSH );
 			}
@@ -535,7 +538,7 @@ class zlib_t
 			m_zlib_stream.next_in = nullptr;
 			m_zlib_stream.avail_in = static_cast< uInt >( 0 );
 
-			if( zlib_params_t::operation_t::compress == m_params.operation() )
+			if( params_t::operation_t::compress == m_params.operation() )
 			{
 				write_compress_impl( Z_FINISH );
 			}
@@ -717,7 +720,7 @@ class zlib_t
 		}
 
 		//! Parameters for zlib.
-		const zlib_params_t m_params;
+		const params_t m_params;
 
 		//! Flag: was m_zlib_stream initialized properly.
 		/*!
@@ -737,6 +740,8 @@ class zlib_t
 		bool m_operation_is_complete{ false };
 };
 
-} /* namespace transformator */
+} /* namespace zlib */
+
+} /* namespace transforms */
 
 } /* namespace restinio */
