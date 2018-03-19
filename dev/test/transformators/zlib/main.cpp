@@ -231,7 +231,7 @@ TEST_CASE( "deflate" , "[zlib][compress][decompress][deflate]" )
 		REQUIRE_NOTHROW( zc.complete() );
 
 		const auto out_size = zc.output_size();
-		const auto out_data = zc.givaway_output();
+		const auto out_data = zc.giveaway_output();
 		REQUIRE( out_size == out_data.size() );
 		REQUIRE( 10 < out_data.size() );
 
@@ -241,7 +241,7 @@ TEST_CASE( "deflate" , "[zlib][compress][decompress][deflate]" )
 		REQUIRE_NOTHROW( zd.complete() );
 
 		const auto decompression_out_size = zd.output_size();
-		const auto decompression_out_data = zd.givaway_output();
+		const auto decompression_out_data = zd.giveaway_output();
 		REQUIRE( decompression_out_size == decompression_out_data.size() );
 		REQUIRE( decompression_out_data == input_data+input_data );
 	}
@@ -298,7 +298,7 @@ TEST_CASE( "deflate" , "[zlib][compress][decompress][deflate]" )
 
 			REQUIRE_NOTHROW( zc.complete() );
 			const auto out_size = zc.output_size();
-			const auto out_data = zc.givaway_output();
+			const auto out_data = zc.giveaway_output();
 			REQUIRE( out_size == out_data.size() );
 			REQUIRE( 10 < out_data.size() );
 
@@ -327,7 +327,7 @@ TEST_CASE( "deflate" , "[zlib][compress][decompress][deflate]" )
 
 			zd.complete();
 			const auto decompression_out_size = zd.output_size();
-			const auto decompression_out_data = zd.givaway_output();
+			const auto decompression_out_data = zd.giveaway_output();
 			REQUIRE( decompression_out_size == decompression_out_data.size() );
 			REQUIRE( decompression_out_data == input_data );
 		}
@@ -354,7 +354,7 @@ TEST_CASE( "gzip" , "[zlib][compress][decompress][gzip]" )
 		REQUIRE_NOTHROW( zc.complete() );
 
 		const auto out_size = zc.output_size();
-		const auto out_data = zc.givaway_output();
+		const auto out_data = zc.giveaway_output();
 		REQUIRE( out_size == out_data.size() );
 		REQUIRE( 10 < out_data.size() );
 
@@ -364,7 +364,7 @@ TEST_CASE( "gzip" , "[zlib][compress][decompress][gzip]" )
 		REQUIRE_NOTHROW( zd.complete() );
 
 		const auto decompression_out_size = zd.output_size();
-		const auto decompression_out_data = zd.givaway_output();
+		const auto decompression_out_data = zd.giveaway_output();
 		REQUIRE( decompression_out_size == decompression_out_data.size() );
 		REQUIRE( decompression_out_data == input_data+input_data );
 	}
@@ -421,7 +421,7 @@ TEST_CASE( "gzip" , "[zlib][compress][decompress][gzip]" )
 
 			REQUIRE_NOTHROW( zc.complete() );
 			const auto out_size = zc.output_size();
-			const auto out_data = zc.givaway_output();
+			const auto out_data = zc.giveaway_output();
 			REQUIRE( out_size == out_data.size() );
 			REQUIRE( 10 < out_data.size() );
 
@@ -450,7 +450,7 @@ TEST_CASE( "gzip" , "[zlib][compress][decompress][gzip]" )
 
 			zd.complete();
 			const auto decompression_out_size = zd.output_size();
-			const auto decompression_out_data = zd.givaway_output();
+			const auto decompression_out_data = zd.giveaway_output();
 			REQUIRE( decompression_out_size == decompression_out_data.size() );
 			REQUIRE( decompression_out_data == input_data );
 		}
@@ -488,7 +488,7 @@ TEST_CASE( "complete" , "[zlib][compress][decompress][commplete]" )
 		REQUIRE( zc.is_completed() );
 
 		const auto out_size = zc.output_size();
-		const auto out_data = zc.givaway_output();
+		const auto out_data = zc.giveaway_output();
 		REQUIRE( out_size == out_data.size() );
 
 		rt::zlib_t zd{ rt::gzip_decompress() };
@@ -509,7 +509,7 @@ TEST_CASE( "complete" , "[zlib][compress][decompress][commplete]" )
 		REQUIRE( zd.is_completed() );
 
 		const auto decompression_out_size = zd.output_size();
-		const auto decompression_out_data = zd.givaway_output();
+		const auto decompression_out_data = zd.giveaway_output();
 		REQUIRE( decompression_out_size == decompression_out_data.size() );
 		REQUIRE( decompression_out_data == input_data + input_data );
 	}
@@ -533,39 +533,39 @@ TEST_CASE( "take output" , "[zlib][compress][decompress][output]" )
 
 		std::string out_data;
 		REQUIRE_NOTHROW( zc.write( input_data ) );
-		REQUIRE_NOTHROW( out_data += zc.givaway_output() );
-		REQUIRE_NOTHROW( zc.givaway_output() == "" );
+		REQUIRE_NOTHROW( out_data += zc.giveaway_output() );
+		REQUIRE_NOTHROW( zc.giveaway_output() == "" );
 
 		REQUIRE_NOTHROW( zc.flush() );
-		REQUIRE_NOTHROW( out_data += zc.givaway_output() );
-		REQUIRE_NOTHROW( zc.givaway_output() == "" );
+		REQUIRE_NOTHROW( out_data += zc.giveaway_output() );
+		REQUIRE_NOTHROW( zc.giveaway_output() == "" );
 
 		REQUIRE_NOTHROW( zc.write( input_data ) );
-		REQUIRE_NOTHROW( out_data += zc.givaway_output() );
-		REQUIRE_NOTHROW( zc.givaway_output() == "" );
+		REQUIRE_NOTHROW( out_data += zc.giveaway_output() );
+		REQUIRE_NOTHROW( zc.giveaway_output() == "" );
 
 		REQUIRE_NOTHROW( zc.complete() );
-		REQUIRE_NOTHROW( out_data += zc.givaway_output() );
-		REQUIRE_NOTHROW( zc.givaway_output() == "" );
+		REQUIRE_NOTHROW( out_data += zc.giveaway_output() );
+		REQUIRE_NOTHROW( zc.giveaway_output() == "" );
 
 		rt::zlib_t zd{ rt::gzip_decompress() };
 		std::string decompression_out_data;
 
 		REQUIRE_NOTHROW( zd.write( out_data.substr(0, out_data.size()/2 ) ) );
-		REQUIRE_NOTHROW( decompression_out_data += zd.givaway_output() );
-		REQUIRE_NOTHROW( zd.givaway_output() == "" );
+		REQUIRE_NOTHROW( decompression_out_data += zd.giveaway_output() );
+		REQUIRE_NOTHROW( zd.giveaway_output() == "" );
 
 		REQUIRE_NOTHROW( zd.flush() );
-		REQUIRE_NOTHROW( decompression_out_data += zd.givaway_output() );
-		REQUIRE_NOTHROW( zd.givaway_output() == "" );
+		REQUIRE_NOTHROW( decompression_out_data += zd.giveaway_output() );
+		REQUIRE_NOTHROW( zd.giveaway_output() == "" );
 
 		REQUIRE_NOTHROW( zd.write( out_data.substr( out_data.size()/2 ) ) );
-		REQUIRE_NOTHROW( decompression_out_data += zd.givaway_output() );
-		REQUIRE_NOTHROW( zd.givaway_output() == "" );
+		REQUIRE_NOTHROW( decompression_out_data += zd.giveaway_output() );
+		REQUIRE_NOTHROW( zd.giveaway_output() == "" );
 
 		REQUIRE_NOTHROW( zd.complete() );
-		REQUIRE_NOTHROW( decompression_out_data += zd.givaway_output() );
-		REQUIRE_NOTHROW( zd.givaway_output() == "" );
+		REQUIRE_NOTHROW( decompression_out_data += zd.giveaway_output() );
+		REQUIRE_NOTHROW( zd.giveaway_output() == "" );
 
 		REQUIRE( decompression_out_data == input_data + input_data );
 	}

@@ -548,11 +548,11 @@ class zlib_t
 			restinio::transformator::zlib_t z{ restinio::transformator::gzip_compress() };
 
 			z.write( A );
-			consume_out( z.givaway_output() ); // (1)
+			consume_out( z.giveaway_output() ); // (1)
 
 			z.write( B );
 			z.write( C );
-			consume_out( z.givaway_output() ); // (2)
+			consume_out( z.giveaway_output() ); // (2)
 
 			\endcode
 			At the point (2) `consume_out()` function receives
@@ -560,7 +560,7 @@ class zlib_t
 			received in point (1).
 		*/
 		std::string
-		givaway_output()
+		giveaway_output()
 		{
 			std::string result;
 			const auto data_size = m_write_pos;
