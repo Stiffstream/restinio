@@ -475,6 +475,16 @@ class zlib_t
 		{
 			ensure_operation_in_not_completed();
 
+			if( std::numeric_limits< decltype( m_zlib_stream.avail_in ) >::max() < sv.size() )
+			{
+				throw exception_t{
+					fmt::format(
+						"input data is too large: {} (max possible: {}), "
+						"try to break large data into pieces",
+						sv.size(),
+						std::numeric_limits< decltype( m_zlib_stream.avail_in ) >::max() ) };
+			}
+
 			if( 0 < sv.size() )
 			{
 				// const Bytef* x = reinterpret_cast< const Bytef* >( sv.data() );

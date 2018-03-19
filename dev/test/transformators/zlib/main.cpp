@@ -523,7 +523,6 @@ TEST_CASE( "take output" , "[zlib][compress][decompress][output]" )
 
 	{
 		rt::zlib_t zc{ rt::gzip_compress() };
-		REQUIRE_FALSE( zc.is_completed() );
 
 		std::string
 			input_data{
@@ -568,5 +567,27 @@ TEST_CASE( "take output" , "[zlib][compress][decompress][output]" )
 		REQUIRE_NOTHROW( zd.giveaway_output() == "" );
 
 		REQUIRE( decompression_out_data == input_data + input_data );
+	}
+}
+
+TEST_CASE( "write check input size" , "[zlib][write][large input]" )
+{
+	namespace rt = restinio::transformator;
+
+	std::srand( std::time( nullptr ) );
+
+	{
+		rt::zlib_t zc{ rt::gzip_compress() };
+
+		const char * s =
+			"The zlib compression library provides "
+			"in-memory compression and decompression functions, "
+			"including integrity checks of the uncompressed data.";
+
+		restinio::string_view_t large_input{
+			s,
+			std::uint64_t{ 1 } + std::numeric_limits< decltype( z_stream::avail_in ) >::max() };
+
+		REQUIRE_THROWS( zc.write( large_input ) );
 	}
 }
