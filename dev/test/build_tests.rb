@@ -69,6 +69,10 @@ MxxRu::Cpp::composite_target {
 	required_prj( "test/router/cmp_router_bench/prj.rb" )
 
 	# ================================================================
+	# Transformators
+	required_prj( "test/transformators/zlib/prj.ut.rb" )
+
+	# ================================================================
 	required_prj( "test/encoders/prj.ut.rb" )
 
 	# ================================================================
