@@ -473,7 +473,7 @@ class zlib_t
 		void
 		write( string_view_t sv )
 		{
-			check_operation_is_not_completed();
+			ensure_operation_in_not_completed();
 
 			if( 0 < sv.size() )
 			{
@@ -501,7 +501,7 @@ class zlib_t
 		void
 		flush()
 		{
-			check_operation_is_not_completed();
+			ensure_operation_in_not_completed();
 
 			m_zlib_stream.next_in = nullptr;
 			m_zlib_stream.avail_in = static_cast< uInt >( 0 );
@@ -520,7 +520,7 @@ class zlib_t
 		void
 		complete()
 		{
-			check_operation_is_not_completed();
+			ensure_operation_in_not_completed();
 
 			m_zlib_stream.next_in = nullptr;
 			m_zlib_stream.avail_in = static_cast< uInt >( 0 );
@@ -579,7 +579,7 @@ class zlib_t
 	private:
 		//! Checks completion flag and throws if operation is is already completed.
 		void
-		check_operation_is_not_completed() const
+		ensure_operation_in_not_completed() const
 		{
 			if( is_completed() )
 				throw exception_t{ "zlib operation is already completed" };
