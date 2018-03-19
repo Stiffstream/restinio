@@ -9,7 +9,7 @@ MxxRu::Cpp::exe_target {
 	required_prj 'fmt_mxxru/prj.rb'
 	required_prj 'restinio/platform_specific_libs.rb'
 
-	target( "_unit.test.transformators.zlib" )
+	target( "_unit.test.transforms.zlib" )
 
 	lib( 'z' )
 
