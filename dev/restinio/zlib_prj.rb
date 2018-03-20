@@ -1,0 +1,37 @@
+require 'rubygems'
+
+gem 'Mxx_ru', '>= 1.3.0'
+
+require 'mxx_ru/cpp'
+
+MxxRu::Cpp::lib_target {
+
+  # Define your target name here.
+  target 'zlib'
+
+  define '_LARGEFILE64_SOURCE=1', Mxx_ru::Cpp::Target::OPT_UPSPREAD
+
+  if 'gcc' == toolset.name || 'clang' == toolset.name
+    define 'HAVE_HIDDEN'
+  end
+
+  # Enumerate your C/C++ files here.
+  sources_root( '../zlib' ) {
+    c_sources ['adler32.c',
+    'crc32.c',
+    'deflate.c',
+    'infback.c',
+    'inffast.c',
+    'inflate.c',
+    'inftrees.c',
+    'trees.c',
+    'zutil.c',
+    'compress.c',
+    'uncompr.c',
+    'gzclose.c',
+    'gzlib.c',
+    'gzread.c',
+    'gzwrite.c']
+  }
+}
+

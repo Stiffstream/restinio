@@ -20,6 +20,8 @@ else ()
 	message(FATAL_ERROR "Your C++ compiler (ID: '${CMAKE_CXX_COMPILER_ID}') not supported.")
 endif ()
 
+# ------------------------------------------------------------------------------
+# BOOST
 if ( RESTINIO_USE_BOOST_ASIO MATCHES "none" )
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/asio/include)
 	add_definitions(-DASIO_STANDALONE -DASIO_HAS_STD_CHRONO -DASIO_DISABLE_STD_STRING_VIEW)
@@ -57,7 +59,12 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 
+# ------------------------------------------------------------------------------
+# OpenSSL
 find_package(OpenSSL)
+
+# ------------------------------------------------------------------------------
+# PCRE*
 find_package(PCRE)
 find_package(PCRE2)
 IF(PCRE2_FOUND)
@@ -65,12 +72,24 @@ IF(PCRE2_FOUND)
   add_definitions(-DPCRE2_CODE_UNIT_WIDTH=8)
 ENDIF(PCRE2_FOUND)
 
+# HTTP parser
 add_subdirectory(nodejs/http_parser)
 
+# ------------------------------------------------------------------------------
+# SObjectizer
 set(SOBJECTIZER_BUILD_STATIC ON)
 set(SOBJECTIZER_LIBS sobjectizer::StaticLib)
 add_subdirectory(so_5)
 
+# ------------------------------------------------------------------------------
+# Zlib
+find_package(ZLIB)
+if (ZLIB_FOUND)
+  include_directories( ${ZLIB_INCLUDE_DIRS} )
+endif (ZLIB_FOUND)
+
+# ------------------------------------------------------------------------------
+# Tests
 enable_testing()
 add_subdirectory(test)
 
@@ -78,5 +97,10 @@ if(WIN32)
 	configure_file(${CMAKE_SOURCE_DIR}/cmake/run_tests.bat ${CMAKE_BINARY_DIR} NEWLINE_STYLE WIN32)
 endif()
 
+# ------------------------------------------------------------------------------
+# Samples
 add_subdirectory(sample)
+
+# ------------------------------------------------------------------------------
+# Benches
 add_subdirectory(benches)
