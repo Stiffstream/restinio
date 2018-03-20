@@ -74,6 +74,12 @@ class basic_string_view_t final
 		{
 		}
 
+		basic_string_view_t( const std::string & s )
+		:	m_str{ s.data() }
+		,	m_size{ s.size() }
+		{
+		}
+
 		// Assignment
 		basic_string_view_t &
 		operator= ( const basic_string_view_t & other ) = default;

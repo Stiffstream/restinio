@@ -442,8 +442,9 @@ class zlib_t
 			{
 				throw exception_t{
 					fmt::format(
-						"Failed to initialize zlib stream: {}",
-						init_result ) };
+						"Failed to initialize zlib stream: {}, {}",
+						init_result,
+						get_error_msg() ) };
 			}
 
 			m_zlib_stream_initialized = true;
@@ -590,6 +591,17 @@ class zlib_t
 		bool is_completed() const { return m_operation_is_complete; }
 
 	private:
+		//! Get zlib error message if it exists.
+		const char * 
+		get_error_msg() const
+		{
+			const char * err_msg = "<no zlib error description>";
+			if( m_zlib_stream.msg )
+				err_msg = m_zlib_stream.msg;
+
+			return err_msg;
+		}
+
 		//! Checks completion flag and throws if operation is is already completed.
 		void
 		ensure_operation_in_not_completed() const
@@ -688,15 +700,11 @@ class zlib_t
 						Z_BUF_ERROR == operation_result ||
 						Z_STREAM_END == operation_result ) )
 				{
-					const char * err_msg = "<no error desc>";
-					if( m_zlib_stream.msg )
-						err_msg = m_zlib_stream.msg;
-
 					throw exception_t{
 						fmt::format(
 							"unexpected result of inflate() (zlib): {}, {}",
 							operation_result,
-							err_msg ) };
+							get_error_msg() ) };
 				}
 
 				m_write_pos += provided_out_buffer_size - m_zlib_stream.avail_out;

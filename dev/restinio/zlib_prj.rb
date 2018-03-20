@@ -9,10 +9,19 @@ MxxRu::Cpp::lib_target {
   # Define your target name here.
   target 'zlib'
 
-  define '_LARGEFILE64_SOURCE=1', Mxx_ru::Cpp::Target::OPT_UPSPREAD
+  include_path './zlib', Mxx_ru::Cpp::Target::OPT_UPSPREAD
 
   if 'gcc' == toolset.name || 'clang' == toolset.name
+    define( '_LARGEFILE64_SOURCE=1', Mxx_ru::Cpp::Target::OPT_UPSPREAD )
     define 'HAVE_HIDDEN'
+  end
+
+  if 'vc' == toolset.name
+    define 'NO_FSEEKO'
+    define '_CRT_SECURE_NO_DEPRECATE'
+    define '_CRT_NONSTDC_NO_DEPRECATE'
+    define 'WIN32'
+    define '_WINDOWS'
   end
 
   # Enumerate your C/C++ files here.
