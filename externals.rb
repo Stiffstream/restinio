@@ -71,3 +71,53 @@ MxxRu::arch_externals :catch do |e|
 
   e.map_file 'single_include/catch.hpp' => 'dev/catch/*'
 end
+
+MxxRu::arch_externals :zlib do |e|
+  e.url 'https://zlib.net/zlib-1.2.11.tar.gz'
+
+  %w{CMakeLists.txt
+ChangeLog
+FAQ
+INDEX
+Makefile
+Makefile.in
+README
+adler32.c
+compress.c
+configure
+crc32.c
+crc32.h
+deflate.c
+deflate.h
+gzclose.c
+gzguts.h
+gzlib.c
+gzread.c
+gzwrite.c
+infback.c
+inffast.c
+inffast.h
+inffixed.h
+inflate.c
+inflate.h
+inftrees.c
+inftrees.h
+make_vms.com
+treebuild.xml
+trees.c
+trees.h
+uncompr.c
+zconf.h
+zconf.h.cmakein
+zconf.h.in
+zlib.3
+zlib.3.pdf
+zlib.h
+zlib.map
+zlib.pc.cmakein
+zlib.pc.in
+zlib2ansi
+zutil.c
+zutil.h
+  }.each {|f| e.map_file f => 'dev/zlib/*' }
+end
