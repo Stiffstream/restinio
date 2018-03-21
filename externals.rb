@@ -76,5 +76,5 @@ MxxRu::arch_externals :zlib do |e|
   e.url 'https://zlib.net/zlib-1.2.11.tar.gz'
 
   e.map_dir './*' => 'dev/zlib'
-  e.map_file 'zconf.h.in' => 'dev/catch/zconf.h'
+  e.map_file 'zconf.h.in' => 'dev/zlib/zconf.h'
 end
