@@ -9,7 +9,7 @@
 #define CATCH_CONFIG_MAIN
 #include <catch/catch.hpp>
 
-#include <restinio/transforms/zlib/zlib.hpp>
+#include <restinio/transforms/zlib.hpp>
 
 TEST_CASE( "Create parameters for zlib transformators" , "[zlib][params][create_params]" )
 {
