@@ -71,10 +71,3 @@ MxxRu::arch_externals :catch do |e|
 
   e.map_file 'single_include/catch.hpp' => 'dev/catch/*'
 end
-
-MxxRu::arch_externals :zlib do |e|
-  e.url 'https://zlib.net/zlib-1.2.11.tar.gz'
-
-  e.map_dir './*' => 'dev/zlib'
-  e.map_file 'zconf.h.in' => 'dev/zlib/zconf.h'
-end

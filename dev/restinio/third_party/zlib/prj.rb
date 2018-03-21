@@ -7,7 +7,7 @@ require 'mxx_ru/cpp'
 MxxRu::Cpp::lib_target {
 
   # Define your target name here.
-  target 'zlib'
+  target 'zlib-1.2.11'
 
   include_path './zlib', Mxx_ru::Cpp::Target::OPT_UPSPREAD
 
@@ -26,7 +26,8 @@ MxxRu::Cpp::lib_target {
 
   # Enumerate your C/C++ files here.
   sources_root( '../zlib' ) {
-    c_sources ['adler32.c',
+    c_sources [
+    'adler32.c',
     'crc32.c',
     'deflate.c',
     'infback.c',
