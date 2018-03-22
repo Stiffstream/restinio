@@ -83,14 +83,14 @@ add_subdirectory(so_5)
 
 # ------------------------------------------------------------------------------
 # Zlib
-# find_package(ZLIB)
+find_package(ZLIB)
 
-# if (NOT ZLIB_FOUND)
+if (NOT ZLIB_FOUND)
   add_subdirectory(restinio/third_party/zlib)
   message( STATUS "USE OWN ZLIB SOURCES")
   SET(ZLIB_LIBRARIES zlibstatic)
   SET(ZLIB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/restinio/third_party/zlib)
-# endif ()
+endif ()
 message( STATUS "ZLIB_LIBRARIES='" ${ZLIB_LIBRARIES} "'" )
 message( STATUS "ZLIB_INCLUDE_DIRS='" ${ZLIB_INCLUDE_DIRS} "'" )
 
