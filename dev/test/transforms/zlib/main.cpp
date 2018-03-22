@@ -11,6 +11,8 @@
 
 #include <restinio/transforms/zlib.hpp>
 
+#include "../random_data_generators.inl"
+
 TEST_CASE( "Create parameters for zlib transformators" , "[zlib][params][create_params]" )
 {
 	namespace rtz = restinio::transforms::zlib;
@@ -167,48 +169,6 @@ TEST_CASE( "Setting parameters for zlib transformators: reserve_buffer_size" , "
 		REQUIRE_THROWS( params.reserve_buffer_size( 1 ) );
 		REQUIRE_THROWS( params.reserve_buffer_size( 0 ) );
 	}
-}
-
-std::string
-create_random_text( std::size_t n, std::size_t repeat_max = 1 )
-{
-	restinio::string_view_t symbols{
-		// " \t\r\n"
-		"0123456789"
-		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-		"abcdefghijklmnopqrstuvwxyz"
-		// ",.;:'\"!@#$%^&*~-+\\/"
-		"<>{}()"};
-
-	std::string result;
-	result.reserve( n );
-
-	while( 0 != n )
-	{
-		const char c = symbols[ std::rand() % symbols.size() ];
-		std::size_t repeats = 1 + std::min< std::size_t >( n - 1, std::rand() % repeat_max );
-		result.append( repeats, c );
-		n -= repeats;
-	}
-
-	return result;
-}
-
-std::string
-create_random_binary( std::size_t n, std::size_t repeat_max = 1 )
-{
-	std::string result;
-	result.reserve( n );
-
-	while( 0 != n )
-	{
-		const unsigned char c = std::rand() % 256;
-		std::size_t repeats = 1 + std::min< std::size_t >( n - 1, std::rand() % repeat_max );
-		result.append( repeats, c );
-		n -= repeats;
-	}
-
-	return result;
 }
 
 TEST_CASE( "deflate" , "[zlib][compress][decompress][deflate]" )
@@ -455,6 +415,37 @@ TEST_CASE( "gzip" , "[zlib][compress][decompress][gzip]" )
 			REQUIRE( decompression_out_data == input_data );
 		}
 	}
+}
+
+TEST_CASE( "transform functions" , "[zlib][transform]" )
+{
+	namespace rtz = restinio::transforms::zlib;
+
+	const std::string
+		input_data{
+			"The zlib compression library provides "
+			"in-memory compression and decompression functions, "
+			"including integrity checks of the uncompressed data." };
+
+	REQUIRE( input_data ==
+		rtz::transform(
+			rtz::transform(
+				input_data,
+				rtz::deflate_compress() ),
+			rtz::deflate_decompress() ) );
+
+	REQUIRE( input_data ==
+		rtz::transform(
+			rtz::transform(
+				input_data,
+				rtz::gzip_compress() ),
+			rtz::gzip_decompress() ) );
+
+	REQUIRE( input_data ==
+		rtz::deflate_decompress( rtz::deflate_compress( input_data ) ) );
+
+	REQUIRE( input_data ==
+		rtz::gzip_decompress( rtz::gzip_compress( input_data ) ) );
 }
 
 TEST_CASE( "complete" , "[zlib][compress][decompress][commplete]" )

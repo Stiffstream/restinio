@@ -19,6 +19,7 @@
 
 #include <restinio/exception.hpp>
 #include <restinio/string_view.hpp>
+#include <restinio/message_builders.hpp>
 
 namespace restinio
 {
@@ -337,25 +338,25 @@ class params_t
  * Instead of writing something like this:
  * \code
  * params_t params{
- *     restinio::transformators::params_t::operation_t::compress,
- *     restinio::transformators::params_t::format_t::gzip,
+ *     restinio::transforms::zlib::params_t::operation_t::compress,
+ *     restinio::transforms::zlib::params_t::format_t::gzip,
  *     -1 };
  * \endcode
  * It is better to write the following:
  * \code
- * params_t params = restinio::transformators::gzip_compress();
+ * params_t params = restinio::transforms::zlib::gzip_compress();
  * \endcode
  *
  * @since v.0.4.4
 */
 ///@{
 inline params_t
-deflate_compress( int level = -1 )
+deflate_compress( int compression_level = -1 )
 {
 	return params_t{
 			params_t::operation_t::compress,
 			params_t::format_t::deflate,
-			level };
+			compression_level };
 }
 
 inline params_t
@@ -367,12 +368,12 @@ deflate_decompress()
 }
 
 inline params_t
-gzip_compress( int level = -1)
+gzip_compress( int compression_level = -1)
 {
 	return params_t{
 			params_t::operation_t::compress,
 			params_t::format_t::gzip,
-			level };
+			compression_level };
 }
 
 inline params_t
@@ -397,8 +398,8 @@ gzip_decompress()
 class zlib_t
 {
 	public:
-		zlib_t( const params_t & params )
-			:	m_params{ params }
+		zlib_t( const params_t & transformation_params )
+			:	m_params{ transformation_params }
 		{
 			// Setting allocator stuff before initializing
 			// TODO: allocation can be done with user defined allocator.
@@ -473,29 +474,31 @@ class zlib_t
 			}
 		}
 
+		//! Get parameters of current transformation.
+		const params_t & params() const { return m_params; }
+
 		//! Append input data.
 		void
-		write( string_view_t sv )
+		write( string_view_t input )
 		{
 			ensure_operation_in_not_completed();
 
-			if( std::numeric_limits< decltype( m_zlib_stream.avail_in ) >::max() < sv.size() )
+			if( std::numeric_limits< decltype( m_zlib_stream.avail_in ) >::max() < input.size() )
 			{
 				throw exception_t{
 					fmt::format(
 						"input data is too large: {} (max possible: {}), "
 						"try to break large data into pieces",
-						sv.size(),
+						input.size(),
 						std::numeric_limits< decltype( m_zlib_stream.avail_in ) >::max() ) };
 			}
 
-			if( 0 < sv.size() )
+			if( 0 < input.size() )
 			{
-				// const Bytef* x = reinterpret_cast< const Bytef* >( sv.data() );
 				m_zlib_stream.next_in =
-					reinterpret_cast< Bytef* >( const_cast< char* >( sv.data() ) );
+					reinterpret_cast< Bytef* >( const_cast< char* >( input.data() ) );
 
-				m_zlib_stream.avail_in = static_cast< uInt >( sv.size() );
+				m_zlib_stream.avail_in = static_cast< uInt >( input.size() );
 
 				if( params_t::operation_t::compress == m_params.operation() )
 				{
@@ -592,7 +595,7 @@ class zlib_t
 
 	private:
 		//! Get zlib error message if it exists.
-		const char * 
+		const char *
 		get_error_msg() const
 		{
 			const char * err_msg = "<no zlib error description>";
@@ -747,6 +750,393 @@ class zlib_t
 
 		bool m_operation_is_complete{ false };
 };
+
+/** @name Helper functions for doing zlib transformation with less boilerplate.
+ * @brief A set of handy functions helping to perform zlib transform in one line.
+ *
+ * Instead of writing something like this:
+ * \code
+ * restinio::transforms::zlib::zlib_t z{ restinio::transforms::zlib::gzip_compress() };
+ * z.write( data );
+ * z.complete();
+ * body = z.giveaway_output();
+ * \endcode
+ * It is possible to write the following:
+ * \code
+ * body = restinio::transformators::zlib::gzip_compress( data );
+ * \endcode
+ *
+ * @since v.0.4.4
+*/
+///@{
+
+//! Do a specified zlib transformation.
+inline std::string
+transform( string_view_t input, const params_t & params )
+{
+	zlib_t z{ params };
+	z.write( input );
+	z.complete();
+
+	return z.giveaway_output();
+}
+
+inline std::string
+deflate_compress( string_view_t input, int compression_level = -1 )
+{
+	return transform( input, deflate_compress( compression_level ) );
+}
+
+inline std::string
+deflate_decompress( string_view_t input )
+{
+	return transform( input, deflate_decompress() );
+}
+
+inline std::string
+gzip_compress( string_view_t input, int compression_level = -1 )
+{
+	return transform( input, gzip_compress( compression_level ) );
+}
+
+inline std::string
+gzip_decompress( string_view_t input )
+{
+	return transform( input, gzip_decompress() );
+}
+///@}
+
+//
+// body_appender_t
+//
+
+template < typename Response_Output_Strategy >
+class body_appender_t
+{
+	body_appender_t() = delete;
+};
+
+namespace impl
+{
+
+//! Check if operation is a copression, and throw if it is not.
+inline void ensure_is_compression_operation( params_t::operation_t op )
+{
+	if( params_t::operation_t::compress != op )
+	{
+		throw exception_t{ "operation is not copress" };
+	}
+}
+
+//! Check if a pointer to zlib transformator is valid.
+inline void ensure_valid_transforator( zlib_t * ztransformator )
+{
+	if( nullptr == ztransformator )
+	{
+		throw exception_t{ "invalid body appender" };
+	}
+}
+
+//! Get token for copression format.
+inline std::string content_encoding_token( params_t::format_t f )
+{
+	std::string result{ "deflate" };
+	if( params_t::format_t::gzip == f )
+	{
+		result.assign( "gzip" );
+	}
+
+	return result;
+}
+
+} /* namespace impl */
+
+//
+// body_appender_base_t
+//
+
+//! Base class for body appenders.
+template < typename Response_Output_Strategy, typename Descendant >
+class body_appender_base_t
+{
+	public:
+		using resp_t = response_builder_t< Response_Output_Strategy >;
+
+		body_appender_base_t( const params_t & params, resp_t & resp )
+			:	m_ztransformator{ std::make_unique< zlib_t >( params ) }
+			,	m_resp{ resp }
+		{
+			impl::ensure_is_compression_operation(
+				m_ztransformator->params().operation() );
+
+			m_resp.append_header(
+				restinio::http_field::content_encoding,
+				impl::content_encoding_token(
+					m_ztransformator->params().format() ) );
+		}
+
+		body_appender_base_t( const body_appender_base_t & ) = delete;
+		const body_appender_base_t & operator = ( const body_appender_base_t & ) = delete;
+		body_appender_base_t & operator = ( body_appender_base_t && ) = delete;
+
+		body_appender_base_t( body_appender_base_t && ba )
+			:	m_ztransformator{ std::move( ba.m_ztransformator ) }
+			,	m_resp{ ba.m_resp }
+		{}
+
+		virtual ~body_appender_base_t() {}
+
+	protected:
+		std::unique_ptr< zlib_t > m_ztransformator;
+		resp_t & m_resp;
+};
+
+//! Base class for body appenders with restinio or user controlled output.
+template < typename X_Controlled_Output, typename Descendant >
+class x_controlled_output_body_appender_base_t
+	:	public body_appender_base_t< X_Controlled_Output, Descendant >
+{
+	public:
+		using base_type_t = body_appender_base_t< X_Controlled_Output, Descendant >;
+
+		using base_type_t::base_type_t;
+
+		//! Append a piece of data to response.
+		Descendant &
+		append( string_view_t input )
+		{
+			impl::ensure_valid_transforator( this->m_ztransformator.get() );
+			this->m_ztransformator->write( input );
+			return static_cast< Descendant & >( *this );
+		}
+
+		//! Complete zlib transformation operation.
+		void
+		complete()
+		{
+			impl::ensure_valid_transforator( this->m_ztransformator.get() );
+
+			this->m_ztransformator->complete();
+
+			this->m_resp.append_body( this->m_ztransformator->giveaway_output() );
+		}
+};
+
+/** @name Body appender.
+ * @brief Helper class for setting the body of response_builder_t<restinio_controlled_output_t>.
+ *
+ * Sample usage:
+ * \code
+ * auto resp = req->create_response();
+ *
+ * resp.append_header( restinio::http_field::server, "RESTinio" )
+ *   .append_header_date_field()
+ *   .append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" );
+ *
+ * auto ba = restinio::transformators::zlib::gzip_body_appender( resp );
+ * ba.append( some_data );
+ * // ...
+ * ba.append( some_more_data );
+ * ba.complete();
+ * resp.done();
+ * \endcode
+ *
+ * @since v.0.4.4
+*/
+template <>
+class body_appender_t< restinio_controlled_output_t >
+	:	public x_controlled_output_body_appender_base_t<
+					restinio_controlled_output_t,
+					body_appender_t< restinio_controlled_output_t > >
+{
+	public:
+		using base_type_t =
+			x_controlled_output_body_appender_base_t<
+				restinio_controlled_output_t,
+				body_appender_t< restinio_controlled_output_t > >;
+
+		//! Get the size of transformed body.
+		auto
+		size() const
+		{
+			impl::ensure_valid_transforator( m_ztransformator.get() );
+
+			return m_ztransformator->output_size();
+		}
+
+		using base_type_t::base_type_t;
+};
+
+/** @name Body appender.
+ * @brief Helper class for setting the body of response_builder_t<user_controlled_output_t>.
+ *
+ * Sample usage:
+ * \code
+ * auto resp = req->create_response<user_controlled_output_t>();
+ *
+ * resp.append_header( restinio::http_field::server, "RESTinio" )
+ *   .append_header_date_field()
+ *   .append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" );
+ *
+ * auto ba = restinio::transformators::zlib::gzip_body_appender( resp );
+ * ba.append( some_data );
+ * ba.flush();
+ * // ...
+ * ba.append( some_more_data );
+ * ba.complete();
+ * resp.done();
+ * \endcode
+ *
+ * @since v.0.4.4
+*/
+template <>
+class body_appender_t< user_controlled_output_t > final
+	:	public x_controlled_output_body_appender_base_t<
+					user_controlled_output_t,
+					body_appender_t< user_controlled_output_t > >
+{
+	public:
+		using base_type_t =
+			x_controlled_output_body_appender_base_t<
+				user_controlled_output_t,
+				body_appender_t< user_controlled_output_t > >;
+
+		using base_type_t::base_type_t;
+
+		auto &
+		flush()
+		{
+			impl::ensure_valid_transforator( m_ztransformator.get() );
+			m_ztransformator->flush();
+			m_resp
+				.append_body( m_ztransformator->giveaway_output() )
+				.flush();
+
+			return *this;
+		}
+};
+
+
+/** @name Body appender.
+ * @brief Helper class for setting the body of response_builder_t<chunked_output_t>.
+ *
+ * Sample usage:
+ * \code
+ * auto resp = req->create_response<chunked_output_t>();
+ *
+ * resp.append_header( restinio::http_field::server, "RESTinio" )
+ *   .append_header_date_field()
+ *   .append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" );
+ *
+ * auto ba = restinio::transformators::zlib::gzip_body_appender( resp );
+ * ba.append( some_data );
+ * ba.append( some_more_data );
+ * ba.make_chunk(); // Flush copressed data and creates a chunk with it.
+ * ba.flush(); // Send currently prepared chunks to client
+ * // ...
+ * // Copress the data and creates a chunk with it.
+ * ba.make_chunk( even_more_data );
+ * ba.flush(); // Send currently prepared chunks to client
+ * // ...
+ * ba.append( yet_even_more_data );
+ * ba.append( last_data );
+ * ba.complete(); // Creates last chunk, but doesn't send it to client.
+ * ba.flush(); // Send chunk created by complete() call
+ * // ...
+ * // Can add more chunks directly with resp object.
+ * resp.append_chunk( "---THE END---" );
+ * resp.done();
+ * \endcode
+ *
+ * @since v.0.4.4
+*/
+template <>
+class body_appender_t< chunked_output_t > final
+	:	public body_appender_base_t<
+					chunked_output_t,
+					body_appender_t< chunked_output_t > >
+{
+	public:
+		using base_type_t =
+			body_appender_base_t<
+				chunked_output_t,
+				body_appender_t< chunked_output_t > >;
+
+		using base_type_t::base_type_t;
+
+		auto &
+		append( string_view_t input )
+		{
+			impl::ensure_valid_transforator( m_ztransformator.get() );
+
+			m_ztransformator->write( input );
+			return *this;
+		}
+
+		auto &
+		make_chunk( string_view_t input = string_view_t{} )
+		{
+			impl::ensure_valid_transforator( m_ztransformator.get() );
+			m_ztransformator->write( input );
+			m_ztransformator->flush();
+
+			m_resp.append_chunk( m_ztransformator->giveaway_output() );
+
+			return *this;
+		}
+
+		void
+		flush()
+		{
+			impl::ensure_valid_transforator( m_ztransformator.get() );
+
+			if( !m_ztransformator->is_completed() )
+			{
+				m_ztransformator->flush();
+				m_resp.append_chunk( m_ztransformator->giveaway_output() );
+			}
+
+			m_resp.flush();
+		}
+
+		void
+		complete()
+		{
+			impl::ensure_valid_transforator( m_ztransformator.get() );
+			m_ztransformator->complete();
+			m_resp.append_chunk( m_ztransformator->giveaway_output() );
+		}
+};
+
+//! Create body appender with given zlib transformation parameters.
+template < typename Response_Output_Strategy >
+body_appender_t< Response_Output_Strategy >
+body_appender(
+	response_builder_t< Response_Output_Strategy > & resp,
+	const params_t & params )
+{
+	return body_appender_t< Response_Output_Strategy >{ params, resp };
+}
+
+//! Create body appender with deflate transformation and a given compression level.
+template < typename Response_Output_Strategy >
+body_appender_t< Response_Output_Strategy >
+deflate_body_appender(
+	response_builder_t< Response_Output_Strategy > & resp,
+	int compression_level = -1 )
+{
+	return body_appender( resp, deflate_compress( compression_level ) );
+}
+
+//! Create body appender with gzip transformation and a given compression level.
+template < typename Response_Output_Strategy >
+inline body_appender_t< Response_Output_Strategy >
+gzip_body_appender(
+	response_builder_t< Response_Output_Strategy > & resp,
+	int compression_level = -1 )
+{
+	return body_appender( resp, gzip_compress( compression_level ) );
+}
 
 } /* namespace zlib */
 
