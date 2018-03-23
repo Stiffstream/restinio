@@ -1064,6 +1064,11 @@ class body_appender_t< chunked_output_t > final
 
 		using base_type_t::base_type_t;
 
+		//! Append data to be compressed.
+		/*!
+			Function only adds data to anderlying zlib stream
+			and it doesn't affect target response right on here.
+		*/
 		auto &
 		append( string_view_t input )
 		{
@@ -1073,18 +1078,28 @@ class body_appender_t< chunked_output_t > final
 			return *this;
 		}
 
+		//! Append data to be compressed and adds current zlib transformator output
+		//! as a new chunk.
+		/*!
+			Adds data and flushes zlib transformator.
+			Then ready compressed data is taken and used as a new chunk
+			of target response.
+		*/
 		auto &
 		make_chunk( string_view_t input = string_view_t{} )
 		{
-			impl::ensure_valid_transforator( m_ztransformator.get() );
-			m_ztransformator->write( input );
-			m_ztransformator->flush();
+			append( input ); // m_ztransformator is checked here.
 
+			m_ztransformator->flush(); // Flush already compressed data.
+
+			// Create a chunk with current output.
 			m_resp.append_chunk( m_ztransformator->giveaway_output() );
 
 			return *this;
 		}
 
+		//! Flushes currently available compressed data with possibly creating new chunk
+		//! and then flushes target response.
 		void
 		flush()
 		{
@@ -1099,6 +1114,7 @@ class body_appender_t< chunked_output_t > final
 			m_resp.flush();
 		}
 
+		//! Complete zlib transformation operation.
 		void
 		complete()
 		{
