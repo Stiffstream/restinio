@@ -20,6 +20,7 @@
 #include <restinio/exception.hpp>
 #include <restinio/string_view.hpp>
 #include <restinio/message_builders.hpp>
+#include <restinio/request_handler.hpp>
 
 namespace restinio
 {
@@ -1152,6 +1153,64 @@ gzip_body_appender(
 	int compression_level = -1 )
 {
 	return body_appender( resp, gzip_compress( compression_level ) );
+}
+
+//! Call a handler over a request body.
+/*!
+ * If body is encoded with either 'deflate' or 'gzip'
+ * then it is decompressed and the handler is called.
+ *
+ * If body is encoded with 'identity' (or not specified)
+ * the handler is called with original body.
+ *
+ * In other cases an exception is thrown.
+ *
+ * \tparam Handler a function object capable to handle std::string as an argument.
+ *
+ * Sample usage:
+ * \code
+ * auto decompressed_echo_handler( restinio::request_handle_t req )
+ * {
+ *   return
+ *     restinio::transforms::zlib::handle_body(
+ *       *req,
+ *       [&]( auto body ){
+ *         return
+ *           req->create_response()
+ *             .append_header( restinio::http_field::server, "RESTinio" )
+ *             .append_header_date_field()
+ *             .append_header(
+ *               restinio::http_field::content_type,
+ *               "text/plain; charset=utf-8" );
+ *             .set_body( std::move( body ) )
+ *             .done();
+ *       } );
+ * }
+ * \endcode
+ *
+*/
+template < typename Handler >
+auto
+handle_body( const request_t & req, Handler handler )
+{
+	const auto content_encoding =
+		req.header().get_field( restinio::http_field::content_encoding, "identity" );
+
+	if( caseless_cmp( content_encoding, "deflate" ) )
+	{
+		return handler( deflate_decompress( req.body() ) );
+	}
+	else if( caseless_cmp( content_encoding, "gzip" ) )
+	{
+		return handler( gzip_decompress( req.body() ) );
+	}
+	else if( !caseless_cmp( content_encoding, "identity" ) )
+	{
+		throw exception_t{
+			fmt::format( "content-encoding '{}' not supported", content_encoding ) };
+	}
+
+	return handler( req.body() );
 }
 
 } /* namespace zlib */

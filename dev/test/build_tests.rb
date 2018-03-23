@@ -72,6 +72,7 @@ MxxRu::Cpp::composite_target {
 	# Transformators
 	required_prj( "test/transforms/zlib/prj.ut.rb" )
 	required_prj( "test/transforms/zlib_body_appender/prj.ut.rb" )
+	required_prj( "test/transforms/zlib_body_handler/prj.ut.rb" )
 
 	# ================================================================
 	required_prj( "test/encoders/prj.ut.rb" )

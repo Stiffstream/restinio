@@ -1,2 +1,3 @@
 add_subdirectory(zlib)
 add_subdirectory(zlib_body_appender)
+add_subdirectory(zlib_body_handler)
