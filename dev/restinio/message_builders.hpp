@@ -628,19 +628,26 @@ class response_builder_t< chunked_output_t > final
 
 			}
 
-			// TODO: orginize 2 following conditional buff appends into
-			// 1 buffer append.
+			const char * ending_representation = "\r\n" "0\r\n\r\n";
+			const char * appendix_begin = ending_representation + 2;
+			const char * appendix_end = appendix_begin;
+
 			if( !m_chunks.empty() )
 			{
-				// Add "\r\n"-ending for the last part (if any).
-				const char * rn_ending = "\r\n";
-				bufs.emplace_back( const_buffer( rn_ending, 2 ) );
+				// Add "\r\n"part to appendix.
+				appendix_begin -= 2;
+				// bufs.emplace_back( const_buffer( rn_ending, 2 ) );
 			}
 
 			if( add_zero_chunk )
 			{
-				const char * zero_chunk = "0\r\n\r\n";
-				bufs.emplace_back( const_buffer( zero_chunk, 5 ) );
+				// Add "0\r\n\r\n"part to appendix.
+				appendix_end += 5;
+			}
+
+			if( appendix_begin != appendix_end )
+			{
+				bufs.emplace_back( const_buffer( appendix_begin, appendix_end - appendix_begin ) );
 			}
 
 			m_chunks.clear();
