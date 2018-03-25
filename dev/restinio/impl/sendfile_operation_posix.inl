@@ -213,7 +213,7 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 #if __FreeBSD__ >= 11
 						SF_FLAGS( 16, SF_NOCACHE ) 
 #else
-						SF_NOCACHE
+						SF_MNOWAIT
 #endif
 						);
 
