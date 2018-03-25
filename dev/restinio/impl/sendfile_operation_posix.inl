@@ -210,7 +210,12 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 						nullptr, // struct	sf_hdtr	*hdtr
 						&n, // sbytes
 						// Is 16 a reasonable constant here.
-						SF_FLAGS( 16, SF_NOCACHE ) );
+#if __FreeBSD__ >= 11
+						SF_FLAGS( 16, SF_NOCACHE ) 
+#else
+						SF_NOCACHE
+#endif
+						);
 
 				// Shift the number of bytes successfully sent.
 				m_next_write_offset += n;
