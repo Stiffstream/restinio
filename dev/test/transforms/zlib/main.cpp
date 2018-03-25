@@ -567,6 +567,7 @@ TEST_CASE( "write check input size" , "[zlib][write][large input]" )
 
 	std::srand( std::time( nullptr ) );
 
+	if( sizeof( restinio::string_view_t::size_type ) == 8 )
 	{
 		rtz::zlib_t zc{ rtz::gzip_compress() };
 
@@ -577,7 +578,7 @@ TEST_CASE( "write check input size" , "[zlib][write][large input]" )
 
 		restinio::string_view_t large_input{
 			s,
-			std::uint64_t{ 1 } + std::numeric_limits< decltype( z_stream::avail_in ) >::max() };
+			restinio::string_view_t::size_type{ 1 } + std::numeric_limits< decltype( z_stream::avail_in ) >::max() };
 
 		REQUIRE_THROWS( zc.write( large_input ) );
 	}
