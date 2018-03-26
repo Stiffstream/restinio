@@ -110,9 +110,12 @@ TEST_CASE( "Don't move std::function by lvalue reference in open-async",
 					[]( auto ){ return restinio::request_rejected(); } );
 		} };
 
-	std::function< void() > open_ok_cb = []{ std::cout << "OK"; };
+	// A big dummy object to prevent small object optimization in std::function.
+	std::array<char, 128> big_data;
+
+	std::function< void() > open_ok_cb = [big_data]{ std::cout << "OK"; };
 	std::function< void(std::exception_ptr) > open_error_cb =
-			[](std::exception_ptr){ std::cout << "ERR"; };
+			[big_data](std::exception_ptr){ std::cout << "ERR"; };
 
 	REQUIRE( open_ok_cb );
 	REQUIRE( open_error_cb );
@@ -145,9 +148,12 @@ TEST_CASE( "std::function by rvalue reference in open-async",
 					[]( auto ){ return restinio::request_rejected(); } );
 		} };
 
-	std::function< void() > open_ok_cb = []{ std::cout << "OK"; };
+	// A big dummy object to prevent small object optimization in std::function.
+	std::array<char, 128> big_data;
+
+	std::function< void() > open_ok_cb = [big_data]{ std::cout << "OK"; };
 	std::function< void(std::exception_ptr) > open_error_cb =
-			[](std::exception_ptr){ std::cout << "ERR"; };
+			[big_data](std::exception_ptr){ std::cout << "ERR"; };
 
 	REQUIRE( open_ok_cb );
 	REQUIRE( open_error_cb );
@@ -180,9 +186,12 @@ TEST_CASE( "Don't move std::function by lvalue reference in close-async",
 					[]( auto ){ return restinio::request_rejected(); } );
 		} };
 
-	std::function< void() > close_ok_cb = []{ std::cout << "OK"; };
+	// A big dummy object to prevent small object optimization in std::function.
+	std::array<char, 128> big_data;
+
+	std::function< void() > close_ok_cb = [big_data]{ std::cout << "OK"; };
 	std::function< void(std::exception_ptr) > close_error_cb =
-			[](std::exception_ptr){ std::cout << "ERR"; };
+			[big_data](std::exception_ptr){ std::cout << "ERR"; };
 
 	REQUIRE( close_ok_cb );
 	REQUIRE( close_error_cb );
@@ -215,9 +224,12 @@ TEST_CASE( "std::function by rvalue reference in close-async",
 					[]( auto ){ return restinio::request_rejected(); } );
 		} };
 
-	std::function< void() > close_ok_cb = []{ std::cout << "OK"; };
+	// A big dummy object to prevent small object optimization in std::function.
+	std::array<char, 128> big_data;
+
+	std::function< void() > close_ok_cb = [big_data]{ std::cout << "OK"; };
 	std::function< void(std::exception_ptr) > close_error_cb =
-			[](std::exception_ptr){ std::cout << "ERR"; };
+			[big_data](std::exception_ptr){ std::cout << "ERR"; };
 
 	REQUIRE( close_ok_cb );
 	REQUIRE( close_error_cb );
@@ -235,3 +247,4 @@ TEST_CASE( "std::function by rvalue reference in close-async",
 	REQUIRE( !close_error_cb );
 
 }
+
