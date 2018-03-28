@@ -67,6 +67,23 @@ TEST_CASE( "restinio_controlled_output" , "[zlib][body_appender][restinio_contro
 				return resp.done();
 		} );
 
+	router->http_get(
+		R"-(/identity)-",
+		[ & ]( auto req, auto ){
+				auto resp = req->create_response();
+
+				resp
+					.append_header( "Server", "RESTinio Benchmark" )
+					.append_header_date_field()
+					.append_header( "Content-Type", "text/plain; charset=utf-8" );
+
+				rtz::identity_body_appender( resp )
+					.append( response_body )
+					.complete();
+
+				return resp.done();
+		} );
+
 
 	using http_server_t =
 		restinio::http_server_t<
@@ -134,6 +151,28 @@ TEST_CASE( "restinio_controlled_output" , "[zlib][body_appender][restinio_contro
 			Catch::Matchers::EndsWith(
 				"\r\n\r\n" +
 				rtz::gzip_compress( response_body, -1 ) ) );
+	}
+
+	{
+		const std::string request{
+				"GET /identity HTTP/1.0\r\n"
+				"From: unit-test\r\n"
+				"User-Agent: unit-test\r\n"
+				"Content-Type: application/x-www-form-urlencoded\r\n"
+				"Connection: close\r\n"
+				"\r\n"
+		};
+		std::string response;
+
+		REQUIRE_NOTHROW( response = do_request( request ) );
+
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "Content-Encoding: identity\r\n" ) );
+
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::EndsWith( "\r\n\r\n" + response_body ) );
 	}
 
 	for( int i = 0; i <= 9; ++i )
@@ -267,6 +306,33 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 				return resp.done();
 		} );
 
+	router->http_get(
+		R"-(/identity)-",
+		[ & ]( restinio::request_handle_t req, auto ){
+				auto resp = req->create_response< restinio::user_controlled_output_t >();
+
+				resp
+					.append_header( "Server", "RESTinio Benchmark" )
+					.append_header_date_field()
+					.append_header( "Content-Type", "text/plain; charset=utf-8" );
+
+				auto ba = rtz::identity_body_appender( resp );
+				ba
+					.append(
+						restinio::string_view_t{
+							response_body.data(),
+							response_body.size()/2 } )
+					.flush();
+
+				ba
+					.append(
+						restinio::string_view_t{
+							response_body.data() + response_body.size()/2,
+							response_body.size() - response_body.size()/2 } )
+					.complete();
+
+				return resp.done();
+		} );
 
 	using http_server_t =
 		restinio::http_server_t<
@@ -349,6 +415,37 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 				restinio::string_view_t{
 					response.data() + body_start,
 					response.size() - body_start } ) );
+	}
+
+
+	{
+		const std::string request{
+				"GET /identity HTTP/1.0\r\n"
+				"From: unit-test\r\n"
+				"User-Agent: unit-test\r\n"
+				"Content-Type: application/x-www-form-urlencoded\r\n"
+				"Connection: close\r\n"
+				"\r\n"
+		};
+		std::string response;
+
+		REQUIRE_NOTHROW( response = do_request( request ) );
+
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "Content-Encoding: identity\r\n" ) );
+
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "\r\n\r\n" ) );
+
+		const auto body_start = response.find( "\r\n\r\n" ) + 4;
+
+		REQUIRE(
+			response_body ==
+			restinio::string_view_t{
+				response.data() + body_start,
+				response.size() - body_start } );
 	}
 
 	for( int i = 0; i <= 9; ++i )
@@ -501,6 +598,37 @@ TEST_CASE( "chunked_output" , "[zlib][body_appender][chunked_output]" )
 				return resp.done();
 		} );
 
+	router->http_get(
+		R"-(/identity)-",
+		[ & ]( restinio::request_handle_t req, auto ){
+				auto resp = req->create_response< restinio::chunked_output_t >();
+
+				resp
+					.append_header( "Server", "RESTinio Benchmark" )
+					.append_header_date_field()
+					.append_header( "Content-Type", "text/plain; charset=utf-8" );
+
+				auto ba = rtz::identity_body_appender( resp );
+
+				ba
+					.append(
+						restinio::string_view_t{
+							response_body.data(),
+							response_body.size()/2 } )
+					.make_chunk()
+					.flush();
+
+				ba
+					.append(
+						restinio::string_view_t{
+							response_body.data() + response_body.size()/2,
+							response_body.size() - response_body.size()/2 } )
+					.make_chunk()
+					.complete();
+
+				return resp.done();
+		} );
+
 
 	using http_server_t =
 		restinio::http_server_t<
@@ -557,6 +685,25 @@ TEST_CASE( "chunked_output" , "[zlib][body_appender][chunked_output]" )
 		REQUIRE_THAT(
 			response,
 			Catch::Matchers::Contains( "Content-Encoding: gzip\r\n" ) );
+	}
+
+
+	{
+		const std::string request{
+				"GET /identity HTTP/1.0\r\n"
+				"From: unit-test\r\n"
+				"User-Agent: unit-test\r\n"
+				"Content-Type: application/x-www-form-urlencoded\r\n"
+				"Connection: close\r\n"
+				"\r\n"
+		};
+		std::string response;
+
+		REQUIRE_NOTHROW( response = do_request( request ) );
+
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "Content-Encoding: identity\r\n" ) );
 	}
 
 	other_thread.stop_and_join();

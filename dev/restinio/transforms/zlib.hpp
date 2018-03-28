@@ -53,6 +53,10 @@ constexpr int default_strategy = Z_DEFAULT_STRATEGY;
 //! Parameters of performing data transformation with zlib.
 /*
 	@since v.0.4.4
+
+	\note There is a special case for compression format: format_t::identity.
+	If this format is set that zlib transformator is transparently copies
+	input to output and so all other params are ignored.
 */
 class params_t
 {
@@ -72,7 +76,12 @@ class params_t
 			//! zlib format.
 			deflate,
 			//! gzip format
-			gzip
+			gzip,
+			//! Identity. With semantics descrobed here: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Encoding
+			/*
+				Means that no compression will be used and no header/trailer will be applied.
+			*/
+			identity
 		};
 
 		//! Init constructor.
@@ -93,6 +102,14 @@ class params_t
 			,	m_format{ f }
 		{
 			level( l );
+		}
+
+		//! Default constructor for identiry transformator
+		params_t()
+			:	m_operation{ operation_t::compress }
+			,	m_format{ format_t::identity }
+		{
+			level( -1 );
 		}
 
 		//! Get operation.
@@ -384,6 +401,12 @@ gzip_decompress()
 			params_t::operation_t::decompress,
 			params_t::format_t::gzip };
 }
+
+inline params_t
+identity()
+{
+	return params_t{};
+}
 ///@}
 
 //
@@ -402,57 +425,61 @@ class zlib_t
 		zlib_t( const params_t & transformation_params )
 			:	m_params{ transformation_params }
 		{
-			// Setting allocator stuff before initializing
-			// TODO: allocation can be done with user defined allocator.
-			m_zlib_stream.zalloc = Z_NULL;
-			m_zlib_stream.zfree = Z_NULL;
-			m_zlib_stream.opaque = Z_NULL;
-
-			// Track initialization result.
-			int init_result;
-
-			// Compression.
-			auto current_window_bits = m_params.window_bits();
-
-			if( params_t::format_t::gzip == m_params.format() )
+			if( !is_identity() )
 			{
-				current_window_bits += 16;
+				// Setting allocator stuff before initializing
+				// TODO: allocation can be done with user defined allocator.
+				m_zlib_stream.zalloc = Z_NULL;
+				m_zlib_stream.zfree = Z_NULL;
+				m_zlib_stream.opaque = Z_NULL;
+
+				// Track initialization result.
+				int init_result;
+
+				// Compression.
+				auto current_window_bits = m_params.window_bits();
+
+				if( params_t::format_t::gzip == m_params.format() )
+				{
+					current_window_bits += 16;
+				}
+
+				if( params_t::operation_t::compress == m_params.operation() )
+				{
+
+					// zlib format.
+					init_result =
+						deflateInit2(
+							&m_zlib_stream,
+							m_params.level(),
+							Z_DEFLATED,
+							current_window_bits,
+							m_params.mem_level(),
+							m_params.strategy() );
+				}
+				else
+				{
+					init_result =
+						inflateInit2(
+							&m_zlib_stream,
+							current_window_bits );
+				}
+
+				if( Z_OK != init_result )
+				{
+					throw exception_t{
+						fmt::format(
+							"Failed to initialize zlib stream: {}, {}",
+							init_result,
+							get_error_msg() ) };
+				}
+
+				m_zlib_stream_initialized = true;
+
+				// Reserve initial buffer.
+				inc_buffer();
 			}
-
-			if( params_t::operation_t::compress == m_params.operation() )
-			{
-
-				// zlib format.
-				init_result =
-					deflateInit2(
-						&m_zlib_stream,
-						m_params.level(),
-						Z_DEFLATED,
-						current_window_bits,
-						m_params.mem_level(),
-						m_params.strategy() );
-			}
-			else
-			{
-				init_result =
-					inflateInit2(
-						&m_zlib_stream,
-						current_window_bits );
-			}
-
-			if( Z_OK != init_result )
-			{
-				throw exception_t{
-					fmt::format(
-						"Failed to initialize zlib stream: {}, {}",
-						init_result,
-						get_error_msg() ) };
-			}
-
-			m_zlib_stream_initialized = true;
-
-			// Reserve initial buffer.
-			inc_buffer();
+			// else => Nothing to initialize and to reserve.
 		}
 
 		zlib_t( const zlib_t & ) = delete;
@@ -484,30 +511,38 @@ class zlib_t
 		{
 			ensure_operation_in_not_completed();
 
-			if( std::numeric_limits< decltype( m_zlib_stream.avail_in ) >::max() < input.size() )
+			if( is_identity() )
 			{
-				throw exception_t{
-					fmt::format(
-						"input data is too large: {} (max possible: {}), "
-						"try to break large data into pieces",
-						input.size(),
-						std::numeric_limits< decltype( m_zlib_stream.avail_in ) >::max() ) };
+				m_out_buffer.append( input.data(), input.size() );
+				m_write_pos = m_out_buffer.size();
 			}
-
-			if( 0 < input.size() )
+			else
 			{
-				m_zlib_stream.next_in =
-					reinterpret_cast< Bytef* >( const_cast< char* >( input.data() ) );
-
-				m_zlib_stream.avail_in = static_cast< uInt >( input.size() );
-
-				if( params_t::operation_t::compress == m_params.operation() )
+				if( std::numeric_limits< decltype( m_zlib_stream.avail_in ) >::max() < input.size() )
 				{
-					write_compress_impl( Z_NO_FLUSH );
+					throw exception_t{
+						fmt::format(
+							"input data is too large: {} (max possible: {}), "
+							"try to break large data into pieces",
+							input.size(),
+							std::numeric_limits< decltype( m_zlib_stream.avail_in ) >::max() ) };
 				}
-				else
+
+				if( 0 < input.size() )
 				{
-					write_decompress_impl( Z_NO_FLUSH );
+					m_zlib_stream.next_in =
+						reinterpret_cast< Bytef* >( const_cast< char* >( input.data() ) );
+
+					m_zlib_stream.avail_in = static_cast< uInt >( input.size() );
+
+					if( params_t::operation_t::compress == m_params.operation() )
+					{
+						write_compress_impl( Z_NO_FLUSH );
+					}
+					else
+					{
+						write_decompress_impl( Z_NO_FLUSH );
+					}
 				}
 			}
 		}
@@ -521,16 +556,19 @@ class zlib_t
 		{
 			ensure_operation_in_not_completed();
 
-			m_zlib_stream.next_in = nullptr;
-			m_zlib_stream.avail_in = static_cast< uInt >( 0 );
+			if( !is_identity() )
+			{
+				m_zlib_stream.next_in = nullptr;
+				m_zlib_stream.avail_in = static_cast< uInt >( 0 );
 
-			if( params_t::operation_t::compress == m_params.operation() )
-			{
-				write_compress_impl( Z_SYNC_FLUSH );
-			}
-			else
-			{
-				write_decompress_impl( Z_SYNC_FLUSH );
+				if( params_t::operation_t::compress == m_params.operation() )
+				{
+					write_compress_impl( Z_SYNC_FLUSH );
+				}
+				else
+				{
+					write_decompress_impl( Z_SYNC_FLUSH );
+				}
 			}
 		}
 
@@ -540,16 +578,19 @@ class zlib_t
 		{
 			ensure_operation_in_not_completed();
 
-			m_zlib_stream.next_in = nullptr;
-			m_zlib_stream.avail_in = static_cast< uInt >( 0 );
+			if( !is_identity() )
+			{
+				m_zlib_stream.next_in = nullptr;
+				m_zlib_stream.avail_in = static_cast< uInt >( 0 );
 
-			if( params_t::operation_t::compress == m_params.operation() )
-			{
-				write_compress_impl( Z_FINISH );
-			}
-			else
-			{
-				write_decompress_impl( Z_FINISH );
+				if( params_t::operation_t::compress == m_params.operation() )
+				{
+					write_compress_impl( Z_FINISH );
+				}
+				else
+				{
+					write_decompress_impl( Z_FINISH );
+				}
 			}
 
 			m_operation_is_complete = true;
@@ -595,6 +636,11 @@ class zlib_t
 		bool is_completed() const { return m_operation_is_complete; }
 
 	private:
+		bool is_identity() const
+		{
+			return params_t::format_t::identity == m_params.format();
+		}
+
 		//! Get zlib error message if it exists.
 		const char *
 		get_error_msg() const
@@ -841,7 +887,12 @@ inline void ensure_valid_transforator( zlib_t * ztransformator )
 //! Get token for copression format.
 inline std::string content_encoding_token( params_t::format_t f )
 {
-	std::string result{ "deflate" };
+	std::string result{ "identity" };
+
+	if( params_t::format_t::deflate == f )
+	{
+		result.assign( "deflate" );
+	}
 	if( params_t::format_t::gzip == f )
 	{
 		result.assign( "gzip" );
@@ -1153,6 +1204,16 @@ gzip_body_appender(
 	int compression_level = -1 )
 {
 	return body_appender( resp, gzip_compress( compression_level ) );
+}
+
+//! Create body appender with gzip transformation and a given compression level.
+template < typename Response_Output_Strategy >
+inline body_appender_t< Response_Output_Strategy >
+identity_body_appender(
+	response_builder_t< Response_Output_Strategy > & resp,
+	int = -1 )
+{
+	return body_appender( resp, identity() );
 }
 
 //! Call a handler over a request body.

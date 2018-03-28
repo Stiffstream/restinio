@@ -62,6 +62,12 @@ TEST_CASE( "Create parameters for zlib transformators" , "[zlib][params][create_
 		REQUIRE( rtz::params_t::operation_t::decompress == params.operation() );
 		REQUIRE( rtz::params_t::format_t::gzip == params.format() );
 	}
+
+	{
+		auto params = rtz::identity();
+
+		REQUIRE( rtz::params_t::format_t::identity == params.format() );
+	}
 }
 
 TEST_CASE( "Default parameters for zlib transformators" , "[zlib][params][defaults]" )
@@ -417,6 +423,30 @@ TEST_CASE( "gzip" , "[zlib][compress][decompress][gzip]" )
 	}
 }
 
+TEST_CASE( "identity" , "[zlib][identity]" )
+{
+	namespace rtz = restinio::transforms::zlib;
+
+	std::srand( std::time( nullptr ) );
+
+	{
+		rtz::zlib_t zc{ rtz::identity() };
+
+		std::string
+			input_data{
+				"The zlib compression library provides "
+				"in-memory compression and decompression functions, "
+				"including integrity checks of the uncompressed data." };
+
+		REQUIRE_NOTHROW( zc.write( input_data ) );
+		REQUIRE_NOTHROW( zc.write( input_data ) );
+		REQUIRE_NOTHROW( zc.complete() );
+
+		const auto out_data = zc.giveaway_output();
+		REQUIRE( out_data == input_data + input_data );
+	}
+}
+
 TEST_CASE( "transform functions" , "[zlib][transform]" )
 {
 	namespace rtz = restinio::transforms::zlib;
@@ -426,6 +456,8 @@ TEST_CASE( "transform functions" , "[zlib][transform]" )
 			"The zlib compression library provides "
 			"in-memory compression and decompression functions, "
 			"including integrity checks of the uncompressed data." };
+
+	REQUIRE( input_data == rtz::transform( input_data, rtz::identity() ) );
 
 	REQUIRE( input_data ==
 		rtz::transform(
@@ -558,6 +590,37 @@ TEST_CASE( "take output" , "[zlib][compress][decompress][output]" )
 		REQUIRE_NOTHROW( zd.giveaway_output() == "" );
 
 		REQUIRE( decompression_out_data == input_data + input_data );
+	}
+
+	{
+		rtz::zlib_t zc{ rtz::identity() };
+
+		std::string
+			input_data{
+				"The zlib compression library provides "
+				"in-memory compression and decompression functions, "
+				"including integrity checks of the uncompressed data." };
+
+		std::string out_data;
+		REQUIRE_NOTHROW( zc.write( input_data ) );
+		REQUIRE_NOTHROW( out_data += zc.giveaway_output() );
+		REQUIRE( out_data == input_data );
+		REQUIRE_NOTHROW( zc.giveaway_output() == "" );
+
+		REQUIRE_NOTHROW( zc.flush() );
+		REQUIRE_NOTHROW( out_data += zc.giveaway_output() );
+		REQUIRE( out_data == input_data );
+		REQUIRE_NOTHROW( zc.giveaway_output() == "" );
+
+		REQUIRE_NOTHROW( zc.write( input_data ) );
+		REQUIRE_NOTHROW( out_data += zc.giveaway_output() );
+		REQUIRE( out_data == input_data + input_data );
+		REQUIRE_NOTHROW( zc.giveaway_output() == "" );
+
+		REQUIRE_NOTHROW( zc.complete() );
+		REQUIRE_NOTHROW( out_data += zc.giveaway_output() );
+		REQUIRE( out_data == input_data + input_data );
+		REQUIRE_NOTHROW( zc.giveaway_output() == "" );
 	}
 }
 
