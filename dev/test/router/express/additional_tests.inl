@@ -121,3 +121,31 @@ TEST_CASE( "Invalid path" , "[path2regex][invalid]" )
 		REQUIRE_THAT( ex.what(), Catch::Matchers::Contains( "pos 10:" ) );
 	}
 }
+
+TEST_CASE( "value_or" , "[value_or]" )
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			"/:to/:from/:age/:gender",
+			path2regex::options_t{} );
+
+	route_matcher_t
+		rm{
+			http_method_t::http_get,
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
+
+	route_params_t params;
+
+	REQUIRE( rm.match_route( "/815875200/1133136000/38/f", params ) );
+	REQUIRE( restinio::value_or( params, "to", 0L ) == 815875200L );
+	REQUIRE( restinio::value_or( params, "from", 0L ) == 1133136000UL );
+	REQUIRE( restinio::value_or( params, "age", std::size_t{99} ) == 38 );
+	REQUIRE( restinio::value_or( params, "gender", string_view_t{"m"} ) == "f" );
+
+	REQUIRE( restinio::value_or( params, "does_not_exits", 42UL ) == 42UL );
+	REQUIRE( restinio::value_or( params, "pi", 3.14 ) == 3.14 );
+	REQUIRE( restinio::value_or( params, "e", string_view_t{ "2.71828" } ) ==
+															"2.71828" );
+}

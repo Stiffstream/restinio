@@ -9,6 +9,7 @@
 #pragma once
 
 #include <restinio/request_handler.hpp>
+#include <restinio/optional.hpp>
 
 #include <restinio/path2regex/path2regex.hpp>
 
@@ -101,6 +102,17 @@ class route_params_t final
 		has( string_view_t key ) const
 		{
 			return m_named_parameters.end() != find_named_parameter( key );
+		}
+
+		//! Get the value of a parameter if it exists.
+		optional_t< string_view_t >
+		get_praram( string_view_t key ) const
+		{
+			const auto it = find_named_parameter( key );
+
+			return m_named_parameters.end() != it ?
+				optional_t< string_view_t >{ it->second } :
+				optional_t< string_view_t >{ nullopt };
 		}
 
 		//! Get indexed parameter.

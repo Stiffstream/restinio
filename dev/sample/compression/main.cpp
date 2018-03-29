@@ -96,14 +96,7 @@ auto make_transform_params(
 			restinio::http_field::accept_encoding,
 			"deflate" );
 
-	auto copression_level = [&]{
-		int level = -1;
-		if( qp.has( "level" ) )
-		{
-			level= restinio::cast_to< int >( qp[ "level" ] );
-		}
-		return level;
-	};
+	auto copression_level = [&]{ return restinio::value_or( qp, "level", -1 ); };
 
 	if( std::string::npos != accept_encoding.find( "deflate" ) )
 	{
@@ -177,8 +170,7 @@ auto make_router()
 		[ & ]( restinio::request_handle_t req, auto ){
 
 			const auto qp = restinio::parse_query( req->header().query() );
-			const std::size_t count = qp.has( "count" ) ?
-					restinio::cast_to<std::size_t>( qp[ "count" ] ) : 100u;
+			const std::size_t count = restinio::value_or( qp, "count", 100u );
 
 			if( count < count_threshold )
 				return make_resp_for_small_count( req, qp, count );
