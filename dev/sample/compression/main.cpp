@@ -78,8 +78,7 @@ std::string get_random_nums_str( std::size_t count )
 	return sout.str();
 }
 
-std::vector< int >
-get_random_nums( std::size_t count )
+std::vector< int > get_random_nums( std::size_t count )
 {
 	std::vector< int > result;
 	result.reserve( count );
