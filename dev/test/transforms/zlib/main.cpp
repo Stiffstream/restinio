@@ -18,7 +18,7 @@ TEST_CASE( "Create parameters for zlib transformators" , "[zlib][params][create_
 	namespace rtz = restinio::transforms::zlib;
 
 	{
-		auto params = rtz::deflate_compress();
+		auto params = rtz::make_deflate_compress_params();
 
 		REQUIRE( rtz::params_t::operation_t::compress == params.operation() );
 		REQUIRE( rtz::params_t::format_t::deflate == params.format() );
@@ -26,7 +26,7 @@ TEST_CASE( "Create parameters for zlib transformators" , "[zlib][params][create_
 	}
 
 	{
-		auto params = rtz::deflate_compress( 9 );
+		auto params = rtz::make_deflate_compress_params( 9 );
 
 		REQUIRE( rtz::params_t::operation_t::compress == params.operation() );
 		REQUIRE( rtz::params_t::format_t::deflate == params.format() );
@@ -34,7 +34,7 @@ TEST_CASE( "Create parameters for zlib transformators" , "[zlib][params][create_
 	}
 
 	{
-		auto params = rtz::gzip_compress();
+		auto params = rtz::make_gzip_compress_params();
 
 		REQUIRE( rtz::params_t::operation_t::compress == params.operation() );
 		REQUIRE( rtz::params_t::format_t::gzip == params.format() );
@@ -42,7 +42,7 @@ TEST_CASE( "Create parameters for zlib transformators" , "[zlib][params][create_
 	}
 
 	{
-		auto params = rtz::gzip_compress( 3 );
+		auto params = rtz::make_gzip_compress_params( 3 );
 
 		REQUIRE( rtz::params_t::operation_t::compress == params.operation() );
 		REQUIRE( rtz::params_t::format_t::gzip == params.format() );
@@ -50,21 +50,21 @@ TEST_CASE( "Create parameters for zlib transformators" , "[zlib][params][create_
 	}
 
 	{
-		auto params = rtz::deflate_decompress();
+		auto params = rtz::make_deflate_decompress_params();
 
 		REQUIRE( rtz::params_t::operation_t::decompress == params.operation() );
 		REQUIRE( rtz::params_t::format_t::deflate == params.format() );
 	}
 
 	{
-		auto params = rtz::gzip_decompress();
+		auto params = rtz::make_gzip_decompress_params();
 
 		REQUIRE( rtz::params_t::operation_t::decompress == params.operation() );
 		REQUIRE( rtz::params_t::format_t::gzip == params.format() );
 	}
 
 	{
-		auto params = rtz::identity();
+		auto params = rtz::make_identity_params();
 
 		REQUIRE( rtz::params_t::format_t::identity == params.format() );
 	}
@@ -74,7 +74,7 @@ TEST_CASE( "Default parameters for zlib transformators" , "[zlib][params][defaul
 {
 	namespace rtz = restinio::transforms::zlib;
 
-	auto params = rtz::deflate_compress();
+	auto params = rtz::make_deflate_compress_params();
 
 	REQUIRE( rtz::default_window_bits == params.window_bits() );
 	REQUIRE( rtz::default_mem_level == params.mem_level() );
@@ -88,7 +88,7 @@ TEST_CASE( "Setting parameters for zlib transformators: window_bits" , "[zlib][p
 	namespace rtz = restinio::transforms::zlib;
 
 	{
-		auto params = rtz::deflate_compress();
+		auto params = rtz::make_deflate_compress_params();
 
 		REQUIRE_NOTHROW( params.window_bits( 12 ) );
 		REQUIRE( 12 == params.window_bits() );
@@ -111,7 +111,7 @@ TEST_CASE( "Setting parameters for zlib transformators: window_bits" , "[zlib][p
 	}
 
 	{
-		auto params = rtz::deflate_decompress();
+		auto params = rtz::make_deflate_decompress_params();
 		REQUIRE_NOTHROW( params.window_bits( 0 ) );
 		REQUIRE( 0 == params.window_bits() );
 	}
@@ -122,7 +122,7 @@ TEST_CASE( "Setting parameters for zlib transformators: mem_level" , "[zlib][par
 	namespace rtz = restinio::transforms::zlib;
 
 	{
-		auto params = rtz::deflate_compress();
+		auto params = rtz::make_deflate_compress_params();
 
 		REQUIRE_NOTHROW( params.mem_level( 1 ) );
 		REQUIRE( 1 == params.mem_level() );
@@ -144,7 +144,7 @@ TEST_CASE( "Setting parameters for zlib transformators: strategy" , "[zlib][para
 	namespace rtz = restinio::transforms::zlib;
 
 	{
-		auto params = rtz::deflate_compress();
+		auto params = rtz::make_deflate_compress_params();
 
 		REQUIRE_NOTHROW( params.strategy( Z_DEFAULT_STRATEGY ) );
 		REQUIRE( Z_DEFAULT_STRATEGY == params.strategy() );
@@ -163,7 +163,7 @@ TEST_CASE( "Setting parameters for zlib transformators: reserve_buffer_size" , "
 	namespace rtz = restinio::transforms::zlib;
 
 	{
-		auto params = rtz::deflate_compress();
+		auto params = rtz::make_deflate_compress_params();
 
 		REQUIRE_NOTHROW( params.reserve_buffer_size( 512UL ) );
 		REQUIRE( 512UL == params.reserve_buffer_size() );
@@ -184,7 +184,7 @@ TEST_CASE( "deflate" , "[zlib][compress][decompress][deflate]" )
 	std::srand( std::time( nullptr ) );
 
 	{
-		rtz::zlib_t zc{ rtz::deflate_compress() };
+		rtz::zlib_t zc{ rtz::make_deflate_compress_params() };
 
 		std::string
 			input_data{
@@ -201,7 +201,7 @@ TEST_CASE( "deflate" , "[zlib][compress][decompress][deflate]" )
 		REQUIRE( out_size == out_data.size() );
 		REQUIRE( 10 < out_data.size() );
 
-		rtz::zlib_t zd{ rtz::deflate_decompress() };
+		rtz::zlib_t zd{ rtz::make_deflate_decompress_params() };
 
 		REQUIRE_NOTHROW( zd.write( out_data ) );
 		REQUIRE_NOTHROW( zd.complete() );
@@ -247,7 +247,7 @@ TEST_CASE( "deflate" , "[zlib][compress][decompress][deflate]" )
 					create_random_binary( chunk_size * chunk_count, ts.m_repeats_level );
 
 			rtz::zlib_t zc{
-				rtz::deflate_compress()
+				rtz::make_deflate_compress_params()
 					.reserve_buffer_size( ts.m_reserve_buffer_size + 512 )
 					.window_bits( ts.m_window_bits )
 					.mem_level( ts.m_mem_level ) };
@@ -269,7 +269,7 @@ TEST_CASE( "deflate" , "[zlib][compress][decompress][deflate]" )
 			REQUIRE( 10 < out_data.size() );
 
 			rtz::zlib_t zd{
-				rtz::deflate_decompress()
+				rtz::make_deflate_decompress_params()
 					.reserve_buffer_size( ts.m_reserve_buffer_size + 512 )
 					.window_bits( ts.m_window_bits )
 					.mem_level( ts.m_mem_level ) };
@@ -307,7 +307,7 @@ TEST_CASE( "gzip" , "[zlib][compress][decompress][gzip]" )
 	std::srand( std::time( nullptr ) );
 
 	{
-		rtz::zlib_t zc{ rtz::gzip_compress() };
+		rtz::zlib_t zc{ rtz::make_gzip_compress_params() };
 
 		std::string
 			input_data{
@@ -324,7 +324,7 @@ TEST_CASE( "gzip" , "[zlib][compress][decompress][gzip]" )
 		REQUIRE( out_size == out_data.size() );
 		REQUIRE( 10 < out_data.size() );
 
-		rtz::zlib_t zd{ rtz::gzip_decompress() };
+		rtz::zlib_t zd{ rtz::make_gzip_decompress_params() };
 
 		REQUIRE_NOTHROW( zd.write( out_data ) );
 		REQUIRE_NOTHROW( zd.complete() );
@@ -370,7 +370,7 @@ TEST_CASE( "gzip" , "[zlib][compress][decompress][gzip]" )
 					create_random_binary( chunk_size * chunk_count, ts.m_repeats_level );
 
 			rtz::zlib_t zc{
-				rtz::gzip_compress()
+				rtz::make_gzip_compress_params()
 					.reserve_buffer_size( ts.m_reserve_buffer_size + 512 )
 					.window_bits( ts.m_window_bits )
 					.mem_level( ts.m_mem_level ) };
@@ -392,7 +392,7 @@ TEST_CASE( "gzip" , "[zlib][compress][decompress][gzip]" )
 			REQUIRE( 10 < out_data.size() );
 
 			rtz::zlib_t zd{
-				rtz::gzip_decompress()
+				rtz::make_gzip_decompress_params()
 					.reserve_buffer_size( ts.m_reserve_buffer_size + 512 )
 					.window_bits( ts.m_window_bits )
 					.mem_level( ts.m_mem_level ) };
@@ -430,7 +430,7 @@ TEST_CASE( "identity" , "[zlib][identity]" )
 	std::srand( std::time( nullptr ) );
 
 	{
-		rtz::zlib_t zc{ rtz::identity() };
+		rtz::zlib_t zc{ rtz::make_identity_params() };
 
 		std::string
 			input_data{
@@ -457,21 +457,21 @@ TEST_CASE( "transform functions" , "[zlib][transform]" )
 			"in-memory compression and decompression functions, "
 			"including integrity checks of the uncompressed data." };
 
-	REQUIRE( input_data == rtz::transform( input_data, rtz::identity() ) );
+	REQUIRE( input_data == rtz::transform( input_data, rtz::make_identity_params() ) );
 
 	REQUIRE( input_data ==
 		rtz::transform(
 			rtz::transform(
 				input_data,
-				rtz::deflate_compress() ),
-			rtz::deflate_decompress() ) );
+				rtz::make_deflate_compress_params() ),
+			rtz::make_deflate_decompress_params() ) );
 
 	REQUIRE( input_data ==
 		rtz::transform(
 			rtz::transform(
 				input_data,
-				rtz::gzip_compress() ),
-			rtz::gzip_decompress() ) );
+				rtz::make_gzip_compress_params() ),
+			rtz::make_gzip_decompress_params() ) );
 
 	REQUIRE( input_data ==
 		rtz::deflate_decompress( rtz::deflate_compress( input_data ) ) );
@@ -487,7 +487,7 @@ TEST_CASE( "complete" , "[zlib][compress][decompress][commplete]" )
 	std::srand( std::time( nullptr ) );
 
 	{
-		rtz::zlib_t zc{ rtz::gzip_compress() };
+		rtz::zlib_t zc{ rtz::make_gzip_compress_params() };
 		REQUIRE_FALSE( zc.is_completed() );
 
 		std::string
@@ -514,7 +514,7 @@ TEST_CASE( "complete" , "[zlib][compress][decompress][commplete]" )
 		const auto out_data = zc.giveaway_output();
 		REQUIRE( out_size == out_data.size() );
 
-		rtz::zlib_t zd{ rtz::gzip_decompress() };
+		rtz::zlib_t zd{ rtz::make_gzip_decompress_params() };
 		REQUIRE_FALSE( zd.is_completed() );
 
 		REQUIRE_NOTHROW( zd.write( out_data.substr(0, out_data.size()/2 ) ) );
@@ -545,7 +545,7 @@ TEST_CASE( "take output" , "[zlib][compress][decompress][output]" )
 	std::srand( std::time( nullptr ) );
 
 	{
-		rtz::zlib_t zc{ rtz::gzip_compress() };
+		rtz::zlib_t zc{ rtz::make_gzip_compress_params() };
 
 		std::string
 			input_data{
@@ -570,7 +570,7 @@ TEST_CASE( "take output" , "[zlib][compress][decompress][output]" )
 		REQUIRE_NOTHROW( out_data += zc.giveaway_output() );
 		REQUIRE_NOTHROW( zc.giveaway_output() == "" );
 
-		rtz::zlib_t zd{ rtz::gzip_decompress() };
+		rtz::zlib_t zd{ rtz::make_gzip_decompress_params() };
 		std::string decompression_out_data;
 
 		REQUIRE_NOTHROW( zd.write( out_data.substr(0, out_data.size()/2 ) ) );
@@ -593,7 +593,7 @@ TEST_CASE( "take output" , "[zlib][compress][decompress][output]" )
 	}
 
 	{
-		rtz::zlib_t zc{ rtz::identity() };
+		rtz::zlib_t zc{ rtz::make_identity_params() };
 
 		std::string
 			input_data{
@@ -632,7 +632,7 @@ TEST_CASE( "write check input size" , "[zlib][write][large input]" )
 
 	if( sizeof( restinio::string_view_t::size_type ) == 8 )
 	{
-		rtz::zlib_t zc{ rtz::gzip_compress() };
+		rtz::zlib_t zc{ rtz::make_gzip_compress_params() };
 
 		const char * s =
 			"The zlib compression library provides "

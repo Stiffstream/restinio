@@ -362,14 +362,14 @@ class params_t
  * \endcode
  * It is better to write the following:
  * \code
- * params_t params = restinio::transforms::zlib::gzip_compress();
+ * params_t params = restinio::transforms::zlib::make_gzip_compress_params();
  * \endcode
  *
  * @since v.0.4.4
 */
 ///@{
 inline params_t
-deflate_compress( int compression_level = -1 )
+make_deflate_compress_params( int compression_level = -1 )
 {
 	return params_t{
 			params_t::operation_t::compress,
@@ -378,7 +378,7 @@ deflate_compress( int compression_level = -1 )
 }
 
 inline params_t
-deflate_decompress()
+make_deflate_decompress_params()
 {
 	return params_t{
 			params_t::operation_t::decompress,
@@ -386,7 +386,7 @@ deflate_decompress()
 }
 
 inline params_t
-gzip_compress( int compression_level = -1)
+make_gzip_compress_params( int compression_level = -1)
 {
 	return params_t{
 			params_t::operation_t::compress,
@@ -395,7 +395,7 @@ gzip_compress( int compression_level = -1)
 }
 
 inline params_t
-gzip_decompress()
+make_gzip_decompress_params()
 {
 	return params_t{
 			params_t::operation_t::decompress,
@@ -403,7 +403,7 @@ gzip_decompress()
 }
 
 inline params_t
-identity()
+make_identity_params()
 {
 	return params_t{};
 }
@@ -831,25 +831,25 @@ transform( string_view_t input, const params_t & params )
 inline std::string
 deflate_compress( string_view_t input, int compression_level = -1 )
 {
-	return transform( input, deflate_compress( compression_level ) );
+	return transform( input, make_deflate_compress_params( compression_level ) );
 }
 
 inline std::string
 deflate_decompress( string_view_t input )
 {
-	return transform( input, deflate_decompress() );
+	return transform( input, make_deflate_decompress_params() );
 }
 
 inline std::string
 gzip_compress( string_view_t input, int compression_level = -1 )
 {
-	return transform( input, gzip_compress( compression_level ) );
+	return transform( input, make_gzip_compress_params( compression_level ) );
 }
 
 inline std::string
 gzip_decompress( string_view_t input )
 {
-	return transform( input, gzip_decompress() );
+	return transform( input, make_gzip_decompress_params() );
 }
 ///@}
 
@@ -1193,7 +1193,7 @@ deflate_body_appender(
 	response_builder_t< Response_Output_Strategy > & resp,
 	int compression_level = -1 )
 {
-	return body_appender( resp, deflate_compress( compression_level ) );
+	return body_appender( resp, make_deflate_compress_params( compression_level ) );
 }
 
 //! Create body appender with gzip transformation and a given compression level.
@@ -1203,7 +1203,7 @@ gzip_body_appender(
 	response_builder_t< Response_Output_Strategy > & resp,
 	int compression_level = -1 )
 {
-	return body_appender( resp, gzip_compress( compression_level ) );
+	return body_appender( resp, make_gzip_compress_params( compression_level ) );
 }
 
 //! Create body appender with gzip transformation and a given compression level.
@@ -1213,7 +1213,7 @@ identity_body_appender(
 	response_builder_t< Response_Output_Strategy > & resp,
 	int = -1 )
 {
-	return body_appender( resp, identity() );
+	return body_appender( resp, make_identity_params() );
 }
 
 //! Call a handler over a request body.
