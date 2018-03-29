@@ -3,6 +3,7 @@
 */
 
 #include <iostream>
+#include <random>
 
 #include <args.hxx>
 
@@ -80,10 +81,17 @@ std::string get_random_nums_str( std::size_t count )
 
 std::vector< int > get_random_nums( std::size_t count )
 {
+	std::random_device r;
+	std::mt19937 gen{ r() };
+	std::uniform_int_distribution< int > uniform_dist;
+
 	std::vector< int > result;
 	result.reserve( count );
 
-	std::generate_n( std::back_inserter( result ), count, [](){ return rand(); } );
+	std::generate_n(
+		std::back_inserter( result ),
+		count,
+		[&](){ return uniform_dist( gen ); } );
 
 	return result;
 }
