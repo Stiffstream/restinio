@@ -66,8 +66,7 @@ struct app_args_t
 	}
 };
 
-std::string
-get_random_nums_str( std::size_t count )
+std::string get_random_nums_str( std::size_t count )
 {
 	std::ostringstream sout;
 
@@ -92,8 +91,39 @@ get_random_nums( std::size_t count )
 
 using router_t = restinio::router::express_router_t<>;
 
-template < typename Server_Traits >
-void run_server( const app_args_t & args )
+auto make_transform_params(
+	const restinio::request_t & req,
+	const restinio::query_string_params_t & qp )
+{
+	namespace rtz = restinio::transforms::zlib;
+
+	const auto accept_encoding =
+		req.header().get_field(
+			restinio::http_field::accept_encoding,
+			"deflate" );
+
+	auto copression_level = [&]{
+		int level = -1;
+		if( qp.has( "level" ) )
+		{
+			level= restinio::cast_to< int >( qp[ "level" ] );
+		}
+		return level;
+	};
+
+	if( std::string::npos != accept_encoding.find( "deflate" ) )
+	{
+		return rtz::make_deflate_compress_params( copression_level() );
+	}
+	else if( std::string::npos != accept_encoding.find( "gzip" ) )
+	{
+		return rtz::make_gzip_compress_params( copression_level() );
+	}
+
+	return rtz::make_identity_params();
+};
+
+auto make_router()
 {
 	auto router = std::make_unique< router_t >();
 
@@ -111,33 +141,6 @@ void run_server( const app_args_t & args )
 				count = restinio::cast_to< decltype(count) >( qp[ "count" ] );
 			}
 
-			auto transform_params = [&]{
-				const auto accept_encoding =
-					req->header().get_field(
-						restinio::http_field::accept_encoding,
-						"deflate" );
-
-				auto copression_level = [&]{
-					int level = -1;
-					if( qp.has( "level" ) )
-					{
-						level= restinio::cast_to< int >( qp[ "level" ] );
-					}
-					return level;
-				};
-
-				if( std::string::npos != accept_encoding.find( "deflate" ) )
-				{
-					return rtz::deflate_compress( copression_level() );
-				}
-				else if( std::string::npos != accept_encoding.find( "gzip" ) )
-				{
-					return rtz::gzip_compress( copression_level() );
-				}
-
-				return rtz::identity();
-			};
-
 			if( count < 10000 )
 			{
 				auto resp = req->create_response();
@@ -147,7 +150,7 @@ void run_server( const app_args_t & args )
 					.append_header( "Content-Type", "text/plain; charset=utf-8" );
 
 
-				auto ba = rtz::body_appender( resp, transform_params() );
+				auto ba = rtz::body_appender( resp, make_transform_params( *req, qp ) );
 				ba.append( get_random_nums_str( count ) );
 				ba.complete();
 
@@ -161,7 +164,7 @@ void run_server( const app_args_t & args )
 				.append_header_date_field()
 				.append_header( "Content-Type", "text/plain; charset=utf-8" );
 
-			auto ba = rtz::body_appender( resp, transform_params() );
+			auto ba = rtz::body_appender( resp, make_transform_params( *req, qp ) );
 
 			while( 0 != count )
 			{
@@ -177,12 +180,19 @@ void run_server( const app_args_t & args )
 			return resp.done();
 		} );
 
+	return router;
+}
+
+template < typename Server_Traits >
+void run_server( const app_args_t & args )
+{
+
 	restinio::run(
 		restinio::on_thread_pool< Server_Traits >( args.m_pool_size )
 			.port( args.m_port )
 			.address( args.m_address )
 			.concurrent_accepts_count( args.m_pool_size )
-			.request_handler( std::move( router ) ) );
+			.request_handler( make_router() ) );
 }
 
 int main( int argc, const char * argv[] )
