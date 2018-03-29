@@ -69,41 +69,28 @@ struct app_args_t
 
 std::string get_random_nums_str( std::size_t count )
 {
+	std::random_device r;
+	std::mt19937 gen{ r() };
+	std::uniform_int_distribution< int > uniform_dist;
+
 	std::ostringstream sout;
 
 	while( 0 != count-- )
 	{
-		sout << std::rand() << "\r\n";
+		sout << uniform_dist( gen ) << "\r\n";
 	}
 
 	return sout.str();
 }
 
-std::vector< int > get_random_nums( std::size_t count )
-{
-	std::random_device r;
-	std::mt19937 gen{ r() };
-	std::uniform_int_distribution< int > uniform_dist;
-
-	std::vector< int > result;
-	result.reserve( count );
-
-	std::generate_n(
-		std::back_inserter( result ),
-		count,
-		[&](){ return uniform_dist( gen ); } );
-
-	return result;
-}
-
 using router_t = restinio::router::express_router_t<>;
+
+namespace rtz = restinio::transforms::zlib;
 
 auto make_transform_params(
 	const restinio::request_t & req,
 	const restinio::query_string_params_t & qp )
 {
-	namespace rtz = restinio::transforms::zlib;
-
 	const auto accept_encoding =
 		req.header().get_field(
 			restinio::http_field::accept_encoding,
@@ -130,6 +117,57 @@ auto make_transform_params(
 	return rtz::make_identity_params();
 };
 
+constexpr std::size_t count_threshold = 10000u;
+
+template<typename Resp>
+void setup_resp_headers( Resp & resp )
+{
+	resp
+		.append_header( "Server", "RESTinio Benchmark" )
+		.append_header_date_field()
+		.append_header( "Content-Type", "text/plain; charset=utf-8" );
+}
+
+auto make_resp_for_small_count(
+	restinio::request_handle_t req,
+	const restinio::query_string_params_t & qp,
+	std::size_t count )
+{
+	auto resp = req->create_response();
+	setup_resp_headers( resp );
+
+	auto ba = rtz::body_appender( resp, make_transform_params( *req, qp ) );
+	ba.append( get_random_nums_str( count ) );
+	ba.complete();
+
+	return resp.done();
+}
+
+auto make_resp_for_large_count(
+	restinio::request_handle_t req,
+	const restinio::query_string_params_t & qp,
+	std::size_t count )
+{
+	// The data is big enough, so use chunked encoding.
+	auto resp = req->create_response< restinio::chunked_output_t >();
+	setup_resp_headers( resp );
+
+	auto ba = rtz::body_appender( resp, make_transform_params( *req, qp ) );
+
+	while( 0 != count )
+	{
+		const auto current_portion_size = std::min( count, count_threshold );
+		ba.make_chunk( get_random_nums_str( current_portion_size ) );
+		ba.flush();
+
+		count -= current_portion_size;
+	}
+
+	ba.complete();
+
+	return resp.done();
+}
+
 auto make_router()
 {
 	auto router = std::make_unique< router_t >();
@@ -138,53 +176,14 @@ auto make_router()
 		R"-(/rand/nums)-",
 		[ & ]( restinio::request_handle_t req, auto ){
 
-			namespace rtz = restinio::transforms::zlib;
-
 			const auto qp = restinio::parse_query( req->header().query() );
-			std::size_t count = 100;
+			const std::size_t count = qp.has( "count" ) ?
+					restinio::cast_to<std::size_t>( qp[ "count" ] ) : 100u;
 
-			if( qp.has( "count" ) )
-			{
-				count = restinio::cast_to< decltype(count) >( qp[ "count" ] );
-			}
-
-			if( count < 10000 )
-			{
-				auto resp = req->create_response();
-				resp
-					.append_header( "Server", "RESTinio Benchmark" )
-					.append_header_date_field()
-					.append_header( "Content-Type", "text/plain; charset=utf-8" );
-
-
-				auto ba = rtz::body_appender( resp, make_transform_params( *req, qp ) );
-				ba.append( get_random_nums_str( count ) );
-				ba.complete();
-
-				return resp.done();
-			}
-
-			// The data is big enough, so use chunked encoding.
-			auto resp = req->create_response< restinio::chunked_output_t >();
-			resp
-				.append_header( "Server", "RESTinio Benchmark" )
-				.append_header_date_field()
-				.append_header( "Content-Type", "text/plain; charset=utf-8" );
-
-			auto ba = rtz::body_appender( resp, make_transform_params( *req, qp ) );
-
-			while( 0 != count )
-			{
-				const auto current_portion_size = std::min< std::size_t >( count, 10000 );
-				ba.make_chunk( get_random_nums_str( current_portion_size ) );
-				ba.flush();
-
-				count -= current_portion_size;
-			}
-
-			ba.complete();
-
-			return resp.done();
+			if( count < count_threshold )
+				return make_resp_for_small_count( req, qp, count );
+			else
+				return make_resp_for_large_count( req, qp, count );
 		} );
 
 	return router;
@@ -193,7 +192,6 @@ auto make_router()
 template < typename Server_Traits >
 void run_server( const app_args_t & args )
 {
-
 	restinio::run(
 		restinio::on_thread_pool< Server_Traits >( args.m_pool_size )
 			.port( args.m_port )
