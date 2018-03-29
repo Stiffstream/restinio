@@ -37,17 +37,18 @@
 #if defined( RESTINIO_SUPPORTS_STRING_VIEW )
 namespace restinio
 {
-
 	#if defined( RESTINIO_HAS_STRING_VIEW )
 		using string_view_t = std::string_view;
 	#elif defined( RESTINIO_HAS_EXPERIMENTAL_STRING_VIEW )
 		using string_view_t = std::experimental::string_view;
 	#endif
-
 } /* namespace restinio */
 
 #else
-	// OUR STRING VIEW HERE.
-	#include "string_view.inl"
-#endif
 
+	#include "third_party/string-view-lite/string_view.hpp"
+namespace restinio
+{
+	using string_view_t = nonstd::string_view;
+} /* namespace restinio */
+#endif
