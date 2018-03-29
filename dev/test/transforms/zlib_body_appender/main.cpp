@@ -442,7 +442,7 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 		const auto body_start = response.find( "\r\n\r\n" ) + 4;
 
 		REQUIRE(
-			response_body ==
+			restinio::string_view_t{ response_body } ==
 			restinio::string_view_t{
 				response.data() + body_start,
 				response.size() - body_start } );
