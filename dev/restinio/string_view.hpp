@@ -46,9 +46,11 @@ namespace restinio
 
 #else
 
-	#include "third_party/string-view-lite/string_view.hpp"
+#include "third_party/string-view-lite/string_view.hpp"
+
 namespace restinio
 {
 	using string_view_t = nonstd::string_view;
 } /* namespace restinio */
+
 #endif

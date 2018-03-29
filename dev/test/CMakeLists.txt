@@ -15,7 +15,6 @@ add_subdirectory(router)
 add_subdirectory(transforms/zlib)
 add_subdirectory(transforms/zlib_appenders)
 add_subdirectory(encoders)
-add_subdirectory(string_view)
 add_subdirectory(from_string)
 add_subdirectory(websocket)
 
