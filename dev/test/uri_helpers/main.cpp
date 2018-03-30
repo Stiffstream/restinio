@@ -369,7 +369,7 @@ TEST_CASE( "value_or" , "[value_or]" )
 
 	REQUIRE( restinio::value_or< std::uint32_t >( params, "toDate", 0 ) == 815875200UL );
 	REQUIRE( restinio::value_or< std::uint32_t >( params, "fromDate", 0 ) == 1133136000UL );
-	REQUIRE( restinio::value_or( params, "toAge", std::size_t{99} ) == 38 );
+	REQUIRE( restinio::value_or( params, "toAge", std::uint16_t{99} ) == 38 );
 	REQUIRE( restinio::value_or( params, "gender", restinio::string_view_t{"m"} ) == "f" );
 
 	REQUIRE( restinio::value_or< std::uint32_t >( params, "does_not_exits", 42 ) == 42UL );

@@ -141,7 +141,7 @@ TEST_CASE( "value_or" , "[value_or]" )
 	REQUIRE( rm.match_route( "/815875200/1133136000/38/f", params ) );
 	REQUIRE( restinio::value_or< std::uint32_t >( params, "to", 0L ) == 815875200L );
 	REQUIRE( restinio::value_or< std::uint32_t >( params, "from", 0L ) == 1133136000UL );
-	REQUIRE( restinio::value_or( params, "age", std::size_t{99} ) == 38 );
+	REQUIRE( restinio::value_or( params, "age", std::uint16_t{99} ) == 38 );
 	REQUIRE( restinio::value_or( params, "gender", string_view_t{"m"} ) == "f" );
 
 	REQUIRE( restinio::value_or<std::uint32_t>( params, "does_not_exits", 42UL ) == 42UL );
