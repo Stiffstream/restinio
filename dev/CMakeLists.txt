@@ -66,10 +66,18 @@ find_package(OpenSSL)
 # ------------------------------------------------------------------------------
 # PCRE*
 find_package(PCRE)
+IF(PCRE_FOUND)
+  message( STATUS "PCRE_LIBRARIES='" ${PCRE_LIBRARIES} "'" )
+  message( STATUS "PCRE_INCLUDE_DIRS='" ${PCRE_INCLUDE_DIRS} "'" )
+ENDIF(PCRE_FOUND)
+
 find_package(PCRE2)
 IF(PCRE2_FOUND)
   add_definitions(-DPCRE2_STATIC)
   add_definitions(-DPCRE2_CODE_UNIT_WIDTH=8)
+
+  message( STATUS "PCRE2_LIBRARIES='" ${PCRE2_LIBRARIES} "'" )
+  message( STATUS "PCRE2_INCLUDE_DIRS='" ${PCRE2_INCLUDE_DIRS} "'" )
 ENDIF(PCRE2_FOUND)
 
 # HTTP parser
