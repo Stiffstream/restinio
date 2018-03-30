@@ -16,9 +16,6 @@ add_subdirectory(async_handling_with_sobjectizer)
 add_subdirectory(compression)
 
 if ( OPENSSL_FOUND )
-	message("OpenSSL include dir: ${OPENSSL_INCLUDE_DIR}")
-	message("OpenSSL libraries: ${OPENSSL_LIBRARIES}")
-
 	add_subdirectory(hello_world_https)
 	add_subdirectory(hello_world_sendfile_https)
 	add_subdirectory(websocket_wss)
