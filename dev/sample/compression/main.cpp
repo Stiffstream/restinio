@@ -129,8 +129,14 @@ auto make_resp_for_small_count(
 	auto resp = req->create_response();
 	setup_resp_headers( resp );
 
+	// Create body appender for a given response
+	// (the default one: restinio controlled output).
 	auto ba = rtz::body_appender( resp, make_transform_params( *req, qp ) );
+
+	// Set response body data in one step.
 	ba.append( get_random_nums_str( count ) );
+
+	// All the data was provided, so finish zlib transformation.
 	ba.complete();
 
 	return resp.done();
@@ -141,14 +147,15 @@ auto make_resp_for_large_count(
 	const restinio::query_string_params_t & qp,
 	std::size_t count )
 {
-	// The data is big enough, so use chunked encoding.
 	auto resp = req->create_response< restinio::chunked_output_t >();
 	setup_resp_headers( resp );
 
+	// Create body appender for a given response (chunked_output).
 	auto ba = rtz::body_appender( resp, make_transform_params( *req, qp ) );
 
 	while( 0 != count )
 	{
+		// Handle a piece of data.
 		const auto current_portion_size = std::min( count, count_threshold );
 		ba.make_chunk( get_random_nums_str( current_portion_size ) );
 		ba.flush();
@@ -156,6 +163,7 @@ auto make_resp_for_large_count(
 		count -= current_portion_size;
 	}
 
+	// All the data was provided, so finish zlib transformation.
 	ba.complete();
 
 	return resp.done();
@@ -173,9 +181,15 @@ auto make_router()
 			const std::size_t count = restinio::value_or( qp, "count", 100u );
 
 			if( count < count_threshold )
-				return make_resp_for_small_count( req, qp, count );
+			{
+				// Not to much data to be served in response.
+				return make_resp_for_small_count( std::move( req ), qp, count );
+			}
 			else
-				return make_resp_for_large_count( req, qp, count );
+			{
+				// The data is big enough to use chunked encoding.
+				return make_resp_for_large_count( std::move( req ), qp, count );
+			}
 		} );
 
 	return router;
