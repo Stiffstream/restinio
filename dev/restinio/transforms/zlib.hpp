@@ -1251,7 +1251,7 @@ identity_body_appender(
  *
 */
 template < typename Handler >
-auto
+decltype(auto)
 handle_body( const request_t & req, Handler handler )
 {
 	const auto content_encoding =
