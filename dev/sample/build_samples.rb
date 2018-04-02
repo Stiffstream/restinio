@@ -16,6 +16,7 @@ MxxRu::Cpp::composite_target {
 	required_prj 'sample/using_external_io_context/prj.rb'
 	required_prj 'sample/async_handling_with_sobjectizer/prj.rb'
 	required_prj 'sample/compression/prj.rb'
+	required_prj 'sample/decompression/prj.rb'
 
 	if RestinioOpenSSLFind.has_openssl(toolset)
 		required_prj 'sample/hello_world_https/prj.rb'

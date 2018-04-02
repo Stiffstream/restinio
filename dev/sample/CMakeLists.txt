@@ -14,6 +14,7 @@ add_subdirectory(websocket_detailed)
 add_subdirectory(using_external_io_context)
 add_subdirectory(async_handling_with_sobjectizer)
 add_subdirectory(compression)
+add_subdirectory(decompression)
 
 if ( OPENSSL_FOUND )
 	add_subdirectory(hello_world_https)

@@ -116,9 +116,9 @@ template<typename Resp>
 void setup_resp_headers( Resp & resp )
 {
 	resp
-		.append_header( "Server", "RESTinio Benchmark" )
+		.append_header( "Server", "RESTinio" )
 		.append_header_date_field()
-		.append_header( "Content-Type", "text/plain; charset=utf-8" );
+		.append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" );
 }
 
 auto make_resp_for_small_count(
