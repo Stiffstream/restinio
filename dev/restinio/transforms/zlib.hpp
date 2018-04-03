@@ -218,7 +218,7 @@ class params_t
 
 		//! Set compression mem_level.
 		/*!
-			Must be an integer value in the range of -1 to 9.
+			Must be an integer value in the range of 1 to 9.
 
 			\note Makes sense only for compression operation.
 		*/
@@ -255,7 +255,9 @@ class params_t
 
 		//! Set compression strategy.
 		/*!
-			Must be an integer value in the range of -1 to 9.
+			Must be an integer value defined by one of
+			zlib constants: Z_FILTERED, Z_HUFFMAN_ONLY,
+			Z_RLE, Z_DEFAULT_STRATEGY.
 
 			\note Makes sense only for compression operation.
 		*/
@@ -296,7 +298,7 @@ class params_t
 
 		//! Get the size initially reserved for buffer.
 		/*!
-			When using zlib transformator out buffer is used.
+			When using zlib transformator the outout buffer is used.
 			The initial size of such buffer must be defined.
 			zlib_t instance will use this parameter
 			as the initial size of out buffer and as an increment size
@@ -386,7 +388,7 @@ make_deflate_decompress_params()
 }
 
 inline params_t
-make_gzip_compress_params( int compression_level = -1)
+make_gzip_compress_params( int compression_level = -1 )
 {
 	return params_t{
 			params_t::operation_t::compress,
@@ -416,6 +418,50 @@ make_identity_params()
 //! Zlib transformator.
 /*!
 	Uses zlib (https://zlib.net) for gzip/deflate compresion/decompression.
+	All higher level functionality that minimizes boilerplate code and makes
+	compression and decompression logic less verbose is based on using zlib_t.
+
+	Simple usage:
+	\code
+		namespace rtz = restinio::transforms::zlib;
+		rtz::zlib_t z{ rtz::make_gzip_compress_params( compression_level ).level( 9 ) };
+		z.write( input_data );
+		z.complete();
+
+		auto gziped_data = z.giveaway_output();
+	\endcode
+
+	Advanced usage:
+	\code
+	namespace rtz = restinio::transforms::zlib;
+	rtz::zlib_t z{ rtz::make_gzip_compress_params( compression_level ).level( 9 ) };
+
+	std::size_t processed_data = 0;
+	for( const auto d : data_pieces )
+	{
+		z.write( d );
+
+		// Track how much data is already processed:
+		processed_data += d.size();
+
+		if( processed_data > 1024 * 1024 )
+		{
+			// If more than 1Mb  is processed do flush.
+			z.flush();
+		}
+
+		if( z.output_size() > 100 * 1024 )
+		{
+			// If more than 100Kb of data is ready, then append it to something.
+			append_output( z.giveaway_output() );
+		}
+	}
+
+	// Complete the stream and append remeining putput data.
+	z.complete();
+	append_output( z.giveaway_output() );
+	\endcode
+
 
 	@since v.0.4.4
 */
@@ -446,7 +492,6 @@ class zlib_t
 
 				if( params_t::operation_t::compress == m_params.operation() )
 				{
-
 					// zlib format.
 					init_result =
 						deflateInit2(
@@ -506,6 +551,10 @@ class zlib_t
 		const params_t & params() const { return m_params; }
 
 		//! Append input data.
+		/*!
+			Pushes a given data to zlib transform.
+			\a input is the data to be compressed or decompressed.
+		*/
 		void
 		write( string_view_t input )
 		{
@@ -550,6 +599,7 @@ class zlib_t
 		//! Flush the zlib stream.
 		/*!
 			Flushes underlying zlib stream.
+			All pending output is flushed to the output buffer.
 		*/
 		void
 		flush()
@@ -596,11 +646,11 @@ class zlib_t
 			m_operation_is_complete = true;
 		}
 
-		//! Get current output.
+		//! Get current accumulated output data
 		/*!
-			On this request a currently accumulated output data is reterned.
+			On this request a current accumulated output data is reterned.
 			Move semantics is applied. Once current output is fetched
-			zlib_t object reset its internal out buffer.
+			zlib_t object resets its internal out buffer.
 
 			In the following code:
 			\code
@@ -979,13 +1029,14 @@ class x_controlled_output_body_appender_base_t
  *
  * Sample usage:
  * \code
+ * namespace rtz = restinio::transforms::zlib;
  * auto resp = req->create_response();
  *
  * resp.append_header( restinio::http_field::server, "RESTinio" )
  *   .append_header_date_field()
  *   .append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" );
  *
- * auto ba = restinio::transformators::zlib::gzip_body_appender( resp );
+ * auto ba = rtz::gzip_body_appender( resp );
  * ba.append( some_data );
  * // ...
  * ba.append( some_more_data );
@@ -1024,13 +1075,14 @@ class body_appender_t< restinio_controlled_output_t >
  *
  * Sample usage:
  * \code
+ * namespace rtz = restinio::transforms::zlib;
  * auto resp = req->create_response<user_controlled_output_t>();
  *
  * resp.append_header( restinio::http_field::server, "RESTinio" )
  *   .append_header_date_field()
  *   .append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" );
  *
- * auto ba = restinio::transformators::zlib::gzip_body_appender( resp );
+ * auto ba = rtz::gzip_body_appender( resp );
  * ba.append( some_data );
  * ba.flush();
  * // ...
@@ -1074,13 +1126,14 @@ class body_appender_t< user_controlled_output_t > final
  *
  * Sample usage:
  * \code
+ * namespace rtz = restinio::transforms::zlib;
  * auto resp = req->create_response<chunked_output_t>();
  *
  * resp.append_header( restinio::http_field::server, "RESTinio" )
  *   .append_header_date_field()
  *   .append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" );
  *
- * auto ba = restinio::transformators::zlib::gzip_body_appender( resp );
+ * auto ba = rtz::gzip_body_appender( resp );
  * ba.append( some_data );
  * ba.append( some_more_data );
  * ba.make_chunk(); // Flush copressed data and creates a chunk with it.
@@ -1095,8 +1148,6 @@ class body_appender_t< user_controlled_output_t > final
  * ba.complete(); // Creates last chunk, but doesn't send it to client.
  * ba.flush(); // Send chunk created by complete() call
  * // ...
- * // Can add more chunks directly with resp object.
- * resp.append_chunk( "---THE END---" );
  * resp.done();
  * \endcode
  *
@@ -1177,6 +1228,7 @@ class body_appender_t< chunked_output_t > final
 };
 
 //! Create body appender with given zlib transformation parameters.
+//! @since v.0.4.4
 template < typename Response_Output_Strategy >
 body_appender_t< Response_Output_Strategy >
 body_appender(
@@ -1187,6 +1239,7 @@ body_appender(
 }
 
 //! Create body appender with deflate transformation and a given compression level.
+//! @since v.0.4.4
 template < typename Response_Output_Strategy >
 body_appender_t< Response_Output_Strategy >
 deflate_body_appender(
@@ -1197,6 +1250,7 @@ deflate_body_appender(
 }
 
 //! Create body appender with gzip transformation and a given compression level.
+//! @since v.0.4.4
 template < typename Response_Output_Strategy >
 inline body_appender_t< Response_Output_Strategy >
 gzip_body_appender(
@@ -1207,6 +1261,7 @@ gzip_body_appender(
 }
 
 //! Create body appender with gzip transformation and a given compression level.
+//! @since v.0.4.4
 template < typename Response_Output_Strategy >
 inline body_appender_t< Response_Output_Strategy >
 identity_body_appender(
@@ -1230,10 +1285,11 @@ identity_body_appender(
  *
  * Sample usage:
  * \code
+ * namespace rtz = restinio::transforms::zlib;
  * auto decompressed_echo_handler( restinio::request_handle_t req )
  * {
  *   return
- *     restinio::transforms::zlib::handle_body(
+ *     rtz::handle_body(
  *       *req,
  *       [&]( auto body ){
  *         return
@@ -1248,7 +1304,7 @@ identity_body_appender(
  *       } );
  * }
  * \endcode
- *
+ * @since v.0.4.4
 */
 template < typename Handler >
 auto

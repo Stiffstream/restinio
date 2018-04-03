@@ -4,6 +4,8 @@
 
 /*!
 	Adoption for std::optional (c++17).
+
+	@since v.0.4.4
 */
 
 #pragma once

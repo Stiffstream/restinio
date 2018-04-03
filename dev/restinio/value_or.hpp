@@ -4,6 +4,8 @@
 
 /*!
 	Helper functions for parameter extraction with default values.
+
+	@since v.0.4.4
 */
 
 #pragma once
@@ -21,6 +23,8 @@ namespace restinio
 	If parameter exists in \a params it is obtained as \c string_view_t object and
 	casted to a necessary type and then returns.
 	If \a params has no such parameters then the \a default_value is returned.
+
+	@since v.0.4.4
 */
 template < typename Value_Type, typename Parameter_Container >
 Value_Type

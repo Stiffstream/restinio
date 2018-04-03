@@ -73,6 +73,7 @@ class query_string_params_t final
 		}
 
 		//! Get the value of a parameter if it exists.
+		//! @since v.0.4.4
 		optional_t< string_view_t >
 		get_praram( string_view_t key ) const
 		{
