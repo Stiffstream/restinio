@@ -219,6 +219,10 @@ class params_t
 		//! Set compression mem_level.
 		/*!
 			Must be an integer value in the range of 1 to 9.
+			1 stands for minimum memory usage and
+			9 stands for maximum memory usage.
+			The amount of memory that can be used
+			affects the quality of compression.
 
 			\note Makes sense only for compression operation.
 		*/
