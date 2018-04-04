@@ -42,6 +42,9 @@ so you can apply a complex logic for handling requests.
 * Response builders. Need chunked-encoded body - then RESTinio has a special
   response builder for you (obviously it is not the only builder).
 * ExpressJS-like request routing.
+* Working with query string parameters.
+* Supports sending files and its parts.
+* Supports compression (deflate, gzip).
 * Supports TLS (HTTPS).
 * Basic websocket support. Simply restinio::websocket::basic::upgrade() the
   request handle and start websocket session on a corresponding connection.
