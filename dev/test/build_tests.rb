@@ -12,7 +12,6 @@ MxxRu::Cpp::composite_target {
 	required_prj( "test/ref_qualifiers_settings/prj.ut.rb" )
 	required_prj( "test/buffers/prj.ut.rb" )
 	required_prj( "test/response_coordinator/prj.ut.rb" )
-	required_prj( "test/string_view/prj.ut.rb" )
 	required_prj( "test/from_string/prj.ut.rb" )
 	required_prj( "test/uri_helpers/prj.ut.rb" )
 
@@ -67,6 +66,12 @@ MxxRu::Cpp::composite_target {
 	end
 
 	required_prj( "test/router/cmp_router_bench/prj.rb" )
+
+	# ================================================================
+	# Transformators
+	required_prj( "test/transforms/zlib/prj.ut.rb" )
+	required_prj( "test/transforms/zlib_body_appender/prj.ut.rb" )
+	required_prj( "test/transforms/zlib_body_handler/prj.ut.rb" )
 
 	# ================================================================
 	required_prj( "test/encoders/prj.ut.rb" )

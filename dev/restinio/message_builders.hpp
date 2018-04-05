@@ -328,7 +328,7 @@ class response_builder_t< user_controlled_output_t > final
 		/*!
 			Schedules for sending currently ready data.
 		*/
-		void
+		self_type_t &
 		flush()
 		{
 			if( m_connection )
@@ -337,6 +337,8 @@ class response_builder_t< user_controlled_output_t > final
 					m_connection,
 					response_parts_attr_t::not_final_parts );
 			}
+
+			return *this;
 		}
 
 		//! Complete response.
@@ -562,27 +564,22 @@ class response_builder_t< chunked_output_t > final
 			m_should_keep_alive_when_header_was_sent =
 				m_header.should_keep_alive();
 
-			constexpr const char transfer_encoding[] = "Transfer-Encoding";
-			std::string
-				transfer_encoding_field_name{
-					transfer_encoding,
-					impl::ct_string_len( transfer_encoding ) };
-
 			constexpr const char value[] = "chunked";
-			if( !m_header.has_field( transfer_encoding ) )
+			if( !m_header.has_field( restinio::http_field::transfer_encoding ) )
 			{
 				m_header.set_field(
-					std::move( transfer_encoding_field_name ),
+					restinio::http_field::transfer_encoding,
 					std::string{ value, impl::ct_string_len( value ) } );
 			}
 			else
 			{
-				auto & current_value = m_header.get_field( transfer_encoding );
+				auto & current_value =
+					m_header.get_field( restinio::http_field::transfer_encoding );
 				if( std::string::npos == current_value.find( value ) )
 				{
 					constexpr const char comma_value[] = ",chunked";
 					m_header.append_field(
-						transfer_encoding,
+						restinio::http_field::transfer_encoding,
 						std::string{
 							comma_value,
 							impl::ct_string_len( comma_value ) } );
@@ -631,17 +628,26 @@ class response_builder_t< chunked_output_t > final
 
 			}
 
+			const char * ending_representation = "\r\n" "0\r\n\r\n";
+			const char * appendix_begin = ending_representation + 2;
+			const char * appendix_end = appendix_begin;
+
 			if( !m_chunks.empty() )
 			{
-				// Add "\r\n"-ending for the last part (if any).
-				const char * rn_ending = "\r\n";
-				bufs.emplace_back( const_buffer( rn_ending, 2 ) );
+				// Add "\r\n"part to appendix.
+				appendix_begin -= 2;
+				// bufs.emplace_back( const_buffer( rn_ending, 2 ) );
 			}
 
 			if( add_zero_chunk )
 			{
-				const char * zero_chunk = "0\r\n\r\n";
-				bufs.emplace_back( const_buffer( zero_chunk, 5 ) );
+				// Add "0\r\n\r\n"part to appendix.
+				appendix_end += 5;
+			}
+
+			if( appendix_begin != appendix_end )
+			{
+				bufs.emplace_back( const_buffer( appendix_begin, appendix_end - appendix_begin ) );
 			}
 
 			m_chunks.clear();

@@ -20,5 +20,6 @@
 #include <restinio/ostream_logger.hpp>
 #include <restinio/uri_helpers.hpp>
 #include <restinio/cast_to.hpp>
+#include <restinio/value_or.hpp>
 
 #include <restinio/router/express.hpp>

@@ -11,6 +11,7 @@
 
 #include <restinio/uri_helpers.hpp>
 #include <restinio/cast_to.hpp>
+#include <restinio/value_or.hpp>
 
 using namespace restinio;
 
@@ -354,4 +355,25 @@ TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_multi_map]" )
 		REQUIRE( params.has( "k2" ) );
 		REQUIRE( params[ "k2" ] == "v2" );
 	}
+}
+
+TEST_CASE( "value_or" , "[value_or]" )
+{
+	const restinio::string_view_t
+		query{ "toDate=815875200&"
+			"fromDate=1133136000&"
+			"toAge=38&"
+			"gender=f" };
+
+	auto params = restinio::parse_query( query );
+
+	REQUIRE( restinio::value_or< std::uint32_t >( params, "toDate", 0 ) == 815875200UL );
+	REQUIRE( restinio::value_or< std::uint32_t >( params, "fromDate", 0 ) == 1133136000UL );
+	REQUIRE( restinio::value_or( params, "toAge", std::uint16_t{99} ) == 38 );
+	REQUIRE( restinio::value_or( params, "gender", restinio::string_view_t{"m"} ) == "f" );
+
+	REQUIRE( restinio::value_or< std::uint32_t >( params, "does_not_exits", 42 ) == 42UL );
+	REQUIRE( restinio::value_or( params, "pi", 3.14 ) == 3.14 );
+	REQUIRE( restinio::value_or( params, "e", restinio::string_view_t{ "2.71828" } ) ==
+															"2.71828" );
 }

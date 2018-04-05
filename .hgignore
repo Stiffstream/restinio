@@ -19,6 +19,7 @@ dev/args
 dev/catch
 dev/cmake_build*
 dev/doc/*
+dev/zlib
 o/*
 ./wiki
 *.sublime-project

@@ -16,6 +16,7 @@
 
 #include <restinio/exception.hpp>
 #include <restinio/utils/percent_encoding.hpp>
+#include <restinio/optional.hpp>
 
 namespace restinio
 {
@@ -71,6 +72,18 @@ class query_string_params_t final
 			return m_parameters.end() != find_parameter( key );
 		}
 
+		//! Get the value of a parameter if it exists.
+		//! @since v.0.4.4
+		optional_t< string_view_t >
+		get_praram( string_view_t key ) const
+		{
+			const auto it = find_parameter( key );
+
+			return m_parameters.end() != it ?
+				optional_t< string_view_t >{ it->second } :
+				optional_t< string_view_t >{ nullopt };
+		}
+
 		//! Get the size of parameters.
 		auto size() const { return m_parameters.size(); }
 
@@ -88,6 +101,7 @@ class query_string_params_t final
 			return m_parameters.end();
 		}
 		//! //}
+
 
 	private:
 		parameters_container_t::const_iterator

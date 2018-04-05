@@ -82,7 +82,7 @@ caseless_cmp(
 
 //! Comparator for fields names.
 inline bool
-caseless_cmp( const std::string & a, const std::string & b )
+caseless_cmp( string_view_t a, string_view_t b )
 {
 	return caseless_cmp( a.data(), a.size(), b.data(), b.size() );
 }

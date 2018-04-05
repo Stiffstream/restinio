@@ -5,9 +5,8 @@ MxxRu::arch_externals :so5 do |e|
   e.map_dir 'dev/timertt' => 'dev'
 end
 
-MxxRu::git_externals :asio do |e|
-  e.url 'https://github.com/chriskohlhoff/asio.git'
-  e.commit '9229964dc1853b375077338cb398027a6dbbb148' # Dec 10 2017
+MxxRu::arch_externals :asio do |e|
+  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-12-0.zip'
 
   e.map_dir 'asio/include' => 'dev/asio'
 end

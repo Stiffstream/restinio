@@ -242,8 +242,8 @@ class http_server_t
 				typename Server_Open_Error_CB >
 		void
 		open_async(
-			Server_Open_Ok_CB && open_ok_cb,
-			Server_Open_Error_CB && open_err_cb )
+			Server_Open_Ok_CB open_ok_cb,
+			Server_Open_Error_CB open_err_cb )
 		{
 			asio_ns::post(
 				m_acceptor->get_open_close_operations_executor(),
@@ -288,8 +288,8 @@ class http_server_t
 				typename Server_Close_Error_CB >
 		void
 		close_async(
-			Server_Close_Ok_CB && close_ok_cb,
-			Server_Close_Error_CB && close_err_cb )
+			Server_Close_Ok_CB close_ok_cb,
+			Server_Close_Error_CB close_err_cb )
 		{
 			asio_ns::post(
 				m_acceptor->get_open_close_operations_executor(),
