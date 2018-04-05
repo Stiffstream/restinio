@@ -43,7 +43,7 @@ so you can apply a complex logic for handling requests.
   response builder for you (obviously it is not the only builder).
 * ExpressJS-like request routing.
 * Working with query string parameters.
-* Supports sending files and its parts (with sendfile() on linux/unix and TransmitFile on windows).
+* Supports sending files and its parts (with sendfile on linux/unix and TransmitFile on windows).
 * Supports compression (deflate, gzip).
 * Supports TLS (HTTPS).
 * Basic websocket support. Simply restinio::websocket::basic::upgrade() the
