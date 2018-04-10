@@ -51,10 +51,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 SET(FMT_INSTALL ON)
 add_subdirectory(fmt)
 
-# include_directories(${CMAKE_CURRENT_SOURCE_DIR}/args)
-# include_directories(${CMAKE_CURRENT_SOURCE_DIR}/rapidjson/include)
-# add_definitions(-DRAPIDJSON_HAS_STDSTRING -DRAPIDJSON_HAS_CXX11_RVALUE_REFS)
-
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
@@ -77,9 +73,6 @@ ENDIF ()
 
 find_package(PCRE2)
 IF (PCRE2_FOUND)
-	add_definitions(-DPCRE2_STATIC)
-	add_definitions(-DPCRE2_CODE_UNIT_WIDTH=8)
-
 	message( STATUS "PCRE2_LIBRARIES='" ${PCRE2_LIBRARIES} "'" )
 	message( STATUS "PCRE2_INCLUDE_DIRS='" ${PCRE2_INCLUDE_DIRS} "'" )
 ENDIF ()
