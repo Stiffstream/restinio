@@ -8,7 +8,7 @@ endif()
 
 add_executable(${SAMPLE} ${SAMPLE_SRCFILES})
 
-target_link_libraries(${SAMPLE} nodejs_http_parser)
+target_link_libraries(${SAMPLE} restinio::restinio)
 
 if(WIN32)
 	target_link_libraries(${SAMPLE} wsock32 ws2_32)

@@ -8,7 +8,7 @@ endif()
 
 add_executable(${BENCH} ${BENCH_SRCFILES})
 
-target_link_libraries(${BENCH} nodejs_http_parser)
+target_link_libraries(${BENCH} restinio::restinio)
 
 if(WIN32)
 	target_link_libraries(${BENCH} wsock32 ws2_32)

@@ -47,8 +47,9 @@ ELSE ()
 	add_definitions( -DRESTINIO_USE_BOOST_ASIO )
 ENDIF ()
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/fmt)
-add_definitions(-DFMT_HEADER_ONLY)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+
+add_subdirectory(fmt)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/args)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/rapidjson/include)
@@ -105,6 +106,10 @@ ENDIF ()
 
 message( STATUS "ZLIB_LIBRARIES='" ${ZLIB_LIBRARIES} "'" )
 message( STATUS "ZLIB_INCLUDE_DIRS='" ${ZLIB_INCLUDE_DIRS} "'" )
+
+
+# RESTinio itself.
+add_subdirectory(restinio)
 
 # ------------------------------------------------------------------------------
 # Tests

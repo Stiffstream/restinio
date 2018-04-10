@@ -34,6 +34,10 @@ MxxRu::arch_externals :fmt do |e|
   e.url 'https://github.com/fmtlib/fmt/archive/4.1.0.zip'
 
   e.map_dir 'fmt' => 'dev/fmt'
+  e.map_dir 'support' => 'dev/fmt'
+  e.map_file 'CMakeLists.txt' => 'dev/fmt/*'
+  e.map_file 'README.rst' => 'dev/fmt/*'
+  e.map_file 'ChangeLog.rst' => 'dev/fmt/*'
 end
 
 MxxRu::arch_externals :fmtlib_mxxru do |e|

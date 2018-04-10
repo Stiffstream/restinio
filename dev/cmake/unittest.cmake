@@ -8,7 +8,7 @@ endif()
 
 add_executable(${UNITTEST} ${UNITTEST_SRCFILES})
 
-target_link_libraries(${UNITTEST} nodejs_http_parser)
+target_link_libraries(${UNITTEST} restinio::restinio)
 
 if(WIN32)
 	target_link_libraries(${UNITTEST} wsock32 ws2_32)
@@ -19,3 +19,4 @@ if( NOT (RESTINIO_USE_BOOST_ASIO STREQUAL "none") )
 endif()
 
 add_test(NAME ${UNITTEST} COMMAND ${SO_5_TEST_LAUNCHER} ${UNITTEST})
+# add_test(NAME ${UNITTEST} COMMAND ${SO_5_TEST_LAUNCHER} ${UNITTEST})
