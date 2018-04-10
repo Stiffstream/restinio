@@ -8,14 +8,12 @@ endif()
 
 add_executable(${SAMPLE} ${SAMPLE_SRCFILES})
 
-target_link_libraries(${SAMPLE} restinio::restinio)
+TARGET_LINK_LIBRARIES(${SAMPLE} PRIVATE restinio::restinio)
+TARGET_INCLUDE_DIRECTORIES(${SAMPLE} PRIVATE ${CMAKE_SOURCE_DIR}/args)
 
 if(WIN32)
-	target_link_libraries(${SAMPLE} wsock32 ws2_32)
+	TARGET_LINK_LIBRARIES(${SAMPLE} wsock32 ws2_32)
 endif()
 
-if( NOT (RESTINIO_USE_BOOST_ASIO STREQUAL "none") )
-	target_link_libraries(${SAMPLE} ${Boost_SYSTEM_LIBRARY} )
-endif()
 
 install(TARGETS ${SAMPLE} DESTINATION bin)

@@ -10,6 +10,10 @@ add_library(restinio::restinio ALIAS ${RESTINIO})
 TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE fmt::fmt-header-only)
 TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE nodejs::http_parser)
 
+if( NOT (RESTINIO_USE_BOOST_ASIO STREQUAL "none") )
+	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE ${Boost_SYSTEM_LIBRARY} )
+endif()
+
 set(RESTINIO_HEADERS_ALL
 	all.hpp
 	asio_include.hpp

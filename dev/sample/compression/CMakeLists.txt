@@ -1,5 +1,5 @@
 set(SAMPLE sample.compression)
 include(${CMAKE_SOURCE_DIR}/cmake/sample.cmake)
 
-target_include_directories(${SAMPLE} PRIVATE ${ZLIB_INCLUDE_DIRS} )
-target_link_libraries(${SAMPLE} ${ZLIB_LIBRARIES})
+TARGET_INCLUDE_DIRECTORIES(${SAMPLE} PRIVATE ${ZLIB_INCLUDE_DIRS} )
+TARGET_LINK_LIBRARIES(${SAMPLE} PRIVATE ${ZLIB_LIBRARIES})

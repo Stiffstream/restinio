@@ -3,10 +3,9 @@ project(nodejs_http_parser)
 add_library(nodejs_http_parser http_parser.c)
 add_library(nodejs::http_parser ALIAS nodejs_http_parser)
 
-target_include_directories(nodejs_http_parser PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+TARGET_INCLUDE_DIRECTORIES(nodejs_http_parser PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_compile_definitions(nodejs_http_parser INTERFACE HTTP_PARSER_STRICT=0)
-
+TARGET_COMPILE_DEFINITIONS(nodejs_http_parser INTERFACE HTTP_PARSER_STRICT=0)
 
 include(GNUInstallDirs)
 

@@ -4,7 +4,6 @@ SET(CMAKE_CXX_STANDARD 14)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 SET(RESTINIO_USE_BOOST_ASIO "none" CACHE STRING "Use boost version of ASIO")
-
 SET(RESTINIO_USE_BOOST_ASIO_VALUES "none;static;shared")
 
 set_property(CACHE RESTINIO_USE_BOOST_ASIO PROPERTY STRINGS ${RESTINIO_USE_BOOST_ASIO_VALUES})
@@ -52,9 +51,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 SET(FMT_INSTALL ON)
 add_subdirectory(fmt)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/args)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/rapidjson/include)
-add_definitions(-DRAPIDJSON_HAS_STDSTRING -DRAPIDJSON_HAS_CXX11_RVALUE_REFS)
+# include_directories(${CMAKE_CURRENT_SOURCE_DIR}/args)
+# include_directories(${CMAKE_CURRENT_SOURCE_DIR}/rapidjson/include)
+# add_definitions(-DRAPIDJSON_HAS_STDSTRING -DRAPIDJSON_HAS_CXX11_RVALUE_REFS)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 

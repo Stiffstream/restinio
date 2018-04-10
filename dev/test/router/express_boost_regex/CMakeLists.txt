@@ -8,4 +8,4 @@ set(UNITTEST_SRCFILES
 	main.cpp )
 include(${CMAKE_SOURCE_DIR}/cmake/unittest.cmake)
 
-target_link_libraries(${UNITTEST} ${Boost_REGEX_LIBRARY})
+TARGET_LINK_LIBRARIES(${UNITTEST} PRIVATE ${Boost_REGEX_LIBRARY})
