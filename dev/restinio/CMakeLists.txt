@@ -2,10 +2,34 @@ cmake_minimum_required(VERSION 3.3)
 
 set(RESTINIO restinio)
 
+include(cmake/target.cmake)
+
 project(${RESTINIO}) # not to misspell it.
 
 add_library(${RESTINIO} INTERFACE)
 add_library(restinio::restinio ALIAS ${RESTINIO})
+
+IF (${CMAKE_VERSION} VERSION_LESS "3.8.0")
+	set_target_properties(${RESTINIO} PROPERTIES
+		CXX_STANDARD 14
+		CXX_STANDARD_REQUIRED YES
+		CXX_EXTENSIONS NO
+	)
+ELSE ()
+	target_compile_features(${RESTINIO} INTERFACE cxx_std_14)
+ENDIF ()
+
+get_filename_component(CURRENT_FILE_DIR ${CMAKE_CURRENT_LIST_FILE} DIRECTORY)
+get_filename_component(CURRENT_FILE_DIR ${CURRENT_FILE_DIR} DIRECTORY)
+set(RESTINIO_INCLUDE_PATH ${CURRENT_FILE_DIR})
+unset(CURRENT_FILE_DIR)
+
+# Propagate include directories for RESTinio.
+TARGET_INCLUDE_DIRECTORIES(${RESTINIO}
+	INTERFACE
+		$<BUILD_INTERFACE:${RESTINIO_INCLUDE_PATH}>
+		$<INSTALL_INTERFACE:include>
+	)
 
 # ------------------------------------------------------------------------------
 # ASIO or Boost::ASIO
@@ -22,6 +46,7 @@ ELSE ()
 	TARGET_INCLUDE_DIRECTORIES(${RESTINIO} INTERFACE ${Boost_INCLUDE_DIRS} )
 	TARGET_COMPILE_DEFINITIONS(${RESTINIO} INTERFACE -DRESTINIO_USE_BOOST_ASIO )
 ENDIF ()
+# ------------------------------------------------------------------------------
 
 TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE fmt::fmt-header-only)
 TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE nodejs::http_parser)
@@ -116,17 +141,56 @@ set(RESTINIO_HEADERS_ALL
 	websocket/impl/ws_protocol_validator.hpp
 	)
 
-
 IF (RESTINIO_INSTALL)
 	include(GNUInstallDirs)
+	include(CMakePackageConfigHelpers)
 
-	set(RESTINIO_INC_DIR ${CMAKE_INSTALL_INCLUDEDIR}/restinio/ CACHE STRING
+	set(RESTINIO_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/restinio CACHE STRING
+		"Installation directory for cmake files, relative to ${CMAKE_INSTALL_PREFIX}.")
+	set(RESTINIO_VERSION_CONFIG ${PROJECT_BINARY_DIR}/restinio-config-version.cmake)
+	set(RESTINIO_PROJECT_CONFIG ${PROJECT_BINARY_DIR}/restinio-config.cmake)
+
+	SET(RESTINIO_INC_DIR ${CMAKE_INSTALL_INCLUDEDIR}/restinio/ CACHE STRING
 		"Installation directory for include files, relative to ${CMAKE_INSTALL_PREFIX}.")
 
+	# Generate the version, config and target files into the build directory.
+	write_basic_package_version_file(
+		${RESTINIO_VERSION_CONFIG}
+		VERSION ${RESTINIO_VERSION}
+		COMPATIBILITY ExactVersion )
 
-	foreach(HEADER_FILE ${RESTINIO_HEADERS_ALL} )
+	configure_package_config_file(
+		"cmake/restinio-config.cmake.in"
+		${RESTINIO_PROJECT_CONFIG}
+		INSTALL_DESTINATION ${RESTINIO_CMAKE_DIR}
+		PATH_VARS RESTINIO_VERSION)
+
+	# Install version, config and target files.
+	install(
+		FILES ${RESTINIO_PROJECT_CONFIG} ${RESTINIO_VERSION_CONFIG}
+		DESTINATION ${RESTINIO_CMAKE_DIR})
+
+	# install(EXPORT ${targets_export_name} DESTINATION ${RESTINIO_CMAKE_DIR}
+		# NAMESPACE fmt::)
+	set (RESTINIO_INSTALL_TARGETS ${RESTINIO})
+
+	# install(
+	# 	TARGETS ${RESTINIO_INSTALL_TARGETS}
+	# 	EXPORT RESTINIO_ALL_TARGETS
+	# 	LIBRARY DESTINATION lib
+	# 	ARCHIVE DESTINATION lib
+	# 	RUNTIME DESTINATION bin
+	# )
+
+	# install(
+	# 	EXPORT RESTINIO_ALL_TARGETS
+	# 	NAMESPACE restinio::
+	# 	FILE restinio-targets.cmake
+	# 	DESTINATION ${RESTINIO_CMAKE_DIR} )
+
+	FOREACH(HEADER_FILE ${RESTINIO_HEADERS_ALL} )
 		get_filename_component( DIR ${HEADER_FILE} PATH )
 		install( FILES ${HEADER_FILE} DESTINATION ${RESTINIO_INC_DIR}/${DIR} )
-	endforeach()
+	ENDFOREACH()
 
 ENDIF ()

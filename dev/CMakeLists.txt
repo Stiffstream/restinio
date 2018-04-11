@@ -70,9 +70,6 @@ IF (RESTINIO_MASTER_PROJECT)
 	add_subdirectory(fmt)
 	# ------------------------------------------------------------------------------
 
-	# TODO: get rid of it if possible:
-	include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
 	# ------------------------------------------------------------------------------
 	# Tests, samples and benchmark dependencies:
 	# OpenSSL
@@ -122,8 +119,7 @@ IF (RESTINIO_MASTER_PROJECT)
 
 	message( STATUS "ZLIB_LIBRARIES='" ${ZLIB_LIBRARIES} "'" )
 	message( STATUS "ZLIB_INCLUDE_DIRS='" ${ZLIB_INCLUDE_DIRS} "'" )
-
-ENDIF ()
+ENDIF (RESTINIO_MASTER_PROJECT)
 
 # RESTinio itself.
 add_subdirectory(restinio)
