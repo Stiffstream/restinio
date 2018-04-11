@@ -7,6 +7,22 @@ project(${RESTINIO}) # not to misspell it.
 add_library(${RESTINIO} INTERFACE)
 add_library(restinio::restinio ALIAS ${RESTINIO})
 
+# ------------------------------------------------------------------------------
+# ASIO or Boost::ASIO
+IF ( RESTINIO_USE_BOOST_ASIO MATCHES "none" )
+	IF (RESTINIO_STAND_ALONE_ASIO_HEADERS)
+		TARGET_INCLUDE_DIRECTORIES(${RESTINIO} INTERFACE ${RESTINIO_STAND_ALONE_ASIO_HEADERS})
+	ENDIF ()
+
+	IF( RESTINIO_STAND_ALONE_ASIO_DEFINES )
+		TARGET_COMPILE_DEFINITIONS(${RESTINIO} INTERFACE ${RESTINIO_STAND_ALONE_ASIO_DEFINES})
+	ENDIF ()
+
+ELSE ()
+	TARGET_INCLUDE_DIRECTORIES(${RESTINIO} INTERFACE ${Boost_INCLUDE_DIRS} )
+	TARGET_COMPILE_DEFINITIONS(${RESTINIO} INTERFACE -DRESTINIO_USE_BOOST_ASIO )
+ENDIF ()
+
 TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE fmt::fmt-header-only)
 TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE nodejs::http_parser)
 
@@ -100,7 +116,17 @@ set(RESTINIO_HEADERS_ALL
 	websocket/impl/ws_protocol_validator.hpp
 	)
 
-foreach(HEADER_FILE ${RESTINIO_HEADERS_ALL} )
-	get_filename_component( DIR ${HEADER_FILE} PATH )
-	install( FILES ${HEADER_FILE} DESTINATION include/restinio/${DIR} )
-endforeach()
+
+IF (RESTINIO_INSTALL)
+	include(GNUInstallDirs)
+
+	set(RESTINIO_INC_DIR ${CMAKE_INSTALL_INCLUDEDIR}/restinio/ CACHE STRING
+		"Installation directory for include files, relative to ${CMAKE_INSTALL_PREFIX}.")
+
+
+	foreach(HEADER_FILE ${RESTINIO_HEADERS_ALL} )
+		get_filename_component( DIR ${HEADER_FILE} PATH )
+		install( FILES ${HEADER_FILE} DESTINATION ${RESTINIO_INC_DIR}/${DIR} )
+	endforeach()
+
+ENDIF ()
