@@ -10,7 +10,7 @@
 
 #include <restinio/asio_include.hpp>
 
-#include <nodejs/http_parser/http_parser.h>
+#include <http_parser.h>
 
 #include <fmt/format.h>
 

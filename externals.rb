@@ -1,5 +1,6 @@
 MxxRu::arch_externals :so5 do |e|
-  e.url 'https://github.com/eao197/so-5-5/archive/v5.5.21.tar.gz'
+  # e.url 'https://github.com/eao197/so-5-5/archive/v5.5.21.tar.gz'
+  e.url 'https://netix.dl.sourceforge.net/project/sobjectizer/sobjectizer/SObjectizer%20Core%20v.5.5/so-5.5.22-alpha4.zip'
 
   e.map_dir 'dev/so_5' => 'dev'
   e.map_dir 'dev/timertt' => 'dev'
@@ -25,7 +26,7 @@ MxxRu::arch_externals :nodejs_http_parser do |e|
 end
 
 MxxRu::arch_externals :nodejs_http_parser_mxxru do |e|
-  e.url 'https://bitbucket.org/sobjectizerteam/nodejs_http_parser_mxxru-0.1/get/v.0.1.0.tar.bz2'
+  e.url 'https://bitbucket.org/sobjectizerteam/nodejs_http_parser_mxxru-0.2/get/v.0.2.0.tar.bz2'
 
   e.map_dir 'dev/nodejs/http_parser_mxxru' => 'dev/nodejs'
 end

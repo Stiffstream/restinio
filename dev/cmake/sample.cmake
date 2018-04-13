@@ -1,19 +1,20 @@
-if(NOT SAMPLE)
-    message(FATAL_ERROR "SAMPLE is not defined!")
-endif()
+IF (NOT SAMPLE)
+	message(FATAL_ERROR "SAMPLE is not defined!")
+ENDIF ()
 
-if(NOT SAMPLE_SRCFILES)
-	set(SAMPLE_SRCFILES main.cpp)
-endif()
+IF(NOT SAMPLE_SRCFILES)
+	SET(SAMPLE_SRCFILES main.cpp)
+ENDIF()
 
 add_executable(${SAMPLE} ${SAMPLE_SRCFILES})
 
 TARGET_LINK_LIBRARIES(${SAMPLE} PRIVATE restinio::restinio)
 TARGET_INCLUDE_DIRECTORIES(${SAMPLE} PRIVATE ${CMAKE_SOURCE_DIR}/args)
 
-if(WIN32)
+IF (WIN32)
 	TARGET_LINK_LIBRARIES(${SAMPLE} wsock32 ws2_32)
-endif()
+ENDIF ()
 
-
-install(TARGETS ${SAMPLE} DESTINATION bin)
+IF (RESTINIO_INSTALL_SAMPLES)
+	install(TARGETS ${SAMPLE} DESTINATION bin)
+endif ()

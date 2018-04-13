@@ -13,7 +13,9 @@ ENDIF ()
 option(RESTINIO_INSTALL "Generate the install target." ${RESTINIO_MASTER_PROJECT})
 option(RESTINIO_TEST "Build the tests." ${RESTINIO_MASTER_PROJECT})
 option(RESTINIO_SAMPLE "Build samples." ${RESTINIO_MASTER_PROJECT})
+option(RESTINIO_INSTALL_SAMPLES "Build install samples." ${RESTINIO_MASTER_PROJECT})
 option(RESTINIO_BENCH "Build the test target." ${RESTINIO_MASTER_PROJECT})
+option(RESTINIO_INSTALL_BENCHES "Build install samples." ${RESTINIO_MASTER_PROJECT})
 
 SET(RESTINIO_USE_BOOST_ASIO "none" CACHE STRING "Use boost version of ASIO")
 SET(RESTINIO_USE_BOOST_ASIO_VALUES "none;static;shared")
@@ -62,12 +64,11 @@ IF (RESTINIO_MASTER_PROJECT)
 	ENDIF ()
 
 	# 2. HTTP parser
-	SET(NODEJS_HTTP_PARSER_INSTALL ${RESTINIO_INSTALL})
 	add_subdirectory(nodejs/http_parser)
 
 	# 3. fmtlib
-	SET(FMT_INSTALL ${RESTINIO_INSTALL})
 	add_subdirectory(fmt)
+
 	# ------------------------------------------------------------------------------
 
 	# ------------------------------------------------------------------------------
