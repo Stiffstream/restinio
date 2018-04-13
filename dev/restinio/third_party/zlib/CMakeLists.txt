@@ -213,6 +213,8 @@ if(UNIX)
 #     set_target_properties(zlib PROPERTIES SUFFIX "1.dll")
 endif()
 
+set( SKIP_INSTALL_ALL ON ) 
+
 if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL )
     install(TARGETS zlibstatic
         RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
