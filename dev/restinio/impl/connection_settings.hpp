@@ -11,7 +11,7 @@
 #include <memory>
 #include <chrono>
 
-#include <nodejs/http_parser/http_parser.h>
+#include <http_parser.h>
 
 namespace restinio
 {

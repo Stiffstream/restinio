@@ -15,7 +15,7 @@
 
 #include <fmt/format.h>
 
-#include <nodejs/http_parser/http_parser.h>
+#include <http_parser.h>
 
 #include <restinio/exception.hpp>
 #include <restinio/string_view.hpp>
