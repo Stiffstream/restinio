@@ -1,7 +1,5 @@
 MxxRu::arch_externals :so5 do |e|
-  # e.url 'https://github.com/eao197/so-5-5/archive/v5.5.21.tar.gz'
-  e.url 'https://netix.dl.sourceforge.net/project/sobjectizer/sobjectizer/SObjectizer%20Core%20v.5.5/so-5.5.22-alpha4.zip'
-
+  e.url 'https://github.com/eao197/so-5-5/archive/v5.5.22.zip'
   e.map_dir 'dev/so_5' => 'dev'
   e.map_dir 'dev/timertt' => 'dev'
 end
