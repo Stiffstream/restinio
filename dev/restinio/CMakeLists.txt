@@ -49,11 +49,14 @@ ELSE ()
 ENDIF ()
 # ------------------------------------------------------------------------------
 
-TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE
-	$<BUILD_INTERFACE:fmt::fmt-header-only> )
-
-TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE
-	$<BUILD_INTERFACE:nodejs::http_parser>)
+IF (RESTINIO_VCPKG_BUILD)
+	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE fmt::fmt-header-only)
+	# http-parser port names lib as 'http_parser'
+	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE http_parser)
+ELSE ()
+	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE $<BUILD_INTERFACE:fmt::fmt-header-only> )
+	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE $<BUILD_INTERFACE:nodejs::http_parser> )
+ENDIF ()
 
 if( NOT (RESTINIO_USE_BOOST_ASIO STREQUAL "none") )
 	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE ${Boost_SYSTEM_LIBRARY} )
