@@ -49,7 +49,7 @@ ELSE ()
 ENDIF ()
 # ------------------------------------------------------------------------------
 
-IF (RESTINIO_VCPKG_BUILD)
+IF (RESTINIO_DEPENDENCIES_WITH_FIND_PACKAGE)
 	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE fmt::fmt-header-only)
 	# http-parser port names lib as 'http_parser'
 	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE http_parser)

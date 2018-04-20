@@ -9,10 +9,11 @@ SET(RESTINIO_USE_BOOST_ASIO "none" CACHE STRING "Use boost version of ASIO")
 
 SET( RESTINIO_STAND_ALONE_ASIO_DEFINES -DASIO_STANDALONE -DASIO_HAS_STD_CHRONO -DASIO_DISABLE_STD_STRING_VIEW)
 
-find_package(nodejs_http_parser)
-find_package(fmt)
+# http_parser is linked as raw static lib file.
+# fmt must be found.
+find_package(fmt REQUIRED)
 
-SET(RESTINIO_VCPKG_BUILD ON)
+SET(RESTINIO_DEPENDENCIES_WITH_FIND_PACKAGE ON)
 
 # RESTinio itself.
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../dev/restinio ${CMAKE_CURRENT_BINARY_DIR}/restinio)

@@ -41,7 +41,7 @@ IF (RESTINIO_MASTER_PROJECT)
 
 	# ------------------------------------------------------------------------------
 	# RESTinio dependencies:
-	# 1. ASIO or Boost::ASIO
+	# ASIO or Boost::ASIO
 	IF ( RESTINIO_USE_BOOST_ASIO MATCHES "none" )
 		SET( RESTINIO_STAND_ALONE_ASIO_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/asio/include )
 		SET( RESTINIO_STAND_ALONE_ASIO_DEFINES -DASIO_STANDALONE -DASIO_HAS_STD_CHRONO -DASIO_DISABLE_STD_STRING_VIEW)
@@ -63,11 +63,23 @@ IF (RESTINIO_MASTER_PROJECT)
 		find_package(Boost 1.66.0 REQUIRED COMPONENTS system regex)
 	ENDIF ()
 
-	# 2. HTTP parser
-	add_subdirectory(nodejs/http_parser)
+	IF (RESTINIO_DEPENDENCIES_WITH_FIND_PACKAGE)
+		# Require necessary packages.
 
-	# 3. fmtlib
-	add_subdirectory(fmt)
+		# HTTP parser
+		# http_parser is linked as raw static lib file.
+
+		# fmtlib
+		find_package(fmt REQUIRED)
+	ELSE ()
+		# Add necessary dependecies.
+
+		# HTTP parser
+		add_subdirectory(nodejs/http_parser)
+
+		# fmtlib
+		add_subdirectory(fmt)
+	ENDIF ()
 
 	# ------------------------------------------------------------------------------
 
