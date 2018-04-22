@@ -11,7 +11,6 @@ RESTinio represents our solution for that task. Currently it is in stable beta s
 Lets see how it feels like in the simplest case:
 
 ```C++
-#include <iostream>
 #include <restinio/all.hpp>
 int main()
 {
