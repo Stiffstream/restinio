@@ -438,9 +438,9 @@ make_digest( const char * what, std::size_t length )
 }
 
 inline digest_t
-make_digest( const std::string & str )
+make_digest( string_view_t sv )
 {
-	return make_digest( str.data(), str.size() );
+	return make_digest( sv.data(), sv.size() );
 }
 
 } /* namespace sha1 */

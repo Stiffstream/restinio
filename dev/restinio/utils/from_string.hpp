@@ -127,13 +127,13 @@ from_string< string_view_t >( string_view_t s )
 	return s;
 }
 
-//! Get a value from string.
-template < typename Value_Type >
-Value_Type
-from_string( const std::string & s )
-{
-	return from_string< Value_Type >( string_view_t{ s.data(), s.size() } );
-}
+// //! Get a value from string.
+// template < typename Value_Type >
+// Value_Type
+// from_string( const std::string & s )
+// {
+// 	return from_string< Value_Type >( string_view_t{ s.data(), s.size() } );
+// }
 
 } /* namespace utils */
 

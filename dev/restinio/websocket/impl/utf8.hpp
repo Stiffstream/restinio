@@ -10,6 +10,8 @@
 #include <iostream> // std::cout, debug
 #include <algorithm>
 
+#include <restinio/string_view.hpp>
+
 namespace restinio
 {
 
@@ -198,11 +200,11 @@ class utf8_checker_t
 //
 
 inline bool
-check_utf8_is_correct( const std::string & str )
+check_utf8_is_correct( string_view_t sv )
 {
 	utf8_checker_t checker;
 
-	for( const auto & ch : str )
+	for( const auto & ch : sv )
 	{
 		if( ! checker.process_byte( static_cast<std::uint8_t>(ch) ))
 		{

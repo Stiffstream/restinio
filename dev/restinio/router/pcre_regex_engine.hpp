@@ -9,6 +9,7 @@
 #pragma once
 
 #include <pcre.h>
+
 #include <fmt/format.h>
 
 #include <restinio/exception.hpp>
@@ -74,7 +75,7 @@ class regex_t final
 {
 	public:
 		regex_t() = default;
-		regex_t( const std::string & r, int options )
+		regex_t( string_view_t r, int options )
 		{
 			compile( r, options );
 		}
@@ -116,18 +117,22 @@ class regex_t final
 		pcre * m_route_regex{ nullptr };
 
 		void
-		compile( const std::string & r, int options )
+		compile( string_view_t r, int options )
 		{
 			const char* compile_error;
 			int eoffset;
 
-			m_route_regex = pcre_compile( r.c_str(), options, &compile_error, &eoffset, nullptr );
+			// We need zero-terminated string.
+			const std::string route{ r.data(), r.size() };
+
+			m_route_regex = pcre_compile( route.c_str(), options, &compile_error, &eoffset, nullptr );
+
 			if( nullptr == m_route_regex )
 			{
 				throw std::runtime_error{
 						fmt::format(
 							"unable to compile regex \"{}\": {}",
-							r,
+							route,
 							compile_error ) };
 			}
 		}
@@ -171,7 +176,7 @@ struct pcre_regex_engine_t
 	static auto
 	compile_regex(
 		//! Regular expression (the pattern).
-		const std::string & r,
+		string_view_t r,
 		//! Option for case sensativity.
 		bool is_case_sensative )
 	{

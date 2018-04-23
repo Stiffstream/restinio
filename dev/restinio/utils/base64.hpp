@@ -13,6 +13,7 @@
 #include <restinio/utils/impl/bitops.hpp>
 
 #include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include <string>
 #include <bitset>
@@ -43,12 +44,14 @@ is_base64_char( char c )
 }
 
 inline void
-check_string_is_base64( const std::string & str )
+check_string_is_base64( string_view_t str )
 {
 	auto throw_invalid_string = [&]{
 			throw exception_t{
 				fmt::format( "invalid base64 string '{}'", str ) };
 		};
+
+	// TODO: Handle long strings.
 
 	if( str.size() < 4 )
 		throw_invalid_string();
@@ -74,7 +77,7 @@ sixbits_char( uint_type_t bs )
 }
 
 inline std::string
-encode( const std::string & str )
+encode( string_view_t str )
 {
 	std::string result;
 
@@ -129,7 +132,7 @@ encode( const std::string & str )
 }
 
 inline std::string
-decode( const std::string & str )
+decode( string_view_t str )
 {
 	constexpr std::size_t group_size = 4;
 

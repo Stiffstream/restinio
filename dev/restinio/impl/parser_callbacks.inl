@@ -53,7 +53,7 @@ restinio_header_field_cb( http_parser * parser, const char *at, size_t length )
 }
 
 inline void
-append_last_field_accessor( http_header_fields_t & fields, const std::string & value )
+append_last_field_accessor( http_header_fields_t & fields, string_view_t value )
 {
 	fields.append_last_field( value );
 }

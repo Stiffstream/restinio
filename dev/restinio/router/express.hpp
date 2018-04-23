@@ -442,7 +442,7 @@ class express_route_entry_t
 
 		express_route_entry_t(
 			http_method_t method,
-			const std::string & route_path,
+			string_view_t route_path,
 			const path2regex::options_t & options,
 			express_request_handler_t handler )
 			:	express_route_entry_t{
@@ -455,7 +455,7 @@ class express_route_entry_t
 
 		express_route_entry_t(
 			http_method_t method,
-			const std::string & route_path,
+			string_view_t route_path,
 			express_request_handler_t handler )
 			:	express_route_entry_t{
 					method,
@@ -550,7 +550,7 @@ class express_router_t
 		void
 		add_handler(
 			http_method_t method,
-			const std::string & route_path,
+			string_view_t route_path,
 			express_request_handler_t handler )
 		{
 			add_handler(
@@ -563,7 +563,7 @@ class express_router_t
 		void
 		add_handler(
 			http_method_t method,
-			const std::string & route_path,
+			string_view_t route_path,
 			const path2regex::options_t & options,
 			express_request_handler_t handler )
 		{
@@ -572,7 +572,7 @@ class express_router_t
 
 		void
 		http_delete(
-			const std::string & route_path,
+			string_view_t route_path,
 			express_request_handler_t handler )
 		{
 			add_handler(
@@ -583,7 +583,7 @@ class express_router_t
 
 		void
 		http_delete(
-			const std::string & route_path,
+			string_view_t route_path,
 			const path2regex::options_t & options,
 			express_request_handler_t handler )
 		{
@@ -596,7 +596,7 @@ class express_router_t
 
 		void
 		http_get(
-			const std::string & route_path,
+			string_view_t route_path,
 			express_request_handler_t handler )
 		{
 			add_handler(
@@ -607,7 +607,7 @@ class express_router_t
 
 		void
 		http_get(
-			const std::string & route_path,
+			string_view_t route_path,
 			const path2regex::options_t & options,
 			express_request_handler_t handler )
 		{
@@ -620,7 +620,7 @@ class express_router_t
 
 		void
 		http_head(
-			const std::string & route_path,
+			string_view_t route_path,
 			express_request_handler_t handler )
 		{
 			add_handler(
@@ -631,7 +631,7 @@ class express_router_t
 
 		void
 		http_head(
-			const std::string & route_path,
+			string_view_t route_path,
 			const path2regex::options_t & options,
 			express_request_handler_t handler )
 		{
@@ -644,7 +644,7 @@ class express_router_t
 
 		void
 		http_post(
-			const std::string & route_path,
+			string_view_t route_path,
 			express_request_handler_t handler )
 		{
 			add_handler(
@@ -655,7 +655,7 @@ class express_router_t
 
 		void
 		http_post(
-			const std::string & route_path,
+			string_view_t route_path,
 			const path2regex::options_t & options,
 			express_request_handler_t handler )
 		{
@@ -668,7 +668,7 @@ class express_router_t
 
 		void
 		http_put(
-			const std::string & route_path,
+			string_view_t route_path,
 			express_request_handler_t handler )
 		{
 			add_handler(
@@ -679,7 +679,7 @@ class express_router_t
 
 		void
 		http_put(
-			const std::string & route_path,
+			string_view_t route_path,
 			const path2regex::options_t & options,
 			express_request_handler_t handler )
 		{

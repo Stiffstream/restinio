@@ -109,7 +109,7 @@ template < typename Object >
 auto
 ensure_created(
 	std::unique_ptr< Object > mb_created_one,
-	const std::string & fail_description )
+	string_view_t fail_description )
 {
 	auto result{ std::move( mb_created_one ) };
 
@@ -131,7 +131,7 @@ template < typename Object >
 auto
 ensure_created(
 	std::shared_ptr< Object > mb_created_one,
-	const std::string & fail_description )
+	string_view_t fail_description )
 {
 	auto result{ std::move( mb_created_one ) };
 

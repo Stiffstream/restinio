@@ -39,7 +39,7 @@ struct std_regex_engine_t
 	static auto
 	compile_regex(
 		//! Regular expression (the pattern).
-		const std::string & r,
+		string_view_t r,
 		//! Option for case sensativity.
 		bool is_case_sensative )
 	{
@@ -50,7 +50,7 @@ struct std_regex_engine_t
 			regex_flags |= std::regex::icase;
 		}
 
-		return compiled_regex_t{ r, regex_flags };
+		return compiled_regex_t{ r.data(), r.size(), regex_flags };
 	}
 
 	//! Wrapper function for matching logic invokation.

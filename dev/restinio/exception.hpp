@@ -11,6 +11,8 @@
 #include <string>
 #include <stdexcept>
 
+#include <restinio/string_view.hpp>
+
 namespace restinio
 {
 
@@ -30,6 +32,10 @@ class exception_t
 
 		exception_t( const std::string & err )
 			:	bast_type_t{ err }
+		{}
+
+		exception_t( string_view_t err )
+			:	bast_type_t{ std::string{ err.data(), err.size() } }
 		{}
 };
 

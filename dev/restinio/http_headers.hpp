@@ -14,6 +14,7 @@
 #include <algorithm>
 
 #include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include <http_parser.h>
 
@@ -273,8 +274,10 @@ using http_field = http_field_t;
 //! Helper function to get method string name.
 //! \{
 inline http_field_t
-string_to_field( const char * field_name, std::size_t field_name_size )
+string_to_field( string_view_t field )
 {
+	const char * field_name = field.data();
+	std::size_t field_name_size = field.size();
 
 #define RESTINIO_HTTP_CHECK_FOR_FIELD( field_id, candidate_field_name ) \
 	if( caseless_cmp(field_name, #candidate_field_name , field_name_size ) ) \
@@ -518,19 +521,6 @@ string_to_field( const char * field_name, std::size_t field_name_size )
 	return http_field_t::field_unspecified;
 }
 
-inline http_field_t
-string_to_field( const char * field_name )
-{
-	return string_to_field( field_name, std::strlen( field_name ) );
-}
-
-inline http_field_t
-string_to_field( const std::string & field_name )
-{
-	return string_to_field( field_name.data(), field_name.size() );
-}
-//! \}
-
 //
 // field_to_string()
 //
@@ -581,8 +571,24 @@ struct http_header_field_t
 	{}
 
 	http_header_field_t(
+		string_view_t name,
+		string_view_t value )
+		:	m_name{ name.data(), name.size() }
+		,	m_value{ value.data(), value.size() }
+		,	m_field_id{ string_to_field( m_name ) }
+	{}
+
+	http_header_field_t(
 		http_field_t field_id,
 		std::string value )
+		:	m_name{ field_to_string( field_id ) }
+		,	m_value{ std::move( value ) }
+		,	m_field_id{ field_id }
+	{}
+
+	http_header_field_t(
+		http_field_t field_id,
+		string_view_t value )
 		:	m_name{ field_to_string( field_id ) }
 		,	m_value{ std::move( value ) }
 		,	m_field_id{ field_id }
@@ -599,7 +605,7 @@ namespace impl
 {
 
 void
-append_last_field_accessor( http_header_fields_t &, const std::string & );
+append_last_field_accessor( http_header_fields_t &, string_view_t );
 
 } /* namespace impl */
 
@@ -625,7 +631,7 @@ append_last_field_accessor( http_header_fields_t &, const std::string & );
 class http_header_fields_t
 {
 		friend void
-		impl::append_last_field_accessor( http_header_fields_t &, const std::string & );
+		impl::append_last_field_accessor( http_header_fields_t &, string_view_t );
 
 	public:
 		using fields_container_t = std::vector< http_header_field_t >;
@@ -649,7 +655,7 @@ class http_header_fields_t
 
 		//! Chack field by name.
 		bool
-		has_field( const std::string & field_name ) const
+		has_field( string_view_t field_name ) const
 		{
 			return m_fields.cend() != cfind( field_name );
 		}
@@ -717,14 +723,14 @@ class http_header_fields_t
 		//! Append field with name.
 		void
 		append_field(
-			const std::string & field_name,
-			const std::string & field_value )
+			string_view_t field_name,
+			string_view_t field_value )
 		{
 			const auto it = find( field_name );
 
 			if( m_fields.end() != it )
 			{
-				it->m_value.append( field_value );
+				it->m_value.append( field_value.data(), field_value.size() );
 			}
 			else
 			{
@@ -740,7 +746,7 @@ class http_header_fields_t
 		void
 		append_field(
 			http_field_t field_id,
-			const std::string & field_value )
+			string_view_t field_value )
 		{
 			if( http_field_t::field_unspecified != field_id )
 			{
@@ -748,7 +754,7 @@ class http_header_fields_t
 
 				if( m_fields.end() != it )
 				{
-					it->m_value.append( field_value );
+					it->m_value.append( field_value.data(), field_value.size() );
 				}
 				else
 				{
@@ -759,8 +765,7 @@ class http_header_fields_t
 
 		//! Get field by name.
 		const std::string &
-		get_field(
-			const std::string & field_name ) const
+		get_field( string_view_t field_name ) const
 		{
 			const auto it = cfind( field_name );
 
@@ -773,21 +778,24 @@ class http_header_fields_t
 
 		//! Get field by id.
 		const std::string &
-		get_field(
-			http_field_t field_id ) const
+		get_field( http_field_t field_id ) const
 		{
 			if( http_field_t::field_unspecified == field_id )
+			{
 				throw exception_t{
 					fmt::format(
 						"unspecified fields cannot be searched by id" ) };
+			}
 
 			const auto it = cfind( field_id );
 
 			if( m_fields.end() == it )
+			{
 				throw exception_t{
 					fmt::format(
 						"field '{}' doesn't exist",
 						field_to_string( field_id ) ) };
+			}
 
 			return it->m_value;
 		}
@@ -798,7 +806,7 @@ class http_header_fields_t
 		*/
 		const std::string &
 		get_field(
-			const std::string & field_name,
+			string_view_t field_name,
 			const std::string & default_value ) const
 		{
 			const auto it = cfind( field_name );
@@ -831,12 +839,14 @@ class http_header_fields_t
 
 		//! Remove field by name.
 		void
-		remove_field( const std::string & field_name )
+		remove_field( string_view_t field_name )
 		{
 			const auto it = find( field_name );
 
 			if( m_fields.end() != it )
+			{
 				m_fields.erase( it );
+			}
 		}
 
 		//! Remove field by id.
@@ -848,24 +858,23 @@ class http_header_fields_t
 				const auto it = find( field_id );
 
 				if( m_fields.end() != it )
+				{
 					m_fields.erase( it );
+				}
 			}
 		}
 
-		auto
-		begin() const
+		auto begin() const
 		{
 			return m_fields.cbegin();
 		}
 
-		auto
-		end() const
+		auto end() const
 		{
 			return m_fields.cend();
 		}
 
-		auto
-		fields_count() const
+		auto fields_count() const
 		{
 			return m_fields.size();
 		}
@@ -881,13 +890,13 @@ class http_header_fields_t
 			so it is not in the public interface.
 		*/
 		void
-		append_last_field( const std::string & field_value )
+		append_last_field( string_view_t field_value )
 		{
-			m_fields.back().m_value.append( field_value );
+			m_fields.back().m_value.append( field_value.data(), field_value.size() );
 		}
 
 		fields_container_t::iterator
-		find( const std::string & field_name )
+		find( string_view_t field_name )
 		{
 			return std::find_if(
 				m_fields.begin(),
@@ -898,7 +907,7 @@ class http_header_fields_t
 		}
 
 		fields_container_t::const_iterator
-		cfind( const std::string & field_name ) const
+		cfind( string_view_t field_name ) const
 		{
 			return std::find_if(
 				m_fields.cbegin(),

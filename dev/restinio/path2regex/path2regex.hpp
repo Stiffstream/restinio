@@ -560,9 +560,9 @@ constexpr std::size_t group_modifier_idx = 5;
 
 //! Checks that string doesn't contain non-excaped brackets
 inline std::string
-check_no_unescaped_brackets( const std::string & str, std::size_t base_pos )
+check_no_unescaped_brackets( string_view_t strv, std::size_t base_pos )
 {
-	auto pos = str.find( '(' );
+	auto pos = strv.find( '(' );
 	if( std::string::npos != pos )
 	{
 		throw exception_t{
@@ -571,7 +571,7 @@ check_no_unescaped_brackets( const std::string & str, std::size_t base_pos )
 				base_pos + pos ) };
 	}
 
-	pos = str.find( ')' );
+	pos = strv.find( ')' );
 	if( std::string::npos != pos )
 	{
 		throw exception_t{
@@ -580,7 +580,7 @@ check_no_unescaped_brackets( const std::string & str, std::size_t base_pos )
 				base_pos + pos ) };
 	}
 
-	return str;
+	return std::string{ strv.data(), strv.size() };
 }
 
 //
@@ -674,7 +674,7 @@ handle_param_token(
 //! Parse a string for the raw tokens.
 template < typename Route_Param_Appender >
 token_list_t< Route_Param_Appender >
-parse( const std::string & route_str, const options_t & options )
+parse( string_view_t route_sv, const options_t & options )
 {
 	token_list_t< Route_Param_Appender > result;
 
@@ -683,13 +683,13 @@ parse( const std::string & route_str, const options_t & options )
 	bool path_escaped = false;
 
 	auto token_it =
-		std::sregex_iterator( route_str.begin(), route_str.end(), main_path_regex );
-	auto token_end = std::sregex_iterator{};
+		std::cregex_iterator( route_sv.begin(), route_sv.end(), main_path_regex );
+	auto token_end = std::cregex_iterator{};
 
 	if( token_it == token_end )
 	{
 		// Path is a single token.
-		path = check_no_unescaped_brackets( route_str, 0 );
+		path = check_no_unescaped_brackets( route_sv, 0 );
 	}
 
 	while( token_it != token_end )
@@ -698,7 +698,11 @@ parse( const std::string & route_str, const options_t & options )
 
 		assert( 6 == match.size() );
 
-		const std::string prefix{ match.prefix() };
+		const string_view_t
+			prefix{
+				match.prefix().first,
+				static_cast<std::size_t>( match.prefix().length() ) };
+
 		path += check_no_unescaped_brackets( prefix,
 				static_cast<std::size_t>(match.position()) - prefix.size() );
 
@@ -773,7 +777,7 @@ struct route_regex_matcher_data_t
 template < typename Route_Param_Appender, typename Regex_Engine >
 auto
 tokens2regexp(
-	const std::string & path,
+	string_view_t path,
 	const token_list_t< Route_Param_Appender > & tokens,
 	const options_t & options )
 {
@@ -856,7 +860,7 @@ tokens2regexp(
 template < typename Route_Param_Appender, typename Regex_Engine >
 inline auto
 path2regex(
-	const std::string & path,
+	string_view_t path,
 	const options_t & options )
 {
 	return impl::tokens2regexp< Route_Param_Appender, Regex_Engine >(

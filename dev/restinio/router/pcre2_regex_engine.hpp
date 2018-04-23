@@ -11,7 +11,9 @@
 #include <array>
 
 #include <pcre2.h>
+
 #include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include <restinio/exception.hpp>
 
@@ -86,7 +88,7 @@ class regex_t final
 {
 	public:
 		regex_t() = default;
-		regex_t( const std::string & r, int options )
+		regex_t( string_view_t r, int options )
 		{
 			compile( r, options );
 		}
@@ -128,7 +130,7 @@ class regex_t final
 		pcre2_code * m_route_regex{ nullptr };
 
 		void
-		compile( const std::string & r, int options )
+		compile( string_view_t r, int options )
 		{
 			PCRE2_SIZE erroroffset;
 			int errorcode;
@@ -192,7 +194,7 @@ struct pcre2_regex_engine_t
 	static auto
 	compile_regex(
 		//! Regular expression (the pattern).
-		const std::string & r,
+		string_view_t r,
 		//! Option for case sensativity.
 		bool is_case_sensative )
 	{
