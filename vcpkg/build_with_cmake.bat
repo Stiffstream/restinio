@@ -6,7 +6,7 @@ cd ../
 
 mkdir cmake_build_http_parser
 cd cmake_build_http_parser
-cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=../local_installs -DNODEJS_HTTP_PARSER_INSTALL=ON -DRESTINIO_VCPKG_BUILD=ON ../../dev/nodejs/http_parser
+cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=../local_installs -DNODEJS_HTTP_PARSER_INSTALL=ON ../../dev/nodejs/http_parser
 nmake install
 cd ../
 

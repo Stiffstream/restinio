@@ -9,9 +9,11 @@ SET(RESTINIO_USE_BOOST_ASIO "none" CACHE STRING "Use boost version of ASIO")
 
 SET( RESTINIO_STAND_ALONE_ASIO_DEFINES -DASIO_STANDALONE -DASIO_HAS_STD_CHRONO -DASIO_DISABLE_STD_STRING_VIEW)
 
-# http_parser is linked as raw static lib file.
+# http_parser must be found.
+find_package(http-parser REQUIRED)
 # fmt must be found.
 find_package(fmt REQUIRED)
+
 
 SET(RESTINIO_DEPENDENCIES_WITH_FIND_PACKAGE ON)
 
