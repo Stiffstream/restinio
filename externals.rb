@@ -17,7 +17,7 @@ MxxRu::arch_externals :asio_mxxru do |e|
 end
 
 MxxRu::arch_externals :nodejs_http_parser do |e|
-  e.url 'https://github.com/nodejs/http-parser/archive/v2.7.1.tar.gz'
+  e.url 'https://github.com/nodejs/http-parser/archive/v2.8.1.tar.gz'
 
   e.map_file 'http_parser.h' => 'dev/nodejs/http_parser/*'
   e.map_file 'http_parser.c' => 'dev/nodejs/http_parser/*'
