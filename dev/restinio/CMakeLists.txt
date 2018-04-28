@@ -50,12 +50,12 @@ ENDIF ()
 # ------------------------------------------------------------------------------
 
 IF (RESTINIO_DEPENDENCIES_WITH_FIND_PACKAGE)
+	message(STATUS "RESTinio dependencies are included with find_package()")
 	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE fmt::fmt-header-only)
-	# http-parser port names lib as 'http_parser'
-	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE http_parser)
+	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE unofficial::http_parser::http_parser)
 ELSE ()
-	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE $<BUILD_INTERFACE:fmt::fmt-header-only> )
-	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE $<BUILD_INTERFACE:nodejs::http_parser> )
+	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE $<BUILD_INTERFACE:fmt::fmt-header-only>)
+	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE $<BUILD_INTERFACE:unofficial::http_parser::http_parser>)
 ENDIF ()
 
 if( NOT (RESTINIO_USE_BOOST_ASIO STREQUAL "none") )
