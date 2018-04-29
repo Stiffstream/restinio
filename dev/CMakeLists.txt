@@ -22,17 +22,6 @@ SET(RESTINIO_USE_BOOST_ASIO_VALUES "none;static;shared")
 
 set_property(CACHE RESTINIO_USE_BOOST_ASIO PROPERTY STRINGS ${RESTINIO_USE_BOOST_ASIO_VALUES})
 
-IF ("x${CMAKE_CXX_COMPILER_ID}" MATCHES "xGNU"
-		OR "x${CMAKE_CXX_COMPILER_ID}" MATCHES "xClang"
-		OR "x${CMAKE_CXX_COMPILER_ID}" MATCHES "xIntel")
-	add_definitions(-pthread -mtune=native -march=native)
-	SET(CMAKE_EXE_LINKER_FLAGS "-pthread")
-	SET(CMAKE_SHARED_LINKER_FLAGS "-pthread")
-ELSEIF (${MSVC})
-ELSE ()
-	message(FATAL_ERROR "Your C++ compiler (ID: '${CMAKE_CXX_COMPILER_ID}') not supported.")
-ENDIF ()
-
 IF (RESTINIO_MASTER_PROJECT)
 	# RESTinio is a main project (not subproject)
 	# Do regular stuff here.
