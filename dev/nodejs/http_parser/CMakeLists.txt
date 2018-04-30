@@ -10,6 +10,7 @@ if(CMAKE_BUILD_TYPE MATCHES "Release")
 endif()
 
 add_library(http_parser http_parser.c http_parser.h)
+add_library(unofficial::http_parser::http_parser ALIAS http_parser)
 
 target_include_directories(http_parser PUBLIC
 	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
