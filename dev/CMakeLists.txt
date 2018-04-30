@@ -16,6 +16,7 @@ option(RESTINIO_SAMPLE "Build samples." ${RESTINIO_MASTER_PROJECT})
 option(RESTINIO_INSTALL_SAMPLES "Build install samples." ${RESTINIO_MASTER_PROJECT})
 option(RESTINIO_BENCH "Build the test target." ${RESTINIO_MASTER_PROJECT})
 option(RESTINIO_INSTALL_BENCHES "Build install samples." ${RESTINIO_MASTER_PROJECT})
+option(RESTINIO_FIND_DEPS "Use `find_package()` for including RESTinio dependencies." OFF)
 
 SET(RESTINIO_USE_BOOST_ASIO "none" CACHE STRING "Use boost version of ASIO")
 SET(RESTINIO_USE_BOOST_ASIO_VALUES "none;static;shared")
@@ -52,7 +53,7 @@ IF (RESTINIO_MASTER_PROJECT)
 		find_package(Boost 1.66.0 REQUIRED COMPONENTS system regex)
 	ENDIF ()
 
-	IF (RESTINIO_DEPENDENCIES_WITH_FIND_PACKAGE)
+	IF (RESTINIO_FIND_DEPS)
 		# Require necessary packages.
 
 		# HTTP parser

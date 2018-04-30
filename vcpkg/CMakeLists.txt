@@ -4,7 +4,6 @@ SET(CMAKE_CXX_STANDARD 14)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(RESTINIO_INSTALL "Generate the install target." ON)
-message(STATUS "RESTINIO_INSTALL = ${RESTINIO_INSTALL}")
 
 SET(RESTINIO_USE_BOOST_ASIO "none" CACHE STRING "Use boost version of ASIO")
 
@@ -15,10 +14,7 @@ find_package(unofficial-http-parser REQUIRED)
 # fmt must be found.
 find_package(fmt REQUIRED)
 
-option(RESTINIO_DEPENDENCIES_WITH_FIND_PACKAGE 
-	"RESTinio dependencies are included with find_package() or not." 
-	ON)
+option(RESTINIO_FIND_DEPS "Use `find_package()` for including RESTinio dependencies." ON)
 
-message(STATUS "RESTINIO_DEPENDENCIES_WITH_FIND_PACKAGE = ${RESTINIO_DEPENDENCIES_WITH_FIND_PACKAGE}")
-# RESTinio itself.
+# RESTinio:
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../dev/restinio ${CMAKE_CURRENT_BINARY_DIR}/restinio)

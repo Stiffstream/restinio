@@ -49,8 +49,9 @@ ELSE ()
 ENDIF ()
 # ------------------------------------------------------------------------------
 
-IF (RESTINIO_DEPENDENCIES_WITH_FIND_PACKAGE)
-	message(STATUS "RESTinio dependencies are included with find_package()")
+IF (RESTINIO_FIND_DEPS)
+	message(STATUS "RESTinio dependencies are included with `find_package()`")
+
 	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE fmt::fmt-header-only)
 	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE unofficial::http_parser::http_parser)
 ELSE ()
