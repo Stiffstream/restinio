@@ -23,13 +23,6 @@ SET(RESTINIO_USE_BOOST_ASIO_VALUES "none;static;shared")
 
 set_property(CACHE RESTINIO_USE_BOOST_ASIO PROPERTY STRINGS ${RESTINIO_USE_BOOST_ASIO_VALUES})
 
-# set(THREADS_PREFER_PTHREAD_FLAG ON)
-# find_package(Threads)
-# # target_link_libraries(my_app Threads::Threads)
-# IF (Threads_FOUND)
-# 	link_libraries(Threads::Threads)
-# ENDIF ()
-
 IF (RESTINIO_MASTER_PROJECT)
 	# RESTinio is a main project (not subproject)
 	# Do regular stuff here.
