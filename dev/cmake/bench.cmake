@@ -1,3 +1,4 @@
+
 IF (NOT BENCH)
 	message(FATAL_ERROR "BENCH is not defined!")
 ENDIF ()
@@ -9,6 +10,8 @@ ENDIF ()
 add_executable(${BENCH} ${BENCH_SRCFILES})
 
 TARGET_LINK_LIBRARIES(${BENCH} PRIVATE restinio::restinio)
+
+link_threads_if_necessary(${BENCH})
 
 IF (WIN32)
 	TARGET_LINK_LIBRARIES(${BENCH} PRIVATE wsock32 ws2_32)
