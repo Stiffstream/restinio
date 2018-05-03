@@ -29,59 +29,6 @@ Server runs on the main thread, and respond to all requests with hello-world
 message. Of course you've got an access to the structure of a given HTTP request,
 so you can apply a complex logic for handling requests.
 
-# Basic Example Of Express Router
-
-```C++
-
-#include <restinio/all.hpp>
-// More includes.
-
-void store_meter_data( ... /* params  */ ) {...}
-
-meter_data load_meter_data(... /* params */) {...}
-
-int main() {
-  // Create express router for our service.
-  auto router = std::make_unique<restinio::router::express_router_t<>>();
-  router->http_get(R"(/data/meter/:meter_id{\d})",
-    [](auto req, auto params) {
-      const auto qp = restinio::parse_query(req->header().query());
-      const auto data = load_meter_data(
-        restinio::cast_to<int>(params["meter_id"]),
-        qp.get_param("year"),
-        qp.get_param("mon"),
-        qp.get_param("day"));
-      ... // Writting a response.
-    });
-
-  router->http_post(R"(/data/meter/:meter_id{\d})",
-    [](auto req, auto params) {
-      store_meter_data(
-        restinio::cast_to<int>(params["meter_id"]),
-        ... /* More params from req */ );
-      ... // Writting a response.
-    });
-
-  router->non_matched_request_handler([](auto req){
-    return req->create_response( 404, "Not found")
-        .connection_close()
-        .done();
-  } );
-
-  // Launching a server with custom traits.
-  struct my_server_traits : public restinio::default_single_threaded_traits_t {
-    using request_handler_t = restinio::router::express_router_t<>;
-  };
-
-  restinio::run(
-    restinio::on_this_thread<my_server_traits>()
-      .address("localhost")
-      .request_handler(std::move(router)));
-
-  return 0;
-}
-```
-
 # Features
 
 * Async request handling. Cannot get the response data immediately? That's ok,
@@ -93,7 +40,7 @@ int main() {
   "GET /" and then just stuck.
 * Response builders. Need chunked-encoded body - then RESTinio has a special
   response builder for you (obviously it is not the only builder).
-* ExpressJS-like request routing.
+* ExpressJS-like request routing (see an example below).
 * Working with query string parameters.
 * Supports sending files and its parts (with sendfile on linux/unix and TransmitFile on windows).
 * Supports compression (deflate, gzip).
@@ -104,6 +51,55 @@ int main() {
   context.
 * Some tune options. One can set acceptor and socket options. When running
   RESTinio on a pool of threads connections can be accepted in parallel.
+
+# More Advanced Example With Express Router 
+
+```C++
+#include <restinio/all.hpp>
+
+using namespace restinio;
+
+template<typename T>
+std::ostream & operator<<(std::ostream & to, const optional_t<T> & v) {
+	if(v) to << *v;
+	return to;
+}
+
+int main() {
+	// Create express router for our service.
+	auto router = std::make_unique<router::express_router_t<>>();
+	router->http_get(
+			R"(/data/meter/:meter_id(\d+))",
+			[](auto req, auto params) {
+				const auto qp = parse_query(req->header().query());
+				return req->create_response()
+						.set_body(
+								fmt::format("meter_id={} (year={}/mon={}/day={})",
+										cast_to<int>(params["meter_id"]),
+										opt_value<int>(qp, "year"),
+										opt_value<int>(qp, "mon"),
+										opt_value<int>(qp, "day")))
+						.done();
+			});
+
+	router->non_matched_request_handler(
+			[](auto req){
+				return req->create_response( 404, "Not found").connection_close().done();
+			});
+
+	// Launching a server with custom traits.
+	struct my_server_traits : public default_single_thread_traits_t {
+		using request_handler_t = restinio::router::express_router_t<>;
+	};
+
+	restinio::run(
+			restinio::on_this_thread<my_server_traits>()
+					.address("localhost")
+					.request_handler(std::move(router)));
+
+	return 0;
+}
+```
 
 # License
 
