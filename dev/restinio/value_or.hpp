@@ -35,7 +35,7 @@ value_or( const Parameter_Container & params, string_view_t key, Value_Type defa
 		std::is_same< Parameter_Container, router::route_params_t >::value,
 		"restinio::value_or() supports only restinio param containers" );
 
-	const auto value = params.get_praram( key );
+	const auto value = params.get_param( key );
 	if( value )
 	{
 		return cast_to< Value_Type >( *value );
