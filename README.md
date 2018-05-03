@@ -52,7 +52,7 @@ so you can apply a complex logic for handling requests.
 * Some tune options. One can set acceptor and socket options. When running
   RESTinio on a pool of threads connections can be accepted in parallel.
 
-# More Advanced Example With Express Router 
+# Enhanced Example With Express Router
 
 ```C++
 #include <restinio/all.hpp>
