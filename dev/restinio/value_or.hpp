@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <type_traits>
+
 #include <restinio/cast_to.hpp>
 #include <restinio/uri_helpers.hpp>
 #include <restinio/router/express.hpp>
@@ -27,14 +29,12 @@ namespace restinio
 	@since v.0.4.4
 */
 template < typename Value_Type, typename Parameter_Container >
-Value_Type
+typename std::enable_if<
+		std::is_same< Parameter_Container, query_string_params_t >::value ||
+			std::is_same< Parameter_Container, router::route_params_t >::value,
+		Value_Type >::type
 value_or( const Parameter_Container & params, string_view_t key, Value_Type default_value )
 {
-	static_assert(
-		std::is_same< Parameter_Container, query_string_params_t >::value ||
-		std::is_same< Parameter_Container, router::route_params_t >::value,
-		"restinio::value_or() supports only restinio param containers" );
-
 	const auto value = params.get_param( key );
 	if( value )
 	{
@@ -42,6 +42,36 @@ value_or( const Parameter_Container & params, string_view_t key, Value_Type defa
 	}
 
 	return default_value;
+}
+
+/*!
+	\brief Gets the value of a parameter specified by \a key wrapped in `optional_t<Value_Type>`
+	if parameter exists and empty `optional_t<Value_Type>`
+	if parameter with a given key value doesn't exist.
+
+	If parameter exists in \a params it is obtained as \c string_view_t object and
+	casted to a necessary type and then is wrapped in `optional_t<Value_Type>`.
+	If \a params has no such parameters then the empty `optional_t<Value_Type>`
+	is returned.
+
+	@since v.0.4.5.1
+*/
+template < typename Value_Type, typename Parameter_Container >
+typename std::enable_if<
+		std::is_same< Parameter_Container, query_string_params_t >::value ||
+			std::is_same< Parameter_Container, router::route_params_t >::value,
+		optional_t< Value_Type > >::type
+opt_value( const Parameter_Container & params, string_view_t key )
+{
+	optional_t< Value_Type > result{};
+
+	const auto value = params.get_param( key );
+	if( value )
+	{
+		result = cast_to< Value_Type >( *value );
+	}
+
+	return result;
 }
 
 } /* namespace restinio */

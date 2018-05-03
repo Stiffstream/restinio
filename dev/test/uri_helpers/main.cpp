@@ -377,3 +377,23 @@ TEST_CASE( "value_or" , "[value_or]" )
 	REQUIRE( restinio::value_or( params, "e", restinio::string_view_t{ "2.71828" } ) ==
 															"2.71828" );
 }
+
+TEST_CASE( "opt_value" , "[opt_value]" )
+{
+	const restinio::string_view_t
+		query{ "toDate=815875200&"
+			"fromDate=1133136000&"
+			"toAge=38&"
+			"gender=f" };
+
+	auto params = restinio::parse_query( query );
+
+	REQUIRE( *restinio::opt_value< std::uint32_t >( params, "toDate" ) == 815875200UL );
+	REQUIRE( *opt_value< std::uint32_t >( params, "fromDate" ) == 1133136000UL );
+	REQUIRE( *opt_value< int >( params, "toAge" ) == 38 );
+	REQUIRE( *opt_value< std::string >( params, "gender" ) == "f" );
+
+	REQUIRE_FALSE( restinio::opt_value< std::uint32_t >( params, "does_not_exits" ) );
+	REQUIRE_FALSE( restinio::opt_value< double >( params, "pi" ) );
+	REQUIRE_FALSE( restinio::opt_value< std::string >( params, "e" ) );
+}
