@@ -9,6 +9,7 @@
 #pragma once
 
 #include <functional>
+#include <iosfwd>
 
 #include <restinio/exception.hpp>
 #include <restinio/http_headers.hpp>
@@ -53,6 +54,7 @@ class request_t final
 			,	m_header{ std::move( header ) }
 			,	m_body{ std::move( body ) }
 			,	m_connection{ std::move( connection ) }
+			,	m_connection_id{ m_connection->connection_id() }
 		{}
 
 		//! Get request header.
@@ -90,6 +92,20 @@ class request_t final
 				m_header.should_keep_alive() };
 		}
 
+		//! Get request id.
+		request_id_t
+		request_id() const
+		{
+			return m_request_id;
+		}
+
+		//! Get connection id.
+		connection_id_t
+		connection_id() const
+		{
+			return m_connection_id;
+		}
+
 	private:
 		void
 		check_connection()
@@ -105,7 +121,19 @@ class request_t final
 		const std::string m_body;
 
 		impl::connection_handle_t m_connection;
+		const connection_id_t m_connection_id;
 };
+
+inline std::ostream &
+operator << ( std::ostream & o, const request_t & req )
+{
+	o << "{req_id: " << req.request_id() << ", "
+		"conn_id: " << req.connection_id() << ", "
+		"path: " << req.header().path() << ","
+		"query: " << req.header().query() << "}";
+
+	return o;
+}
 
 //! Request handler, that is the type for calling request handlers.
 using request_handle_t = std::shared_ptr< request_t >;
@@ -116,7 +144,6 @@ using request_handle_t = std::shared_ptr< request_t >;
 
 using default_request_handler_t =
 		std::function< request_handling_status_t ( request_handle_t ) >;
-
 
 namespace impl
 {

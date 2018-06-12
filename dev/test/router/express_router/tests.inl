@@ -1,3 +1,21 @@
+struct fake_connection_t : public restinio::impl::connection_base_t
+{
+	fake_connection_t() : restinio::impl::connection_base_t{ 0 }
+	{}
+
+	virtual void
+	check_timeout( std::shared_ptr< tcp_connection_ctx_base_t > & ) override
+	{}
+
+	virtual void
+	write_response_parts(
+		request_id_t ,
+		response_output_flags_t ,
+		writable_items_container_t ) override
+	{}
+};
+
+
 request_handle_t
 create_fake_request( std::string target, http_method_t method = http_method_get() )
 {
@@ -6,7 +24,8 @@ create_fake_request( std::string target, http_method_t method = http_method_get(
 			0,
 			http_request_header_t{ method, std::move( target ) },
 			"",
-			restinio::impl::connection_handle_t{} );
+			std::make_shared< fake_connection_t >() );
+			// restinio::impl::connection_handle_t{ new fake_connection_t} );
 }
 
 TEST_CASE( "Simple named param" , "[express][simple][named_params]" )

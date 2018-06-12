@@ -13,6 +13,8 @@
 namespace restinio
 {
 
+using connection_id_t = std::uint64_t;
+
 //
 // tcp_connection_ctx_base_t
 //
@@ -33,7 +35,7 @@ class tcp_connection_ctx_base_t
 		virtual ~tcp_connection_ctx_base_t() = default;
 
 		//! Get connection id.
-		std::uint64_t
+		connection_id_t
 		connection_id() const
 		{
 			return m_connection_id;
@@ -57,7 +59,7 @@ class tcp_connection_ctx_base_t
 
 	private:
 		//! Id of a connection.
-		const std::uint64_t m_connection_id;
+		const connection_id_t m_connection_id;
 };
 
 //! Alias for http connection handle.
