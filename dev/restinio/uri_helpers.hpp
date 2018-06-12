@@ -122,10 +122,12 @@ class query_string_params_t final
 			auto it = find_parameter( key );
 
 			if( m_parameters.end() == it )
+			{
 				throw exception_t{
 					fmt::format(
-						"invalid parameter name: {}",
+						"unable to find parameter \"{}\"",
 						std::string{ key.data(), key.size() } ) };
+			}
 
 			return *it;
 		}
