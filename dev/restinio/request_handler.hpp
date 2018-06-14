@@ -129,7 +129,7 @@ operator << ( std::ostream & o, const request_t & req )
 {
 	o << "{req_id: " << req.request_id() << ", "
 		"conn_id: " << req.connection_id() << ", "
-		"path: " << req.header().path() << ","
+		"path: " << req.header().path() << ", "
 		"query: " << req.header().query() << "}";
 
 	return o;
