@@ -241,10 +241,44 @@ caseless_cmp( string_view_t a, string_view_t b )
 	RESTINIO_GEN( www_authenticate,             WWW-Authenticate )            \
 	RESTINIO_GEN( want_digest,                  Want-Digest )                 \
 	RESTINIO_GEN( warning,                      Warning )                     \
-	RESTINIO_GEN( x_frame_options,              X-Frame-Options )
+	RESTINIO_GEN( x_frame_options,              X-Frame-Options )             \
+\
+	RESTINIO_GEN( access_control,               Access-Control )              \
+	RESTINIO_GEN( access_control_allow_credentials, Access-Control-Allow-Credentials ) \
+	RESTINIO_GEN( access_control_allow_headers, Access-Control-Allow-Headers )\
+	RESTINIO_GEN( access_control_allow_methods, Access-Control-Allow-Methods )\
+	RESTINIO_GEN( access_control_allow_origin,  Access-Control-Allow-Origin ) \
+	RESTINIO_GEN( access_control_max_age,       Access-Control-Max-Age )      \
+	RESTINIO_GEN( access_control_request_method,    Access-Control-Request-Method )    \
+	RESTINIO_GEN( access_control_request_headers,   Access-Control-Request-Headers )   \
+	RESTINIO_GEN( compliance,                   Compliance )                  \
+	RESTINIO_GEN( content_transfer_encoding,    Content-Transfer-Encoding )   \
+	RESTINIO_GEN( cost,                         Cost )                        \
+	RESTINIO_GEN( ediint_features,              EDIINT-Features )             \
+	RESTINIO_GEN( message_id,                   Message-ID )                  \
+	RESTINIO_GEN( method_check,                 Method-Check )                \
+	RESTINIO_GEN( method_check_expires,         Method-Check-Expires )        \
+	RESTINIO_GEN( non_compliance,               Non-Compliance )              \
+	RESTINIO_GEN( optional,                     Optional )                    \
+	RESTINIO_GEN( referer_root,                 Referer-Root )                \
+	RESTINIO_GEN( resolution_hint,              Resolution-Hint )             \
+	RESTINIO_GEN( resolver_location,            Resolver-Location )           \
+	RESTINIO_GEN( subok,                        SubOK )                       \
+	RESTINIO_GEN( subst,                        Subst )                       \
+	RESTINIO_GEN( title,                        Title )                       \
+	RESTINIO_GEN( ua_color,                     UA-Color )                    \
+	RESTINIO_GEN( ua_media,                     UA-Media )                    \
+	RESTINIO_GEN( ua_pixels,                    UA-Pixels )                   \
+	RESTINIO_GEN( ua_resolution,                UA-Resolution )               \
+	RESTINIO_GEN( ua_windowpixels,              UA-Windowpixels )             \
+	RESTINIO_GEN( version,                      Version )                     \
+	RESTINIO_GEN( x_device_accept,              X-Device-Accept )             \
+	RESTINIO_GEN( x_device_accept_charset,      X-Device-Accept-Charset )     \
+	RESTINIO_GEN( x_device_accept_encoding,     X-Device-Accept-Encoding )    \
+	RESTINIO_GEN( x_device_accept_language,     X-Device-Accept-Language )    \
+	RESTINIO_GEN( x_device_user_agent,          X-Device-User-Agent )
 	// SPECIAL CASE: RESTINIO_GEN( connection,                   Connection )
 	// SPECIAL CASE: RESTINIO_GEN( content_length,               Content-Length )
-
 
 //
 // http_method_t
@@ -255,7 +289,7 @@ caseless_cmp( string_view_t a, string_view_t b )
 	\note Fields `Connection` and `Content-Length` are specieal cases,
 	thus they are not present in the list.
 */
-enum class http_field_t : std::uint8_t //By now 152 + 1 items fits to uint8_t
+enum class http_field_t : std::uint8_t //By now 152 + 34 + 1 items fits to uint8_t
 {
 #define RESTINIO_HTTP_FIELD_GEN( name, ignored ) name,
 	RESTINIO_HTTP_FIELDS_MAP( RESTINIO_HTTP_FIELD_GEN )
@@ -321,6 +355,7 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( safe,                         Safe )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( slug,                         SLUG )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( vary,                         Vary )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( cost,                         Cost )
 			break;
 
 		case 5:
@@ -335,6 +370,9 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( meter,                        Meter )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( range,                        Range )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( topic,                        Topic )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( subok,                        SubOK )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( subst,                        Subst )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( title,                        Title )
 			break;
 
 		case 6:
@@ -362,6 +400,7 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( urgency,                      Urgency )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( upgrade,                      Upgrade )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( warning,                      Warning )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( version,                      Version )
 			break;
 
 		case 8:
@@ -372,12 +411,16 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( pep_info,                     Pep-Info )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( position,                     Position )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( protocol,                     Protocol )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( optional,                     Optional )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( ua_color,                     UA-Color )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( ua_media,                     UA-Media )
 			break;
 
 		case 9:
 			RESTINIO_HTTP_CHECK_FOR_FIELD( forwarded,                    Forwarded )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( negotiate,                    Negotiate )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( overwrite,                    Overwrite )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( ua_pixels,                    UA-Pixels )
 			break;
 
 		case 10:
@@ -394,6 +437,8 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( soapaction,                   SoapAction )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( status_uri,                   Status-URI )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( user_agent,                   User-Agent )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( compliance,                   Compliance )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( message_id,                   Message-ID )
 			break;
 
 		case 11:
@@ -417,6 +462,8 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( schedule_tag,                 Schedule-Tag )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( redirect_ref,                 Redirect-Ref )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( variant_vary,                 Variant-Vary )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( method_check,                 Method-Check )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( referer_root,                 Referer-Root )
 			break;
 
 		case 13:
@@ -430,6 +477,7 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( ordering_type,                Ordering-Type )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( profileobject,                ProfileObject )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( protocol_info,                Protocol-Info )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( ua_resolution,                UA-Resolution )
 			break;
 
 		case 14:
@@ -438,6 +486,8 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( protocol_query,               Protocol-Query )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( proxy_features,               Proxy-Features )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( schedule_reply,               Schedule-Reply )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( non_compliance,               Non-Compliance )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( access_control,               Access-Control )
 			break;
 
 		case 15:
@@ -450,6 +500,10 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( public_key_pins,              Public-Key-Pins )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( security_scheme,              Security-Scheme )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( x_frame_options,              X-Frame-Options )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( x_device_accept,              X-Device-Accept )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( resolution_hint,              Resolution-Hint )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( ediint_features,              EDIINT-Features )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( ua_windowpixels,              UA-Windowpixels )
 			break;
 
 		case 16:
@@ -469,6 +523,7 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( sec_websocket_key,            Sec-WebSocket-Key )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( surrogate_control,            Surrogate-Control )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( transfer_encoding,            Transfer-Encoding )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( resolver_location,            Resolver-Location )
 			break;
 
 		case 18:
@@ -483,11 +538,13 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( content_script_type,          Content-Script-Type )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( if_unmodified_since,          If-Unmodified-Since )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( proxy_authorization,          Proxy-Authorization )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( x_device_user_agent,          X-Device-User-Agent )
 			break;
 
 		case 20:
 			RESTINIO_HTTP_CHECK_FOR_FIELD( sec_websocket_accept,         Sec-WebSocket-Accept )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( surrogate_capability,         Surrogate-Capability )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( method_check_expires,         Method-Check-Expires )
 			break;
 
 		case 21:
@@ -499,20 +556,46 @@ string_to_field( string_view_t field )
 		case 22:
 			RESTINIO_HTTP_CHECK_FOR_FIELD( authentication_control,       Authentication-Control )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( sec_websocket_protocol,       Sec-WebSocket-Protocol )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( access_control_max_age,       Access-Control-Max-Age )
+			break;
+
+		case 23:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( x_device_accept_charset,      X-Device-Accept-Charset )
 			break;
 
 		case 24:
 			RESTINIO_HTTP_CHECK_FOR_FIELD( sec_websocket_extensions,     Sec-WebSocket-Extensions )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( x_device_accept_encoding,     X-Device-Accept-Encoding )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( x_device_accept_language,     X-Device-Accept-Language )
 			break;
 
 		case 25:
 			RESTINIO_HTTP_CHECK_FOR_FIELD( optional_www_authenticate,    Optional-WWW-Authenticate )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( proxy_authentication_info,    Proxy-Authentication-Info )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( strict_transport_security,    Strict-Transport-Security )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( content_transfer_encoding,    Content-Transfer-Encoding )
 			break;
 
 		case 27:
 			RESTINIO_HTTP_CHECK_FOR_FIELD( public_key_pins_report_only,  Public-Key-Pins-Report-Only )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( access_control_allow_origin,  Access-Control-Allow-Origin )
+			break;
+
+		case 28:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( access_control_allow_headers, Access-Control-Allow-Headers )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( access_control_allow_methods, Access-Control-Allow-Methods )
+			break;
+
+		case 29:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( access_control_request_method,    Access-Control-Request-Method )
+			break;
+
+		case 30:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( access_control_request_headers,   Access-Control-Request-Headers )
+			break;
+
+		case 32:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( access_control_allow_credentials, Access-Control-Allow-Credentials )
 			break;
 	}
 
