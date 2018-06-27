@@ -50,8 +50,9 @@ open_file( const char * file_path )
 }
 
 //! Get file size.
-inline file_size_t
-size_of_file( file_descriptor_t fd )
+template < typename META >
+META
+get_file_meta( file_descriptor_t fd )
 {
 	file_size_t fsize = 0;
 
@@ -78,7 +79,9 @@ size_of_file( file_descriptor_t fd )
 		}
 	}
 
-	return fsize;
+	// No way to get last modification,
+	// Use current time instead.
+	return META{ fsize, std::time( nullptr ) };
 }
 
 //! Close file by its descriptor.

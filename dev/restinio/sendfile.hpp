@@ -179,6 +179,38 @@ class file_descriptor_holder_t
 };
 
 //
+// file_meta_t
+//
+
+//! Meta data of the file.
+struct file_meta_t
+{
+	file_meta_t()
+	{}
+
+	file_meta_t(
+		file_size_t file_total_size,
+		std::time_t last_modified_at )
+		:	m_file_total_size{ file_total_size }
+		,	m_last_modified_at{ last_modified_at }
+	{}
+
+	//! Total file size.
+	file_size_t m_file_total_size{ 0 };
+
+	//! Last modification date.
+	std::time_t m_last_modified_at{ 0 };
+};
+
+inline void
+swap( file_meta_t & r, file_meta_t & l ) noexcept
+{
+	std::swap( r.m_file_total_size, l.m_file_total_size );
+	std::swap( r.m_last_modified_at, l.m_last_modified_at );
+}
+
+
+//
 // sendfile_t
 //
 
@@ -191,16 +223,19 @@ class file_descriptor_holder_t
 */
 class sendfile_t
 {
-		friend sendfile_t sendfile( file_descriptor_holder_t , file_size_t , file_size_t );
+		friend sendfile_t sendfile( file_descriptor_holder_t , file_meta_t , file_size_t );
 
 		sendfile_t(
+			//! File descriptor.
 			file_descriptor_holder_t fdh,
-			file_size_t file_total_size,
+			//! File meta data.
+			file_meta_t meta,
+			//! Send chunk size.
 			sendfile_chunk_size_guarded_value_t chunk )
 			:	m_file_descriptor{ std::move( fdh ) }
-			,	m_file_total_size{ file_total_size }
+			,	m_meta{ std::move( meta ) }
 			,	m_offset{ 0 }
-			,	m_size{ file_total_size }
+			,	m_size{ m_meta.m_file_total_size }
 			,	m_chunk_size{ chunk.value() }
 			,	m_timelimit{ std::chrono::steady_clock::duration::zero() }
 		{}
@@ -210,7 +245,7 @@ class sendfile_t
 		{
 			using std::swap;
 			std::swap( left.m_file_descriptor, right.m_file_descriptor );
-			std::swap( left.m_file_total_size, right.m_file_total_size );
+			std::swap( left.m_meta, right.m_meta );
 			std::swap( left.m_offset, right.m_offset );
 			std::swap( left.m_size, right.m_size );
 			std::swap( left.m_chunk_size, right.m_chunk_size );
@@ -231,7 +266,7 @@ class sendfile_t
 		///@{
 		sendfile_t( sendfile_t && sf ) noexcept
 			:	m_file_descriptor{ std::move( sf.m_file_descriptor ) }
-			,	m_file_total_size{ sf.m_file_total_size }
+			,	m_meta{ std::move( sf.m_meta ) }
 			,	m_offset{ sf.m_offset }
 			,	m_size{ sf.m_size }
 			,	m_chunk_size{ sf.m_chunk_size }
@@ -253,8 +288,17 @@ class sendfile_t
 		//! Check if file is valid.
 		bool is_valid() const noexcept { return m_file_descriptor.is_valid(); }
 
+		//! Get file meta data.
+		const file_meta_t & meta() const
+		{
+			return m_meta;
+		}
+
 		//! Get total file size.
-		auto file_total_size() const noexcept { return m_file_total_size; }
+		/*!
+			\deprecated Use meta() to get file total size.
+		*/
+		auto file_total_size() const noexcept { return m_meta.m_file_total_size; }
 
 		//! Get offset of data to write.
 		auto offset() const noexcept { return m_offset; }
@@ -279,19 +323,19 @@ class sendfile_t
 		{
 			check_file_is_valid();
 
-			if( static_cast< file_size_t >( offset_value ) > m_file_total_size )
+			if( static_cast< file_size_t >( offset_value ) > m_meta.m_file_total_size )
 			{
 				throw exception_t{
 					fmt::format(
 						"invalid file offset: {}, while file size is {}",
 						offset_value,
-						m_file_total_size ) };
+						m_meta.m_file_total_size ) };
 			}
 
 			m_offset = offset_value;
 			m_size =
 				std::min< file_size_t >(
-					m_file_total_size - static_cast< file_size_t >( offset_value ),
+					m_meta.m_file_total_size - static_cast< file_size_t >( offset_value ),
 					size_value );
 
 			return *this;
@@ -375,8 +419,9 @@ class sendfile_t
 
 		//! Native file descriptor.
 		file_descriptor_holder_t m_file_descriptor;
-		//! The size of the file.
-		file_size_t m_file_total_size;
+
+		//! File meta data.
+		file_meta_t m_meta;
 
 		//! Data offset within the file.
 		file_offset_t m_offset;
@@ -407,12 +452,12 @@ inline sendfile_t
 sendfile(
 	//! Native file descriptor.
 	file_descriptor_holder_t fd,
-	//! Total file size.
-	file_size_t total_file_size,
+	//! File meta data.
+	file_meta_t meta,
 	//! The max size of a data to be send on a single iteration.
 	file_size_t chunk_size = sendfile_default_chunk_size )
 {
-	return sendfile_t{ std::move( fd ), total_file_size, chunk_size };
+	return sendfile_t{ std::move( fd ), std::move( meta ), chunk_size };
 }
 
 inline sendfile_t
@@ -424,9 +469,9 @@ sendfile(
 {
 	file_descriptor_holder_t fd{ open_file( file_path ) };
 
-	auto total_file_size = size_of_file( fd.fd() );
+	auto meta = get_file_meta< file_meta_t >( fd.fd() );
 
-	return sendfile( std::move( fd ), total_file_size , chunk_size );
+	return sendfile( std::move( fd ), std::move( meta ), chunk_size );
 }
 
 inline sendfile_t

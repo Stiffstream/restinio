@@ -62,8 +62,9 @@ open_file( const char * file_path)
 }
 
 //! Get file size.
-inline file_size_t
-size_of_file( file_descriptor_t fd )
+template < typename META >
+META
+get_file_meta( file_descriptor_t fd )
 {
 	if( null_file_descriptor() == fd )
 	{
@@ -86,7 +87,9 @@ size_of_file( file_descriptor_t fd )
 			fmt::format( "unable to get file size : {}", strerror( errno ) ) };
 	}
 
-	return static_cast< file_size_t >( file_stat.st_size );
+	return META{
+			static_cast< file_size_t >( file_stat.st_size ),
+			file_stat.st_mtim.tv_sec };
 }
 
 //! Close file by its descriptor.
