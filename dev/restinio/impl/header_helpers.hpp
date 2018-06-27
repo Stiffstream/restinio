@@ -51,7 +51,7 @@ calculate_approx_buffer_size_for_header( const http_response_header_t & h )
 
 	for( const auto & f : h )
 	{
-		result += f.m_name.size() + 2 + f.m_value.size() + 2;
+		result += f.name().size() + 2 + f.value().size() + 2;
 	}
 
 	result += 2; // Final "\r\n\r\n".
@@ -142,9 +142,9 @@ create_header_string(
 	constexpr const char header_field_sep[] = ": ";
 	for( const auto & f : h )
 	{
-		result += f.m_name;
+		result += f.name();
 		result.append( header_field_sep, ct_string_len( header_field_sep ) );
-		result += f.m_value;
+		result += f.value();
 		result.append( header_rn, ct_string_len( header_rn ) );
 	}
 
