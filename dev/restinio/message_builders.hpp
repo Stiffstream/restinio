@@ -83,6 +83,14 @@ class base_response_builder_t
 
 		//! Add header field.
 		Response_Builder &
+		append_header( http_header_field_t http_header_field )
+		{
+			m_header.set_field( std::move( http_header_field ) );
+			return upcast_reference();
+		}
+
+		//! Add header field.
+		Response_Builder &
 		append_header(
 			http_field_t field_id,
 			std::string field_value )
@@ -101,7 +109,7 @@ class base_response_builder_t
 			const auto tpoint = make_gmtime( t );
 
 			std::array< char, 64 > buf;
-			// TODO: is there a faster way to get time string?
+			// TODO: is there a faster way to get a time string?
 			strftime(
 				buf.data(),
 				buf.size(),
