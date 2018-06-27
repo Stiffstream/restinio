@@ -33,7 +33,6 @@ TEST_CASE( "Working with fields (by name)" , "[header][fields][by_name]" )
 		fields.get_field( "CONTENT-TYPE", "default-value-3" )
 			== "default-value-3" );
 
-
 	fields.set_field( "Content-Type", "text/plain" );
 	REQUIRE( 1 == fields.fields_count() );
 
@@ -195,6 +194,17 @@ TEST_CASE( "Working with fields (by id)" , "[header][fields][by_id]" )
 	REQUIRE( 2 == fields.fields_count() );
 	fields.remove_field( http_field::server );
 	REQUIRE( 1 == fields.fields_count() );
+}
+
+TEST_CASE( "Working with fields (by http_header_field_t)" , "[header][fields][by_http_header_field_t]" )
+{
+	http_header_fields_t fields;
+
+	fields.set_field( http_header_field_t{ std::string{"Content-Type"}, std::string{ "text/plain"} } );
+	fields.set_field( http_header_field_t{ http_field::server, std::string{"UNIT-TEST"} } );
+
+	REQUIRE( fields.get_field( http_field::content_type ) == "text/plain" );
+	REQUIRE( fields.get_field( "Server" ) == "UNIT-TEST" );
 }
 
 TEST_CASE( "Working with common header" , "[header][common]" )
