@@ -25,6 +25,27 @@ namespace restinio
 {
 
 //
+// make_date_field_value()
+//
+
+//! Format a timepoint to a string of a propper format.
+inline std::string
+make_date_field_value( std::time_t t )
+{
+	const auto tpoint = make_gmtime( t );
+
+	std::array< char, 64 > buf;
+	// TODO: is there a faster way to get time string?
+	strftime(
+		buf.data(),
+		buf.size(),
+		"%a, %d %b %Y %H:%M:%S GMT",
+		&tpoint );
+
+	return std::string{ buf.data() };
+}
+
+//
 // base_response_builder_t
 //
 
@@ -98,17 +119,7 @@ class base_response_builder_t
 		append_header_date_field(
 			std::time_t t = std::time( nullptr ) )
 		{
-			const auto tpoint = make_gmtime( t );
-
-			std::array< char, 64 > buf;
-			// TODO: is there a faster way to get time string?
-			strftime(
-				buf.data(),
-				buf.size(),
-				"%a, %d %b %Y %H:%M:%S GMT",
-				&tpoint );
-
-			m_header.set_field( http_field_t::date, buf.data() );
+			m_header.set_field( http_field_t::date, make_date_field_value( t ) );
 
 			return upcast_reference();
 		}

@@ -120,13 +120,25 @@ auto server_handler( const std::string & root_dir )
 				try
 				{
 					auto sf = restinio::sendfile( file_path );
+					auto modified_at =
+						restinio::make_date_field_value( sf.meta().m_last_modified_at );
+
+					auto expires_at =
+						restinio::make_date_field_value(
+							std::time( nullptr ) + 7 * 24 * 60 * 60 ); // 1 week.
 
 					return
 						req->create_response()
-							.append_header_date_field()
 							.append_header(
 								restinio::http_field::server,
 								"RESTinio" )
+							.append_header_date_field()
+							.append_header(
+								restinio::http_field::last_modified,
+								std::move( modified_at ) )
+							.append_header(
+								restinio::http_field::expires,
+								std::move( expires_at ) )
 							.append_header(
 								restinio::http_field::content_type,
 								content_type_by_file_extention( params[ "ext" ] ) )
