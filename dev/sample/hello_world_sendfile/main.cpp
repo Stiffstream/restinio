@@ -142,7 +142,7 @@ void run_server( const app_args_t & args )
 									.set_body( std::move( sf ) )
 									.done();
 						}
-						catch( const std::exception & ex )
+						catch( const std::exception & )
 						{
 							return req->create_response( 404, "Not Found" )
 								.connection_close()

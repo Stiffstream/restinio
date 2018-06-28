@@ -61,7 +61,7 @@ open_file( const char * file_path)
 	return file_descriptor;
 }
 
-//! Get file size.
+//! Get file meta.
 template < typename META >
 META
 get_file_meta( file_descriptor_t fd )
@@ -84,7 +84,7 @@ get_file_meta( file_descriptor_t fd )
 	if( 0 != fstat_rc )
 	{
 		throw exception_t{
-			fmt::format( "unable to get file size : {}", strerror( errno ) ) };
+			fmt::format( "unable to get file stat : {}", strerror( errno ) ) };
 	}
 
 	return META{
