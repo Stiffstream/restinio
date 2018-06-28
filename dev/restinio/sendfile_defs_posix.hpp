@@ -89,7 +89,12 @@ get_file_meta( file_descriptor_t fd )
 
 	return META{
 			static_cast< file_size_t >( file_stat.st_size ),
-			file_stat.st_mtim.tv_sec };
+#if defined( RESTINIO_MACOS_TARGET )
+			file_stat.st_mtimespec.tv_sec
+#else
+			file_stat.st_mtim.tv_sec
+#endif
+		};
 }
 
 //! Close file by its descriptor.
