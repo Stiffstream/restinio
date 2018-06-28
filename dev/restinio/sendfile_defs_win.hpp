@@ -86,9 +86,8 @@ get_file_meta( file_descriptor_t fd )
 			// https://msdn.microsoft.com/en-us/library/windows/desktop/ms724284(v=vs.85).aspx
 
 			// Microseconds between 1601-01-01 00:00:00 UTC and 1970-01-01 00:00:00 UTC
-			constexpr std::uint64_t epoch_difference = 11644473600000000ULL;
-			constexpr std::uint64_t nanosec_in_sec = 1000 * 1000;
-
+			constexpr std::uint64_t nanosec100_in_sec = 1000 * 1000 * 1000 / 100;
+			constexpr std::uint64_t epoch_difference_s = 11644473600ULL;
 
 			// First convert 100-ns intervals to microseconds, then adjust for the
 			// epoch difference
@@ -96,7 +95,7 @@ get_file_meta( file_descriptor_t fd )
 			ull.LowPart = ftWrite.dwLowDateTime;
 			ull.HighPart = ftWrite.dwHighDateTime;
 
-			flastmodified = ( ull.QuadPart - epoch_difference ) / 1000000;
+			flastmodified = ull.QuadPart / nanosec100_in_sec - epoch_difference_s;
 		}
 		else
 		{
