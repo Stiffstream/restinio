@@ -58,11 +58,13 @@ open_file( const char * file_path )
 	return file_descriptor;
 }
 
-//! Get file size.
-inline file_size_t
-size_of_file( file_descriptor_t fd )
+//! Get file meta.
+template < typename META >
+META
+get_file_meta( file_descriptor_t fd )
 {
 	file_size_t fsize = 0;
+	std::time_t flastmodified = 0;
 
 	if( null_file_descriptor() != fd )
 	{
@@ -72,9 +74,40 @@ size_of_file( file_descriptor_t fd )
 		{
 			fsize = static_cast< file_size_t >( file_size.QuadPart );
 		}
+		else
+		{
+			throw exception_t{
+				fmt::format( "unable to get file size: error code:{}", GetLastError() ) };
+		}
+
+		FILETIME ftWrite;
+		if( GetFileTime( fd, NULL, NULL, &ftWrite ) )
+		{
+			// https://msdn.microsoft.com/en-us/library/windows/desktop/ms724284(v=vs.85).aspx
+
+			// Microseconds between 1601-01-01 00:00:00 UTC and 1970-01-01 00:00:00 UTC
+			constexpr std::uint64_t epoch_difference = 11644473600000000ULL;
+			constexpr std::uint64_t nanosec_in_sec = 1000 * 1000;
+
+
+			// First convert 100-ns intervals to microseconds, then adjust for the
+			// epoch difference
+			ULARGE_INTEGER ull;
+			ull.LowPart = ftWrite.dwLowDateTime;
+			ull.HighPart = ftWrite.dwHighDateTime;
+
+			flastmodified = ( ull.QuadPart - epoch_difference ) / 1000000;
+		}
+		else
+		{
+			throw exception_t{
+				fmt::format( 
+					"unable to get file last modification: error code:{}", 
+					GetLastError() ) };
+		}
 	}
 
-	return fsize;
+	return META{ fsize, flastmodified};
 }
 
 //! Close file by its descriptor.

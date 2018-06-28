@@ -61,7 +61,7 @@ open_file( const char * file_path)
 	return file_descriptor;
 }
 
-//! Get file size.
+//! Get file meta.
 template < typename META >
 META
 get_file_meta( file_descriptor_t fd )
