@@ -125,7 +125,8 @@ auto server_handler( const std::string & root_dir )
 
 					auto expires_at =
 						restinio::make_date_field_value(
-							std::time( nullptr ) + 7 * 24 * 60 * 60 ); // 1 week.
+							std::chrono::system_clock::now() +
+								std::chrono::hours( 24 * 7 ) );
 
 					return
 						req->create_response()
