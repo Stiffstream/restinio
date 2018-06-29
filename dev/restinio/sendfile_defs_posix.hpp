@@ -91,10 +91,10 @@ get_file_meta( file_descriptor_t fd )
 		last_modified{
 #if defined( RESTINIO_MACOS_TARGET )
 			std::chrono::seconds( file_stat.st_mtimespec.tv_sec ) +
-				std::chrono::nanoseconds( file_stat.st_mtimespec.tv_nsec )
+				std::chrono::microseconds( file_stat.st_mtimespec.tv_nsec / 1000 )
 #else
 			std::chrono::seconds( file_stat.st_mtim.tv_sec ) +
-				std::chrono::nanoseconds( file_stat.st_mtim.tv_nsec )
+				std::chrono::microseconds( file_stat.st_mtim.tv_nsec / 1000 )
 #endif
 		};
 
