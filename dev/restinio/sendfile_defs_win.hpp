@@ -64,7 +64,7 @@ META
 get_file_meta( file_descriptor_t fd )
 {
 	file_size_t fsize = 0;
-	std::time_t flastmodified = 0;
+	std::chrono::system_clock::time_point flastmodified;
 
 	if( null_file_descriptor() != fd )
 	{
@@ -86,8 +86,9 @@ get_file_meta( file_descriptor_t fd )
 			// https://msdn.microsoft.com/en-us/library/windows/desktop/ms724284(v=vs.85).aspx
 
 			// Microseconds between 1601-01-01 00:00:00 UTC and 1970-01-01 00:00:00 UTC
-			constexpr std::uint64_t nanosec100_in_sec = 1000 * 1000 * 1000 / 100;
-			constexpr std::uint64_t epoch_difference_s = 11644473600ULL;
+			constexpr std::uint64_t nanosec100_in_microsec = 10;
+			constexpr std::uint64_t epoch_difference_in_microsec = 
+				11644473600ULL * 1000 *1000;
 
 			// First convert 100-ns intervals to microseconds, then adjust for the
 			// epoch difference
@@ -95,7 +96,10 @@ get_file_meta( file_descriptor_t fd )
 			ull.LowPart = ftWrite.dwLowDateTime;
 			ull.HighPart = ftWrite.dwHighDateTime;
 
-			flastmodified = ull.QuadPart / nanosec100_in_sec - epoch_difference_s;
+			flastmodified = 
+				std::chrono::system_clock::time_point{
+					std::chrono::microseconds( 
+						ull.QuadPart / nanosec100_in_microsec - epoch_difference_in_microsec ) };
 		}
 		else
 		{
