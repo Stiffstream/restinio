@@ -33,7 +33,6 @@ TEST_CASE( "Working with fields (by name)" , "[header][fields][by_name]" )
 		fields.get_field( "CONTENT-TYPE", "default-value-3" )
 			== "default-value-3" );
 
-
 	fields.set_field( "Content-Type", "text/plain" );
 	REQUIRE( 1 == fields.fields_count() );
 
@@ -75,13 +74,13 @@ TEST_CASE( "Working with fields (by name)" , "[header][fields][by_name]" )
 
 	{
 		const auto & f = *( fields.begin() );
-		REQUIRE( f.m_name == "Content-Type" );
-		REQUIRE( f.m_value == "text/plain; charset=utf-8" );
+		REQUIRE( f.name() == "Content-Type" );
+		REQUIRE( f.value() == "text/plain; charset=utf-8" );
 	}
 	{
 		const auto & f = *( std::next( fields.begin() ) );
-		REQUIRE( f.m_name == "Server" );
-		REQUIRE( f.m_value == "Unit Test; Fields Test" );
+		REQUIRE( f.name() == "Server" );
+		REQUIRE( f.value() == "Unit Test; Fields Test" );
 	}
 
 	// Fields that don't exist
@@ -165,15 +164,15 @@ TEST_CASE( "Working with fields (by id)" , "[header][fields][by_id]" )
 
 	{
 		const auto & f = *( fields.begin() );
-		REQUIRE( f.m_field_id == http_field::content_type );
-		REQUIRE( f.m_name == field_to_string( http_field::content_type ) );
-		REQUIRE( f.m_value == "text/plain; charset=utf-8" );
+		REQUIRE( f.field_id() == http_field::content_type );
+		REQUIRE( f.name() == field_to_string( http_field::content_type ) );
+		REQUIRE( f.value() == "text/plain; charset=utf-8" );
 	}
 	{
 		const auto & f = *( std::next( fields.begin() ) );
-		REQUIRE( f.m_field_id == http_field::server );
-		REQUIRE( f.m_name == field_to_string( http_field::server ) );
-		REQUIRE( f.m_value == "Unit Test; Fields Test" );
+		REQUIRE( f.field_id() == http_field::server );
+		REQUIRE( f.name() == field_to_string( http_field::server ) );
+		REQUIRE( f.value() == "Unit Test; Fields Test" );
 	}
 
 	// Fields that don't exist
@@ -195,6 +194,17 @@ TEST_CASE( "Working with fields (by id)" , "[header][fields][by_id]" )
 	REQUIRE( 2 == fields.fields_count() );
 	fields.remove_field( http_field::server );
 	REQUIRE( 1 == fields.fields_count() );
+}
+
+TEST_CASE( "Working with fields (by http_header_field_t)" , "[header][fields][by_http_header_field_t]" )
+{
+	http_header_fields_t fields;
+
+	fields.set_field( http_header_field_t{ std::string{"Content-Type"}, std::string{ "text/plain"} } );
+	fields.set_field( http_header_field_t{ http_field::server, std::string{"UNIT-TEST"} } );
+
+	REQUIRE( fields.get_field( http_field::content_type ) == "text/plain" );
+	REQUIRE( fields.get_field( "Server" ) == "UNIT-TEST" );
 }
 
 TEST_CASE( "Working with common header" , "[header][common]" )
@@ -430,6 +440,41 @@ TEST_CASE( "working with string_to_field()" , "[header][string_to_field]" )
 	RESTINIO_FIELD_FROM_STRIN_TEST( warning,                      Warning )
 	RESTINIO_FIELD_FROM_STRIN_TEST( x_frame_options,              X-Frame-Options )
 
+	// Since v0.4.7
+	RESTINIO_FIELD_FROM_STRIN_TEST( access_control,               Access-Control )
+	RESTINIO_FIELD_FROM_STRIN_TEST( access_control_allow_credentials, Access-Control-Allow-Credentials )
+	RESTINIO_FIELD_FROM_STRIN_TEST( access_control_allow_headers, Access-Control-Allow-Headers )
+	RESTINIO_FIELD_FROM_STRIN_TEST( access_control_allow_methods, Access-Control-Allow-Methods )
+	RESTINIO_FIELD_FROM_STRIN_TEST( access_control_allow_origin,  Access-Control-Allow-Origin )
+	RESTINIO_FIELD_FROM_STRIN_TEST( access_control_max_age,       Access-Control-Max-Age )
+	RESTINIO_FIELD_FROM_STRIN_TEST( access_control_request_method,    Access-Control-Request-Method )
+	RESTINIO_FIELD_FROM_STRIN_TEST( access_control_request_headers,   Access-Control-Request-Headers )
+	RESTINIO_FIELD_FROM_STRIN_TEST( compliance,                   Compliance )
+	RESTINIO_FIELD_FROM_STRIN_TEST( content_transfer_encoding,    Content-Transfer-Encoding )
+	RESTINIO_FIELD_FROM_STRIN_TEST( cost,                         Cost )
+	RESTINIO_FIELD_FROM_STRIN_TEST( ediint_features,              EDIINT-Features )
+	RESTINIO_FIELD_FROM_STRIN_TEST( message_id,                   Message-ID )
+	RESTINIO_FIELD_FROM_STRIN_TEST( method_check,                 Method-Check )
+	RESTINIO_FIELD_FROM_STRIN_TEST( method_check_expires,         Method-Check-Expires )
+	RESTINIO_FIELD_FROM_STRIN_TEST( non_compliance,               Non-Compliance )
+	RESTINIO_FIELD_FROM_STRIN_TEST( optional,                     Optional )
+	RESTINIO_FIELD_FROM_STRIN_TEST( referer_root,                 Referer-Root )
+	RESTINIO_FIELD_FROM_STRIN_TEST( resolution_hint,              Resolution-Hint )
+	RESTINIO_FIELD_FROM_STRIN_TEST( resolver_location,            Resolver-Location )
+	RESTINIO_FIELD_FROM_STRIN_TEST( subok,                        SubOK )
+	RESTINIO_FIELD_FROM_STRIN_TEST( subst,                        Subst )
+	RESTINIO_FIELD_FROM_STRIN_TEST( title,                        Title )
+	RESTINIO_FIELD_FROM_STRIN_TEST( ua_color,                     UA-Color )
+	RESTINIO_FIELD_FROM_STRIN_TEST( ua_media,                     UA-Media )
+	RESTINIO_FIELD_FROM_STRIN_TEST( ua_pixels,                    UA-Pixels )
+	RESTINIO_FIELD_FROM_STRIN_TEST( ua_resolution,                UA-Resolution )
+	RESTINIO_FIELD_FROM_STRIN_TEST( ua_windowpixels,              UA-Windowpixels )
+	RESTINIO_FIELD_FROM_STRIN_TEST( version,                      Version )
+	RESTINIO_FIELD_FROM_STRIN_TEST( x_device_accept,              X-Device-Accept )
+	RESTINIO_FIELD_FROM_STRIN_TEST( x_device_accept_charset,      X-Device-Accept-Charset )
+	RESTINIO_FIELD_FROM_STRIN_TEST( x_device_accept_encoding,     X-Device-Accept-Encoding )
+	RESTINIO_FIELD_FROM_STRIN_TEST( x_device_accept_language,     X-Device-Accept-Language )
+	RESTINIO_FIELD_FROM_STRIN_TEST( x_device_user_agent,          X-Device-User-Agent )
 #undef RESTINIO_FIELD_FROM_STRIN_TEST
 }
 

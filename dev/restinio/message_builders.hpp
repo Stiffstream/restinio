@@ -111,6 +111,14 @@ class base_response_builder_t
 
 		//! Add header field.
 		Response_Builder &
+		append_header( http_header_field_t http_header_field )
+		{
+			m_header.set_field( std::move( http_header_field ) );
+			return upcast_reference();
+		}
+
+		//! Add header field.
+		Response_Builder &
 		append_header(
 			http_field_t field_id,
 			std::string field_value )
@@ -127,7 +135,6 @@ class base_response_builder_t
 			std::time_t t = std::time( nullptr ) )
 		{
 			m_header.set_field( http_field_t::date, make_date_field_value( t ) );
-
 			return upcast_reference();
 		}
 

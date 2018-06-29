@@ -241,10 +241,44 @@ caseless_cmp( string_view_t a, string_view_t b )
 	RESTINIO_GEN( www_authenticate,             WWW-Authenticate )            \
 	RESTINIO_GEN( want_digest,                  Want-Digest )                 \
 	RESTINIO_GEN( warning,                      Warning )                     \
-	RESTINIO_GEN( x_frame_options,              X-Frame-Options )
+	RESTINIO_GEN( x_frame_options,              X-Frame-Options )             \
+\
+	RESTINIO_GEN( access_control,               Access-Control )              \
+	RESTINIO_GEN( access_control_allow_credentials, Access-Control-Allow-Credentials ) \
+	RESTINIO_GEN( access_control_allow_headers, Access-Control-Allow-Headers )\
+	RESTINIO_GEN( access_control_allow_methods, Access-Control-Allow-Methods )\
+	RESTINIO_GEN( access_control_allow_origin,  Access-Control-Allow-Origin ) \
+	RESTINIO_GEN( access_control_max_age,       Access-Control-Max-Age )      \
+	RESTINIO_GEN( access_control_request_method,    Access-Control-Request-Method )    \
+	RESTINIO_GEN( access_control_request_headers,   Access-Control-Request-Headers )   \
+	RESTINIO_GEN( compliance,                   Compliance )                  \
+	RESTINIO_GEN( content_transfer_encoding,    Content-Transfer-Encoding )   \
+	RESTINIO_GEN( cost,                         Cost )                        \
+	RESTINIO_GEN( ediint_features,              EDIINT-Features )             \
+	RESTINIO_GEN( message_id,                   Message-ID )                  \
+	RESTINIO_GEN( method_check,                 Method-Check )                \
+	RESTINIO_GEN( method_check_expires,         Method-Check-Expires )        \
+	RESTINIO_GEN( non_compliance,               Non-Compliance )              \
+	RESTINIO_GEN( optional,                     Optional )                    \
+	RESTINIO_GEN( referer_root,                 Referer-Root )                \
+	RESTINIO_GEN( resolution_hint,              Resolution-Hint )             \
+	RESTINIO_GEN( resolver_location,            Resolver-Location )           \
+	RESTINIO_GEN( subok,                        SubOK )                       \
+	RESTINIO_GEN( subst,                        Subst )                       \
+	RESTINIO_GEN( title,                        Title )                       \
+	RESTINIO_GEN( ua_color,                     UA-Color )                    \
+	RESTINIO_GEN( ua_media,                     UA-Media )                    \
+	RESTINIO_GEN( ua_pixels,                    UA-Pixels )                   \
+	RESTINIO_GEN( ua_resolution,                UA-Resolution )               \
+	RESTINIO_GEN( ua_windowpixels,              UA-Windowpixels )             \
+	RESTINIO_GEN( version,                      Version )                     \
+	RESTINIO_GEN( x_device_accept,              X-Device-Accept )             \
+	RESTINIO_GEN( x_device_accept_charset,      X-Device-Accept-Charset )     \
+	RESTINIO_GEN( x_device_accept_encoding,     X-Device-Accept-Encoding )    \
+	RESTINIO_GEN( x_device_accept_language,     X-Device-Accept-Language )    \
+	RESTINIO_GEN( x_device_user_agent,          X-Device-User-Agent )
 	// SPECIAL CASE: RESTINIO_GEN( connection,                   Connection )
 	// SPECIAL CASE: RESTINIO_GEN( content_length,               Content-Length )
-
 
 //
 // http_method_t
@@ -255,7 +289,7 @@ caseless_cmp( string_view_t a, string_view_t b )
 	\note Fields `Connection` and `Content-Length` are specieal cases,
 	thus they are not present in the list.
 */
-enum class http_field_t : std::uint8_t //By now 152 + 1 items fits to uint8_t
+enum class http_field_t : std::uint8_t //By now 152 + 34 + 1 items fits to uint8_t
 {
 #define RESTINIO_HTTP_FIELD_GEN( name, ignored ) name,
 	RESTINIO_HTTP_FIELDS_MAP( RESTINIO_HTTP_FIELD_GEN )
@@ -321,6 +355,7 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( safe,                         Safe )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( slug,                         SLUG )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( vary,                         Vary )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( cost,                         Cost )
 			break;
 
 		case 5:
@@ -335,6 +370,9 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( meter,                        Meter )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( range,                        Range )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( topic,                        Topic )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( subok,                        SubOK )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( subst,                        Subst )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( title,                        Title )
 			break;
 
 		case 6:
@@ -362,6 +400,7 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( urgency,                      Urgency )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( upgrade,                      Upgrade )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( warning,                      Warning )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( version,                      Version )
 			break;
 
 		case 8:
@@ -372,12 +411,16 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( pep_info,                     Pep-Info )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( position,                     Position )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( protocol,                     Protocol )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( optional,                     Optional )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( ua_color,                     UA-Color )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( ua_media,                     UA-Media )
 			break;
 
 		case 9:
 			RESTINIO_HTTP_CHECK_FOR_FIELD( forwarded,                    Forwarded )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( negotiate,                    Negotiate )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( overwrite,                    Overwrite )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( ua_pixels,                    UA-Pixels )
 			break;
 
 		case 10:
@@ -394,6 +437,8 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( soapaction,                   SoapAction )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( status_uri,                   Status-URI )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( user_agent,                   User-Agent )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( compliance,                   Compliance )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( message_id,                   Message-ID )
 			break;
 
 		case 11:
@@ -417,6 +462,8 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( schedule_tag,                 Schedule-Tag )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( redirect_ref,                 Redirect-Ref )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( variant_vary,                 Variant-Vary )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( method_check,                 Method-Check )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( referer_root,                 Referer-Root )
 			break;
 
 		case 13:
@@ -430,6 +477,7 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( ordering_type,                Ordering-Type )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( profileobject,                ProfileObject )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( protocol_info,                Protocol-Info )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( ua_resolution,                UA-Resolution )
 			break;
 
 		case 14:
@@ -438,6 +486,8 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( protocol_query,               Protocol-Query )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( proxy_features,               Proxy-Features )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( schedule_reply,               Schedule-Reply )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( non_compliance,               Non-Compliance )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( access_control,               Access-Control )
 			break;
 
 		case 15:
@@ -450,6 +500,10 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( public_key_pins,              Public-Key-Pins )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( security_scheme,              Security-Scheme )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( x_frame_options,              X-Frame-Options )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( x_device_accept,              X-Device-Accept )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( resolution_hint,              Resolution-Hint )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( ediint_features,              EDIINT-Features )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( ua_windowpixels,              UA-Windowpixels )
 			break;
 
 		case 16:
@@ -469,6 +523,7 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( sec_websocket_key,            Sec-WebSocket-Key )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( surrogate_control,            Surrogate-Control )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( transfer_encoding,            Transfer-Encoding )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( resolver_location,            Resolver-Location )
 			break;
 
 		case 18:
@@ -483,11 +538,13 @@ string_to_field( string_view_t field )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( content_script_type,          Content-Script-Type )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( if_unmodified_since,          If-Unmodified-Since )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( proxy_authorization,          Proxy-Authorization )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( x_device_user_agent,          X-Device-User-Agent )
 			break;
 
 		case 20:
 			RESTINIO_HTTP_CHECK_FOR_FIELD( sec_websocket_accept,         Sec-WebSocket-Accept )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( surrogate_capability,         Surrogate-Capability )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( method_check_expires,         Method-Check-Expires )
 			break;
 
 		case 21:
@@ -499,20 +556,46 @@ string_to_field( string_view_t field )
 		case 22:
 			RESTINIO_HTTP_CHECK_FOR_FIELD( authentication_control,       Authentication-Control )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( sec_websocket_protocol,       Sec-WebSocket-Protocol )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( access_control_max_age,       Access-Control-Max-Age )
+			break;
+
+		case 23:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( x_device_accept_charset,      X-Device-Accept-Charset )
 			break;
 
 		case 24:
 			RESTINIO_HTTP_CHECK_FOR_FIELD( sec_websocket_extensions,     Sec-WebSocket-Extensions )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( x_device_accept_encoding,     X-Device-Accept-Encoding )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( x_device_accept_language,     X-Device-Accept-Language )
 			break;
 
 		case 25:
 			RESTINIO_HTTP_CHECK_FOR_FIELD( optional_www_authenticate,    Optional-WWW-Authenticate )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( proxy_authentication_info,    Proxy-Authentication-Info )
 			RESTINIO_HTTP_CHECK_FOR_FIELD( strict_transport_security,    Strict-Transport-Security )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( content_transfer_encoding,    Content-Transfer-Encoding )
 			break;
 
 		case 27:
 			RESTINIO_HTTP_CHECK_FOR_FIELD( public_key_pins_report_only,  Public-Key-Pins-Report-Only )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( access_control_allow_origin,  Access-Control-Allow-Origin )
+			break;
+
+		case 28:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( access_control_allow_headers, Access-Control-Allow-Headers )
+			RESTINIO_HTTP_CHECK_FOR_FIELD( access_control_allow_methods, Access-Control-Allow-Methods )
+			break;
+
+		case 29:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( access_control_request_method,    Access-Control-Request-Method )
+			break;
+
+		case 30:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( access_control_request_headers,   Access-Control-Request-Headers )
+			break;
+
+		case 32:
+			RESTINIO_HTTP_CHECK_FOR_FIELD( access_control_allow_credentials, Access-Control-Allow-Credentials )
 			break;
 	}
 
@@ -556,47 +639,79 @@ field_to_string( http_field_t f )
 	rely on the name only. And as the names of almoust all speified fields
 	fits in SSO it doesn't involve much overhead on standard fields.
 */
-struct http_header_field_t
+class http_header_field_t
 {
-	http_header_field_t()
-		:	m_field_id{ http_field_t::field_unspecified }
-	{}
+	public:
+		http_header_field_t()
+			:	m_field_id{ http_field_t::field_unspecified }
+		{}
 
-	http_header_field_t(
-		std::string name,
-		std::string value )
-		:	m_name{ std::move( name ) }
-		,	m_value{ std::move( value ) }
-		,	m_field_id{ string_to_field( m_name ) }
-	{}
+		http_header_field_t(
+			std::string name,
+			std::string value )
+			:	m_name{ std::move( name ) }
+			,	m_value{ std::move( value ) }
+			,	m_field_id{ string_to_field( m_name ) }
+		{}
 
-	http_header_field_t(
-		string_view_t name,
-		string_view_t value )
-		:	m_name{ name.data(), name.size() }
-		,	m_value{ value.data(), value.size() }
-		,	m_field_id{ string_to_field( m_name ) }
-	{}
+		http_header_field_t(
+			string_view_t name,
+			string_view_t value )
+			:	m_name{ name.data(), name.size() }
+			,	m_value{ value.data(), value.size() }
+			,	m_field_id{ string_to_field( m_name ) }
+		{}
 
-	http_header_field_t(
-		http_field_t field_id,
-		std::string value )
-		:	m_name{ field_to_string( field_id ) }
-		,	m_value{ std::move( value ) }
-		,	m_field_id{ field_id }
-	{}
+		http_header_field_t(
+			http_field_t field_id,
+			std::string value )
+			:	m_name{ field_to_string( field_id ) }
+			,	m_value{ std::move( value ) }
+			,	m_field_id{ field_id }
+		{}
 
-	http_header_field_t(
-		http_field_t field_id,
-		string_view_t value )
-		:	m_name{ field_to_string( field_id ) }
-		,	m_value{ std::move( value ) }
-		,	m_field_id{ field_id }
-	{}
+		http_header_field_t(
+			http_field_t field_id,
+			string_view_t value )
+			:	m_name{ field_to_string( field_id ) }
+			,	m_value{ std::move( value ) }
+			,	m_field_id{ field_id }
+		{}
 
-	std::string m_name;
-	std::string m_value;
-	http_field_t m_field_id;
+		const std::string & name() const { return m_name; }
+		const std::string & value() const { return m_value; }
+		http_field_t field_id() const { return m_field_id; }
+
+		void
+		name( std::string n )
+		{
+			m_name = std::move( n );
+			m_field_id = string_to_field( m_name );
+		}
+
+		void
+		value( std::string v )
+		{
+			m_value = std::move( v );
+		}
+
+		void
+		append_value( string_view_t v )
+		{
+			m_value.append( v.data(), v.size() );
+		}
+
+		void
+		field_id( http_field_t field_id )
+		{
+			m_field_id = field_id;
+			m_name = field_to_string( m_field_id );
+		}
+
+	private:
+		std::string m_name;
+		std::string m_value;
+		http_field_t m_field_id;
 };
 
 // Make neccessary forward declarations.
@@ -653,14 +768,14 @@ class http_header_fields_t
 			std::swap( m_fields, http_header_fields.m_fields );
 		}
 
-		//! Chack field by name.
+		//! Check field by name.
 		bool
 		has_field( string_view_t field_name ) const
 		{
 			return m_fields.cend() != cfind( field_name );
 		}
 
-		//! Chack field by field-id.
+		//! Check field by field-id.
 		/*!
 			\note If `field_id=http_field_t::field_unspecified`
 			then function returns not more than just a fact
@@ -670,6 +785,34 @@ class http_header_fields_t
 		has_field( http_field_t field_id ) const
 		{
 			return m_fields.cend() != cfind( field_id );
+		}
+
+		//! Set header field via http_header_field_t.
+		void
+		set_field( http_header_field_t http_header_field )
+		{
+			fields_container_t::iterator it;
+			if( http_field_t::field_unspecified != http_header_field.field_id() )
+			{
+				// Field has a standard name.
+				// Search it by id.
+				it = find( http_header_field.field_id() );
+			}
+			else
+			{
+				// Field has a non standard name.
+				// Search it by name.
+				it = find( http_header_field.name() );
+			}
+
+			if( m_fields.end() != it )
+			{
+				*it = std::move( http_header_field );
+			}
+			else
+			{
+				m_fields.emplace_back( std::move( http_header_field ) );
+			}
 		}
 
 		//! Set field with string pair.
@@ -682,8 +825,8 @@ class http_header_fields_t
 
 			if( m_fields.end() != it )
 			{
-				it->m_name = std::move( field_name );
-				it->m_value = std::move( field_value );
+				it->name( std::move( field_name ) );
+				it->value( std::move( field_value ) );
 			}
 			else
 			{
@@ -709,7 +852,7 @@ class http_header_fields_t
 
 				if( m_fields.end() != it )
 				{
-					it->m_value = std::move( field_value );
+					it->value( std::move( field_value ) );
 				}
 				else
 				{
@@ -730,7 +873,7 @@ class http_header_fields_t
 
 			if( m_fields.end() != it )
 			{
-				it->m_value.append( field_value.data(), field_value.size() );
+				it->append_value( field_value );
 			}
 			else
 			{
@@ -754,7 +897,7 @@ class http_header_fields_t
 
 				if( m_fields.end() != it )
 				{
-					it->m_value.append( field_value.data(), field_value.size() );
+					it->append_value( field_value );
 				}
 				else
 				{
@@ -773,7 +916,7 @@ class http_header_fields_t
 				throw exception_t{
 					fmt::format( "field '{}' doesn't exist", field_name ) };
 
-			return it->m_value;
+			return it->value();
 		}
 
 		//! Get field by id.
@@ -797,7 +940,7 @@ class http_header_fields_t
 						field_to_string( field_id ) ) };
 			}
 
-			return it->m_value;
+			return it->value();
 		}
 
 		//! Get field by name.
@@ -814,7 +957,7 @@ class http_header_fields_t
 			if( m_fields.end() == it )
 				return default_value;
 
-			return it->m_value;
+			return it->value();
 		}
 
 		//! Get field by id.
@@ -831,7 +974,7 @@ class http_header_fields_t
 				const auto it = cfind( field_id );
 
 				if( m_fields.end() != it )
-					return it->m_value;
+					return it->value();
 			}
 
 			return default_value;
@@ -892,7 +1035,7 @@ class http_header_fields_t
 		void
 		append_last_field( string_view_t field_value )
 		{
-			m_fields.back().m_value.append( field_value.data(), field_value.size() );
+			m_fields.back().append_value( field_value );
 		}
 
 		fields_container_t::iterator
@@ -902,7 +1045,7 @@ class http_header_fields_t
 				m_fields.begin(),
 				m_fields.end(),
 				[&]( const auto & f ){
-					return caseless_cmp( f.m_name, field_name );
+					return caseless_cmp( f.name(), field_name );
 				} );
 		}
 
@@ -913,7 +1056,7 @@ class http_header_fields_t
 				m_fields.cbegin(),
 				m_fields.cend(),
 				[&]( const auto & f ){
-					return caseless_cmp( f.m_name, field_name );
+					return caseless_cmp( f.name(), field_name );
 				} );
 		}
 
@@ -924,7 +1067,7 @@ class http_header_fields_t
 				m_fields.begin(),
 				m_fields.end(),
 				[&]( const auto & f ){
-					return f.m_field_id == field_id;
+					return f.field_id() == field_id;
 				} );
 		}
 
@@ -935,7 +1078,7 @@ class http_header_fields_t
 				m_fields.cbegin(),
 				m_fields.cend(),
 				[&]( const auto & f ){
-					return f.m_field_id == field_id;
+					return f.field_id() == field_id;
 				} );
 		}
 
