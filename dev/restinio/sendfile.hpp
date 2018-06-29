@@ -183,32 +183,38 @@ class file_descriptor_holder_t
 //
 
 //! Meta data of the file.
-struct file_meta_t
+class file_meta_t
 {
-	file_meta_t()
-	{}
+	public:
+		file_meta_t()
+		{}
 
-	file_meta_t(
-		file_size_t file_total_size,
-		std::time_t last_modified_at )
-		:	m_file_total_size{ file_total_size }
-		,	m_last_modified_at{ last_modified_at }
-	{}
+		file_meta_t(
+			file_size_t file_total_size,
+			std::chrono::system_clock::time_point last_modified_at )
+			:	m_file_total_size{ file_total_size }
+			,	m_last_modified_at{ last_modified_at }
+		{}
 
-	//! Total file size.
-	file_size_t m_file_total_size{ 0 };
+		file_size_t file_total_size() const noexcept { return m_file_total_size; }
 
-	//! Last modification date.
-	std::time_t m_last_modified_at{ 0 };
+		std::chrono::system_clock::time_point
+		last_modified_at() const noexcept { return m_last_modified_at; }
+
+		friend void
+		swap( file_meta_t & r, file_meta_t & l ) noexcept
+		{
+			std::swap( r.m_file_total_size, l.m_file_total_size );
+			std::swap( r.m_last_modified_at, l.m_last_modified_at );
+		}
+
+	private:
+		//! Total file size.
+		file_size_t m_file_total_size{ 0 };
+
+		//! Last modification date.
+		std::chrono::system_clock::time_point  m_last_modified_at{};
 };
-
-inline void
-swap( file_meta_t & r, file_meta_t & l ) noexcept
-{
-	std::swap( r.m_file_total_size, l.m_file_total_size );
-	std::swap( r.m_last_modified_at, l.m_last_modified_at );
-}
-
 
 //
 // sendfile_t
@@ -235,13 +241,14 @@ class sendfile_t
 			:	m_file_descriptor{ std::move( fdh ) }
 			,	m_meta{ std::move( meta ) }
 			,	m_offset{ 0 }
-			,	m_size{ m_meta.m_file_total_size }
+			,	m_size{ m_meta.file_total_size() }
 			,	m_chunk_size{ chunk.value() }
 			,	m_timelimit{ std::chrono::steady_clock::duration::zero() }
 		{}
 
 	public:
-		friend void swap( sendfile_t & left, sendfile_t & right ) noexcept
+		friend void
+		swap( sendfile_t & left, sendfile_t & right ) noexcept
 		{
 			using std::swap;
 			std::swap( left.m_file_descriptor, right.m_file_descriptor );
@@ -298,7 +305,7 @@ class sendfile_t
 		/*!
 			\deprecated Use meta() to get file total size.
 		*/
-		auto file_total_size() const noexcept { return m_meta.m_file_total_size; }
+		auto file_total_size() const noexcept { return m_meta.file_total_size(); }
 
 		//! Get offset of data to write.
 		auto offset() const noexcept { return m_offset; }
@@ -323,19 +330,19 @@ class sendfile_t
 		{
 			check_file_is_valid();
 
-			if( static_cast< file_size_t >( offset_value ) > m_meta.m_file_total_size )
+			if( static_cast< file_size_t >( offset_value ) > m_meta.file_total_size() )
 			{
 				throw exception_t{
 					fmt::format(
 						"invalid file offset: {}, while file size is {}",
 						offset_value,
-						m_meta.m_file_total_size ) };
+						m_meta.file_total_size() ) };
 			}
 
 			m_offset = offset_value;
 			m_size =
 				std::min< file_size_t >(
-					m_meta.m_file_total_size - static_cast< file_size_t >( offset_value ),
+					m_meta.file_total_size() - static_cast< file_size_t >( offset_value ),
 					size_value );
 
 			return *this;

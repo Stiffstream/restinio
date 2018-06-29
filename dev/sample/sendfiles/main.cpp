@@ -121,7 +121,7 @@ auto server_handler( const std::string & root_dir )
 				{
 					auto sf = restinio::sendfile( file_path );
 					auto modified_at =
-						restinio::make_date_field_value( sf.meta().m_last_modified_at );
+						restinio::make_date_field_value( sf.meta().last_modified_at() );
 
 					auto expires_at =
 						restinio::make_date_field_value(

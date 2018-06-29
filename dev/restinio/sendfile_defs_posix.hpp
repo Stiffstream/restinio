@@ -87,14 +87,18 @@ get_file_meta( file_descriptor_t fd )
 			fmt::format( "unable to get file stat : {}", strerror( errno ) ) };
 	}
 
-	return META{
-			static_cast< file_size_t >( file_stat.st_size ),
+	const std::chrono::system_clock::time_point
+		last_modified{
 #if defined( RESTINIO_MACOS_TARGET )
-			file_stat.st_mtimespec.tv_sec
+			std::chrono::seconds( file_stat.st_mtimespec.tv_sec ) +
+				std::chrono::nanoseconds( file_stat.st_mtimespec.tv_nsec )
 #else
-			file_stat.st_mtim.tv_sec
+			std::chrono::seconds( file_stat.st_mtim.tv_sec ) +
+				std::chrono::nanoseconds( file_stat.st_mtim.tv_nsec )
 #endif
 		};
+
+	return META{ static_cast< file_size_t >( file_stat.st_size ), last_modified };
 }
 
 //! Close file by its descriptor.

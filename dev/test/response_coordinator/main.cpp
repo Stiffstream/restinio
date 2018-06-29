@@ -1036,7 +1036,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 				connection_should_close() },
 			make_buffers( restinio::sendfile(
 							restinio::null_file_descriptor() /* fake not real */,
-							restinio::file_meta_t{1024, 0 } ) ) ) );
+							restinio::file_meta_t{1024, std::chrono::system_clock::now() } ) ) ) );
 
 		REQUIRE_FALSE( coordinator.closed() );
 
@@ -1082,7 +1082,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 				connection_should_keep_alive() },
 			make_buffers( restinio::sendfile(
 							restinio::null_file_descriptor() /* fake not real */,
-							restinio::file_meta_t{ 1024, 0 } ) ) ) );
+							restinio::file_meta_t{ 1024, std::chrono::system_clock::now() } ) ) ) );
 
 		out_bufs.clear();
 		REQUIRE(
@@ -1128,7 +1128,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 				connection_should_close() },
 			make_buffers( restinio::sendfile(
 							restinio::null_file_descriptor() /* fake not real */,
-							restinio::file_meta_t{ 1024, 0 } ) ) ) );
+							restinio::file_meta_t{ 1024, std::chrono::system_clock::now() } ) ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
@@ -1137,7 +1137,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 				connection_should_close() },
 			make_buffers( restinio::sendfile(
 							restinio::null_file_descriptor() /* fake not real */,
-							restinio::file_meta_t{ 2048, 0 } ) ) ) );
+							restinio::file_meta_t{ 2048, std::chrono::system_clock::now() } ) ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
@@ -1146,7 +1146,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 				connection_should_close() },
 			make_buffers( restinio::sendfile(
 								restinio::null_file_descriptor() /* fake not real */,
-								restinio::file_meta_t{ 4096, 0 } ) ) ) );
+								restinio::file_meta_t{ 4096, std::chrono::system_clock::now() } ) ) ) );
 
 		out_bufs.clear();
 		REQUIRE(
@@ -1213,7 +1213,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 				connection_should_close() },
 			make_buffers( restinio::sendfile(
 							restinio::null_file_descriptor() /* fake not real */,
-							restinio::file_meta_t{ 1024, 0 } ) ) ) );
+							restinio::file_meta_t{ 1024, std::chrono::system_clock::now() } ) ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
@@ -1222,7 +1222,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 				connection_should_close() },
 			make_buffers( restinio::sendfile(
 							restinio::null_file_descriptor() /* fake not real */,
-							restinio::file_meta_t{ 2048, 0 } ) ) ) );
+							restinio::file_meta_t{ 2048, std::chrono::system_clock::now() } ) ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
@@ -1231,7 +1231,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 				connection_should_close() },
 			make_buffers( restinio::sendfile(
 							restinio::null_file_descriptor() /* fake not real */,
-							restinio::file_meta_t{ 4096, 0 } ) ) ) );
+							restinio::file_meta_t{ 4096, std::chrono::system_clock::now() } ) ) ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
@@ -1326,7 +1326,7 @@ TEST_CASE( "response_coordinator sendfile 2" , "[response_coordinator][sendfile]
 				connection_should_close() },
 			make_buffers( restinio::sendfile(
 								restinio::null_file_descriptor() /* fake not real */,
-								restinio::file_meta_t{ 1024, 0 } ) ) ) );
+								restinio::file_meta_t{ 1024, std::chrono::system_clock::now() } ) ) ) );
 
 		// Previous response goes with connection close flag
 		// So it would not be selected.
@@ -1337,7 +1337,7 @@ TEST_CASE( "response_coordinator sendfile 2" , "[response_coordinator][sendfile]
 				connection_should_close() },
 			make_buffers( restinio::sendfile(
 								restinio::null_file_descriptor() /* fake not real */,
-								restinio::file_meta_t{ 2048, 0 } ) ) ) );
+								restinio::file_meta_t{ 2048, std::chrono::system_clock::now() } ) ) ) );
 
 		REQUIRE_FALSE( coordinator.closed() );
 
@@ -1389,7 +1389,7 @@ TEST_CASE( "response_coordinator sendfile 2" , "[response_coordinator][sendfile]
 				connection_should_keep_alive() },
 			make_buffers( restinio::sendfile(
 								restinio::null_file_descriptor() /* fake not real */,
-								restinio::file_meta_t{ 1024, 0 } ) ) ) );
+								restinio::file_meta_t{ 1024, std::chrono::system_clock::now() } ) ) ) );
 
 		// Previous response goes with connection close flag
 		// So it would not be selected.
@@ -1400,7 +1400,7 @@ TEST_CASE( "response_coordinator sendfile 2" , "[response_coordinator][sendfile]
 				connection_should_keep_alive() },
 			make_buffers( restinio::sendfile(
 								restinio::null_file_descriptor() /* fake not real */,
-								restinio::file_meta_t{ 2048, 0 } ) ) ) );
+								restinio::file_meta_t{ 2048, std::chrono::system_clock::now() } ) ) ) );
 
 		REQUIRE_FALSE( coordinator.closed() );
 

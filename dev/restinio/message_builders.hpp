@@ -8,7 +8,8 @@
 
 #pragma once
 
-#include <time.h>
+#include <ctime>
+#include <chrono>
 
 #include <fmt/format.h>
 #include <fmt/time.h>
@@ -43,6 +44,12 @@ make_date_field_value( std::time_t t )
 		&tpoint );
 
 	return std::string{ buf.data() };
+}
+
+inline std::string
+make_date_field_value( std::chrono::system_clock::time_point tp )
+{
+	return make_date_field_value( std::chrono::system_clock::to_time_t( tp ) );
 }
 
 //

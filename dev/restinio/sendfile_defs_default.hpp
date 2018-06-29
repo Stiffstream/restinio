@@ -81,7 +81,7 @@ get_file_meta( file_descriptor_t fd )
 
 	// No way to get last modification,
 	// Use current time instead.
-	return META{ fsize, std::time( nullptr ) };
+	return META{ fsize, std::chrono::system_clock::now() };
 }
 
 //! Close file by its descriptor.
