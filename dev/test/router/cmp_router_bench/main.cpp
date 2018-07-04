@@ -76,7 +76,7 @@ struct request_handler_t
 		}
 
 		return
-			req->create_response( 501, "Not implemented" )
+			req->create_response( restinio::status::make_not_implemented() )
 				.connection_close()
 				.done();
 	}

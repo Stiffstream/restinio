@@ -86,14 +86,14 @@ create_header_string(
 	result += static_cast<char>( '0' + h.http_minor() );
 	result += ' ';
 
-	auto status_code = h.status_code();
+	const auto sc = h.status_code().status_code();
 
 //FIXME: there should be a check for status_code in range 100..999.
 //May be a special type like bounded_value_t<100,999> must be used in
 //http_response_header_t.
-	result += '0' + ( status_code / 100 ) % 10;
-	result += '0' + ( status_code / 10 ) % 10;
-	result += '0' + ( status_code ) % 10;
+	result += '0' + ( sc / 100 ) % 10;
+	result += '0' + ( sc / 10 ) % 10;
+	result += '0' + ( sc ) % 10;
 
 	result += ' ';
 	result += h.reason_phrase();
@@ -153,15 +153,15 @@ create_header_string(
 	return result;
 }
 
-inline auto
-create_error_resp( std::uint16_t status, std::string phrase )
-{
-	http_response_header_t h{ status, std::move( phrase ) };
-	h.should_keep_alive( false );
-	h.http_major( 1 );
-	h.http_minor( 1 );
-	return create_header_string( h );
-}
+// inline auto
+// create_error_resp( std::uint16_t status, std::string phrase )
+// {
+// 	http_response_header_t h{ status, std::move( phrase ) };
+// 	h.should_keep_alive( false );
+// 	h.http_major( 1 );
+// 	h.http_minor( 1 );
+// 	return create_header_string( h );
+// }
 
 inline auto
 create_not_implemented_resp()

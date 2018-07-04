@@ -1433,30 +1433,148 @@ struct http_request_header_t final
 };
 
 //
-// http_response_header_t
+// http_status_code_t
 //
 
-//! Resp header.
-struct http_response_header_t final
-	:	public http_header_common_t
+//! A handy wrapper for HTTP response status code.
+class http_status_code_t
 {
 	public:
-		http_response_header_t()
+		constexpr http_status_code_t() noexcept
 		{}
 
-		http_response_header_t(
-			std::uint16_t status_code,
-			std::string reason_phrase )
+		constexpr explicit http_status_code_t( std::uint16_t status_code ) noexcept
 			:	m_status_code{ status_code }
+		{}
+
+		constexpr auto
+		status_code() const noexcept
+		{
+			return m_status_code;
+		}
+
+		constexpr bool
+		operator == ( const http_status_code_t & sc ) const noexcept
+		{
+			return m_status_code == sc.m_status_code;
+		}
+
+	private:
+		//! Status code value.
+		std::uint16_t m_status_code{ 0 };
+};
+
+namespace status_code
+{
+
+/** @name RFC 2616 status code list.
+ * @brief Codes defined by RFC 2616: https://www.w3.org/Protocols/rfc2616/rfc2616-sec6.html#sec6.1.1.
+*/
+///@{
+
+// Add '_', because 'continue is reserved word.'
+constexpr http_status_code_t continue_{ 100 };
+
+constexpr http_status_code_t switching_protocols{ 101 };
+constexpr http_status_code_t ok{ 200 };
+constexpr http_status_code_t created{ 201 };
+constexpr http_status_code_t accepted{ 202 };
+constexpr http_status_code_t non_authoritative_information{ 203 };
+constexpr http_status_code_t no_content{ 204 };
+constexpr http_status_code_t reset_content{ 205 };
+constexpr http_status_code_t partial_content{ 206 };
+constexpr http_status_code_t multiple_choices{ 300 };
+constexpr http_status_code_t moved_permanently{ 301 };
+constexpr http_status_code_t found{ 302 };
+constexpr http_status_code_t see_other{ 303 };
+constexpr http_status_code_t not_modified{ 304 };
+constexpr http_status_code_t use_proxy{ 305 };
+constexpr http_status_code_t temporary_redirect{ 307 };
+constexpr http_status_code_t bad_request{ 400 };
+constexpr http_status_code_t unauthorized{ 401 };
+constexpr http_status_code_t payment_required{ 402 };
+constexpr http_status_code_t forbidden{ 403 };
+constexpr http_status_code_t not_found{ 404 };
+constexpr http_status_code_t method_not_allowed{ 405 };
+constexpr http_status_code_t not_acceptable{ 406 };
+constexpr http_status_code_t proxy_authentication_required{ 407 };
+constexpr http_status_code_t request_time_out{ 408 };
+constexpr http_status_code_t conflict{ 409 };
+constexpr http_status_code_t gone{ 410 };
+constexpr http_status_code_t length_required{ 411 };
+constexpr http_status_code_t precondition_failed{ 412 };
+
+//413 Payload Too Large (RFC 7231)
+// The request is larger than the server is willing or able to process.
+// Previously called "Request Entity Too Large".[44]
+constexpr http_status_code_t payload_too_large{ 413 };
+
+// 414 URI Too Long (RFC 7231)
+// The URI provided was too long for the server to process.
+// Often the result of too much data being encoded as a query-string of a GET request,
+// in which case it should be converted to a POST request.
+// Called "Request-URI Too Long" previously.[46]
+constexpr http_status_code_t uri_too_long{ 414 };
+
+constexpr http_status_code_t unsupported_media_type{ 415 };
+constexpr http_status_code_t requested_range_not_satisfiable{ 416 };
+constexpr http_status_code_t expectation_failed{ 417 };
+constexpr http_status_code_t internal_server_error{ 500 };
+constexpr http_status_code_t not_implemented{ 501 };
+constexpr http_status_code_t bad_gateway{ 502 };
+constexpr http_status_code_t service_unavailable{ 503 };
+constexpr http_status_code_t gateway_time_out{ 504 };
+constexpr http_status_code_t http_version_not_supported{ 505 };
+///@}
+
+/** @name Additional status codes.
+ * @brief Codes not covered with RFC 2616.
+*/
+///@{
+	// RFC 7538
+constexpr http_status_code_t permanent_redirect{ 308 };
+
+	// RFC 2518
+constexpr http_status_code_t processing{ 102 };
+constexpr http_status_code_t multi_status{ 207 };
+constexpr http_status_code_t unprocessable_entity{ 422 };
+constexpr http_status_code_t locked{ 423 };
+constexpr http_status_code_t failed_dependency{ 424 };
+constexpr http_status_code_t insufficient_storage{ 507 };
+
+	// RFC 6585
+constexpr http_status_code_t precondition_required{ 428 };
+constexpr http_status_code_t too_many_requests{ 429 };
+constexpr http_status_code_t request_header_fields_too_large{ 431 };
+constexpr http_status_code_t network_authentication_required{ 511 };
+///@}
+
+} /* namespace status_code */
+
+//
+// http_status_line_t
+//
+
+//! HTTP response header status line.
+class http_status_line_t
+{
+	public:
+		http_status_line_t()
+		{}
+
+		http_status_line_t(
+			http_status_code_t sc,
+			std::string reason_phrase )
+			:	m_status_code{ sc }
 			,	m_reason_phrase{ std::move( reason_phrase ) }
 		{}
 
-		std::uint16_t
+		http_status_code_t
 		status_code() const
 		{ return m_status_code; }
 
 		void
-		status_code( std::uint16_t c )
+		status_code( http_status_code_t c )
 		{ m_status_code = c; }
 
 		const std::string &
@@ -1468,8 +1586,234 @@ struct http_response_header_t final
 		{ m_reason_phrase.assign( std::move( r ) ); }
 
 	private:
-		std::uint16_t m_status_code{ 200 };
+		http_status_code_t m_status_code{ status_code::ok };
 		std::string m_reason_phrase;
+};
+
+inline std::ostream &
+operator << ( std::ostream & o, const http_status_line_t & status_line )
+{
+	return o << "{" << status_line.status_code().status_code() << ", "
+			<< status_line.reason_phrase() << "}";
+}
+
+namespace status
+{
+/** @name RFC 2616 statuses.
+ * @brief Codes defined by RFC 2616: https://www.w3.org/Protocols/rfc2616/rfc2616-sec6.html#sec6.1.1.
+*/
+///@{
+
+inline http_status_line_t make_continue()
+{ return http_status_line_t{ status_code::continue_, "Continue" }; }
+
+inline http_status_line_t make_switching_protocols()
+{ return http_status_line_t{ status_code::switching_protocols, "Switching Protocols" }; }
+
+inline http_status_line_t make_ok()
+{ return http_status_line_t{ status_code::ok, "OK" }; }
+
+inline http_status_line_t make_created()
+{ return http_status_line_t{ status_code::created, "Created" }; }
+
+inline http_status_line_t make_accepted()
+{ return http_status_line_t{ status_code::accepted, "Accepted" }; }
+
+inline http_status_line_t make_non_authoritative_information()
+{ return http_status_line_t{ status_code::non_authoritative_information, "Non-Authoritative Information" }; }
+
+inline http_status_line_t make_no_content()
+{ return http_status_line_t{ status_code::no_content, "No Content" }; }
+
+inline http_status_line_t make_reset_content()
+{ return http_status_line_t{ status_code::reset_content, "Reset Content" }; }
+
+inline http_status_line_t make_partial_content()
+{ return http_status_line_t{ status_code::partial_content, "Partial Content" }; }
+
+inline http_status_line_t make_multiple_choices()
+{ return http_status_line_t{ status_code::multiple_choices, "Multiple Choices" }; }
+
+inline http_status_line_t make_moved_permanently()
+{ return http_status_line_t{ status_code::moved_permanently, "Moved Permanently" }; }
+
+inline http_status_line_t make_found()
+{ return http_status_line_t{ status_code::found, "Found" }; }
+
+inline http_status_line_t make_see_other()
+{ return http_status_line_t{ status_code::see_other, "See Other" }; }
+
+inline http_status_line_t make_not_modified()
+{ return http_status_line_t{ status_code::not_modified, "Not Modified" }; }
+
+inline http_status_line_t make_use_proxy()
+{ return http_status_line_t{ status_code::use_proxy, "Use Proxy" }; }
+
+inline http_status_line_t make_temporary_redirect()
+{ return http_status_line_t{ status_code::temporary_redirect, "Temporary Redirect" }; }
+
+inline http_status_line_t make_bad_request()
+{ return http_status_line_t{ status_code::bad_request, "Bad Request" }; }
+
+inline http_status_line_t make_unauthorized()
+{ return http_status_line_t{ status_code::unauthorized, "Unauthorized" }; }
+
+inline http_status_line_t make_payment_required()
+{ return http_status_line_t{ status_code::payment_required, "Payment Required" }; }
+
+inline http_status_line_t make_forbidden()
+{ return http_status_line_t{ status_code::forbidden, "Forbidden" }; }
+
+inline http_status_line_t make_not_found()
+{ return http_status_line_t{ status_code::not_found, "Not Found" }; }
+
+inline http_status_line_t make_method_not_allowed()
+{ return http_status_line_t{ status_code::method_not_allowed, "Method Not Allowed" }; }
+
+inline http_status_line_t make_not_acceptable()
+{ return http_status_line_t{ status_code::not_acceptable, "Not Acceptable" }; }
+
+inline http_status_line_t make_proxy_authentication_required()
+{ return http_status_line_t{status_code::proxy_authentication_required, "Proxy Authentication Required" }; }
+
+inline http_status_line_t make_request_time_out()
+{ return http_status_line_t{ status_code::request_time_out, "Request Timeout" }; }
+
+inline http_status_line_t make_conflict()
+{ return http_status_line_t{ status_code::conflict, "Conflict" }; }
+
+inline http_status_line_t make_gone()
+{ return http_status_line_t{ status_code::gone, "Gone" }; }
+
+inline http_status_line_t make_length_required()
+{ return http_status_line_t{ status_code::length_required, "Length Required" }; }
+
+inline http_status_line_t make_precondition_failed()
+{ return http_status_line_t{ status_code::precondition_failed, "Precondition Failed" }; }
+
+inline http_status_line_t make_payload_too_large()
+{ return http_status_line_t{ status_code::payload_too_large, "Payload Too Large" }; }
+
+inline http_status_line_t make_uri_too_long()
+{ return http_status_line_t{ status_code::uri_too_long, "URI Too Long" }; }
+
+inline http_status_line_t make_unsupported_media_type()
+{ return http_status_line_t{ status_code::unsupported_media_type, "Unsupported Media Type" }; }
+
+inline http_status_line_t make_requested_range_not_satisfiable()
+{ return http_status_line_t{ status_code::requested_range_not_satisfiable, "Requested Range Not Satisfiable" }; }
+
+inline http_status_line_t make_expectation_failed()
+{ return http_status_line_t{ status_code::expectation_failed, "Expectation Failed" }; }
+
+inline http_status_line_t make_internal_server_error()
+{ return http_status_line_t{ status_code::internal_server_error, "Internal Server Error" }; }
+
+inline http_status_line_t make_not_implemented()
+{ return http_status_line_t{ status_code::not_implemented, "Not Implemented" }; }
+
+inline http_status_line_t make_bad_gateway()
+{ return http_status_line_t{ status_code::bad_gateway, "Bad Gateway" }; }
+
+inline http_status_line_t make_service_unavailable()
+{ return http_status_line_t{ status_code::service_unavailable, "Service Unavailable" }; }
+
+inline http_status_line_t make_gateway_time_out()
+{ return http_status_line_t{ status_code::gateway_time_out, "Gateway Timeout" }; }
+
+inline http_status_line_t make_http_version_not_supported()
+{ return http_status_line_t{ status_code::http_version_not_supported, "HTTP Version not supported" }; }
+///@}
+
+/** @name Additional statuses.
+ * @brief Not covered with RFC 2616.
+*/
+///@{
+	// RFC 7538
+inline http_status_line_t make_permanent_redirect()
+{ return http_status_line_t{ status_code::permanent_redirect, "Permanent Redirect" }; }
+
+	// RFC 2518
+inline http_status_line_t make_processing()
+{ return http_status_line_t{ status_code::processing, "Processing" }; }
+
+inline http_status_line_t make_multi_status()
+{ return http_status_line_t{ status_code::multi_status, "Multi-Status" }; }
+
+inline http_status_line_t make_unprocessable_entity()
+{ return http_status_line_t{ status_code::unprocessable_entity, "Unprocessable Entity" }; }
+
+inline http_status_line_t make_locked()
+{ return http_status_line_t{ status_code::locked, "Locked" }; }
+
+inline http_status_line_t make_failed_dependency()
+{ return http_status_line_t{ status_code::failed_dependency, "Failed Dependency" }; }
+
+inline http_status_line_t make_insufficient_storage()
+{ return http_status_line_t{ status_code::insufficient_storage, "Insufficient Storage" }; }
+
+	// RFC 6585
+inline http_status_line_t make_precondition_required()
+{ return http_status_line_t{ status_code::precondition_required, "Precondition Required" }; }
+
+inline http_status_line_t make_too_many_requests()
+{ return http_status_line_t{ status_code::too_many_requests, "Too Many Requests" }; }
+
+inline http_status_line_t make_request_header_fields_too_large()
+{ return http_status_line_t{ status_code::request_header_fields_too_large, "Request Header Fields Too Large" }; }
+
+inline http_status_line_t make_network_authentication_required()
+{ return http_status_line_t{ status_code::network_authentication_required, "Network Authentication Required" }; }
+///@}
+
+} /* namespace status */
+
+//
+// http_response_header_t
+//
+
+//! Resp header.
+struct http_response_header_t final
+	:	public http_header_common_t
+{
+	public:
+		http_response_header_t()
+		{}
+
+		http_response_header_t( http_status_line_t status_line )
+			:	m_status_line{ std::move( status_line ) }
+		{}
+
+		http_status_code_t
+		status_code() const
+		{ return m_status_line.status_code(); }
+
+		void
+		status_code( http_status_code_t c )
+		{ m_status_line.status_code( c ); }
+
+		const std::string &
+		reason_phrase() const
+		{ return m_status_line.reason_phrase(); }
+
+		void
+		reason_phrase( std::string r )
+		{ m_status_line.reason_phrase( std::move( r ) ); }
+
+		const http_status_line_t &
+		status_line() const
+		{
+			return m_status_line;
+		}
+
+		void
+		status_line( http_status_line_t sl )
+		{
+			m_status_line = std::move( sl );
+		}
+
+	private:
+		http_status_line_t m_status_line;
 };
 
 } /* namespace restinio */

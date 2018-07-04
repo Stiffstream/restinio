@@ -116,7 +116,7 @@ auto server_handler()
 	router->non_matched_request_handler(
 		[]( auto req ){
 			return
-				req->create_response( 404, "Not found")
+				req->create_response( restinio::status::make_not_found() )
 					.append_header_date_field()
 					.connection_close()
 					.done();

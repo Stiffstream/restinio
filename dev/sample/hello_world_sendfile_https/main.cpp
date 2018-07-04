@@ -164,7 +164,9 @@ void run_server( const app_args_t & args )
 
 							return
 								req->create_response()
-									.append_header( restinio::http_field::server, "RESTinio hello world server" )
+									.append_header(
+										restinio::http_field::server,
+										"RESTinio hello world server" )
 									.append_header_date_field()
 									.append_header(
 										restinio::http_field::content_type,
@@ -174,7 +176,7 @@ void run_server( const app_args_t & args )
 						}
 						catch( const std::exception & )
 						{
-							return req->create_response( 404, "Not Found" )
+							return req->create_response( restinio::status::make_not_found() )
 								.connection_close()
 								.append_header_date_field()
 								.done();

@@ -144,10 +144,12 @@ void run_server( const app_args_t & args )
 						}
 						catch( const std::exception & )
 						{
-							return req->create_response( 404, "Not Found" )
-								.connection_close()
-								.append_header_date_field()
-								.done();
+							return
+								req->create_response(
+										restinio::status::make_not_found() )
+									.connection_close()
+									.append_header_date_field()
+									.done();
 						}
 					}
 

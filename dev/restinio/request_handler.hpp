@@ -77,20 +77,33 @@ class request_t final
 			all further calls will throw exception.
 		*/
 		template < typename Output = restinio_controlled_output_t >
+		[[deprecated("use override with http_status_line_t argument instead")]]
 		auto
 		create_response(
-			std::uint16_t status_code = 200,
-			std::string reason_phrase = "OK" )
+			std::uint16_t status_code,
+			std::string reason_phrase )
+		{
+			return
+				create_response(
+					http_status_line_t{
+						http_status_code_t{ status_code },
+						std::move( reason_phrase ) } );
+		}
+
+		template < typename Output = restinio_controlled_output_t >
+		auto
+		create_response(
+			http_status_line_t status_line = status::make_ok() )
 		{
 			check_connection();
 
 			return response_builder_t< Output >{
-				status_code,
-				reason_phrase,
+				status_line,
 				std::move( m_connection ),
 				m_request_id,
 				m_header.should_keep_alive() };
 		}
+
 
 		//! Get request id.
 		request_id_t

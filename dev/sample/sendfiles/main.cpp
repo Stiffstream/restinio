@@ -150,7 +150,7 @@ auto server_handler( const std::string & root_dir )
 				catch( const std::exception & )
 				{
 					return
-						req->create_response( 404, "Not Found" )
+						req->create_response( restinio::status::make_not_found() )
 							.append_header_date_field()
 							.connection_close()
 							.done();
@@ -160,7 +160,7 @@ auto server_handler( const std::string & root_dir )
 			{
 				// Bad path.
 				return
-					req->create_response( 403, "Forbidden" )
+					req->create_response( restinio::status::make_forbidden() )
 						.append_header_date_field()
 						.connection_close()
 						.done();
@@ -172,12 +172,12 @@ auto server_handler( const std::string & root_dir )
 		[]( auto req ){
 			if( restinio::http_method_get() == req->header().method() )
 				return
-					req->create_response( 404, "Not Found" )
+					req->create_response( restinio::status::make_not_found() )
 						.append_header_date_field()
 						.connection_close()
 						.done();
 
-			return req->create_response( 501, "Not Implemented" )
+			return req->create_response( restinio::status::make_not_implemented() )
 					.append_header_date_field()
 					.connection_close()
 					.done();

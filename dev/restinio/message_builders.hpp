@@ -70,12 +70,11 @@ class base_response_builder_t
 		{}
 
 		base_response_builder_t(
-			std::uint16_t status_code,
-			std::string reason_phrase,
+			http_status_line_t status_line,
 			impl::connection_handle_t connection,
 			request_id_t request_id,
 			bool should_keep_alive )
-			:	m_header{ status_code, std::move( reason_phrase ) }
+			:	m_header{ std::move( status_line ) }
 			,	m_connection{ std::move( connection ) }
 			,	m_request_id{ request_id }
 		{
@@ -497,14 +496,12 @@ class response_builder_t< chunked_output_t > final
 			base_response_builder_t< response_builder_t< chunked_output_t > >;
 	public:
 		response_builder_t(
-			std::uint16_t status_code,
-			std::string reason_phrase,
+			http_status_line_t status_line,
 			impl::connection_handle_t connection,
 			request_id_t request_id,
 			bool should_keep_alive )
 			:	base_type_t{
-					status_code,
-					std::move( reason_phrase ),
+					std::move( status_line ),
 					std::move( connection ),
 					request_id,
 					should_keep_alive }

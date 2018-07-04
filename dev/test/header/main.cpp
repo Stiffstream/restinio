@@ -264,10 +264,10 @@ TEST_CASE( "working with response header" , "[header][response]" )
 	SECTION( "status code" )
 	{
 		http_response_header_t h;
-		REQUIRE( 200 == h.status_code() );
+		REQUIRE( restinio::status_code::ok == h.status_code() );
 
-		h.status_code( 404 );
-		REQUIRE( 404 == h.status_code() );
+		h.status_code( restinio::status_code::not_found );
+		REQUIRE( restinio::status_code::not_found == h.status_code() );
 	}
 
 	SECTION( "request target" )
