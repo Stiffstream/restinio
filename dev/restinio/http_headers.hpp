@@ -1448,7 +1448,7 @@ class http_status_code_t
 		{}
 
 		constexpr auto
-		status_code() const noexcept
+		raw_code() const noexcept
 		{
 			return m_status_code;
 		}
@@ -1456,7 +1456,19 @@ class http_status_code_t
 		constexpr bool
 		operator == ( const http_status_code_t & sc ) const noexcept
 		{
-			return m_status_code == sc.m_status_code;
+			return raw_code() == sc.raw_code();
+		}
+
+		constexpr bool
+		operator != ( const http_status_code_t & sc ) const noexcept
+		{
+			return sc.raw_code() != sc.raw_code();
+		}
+
+		constexpr bool
+		operator < ( const http_status_code_t & sc ) const noexcept
+		{
+			return sc.raw_code() < sc.raw_code();
 		}
 
 	private:
@@ -1570,11 +1582,11 @@ class http_status_line_t
 		{}
 
 		http_status_code_t
-		status_code() const
+		status_code() const noexcept
 		{ return m_status_code; }
 
 		void
-		status_code( http_status_code_t c )
+		status_code( http_status_code_t c ) noexcept
 		{ m_status_code = c; }
 
 		const std::string &
@@ -1593,7 +1605,7 @@ class http_status_line_t
 inline std::ostream &
 operator << ( std::ostream & o, const http_status_line_t & status_line )
 {
-	return o << "{" << status_line.status_code().status_code() << ", "
+	return o << "{" << status_line.status_code().raw_code() << ", "
 			<< status_line.reason_phrase() << "}";
 }
 

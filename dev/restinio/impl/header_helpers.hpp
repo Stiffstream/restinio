@@ -86,7 +86,7 @@ create_header_string(
 	result += static_cast<char>( '0' + h.http_minor() );
 	result += ' ';
 
-	const auto sc = h.status_code().status_code();
+	const auto sc = h.status_code().raw_code();
 
 //FIXME: there should be a check for status_code in range 100..999.
 //May be a special type like bounded_value_t<100,999> must be used in
