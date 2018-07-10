@@ -30,7 +30,7 @@ namespace impl
 #include "impl/to_lower_lut.inl"
 
 constexpr auto
-uchar_at( const char * const from, const std::size_t at )
+uchar_at( const char * const from, const std::size_t at ) noexcept
 {
 	return static_cast< unsigned char >( from[ at ] );
 };
@@ -46,7 +46,7 @@ inline bool
 caseless_cmp(
 	const char * a,
 	const char * b,
-	std::size_t size )
+	std::size_t size ) noexcept
 {
 	const unsigned char * const table = impl::to_lower_lut< unsigned char >();
 
@@ -67,7 +67,7 @@ caseless_cmp(
 	const char * a,
 	std::size_t a_size,
 	const char * b,
-	std::size_t b_size )
+	std::size_t b_size ) noexcept
 {
 	if( a_size == b_size )
 	{
@@ -83,7 +83,7 @@ caseless_cmp(
 
 //! Comparator for fields names.
 inline bool
-caseless_cmp( string_view_t a, string_view_t b )
+caseless_cmp( string_view_t a, string_view_t b ) noexcept
 {
 	return caseless_cmp( a.data(), a.size(), b.data(), b.size() );
 }
@@ -308,10 +308,10 @@ using http_field = http_field_t;
 //! Helper function to get method string name.
 //! \{
 inline http_field_t
-string_to_field( string_view_t field )
+string_to_field( string_view_t field ) noexcept
 {
 	const char * field_name = field.data();
-	std::size_t field_name_size = field.size();
+	const std::size_t field_name_size = field.size();
 
 #define RESTINIO_HTTP_CHECK_FOR_FIELD( field_id, candidate_field_name ) \
 	if( caseless_cmp(field_name, #candidate_field_name , field_name_size ) ) \
@@ -610,7 +610,7 @@ string_to_field( string_view_t field )
 
 //! Helper sunction to get method string name.
 inline const char *
-field_to_string( http_field_t f )
+field_to_string( http_field_t f ) noexcept
 {
 	const char * result = "";
 	switch( f )
@@ -678,9 +678,9 @@ class http_header_field_t
 			,	m_field_id{ field_id }
 		{}
 
-		const std::string & name() const { return m_name; }
-		const std::string & value() const { return m_value; }
-		http_field_t field_id() const { return m_field_id; }
+		const std::string & name() const noexcept { return m_name; }
+		const std::string & value() const noexcept { return m_value; }
+		http_field_t field_id() const noexcept { return m_field_id; }
 
 		void
 		name( std::string n )
@@ -770,7 +770,7 @@ class http_header_fields_t
 
 		//! Check field by name.
 		bool
-		has_field( string_view_t field_name ) const
+		has_field( string_view_t field_name ) const noexcept
 		{
 			return m_fields.cend() != cfind( field_name );
 		}
@@ -782,7 +782,7 @@ class http_header_fields_t
 			whether there is at least one unspecified field.
 		*/
 		bool
-		has_field( http_field_t field_id ) const
+		has_field( http_field_t field_id ) const noexcept
 		{
 			return m_fields.cend() != cfind( field_id );
 		}
@@ -950,7 +950,7 @@ class http_header_fields_t
 		const std::string &
 		get_field(
 			string_view_t field_name,
-			const std::string & default_value ) const
+			const std::string & default_value ) const noexcept
 		{
 			const auto it = cfind( field_name );
 
@@ -967,7 +967,7 @@ class http_header_fields_t
 		const std::string &
 		get_field(
 			http_field_t field_id,
-			const std::string & default_value ) const
+			const std::string & default_value ) const noexcept
 		{
 			if( http_field_t::field_unspecified != field_id )
 			{
@@ -1007,17 +1007,17 @@ class http_header_fields_t
 			}
 		}
 
-		auto begin() const
+		auto begin() const noexcept
 		{
 			return m_fields.cbegin();
 		}
 
-		auto end() const
+		auto end() const noexcept
 		{
 			return m_fields.cend();
 		}
 
-		auto fields_count() const
+		auto fields_count() const noexcept
 		{
 			return m_fields.size();
 		}
@@ -1039,7 +1039,7 @@ class http_header_fields_t
 		}
 
 		fields_container_t::iterator
-		find( string_view_t field_name )
+		find( string_view_t field_name ) noexcept
 		{
 			return std::find_if(
 				m_fields.begin(),
@@ -1050,7 +1050,7 @@ class http_header_fields_t
 		}
 
 		fields_container_t::const_iterator
-		cfind( string_view_t field_name ) const
+		cfind( string_view_t field_name ) const noexcept
 		{
 			return std::find_if(
 				m_fields.cbegin(),
@@ -1061,7 +1061,7 @@ class http_header_fields_t
 		}
 
 		fields_container_t::iterator
-		find( http_field_t field_id )
+		find( http_field_t field_id ) noexcept
 		{
 			return std::find_if(
 				m_fields.begin(),
@@ -1072,7 +1072,7 @@ class http_header_fields_t
 		}
 
 		fields_container_t::const_iterator
-		cfind( http_field_t field_id ) const
+		cfind( http_field_t field_id ) const noexcept
 		{
 			return std::find_if(
 				m_fields.cbegin(),
@@ -1109,39 +1109,39 @@ struct http_header_common_t
 		//! Http version.
 		//! \{
 		std::uint16_t
-		http_major() const
+		http_major() const noexcept
 		{ return m_http_major; }
 
 		void
-		http_major( std::uint16_t v )
+		http_major( std::uint16_t v ) noexcept
 		{ m_http_major = v; }
 
 		std::uint16_t
-		http_minor() const
+		http_minor() const noexcept
 		{ return m_http_minor; }
 
 		void
-		http_minor( std::uint16_t v )
+		http_minor( std::uint16_t v ) noexcept
 		{ m_http_minor = v; }
 		//! \}
 
 		//! Length of body of an http-message.
 		std::uint64_t
-		content_length() const
+		content_length() const noexcept
 		{ return m_content_length; }
 
 		void
-		content_length( std::uint64_t l )
+		content_length( std::uint64_t l ) noexcept
 		{ m_content_length = l; }
 
 		bool
-		should_keep_alive() const
+		should_keep_alive() const noexcept
 		{
 			return http_connection_header_t::keep_alive == m_http_connection_header_field_value;
 		}
 
 		void
-		should_keep_alive( bool keep_alive )
+		should_keep_alive( bool keep_alive ) noexcept
 		{
 			connection( keep_alive?
 				http_connection_header_t::keep_alive :
@@ -1157,7 +1157,7 @@ struct http_header_common_t
 
 		//! Set the value of 'connection' header field.
 		void
-		connection( http_connection_header_t ch )
+		connection( http_connection_header_t ch ) noexcept
 		{
 			m_http_connection_header_field_value = ch;
 		}
@@ -1251,7 +1251,7 @@ http_method_unknown()
 
 //! Map nodejs http method to http_method_t.
 inline http_method_t
-http_method_from_nodejs( int m )
+http_method_from_nodejs( int m ) noexcept
 {
 	auto method = http_method_t::http_unknown;
 
@@ -1280,7 +1280,7 @@ http_method_from_nodejs( int m )
 
 //! Helper sunction to get method string name.
 inline const char *
-method_to_string( http_method_t m )
+method_to_string( http_method_t m ) noexcept
 {
 	const char * result = "<unknown>";
 	switch( m )
@@ -1326,15 +1326,15 @@ struct http_request_header_t final
 		}
 
 		http_method_t
-		method() const
+		method() const noexcept
 		{ return m_method; }
 
 		void
-		method( http_method_t m )
+		method( http_method_t m ) noexcept
 		{ m_method = m; }
 
 		const std::string &
-		request_target() const
+		request_target() const noexcept
 		{ return m_request_target; }
 
 		void
@@ -1358,7 +1358,7 @@ struct http_request_header_t final
 			then function returns string view on '/weather/temperature' part.
 		*/
 		string_view_t
-		path() const
+		path() const noexcept
 		{
 			return string_view_t{ m_request_target.data(), m_query_separator_pos };
 		}
@@ -1369,7 +1369,7 @@ struct http_request_header_t final
 			then function returns string view on 'from=2012-01-01&to=2012-01-10' part.
 		*/
 		string_view_t
-		query() const
+		query() const noexcept
 		{
 			return
 				m_fragment_separator_pos == m_query_separator_pos ?
@@ -1590,7 +1590,7 @@ class http_status_line_t
 		{ m_status_code = c; }
 
 		const std::string &
-		reason_phrase() const
+		reason_phrase() const noexcept
 		{ return m_reason_phrase; }
 
 		void
@@ -1611,6 +1611,7 @@ operator << ( std::ostream & o, const http_status_line_t & status_line )
 
 namespace status
 {
+
 /** @name RFC 2616 statuses.
  * @brief Codes defined by RFC 2616: https://www.w3.org/Protocols/rfc2616/rfc2616-sec6.html#sec6.1.1.
 */
@@ -1797,15 +1798,15 @@ struct http_response_header_t final
 		{}
 
 		http_status_code_t
-		status_code() const
+		status_code() const noexcept
 		{ return m_status_line.status_code(); }
 
 		void
-		status_code( http_status_code_t c )
+		status_code( http_status_code_t c ) noexcept
 		{ m_status_line.status_code( c ); }
 
 		const std::string &
-		reason_phrase() const
+		reason_phrase() const noexcept
 		{ return m_status_line.reason_phrase(); }
 
 		void
@@ -1813,7 +1814,7 @@ struct http_response_header_t final
 		{ m_status_line.reason_phrase( std::move( r ) ); }
 
 		const http_status_line_t &
-		status_line() const
+		status_line() const noexcept
 		{
 			return m_status_line;
 		}
