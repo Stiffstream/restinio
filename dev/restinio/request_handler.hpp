@@ -71,6 +71,20 @@ class request_t final
 			return m_body;
 		}
 
+		template < typename Output = restinio_controlled_output_t >
+		auto
+		create_response(
+			http_status_line_t status_line = status::make_ok() )
+		{
+			check_connection();
+
+			return response_builder_t< Output >{
+				status_line,
+				std::move( m_connection ),
+				m_request_id,
+				m_header.should_keep_alive() };
+		}
+
 		//! Create response.
 		/*!
 			Creates response object if is called for the first time
@@ -89,21 +103,6 @@ class request_t final
 						http_status_code_t{ status_code },
 						std::move( reason_phrase ) } );
 		}
-
-		template < typename Output = restinio_controlled_output_t >
-		auto
-		create_response(
-			http_status_line_t status_line = status::make_ok() )
-		{
-			check_connection();
-
-			return response_builder_t< Output >{
-				status_line,
-				std::move( m_connection ),
-				m_request_id,
-				m_header.should_keep_alive() };
-		}
-
 
 		//! Get request id.
 		request_id_t
