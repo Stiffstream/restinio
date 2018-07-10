@@ -61,8 +61,7 @@ class base_response_builder_t
 {
 	public:
 		base_response_builder_t( const base_response_builder_t & ) = delete;
-		void
-		operator = ( const base_response_builder_t & ) = delete;
+		base_response_builder_t & operator = ( const base_response_builder_t & ) = delete;
 
 		base_response_builder_t( base_response_builder_t && ) = default;
 

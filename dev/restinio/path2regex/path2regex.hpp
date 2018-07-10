@@ -749,7 +749,7 @@ struct route_regex_matcher_data_t
 {
 	route_regex_matcher_data_t() = default;
 	route_regex_matcher_data_t( const route_regex_matcher_data_t & ) = delete;
-	const route_regex_matcher_data_t & operator = ( const route_regex_matcher_data_t & ) = delete;
+	route_regex_matcher_data_t & operator = ( const route_regex_matcher_data_t & ) = delete;
 
 	route_regex_matcher_data_t( route_regex_matcher_data_t && ) = default;
 	route_regex_matcher_data_t & operator = ( route_regex_matcher_data_t && ) = delete;

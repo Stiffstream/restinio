@@ -32,7 +32,7 @@ class sendfile_operation_runner_t final
 
 		sendfile_operation_runner_t( const sendfile_operation_runner_t & ) = delete;
 		sendfile_operation_runner_t( sendfile_operation_runner_t && ) = delete;
-		const sendfile_operation_runner_t & operator = ( const sendfile_operation_runner_t & ) = delete;
+		sendfile_operation_runner_t & operator = ( const sendfile_operation_runner_t & ) = delete;
 		sendfile_operation_runner_t & operator = ( sendfile_operation_runner_t && ) = delete;
 
 		// Reuse construstors from base.
@@ -132,7 +132,7 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 
 		sendfile_operation_runner_t( const sendfile_operation_runner_t & ) = delete;
 		sendfile_operation_runner_t( sendfile_operation_runner_t && ) = delete;
-		const sendfile_operation_runner_t & operator = ( const sendfile_operation_runner_t & ) = delete;
+		sendfile_operation_runner_t & operator = ( const sendfile_operation_runner_t & ) = delete;
 		sendfile_operation_runner_t & operator = ( sendfile_operation_runner_t && ) = delete;
 
 		// Reuse construstors from base.
@@ -211,7 +211,7 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 						&n, // sbytes
 						// Is 16 a reasonable constant here.
 #if __FreeBSD__ >= 11
-						SF_FLAGS( 16, SF_NOCACHE ) 
+						SF_FLAGS( 16, SF_NOCACHE )
 #else
 						SF_MNOWAIT
 #endif

@@ -81,7 +81,7 @@ class regex_t final
 		}
 
 		regex_t( const regex_t & ) = delete;
-		const regex_t & operator = ( const regex_t & ) = delete;
+		regex_t & operator = ( const regex_t & ) = delete;
 
 		regex_t( regex_t && rw )
 		{

@@ -39,8 +39,8 @@ struct connection_settings_t final
 
 	connection_settings_t( const connection_settings_t & ) = delete;
 	connection_settings_t( const connection_settings_t && ) = delete;
-	void operator = ( const connection_settings_t & ) = delete;
-	void operator = ( const connection_settings_t && ) = delete;
+	connection_settings_t & operator = ( const connection_settings_t & ) = delete;
+	connection_settings_t & operator = ( connection_settings_t && ) = delete;
 
 	template < typename Settings >
 	connection_settings_t(

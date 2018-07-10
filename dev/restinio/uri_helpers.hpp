@@ -56,7 +56,7 @@ class query_string_params_t final
 		query_string_params_t & operator = ( query_string_params_t && ) = default;
 
 		query_string_params_t( const query_string_params_t & ) = delete;
-		const query_string_params_t & operator = ( const query_string_params_t & ) = delete;
+		query_string_params_t & operator = ( const query_string_params_t & ) = delete;
 
 		//! Get parameter.
 		string_view_t

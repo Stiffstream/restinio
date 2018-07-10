@@ -247,8 +247,8 @@ class connection_t final
 
 		connection_t( const connection_t & ) = delete;
 		connection_t( connection_t && ) = delete;
-		void operator = ( const connection_t & ) = delete;
-		void operator = ( connection_t && ) = delete;
+		connection_t & operator = ( const connection_t & ) = delete;
+		connection_t & operator = ( connection_t && ) = delete;
 
 		~connection_t() override
 		{

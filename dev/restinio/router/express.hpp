@@ -81,7 +81,7 @@ class route_params_t final
 		route_params_t() = default;
 
 		route_params_t( route_params_t && ) = default;
-		route_params_t &operator = ( route_params_t && ) = default;
+		route_params_t & operator = ( route_params_t && ) = default;
 
 		route_params_t( const route_params_t & ) = delete;
 		route_params_t & operator = ( const route_params_t & ) = delete;
@@ -247,7 +247,7 @@ class route_params_appender_t
 
 		route_params_appender_t( const route_params_appender_t & ) = delete;
 		route_params_appender_t( route_params_appender_t && ) = delete;
-		const route_params_appender_t & operator = ( const route_params_appender_t & ) = delete;
+		route_params_appender_t & operator = ( const route_params_appender_t & ) = delete;
 		route_params_appender_t & operator = ( route_params_appender_t && ) = delete;
 
 		void
@@ -432,8 +432,7 @@ class express_route_entry_t
 
 	public:
 		express_route_entry_t( const express_route_entry_t & ) = delete;
-		const express_route_entry_t &
-		operator = ( const express_route_entry_t & ) = delete;
+		express_route_entry_t & operator = ( const express_route_entry_t & ) = delete;
 
 		express_route_entry_t() = default;
 		express_route_entry_t( express_route_entry_t && ) = default;

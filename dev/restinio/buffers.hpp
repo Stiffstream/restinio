@@ -45,7 +45,7 @@ class writable_base_t
 		writable_base_t() = default;
 		writable_base_t( const writable_base_t & ) = default;
 		writable_base_t( writable_base_t && ) = default;
-		const writable_base_t & operator = ( const writable_base_t & ) = delete;
+		writable_base_t & operator = ( const writable_base_t & ) = delete;
 		writable_base_t & operator = ( writable_base_t && ) = delete;
 
 		virtual ~writable_base_t()
@@ -74,7 +74,7 @@ class empty_buf_t final : public buf_iface_t
 		empty_buf_t() {}
 
 		empty_buf_t( const empty_buf_t & ) = delete;
-		const empty_buf_t & operator = ( const empty_buf_t & ) = delete;
+		empty_buf_t & operator = ( const empty_buf_t & ) = delete;
 
 		empty_buf_t( empty_buf_t && ) = default; // allow only explicit move.
 		empty_buf_t & operator = ( empty_buf_t && ) = delete;
@@ -104,7 +104,7 @@ class const_buf_t final : public buf_iface_t
 		{}
 
 		const_buf_t( const const_buf_t & ) = delete;
-		const const_buf_t & operator = ( const const_buf_t & ) = delete;
+		const_buf_t & operator = ( const const_buf_t & ) = delete;
 
 		const_buf_t( const_buf_t && ) = default; // allow only explicit move.
 		const_buf_t & operator = ( const_buf_t && ) = delete;
@@ -136,7 +136,7 @@ class string_buf_t final : public buf_iface_t
 		{}
 
 		string_buf_t( const string_buf_t & ) = delete;
-		const string_buf_t & operator = ( const string_buf_t & ) = delete;
+		string_buf_t & operator = ( const string_buf_t & ) = delete;
 
 		string_buf_t( string_buf_t && ) = default; // allow only explicit move.
 		string_buf_t & operator = ( string_buf_t && ) = delete;
@@ -171,7 +171,7 @@ class shared_datasizeable_buf_t final : public buf_iface_t
 		{}
 
 		shared_datasizeable_buf_t( const shared_datasizeable_buf_t & ) = delete;
-		const shared_datasizeable_buf_t & operator = ( const shared_datasizeable_buf_t & ) = delete;
+		shared_datasizeable_buf_t & operator = ( const shared_datasizeable_buf_t & ) = delete;
 
 		shared_datasizeable_buf_t( shared_datasizeable_buf_t && ) = default; // allow only explicit move.
 		shared_datasizeable_buf_t & operator = ( shared_datasizeable_buf_t && ) = delete;
@@ -207,7 +207,7 @@ struct sendfile_write_operation_t : public writable_base_t
 		{}
 
 		sendfile_write_operation_t( const sendfile_write_operation_t & ) = delete;
-		const sendfile_write_operation_t & operator = ( const sendfile_write_operation_t & ) = delete;
+		sendfile_write_operation_t & operator = ( const sendfile_write_operation_t & ) = delete;
 		sendfile_write_operation_t( sendfile_write_operation_t && ) = default;
 		sendfile_write_operation_t & operator = ( sendfile_write_operation_t && ) = default;
 
@@ -362,7 +362,7 @@ class writable_item_t
 			b.get_writable_base()->relocate_to( &m_storage );
 		}
 
-		void
+		writable_item_t &
 		operator = ( writable_item_t && b )
 		{
 			if( this != &b )
@@ -371,6 +371,8 @@ class writable_item_t
 				m_write_type = b.m_write_type;
 				b.get_writable_base()->relocate_to( &m_storage );
 			}
+
+			return *this;
 		}
 
 		~writable_item_t()

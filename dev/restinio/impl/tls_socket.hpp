@@ -37,7 +37,7 @@ class tls_socket_t
 		using socket_t = asio_ns::ssl::stream< asio_ns::ip::tcp::socket >;
 		using context_handle_t = std::shared_ptr< asio_ns::ssl::context >;
 		tls_socket_t( const tls_socket_t & ) = delete;
-		const tls_socket_t & operator = ( const tls_socket_t & ) = delete;
+		tls_socket_t & operator = ( const tls_socket_t & ) = delete;
 
 		tls_socket_t(
 			asio_ns::io_context & io_context,

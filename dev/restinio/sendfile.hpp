@@ -130,7 +130,7 @@ class file_descriptor_holder_t
 		*/
 		///@{
 		file_descriptor_holder_t( const file_descriptor_holder_t & ) = delete;
-		const file_descriptor_holder_t & operator = ( const file_descriptor_holder_t & ) = delete;
+		file_descriptor_holder_t & operator = ( const file_descriptor_holder_t & ) = delete;
 		///@}
 
 		file_descriptor_holder_t( file_descriptor_holder_t && fdh ) noexcept
@@ -264,7 +264,7 @@ class sendfile_t
 		*/
 		///@{
 		sendfile_t( const sendfile_t & ) = delete;
-		const sendfile_t & operator = ( const sendfile_t & ) = delete;
+		sendfile_t & operator = ( const sendfile_t & ) = delete;
 		///@}
 
 		/** @name Move semantics.

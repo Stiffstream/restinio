@@ -47,7 +47,7 @@ struct match_results_t final
 
 	match_results_t( const match_results_t & ) = delete;
 	match_results_t( match_results_t && ) = delete;
-	const match_results_t & operator = ( const match_results_t & ) = delete;
+	match_results_t & operator = ( const match_results_t & ) = delete;
 	match_results_t & operator = ( match_results_t && ) = delete;
 
 	struct matched_item_descriptor_t final
@@ -94,7 +94,7 @@ class regex_t final
 		}
 
 		regex_t( const regex_t & ) = delete;
-		const regex_t & operator = ( const regex_t & ) = delete;
+		regex_t & operator = ( const regex_t & ) = delete;
 
 		regex_t( regex_t && rw )
 		{

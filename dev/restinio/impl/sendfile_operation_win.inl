@@ -30,7 +30,7 @@ class sendfile_operation_runner_t final
 
 		sendfile_operation_runner_t( const sendfile_operation_runner_t & ) = delete;
 		sendfile_operation_runner_t( sendfile_operation_runner_t && ) = delete;
-		const sendfile_operation_runner_t & operator = ( const sendfile_operation_runner_t & ) = delete;
+		sendfile_operation_runner_t & operator = ( const sendfile_operation_runner_t & ) = delete;
 		sendfile_operation_runner_t & operator = ( sendfile_operation_runner_t && ) = delete;
 
 		sendfile_operation_runner_t(
@@ -137,7 +137,7 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 
 		sendfile_operation_runner_t( const sendfile_operation_runner_t & ) = delete;
 		sendfile_operation_runner_t( sendfile_operation_runner_t && ) = delete;
-		const sendfile_operation_runner_t & operator = ( const sendfile_operation_runner_t & ) = delete;
+		sendfile_operation_runner_t & operator = ( const sendfile_operation_runner_t & ) = delete;
 		sendfile_operation_runner_t & operator = ( sendfile_operation_runner_t && ) = delete;
 
 		sendfile_operation_runner_t(

@@ -28,7 +28,7 @@ class sendfile_operation_runner_t final
 
 		sendfile_operation_runner_t( const sendfile_operation_runner_t & ) = delete;
 		sendfile_operation_runner_t( sendfile_operation_runner_t && ) = delete;
-		const sendfile_operation_runner_t & operator = ( const sendfile_operation_runner_t & ) = delete;
+		sendfile_operation_runner_t & operator = ( const sendfile_operation_runner_t & ) = delete;
 		sendfile_operation_runner_t & operator = ( sendfile_operation_runner_t && ) = delete;
 
 		// Reuse construstors from base.
@@ -50,7 +50,7 @@ class sendfile_operation_runner_t final
 			}
 			else
 			{
-				this->m_after_sendfile_cb( 
+				this->m_after_sendfile_cb(
 					make_error_code( std::ferror( this->m_file_descriptor ) ),
 				 	this->m_transfered_size );
 				return;
@@ -72,8 +72,8 @@ class sendfile_operation_runner_t final
 
 			if( desired_size != n )
 			{
-				this->m_after_sendfile_cb( 
-					make_error_code( std::ferror( this->m_file_descriptor ) ), 
+				this->m_after_sendfile_cb(
+					make_error_code( std::ferror( this->m_file_descriptor ) ),
 					this->m_transfered_size );
 			}
 			else

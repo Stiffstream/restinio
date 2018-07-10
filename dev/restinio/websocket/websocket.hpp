@@ -48,8 +48,8 @@ class ws_t
 	public:
 		ws_t( const ws_t & ) = delete;
 		ws_t( ws_t && ) = delete;
-		void operator = ( const ws_t & ) = delete;
-		void operator = ( ws_t && ) = delete;
+		ws_t & operator = ( const ws_t & ) = delete;
+		ws_t & operator = ( ws_t && ) = delete;
 
 		ws_t(
 			impl::ws_connection_handle_t ws_connection_handle )

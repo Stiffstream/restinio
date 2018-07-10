@@ -27,9 +27,9 @@ class fixed_buffer_t
 {
 	public:
 		fixed_buffer_t( const fixed_buffer_t & ) = delete;
-		void operator = ( const fixed_buffer_t & ) = delete;
+		fixed_buffer_t & operator = ( const fixed_buffer_t & ) = delete;
 		fixed_buffer_t( fixed_buffer_t && ) = delete;
-		void operator = ( fixed_buffer_t && ) = delete;
+		fixed_buffer_t & operator = ( fixed_buffer_t && ) = delete;
 
 		explicit fixed_buffer_t( std::size_t size )
 		{

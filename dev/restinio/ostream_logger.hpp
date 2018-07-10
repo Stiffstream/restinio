@@ -55,7 +55,7 @@ class ostream_logger_t
 {
 	public:
 		ostream_logger_t( const ostream_logger_t & ) = delete;
-		void operator = ( const ostream_logger_t & ) = delete;
+		ostream_logger_t & operator = ( const ostream_logger_t & ) = delete;
 
 		ostream_logger_t()
 			:	m_out{ &std::cout }

@@ -533,7 +533,7 @@ class zlib_t
 
 		zlib_t( const zlib_t & ) = delete;
 		zlib_t( zlib_t && ) = delete;
-		const zlib_t & operator = ( const zlib_t & ) = delete;
+		zlib_t & operator = ( const zlib_t & ) = delete;
 		zlib_t & operator = ( zlib_t && ) = delete;
 
 		~zlib_t()
@@ -982,7 +982,7 @@ class body_appender_base_t
 		}
 
 		body_appender_base_t( const body_appender_base_t & ) = delete;
-		const body_appender_base_t & operator = ( const body_appender_base_t & ) = delete;
+		body_appender_base_t & operator = ( const body_appender_base_t & ) = delete;
 		body_appender_base_t & operator = ( body_appender_base_t && ) = delete;
 
 		body_appender_base_t( body_appender_base_t && ba )
