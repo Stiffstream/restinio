@@ -74,7 +74,7 @@ class request_t final
 		template < typename Output = restinio_controlled_output_t >
 		auto
 		create_response(
-			http_status_line_t status_line = status::make_ok() )
+			http_status_line_t status_line = status_ok() )
 		{
 			check_connection();
 

@@ -241,7 +241,7 @@ upgrade(
 
 	writable_items_container_t upgrade_response_bufs;
 	{
-		http_response_header_t upgrade_response_header{ status::make_switching_protocols() };
+		http_response_header_t upgrade_response_header{ status_switching_protocols() };
 		upgrade_response_header.swap_fields( upgrade_response_header_fields );
 		upgrade_response_header.connection( http_connection_header_t::upgrade );
 

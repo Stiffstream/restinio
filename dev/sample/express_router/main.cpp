@@ -207,7 +207,7 @@ private :
 	static void
 	mark_as_bad_request( RESP & resp )
 	{
-		resp.header().status_line( restinio::status::make_bad_request() );
+		resp.header().status_line( restinio::status_bad_request() );
 	};
 };
 

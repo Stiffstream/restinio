@@ -76,7 +76,7 @@ struct request_handler_t
 		}
 
 		return
-			req->create_response( restinio::status::make_not_implemented() )
+			req->create_response( restinio::status_not_implemented() )
 				.connection_close()
 				.done();
 	}
