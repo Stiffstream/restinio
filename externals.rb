@@ -1,5 +1,5 @@
 MxxRu::arch_externals :so5 do |e|
-  e.url 'https://github.com/eao197/so-5-5/archive/v5.5.22.zip'
+  e.url 'https://github.com/eao197/so-5-5/archive/v5.5.22.1.zip'
   e.map_dir 'dev/so_5' => 'dev'
   e.map_dir 'dev/timertt' => 'dev'
 end
@@ -30,7 +30,7 @@ MxxRu::arch_externals :nodejs_http_parser_mxxru do |e|
 end
 
 MxxRu::arch_externals :fmt do |e|
-  e.url 'https://github.com/fmtlib/fmt/archive/5.0.0.zip'
+  e.url 'https://github.com/fmtlib/fmt/archive/5.1.0.zip'
 
   e.map_dir 'include' => 'dev/fmt'
   e.map_dir 'src' => 'dev/fmt'
@@ -59,7 +59,7 @@ MxxRu::arch_externals :rapidjson_mxxru do |e|
 end
 
 MxxRu::arch_externals :json_dto do |e|
-  e.url 'https://bitbucket.org/sobjectizerteam/json_dto-0.2/downloads/json_dto-0.2.3-full.zip'
+  e.url 'https://bitbucket.org/sobjectizerteam/json_dto-0.2/downloads/json_dto-0.2.5-full.zip'
 
   e.map_dir 'dev/json_dto' => 'dev'
 end
@@ -71,7 +71,7 @@ MxxRu::arch_externals :args do |e|
 end
 
 MxxRu::arch_externals :catch do |e|
-  e.url 'https://github.com/catchorg/Catch2/archive/v2.1.0.zip'
+  e.url 'https://github.com/catchorg/Catch2/archive/v2.2.3.zip'
 
   e.map_file 'single_include/catch.hpp' => 'dev/catch/*'
 end
