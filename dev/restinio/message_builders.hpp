@@ -127,10 +127,20 @@ class base_response_builder_t
 			return upcast_reference();
 		}
 
+
 		//! Add header `Date` field.
 		Response_Builder &
 		append_header_date_field(
-			std::time_t t = std::time( nullptr ) )
+			std::chrono::system_clock::time_point tp = std::chrono::system_clock::now() )
+		{
+			m_header.set_field( http_field_t::date, make_date_field_value( tp ) );
+			return upcast_reference();
+		}
+
+		//! Add header `Date` field.
+		[[deprecated("use override with std::chrono::system_clock::time_point argument instead")]]
+		Response_Builder &
+		append_header_date_field( std::time_t t )
 		{
 			m_header.set_field( http_field_t::date, make_date_field_value( t ) );
 			return upcast_reference();
