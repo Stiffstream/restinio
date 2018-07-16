@@ -305,6 +305,7 @@ class sendfile_t
 		/*!
 			\deprecated Use meta() to get file total size.
 		*/
+		[[deprecated("use sendfile_t::meta() function for working with file meta data")]]
 		auto file_total_size() const noexcept { return m_meta.file_total_size(); }
 
 		//! Get offset of data to write.

@@ -461,18 +461,10 @@ class writable_item_t
 		storage_t m_storage;
 };
 
-//! Back compatibility.
-//! \deprecated Obsolete in v.4.2.0. Use writable_item_t instead.
-// using buffer_storage_t = writable_item_t;
-
 //
 // writable_items_container_t
 //
 
 using writable_items_container_t = std::vector< writable_item_t >;
-
-//! Back compatibility.
-//! \deprecated Obsolete in v.4.2.0. Use writable_item_t instead.
-// using buffers_container_t = writable_items_container_t;
 
 } /* namespace restinio */

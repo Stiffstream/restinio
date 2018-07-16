@@ -149,6 +149,7 @@ get( const query_string_params_t & params, string_view_t key )
 /*!
 	\deprecated Obsolete in v.4.1.0. Use restinio::parse_query() instead.
 */
+[[deprecated("use restinio::parse_query() instead")]]
 inline query_string_params_t
 parse_query_string( string_view_t query_string )
 {
