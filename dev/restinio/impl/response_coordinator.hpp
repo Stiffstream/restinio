@@ -72,37 +72,37 @@ class response_context_table_t
 
 		//! If table is empty.
 		bool
-		empty() const
+		empty() const noexcept
 		{
-			return 0UL == m_elements_exists;
+			return !m_elements_exists;
 		}
 
 		//! If table is full.
 		bool
-		is_full() const
+		is_full() const noexcept
 		{
 			return m_contexts.size() == m_elements_exists;
 		}
 
 		//! Get first context.
 		response_context_t &
-		front()
+		front() noexcept
 		{
-			return m_contexts[ m_first_element_indx ];
+			return m_contexts[ m_first_element_index ];
 		}
 
 		//! Get last context.
 		response_context_t &
-		back()
+		back() noexcept
 		{
 			return m_contexts[
-				(m_first_element_indx + (m_elements_exists - 1) ) %
+				(m_first_element_index + (m_elements_exists - 1) ) %
 					m_contexts.size() ];
 		}
 
 		//! Get context of specified request.
 		response_context_t *
-		get_by_req_id( request_id_t req_id )
+		get_by_req_id( request_id_t req_id ) noexcept
 		{
 			if( empty() ||
 				req_id < front().m_request_id ||
@@ -118,7 +118,7 @@ class response_context_table_t
 		void
 		push_response_context( request_id_t req_id )
 		{
-			if( m_contexts.size() == m_elements_exists )
+			if( is_full() )
 				throw exception_t{
 					"unable to insert context because "
 					"response_context_table is full" };
@@ -126,7 +126,7 @@ class response_context_table_t
 			auto & ctx =
 				m_contexts[
 						// Current next.
-						( m_first_element_indx + m_elements_exists ) % m_contexts.size()
+						( m_first_element_index + m_elements_exists ) % m_contexts.size()
 					];
 
 				ctx.reinit( req_id );
@@ -144,25 +144,25 @@ class response_context_table_t
 					"response_context_table is empty" };
 
 			--m_elements_exists;
-			++m_first_element_indx;
-			if( m_contexts.size() == m_first_element_indx )
+			++m_first_element_index;
+			if( m_contexts.size() == m_first_element_index )
 			{
-				m_first_element_indx = 0UL;
+				m_first_element_index = std::size_t{0};
 			}
 		}
 
 	private:
 		std::size_t
-		get_real_index( request_id_t req_id )
+		get_real_index( request_id_t req_id ) noexcept
 		{
 			const auto distance_from_first =
 				req_id - front().m_request_id;
 
-			return ( m_first_element_indx + distance_from_first ) % m_contexts.size();
+			return ( m_first_element_index + distance_from_first ) % m_contexts.size();
 		}
 
 		std::vector< response_context_t > m_contexts;
-		std::size_t m_first_element_indx{0};
+		std::size_t m_first_element_index{0};
 		std::size_t m_elements_exists{0};
 };
 
@@ -170,7 +170,7 @@ class response_context_table_t
 // response_coordinator_t
 //
 
-//! Coordinator for process od sending responses with
+//! Coordinator for process of sending responses with
 //! respect to http pipeline technique and chunk transfer.
 /*
 	Keeps track of maximum N (max_req_count) pipelined requests,
@@ -187,26 +187,26 @@ class response_coordinator_t
 		{}
 
 		bool
-		closed() const
+		closed() const noexcept
 		{
 			return m_connection_closed_response_occured;
 		}
 
 		bool
-		empty() const
+		empty() const noexcept
 		{
 			return m_context_table.empty();
 		}
 
 		bool
-		is_full() const
+		is_full() const noexcept
 		{
 			return m_context_table.is_full();
 		}
 
 		//! Check if it is possible to accept more requests.
 		bool
-		is_able_to_get_more_messages() const
+		is_able_to_get_more_messages() const noexcept
 		{
 			return !closed() && !is_full();
 		}
