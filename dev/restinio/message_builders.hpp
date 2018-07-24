@@ -398,35 +398,23 @@ class response_builder_t< user_controlled_output_t > final
 				m_should_keep_alive_when_header_was_sent =
 					m_header.should_keep_alive();
 
-				const response_output_flags_t
-					response_output_flags{
-						response_parts_attr,
-						response_connection_attr( m_should_keep_alive_when_header_was_sent ) };
-
 				if_neccessary_reserve_first_element_for_header();
 
 				m_response_parts[ 0 ] =
 					writable_item_t{ impl::create_header_string( m_header ) };
 
-				conn->write_response_parts(
-					m_request_id,
-					response_output_flags,
-					std::move( m_response_parts ) );
-
 				m_header_was_sent = true;
 			}
-			else
-			{
-				const response_output_flags_t
-					response_output_flags{
-						response_parts_attr,
-						response_connection_attr( m_should_keep_alive_when_header_was_sent ) };
 
-				conn->write_response_parts(
-					m_request_id,
-					response_output_flags,
-					std::move( m_response_parts ) );
-			}
+			const response_output_flags_t
+				response_output_flags{
+					response_parts_attr,
+					response_connection_attr( m_should_keep_alive_when_header_was_sent ) };
+
+			conn->write_response_parts(
+				m_request_id,
+				response_output_flags,
+				std::move( m_response_parts ) );
 		}
 
 		self_type_t &
