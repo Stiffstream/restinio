@@ -1132,7 +1132,6 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 	}
 }
 
-#if 0 /* Needs to be changed */
 
 TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][size1]" )
 {
@@ -1142,7 +1141,6 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 
 	{
 		// close after sendfile.
-		writable_items_container_t out_bufs;
 		response_coordinator_t coordinator{ 1 };
 
 		auto req_id = coordinator.register_new_request();
@@ -1153,42 +1151,38 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_close() },
-			make_buffers( { "header1", "header2", "header3" } ) ) );
+			write_group_t{
+				make_buffers( { "header1", "header2", "header3" } ) } ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_close() },
-			make_buffers( restinio::sendfile(
-							restinio::null_file_descriptor() /* fake not real */,
-							restinio::file_meta_t{1024, std::chrono::system_clock::now() } ) ) ) );
+			write_group_t{
+				make_buffers( restinio::sendfile(
+					restinio::null_file_descriptor() /* fake not real */,
+					restinio::file_meta_t{1024, std::chrono::system_clock::now() } ) ) } ) );
 
-		REQUIRE_FALSE( coordinator.closed() );
 
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::trivial_write_operation ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
-		REQUIRE( 3UL == out_bufs.size() );
-		REQUIRE( make_string( out_bufs[ 0UL ] ) == "header1" );
-		REQUIRE( make_string( out_bufs[ 1UL ] ) == "header2" );
-		REQUIRE( make_string( out_bufs[ 2UL ] ) == "header3" );
+		auto popped_wg = coordinator.pop_ready_buffers();
 
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::file_write_operation ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
-		REQUIRE( 1UL == out_bufs.size() );
+		REQUIRE( popped_wg );
 
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
+		// Groups merged
+		REQUIRE( 4UL == popped_wg->items_count() );
+		REQUIRE( make_string( popped_wg->items()[ 0UL ] ) == "header1" );
+		REQUIRE( make_string( popped_wg->items()[ 1UL ] ) == "header2" );
+		REQUIRE( make_string( popped_wg->items()[ 2UL ] ) == "header3" );
+		REQUIRE( popped_wg->items()[ 3UL ].write_type() ==
+				writable_item_type_t::file_write_operation );
+		CHECK_NOTHROW( popped_wg->items()[ 3UL ].sendfile_operation() );
 
 		REQUIRE( coordinator.closed() );
 	}
 
 	{
 		// keep-alive after sendfile.
-		writable_items_container_t out_bufs;
 		response_coordinator_t coordinator{ 1 };
 
 		auto req_id = coordinator.register_new_request();
@@ -1199,42 +1193,39 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_keep_alive() },
-			make_buffers( { "header1", "header2", "header3" } ) ) );
+			write_group_t{
+				make_buffers( { "header1", "header2", "header3" } ) } ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
 			response_output_flags_t{
-				response_is_not_complete(),
+				response_is_complete(),
 				connection_should_keep_alive() },
-			make_buffers( restinio::sendfile(
-							restinio::null_file_descriptor() /* fake not real */,
-							restinio::file_meta_t{ 1024, std::chrono::system_clock::now() } ) ) ) );
-
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::trivial_write_operation ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
-		REQUIRE( 3UL == out_bufs.size() );
-		REQUIRE( make_string( out_bufs[ 0UL ] ) == "header1" );
-		REQUIRE( make_string( out_bufs[ 1UL ] ) == "header2" );
-		REQUIRE( make_string( out_bufs[ 2UL ] ) == "header3" );
+			write_group_t{
+				make_buffers( restinio::sendfile(
+					restinio::null_file_descriptor() /* fake not real */,
+					restinio::file_meta_t{1024, std::chrono::system_clock::now() } ) ) } ) );
 
 		REQUIRE_FALSE( coordinator.closed() );
 
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::file_write_operation ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
-		REQUIRE( 1UL == out_bufs.size() );
+		auto popped_wg = coordinator.pop_ready_buffers();
 
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
+		REQUIRE( popped_wg );
+
+		// Groups merged
+		REQUIRE( 4UL == popped_wg->items_count() );
+		REQUIRE( make_string( popped_wg->items()[ 0UL ] ) == "header1" );
+		REQUIRE( make_string( popped_wg->items()[ 1UL ] ) == "header2" );
+		REQUIRE( make_string( popped_wg->items()[ 2UL ] ) == "header3" );
+		REQUIRE( popped_wg->items()[ 3UL ].write_type() ==
+				writable_item_type_t::file_write_operation );
+		CHECK_NOTHROW( popped_wg->items()[ 3UL ].sendfile_operation() );
 
 		REQUIRE_FALSE( coordinator.closed() );
 	}
 
 	{
 		// several sendfiles and close.
-		writable_items_container_t out_bufs;
 		response_coordinator_t coordinator{ 1 };
 
 		auto req_id = coordinator.register_new_request();
@@ -1245,81 +1236,70 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_close() },
-			make_buffers( { "header1", "header2", "header3" } ) ) );
+			write_group_t{
+				make_buffers( { "header1", "header2", "header3" } ) } ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_close() },
-			make_buffers( restinio::sendfile(
-							restinio::null_file_descriptor() /* fake not real */,
-							restinio::file_meta_t{ 1024, std::chrono::system_clock::now() } ) ) ) );
+			write_group_t{
+				make_buffers( restinio::sendfile(
+					restinio::null_file_descriptor() /* fake not real */,
+					restinio::file_meta_t{1024, std::chrono::system_clock::now() } ) ) } ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_close() },
-			make_buffers( restinio::sendfile(
-							restinio::null_file_descriptor() /* fake not real */,
-							restinio::file_meta_t{ 2048, std::chrono::system_clock::now() } ) ) ) );
+			write_group_t{
+				make_buffers( restinio::sendfile(
+					restinio::null_file_descriptor() /* fake not real */,
+					restinio::file_meta_t{2048, std::chrono::system_clock::now() } ) ) } ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_close() },
-			make_buffers( restinio::sendfile(
-								restinio::null_file_descriptor() /* fake not real */,
-								restinio::file_meta_t{ 4096, std::chrono::system_clock::now() } ) ) ) );
+			write_group_t{
+				make_buffers( restinio::sendfile(
+					restinio::null_file_descriptor() /* fake not real */,
+					restinio::file_meta_t{4096, std::chrono::system_clock::now() } ) ) } ) );
 
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::trivial_write_operation ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
-		REQUIRE( 3UL == out_bufs.size() );
-		REQUIRE( make_string( out_bufs[ 0UL ] ) == "header1" );
-		REQUIRE( make_string( out_bufs[ 1UL ] ) == "header2" );
-		REQUIRE( make_string( out_bufs[ 2UL ] ) == "header3" );
-
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::file_write_operation ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
-		REQUIRE( 1UL == out_bufs.size() );
 		REQUIRE_FALSE( coordinator.closed() );
 
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
-		REQUIRE( out_bufs[ 0UL ].size() == 1024 );
-		REQUIRE_FALSE( coordinator.closed() );
+		auto popped_wg = coordinator.pop_ready_buffers();
 
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::file_write_operation ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
-		REQUIRE( 1UL == out_bufs.size() );
-		REQUIRE_FALSE( coordinator.closed() );
+		REQUIRE( popped_wg );
+		// Groups merged
+		REQUIRE( 6UL == popped_wg->items_count() );
+		REQUIRE( make_string( popped_wg->items()[ 0UL ] ) == "header1" );
+		REQUIRE( make_string( popped_wg->items()[ 1UL ] ) == "header2" );
+		REQUIRE( make_string( popped_wg->items()[ 2UL ] ) == "header3" );
 
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
-		REQUIRE( out_bufs[ 0UL ].size() == 2048 );
-		REQUIRE_FALSE( coordinator.closed() );
+		REQUIRE( popped_wg->items()[ 3UL ].write_type() ==
+				writable_item_type_t::file_write_operation );
+		REQUIRE( popped_wg->items()[ 3UL ].size() == 1024 );
+		CHECK_NOTHROW( popped_wg->items()[ 3UL ].sendfile_operation() );
 
+		REQUIRE( popped_wg->items()[ 4UL ].write_type() ==
+				writable_item_type_t::file_write_operation );
+		REQUIRE( popped_wg->items()[ 4UL ].size() == 2048 );
+		CHECK_NOTHROW( popped_wg->items()[ 4UL ].sendfile_operation() );
 
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::file_write_operation ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
-		REQUIRE( 1UL == out_bufs.size() );
+		REQUIRE( popped_wg->items()[ 5UL ].write_type() ==
+				writable_item_type_t::file_write_operation );
+		REQUIRE( popped_wg->items()[ 5UL ].size() == 4096 );
+		CHECK_NOTHROW( popped_wg->items()[ 5UL ].sendfile_operation() );
 
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
-		REQUIRE( out_bufs[ 0UL ].size() == 4096 );
 		REQUIRE( coordinator.closed() );
 	}
 
 	{
 		// several sendfiles trivial buf and keep-alive.
-		writable_items_container_t out_bufs;
 		response_coordinator_t coordinator{ 1 };
 
 		auto req_id = coordinator.register_new_request();
@@ -1330,238 +1310,391 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_close() },
-			make_buffers( { "header1", "header2", "header3" } ) ) );
+			write_group_t{
+				make_buffers( { "header1", "header2", "header3" } ) } ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_close() },
-			make_buffers( restinio::sendfile(
-							restinio::null_file_descriptor() /* fake not real */,
-							restinio::file_meta_t{ 1024, std::chrono::system_clock::now() } ) ) ) );
+			write_group_t{
+				make_buffers( restinio::sendfile(
+					restinio::null_file_descriptor() /* fake not real */,
+					restinio::file_meta_t{1024, std::chrono::system_clock::now() } ) ) } ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_close() },
-			make_buffers( restinio::sendfile(
-							restinio::null_file_descriptor() /* fake not real */,
-							restinio::file_meta_t{ 2048, std::chrono::system_clock::now() } ) ) ) );
+			write_group_t{
+				make_buffers( restinio::sendfile(
+					restinio::null_file_descriptor() /* fake not real */,
+					restinio::file_meta_t{2048, std::chrono::system_clock::now() } ) ) } ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_close() },
-			make_buffers( restinio::sendfile(
-							restinio::null_file_descriptor() /* fake not real */,
-							restinio::file_meta_t{ 4096, std::chrono::system_clock::now() } ) ) ) );
+			write_group_t{
+				make_buffers( restinio::sendfile(
+					restinio::null_file_descriptor() /* fake not real */,
+					restinio::file_meta_t{4096, std::chrono::system_clock::now() } ) ) } ) );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id,
 			response_output_flags_t{
 				response_is_complete(),
 				connection_should_close() },
-			make_buffers( { "END", "OF", "RESPONSE" } ) ) );
+			write_group_t{
+				make_buffers( { "END", "OF", "RESPONSE" } ) } ) );
 
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::trivial_write_operation ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
-		REQUIRE( 3UL == out_bufs.size() );
-		REQUIRE( make_string( out_bufs[ 0UL ] ) == "header1" );
-		REQUIRE( make_string( out_bufs[ 1UL ] ) == "header2" );
-		REQUIRE( make_string( out_bufs[ 2UL ] ) == "header3" );
-
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::file_write_operation ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
-		REQUIRE( 1UL == out_bufs.size() );
-		REQUIRE_FALSE( coordinator.closed() );
-
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
-		REQUIRE( out_bufs[ 0UL ].size() == 1024 );
-		REQUIRE_FALSE( coordinator.closed() );
-
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::file_write_operation ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
-		REQUIRE( 1UL == out_bufs.size() );
-		REQUIRE_FALSE( coordinator.closed() );
-
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
-		REQUIRE( out_bufs[ 0UL ].size() == 2048 );
 		REQUIRE_FALSE( coordinator.closed() );
 
 
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::file_write_operation ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
-		REQUIRE( 1UL == out_bufs.size() );
+		auto popped_wg = coordinator.pop_ready_buffers();
 
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
-		REQUIRE( out_bufs[ 0UL ].size() == 4096 );
-		REQUIRE_FALSE( coordinator.closed() );
+		REQUIRE( popped_wg );
+		// Groups merged
+		REQUIRE( 9UL == popped_wg->items_count() );
+		REQUIRE( make_string( popped_wg->items()[ 0UL ] ) == "header1" );
+		REQUIRE( make_string( popped_wg->items()[ 1UL ] ) == "header2" );
+		REQUIRE( make_string( popped_wg->items()[ 2UL ] ) == "header3" );
 
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::trivial_write_operation ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
-		REQUIRE( 3UL == out_bufs.size() );
-		REQUIRE( make_string( out_bufs[ 0UL ] ) == "END" );
-		REQUIRE( make_string( out_bufs[ 1UL ] ) == "OF" );
-		REQUIRE( make_string( out_bufs[ 2UL ] ) == "RESPONSE" );
+		REQUIRE( popped_wg->items()[ 3UL ].write_type() ==
+				writable_item_type_t::file_write_operation );
+		REQUIRE( popped_wg->items()[ 3UL ].size() == 1024 );
+		CHECK_NOTHROW( popped_wg->items()[ 3UL ].sendfile_operation() );
+
+		REQUIRE( popped_wg->items()[ 4UL ].write_type() ==
+				writable_item_type_t::file_write_operation );
+		REQUIRE( popped_wg->items()[ 4UL ].size() == 2048 );
+		CHECK_NOTHROW( popped_wg->items()[ 4UL ].sendfile_operation() );
+
+		REQUIRE( popped_wg->items()[ 5UL ].write_type() ==
+				writable_item_type_t::file_write_operation );
+		REQUIRE( popped_wg->items()[ 5UL ].size() == 4096 );
+		CHECK_NOTHROW( popped_wg->items()[ 5UL ].sendfile_operation() );
+
+		REQUIRE( make_string( popped_wg->items()[ 6UL ] ) == "END" );
+		REQUIRE( make_string( popped_wg->items()[ 7UL ] ) == "OF" );
+		REQUIRE( make_string( popped_wg->items()[ 8UL ] ) == "RESPONSE" );
+
 		REQUIRE( coordinator.closed() );
+	}
+
+	{
+		// Several sendfiles with notificators and trivial buf and keep-alive.
+		response_coordinator_t coordinator{ 1 };
+
+		auto req_id = coordinator.register_new_request();
+		REQUIRE( coordinator.is_full() );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_close() },
+			write_group_t{
+				make_buffers( { "header1", "header2", "header3" } ) } ) );
+
+		{
+			// This wg will be merged with trivial bufs.
+			write_group_t wg{
+				make_buffers( restinio::sendfile(
+					restinio::null_file_descriptor() /* fake not real */,
+					restinio::file_meta_t{1024, std::chrono::system_clock::now() } ) ) };
+			wg.after_write_notificator( []( const auto & ){} );
+
+			CHECK_NOTHROW( coordinator.append_response(
+				req_id,
+				response_output_flags_t{
+					response_is_not_complete(),
+					connection_should_close() },
+				std::move( wg ) ) );
+		}
+
+		{
+			// Cannot be merged: prev group has notificator.
+			// 2nd group is formed.
+			CHECK_NOTHROW( coordinator.append_response(
+				req_id,
+				response_output_flags_t{
+					response_is_not_complete(),
+					connection_should_close() },
+				write_group_t{
+					make_buffers( restinio::sendfile(
+						restinio::null_file_descriptor() /* fake not real */,
+						restinio::file_meta_t{2048, std::chrono::system_clock::now() } ) ) } ) );
+		}
+
+		{
+			// Will be merged with prev (2nd) group.
+			write_group_t wg{
+				make_buffers( restinio::sendfile(
+					restinio::null_file_descriptor() /* fake not real */,
+					restinio::file_meta_t{4096, std::chrono::system_clock::now() } ) ) };
+			wg.after_write_notificator( []( const auto & ){} );
+
+			CHECK_NOTHROW( coordinator.append_response(
+				req_id,
+				response_output_flags_t{
+					response_is_not_complete(),
+					connection_should_close() },
+				std::move( wg ) ) );
+		}
+
+		// Cannot be merged: prev group has notificator.
+		// 3nd group is formed.
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id,
+			response_output_flags_t{
+				response_is_complete(),
+				connection_should_close() },
+			write_group_t{
+				make_buffers( { "END", "OF", "RESPONSE" } ) } ) );
+
+
+		auto popped_wg = coordinator.pop_ready_buffers();
+		REQUIRE( popped_wg );
+		REQUIRE_FALSE( coordinator.closed() );
+
+		// Groups merged
+		REQUIRE( 4UL == popped_wg->items_count() );
+		REQUIRE( make_string( popped_wg->items()[ 0UL ] ) == "header1" );
+		REQUIRE( make_string( popped_wg->items()[ 1UL ] ) == "header2" );
+		REQUIRE( make_string( popped_wg->items()[ 2UL ] ) == "header3" );
+
+		REQUIRE( popped_wg->items()[ 3UL ].write_type() ==
+				writable_item_type_t::file_write_operation );
+		REQUIRE( popped_wg->items()[ 3UL ].size() == 1024 );
+		CHECK_NOTHROW( popped_wg->items()[ 3UL ].sendfile_operation() );
+
+		REQUIRE( static_cast< bool >( popped_wg->after_write_notificator() ) );
+
+		popped_wg = coordinator.pop_ready_buffers();
+		REQUIRE( popped_wg );
+		REQUIRE_FALSE( coordinator.closed() );
+		REQUIRE( 2UL == popped_wg->items_count() );
+		REQUIRE( popped_wg->items()[ 0UL ].write_type() ==
+				writable_item_type_t::file_write_operation );
+		REQUIRE( popped_wg->items()[ 0UL ].size() == 2048 );
+		CHECK_NOTHROW( popped_wg->items()[ 0UL ].sendfile_operation() );
+		REQUIRE( popped_wg->items()[ 1UL ].write_type() ==
+				writable_item_type_t::file_write_operation );
+		REQUIRE( popped_wg->items()[ 1UL ].size() == 4096 );
+		CHECK_NOTHROW( popped_wg->items()[ 1UL ].sendfile_operation() );
+
+		REQUIRE( static_cast< bool >( popped_wg->after_write_notificator() ) );
+
+
+		popped_wg = coordinator.pop_ready_buffers();
+		REQUIRE( popped_wg );
+		REQUIRE( coordinator.closed() );
+		REQUIRE( 3UL == popped_wg->items_count() );
+		REQUIRE( make_string( popped_wg->items()[ 0UL ] ) == "END" );
+		REQUIRE( make_string( popped_wg->items()[ 1UL ] ) == "OF" );
+		REQUIRE( make_string( popped_wg->items()[ 2UL ] ) == "RESPONSE" );
 	}
 }
 
-TEST_CASE( "response_coordinator sendfile 2" , "[response_coordinator][sendfile][sizeN]" )
+TEST_CASE( "response_coordinator merge write groups" , "[response_coordinator][merge groups]" )
 {
-	//
-	// response_coordinator with N item.
-	//
+	response_coordinator_t coordinator{ 3 };
+	REQUIRE_FALSE( coordinator.closed() );
+
+	request_id_t req_id[ 3 ];
+
+	CHECK_NOTHROW( req_id[ 0 ] = coordinator.register_new_request() );
+	CHECK_NOTHROW( req_id[ 1 ] = coordinator.register_new_request() );
+	CHECK_NOTHROW( req_id[ 2 ] = coordinator.register_new_request() );
+
+	// #0: <nothing>
+	// #1: <nothing>
+	// #2: <nothing>
 
 	{
-		// first response goes with connection close flag.
-		// 2 sequential sendfile writables for distinct requests.
-		writable_items_container_t out_bufs;
-		response_coordinator_t coordinator{ 2 };
-
-		request_id_t req_id[ 2 ];
-		req_id[0] = coordinator.register_new_request();
-		REQUIRE_FALSE( coordinator.is_full() );
-		req_id[1] = coordinator.register_new_request();
-		REQUIRE( coordinator.is_full() );
+		write_group_t wg{
+			make_buffers(
+				{ "0a", "0b", "0c", "0a", "0b", "0c",
+				  "0a", "0b", "0c", "0a", "0b", "0c" } ) };
+		wg.after_write_notificator( []( const auto & ){} );
 
 		CHECK_NOTHROW( coordinator.append_response(
-			req_id[0],
+			req_id[ 0 ],
 			response_output_flags_t{
 				response_is_not_complete(),
-				connection_should_close() },
-			make_buffers( { "header1", "header2", "header3" } ) ) );
-
-		CHECK_NOTHROW( coordinator.append_response(
-			req_id[0],
-			response_output_flags_t{
-				response_is_complete(),
-				connection_should_close() },
-			make_buffers( restinio::sendfile(
-								restinio::null_file_descriptor() /* fake not real */,
-								restinio::file_meta_t{ 1024, std::chrono::system_clock::now() } ) ) ) );
-
-		// Previous response goes with connection close flag
-		// So it would not be selected.
-		CHECK_NOTHROW( coordinator.append_response(
-			req_id[1],
-			response_output_flags_t{
-				response_is_not_complete(),
-				connection_should_close() },
-			make_buffers( restinio::sendfile(
-								restinio::null_file_descriptor() /* fake not real */,
-								restinio::file_meta_t{ 2048, std::chrono::system_clock::now() } ) ) ) );
-
-		REQUIRE_FALSE( coordinator.closed() );
-
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::trivial_write_operation ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
-		REQUIRE( 3UL == out_bufs.size() );
-		REQUIRE( make_string( out_bufs[ 0UL ] ) == "header1" );
-		REQUIRE( make_string( out_bufs[ 1UL ] ) == "header2" );
-		REQUIRE( make_string( out_bufs[ 2UL ] ) == "header3" );
-
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::file_write_operation ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
-		REQUIRE( 1UL == out_bufs.size() );
-
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
-
-		REQUIRE( coordinator.closed() );
-
-		out_bufs.clear();
-		CHECK_THROWS( coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+				connection_should_keep_alive() },
+			std::move( wg ) ) );
 	}
+
+	// #0: 1 group
+	// #1: <nothing>
+	// #2: <nothing>
 
 	{
-		// 2 sequential sendfile writables for distinct requests.
-		writable_items_container_t out_bufs;
-		response_coordinator_t coordinator{ 2 };
-
-		request_id_t req_id[ 2 ];
-		req_id[0] = coordinator.register_new_request();
-		REQUIRE_FALSE( coordinator.is_full() );
-		req_id[1] = coordinator.register_new_request();
-		REQUIRE( coordinator.is_full() );
+		write_group_t wg{
+			make_buffers(
+				{ "0a", "0b", "0c", "0a", "0b", "0c",
+				  "0a", "0b", "0c", "0a", "0b", "0c" } ) };
+		wg.after_write_notificator( []( const auto & ){} );
 
 		CHECK_NOTHROW( coordinator.append_response(
-			req_id[0],
+			req_id[ 0 ],
 			response_output_flags_t{
 				response_is_not_complete(),
 				connection_should_keep_alive() },
-			make_buffers( { "header1", "header2", "header3" } ) ) );
-
-		CHECK_NOTHROW( coordinator.append_response(
-			req_id[0],
-			response_output_flags_t{
-				response_is_complete(),
-				connection_should_keep_alive() },
-			make_buffers( restinio::sendfile(
-								restinio::null_file_descriptor() /* fake not real */,
-								restinio::file_meta_t{ 1024, std::chrono::system_clock::now() } ) ) ) );
-
-		// Previous response goes with connection close flag
-		// So it would not be selected.
-		CHECK_NOTHROW( coordinator.append_response(
-			req_id[1],
-			response_output_flags_t{
-				response_is_complete(),
-				connection_should_keep_alive() },
-			make_buffers( restinio::sendfile(
-								restinio::null_file_descriptor() /* fake not real */,
-								restinio::file_meta_t{ 2048, std::chrono::system_clock::now() } ) ) ) );
-
-		REQUIRE_FALSE( coordinator.closed() );
-
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::trivial_write_operation ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
-		REQUIRE( 3UL == out_bufs.size() );
-		REQUIRE( make_string( out_bufs[ 0UL ] ) == "header1" );
-		REQUIRE( make_string( out_bufs[ 1UL ] ) == "header2" );
-		REQUIRE( make_string( out_bufs[ 2UL ] ) == "header3" );
-
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::file_write_operation ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
-		REQUIRE( 1UL == out_bufs.size() );
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
-		REQUIRE( out_bufs[ 0UL ].size() == 1024 );
-
-		REQUIRE_FALSE( coordinator.closed() );
-
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::file_write_operation ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
-		REQUIRE( 1UL == out_bufs.size() );
-		CHECK_NOTHROW( out_bufs[ 0UL ].sendfile_operation() );
-		REQUIRE( out_bufs[ 0UL ].size() == 2048 );
-
-		out_bufs.clear();
-		REQUIRE(
-			writable_item_type_t::none ==
-			coordinator.pop_ready_buffers( 10UL, out_bufs ) );
+			std::move( wg ) ) );
 	}
+
+	// #0: 2 groups
+	// #1: <nothing>
+	// #2: <nothing>
+
+	{
+		write_group_t wg{
+			make_buffers(
+				{ "1a", "1b", "1c", "1a", "1b", "1c" } ) };
+		wg.after_write_notificator( []( const auto & ){} );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id[ 1 ],
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
+			std::move( wg ) ) );
+	}
+
+	// #0: 2 groups
+	// #1: 1 group
+	// #2: <nothing>
+
+	{
+		write_group_t wg{
+			make_buffers(
+				{ "1a", "1b", "1c", "1a", "1b", "1c" } ) };
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id[ 1 ],
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
+			std::move( wg ) ) );
+	}
+
+	// #0: 2 groups
+	// #1: 2 groups
+	// #2: <nothing>
+
+	{
+		write_group_t wg{
+			make_buffers(
+				{ "1a", "1b", "1c", "1a", "1b", "1c" } ) };
+		wg.after_write_notificator( []( const auto & ){} );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id[ 1 ],
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
+			std::move( wg ) ) );
+	}
+
+	// #0: 2 groups
+	// #1: 2 groups (merged)
+	// #2: <nothing>
+
+	{
+		write_group_t wg{
+			make_buffers(
+				{ "1a", "1b", "1c", "1a", "1b", "1c" } ) };
+		wg.after_write_notificator( []( const auto & ){} );
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id[ 1 ],
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
+			std::move( wg ) ) );
+	}
+
+	// #0: 2 groups
+	// #1: 3 groups
+	// #2: <nothing>
+
+	auto popped_wg = coordinator.pop_ready_buffers();
+	REQUIRE( popped_wg );
+
+	REQUIRE( 12UL == popped_wg->items_count() );
+	REQUIRE( concat_bufs( *popped_wg ) ==
+		"0a0b0c0a0b0c0a0b0c0a0b0c" );
+
+	// #0: 1 group
+	// #1: 3 groups
+	// #2: <nothing>
+
+	popped_wg = coordinator.pop_ready_buffers();
+	REQUIRE( popped_wg );
+
+	REQUIRE( 12UL == popped_wg->items_count() );
+	REQUIRE( concat_bufs( *popped_wg ) ==
+		"0a0b0c0a0b0c0a0b0c0a0b0c" );
+
+	// #0: <nothing>
+	// #1: 3 groups
+	// #2: <nothing>
+
+	popped_wg = coordinator.pop_ready_buffers();
+	REQUIRE_FALSE( popped_wg );
+
+	CHECK_NOTHROW( coordinator.append_response(
+		req_id[ 0 ],
+		response_output_flags_t{
+			response_is_complete(),
+			connection_should_keep_alive() },
+		write_group_t{ make_buffers( { "LAST", " ", "PARTS" } ) } ) );
+
+	popped_wg = coordinator.pop_ready_buffers();
+	REQUIRE( popped_wg );
+
+	REQUIRE( 3UL == popped_wg->items_count() );
+	REQUIRE( concat_bufs( *popped_wg ) == "LAST PARTS" );
+	REQUIRE_FALSE( coordinator.empty() );
+	REQUIRE_FALSE( coordinator.is_full() );
+	REQUIRE_FALSE( coordinator.closed() );
+
+	// #1: 3 groups
+	// #2: <nothing>
+
+	popped_wg = coordinator.pop_ready_buffers();
+	REQUIRE( popped_wg );
+
+	REQUIRE( 6UL == popped_wg->items_count() );
+	REQUIRE( concat_bufs( *popped_wg ) ==
+		"1a1b1c1a1b1c" );
+
+	// #1: 2 groups
+	// #2: <nothing>
+
+	popped_wg = coordinator.pop_ready_buffers();
+	REQUIRE( popped_wg );
+
+	REQUIRE( 12UL == popped_wg->items_count() );
+	REQUIRE( concat_bufs( *popped_wg ) ==
+		"1a1b1c1a1b1c1a1b1c1a1b1c" );
+
+	// #1: 1 group
+	// #2: <nothing>
+
+	popped_wg = coordinator.pop_ready_buffers();
+	REQUIRE( popped_wg );
+
+	REQUIRE( 6UL == popped_wg->items_count() );
+	REQUIRE( concat_bufs( *popped_wg ) ==
+		"1a1b1c1a1b1c" );
+
+	// #1: <nothing>
+	// #2: <nothing>
 }
-
-#endif
