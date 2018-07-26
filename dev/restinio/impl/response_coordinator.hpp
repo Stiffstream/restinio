@@ -17,6 +17,7 @@
 #include <restinio/exception.hpp>
 #include <restinio/request_handler.hpp>
 #include <restinio/buffers.hpp>
+#include <restinio/optional.hpp>
 
 namespace restinio
 {
@@ -24,37 +25,104 @@ namespace restinio
 namespace impl
 {
 
+using write_groups_container_t = std::vector< write_group_t >;
+
 //
 // response_context_t
 //
 
 //! A context for a single response.
-struct response_context_t
+class response_context_t
 {
-	void
-	reinit( request_id_t request_id )
-	{
-		m_request_id = request_id;
-		m_total_bufs_count = 0;
-		m_response_output_flags =
-			response_output_flags_t{
+	public:
+		//! Access write-groups container (used in unit tests)
+		friend write_groups_container_t &
+		utest_access( response_context_t & ctx )
+		{
+			return ctx.m_write_groups;
+		}
+
+		void
+		reinit( request_id_t request_id )
+		{
+			m_request_id = request_id;
+			m_response_output_flags =
+				response_output_flags_t{
+					response_parts_attr_t::not_final_parts,
+					response_connection_attr_t::connection_keepalive };
+		}
+
+		//! Put write group to data queue.
+		void
+		enqueue_group( write_group_t wg )
+		{
+			// There is at least one group.
+			// So we check if this group can be merged with existing (the last one).
+			if( !m_write_groups.empty() &&
+				!m_write_groups.back().after_write_notificator() &&
+				std::size_t{ 0 } == wg.status_line_size() )
+			{
+				m_write_groups.back().merge( std::move( wg ) );
+			}
+			else
+			{
+				m_write_groups.emplace_back( std::move( wg ) );
+			}
+
+		}
+
+		bool empty() const noexcept { return m_write_groups.empty(); }
+
+		//! Extract write group from data queue.
+		write_group_t
+		dequeue_group()
+		{
+			assert( !m_write_groups.empty() );
+
+			write_group_t result{ std::move( m_write_groups.front() ) };
+
+			m_write_groups.erase( begin( m_write_groups ) );
+
+			return result;
+		}
+
+		//! Get id of associated request.
+		auto request_id() const noexcept { return m_request_id; }
+
+		//! Get flags of corrent response data flow.
+		void
+		response_output_flags( response_output_flags_t flags ) noexcept
+		{
+			m_response_output_flags = flags;
+		}
+
+		//! Get flags of corrent response data flow.
+		auto
+		response_output_flags() const noexcept
+		{
+			return m_response_output_flags;
+		}
+
+		//! Is response data of a given request is complete.
+		bool
+		is_complete() const noexcept
+		{
+			return m_write_groups.empty() &&
+				response_parts_attr_t::final_parts ==
+					m_response_output_flags.m_response_parts;
+		}
+
+	private:
+		request_id_t m_request_id{ 0 };
+
+		//! Unsent responses parts.
+		write_groups_container_t m_write_groups;
+
+		//! Response flags
+		response_output_flags_t
+			m_response_output_flags{
 				response_parts_attr_t::not_final_parts,
 				response_connection_attr_t::connection_keepalive };
-	}
-
-	request_id_t m_request_id{ 0 };
-
-	//! Unsent responses parts.
-	writable_items_container_t m_bufs;
-
-	//! Total used bufs, historical count of bufs used to send this response.
-	std::size_t m_total_bufs_count{ 0 };
-
-	//! Response flags
-	response_output_flags_t
-		m_response_output_flags{
-			response_parts_attr_t::not_final_parts,
-			response_connection_attr_t::connection_keepalive };
 };
 
 //
@@ -105,8 +173,8 @@ class response_context_table_t
 		get_by_req_id( request_id_t req_id ) noexcept
 		{
 			if( empty() ||
-				req_id < front().m_request_id ||
-				req_id > back().m_request_id )
+				req_id < front().request_id() ||
+				req_id > back().request_id() )
 			{
 				return nullptr;
 			}
@@ -156,7 +224,7 @@ class response_context_table_t
 		get_real_index( request_id_t req_id ) noexcept
 		{
 			const auto distance_from_first =
-				req_id - front().m_request_id;
+				req_id - front().request_id();
 
 			return ( m_first_element_index + distance_from_first ) % m_contexts.size();
 		}
@@ -228,7 +296,7 @@ class response_coordinator_t
 			//! Resp output flag.
 			response_output_flags_t response_output_flags,
 			//! The parts of response.
-			writable_items_container_t bufs )
+			write_group_t wg )
 		{
 			// Nothing to do if already closed response emitted.
 			if( closed() )
@@ -248,7 +316,7 @@ class response_coordinator_t
 			}
 
 			if( response_parts_attr_t::final_parts ==
-				ctx->m_response_output_flags.m_response_parts )
+				ctx->response_output_flags().m_response_parts )
 			{
 				// Request is already completed...
 				throw exception_t{
@@ -256,170 +324,183 @@ class response_coordinator_t
 					"it marked as complete" };
 			}
 
-			ctx->m_response_output_flags = response_output_flags;
+			ctx->response_output_flags( response_output_flags );
 
-			if( ctx->m_bufs.empty() )
-				ctx->m_bufs = std::move( bufs );
-			else
-			{
-				ctx->m_bufs.reserve(
-					ctx->m_bufs.size() +  bufs.size() );
-
-				for( auto & buf : bufs )
-					ctx->m_bufs.emplace_back( std::move( buf ) );
-			}
+			ctx->enqueue_group( std::move( wg ) );
 		}
 
-		writable_item_type_t
-		pop_ready_buffers(
-			//! The maximum count of buffers to obtain.
-			unsigned int max_buf_count,
-			//! Receiver for buffers.
-			writable_items_container_t & bufs )
+		optional_t< write_group_t >
+		pop_ready_buffers()
+			// //! The maximum count of buffers to obtain.
+			// unsigned int max_buf_count,
+			// //! Receiver for buffers.
+			// writable_items_container_t & bufs )
 		{
 			if( closed() )
 				throw exception_t{
 					"unable to prepare output buffers, "
 					"response coordinator is closed" };
 
+			optional_t< write_group_t > result;
+
 			// Check for custom write operation.
 			if( !m_context_table.empty() )
 			{
 				auto & current_ctx = m_context_table.front();
 
-				if( 0 != current_ctx.m_bufs.size() &&
-					writable_item_type_t::file_write_operation ==
-						current_ctx.m_bufs.front().write_type() )
+				if( !current_ctx.empty() )
 				{
-					// First buffer to send implicates file write operation.
-
-					if( 1 == current_ctx.m_bufs.size() &&
-						response_parts_attr_t::final_parts ==
-							current_ctx.m_response_output_flags.m_response_parts )
+					result = current_ctx.dequeue_group();
+					if( current_ctx.is_complete() )
 					{
-						bufs = std::move( current_ctx.m_bufs );
-
-						// Set close flag.
 						m_connection_closed_response_occured =
-							response_connection_attr_t::connection_close ==
-									current_ctx.m_response_output_flags.m_response_connection;
+							( response_parts_attr_t::final_parts ==
+								current_ctx.response_output_flags().m_response_parts )
+							&&( response_connection_attr_t::connection_close ==
+								current_ctx.response_output_flags().m_response_connection );
 
-						// Response for currently first tracked
-						// request is completed.
 						m_context_table.pop_response_context();
 					}
-					else
-					{
-						bufs.emplace_back( std::move( current_ctx.m_bufs.front() ) );
-						current_ctx.m_bufs.erase( std::begin( current_ctx.m_bufs ) );
-					}
-					return writable_item_type_t::file_write_operation;
 				}
 			}
 
-			return pop_ready_buffers_trivial( max_buf_count, bufs );
+			return result;
+
+			// 	auto & current_ctx = m_context_table.front();
+
+			// 	if( 0 != current_ctx.m_bufs.size() &&
+			// 		writable_item_type_t::file_write_operation ==
+			// 			current_ctx.m_bufs.front().write_type() )
+			// 	{
+			// 		// First buffer to send implicates file write operation.
+
+			// 		if( 1 == current_ctx.m_bufs.size() &&
+			// 			response_parts_attr_t::final_parts ==
+			// 				current_ctx.m_response_output_flags.m_response_parts )
+			// 		{
+			// 			bufs = std::move( current_ctx.m_bufs );
+
+			// 			// Set close flag.
+			// 			m_connection_closed_response_occured =
+			// 				response_connection_attr_t::connection_close ==
+			// 						current_ctx.m_response_output_flags.m_response_connection;
+
+			// 			// Response for currently first tracked
+			// 			// request is completed.
+			// 			m_context_table.pop_response_context();
+			// 		}
+			// 		else
+			// 		{
+			// 			bufs.emplace_back( std::move( current_ctx.m_bufs.front() ) );
+			// 			current_ctx.m_bufs.erase( std::begin( current_ctx.m_bufs ) );
+			// 		}
+			// 		return writable_item_type_t::file_write_operation;
+			// 	}
+			// }
+
+			// return pop_ready_buffers_trivial( max_buf_count, bufs );
 		}
 
 	private:
-		//! Get ready to send buffers (trivial only).
-		writable_item_type_t
-		pop_ready_buffers_trivial(
-			//! The maximum count of buffers to obtain.
-			unsigned int max_buf_count,
-			//! Receiver for buffers.
-			writable_items_container_t & bufs )
-		{
-			// Select buffers one by one while
-			// it is possible to follow the order of the data
-			// that must be sent to client
-			// and buf count not exceed max_buf_count.
-			while(
-				0 != max_buf_count &&
-				!m_context_table.empty() )
-			{
-				auto & current_ctx = m_context_table.front();
-				const auto bufs_to_get_from_current_context =
-					std::min(
-						static_cast<decltype(max_buf_count)>( current_ctx.m_bufs.size() ),
-						max_buf_count );
+		// //! Get ready to send buffers (trivial only).
+		// writable_item_type_t
+		// pop_ready_buffers_trivial(
+		// 	//! The maximum count of buffers to obtain.
+		// 	unsigned int max_buf_count,
+		// 	//! Receiver for buffers.
+		// 	writable_items_container_t & bufs )
+		// {
+		// 	// Select buffers one by one while
+		// 	// it is possible to follow the order of the data
+		// 	// that must be sent to client
+		// 	// and buf count not exceed max_buf_count.
+		// 	while(
+		// 		0 != max_buf_count &&
+		// 		!m_context_table.empty() )
+		// 	{
+		// 		auto & current_ctx = m_context_table.front();
+		// 		const auto bufs_to_get_from_current_context =
+		// 			std::min(
+		// 				static_cast<decltype(max_buf_count)>( current_ctx.m_bufs.size() ),
+		// 				max_buf_count );
 
-				const auto extracted_bufs_begin = std::begin( current_ctx.m_bufs );
-				auto extracted_bufs_end = extracted_bufs_begin;
-				std::advance(
-					extracted_bufs_end,
-					bufs_to_get_from_current_context );
+		// 		const auto extracted_bufs_begin = std::begin( current_ctx.m_bufs );
+		// 		auto extracted_bufs_end = extracted_bufs_begin;
+		// 		std::advance(
+		// 			extracted_bufs_end,
+		// 			bufs_to_get_from_current_context );
 
-				for( auto it = extracted_bufs_begin; it != extracted_bufs_end; ++it )
-				{
-					if( writable_item_type_t::trivial_write_operation == it->write_type() )
-					{
-						bufs.emplace_back( std::move( *it ) );
-						--max_buf_count;
-					}
-					else
-					{
-						// Meet custom write buffer,
-						// so to break selection algo we set
-						// the following:
-						max_buf_count = 0; // we got all the buffers possible.
-						extracted_bufs_end = it; // that buffer will be considered as the end one.
-						break; // exit for.
-					}
-				}
+		// 		for( auto it = extracted_bufs_begin; it != extracted_bufs_end; ++it )
+		// 		{
+		// 			if( writable_item_type_t::trivial_write_operation == it->write_type() )
+		// 			{
+		// 				bufs.emplace_back( std::move( *it ) );
+		// 				--max_buf_count;
+		// 			}
+		// 			else
+		// 			{
+		// 				// Meet custom write buffer,
+		// 				// so to break selection algo we set
+		// 				// the following:
+		// 				max_buf_count = 0; // we got all the buffers possible.
+		// 				extracted_bufs_end = it; // that buffer will be considered as the end one.
+		// 				break; // exit for.
+		// 			}
+		// 		}
 
-				if( current_ctx.m_bufs.end() == extracted_bufs_end )
-				{
-					current_ctx.m_bufs.clear();
+		// 		if( current_ctx.m_bufs.end() == extracted_bufs_end )
+		// 		{
+		// 			current_ctx.m_bufs.clear();
 
-					// All existing parts for current response were
-					// selected for output, so it might be the case
-					// entire response was selected.
+		// 			// All existing parts for current response were
+		// 			// selected for output, so it might be the case
+		// 			// entire response was selected.
 
-					if( response_parts_attr_t::final_parts ==
-						current_ctx.m_response_output_flags.m_response_parts )
-					{
-						m_connection_closed_response_occured =
-							response_connection_attr_t::connection_close ==
-								current_ctx.m_response_output_flags.m_response_connection;
+		// 			if( response_parts_attr_t::final_parts ==
+		// 				current_ctx.m_response_output_flags.m_response_parts )
+		// 			{
+		// 				m_connection_closed_response_occured =
+		// 					response_connection_attr_t::connection_close ==
+		// 						current_ctx.m_response_output_flags.m_response_connection;
 
-						// Response for currently first tracked
-						// request is completed.
-						m_context_table.pop_response_context();
+		// 				// Response for currently first tracked
+		// 				// request is completed.
+		// 				m_context_table.pop_response_context();
 
-						if( m_connection_closed_response_occured )
-						{
-							// Not only the response is complete
-							// but it has a connection-close property.
-							// So the response coordinator must
-							// stop its work.
+		// 				if( m_connection_closed_response_occured )
+		// 				{
+		// 					// Not only the response is complete
+		// 					// but it has a connection-close property.
+		// 					// So the response coordinator must
+		// 					// stop its work.
 
-							break;
-						}
-					}
-					else
-					{
-						// All existing parts of current response were selected
-						// but there must be more parts for current response
-						// that a not already received by coordinator
-						// so breake selection loop.
-						break;
-					}
-				}
-				else
-				{
-					// Current response is definetely not over
-					// but max_buf_count bufers are obtained
-					// while condition will fail.
-					current_ctx.m_bufs.erase(
-						extracted_bufs_begin,
-						extracted_bufs_end );
-				}
-			}
+		// 					break;
+		// 				}
+		// 			}
+		// 			else
+		// 			{
+		// 				// All existing parts of current response were selected
+		// 				// but there must be more parts for current response
+		// 				// that a not already received by coordinator
+		// 				// so breake selection loop.
+		// 				break;
+		// 			}
+		// 		}
+		// 		else
+		// 		{
+		// 			// Current response is definetely not over
+		// 			// but max_buf_count bufers are obtained
+		// 			// while condition will fail.
+		// 			current_ctx.m_bufs.erase(
+		// 				extracted_bufs_begin,
+		// 				extracted_bufs_end );
+		// 		}
+		// 	}
 
-			return bufs.empty() ?
-				writable_item_type_t::none :
-				writable_item_type_t::trivial_write_operation;
-		}
+		// 	return bufs.empty() ?
+		// 		writable_item_type_t::none :
+		// 		writable_item_type_t::trivial_write_operation;
+		// }
 
 		//! Counter for asigining id to new requests.
 		request_id_t m_request_id_counter{ 0 };

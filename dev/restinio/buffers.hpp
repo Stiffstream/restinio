@@ -467,4 +467,158 @@ class writable_item_t
 
 using writable_items_container_t = std::vector< writable_item_t >;
 
+//
+// write_status_cb_t
+//
+
+//! An alias for a callback to be invoked after the write operation of
+//! a particular group of "buffers".
+using write_status_cb_t =
+		std::function< void( const asio_ns::error_code & ec ) >;
+
+//
+// write_group_t
+//
+
+//! Group of writable items transported to the context of underlying connection
+//! as one solid piece.
+/*!
+	@since v.0.4.8
+*/
+class write_group_t
+{
+	public:
+		//! Swap two groups.
+		friend void
+		swap( write_group_t & left, write_group_t & right ) noexcept
+		{
+			using std::swap;
+			swap( left.m_items, right.m_items );
+			swap( left.m_status_line_size, right.m_status_line_size );
+			swap( left.m_after_write_notificator, right.m_after_write_notificator );
+		}
+
+		explicit write_group_t(
+			//! A buffer objects included in this group.
+			writable_items_container_t items )
+			:	m_items{ std::move( items ) }
+			,	m_status_line_size{ 0 }
+		{}
+
+		/** @name Copy semantics.
+		 * @brief Not allowed.
+		*/
+		///@{
+		write_group_t( const write_group_t & ) = delete;
+		write_group_t & operator = ( const write_group_t & ) = delete;
+		///@}
+
+		/** @name Move semantics.
+		 * @brief Make .
+		*/
+		///@{
+		write_group_t( write_group_t && wg )
+			:	m_items{ std::move( wg.m_items ) }
+			,	m_status_line_size{ wg.m_status_line_size }
+			,	m_after_write_notificator{ std::move( wg.m_after_write_notificator ) }
+		{
+			wg.m_status_line_size = 0;
+		}
+
+		write_group_t & operator = ( write_group_t && wg )
+		{
+			if( this != &wg )
+			{
+				write_group_t tmp{ std::move( wg ) };
+				swap( *this, tmp );
+			}
+
+			return *this;
+		}
+		///@}
+
+		/** @name Auxiliary data.
+		 * @brief Accessors for working with auxiliary data.
+		*/
+		///@{
+		void
+		status_line_size( std::size_t n ) noexcept
+		{
+			m_status_line_size = n;
+		}
+
+		std::size_t
+		status_line_size() const noexcept
+		{
+			return m_status_line_size;
+		}
+
+		void
+		after_write_notificator( write_status_cb_t notificator ) noexcept
+		{
+			m_after_write_notificator = std::move( notificator );
+		}
+
+		const write_status_cb_t &
+		after_write_notificator() const noexcept
+		{
+			return m_after_write_notificator;
+		}
+		///@}
+
+		//! Get the count of stored items.
+		auto
+		items_count() const noexcept
+		{
+			return m_items.size();
+		}
+
+		//! Get the count of stored items.
+		const auto &
+		items() const noexcept
+		{
+			return m_items;
+		}
+
+		//! Reset group.
+		void
+		reset()
+		{
+			m_items.clear();
+			m_status_line_size = 0;
+			m_after_write_notificator = write_status_cb_t{};
+		}
+
+		//! Merges with another group.
+		/*!
+			Two groups can be merged if the first one has no after-write callback
+			and the second one has no status line size.
+		*/
+		void
+		merge( write_group_t second )
+		{
+			m_items.reserve( m_items.size() + second.m_items.size() );
+			for( auto & i : second.m_items )
+			{
+				m_items.emplace_back( std::move( i ) );
+			}
+
+			m_after_write_notificator = std::move( second.m_after_write_notificator );
+		}
+
+	private:
+		//! A buffer objects included in this group.
+		writable_items_container_t m_items;
+
+		//! A size of status line located in first "buffer".
+		/*!
+			If the value is not 0 then it means it references
+			a piece of data stored in the first buffer of m_items container.
+		*/
+		std::size_t m_status_line_size;
+
+		//! A callback to invoke once the the write opertaion of a given group completes.
+		write_status_cb_t m_after_write_notificator;
+};
+
 } /* namespace restinio */

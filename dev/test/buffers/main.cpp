@@ -622,3 +622,75 @@ TEST_CASE(
 	REQUIRE( 0 == size( b ) );
 	REQUIRE( nullptr == address( b ) );
 }
+
+TEST_CASE( "write_group_t" , "[write_group][ctor/move]" )
+{
+	{
+		writable_items_container_t wic;
+		write_group_t wg{ std::move( wic ) };
+
+		REQUIRE( 0 == wg.status_line_size() );
+		REQUIRE_FALSE( wg.after_write_notificator() );
+		REQUIRE( 0 == wg.items_count() );
+	}
+
+	{
+		writable_items_container_t wic;
+		wic.emplace_back( const_buffer( "0123456789" ) );
+		wic.emplace_back( const_buffer( "9876543210" ) );
+
+		write_group_t wg1{ std::move( wic ) };
+		write_group_t wg2{ std::move( wic ) };
+
+		wg1.status_line_size( 42 );
+		wg1.after_write_notificator( []( const auto & ){} );
+
+		REQUIRE( 42 == wg1.status_line_size() );
+		REQUIRE( wg1.after_write_notificator() );
+		REQUIRE( 2 == wg1.items_count() );
+		REQUIRE( 0 == wg2.status_line_size() );
+		REQUIRE_FALSE( wg2.after_write_notificator() );
+		REQUIRE( 0 == wg2.items_count() );
+
+		wg2 = std::move( wg1 );
+		REQUIRE( 0 == wg1.status_line_size() );
+		REQUIRE_FALSE( wg1.after_write_notificator() );
+		REQUIRE( 0 == wg1.items_count() );
+		REQUIRE( 42 == wg2.status_line_size() );
+		REQUIRE( wg2.after_write_notificator() );
+		REQUIRE( 2 == wg2.items_count() );
+
+		write_group_t wg3{ std::move( wg2 ) };
+		REQUIRE( 0 == wg2.status_line_size() );
+		REQUIRE_FALSE( wg2.after_write_notificator() );
+		REQUIRE( 0 == wg2.items_count() );
+		REQUIRE( 42 == wg3.status_line_size() );
+		REQUIRE( wg3.after_write_notificator() );
+		REQUIRE( 2 == wg3.items_count() );
+
+		wg3.reset();
+		REQUIRE( 0 == wg3.status_line_size() );
+		REQUIRE_FALSE( wg3.after_write_notificator() );
+		REQUIRE( 0 == wg3.items_count() );
+	}
+}
+
+TEST_CASE( "write_group_t merge" , "[write_group][merge]" )
+{
+	{
+		writable_items_container_t wic;
+		wic.emplace_back( const_buffer( "0123456789" ) );
+
+		write_group_t wg1{ std::move( wic ) };
+
+		wic.emplace_back( const_buffer( "9876543210" ) );
+		write_group_t wg2{ std::move( wic ) };
+
+		REQUIRE( 1 == wg1.items_count() );
+		REQUIRE( 1 == wg2.items_count() );
+
+		wg1.merge( std::move( wg2 ) );
+		REQUIRE( 2 == wg1.items_count() );
+		REQUIRE( 0 == wg2.items_count() );
+	}
+}

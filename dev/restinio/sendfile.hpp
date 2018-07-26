@@ -112,7 +112,7 @@ class sendfile_chunk_size_guarded_value_t
 class file_descriptor_holder_t
 {
 	public:
-		//! Swap two descriptors
+		//! Swap two descriptors.
 		friend void
 		swap( file_descriptor_holder_t & left, file_descriptor_holder_t & right ) noexcept
 		{
