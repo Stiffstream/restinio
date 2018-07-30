@@ -287,7 +287,7 @@ const_buffer( const char * str )
 // writable_item_type_t
 //
 
-//! Popped buffers write operation type.
+//! Buffers write operation type.
 enum class writable_item_type_t
 {
 	//! Item is a buffer and must be written trivially
@@ -380,24 +380,34 @@ class writable_item_t
 			destroy_stored_buffer();
 		}
 
+		//! Get a type of a stored buffer object.
 		writable_item_type_t
 		write_type() const
 		{
 			return m_write_type;
 		}
 
+		//! Get the size of the underlying buffer object.
 		std::size_t
 		size() const
 		{
 			return get_writable_base()->size();
 		}
 
+		//! Create a buf reference object used by ASIO.
+		/*!
+			\note Stored buffer must be of writable_item_type_t::trivial_write_operation.
+		*/
 		asio_ns::const_buffer
 		buf() const
 		{
 			return get_buf()->buffer();
 		}
 
+		//! Get a reference to a sendfile operation.
+		/*!
+			\note Stored buffer must be of writable_item_type_t::file_write_operation.
+		*/
 		const sendfile_t &
 		sendfile_operation() const
 		{
@@ -414,50 +424,54 @@ class writable_item_t
 
 		writable_item_type_t m_write_type;
 
-		//! Access writable_base_t item.
-		//! \{
+		/** @name Access an item as an object of specific types.
+		 * @brief Casts a stored object to one of the types.
+		*/
+		///@{
+
+		//! Access as writable_base_t item.
 		const impl::writable_base_t * get_writable_base() const
 		{
 			return reinterpret_cast< const impl::writable_base_t * >( &m_storage );
 		}
 
+		//! Access as writable_base_t item.
 		impl::writable_base_t * get_writable_base()
 		{
 			return reinterpret_cast< impl::writable_base_t * >( &m_storage );
 		}
-		//! \}
 
-		//! Access buf item.
-		//! \{
+		//! Access as trivial buf item.
 		const impl::buf_iface_t * get_buf() const
 		{
 			return reinterpret_cast< const impl::buf_iface_t * >( &m_storage );
 		}
 
+		//! Access as trivial buf item.
 		impl::buf_iface_t * get_buf()
 		{
 			return reinterpret_cast< impl::buf_iface_t * >( &m_storage );
 		}
-		//! \}
 
-		//! Access sendfile_write_operation_t item.
-		//! \{
+		//! Access as sendfile_write_operation_t item.
 		const impl::sendfile_write_operation_t * get_sfwo() const
 		{
 			return reinterpret_cast< const impl::sendfile_write_operation_t * >( &m_storage );
 		}
 
+		//! Access as sendfile_write_operation_t item.
 		impl::sendfile_write_operation_t * get_sfwo()
 		{
 			return reinterpret_cast< impl::sendfile_write_operation_t * >( &m_storage );
 		}
-		//! \}
+		///@}
 
 		using storage_t =
 			std::aligned_storage_t<
 				impl::needed_storage_max_size,
 				impl::buffer_storage_align >;
 
+		//! A storage for a buffer object of various types.
 		storage_t m_storage;
 };
 
@@ -498,6 +512,7 @@ class write_group_t
 			swap( left.m_after_write_notificator, right.m_after_write_notificator );
 		}
 
+		//! Construct write group with a given bunch of writable items.
 		explicit write_group_t(
 			//! A buffer objects included in this group.
 			writable_items_container_t items )
@@ -514,7 +529,7 @@ class write_group_t
 		///@}
 
 		/** @name Move semantics.
-		 * @brief Make .
+		 * @brief Moves object leaving a moved one in clean state.
 		*/
 		///@{
 		write_group_t( write_group_t && wg )
@@ -542,23 +557,50 @@ class write_group_t
 		*/
 		///@{
 		void
-		status_line_size( std::size_t n ) noexcept
+		status_line_size( std::size_t n )
 		{
-			m_status_line_size = n;
+			if( std::size_t{0} != n )
+			{
+				if( m_items.empty() )
+				{
+					throw exception_t{
+						"cannot set status line size for empty write group" };
+				}
+
+				if( writable_item_type_t::trivial_write_operation !=
+					m_items.front().write_type() )
+				{
+					throw exception_t{
+						"cannot set status line size for write group: "
+						"first writable item must be 'trivial_write_operation'" };
+				}
+
+				if( m_items.front().size() < n )
+				{
+					throw exception_t{
+						"cannot set status line size for write group: "
+						"first writable item size is less than provided value" };
+				}
+
+				m_status_line_size = n;
+			}
 		}
 
+		//! Get status line size.
 		std::size_t
 		status_line_size() const noexcept
 		{
 			return m_status_line_size;
 		}
 
+		//! Set after write notificator.
 		void
 		after_write_notificator( write_status_cb_t notificator ) noexcept
 		{
 			m_after_write_notificator = std::move( notificator );
 		}
 
+		//! Get after write notificator.
 		const write_status_cb_t &
 		after_write_notificator() const noexcept
 		{

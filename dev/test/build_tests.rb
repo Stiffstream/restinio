@@ -12,6 +12,7 @@ MxxRu::Cpp::composite_target {
 	required_prj( "test/ref_qualifiers_settings/prj.ut.rb" )
 	required_prj( "test/buffers/prj.ut.rb" )
 	required_prj( "test/response_coordinator/prj.ut.rb" )
+	required_prj( "test/write_group_output_ctx/prj.ut.rb" )
 	required_prj( "test/from_string/prj.ut.rb" )
 	required_prj( "test/uri_helpers/prj.ut.rb" )
 

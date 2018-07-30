@@ -13,6 +13,8 @@
 #include <restinio/asio_include.hpp>
 
 #include <restinio/buffers.hpp>
+#include <restinio/optional.hpp>
+#include <restinio/variant.hpp>
 #include <restinio/impl/sendfile_operation.hpp>
 
 namespace restinio
@@ -21,13 +23,17 @@ namespace restinio
 namespace impl
 {
 
+using asio_bufs_container_t = std::vector< asio_ns::const_buffer >;
+
 //
-// raw_resp_output_ctx_t
+// write_group_output_ctx_t
 //
 
 //! Helper class for writting response data.
-struct raw_resp_output_ctx_t
+class write_group_output_ctx_t
 {
+	//! Get the maximum number of buffers that can be written with
+	//! gather write operation.
 	static constexpr auto
 	max_iov_len()
 	{
@@ -35,110 +41,253 @@ struct raw_resp_output_ctx_t
 		return std::min< len_t >( asio_ns::detail::max_iov_len, 64 );
 	}
 
-	raw_resp_output_ctx_t()
-	{
-		m_asio_bufs.reserve( max_iov_len() );
-		m_bufs.reserve( max_iov_len() );
-	}
-
-	const std::vector< asio_ns::const_buffer > &
-	create_bufs()
-	{
-		for( const auto & buf : m_bufs )
+	public:
+		//! Contruct an object.
+		/*
+			Space for m_asio_bufs is reserved to be ready to store max_iov_len() asio bufs.
+		*/
+		write_group_output_ctx_t()
 		{
-			m_asio_bufs.emplace_back( buf.buf() );
+			m_asio_bufs.reserve( max_iov_len() );
 		}
 
-		m_transmitting = true;
-		return m_asio_bufs;
-	}
-
-	void
-	done()
-	{
-		m_asio_bufs.resize( 0 );
-		m_bufs.resize( 0 );
-		m_transmitting = false;
-	}
-
-	template< typename Socket, typename After_Write_CB >
-	void
-	start_sendfile_operation(
-		asio_ns::executor executor,
-		Socket & socket,
-		After_Write_CB after_sendfile_cb )
-	{
-		assert( !m_sendfile_operation );
-		assert( 1 == m_bufs.size() );
-
-		const auto & sf_op = m_bufs.front().sendfile_operation();
-
-		assert( sf_op.is_valid() );
-
-		if( !sf_op.is_valid() )
+		//! Trivial write operaton.
+		/*!
+			Presented with a vector of ordinary buffers (data-size objects).
+		*/
+		class trivial_write_operation_t
 		{
-			// This must never happen.
-			throw exception_t{ "invalid file descriptor in sendfile operation." };
+				friend class write_group_output_ctx_t;
+
+				explicit trivial_write_operation_t(
+					const asio_bufs_container_t & asio_bufs )
+					:	m_asio_bufs{ &asio_bufs }
+				{}
+
+			public:
+				trivial_write_operation_t( const trivial_write_operation_t & ) = delete;
+				trivial_write_operation_t & operator = ( const trivial_write_operation_t & ) = delete;
+
+				trivial_write_operation_t( trivial_write_operation_t && ) = default;
+				trivial_write_operation_t & operator = ( trivial_write_operation_t && ) = default;
+
+				//! Get buffer "iovec" for performing gather write.
+				const std::vector< asio_ns::const_buffer > &
+				get_trivial_bufs() const noexcept
+				{
+					return *m_asio_bufs;
+				}
+
+			private:
+				const asio_bufs_container_t * m_asio_bufs;
+		};
+
+		//! Write operaton using sendfile.
+		class file_write_operation_t
+		{
+				friend class write_group_output_ctx_t;
+
+				explicit file_write_operation_t( const sendfile_t & sendfile )
+					:	m_sendfile{ &sendfile }
+				{}
+
+			public:
+				file_write_operation_t( const file_write_operation_t & ) = delete;
+				file_write_operation_t & operator = ( const file_write_operation_t & ) = delete;
+
+				file_write_operation_t( file_write_operation_t && ) = default;
+				file_write_operation_t & operator = ( file_write_operation_t && ) = default;
+
+				template< typename Socket, typename After_Write_CB >
+				void
+				start_sendfile_operation(
+					asio_ns::executor executor,
+					Socket & socket,
+					After_Write_CB after_sendfile_cb )
+				{
+					assert( m_sendfile->is_valid() );
+
+					if( !m_sendfile->is_valid() )
+					{
+						// This must never happen.
+						throw exception_t{ "invalid file descriptor in sendfile operation." };
+					}
+
+					auto sendfile_operation =
+						std::make_shared< sendfile_operation_runner_t< Socket > >(
+							m_sendfile,
+							std::move( executor ),
+							socket,
+							std::move( after_sendfile_cb ) );
+
+					m_sendfile_operation = std::move( sendfile_operation );
+					m_sendfile_operation->start();
+				}
+
+				auto
+				sendfile_timelimit()
+				{
+					assert( m_sendfile->is_valid() );
+
+					return m_sendfile->timelimit();
+				}
+
+				//! Get the size of sendfile operation.
+				auto size() const noexcept { return m_sendfile->size(); }
+
+			private:
+				const sendfile_t * m_sendfile;
+				sendfile_operation_shared_ptr_t m_sendfile_operation;
+		};
+
+		//! None write operation.
+		struct none_write_operation_t {};
+
+		friend class solid_write_operation_t;
+
+		//! Check if data is trunsmitting now
+		bool transmitting() const { return static_cast< bool >( m_current_wg ); }
+
+		//! Start handlong next write group.
+		bool
+		start_next_write_group( optional_t< write_group_t > next_wg )
+		{
+			m_current_wg = std::move( next_wg );
+			return transmitting();
 		}
 
-		auto sendfile_operation =
-			std::make_shared< sendfile_operation_runner_t< Socket > >(
-				sf_op,
-				std::move( executor ),
-				socket,
-				std::move( after_sendfile_cb ) );
+		//! An alias for variant holding write operation specifics.
+		using solid_write_operation_variant_t =
+			variant_t<
+				none_write_operation_t,
+				trivial_write_operation_t,
+				file_write_operation_t >;
 
-		m_sendfile_operation = std::move( sendfile_operation );
-		m_transmitting = true;
-		m_sendfile_operation->start();
-	}
+		//! et an object with next write operation to perform.
+		solid_write_operation_variant_t
+		extract_next_write_operation()
+		{
+			assert( m_current_wg );
 
-	void
-	finish_sendfile_operation()
-	{
-		assert( m_sendfile_operation );
-		m_sendfile_operation.reset();
-		m_bufs.resize( 0 );
-		m_transmitting = false;
-	}
+			solid_write_operation_variant_t result{ none_write_operation_t{} };
 
-	auto
-	sendfile_timelimit()
-	{
-		assert( 1 == m_bufs.size() );
-		return m_bufs.front().sendfile_operation().timelimit();
-	}
+			if( m_next_writable_item_index < m_current_wg->items_count() )
+			{
+				// Has writable items.
+				const auto next_wi_type =
+					m_current_wg->items()[ m_next_writable_item_index ].write_type();
 
-	bool
-	transmitting() const
-	{
-		return m_transmitting;
-	}
+				if( writable_item_type_t::trivial_write_operation == next_wi_type )
+				{
+					// Trivial buffers.
+					result = prepare_trivial_buffers_wo();
+				}
+				else
+				{
+					// Sendfile.
+					assert( writable_item_type_t::file_write_operation == next_wi_type );
+					result = prepare_sendfile_wo();
+				}
+			}
 
-	//! Obtains ready buffers if any.
-	/*!
-		\note Ready_Buffers_Source must have
-		pop_ready_buffers() member function.
-	*/
-	template < class Ready_Buffers_Source >
-	writable_item_type_t
-	obtain_bufs(
-		Ready_Buffers_Source & ready_buffers_source )
-	{
-		return ready_buffers_source.pop_ready_buffers( max_iov_len(), m_bufs );
-	}
+			return result;
+		}
+
+		void
+		fail_write_group( const asio_ns::error_code & ec )
+		{
+			assert( m_current_wg );
+
+			invoke_after_write_notificator_if_necessary( ec );
+			m_current_wg.reset();
+		}
+
+		//! Finish writing group normally.
+		void
+		finish_write_group()
+		{
+			assert( m_current_wg );
+
+			invoke_after_write_notificator_if_necessary( asio_ns::error_code{} );
+			m_current_wg.reset();
+		}
 
 	private:
-		//! Is transmition running?
-		bool m_transmitting{ false };
+		//! Reset the write group and associated context.
+		void
+		reset_write_group()
+		{
+			m_current_wg.reset();
+			m_next_writable_item_index = 0;
+		}
 
-		//! Asio buffers.
-		std::vector< asio_ns::const_buffer > m_asio_bufs;
+		//! Execute notification callback if necessary.
+		void
+		invoke_after_write_notificator_if_necessary( const asio_ns::error_code & ec )
+		{
+			try
+			{
+				if( m_current_wg->after_write_notificator() )
+				{
+					m_current_wg->after_write_notificator()( ec );
+				}
+			}
+			catch( const std::exception & ex )
+			{
+				// Actualy no need to reset m_current_wg as a thrown exception
+				// will break working circle of connection.
+				// But as it is used as flag for transmitting()
+				// we reset the object.
+				reset_write_group();
+
+				throw exception_t{
+					fmt::format( "after write callback failed: {}", ex.what() ) };
+			}
+		}
+
+		//! Prepare write operation for trivial buffers.
+		trivial_write_operation_t
+		prepare_trivial_buffers_wo()
+		{
+			m_asio_bufs.clear();
+
+			const auto & items = m_current_wg->items();
+
+			for( ;m_next_writable_item_index < items.size() &&
+				writable_item_type_t::trivial_write_operation ==
+					items[ m_next_writable_item_index ].write_type() &&
+				max_iov_len() > m_asio_bufs.size();
+				++m_next_writable_item_index )
+			{
+				m_asio_bufs.emplace_back( items[ m_next_writable_item_index ].buf() );
+			}
+
+			assert( !m_asio_bufs.empty() );
+			return trivial_write_operation_t{ m_asio_bufs };
+		}
+
+		//! Prepare write operation for sendfile.
+		file_write_operation_t
+		prepare_sendfile_wo()
+		{
+			const auto & sf =
+				m_current_wg->items()[ m_next_writable_item_index++ ].sendfile_operation();
+
+			return file_write_operation_t{ sf };
+		}
 
 		//! Real buffers with data.
-		writable_items_container_t m_bufs;
+		optional_t< write_group_t > m_current_wg;
 
-		sendfile_operation_shared_ptr_t m_sendfile_operation;
+		//! Keeps track of the next writable item stored in m_current_wg.
+		/*!
+			When emitting next solid write operation
+			we need to know where the next starting item is.
+		*/
+		std::size_t m_next_writable_item_index{ 0 };
+
+		//! Asio buffers.
+		asio_bufs_container_t m_asio_bufs;
 };
 
 } /* namespace impl */

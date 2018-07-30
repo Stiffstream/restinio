@@ -203,6 +203,7 @@ class response_context_table_t
 			++m_elements_exists;
 		}
 
+		//! Remove the first context from queue.
 		void
 		pop_response_context()
 		{
@@ -242,7 +243,7 @@ class response_context_table_t
 //! respect to http pipeline technique and chunk transfer.
 /*
 	Keeps track of maximum N (max_req_count) pipelined requests,
-	gathers pieces (buffers) of responses and provides access to
+	gathers pieces (write groups) of responses and provides access to
 	ready-to-send buffers on demand.
 */
 class response_coordinator_t
@@ -254,23 +255,14 @@ class response_coordinator_t
 			:	m_context_table{ max_req_count }
 		{}
 
-		bool
-		closed() const noexcept
-		{
-			return m_connection_closed_response_occured;
-		}
-
-		bool
-		empty() const noexcept
-		{
-			return m_context_table.empty();
-		}
-
-		bool
-		is_full() const noexcept
-		{
-			return m_context_table.is_full();
-		}
+		/** @name Response coordinator state.
+		 * @brief Various state flags.
+		*/
+		///@{
+		bool closed() const noexcept { return m_connection_closed_response_occured; }
+		bool empty() const noexcept { return m_context_table.empty(); }
+		bool is_full() const noexcept { return m_context_table.is_full(); }
+		///@}
 
 		//! Check if it is possible to accept more requests.
 		bool
@@ -329,12 +321,15 @@ class response_coordinator_t
 			ctx->enqueue_group( std::move( wg ) );
 		}
 
+		//! Extract a portion of data available for write.
+		/*!
+			Data (if available) is wrapped in an instance of write_group_t.
+			It can have a stats line mark (that is necessary for logging)
+			and a notificator that must be invoked after the write operation
+			of a given group completes.
+		*/
 		optional_t< write_group_t >
 		pop_ready_buffers()
-			// //! The maximum count of buffers to obtain.
-			// unsigned int max_buf_count,
-			// //! Receiver for buffers.
-			// writable_items_container_t & bufs )
 		{
 			if( closed() )
 				throw exception_t{

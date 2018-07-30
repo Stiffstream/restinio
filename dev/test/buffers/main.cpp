@@ -642,10 +642,10 @@ TEST_CASE( "write_group_t" , "[write_group][ctor/move]" )
 		write_group_t wg1{ std::move( wic ) };
 		write_group_t wg2{ std::move( wic ) };
 
-		wg1.status_line_size( 42 );
+		wg1.status_line_size( 4 );
 		wg1.after_write_notificator( []( const auto & ){} );
 
-		REQUIRE( 42 == wg1.status_line_size() );
+		REQUIRE( 4 == wg1.status_line_size() );
 		REQUIRE( wg1.after_write_notificator() );
 		REQUIRE( 2 == wg1.items_count() );
 		REQUIRE( 0 == wg2.status_line_size() );
@@ -656,7 +656,7 @@ TEST_CASE( "write_group_t" , "[write_group][ctor/move]" )
 		REQUIRE( 0 == wg1.status_line_size() );
 		REQUIRE_FALSE( wg1.after_write_notificator() );
 		REQUIRE( 0 == wg1.items_count() );
-		REQUIRE( 42 == wg2.status_line_size() );
+		REQUIRE( 4 == wg2.status_line_size() );
 		REQUIRE( wg2.after_write_notificator() );
 		REQUIRE( 2 == wg2.items_count() );
 
@@ -664,7 +664,7 @@ TEST_CASE( "write_group_t" , "[write_group][ctor/move]" )
 		REQUIRE( 0 == wg2.status_line_size() );
 		REQUIRE_FALSE( wg2.after_write_notificator() );
 		REQUIRE( 0 == wg2.items_count() );
-		REQUIRE( 42 == wg3.status_line_size() );
+		REQUIRE( 4 == wg3.status_line_size() );
 		REQUIRE( wg3.after_write_notificator() );
 		REQUIRE( 2 == wg3.items_count() );
 
@@ -672,6 +672,39 @@ TEST_CASE( "write_group_t" , "[write_group][ctor/move]" )
 		REQUIRE( 0 == wg3.status_line_size() );
 		REQUIRE_FALSE( wg3.after_write_notificator() );
 		REQUIRE( 0 == wg3.items_count() );
+	}
+}
+
+TEST_CASE( "write_group_t::status_line_size" , "[write_group][status_line_size]" )
+{
+	{
+		writable_items_container_t wic;
+		write_group_t wg{ std::move( wic ) };
+
+		REQUIRE_THROWS( wg.status_line_size(42) ); // Empty group.
+	}
+
+	{
+		writable_items_container_t wic;
+		wic.emplace_back( const_buffer( "HTTP 200 OK\r\n" ) );
+		wic.emplace_back(
+			const_buffer(
+				"x-a: 0123456789012345678901234567890123456789\r\n"
+				"x-b: 0123456789012345678901234567890123456789\r\n"
+				"\r\n" ) );
+		write_group_t wg{ std::move( wic ) };
+
+		REQUIRE_THROWS( wg.status_line_size(42) ); // first buffer size is less than 42.
+	}
+
+	{
+		writable_items_container_t wic;
+		wic.emplace_back( restinio::sendfile(
+					restinio::null_file_descriptor() /* fake not real */,
+					restinio::file_meta_t{1024, std::chrono::system_clock::now() } ) );
+		write_group_t wg{ std::move( wic ) };
+
+		REQUIRE_THROWS( wg.status_line_size(42) ); // first buffer is not a trivial one.
 	}
 }
 

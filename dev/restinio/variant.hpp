@@ -14,7 +14,9 @@
 
 namespace restinio
 {
-	template< class T >
-	using variant_t = nonstd::variant< T >;
+	template< typename... Types >
+	using variant_t = nonstd::variant< Types... >;
 
+	using nonstd::holds_alternative;
+	using nonstd::get;
 } /* namespace restinio */
