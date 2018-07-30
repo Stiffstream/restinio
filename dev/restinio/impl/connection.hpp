@@ -22,7 +22,7 @@
 #include <restinio/impl/response_coordinator.hpp>
 #include <restinio/impl/connection_settings.hpp>
 #include <restinio/impl/fixed_buffer.hpp>
-#include <restinio/impl/raw_resp_output_ctx.hpp>
+#include <restinio/impl/write_group_output_ctx.hpp>
 #include <restinio/impl/executor_wrapper.hpp>
 #include <restinio/impl/sendfile_operation.hpp>
 
@@ -798,7 +798,7 @@ class connection_t final
 		{
 			assert( !m_response_coordinator.closed() );
 
-			if( !m_resp_out_ctx.transmitting() )
+			if( !m_write_output_ctx.transmitting() )
 			{
 				// Here: not writing anything to socket, so
 				// write operation can be initiated.
@@ -807,36 +807,77 @@ class connection_t final
 				const bool response_coordinator_full_before =
 					m_response_coordinator.is_full();
 
-				const auto obtain_bufs_result = m_resp_out_ctx.obtain_bufs( m_response_coordinator );
-				// Check if all response cells busy:
-				const bool response_coordinator_full_after = m_response_coordinator.is_full();
+				auto next_write_group = m_response_coordinator.pop_ready_buffers();
 
-				const bool init_read_after_this_write =
-						response_coordinator_full_before && !response_coordinator_full_after;
-
-				switch( obtain_bufs_result )
+				if( next_write_group )
 				{
-					case writable_item_type_t::trivial_write_operation:
-						// Here: and there is smth trivial to write.
-						handle_trivial_write_operation( init_read_after_this_write );
-						break;
+					// Check if all response cells busy:
+					const bool response_coordinator_full_after =
+						m_response_coordinator.is_full();
 
-					case writable_item_type_t::file_write_operation:
-						// Here: and there is custom write operation to start.
-						handle_file_write_operation( init_read_after_this_write );
-						break;
+					const bool m_init_read_after_this_write =
+							response_coordinator_full_before && !response_coordinator_full_after;
 
-					case writable_item_type_t::none:
-						handle_nothing_to_write();
+					m_write_output_ctx.start_next_write_group(
+						std::move( next_write_group ) );
+
+					handle_current_write_ctx();
 				}
+				else
+				{
+					handle_nothing_to_write();
+				}
+
+				// const auto obtain_bufs_result =
+				// 	m_write_output_ctx.obtain_bufs( m_response_coordinator );
+
+				// switch( obtain_bufs_result )
+				// {
+				// 	case writable_item_type_t::trivial_write_operation:
+				// 		// Here: and there is smth trivial to write.
+				// 		handle_trivial_write_operation( init_read_after_this_write );
+				// 		break;
+
+				// 	case writable_item_type_t::file_write_operation:
+				// 		// Here: and there is custom write operation to start.
+				// 		handle_file_write_operation( init_read_after_this_write );
+				// 		break;
+
+				// 	case writable_item_type_t::none:
+				// 		handle_nothing_to_write();
+				// }
+			}
+		}
+
+		using none_write_operation_t = write_group_output_ctx_t::none_write_operation_t;
+		using trivial_write_operation_t = write_group_output_ctx_t::trivial_write_operation_t;
+		using file_write_operation_t = write_group_output_ctx_t::file_write_operation_t;
+
+		void
+		handle_current_write_ctx()
+		{
+			auto wo = m_write_output_ctx.extract_next_write_operation();
+
+			if( holds_alternative< trivial_write_operation_t >( wo ) )
+			{
+				handle_trivial_write_operation( get< trivial_write_operation_t >( wo ) );
+			}
+			else if( holds_alternative< file_write_operation_t >( wo ) )
+			{
+				handle_file_write_operation( get< file_write_operation_t >( wo ) );
+			}
+			else
+			{
+				assert( holds_alternative< none_write_operation_t >( wo ) );
+				wg_output.finish_write_group();
 			}
 		}
 
 		void
-		handle_trivial_write_operation( bool init_read_after_this_write )
+		handle_trivial_write_operation( const trivial_write_operation_t & op )
 		{
 			// Asio buffers (param for async write):
-			auto & bufs = m_resp_out_ctx.create_bufs();
+			auto & bufs = op.get_trivial_bufs();
 
 			if( m_response_coordinator.closed() )
 			{
@@ -876,7 +917,7 @@ class connection_t final
 						( const asio_ns::error_code & ec, std::size_t written ){
 
 							// Release buffers.
-							m_resp_out_ctx.done();
+							m_write_output_ctx.done();
 
 							if( !ec )
 							{
@@ -890,15 +931,14 @@ class connection_t final
 
 							after_write(
 								ec,
-								should_keep_alive,
-								init_read_after_this_write );
+								should_keep_alive );
 					} ) );
 
 			guard_write_operation();
 		}
 
 		void
-		handle_file_write_operation( bool init_read_after_this_write )
+		handle_file_write_operation( const trivial_write_operation_t & op )
 		{
 			if( m_response_coordinator.closed() )
 			{
@@ -924,7 +964,7 @@ class connection_t final
 
 			guard_sendfile_operation();
 
-			m_resp_out_ctx.start_sendfile_operation(
+			op.start_sendfile_operation(
 				this->get_executor(),
 				m_socket,
 				asio_ns::bind_executor(
@@ -936,7 +976,7 @@ class connection_t final
 						( const asio_ns::error_code & ec, file_size_t written ){
 
 							// Release sendfile operation.
-							m_resp_out_ctx.finish_sendfile_operation();
+							m_write_output_ctx.finish_sendfile_operation();
 
 							if( !ec )
 							{
@@ -961,8 +1001,7 @@ class connection_t final
 							// TODO: sendfile
 							after_write(
 								ec,
-								should_keep_alive,
-								init_read_after_this_write );
+								should_keep_alive );
 						} ) );
 
 		}
@@ -977,7 +1016,7 @@ class connection_t final
 				// (final_parts) and having connection-close attr.
 				// It is because `init_write_if_necessary()`
 				// is called only under `!m_response_coordinator.closed()`
-				// conditio, so if no bufs were obtained
+				// condition, so if no bufs were obtained
 				// and response coordinator is closed means
 				// that a first response stored by
 				// response coordinator was marked as complete
@@ -1010,10 +1049,7 @@ class connection_t final
 
 		//! Handle write response finished.
 		inline void
-		after_write(
-			const asio_ns::error_code & ec,
-			bool should_keep_alive,
-			bool should_init_read_after_this_write )
+		after_write( const asio_ns::error_code & ec, bool should_keep_alive )
 		{
 			if( !ec )
 			{
@@ -1029,7 +1065,7 @@ class connection_t final
 						m_input.m_connection_upgrade_stage )
 					{
 						// Run ordinary HTTP logic.
-						if( should_init_read_after_this_write )
+						if( m_init_read_after_this_write )
 							wait_for_http_message();
 
 						// Start another write opertion
@@ -1122,7 +1158,9 @@ class connection_t final
 		connection_input_t m_input;
 
 		//! Write to socket operation context.
-		raw_resp_output_ctx_t m_resp_out_ctx;
+		write_group_output_ctx m_write_output_ctx;
+		//! Memo flag: start a read operation after current write or not.
+		bool m_init_read_after_this_write{ false };
 
 		//! Response coordinator.
 		response_coordinator_t m_response_coordinator;
@@ -1253,7 +1291,7 @@ class connection_t final
 		void
 		guard_request_handling_operation()
 		{
-			if( !m_resp_out_ctx.transmitting() )
+			if( !m_write_output_ctx.transmitting() )
 			{
 				schedule_operation_timeout_callback(
 					m_settings->m_handle_request_timeout,
@@ -1287,8 +1325,8 @@ class connection_t final
 		guard_sendfile_operation()
 		{
 			const auto timelimit =
-				std::chrono::steady_clock::duration::zero() == m_resp_out_ctx.sendfile_timelimit() ?
-					m_settings->m_write_http_response_timelimit : m_resp_out_ctx.sendfile_timelimit();
+				std::chrono::steady_clock::duration::zero() == m_write_output_ctx.sendfile_timelimit() ?
+					m_settings->m_write_http_response_timelimit : m_write_output_ctx.sendfile_timelimit();
 
 			schedule_operation_timeout_callback(
 				timelimit,

@@ -11,7 +11,7 @@
 
 #include <iterator>
 
-#include <restinio/impl/raw_resp_output_ctx.hpp>
+#include <restinio/impl/write_group_output_ctx.hpp>
 
 using namespace restinio;
 using namespace restinio::impl;
@@ -411,7 +411,6 @@ TEST_CASE( "write_group_output_ctx_t mixed" , "[write_group_output_ctx_t][mix][t
 			concat_bufs(
 				get< trivial_write_operation_t >( wo )
 					.get_trivial_bufs() ) == "0123456789ABCDEF" );
-
 
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
