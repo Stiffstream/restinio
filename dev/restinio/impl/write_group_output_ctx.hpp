@@ -65,8 +65,8 @@ class write_group_output_ctx_t
 				{}
 
 			public:
-				trivial_write_operation_t( const trivial_write_operation_t & ) = delete;
-				trivial_write_operation_t & operator = ( const trivial_write_operation_t & ) = delete;
+				trivial_write_operation_t( const trivial_write_operation_t & ) = default;
+				trivial_write_operation_t & operator = ( const trivial_write_operation_t & ) = default;
 
 				trivial_write_operation_t( trivial_write_operation_t && ) = default;
 				trivial_write_operation_t & operator = ( trivial_write_operation_t && ) = default;
@@ -87,13 +87,16 @@ class write_group_output_ctx_t
 		{
 				friend class write_group_output_ctx_t;
 
-				explicit file_write_operation_t( const sendfile_t & sendfile )
+				explicit file_write_operation_t(
+					const sendfile_t & sendfile,
+					sendfile_operation_shared_ptr_t & sendfile_operation )
 					:	m_sendfile{ &sendfile }
+					,	m_sendfile_operation{ &sendfile_operation }
 				{}
 
 			public:
-				file_write_operation_t( const file_write_operation_t & ) = delete;
-				file_write_operation_t & operator = ( const file_write_operation_t & ) = delete;
+				file_write_operation_t( const file_write_operation_t & ) = default;
+				file_write_operation_t & operator = ( const file_write_operation_t & ) = default;
 
 				file_write_operation_t( file_write_operation_t && ) = default;
 				file_write_operation_t & operator = ( file_write_operation_t && ) = default;
@@ -103,7 +106,7 @@ class write_group_output_ctx_t
 				start_sendfile_operation(
 					asio_ns::executor executor,
 					Socket & socket,
-					After_Write_CB after_sendfile_cb )
+					After_Write_CB after_sendfile_cb ) const
 				{
 					assert( m_sendfile->is_valid() );
 
@@ -115,21 +118,27 @@ class write_group_output_ctx_t
 
 					auto sendfile_operation =
 						std::make_shared< sendfile_operation_runner_t< Socket > >(
-							m_sendfile,
+							*m_sendfile,
 							std::move( executor ),
 							socket,
 							std::move( after_sendfile_cb ) );
 
-					m_sendfile_operation = std::move( sendfile_operation );
-					m_sendfile_operation->start();
+					*m_sendfile_operation = std::move( sendfile_operation );
+					(*m_sendfile_operation)->start();
 				}
 
 				auto
-				sendfile_timelimit()
+				timelimit() const
 				{
 					assert( m_sendfile->is_valid() );
 
 					return m_sendfile->timelimit();
+				}
+
+				void
+				reset()
+				{
+					m_sendfile_operation->reset();
 				}
 
 				//! Get the size of sendfile operation.
@@ -137,7 +146,8 @@ class write_group_output_ctx_t
 
 			private:
 				const sendfile_t * m_sendfile;
-				sendfile_operation_shared_ptr_t m_sendfile_operation;
+				// Storage must be external.
+				sendfile_operation_shared_ptr_t * m_sendfile_operation;
 		};
 
 		//! None write operation.
@@ -200,6 +210,7 @@ class write_group_output_ctx_t
 
 			invoke_after_write_notificator_if_necessary( ec );
 			m_current_wg.reset();
+			m_sendfile_operation.reset();
 		}
 
 		//! Finish writing group normally.
@@ -273,7 +284,7 @@ class write_group_output_ctx_t
 			const auto & sf =
 				m_current_wg->items()[ m_next_writable_item_index++ ].sendfile_operation();
 
-			return file_write_operation_t{ sf };
+			return file_write_operation_t{ sf, m_sendfile_operation };
 		}
 
 		//! Real buffers with data.
@@ -286,8 +297,11 @@ class write_group_output_ctx_t
 		*/
 		std::size_t m_next_writable_item_index{ 0 };
 
-		//! Asio buffers.
+		//! Asio buffers storage.
 		asio_bufs_container_t m_asio_bufs;
+
+		//! Sendfile operation storage context.
+		sendfile_operation_shared_ptr_t m_sendfile_operation;
 };
 
 } /* namespace impl */

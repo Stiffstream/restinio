@@ -161,10 +161,18 @@ class base_response_builder_t
 		}
 
 	protected:
+		std::size_t
+		calculate_status_line_size() const noexcept
+		{
+			// "HTTP *** <reason-phrase>"
+			return 4 + 1 + 3 + 1 + m_header.status_line().reason_phrase().size();
+		}
+
 		http_response_header_t m_header;
 
 		impl::connection_handle_t m_connection;
 		const request_id_t m_request_id;
+
 
 	private:
 		Response_Builder &
@@ -228,12 +236,10 @@ class response_builder_t< restinio_controlled_output_t > final
 
 		//! Complete response.
 		request_handling_status_t
-		done()
+		done( write_status_cb_t wscb = write_status_cb_t{} )
 		{
 			if( m_connection )
 			{
-				auto conn = std::move( m_connection );
-
 				const response_output_flags_t
 					response_output_flags{
 						response_parts_attr_t::final_parts,
@@ -246,10 +252,20 @@ class response_builder_t< restinio_controlled_output_t > final
 				m_response_parts[ 0 ] =
 					writable_item_t{ impl::create_header_string( m_header ) };
 
+				write_group_t wg{ std::move( m_response_parts ) };
+				wg.status_line_size( calculate_status_line_size() );
+
+				if( wscb )
+				{
+					wg.after_write_notificator( std::move( wscb ) );
+				}
+
+				auto conn = std::move( m_connection );
+
 				conn->write_response_parts(
 					m_request_id,
 					response_output_flags,
-					std::move( m_response_parts ) );
+					std::move( wg ) );
 			}
 
 			return restinio::request_accepted();
@@ -362,13 +378,14 @@ class response_builder_t< user_controlled_output_t > final
 			Schedules for sending currently ready data.
 		*/
 		self_type_t &
-		flush()
+		flush( write_status_cb_t wscb = write_status_cb_t{} )
 		{
 			if( m_connection )
 			{
 				send_ready_data(
 					m_connection,
-					response_parts_attr_t::not_final_parts );
+					response_parts_attr_t::not_final_parts,
+					std::move( wscb ) );
 			}
 
 			return *this;
@@ -376,14 +393,16 @@ class response_builder_t< user_controlled_output_t > final
 
 		//! Complete response.
 		request_handling_status_t
-		done()
+		done( write_status_cb_t wscb = write_status_cb_t{} )
 		{
 			if( m_connection )
 			{
 				send_ready_data(
 					std::move( m_connection ),
-					response_parts_attr_t::final_parts );
+					response_parts_attr_t::final_parts,
+					std::move( wscb ) );
 			}
+
 			return restinio::request_accepted();
 		}
 
@@ -391,8 +410,11 @@ class response_builder_t< user_controlled_output_t > final
 		void
 		send_ready_data(
 			impl::connection_handle_t conn,
-			response_parts_attr_t response_parts_attr )
+			response_parts_attr_t response_parts_attr,
+			write_status_cb_t wscb )
 		{
+			std::size_t status_line_size{ 0 };
+
 			if( !m_header_was_sent )
 			{
 				m_should_keep_alive_when_header_was_sent =
@@ -404,6 +426,7 @@ class response_builder_t< user_controlled_output_t > final
 					writable_item_t{ impl::create_header_string( m_header ) };
 
 				m_header_was_sent = true;
+				status_line_size = calculate_status_line_size();
 			}
 
 			const response_output_flags_t
@@ -411,10 +434,18 @@ class response_builder_t< user_controlled_output_t > final
 					response_parts_attr,
 					response_connection_attr( m_should_keep_alive_when_header_was_sent ) };
 
+			write_group_t wg{ std::move( m_response_parts ) };
+			wg.status_line_size( status_line_size );
+
+			if( wscb )
+			{
+				wg.after_write_notificator( std::move( wscb ) );
+			}
+
 			conn->write_response_parts(
 				m_request_id,
 				response_output_flags,
-				std::move( m_response_parts ) );
+				std::move( wg ) );
 		}
 
 		self_type_t &
@@ -526,25 +557,27 @@ class response_builder_t< chunked_output_t > final
 			Schedules for sending currently ready data.
 		*/
 		void
-		flush()
+		flush( write_status_cb_t wscb = write_status_cb_t{} )
 		{
 			if( m_connection )
 			{
 				send_ready_data(
 					m_connection,
-					response_parts_attr_t::not_final_parts );
+					response_parts_attr_t::not_final_parts,
+					std::move( wscb ) );
 			}
 		}
 
 		//! Complete response.
 		request_handling_status_t
-		done()
+		done( write_status_cb_t wscb = write_status_cb_t{} )
 		{
 			if( m_connection )
 			{
 				send_ready_data(
 					std::move( m_connection ),
-					response_parts_attr_t::final_parts );
+					response_parts_attr_t::final_parts,
+					std::move( wscb ) );
 			}
 			return restinio::request_accepted();
 		}
@@ -553,10 +586,13 @@ class response_builder_t< chunked_output_t > final
 		void
 		send_ready_data(
 			impl::connection_handle_t conn,
-			response_parts_attr_t response_parts_attr )
+			response_parts_attr_t response_parts_attr,
+			write_status_cb_t wscb )
 		{
+			std::size_t status_line_size{ 0 };
 			if( !m_header_was_sent )
 			{
+				status_line_size = calculate_status_line_size();
 				prepare_header_for_sending();
 			}
 
@@ -568,12 +604,21 @@ class response_builder_t< chunked_output_t > final
 					response_parts_attr,
 					response_connection_attr( m_should_keep_alive_when_header_was_sent ) };
 
+
 			if( !bufs.empty() )
 			{
+				write_group_t wg{ std::move( bufs ) };
+				wg.status_line_size( status_line_size );
+
+				if( wscb )
+				{
+					wg.after_write_notificator( std::move( wscb ) );
+				}
+
 				conn->write_response_parts(
 					m_request_id,
 					response_output_flags,
-					std::move( bufs ) );
+					std::move( wg ) );
 			}
 		}
 

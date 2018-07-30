@@ -39,8 +39,8 @@ class connection_base_t
 			request_id_t request_id,
 			//! Resp output flag.
 			response_output_flags_t response_output_flags,
-			//! parts of a response.
-			writable_items_container_t bufs ) = 0;
+			//! Part of the response data.
+			write_group_t wg ) = 0;
 };
 
 //! Alias for http connection handle.

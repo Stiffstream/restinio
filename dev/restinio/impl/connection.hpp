@@ -542,7 +542,7 @@ class connection_t final
 							response_output_flags_t{
 								response_parts_attr_t::final_parts,
 								response_connection_attr_t::connection_close },
-							create_not_implemented_resp() );
+							write_group_t{ create_not_implemented_resp() } );
 					}
 					else if( m_response_coordinator.is_able_to_get_more_messages() )
 					{
@@ -655,7 +655,7 @@ class connection_t final
 						response_output_flags_t{
 							response_parts_attr_t::final_parts,
 							response_connection_attr_t::connection_close },
-						create_not_implemented_resp() );
+						write_group_t{ create_not_implemented_resp() } );
 				}
 				else
 				{
@@ -690,8 +690,8 @@ class connection_t final
 			request_id_t request_id,
 			//! Resp output flag.
 			response_output_flags_t response_output_flags,
-			//! parts of a response.
-			writable_items_container_t bufs ) override
+			//! Part of the response data.
+			write_group_t wg ) override
 		{
 			//! Run write message on io_context loop if possible.
 			asio_ns::dispatch(
@@ -699,14 +699,14 @@ class connection_t final
 				[ this,
 					request_id,
 					response_output_flags,
-					actual_bufs = std::move( bufs ),
+					actual_wg = std::move( wg ),
 					ctx = shared_from_this() ]() mutable {
 						try
 						{
 							write_response_parts_impl(
 								request_id,
 								response_output_flags,
-								std::move( actual_bufs ) );
+								std::move( actual_wg ) );
 						}
 						catch( const std::exception & ex )
 						{
@@ -727,8 +727,8 @@ class connection_t final
 			request_id_t request_id,
 			//! Resp output flag.
 			response_output_flags_t response_output_flags,
-			//! parts of a response.
-			writable_items_container_t bufs )
+			//! Part of the response data.
+			write_group_t wg )
 		{
 			if( !m_socket.is_open() )
 			{
@@ -762,18 +762,18 @@ class connection_t final
 			{
 				m_logger.trace( [&]{
 					return fmt::format(
-							"[connection:{}] append response (#{}), "
-							"flags: {}, bufs count: {}",
-							connection_id(),
-							request_id,
-							response_output_flags,
-							bufs.size() );
+						"[connection:{}] append response (#{}), "
+						"flags: {}, write group size: {}",
+						connection_id(),
+						request_id,
+						response_output_flags,
+						wg.items_count() );
 				} );
 
 				m_response_coordinator.append_response(
 					request_id,
 					response_output_flags,
-					std::move( bufs ) );
+					std::move( wg ) );
 
 				init_write_if_necessary();
 			}
@@ -811,6 +811,12 @@ class connection_t final
 
 				if( next_write_group )
 				{
+					m_logger.trace( [&]{
+						return fmt::format(
+								"[connection:{}] start next write group",
+								this->connection_id() );
+					} );
+
 					// Check if all response cells busy:
 					const bool response_coordinator_full_after =
 						m_response_coordinator.is_full();
@@ -869,7 +875,7 @@ class connection_t final
 			else
 			{
 				assert( holds_alternative< none_write_operation_t >( wo ) );
-				wg_output.finish_write_group();
+				finish_handling_current_write_ctx();
 			}
 		}
 
@@ -911,13 +917,8 @@ class connection_t final
 				asio_ns::bind_executor(
 					this->get_executor(),
 					[ this,
-						ctx = shared_from_this(),
-						should_keep_alive = !m_response_coordinator.closed(),
-						init_read_after_this_write ]
+						ctx = shared_from_this() ]
 						( const asio_ns::error_code & ec, std::size_t written ){
-
-							// Release buffers.
-							m_write_output_ctx.done();
 
 							if( !ec )
 							{
@@ -929,16 +930,14 @@ class connection_t final
 								} );
 							}
 
-							after_write(
-								ec,
-								should_keep_alive );
+							after_write( ec );
 					} ) );
 
 			guard_write_operation();
 		}
 
 		void
-		handle_file_write_operation( const trivial_write_operation_t & op )
+		handle_file_write_operation( const file_write_operation_t & op )
 		{
 			if( m_response_coordinator.closed() )
 			{
@@ -962,21 +961,24 @@ class connection_t final
 				} );
 			}
 
-			guard_sendfile_operation();
+			guard_sendfile_operation( op.timelimit() );
 
-			op.start_sendfile_operation(
+			auto op_ctx = op;
+
+			op_ctx.start_sendfile_operation(
 				this->get_executor(),
 				m_socket,
 				asio_ns::bind_executor(
 					this->get_executor(),
 					[ this,
 						ctx = shared_from_this(),
-						should_keep_alive = !m_response_coordinator.closed(),
-						init_read_after_this_write ]
-						( const asio_ns::error_code & ec, file_size_t written ){
+						// Store operation context till the end
+						op_ctx ](
+							const asio_ns::error_code & ec,
+							file_size_t written ) mutable{
 
-							// Release sendfile operation.
-							m_write_output_ctx.finish_sendfile_operation();
+							// Reset sendfile operation context.
+							op_ctx.reset();
 
 							if( !ec )
 							{
@@ -998,12 +1000,80 @@ class connection_t final
 								} );
 							}
 
-							// TODO: sendfile
-							after_write(
-								ec,
-								should_keep_alive );
+							after_write( ec );
 						} ) );
 
+		}
+
+		void
+		finish_handling_current_write_ctx()
+		{
+			// Finishing writing this group.
+			m_logger.trace( [&]{
+				return fmt::format(
+						"[connection:{}] finishing current write group",
+						this->connection_id() );
+			} );
+
+			try
+			{
+				// Group notificators are called from here (if exist):
+				m_write_output_ctx.finish_write_group();
+			}
+			catch( const std::exception & ex )
+			{
+					trigger_error_and_close( [&]{
+						return fmt::format(
+							"[connection:{}] unable to write: {}",
+							connection_id(),
+							ex.what() );
+					} );
+			}
+
+			if( !m_response_coordinator.closed() )
+			{
+				m_logger.trace( [&]{
+					return fmt::format(
+							"[connection:{}] should keep alive",
+							this->connection_id() );
+				} );
+
+				if( connection_upgrade_stage_t::none ==
+					m_input.m_connection_upgrade_stage )
+				{
+					// Run ordinary HTTP logic.
+					if( m_init_read_after_this_write )
+					{
+						wait_for_http_message();
+					}
+
+					// Start another write opertion
+					// if there is something to send.
+					init_write_if_necessary();
+				}
+				else
+				{
+					if( m_response_coordinator.empty() )
+					{
+						// Here upgrade req is the only request
+						// to by handled by this connection.
+						// So it is safe to call a handler for it.
+						handle_upgrade_request();
+					}
+					else
+					{
+						// Do not start reading in any case,
+						// but if there is at least one request preceding
+						// upgrade-req, logic must continue http interaction.
+						init_write_if_necessary();
+					}
+				}
+			}
+			else
+			{
+				// No keep-alive, close connection.
+				close();
+			}
 		}
 
 		void
@@ -1049,57 +1119,30 @@ class connection_t final
 
 		//! Handle write response finished.
 		inline void
-		after_write( const asio_ns::error_code & ec, bool should_keep_alive )
+		after_write( const asio_ns::error_code & ec )
 		{
 			if( !ec )
 			{
-				if( should_keep_alive )
-				{
-					m_logger.trace( [&]{
-						return fmt::format(
-								"[connection:{}] should keep alive",
-								this->connection_id() );
-					} );
-
-					if( connection_upgrade_stage_t::none ==
-						m_input.m_connection_upgrade_stage )
-					{
-						// Run ordinary HTTP logic.
-						if( m_init_read_after_this_write )
-							wait_for_http_message();
-
-						// Start another write opertion
-						// if there is something to send.
-						init_write_if_necessary();
-					}
-					else
-					{
-						if( m_response_coordinator.empty() )
-						{
-							// Here upgrade req is the only request
-							// to by handled by this connection.
-							// So it is safe to call a handler for it.
-							handle_upgrade_request();
-						}
-						else
-						{
-							// Do not start reading in any case,
-							// but if there is at least one request preceding
-							// upgrade-req, logic must continue http interaction.
-							init_write_if_necessary();
-						}
-					}
-				}
-				else
-				{
-					// No keep-alive, close connection.
-					close();
-				}
+				handle_current_write_ctx();
 			}
 			else
 			{
 				if( !error_is_operation_aborted( ec ) )
 				{
+					try
+					{
+						m_write_output_ctx.fail_write_group( ec );
+					}
+					catch( const std::exception & ex )
+					{
+						m_logger.error( [&]{
+							return fmt::format(
+								"[connection:{}] notificator error: {}",
+								connection_id(),
+								ex.what() );
+						} );
+					}
+
 					trigger_error_and_close( [&]{
 						return fmt::format(
 							"[connection:{}] unable to write: {}",
@@ -1122,8 +1165,8 @@ class connection_t final
 
 			m_logger.trace( [&]{
 				return fmt::format(
-						"[connection:{}] close",
-						connection_id() );
+					"[connection:{}] close",
+					connection_id() );
 			} );
 
 			asio_ns::error_code ignored_ec;
@@ -1158,7 +1201,8 @@ class connection_t final
 		connection_input_t m_input;
 
 		//! Write to socket operation context.
-		write_group_output_ctx m_write_output_ctx;
+		write_group_output_ctx_t m_write_output_ctx;
+
 		//! Memo flag: start a read operation after current write or not.
 		bool m_init_read_after_this_write{ false };
 
@@ -1322,11 +1366,10 @@ class connection_t final
 		}
 
 		void
-		guard_sendfile_operation()
+		guard_sendfile_operation( std::chrono::steady_clock::duration timelimit )
 		{
-			const auto timelimit =
-				std::chrono::steady_clock::duration::zero() == m_write_output_ctx.sendfile_timelimit() ?
-					m_settings->m_write_http_response_timelimit : m_write_output_ctx.sendfile_timelimit();
+			if( std::chrono::steady_clock::duration::zero() == timelimit )
+				timelimit = m_settings->m_write_http_response_timelimit;
 
 			schedule_operation_timeout_callback(
 				timelimit,
