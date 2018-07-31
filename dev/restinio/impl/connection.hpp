@@ -84,7 +84,7 @@ struct http_parser_ctx_t
 	Is used to initialize const value in connection_settings_t ctor.
 */
 inline http_parser_settings
-create_parser_settings()
+create_parser_settings() noexcept
 {
 	http_parser_settings parser_settings;
 	http_parser_settings_init( &parser_settings );
@@ -122,6 +122,11 @@ create_parser_settings()
 	return parser_settings;
 }
 
+//
+// connection_upgrade_stage_t
+//
+
+//! Enum for a flag specifying that connection is going to upgrade or not.
 enum class connection_upgrade_stage_t : std::uint8_t
 {
 	//! No connection request in progress
@@ -136,6 +141,10 @@ enum class connection_upgrade_stage_t : std::uint8_t
 	//! then no further operations are expected.
 	wait_for_upgrade_handling_result_or_nothing
 };
+
+//
+// connection_input_t
+//
 
 //! Data associated with connection read routine.
 struct connection_input_t
@@ -245,6 +254,7 @@ class connection_t final
 			} );
 		}
 
+		// Disable copy/move.
 		connection_t( const connection_t & ) = delete;
 		connection_t( connection_t && ) = delete;
 		connection_t & operator = ( const connection_t & ) = delete;
@@ -388,6 +398,7 @@ class connection_t final
 			}
 		}
 
+		//! Handle read operation result.
 		inline void
 		after_read( const asio_ns::error_code & ec, std::size_t length )
 		{
@@ -800,62 +811,75 @@ class connection_t final
 
 			if( !m_write_output_ctx.transmitting() )
 			{
-				// Here: not writing anything to socket, so
-				// write operation can be initiated.
+				init_write();
+			}
+		}
 
-				// Remember if all response cells were busy.
-				const bool response_coordinator_full_before =
+		//! Initiate write operation.
+		void
+		init_write()
+		{
+			// Here: not writing anything to socket, so
+			// write operation can be initiated.
+
+			// Remember if all response cells were busy.
+			const bool response_coordinator_full_before =
+				m_response_coordinator.is_full();
+
+			auto next_write_group = m_response_coordinator.pop_ready_buffers();
+
+			if( next_write_group )
+			{
+				m_logger.trace( [&]{
+					return fmt::format(
+						"[connection:{}] start next write group for response (#{}), "
+						"size: {}",
+						this->connection_id(),
+						next_write_group->second,
+						next_write_group->first.items_count() );
+				} );
+
+				// Check if all response cells busy:
+				const bool response_coordinator_full_after =
 					m_response_coordinator.is_full();
 
-				auto next_write_group = m_response_coordinator.pop_ready_buffers();
+				// Whether we need to resume read after this group is written?
+				m_init_read_after_this_write =
+					response_coordinator_full_before &&
+					!response_coordinator_full_after;
 
-				if( next_write_group )
+				if( 0 < next_write_group->first.status_line_size() )
 				{
+					// We need to extract status line out of the first buffer
+					assert(
+						writable_item_type_t::trivial_write_operation ==
+						next_write_group->first.items().front().write_type() );
+
 					m_logger.trace( [&]{
-						return fmt::format(
-							"[connection:{}] start next write group, response (#{}), "
-							"size: {}",
-							this->connection_id(),
-							next_write_group->second,
-							next_write_group->first.items_count() );
+						// Get status line:
+						const string_view_t
+							status_line{
+								asio_ns::buffer_cast< const char * >(
+									next_write_group->first.items().front().buf() ),
+								next_write_group->first.status_line_size() };
+
+						return
+							fmt::format(
+								"[connection:{}] start response (#{}): {}",
+								this->connection_id(),
+								next_write_group->second,
+								status_line );
 					} );
-
-					// Check if all response cells busy:
-					const bool response_coordinator_full_after =
-						m_response_coordinator.is_full();
-
-					m_init_read_after_this_write =
-						response_coordinator_full_before &&
-						!response_coordinator_full_after;
-
-					if( 0 < next_write_group->first.status_line_size() )
-					{
-						m_logger.trace( [&]{
-							const string_view_t
-								status_line{
-									asio_ns::buffer_cast< const char * >(
-										next_write_group->first.items().front().buf() ),
-									next_write_group->first.status_line_size() };
-
-
-							return fmt::format(
-									"[connection:{}] start response (#{}): {}",
-									this->connection_id(),
-									next_write_group->second,
-									status_line );
-						} );
-
-					}
-
-					m_write_output_ctx.start_next_write_group(
-						std::move( next_write_group->first ) );
-
-					handle_current_write_ctx();
 				}
-				else
-				{
-					handle_nothing_to_write();
-				}
+
+				m_write_output_ctx.start_next_write_group(
+					std::move( next_write_group->first ) );
+
+				handle_current_write_ctx();
+			}
+			else
+			{
+				handle_nothing_to_write();
 			}
 		}
 
@@ -866,20 +890,32 @@ class connection_t final
 		void
 		handle_current_write_ctx()
 		{
-			auto wo = m_write_output_ctx.extract_next_write_operation();
+			try
+			{
+				auto wo = m_write_output_ctx.extract_next_write_operation();
 
-			if( holds_alternative< trivial_write_operation_t >( wo ) )
-			{
-				handle_trivial_write_operation( get< trivial_write_operation_t >( wo ) );
+				if( holds_alternative< trivial_write_operation_t >( wo ) )
+				{
+					handle_trivial_write_operation( get< trivial_write_operation_t >( wo ) );
+				}
+				else if( holds_alternative< file_write_operation_t >( wo ) )
+				{
+					handle_file_write_operation( get< file_write_operation_t >( wo ) );
+				}
+				else
+				{
+					assert( holds_alternative< none_write_operation_t >( wo ) );
+					finish_handling_current_write_ctx();
+				}
 			}
-			else if( holds_alternative< file_write_operation_t >( wo ) )
+			catch( const std::exception & ex )
 			{
-				handle_file_write_operation( get< file_write_operation_t >( wo ) );
-			}
-			else
-			{
-				assert( holds_alternative< none_write_operation_t >( wo ) );
-				finish_handling_current_write_ctx();
+				trigger_error_and_close( [&]{
+					return fmt::format(
+						"[connection:{}] handle_current_write_ctx failed: {}",
+						connection_id(),
+						ex.what() );
+				} );
 			}
 		}
 
@@ -895,9 +931,11 @@ class connection_t final
 					return fmt::format(
 							"[connection:{}] sending resp data with "
 							"connection-close attribute "
-							"buf count: {}",
+							"buf count: {}, "
+							"total size: {}",
 							connection_id(),
-							bufs.size() );
+							bufs.size(),
+							op.size() );
 				} );
 
 				// Reading new requests is useless.
@@ -909,9 +947,11 @@ class connection_t final
 				m_logger.trace( [&]{
 					return fmt::format(
 						"[connection:{}] sending resp data, "
-						"buf count: {}",
+						"buf count: {}, "
+						"total size: {}",
 						connection_id(),
-						bufs.size() ); } );
+						bufs.size(),
+						op.size() ); } );
 			}
 
 			// There is somethig to write.
@@ -948,8 +988,10 @@ class connection_t final
 				m_logger.trace( [&]{
 					return fmt::format(
 							"[connection:{}] sending resp file data with "
-							"connection-close attribute ",
-							connection_id() );
+							"connection-close attribute, "
+							"total size: {}",
+							connection_id(),
+							op.size() );
 				} );
 
 				// Reading new requests is useless.
@@ -960,8 +1002,9 @@ class connection_t final
 			{
 				m_logger.trace( [&]{
 					return fmt::format(
-						"[connection:{}] sending resp file data",
-						connection_id() );
+						"[connection:{}] sending resp file data, total size: {}",
+						connection_id(),
+						op.size() );
 				} );
 			}
 
@@ -1019,20 +1062,8 @@ class connection_t final
 						this->connection_id() );
 			} );
 
-			try
-			{
-				// Group notificators are called from here (if exist):
-				m_write_output_ctx.finish_write_group();
-			}
-			catch( const std::exception & ex )
-			{
-					trigger_error_and_close( [&]{
-						return fmt::format(
-							"[connection:{}] unable to finish group: {}",
-							connection_id(),
-							ex.what() );
-					} );
-			}
+			// Group notificators are called from here (if exist):
+			m_write_output_ctx.finish_write_group();
 
 			if( !m_response_coordinator.closed() )
 			{
@@ -1133,6 +1164,13 @@ class connection_t final
 			{
 				if( !error_is_operation_aborted( ec ) )
 				{
+					trigger_error_and_close( [&]{
+						return fmt::format(
+							"[connection:{}] unable to write: {}",
+							connection_id(),
+							ec.message() );
+					} );
+
 					try
 					{
 						m_write_output_ctx.fail_write_group( ec );
@@ -1146,13 +1184,6 @@ class connection_t final
 								ex.what() );
 						} );
 					}
-
-					trigger_error_and_close( [&]{
-						return fmt::format(
-							"[connection:{}] unable to write: {}",
-							connection_id(),
-							ec.message() );
-					} );
 				}
 				// else: Operation aborted only in case of close was called.
 			}
@@ -1165,8 +1196,6 @@ class connection_t final
 		void
 		close()
 		{
-			cancel_timeout_checking();
-
 			m_logger.trace( [&]{
 				return fmt::format(
 					"[connection:{}] close",
@@ -1178,6 +1207,29 @@ class connection_t final
 				asio_ns::ip::tcp::socket::shutdown_both,
 				ignored_ec );
 			m_socket.close();
+
+			m_logger.trace( [&]{
+				return fmt::format(
+					"[connection:{}] close: close socket",
+					connection_id() );
+			} );
+
+			// Clear stuff.
+
+			cancel_timeout_checking();
+			m_logger.trace( [&]{
+				return fmt::format(
+					"[connection:{}] close: timer canceled",
+					connection_id() );
+			} );
+
+			m_response_coordinator.reset();
+
+			m_logger.trace( [&]{
+				return fmt::format(
+					"[connection:{}] close: reset responses data",
+					connection_id() );
+			} );
 		}
 
 		//! Trigger an error.
@@ -1207,7 +1259,7 @@ class connection_t final
 		//! Write to socket operation context.
 		write_group_output_ctx_t m_write_output_ctx;
 
-		//! Memo flag: start a read operation after current write or not.
+		// Memo flag: whether we need to resume read after this group is written
 		bool m_init_read_after_this_write{ false };
 
 		//! Response coordinator.

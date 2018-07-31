@@ -60,8 +60,12 @@ class write_group_output_ctx_t
 				friend class write_group_output_ctx_t;
 
 				explicit trivial_write_operation_t(
-					const asio_bufs_container_t & asio_bufs )
+					//! Container of asio buf objects.
+					const asio_bufs_container_t & asio_bufs,
+					//! Total size of data represented by buffers.
+					std::size_t total_size )
 					:	m_asio_bufs{ &asio_bufs }
+					,	m_total_size{ total_size }
 				{}
 
 			public:
@@ -78,8 +82,11 @@ class write_group_output_ctx_t
 					return *m_asio_bufs;
 				}
 
+				auto size() const noexcept { return m_total_size; }
+
 			private:
 				const asio_bufs_container_t * m_asio_bufs;
+				size_t m_total_size;
 		};
 
 		//! Write operaton using sendfile.
@@ -135,6 +142,7 @@ class write_group_output_ctx_t
 					return m_sendfile->timelimit();
 				}
 
+				//! Reset write operation context.
 				void
 				reset()
 				{
@@ -145,26 +153,33 @@ class write_group_output_ctx_t
 				auto size() const noexcept { return m_sendfile->size(); }
 
 			private:
-				const sendfile_t * m_sendfile;
-				// Storage must be external.
+				//! A pointer to sendfile.
+				const sendfile_t * m_sendfile; // Pointer is used to be able to copy/assign.
+
+				//! A curernt sendfile operation.
+				/*!
+					This context must be external to
+					file_write_operation_t instance (in order to avoid circle links).
+				*/
 				sendfile_operation_shared_ptr_t * m_sendfile_operation;
 		};
 
 		//! None write operation.
+		/*!
+			When extract_next_write_operation() returns a variant with
+			none_write_operation_t instance it means that current write group
+			was handled to the end of its buffer sequence.
+		*/
 		struct none_write_operation_t {};
 
-		friend class solid_write_operation_t;
-
 		//! Check if data is trunsmitting now
-		bool transmitting() const { return static_cast< bool >( m_current_wg ); }
+		bool transmitting() const noexcept { return static_cast< bool >( m_current_wg ); }
 
 		//! Start handlong next write group.
-		bool
-		start_next_write_group( optional_t< write_group_t > next_wg )
+		void
+		start_next_write_group( optional_t< write_group_t > next_wg ) noexcept
 		{
-			m_next_writable_item_index = 0;
 			m_current_wg = std::move( next_wg );
-			return transmitting();
 		}
 
 		//! An alias for variant holding write operation specifics.
@@ -221,7 +236,7 @@ class write_group_output_ctx_t
 			assert( m_current_wg );
 
 			invoke_after_write_notificator_if_necessary( asio_ns::error_code{} );
-			m_current_wg.reset();
+			reset_write_group();
 		}
 
 	private:
@@ -264,6 +279,7 @@ class write_group_output_ctx_t
 			m_asio_bufs.clear();
 
 			const auto & items = m_current_wg->items();
+			std::size_t total_size{ 0 };
 
 			for( ;m_next_writable_item_index < items.size() &&
 				writable_item_type_t::trivial_write_operation ==
@@ -271,11 +287,13 @@ class write_group_output_ctx_t
 				max_iov_len() > m_asio_bufs.size();
 				++m_next_writable_item_index )
 			{
-				m_asio_bufs.emplace_back( items[ m_next_writable_item_index ].buf() );
+				const auto & item = items[ m_next_writable_item_index ];
+				m_asio_bufs.emplace_back( item.buf() );
+				total_size += item.size();
 			}
 
 			assert( !m_asio_bufs.empty() );
-			return trivial_write_operation_t{ m_asio_bufs };
+			return trivial_write_operation_t{ m_asio_bufs, total_size };
 		}
 
 		//! Prepare write operation for sendfile.

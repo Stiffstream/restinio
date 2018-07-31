@@ -131,161 +131,161 @@ TEST_CASE( "Using user controlled output response builder" , "[user_controlled_o
 
 	start_request_handler_pool();
 
-	// SECTION( "Simple sequence" )
-	// {
-	// 	std::string response;
+	SECTION( "Simple sequence" )
+	{
+		std::string response;
 
-	// 	const auto pipelinedrequests =
-	// 		create_request( 0, "0:0123456789:0" ) +
-	// 		create_request( 1, "1:0123456789:1" ) +
-	// 		create_request( 2, "2:0123456789:2" ) +
-	// 		create_request( 3, "3:0123456789:3" ) +
-	// 		create_request( 4, "4:0123456789:4" ) +
-	// 		create_request( 5, "5:0123456789:5" ) +
-	// 		create_request( 6, "6:0123456789:6" ) +
-	// 		create_request( 7, "7:0123456789:7" ) +
-	// 		create_request( 8, "8:0123456789:8" ) +
-	// 		create_request( 9, "9:0123456789:9", "close" );
+		const auto pipelinedrequests =
+			create_request( 0, "0:0123456789:0" ) +
+			create_request( 1, "1:0123456789:1" ) +
+			create_request( 2, "2:0123456789:2" ) +
+			create_request( 3, "3:0123456789:3" ) +
+			create_request( 4, "4:0123456789:4" ) +
+			create_request( 5, "5:0123456789:5" ) +
+			create_request( 6, "6:0123456789:6" ) +
+			create_request( 7, "7:0123456789:7" ) +
+			create_request( 8, "8:0123456789:8" ) +
+			create_request( 9, "9:0123456789:9", "close" );
 
-	// 	REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "0:0123456789:0" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "1:0123456789:1" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "2:0123456789:2" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "3:0123456789:3" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "4:0123456789:4" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "5:0123456789:5" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "6:0123456789:6" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "7:0123456789:7" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "8:0123456789:8" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::EndsWith( "9:0123456789:9" ) );
-	// }
+		REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "0:0123456789:0" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "1:0123456789:1" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "2:0123456789:2" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "3:0123456789:3" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "4:0123456789:4" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "5:0123456789:5" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "6:0123456789:6" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "7:0123456789:7" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "8:0123456789:8" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::EndsWith( "9:0123456789:9" ) );
+	}
 
-	// SECTION( "Interrupted sequence" )
-	// {
-	// 	std::string response;
+	SECTION( "Interrupted sequence" )
+	{
+		std::string response;
 
-	// 	const auto pipelinedrequests =
-	// 		create_request( 0, "0:0123456789:0" ) +
-	// 		create_request( 1, "1:0123456789:1" ) +
-	// 		create_request( 2, "2:0123456789:2" ) +
-	// 		create_request( 3, "3:0123456789:3" ) +
-	// 		create_request( 4, "4:0123456789:4" ) +
-	// 		create_request( 5, "5:0123456789:5", "close" ) + // Interrupt
-	// 		create_request( 6, "NOWAY" ) +
-	// 		create_request( 7, "NOWAY" ) +
-	// 		create_request( 8, "NOWAY" ) +
-	// 		create_request( 9, "NOWAY" );
+		const auto pipelinedrequests =
+			create_request( 0, "0:0123456789:0" ) +
+			create_request( 1, "1:0123456789:1" ) +
+			create_request( 2, "2:0123456789:2" ) +
+			create_request( 3, "3:0123456789:3" ) +
+			create_request( 4, "4:0123456789:4" ) +
+			create_request( 5, "5:0123456789:5", "close" ) + // Interrupt
+			create_request( 6, "NOWAY" ) +
+			create_request( 7, "NOWAY" ) +
+			create_request( 8, "NOWAY" ) +
+			create_request( 9, "NOWAY" );
 
-	// 	REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "0:0123456789:0" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "1:0123456789:1" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "2:0123456789:2" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "3:0123456789:3" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "4:0123456789:4" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::EndsWith( "5:0123456789:5" ) );
-	// 	REQUIRE(
-	// 		std::string::npos == response.find( "NOWAY" ) );
-	// }
+		REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "0:0123456789:0" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "1:0123456789:1" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "2:0123456789:2" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "3:0123456789:3" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "4:0123456789:4" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::EndsWith( "5:0123456789:5" ) );
+		REQUIRE(
+			std::string::npos == response.find( "NOWAY" ) );
+	}
 
-	// SECTION( "Interrupted sequence with slow before" )
-	// {
-	// 	std::string response;
+	SECTION( "Interrupted sequence with slow before" )
+	{
+		std::string response;
 
-	// 	const auto pipelinedrequests =
-	// 		create_request( 0, "0:0123456789:0" ) +
-	// 		create_request( 1, "1:0123456789:1" ) +
-	// 		create_request( 2, "2:0123456789:2" ) +
-	// 		create_request( 3, "3:0123456789:3" ) +
-	// 		create_request( 4, "4:0123456789:4" ) +
+		const auto pipelinedrequests =
+			create_request( 0, "0:0123456789:0" ) +
+			create_request( 1, "1:0123456789:1" ) +
+			create_request( 2, "2:0123456789:2" ) +
+			create_request( 3, "3:0123456789:3" ) +
+			create_request( 4, "4:0123456789:4" ) +
 
-	// 		create_request( 9, "9:MUST_BE_1:9" ) +
-	// 		create_request( 9, "9:MUST_BE_2:9" ) +
-	// 		create_request( 9, "9:MUST_BE_3:9" ) +
-	// 		create_request( 9, "9:MUST_BE_4:9" ) +
+			create_request( 9, "9:MUST_BE_1:9" ) +
+			create_request( 9, "9:MUST_BE_2:9" ) +
+			create_request( 9, "9:MUST_BE_3:9" ) +
+			create_request( 9, "9:MUST_BE_4:9" ) +
 
-	// 		create_request( 5, "5:0123456789:5", "close" ) + // Interrupt
+			create_request( 5, "5:0123456789:5", "close" ) + // Interrupt
 
-	// 		create_request( 0, "NOWAY" ) +
-	// 		create_request( 1, "NOWAY" ) +
+			create_request( 0, "NOWAY" ) +
+			create_request( 1, "NOWAY" ) +
 
-	// 		create_request( 2, "NOWAY" ) +
-	// 		create_request( 3, "NOWAY" ) +
-	// 		create_request( 4, "NOWAY" ) +
+			create_request( 2, "NOWAY" ) +
+			create_request( 3, "NOWAY" ) +
+			create_request( 4, "NOWAY" ) +
 
-	// 		create_request( 6, "NOWAY" ) +
-	// 		create_request( 7, "NOWAY" ) +
-	// 		create_request( 8, "NOWAY" ) +
-	// 		create_request( 9, "NOWAY" );
+			create_request( 6, "NOWAY" ) +
+			create_request( 7, "NOWAY" ) +
+			create_request( 8, "NOWAY" ) +
+			create_request( 9, "NOWAY" );
 
-	// 	REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "0:0123456789:0" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "1:0123456789:1" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "2:0123456789:2" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "3:0123456789:3" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "4:0123456789:4" ) );
+		REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "0:0123456789:0" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "1:0123456789:1" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "2:0123456789:2" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "3:0123456789:3" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "4:0123456789:4" ) );
 
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "9:MUST_BE_1:9" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "9:MUST_BE_2:9" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "9:MUST_BE_3:9" ) );
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::Contains( "9:MUST_BE_4:9" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "9:MUST_BE_1:9" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "9:MUST_BE_2:9" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "9:MUST_BE_3:9" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::Contains( "9:MUST_BE_4:9" ) );
 
-	// 	REQUIRE_THAT(
-	// 		response,
-	// 		Catch::Matchers::EndsWith( "5:0123456789:5" ) );
+		REQUIRE_THAT(
+			response,
+			Catch::Matchers::EndsWith( "5:0123456789:5" ) );
 
-	// 	REQUIRE(
-	// 		std::string::npos == response.find( "NOWAY" ) );
-	// }
+		REQUIRE(
+			std::string::npos == response.find( "NOWAY" ) );
+	}
 
 	SECTION( "sequence with mixed order" )
 	{

@@ -366,6 +366,35 @@ class response_coordinator_t
 			return result;
 		}
 
+		//! Remove all contexts.
+		/*!
+			Invoke write groups after-write callbacks with error status.
+		*/
+		void
+		reset()
+		{
+			for(; !m_context_table.empty(); m_context_table.pop_response_context() )
+			{
+				const asio_ns::error_code ec{ asio_ns::error::connection_aborted };
+
+				auto & current_ctx = m_context_table.front();
+				while( !current_ctx.empty() )
+				{
+					auto wg = current_ctx.dequeue_group();
+
+					if( wg.after_write_notificator() )
+					{
+						try
+						{
+							wg.after_write_notificator()( ec );
+						}
+						catch( ... )
+						{}
+					}
+				}
+			}
+		}
+
 	private:
 		//! Counter for asigining id to new requests.
 		request_id_t m_request_id_counter{ 0 };

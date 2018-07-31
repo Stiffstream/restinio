@@ -42,7 +42,8 @@ enum class content_length_field_presence_t : std::uint8_t
 
 //! Calculate buffer size that is enough for serializing the buffer.
 inline std::size_t
-calculate_approx_buffer_size_for_header( const http_response_header_t & h )
+calculate_approx_buffer_size_for_header(
+	const http_response_header_t & h ) noexcept
 {
 	std::size_t result = 13; // "HTTP/1.1 xxx "
 	result += h.reason_phrase().size() + 2; // 2 is for "\r\n".

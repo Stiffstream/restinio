@@ -1698,3 +1698,75 @@ TEST_CASE( "response_coordinator merge write groups" , "[response_coordinator][m
 	// #1: <nothing>
 	// #2: <nothing>
 }
+
+
+TEST_CASE( "response_coordinator reset" , "[response_coordinator][connection_close]" )
+{
+	{
+		response_coordinator_t coordinator{ 3 };
+		REQUIRE_FALSE( coordinator.closed() );
+
+		request_id_t req_id[ 3 ];
+
+		CHECK_NOTHROW( req_id[ 0 ] = coordinator.register_new_request() );
+		CHECK_NOTHROW( req_id[ 1 ] = coordinator.register_new_request() );
+		CHECK_NOTHROW( req_id[ 2 ] = coordinator.register_new_request() );
+
+		coordinator.reset();
+	}
+
+	{
+		response_coordinator_t coordinator{ 3 };
+		REQUIRE_FALSE( coordinator.closed() );
+
+		request_id_t req_id[ 3 ];
+
+		CHECK_NOTHROW( req_id[ 0 ] = coordinator.register_new_request() );
+		CHECK_NOTHROW( req_id[ 1 ] = coordinator.register_new_request() );
+		CHECK_NOTHROW( req_id[ 2 ] = coordinator.register_new_request() );
+
+		bool callbacks_called[] = { false, false, false };
+
+		{
+			write_group_t wg{ make_buffers( { "111", "111" } ) };
+			wg.after_write_notificator(
+				[&]( const auto & ){ callbacks_called[0] = true; });
+
+			CHECK_NOTHROW( coordinator.append_response(
+				req_id[ 0 ],
+				response_output_flags_t{
+					response_is_not_complete(),
+					connection_should_keep_alive() },
+				std::move( wg ) ) );
+		}
+		{
+			write_group_t wg{ make_buffers( { "222", "222" } ) };
+			wg.after_write_notificator(
+				[&]( const auto & ){ callbacks_called[1] = true; });
+
+			CHECK_NOTHROW( coordinator.append_response(
+				req_id[ 1 ],
+				response_output_flags_t{
+					response_is_not_complete(),
+					connection_should_keep_alive() },
+				std::move( wg ) ) );
+		}
+		{
+			write_group_t wg{ make_buffers( { "333", "333" } ) };
+			wg.after_write_notificator(
+				[&]( const auto & ){ callbacks_called[2] = true; });
+
+			CHECK_NOTHROW( coordinator.append_response(
+				req_id[ 2 ],
+				response_output_flags_t{
+					response_is_not_complete(),
+					connection_should_keep_alive() },
+				std::move( wg ) ) );
+		}
+
+		coordinator.reset();
+		REQUIRE( callbacks_called[0] );
+		REQUIRE( callbacks_called[1] );
+		REQUIRE( callbacks_called[2] );
+	}
+}
