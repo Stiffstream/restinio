@@ -328,7 +328,7 @@ class response_coordinator_t
 			and a notificator that must be invoked after the write operation
 			of a given group completes.
 		*/
-		optional_t< write_group_t >
+		optional_t< std::pair< write_group_t, request_id_t > >
 		pop_ready_buffers()
 		{
 			if( closed() )
@@ -336,7 +336,7 @@ class response_coordinator_t
 					"unable to prepare output buffers, "
 					"response coordinator is closed" };
 
-			optional_t< write_group_t > result;
+			optional_t< std::pair< write_group_t, request_id_t > > result;
 
 			// Check for custom write operation.
 			if( !m_context_table.empty() )
@@ -345,7 +345,11 @@ class response_coordinator_t
 
 				if( !current_ctx.empty() )
 				{
-					result = current_ctx.dequeue_group();
+					result =
+						std::make_pair(
+							current_ctx.dequeue_group(),
+							current_ctx.request_id() );
+
 					if( current_ctx.is_complete() )
 					{
 						m_connection_closed_response_occured =
@@ -360,143 +364,9 @@ class response_coordinator_t
 			}
 
 			return result;
-
-			// 	auto & current_ctx = m_context_table.front();
-
-			// 	if( 0 != current_ctx.m_bufs.size() &&
-			// 		writable_item_type_t::file_write_operation ==
-			// 			current_ctx.m_bufs.front().write_type() )
-			// 	{
-			// 		// First buffer to send implicates file write operation.
-
-			// 		if( 1 == current_ctx.m_bufs.size() &&
-			// 			response_parts_attr_t::final_parts ==
-			// 				current_ctx.m_response_output_flags.m_response_parts )
-			// 		{
-			// 			bufs = std::move( current_ctx.m_bufs );
-
-			// 			// Set close flag.
-			// 			m_connection_closed_response_occured =
-			// 				response_connection_attr_t::connection_close ==
-			// 						current_ctx.m_response_output_flags.m_response_connection;
-
-			// 			// Response for currently first tracked
-			// 			// request is completed.
-			// 			m_context_table.pop_response_context();
-			// 		}
-			// 		else
-			// 		{
-			// 			bufs.emplace_back( std::move( current_ctx.m_bufs.front() ) );
-			// 			current_ctx.m_bufs.erase( std::begin( current_ctx.m_bufs ) );
-			// 		}
-			// 		return writable_item_type_t::file_write_operation;
-			// 	}
-			// }
-
-			// return pop_ready_buffers_trivial( max_buf_count, bufs );
 		}
 
 	private:
-		// //! Get ready to send buffers (trivial only).
-		// writable_item_type_t
-		// pop_ready_buffers_trivial(
-		// 	//! The maximum count of buffers to obtain.
-		// 	unsigned int max_buf_count,
-		// 	//! Receiver for buffers.
-		// 	writable_items_container_t & bufs )
-		// {
-		// 	// Select buffers one by one while
-		// 	// it is possible to follow the order of the data
-		// 	// that must be sent to client
-		// 	// and buf count not exceed max_buf_count.
-		// 	while(
-		// 		0 != max_buf_count &&
-		// 		!m_context_table.empty() )
-		// 	{
-		// 		auto & current_ctx = m_context_table.front();
-		// 		const auto bufs_to_get_from_current_context =
-		// 			std::min(
-		// 				static_cast<decltype(max_buf_count)>( current_ctx.m_bufs.size() ),
-		// 				max_buf_count );
-
-		// 		const auto extracted_bufs_begin = std::begin( current_ctx.m_bufs );
-		// 		auto extracted_bufs_end = extracted_bufs_begin;
-		// 		std::advance(
-		// 			extracted_bufs_end,
-		// 			bufs_to_get_from_current_context );
-
-		// 		for( auto it = extracted_bufs_begin; it != extracted_bufs_end; ++it )
-		// 		{
-		// 			if( writable_item_type_t::trivial_write_operation == it->write_type() )
-		// 			{
-		// 				bufs.emplace_back( std::move( *it ) );
-		// 				--max_buf_count;
-		// 			}
-		// 			else
-		// 			{
-		// 				// Meet custom write buffer,
-		// 				// so to break selection algo we set
-		// 				// the following:
-		// 				max_buf_count = 0; // we got all the buffers possible.
-		// 				extracted_bufs_end = it; // that buffer will be considered as the end one.
-		// 				break; // exit for.
-		// 			}
-		// 		}
-
-		// 		if( current_ctx.m_bufs.end() == extracted_bufs_end )
-		// 		{
-		// 			current_ctx.m_bufs.clear();
-
-		// 			// All existing parts for current response were
-		// 			// selected for output, so it might be the case
-		// 			// entire response was selected.
-
-		// 			if( response_parts_attr_t::final_parts ==
-		// 				current_ctx.m_response_output_flags.m_response_parts )
-		// 			{
-		// 				m_connection_closed_response_occured =
-		// 					response_connection_attr_t::connection_close ==
-		// 						current_ctx.m_response_output_flags.m_response_connection;
-
-		// 				// Response for currently first tracked
-		// 				// request is completed.
-		// 				m_context_table.pop_response_context();
-
-		// 				if( m_connection_closed_response_occured )
-		// 				{
-		// 					// Not only the response is complete
-		// 					// but it has a connection-close property.
-		// 					// So the response coordinator must
-		// 					// stop its work.
-
-		// 					break;
-		// 				}
-		// 			}
-		// 			else
-		// 			{
-		// 				// All existing parts of current response were selected
-		// 				// but there must be more parts for current response
-		// 				// that a not already received by coordinator
-		// 				// so breake selection loop.
-		// 				break;
-		// 			}
-		// 		}
-		// 		else
-		// 		{
-		// 			// Current response is definetely not over
-		// 			// but max_buf_count bufers are obtained
-		// 			// while condition will fail.
-		// 			current_ctx.m_bufs.erase(
-		// 				extracted_bufs_begin,
-		// 				extracted_bufs_end );
-		// 		}
-		// 	}
-
-		// 	return bufs.empty() ?
-		// 		writable_item_type_t::none :
-		// 		writable_item_type_t::trivial_write_operation;
-		// }
-
 		//! Counter for asigining id to new requests.
 		request_id_t m_request_id_counter{ 0 };
 

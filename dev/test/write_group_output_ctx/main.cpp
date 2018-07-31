@@ -456,3 +456,72 @@ TEST_CASE( "write_group_output_ctx_t mixed" , "[write_group_output_ctx_t][mix][t
 		REQUIRE_FALSE( wg_output.transmitting() );
 	}
 }
+
+TEST_CASE( "write_group_output_ctx_t two groups" , "[write_group_output_ctx_t][trivial][restart]" )
+{
+	{
+		write_group_output_ctx_t wg_output{};
+
+		wg_output.start_next_write_group(
+			write_group_t{
+				make_buffers( { "BUFFER1" } ) } );
+
+		REQUIRE( wg_output.transmitting() );
+
+		write_group_output_ctx_t::solid_write_operation_variant_t wo{};
+
+		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
+		REQUIRE( holds_alternative< trivial_write_operation_t >( wo ) );
+		REQUIRE(
+			concat_bufs(
+				get< trivial_write_operation_t >( wo )
+					.get_trivial_bufs() ) == "BUFFER1" );
+
+		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
+		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+
+		REQUIRE_NOTHROW( wg_output.finish_write_group() );
+		REQUIRE_FALSE( wg_output.transmitting() );
+
+		// Start with new group.
+
+		wg_output.start_next_write_group(
+			write_group_t{
+				make_buffers( { "BUFFER2" } ) } );
+
+		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
+		REQUIRE( holds_alternative< trivial_write_operation_t >( wo ) );
+		REQUIRE(
+			concat_bufs(
+				get< trivial_write_operation_t >( wo )
+					.get_trivial_bufs() ) == "BUFFER2" );
+
+		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
+		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+
+		REQUIRE_NOTHROW( wg_output.finish_write_group() );
+		REQUIRE_FALSE( wg_output.transmitting() );
+
+
+		// Start with new group.
+		wg_output.start_next_write_group(
+			write_group_t{
+				make_buffers( { "BUFFER3" } ) } );
+
+		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
+		REQUIRE( holds_alternative< trivial_write_operation_t >( wo ) );
+		REQUIRE(
+			concat_bufs(
+				get< trivial_write_operation_t >( wo )
+					.get_trivial_bufs() ) == "BUFFER3" );
+
+		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
+		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+
+		REQUIRE_NOTHROW( wg_output.finish_write_group() );
+		REQUIRE_FALSE( wg_output.transmitting() );
+	}
+}

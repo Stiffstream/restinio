@@ -11,7 +11,7 @@ struct fake_connection_t : public restinio::impl::connection_base_t
 	write_response_parts(
 		request_id_t ,
 		response_output_flags_t ,
-		writable_items_container_t ) override
+		write_group_t ) override
 	{}
 };
 

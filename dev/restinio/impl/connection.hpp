@@ -813,19 +813,42 @@ class connection_t final
 				{
 					m_logger.trace( [&]{
 						return fmt::format(
-								"[connection:{}] start next write group",
-								this->connection_id() );
+							"[connection:{}] start next write group, response (#{}), "
+							"size: {}",
+							this->connection_id(),
+							next_write_group->second,
+							next_write_group->first.items_count() );
 					} );
 
 					// Check if all response cells busy:
 					const bool response_coordinator_full_after =
 						m_response_coordinator.is_full();
 
-					const bool m_init_read_after_this_write =
-							response_coordinator_full_before && !response_coordinator_full_after;
+					m_init_read_after_this_write =
+						response_coordinator_full_before &&
+						!response_coordinator_full_after;
+
+					if( 0 < next_write_group->first.status_line_size() )
+					{
+						m_logger.trace( [&]{
+							const string_view_t
+								status_line{
+									asio_ns::buffer_cast< const char * >(
+										next_write_group->first.items().front().buf() ),
+									next_write_group->first.status_line_size() };
+
+
+							return fmt::format(
+									"[connection:{}] start response (#{}): {}",
+									this->connection_id(),
+									next_write_group->second,
+									status_line );
+						} );
+
+					}
 
 					m_write_output_ctx.start_next_write_group(
-						std::move( next_write_group ) );
+						std::move( next_write_group->first ) );
 
 					handle_current_write_ctx();
 				}
@@ -833,25 +856,6 @@ class connection_t final
 				{
 					handle_nothing_to_write();
 				}
-
-				// const auto obtain_bufs_result =
-				// 	m_write_output_ctx.obtain_bufs( m_response_coordinator );
-
-				// switch( obtain_bufs_result )
-				// {
-				// 	case writable_item_type_t::trivial_write_operation:
-				// 		// Here: and there is smth trivial to write.
-				// 		handle_trivial_write_operation( init_read_after_this_write );
-				// 		break;
-
-				// 	case writable_item_type_t::file_write_operation:
-				// 		// Here: and there is custom write operation to start.
-				// 		handle_file_write_operation( init_read_after_this_write );
-				// 		break;
-
-				// 	case writable_item_type_t::none:
-				// 		handle_nothing_to_write();
-				// }
 			}
 		}
 
@@ -1024,7 +1028,7 @@ class connection_t final
 			{
 					trigger_error_and_close( [&]{
 						return fmt::format(
-							"[connection:{}] unable to write: {}",
+							"[connection:{}] unable to finish group: {}",
 							connection_id(),
 							ex.what() );
 					} );

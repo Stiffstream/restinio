@@ -162,6 +162,7 @@ class write_group_output_ctx_t
 		bool
 		start_next_write_group( optional_t< write_group_t > next_wg )
 		{
+			m_next_writable_item_index = 0;
 			m_current_wg = std::move( next_wg );
 			return transmitting();
 		}

@@ -340,10 +340,10 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		popped_wg = coordinator.pop_ready_buffers();
 
 		REQUIRE( popped_wg );
-		REQUIRE( 3UL == popped_wg->items_count() );
-		REQUIRE( make_string( popped_wg->items()[ 0UL ] ) == "a" );
-		REQUIRE( make_string( popped_wg->items()[ 1UL ] ) == "b" );
-		REQUIRE( make_string( popped_wg->items()[ 2UL ] ) == "c" );
+		REQUIRE( 3UL == popped_wg->first.items_count() );
+		REQUIRE( make_string( popped_wg->first.items()[ 0UL ] ) == "a" );
+		REQUIRE( make_string( popped_wg->first.items()[ 1UL ] ) == "b" );
+		REQUIRE( make_string( popped_wg->first.items()[ 2UL ] ) == "c" );
 
 		CHECK_NOTHROW( coordinator.append_response(
 			req_id[ 0 ],
@@ -366,10 +366,10 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		popped_wg = coordinator.pop_ready_buffers();
 
 		REQUIRE( popped_wg );
-		REQUIRE( 3UL == popped_wg->items_count() );
-		REQUIRE( make_string( popped_wg->items()[ 0UL ] ) == "A" );
-		REQUIRE( make_string( popped_wg->items()[ 1UL ] ) == "B" );
-		REQUIRE( make_string( popped_wg->items()[ 2UL ] ) == "C" );
+		REQUIRE( 3UL == popped_wg->first.items_count() );
+		REQUIRE( make_string( popped_wg->first.items()[ 0UL ] ) == "A" );
+		REQUIRE( make_string( popped_wg->first.items()[ 1UL ] ) == "B" );
+		REQUIRE( make_string( popped_wg->first.items()[ 2UL ] ) == "C" );
 
 		// #0: <nothing>
 		// #1: ("X", "Y", "Z")
@@ -419,17 +419,17 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		popped_wg = coordinator.pop_ready_buffers();
 
 		REQUIRE( popped_wg );
-		REQUIRE( 2UL == popped_wg->items_count() );
-		REQUIRE( make_string( popped_wg->items()[ 0UL ] ) == "LAST" );
-		REQUIRE( make_string( popped_wg->items()[ 1UL ] ) == "PARTS" );
+		REQUIRE( 2UL == popped_wg->first.items_count() );
+		REQUIRE( make_string( popped_wg->first.items()[ 0UL ] ) == "LAST" );
+		REQUIRE( make_string( popped_wg->first.items()[ 1UL ] ) == "PARTS" );
 
 		popped_wg = coordinator.pop_ready_buffers();
-		REQUIRE( 5UL == popped_wg->items_count() );
-		REQUIRE( make_string( popped_wg->items()[ 0UL ] ) == "X" );
-		REQUIRE( make_string( popped_wg->items()[ 1UL ] ) == "Y" );
-		REQUIRE( make_string( popped_wg->items()[ 2UL ] ) == "Z" );
-		REQUIRE( make_string( popped_wg->items()[ 3UL ] ) == "LAST" );
-		REQUIRE( make_string( popped_wg->items()[ 4UL ] ) == "PARTS" );
+		REQUIRE( 5UL == popped_wg->first.items_count() );
+		REQUIRE( make_string( popped_wg->first.items()[ 0UL ] ) == "X" );
+		REQUIRE( make_string( popped_wg->first.items()[ 1UL ] ) == "Y" );
+		REQUIRE( make_string( popped_wg->first.items()[ 2UL ] ) == "Z" );
+		REQUIRE( make_string( popped_wg->first.items()[ 3UL ] ) == "LAST" );
+		REQUIRE( make_string( popped_wg->first.items()[ 4UL ] ) == "PARTS" );
 
 		// Response doesn't exist any more error:
 		CHECK_THROWS( coordinator.append_response(
@@ -548,8 +548,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		auto popped_wg = coordinator.pop_ready_buffers();
 
 		REQUIRE( popped_wg );
-		REQUIRE( 24UL == popped_wg->items_count() );
-		REQUIRE( concat_bufs( *popped_wg ) ==
+		REQUIRE( 24UL == popped_wg->first.items_count() );
+		REQUIRE( concat_bufs( popped_wg->first ) ==
 				"0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c" );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
@@ -601,8 +601,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		popped_wg = coordinator.pop_ready_buffers();
 
 		REQUIRE( popped_wg );
-		REQUIRE( 8UL == popped_wg->items_count() );
-		REQUIRE( concat_bufs( *popped_wg ) ==
+		REQUIRE( 8UL == popped_wg->first.items_count() );
+		REQUIRE( concat_bufs( popped_wg->first ) ==
 				"LASTPARTSLASTPARTSLASTPARTSLASTPARTS" );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -611,8 +611,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		popped_wg = coordinator.pop_ready_buffers();
 
 		REQUIRE( popped_wg );
-		REQUIRE( 32UL == popped_wg->items_count() );
-		REQUIRE( concat_bufs( *popped_wg ) ==
+		REQUIRE( 32UL == popped_wg->first.items_count() );
+		REQUIRE( concat_bufs( popped_wg->first ) ==
 				"1a1b1c1a1b1c1a1b1c1a1b1c1a1b1c1a1b1c1a1b1c1a1b1c"
 				"LASTPARTSLASTPARTSLASTPARTSLASTPARTS" );
 		REQUIRE_FALSE( coordinator.empty() );
@@ -621,8 +621,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		popped_wg = coordinator.pop_ready_buffers();
 
 		REQUIRE( popped_wg );
-		REQUIRE( 24UL == popped_wg->items_count() );
-		REQUIRE( concat_bufs( *popped_wg ) ==
+		REQUIRE( 24UL == popped_wg->first.items_count() );
+		REQUIRE( concat_bufs( popped_wg->first ) ==
 				"2a2b2c2a2b2c2a2b2c2a2b2c2a2b2c2a2b2c2a2b2c2a2b2c" );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -651,8 +651,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		popped_wg = coordinator.pop_ready_buffers();
 
 		REQUIRE( popped_wg );
-		REQUIRE( 8UL == popped_wg->items_count() );
-		REQUIRE( concat_bufs( *popped_wg ) ==
+		REQUIRE( 8UL == popped_wg->first.items_count() );
+		REQUIRE( concat_bufs( popped_wg->first ) ==
 				"LASTPARTSLASTPARTSLASTPARTSLASTPARTS" );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -662,8 +662,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		popped_wg = coordinator.pop_ready_buffers();
 
 		REQUIRE( popped_wg );
-		REQUIRE( 24UL == popped_wg->items_count() );
-		REQUIRE( concat_bufs( *popped_wg ) ==
+		REQUIRE( 24UL == popped_wg->first.items_count() );
+		REQUIRE( concat_bufs( popped_wg->first ) ==
 				"3a3b3c3a3b3c3a3b3c3a3b3c3a3b3c3a3b3c3a3b3c3a3b3c" );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -770,8 +770,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		popped_wg = coordinator.pop_ready_buffers();
 		REQUIRE( popped_wg );
 
-		REQUIRE( 8UL == popped_wg->items_count() );
-		REQUIRE( concat_bufs( *popped_wg ) ==
+		REQUIRE( 8UL == popped_wg->first.items_count() );
+		REQUIRE( concat_bufs( popped_wg->first ) ==
 				"LASTPARTSLASTPARTSLASTPARTSLASTPARTS" );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -791,8 +791,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		popped_wg = coordinator.pop_ready_buffers();
 		REQUIRE( popped_wg );
 
-		REQUIRE( 74UL  == popped_wg->items_count() );
-		REQUIRE( concat_bufs( *popped_wg ) ==
+		REQUIRE( 74UL  == popped_wg->first.items_count() );
+		REQUIRE( concat_bufs( popped_wg->first ) ==
 				"4a4b4c4a4b4c4a4b4c4a4b4c4a4b4c4a4b4c4a4b4c4a4b4c"
 				"4a4b4c4a4b4c4a4b4c4a4b4c4a4b4c4a4b4c4a4b4c4a4b4c"
 				"4a4b4c4a4b4c4a4b4c4a4b4c4a4b4c4a4b4c4a4b4c4a4b4c"
@@ -806,8 +806,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		popped_wg = coordinator.pop_ready_buffers();
 		REQUIRE( popped_wg );
 
-		REQUIRE( 24UL  == popped_wg->items_count() );
-		REQUIRE( concat_bufs( *popped_wg ) ==
+		REQUIRE( 24UL  == popped_wg->first.items_count() );
+		REQUIRE( concat_bufs( popped_wg->first ) ==
 				"5a5b5c5a5b5c5a5b5c5a5b5c5a5b5c5a5b5c5a5b5c5a5b5c" );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -844,8 +844,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		popped_wg = coordinator.pop_ready_buffers();
 		REQUIRE( popped_wg );
 
-		REQUIRE( 8UL == popped_wg->items_count() );
-		REQUIRE( concat_bufs( *popped_wg ) ==
+		REQUIRE( 8UL == popped_wg->first.items_count() );
+		REQUIRE( concat_bufs( popped_wg->first ) ==
 				"LASTPARTSLASTPARTSLASTPARTSLASTPARTS" );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -855,8 +855,8 @@ TEST_CASE( "response_coordinator" , "[response_coordinator]" )
 		popped_wg = coordinator.pop_ready_buffers();
 		REQUIRE( popped_wg );
 
-		REQUIRE( 24UL == popped_wg->items_count() );
-		REQUIRE( concat_bufs( *popped_wg ) ==
+		REQUIRE( 24UL == popped_wg->first.items_count() );
+		REQUIRE( concat_bufs( popped_wg->first ) ==
 				"6a6b6c6a6b6c6a6b6c6a6b6c6a6b6c6a6b6c6a6b6c6a6b6c" );
 		REQUIRE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
@@ -963,8 +963,8 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 		auto popped_wg = coordinator.pop_ready_buffers();
 		REQUIRE( popped_wg );
 
-		REQUIRE( 24UL == popped_wg->items_count() );
-		REQUIRE( concat_bufs( *popped_wg ) ==
+		REQUIRE( 24UL == popped_wg->first.items_count() );
+		REQUIRE( concat_bufs( popped_wg->first ) ==
 				"0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c" );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
@@ -980,8 +980,8 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 		popped_wg = coordinator.pop_ready_buffers();
 		REQUIRE( popped_wg );
 
-		REQUIRE( 3UL == popped_wg->items_count() );
-		REQUIRE( concat_bufs( *popped_wg ) == "LAST PARTS" );
+		REQUIRE( 3UL == popped_wg->first.items_count() );
+		REQUIRE( concat_bufs( popped_wg->first ) == "LAST PARTS" );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 		REQUIRE( coordinator.closed() );
@@ -1064,8 +1064,8 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 		auto popped_wg = coordinator.pop_ready_buffers();
 		REQUIRE( popped_wg );
 
-		REQUIRE( 24UL == popped_wg->items_count() );
-		REQUIRE( concat_bufs( *popped_wg ) ==
+		REQUIRE( 24UL == popped_wg->first.items_count() );
+		REQUIRE( concat_bufs( popped_wg->first ) ==
 				"0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c0a0b0c" );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE( coordinator.is_full() );
@@ -1088,8 +1088,8 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 		popped_wg = coordinator.pop_ready_buffers();
 		REQUIRE( popped_wg );
 
-		REQUIRE( 3UL == popped_wg->items_count() );
-		REQUIRE( concat_bufs( *popped_wg ) == "LAST PARTS" );
+		REQUIRE( 3UL == popped_wg->first.items_count() );
+		REQUIRE( concat_bufs( popped_wg->first ) == "LAST PARTS" );
 		REQUIRE_FALSE( coordinator.empty() );
 		REQUIRE_FALSE( coordinator.is_full() );
 		REQUIRE_FALSE( coordinator.closed() );
@@ -1100,8 +1100,8 @@ TEST_CASE( "response_coordinator_with_close" , "[response_coordinator][connectio
 		popped_wg = coordinator.pop_ready_buffers();
 		REQUIRE( popped_wg );
 
-		REQUIRE( 24UL == popped_wg->items_count() );
-		REQUIRE( concat_bufs( *popped_wg ) ==
+		REQUIRE( 24UL == popped_wg->first.items_count() );
+		REQUIRE( concat_bufs( popped_wg->first ) ==
 			"1a1b1c1a1b1c1a1b1c1a1b1c1a1b1c1a1b1c1a1b1c"
 			"LAST PARTS" );
 		REQUIRE_FALSE( coordinator.empty() );
@@ -1170,13 +1170,13 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 		REQUIRE( popped_wg );
 
 		// Groups merged
-		REQUIRE( 4UL == popped_wg->items_count() );
-		REQUIRE( make_string( popped_wg->items()[ 0UL ] ) == "header1" );
-		REQUIRE( make_string( popped_wg->items()[ 1UL ] ) == "header2" );
-		REQUIRE( make_string( popped_wg->items()[ 2UL ] ) == "header3" );
-		REQUIRE( popped_wg->items()[ 3UL ].write_type() ==
+		REQUIRE( 4UL == popped_wg->first.items_count() );
+		REQUIRE( make_string( popped_wg->first.items()[ 0UL ] ) == "header1" );
+		REQUIRE( make_string( popped_wg->first.items()[ 1UL ] ) == "header2" );
+		REQUIRE( make_string( popped_wg->first.items()[ 2UL ] ) == "header3" );
+		REQUIRE( popped_wg->first.items()[ 3UL ].write_type() ==
 				writable_item_type_t::file_write_operation );
-		CHECK_NOTHROW( popped_wg->items()[ 3UL ].sendfile_operation() );
+		CHECK_NOTHROW( popped_wg->first.items()[ 3UL ].sendfile_operation() );
 
 		REQUIRE( coordinator.closed() );
 	}
@@ -1213,13 +1213,13 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 		REQUIRE( popped_wg );
 
 		// Groups merged
-		REQUIRE( 4UL == popped_wg->items_count() );
-		REQUIRE( make_string( popped_wg->items()[ 0UL ] ) == "header1" );
-		REQUIRE( make_string( popped_wg->items()[ 1UL ] ) == "header2" );
-		REQUIRE( make_string( popped_wg->items()[ 2UL ] ) == "header3" );
-		REQUIRE( popped_wg->items()[ 3UL ].write_type() ==
+		REQUIRE( 4UL == popped_wg->first.items_count() );
+		REQUIRE( make_string( popped_wg->first.items()[ 0UL ] ) == "header1" );
+		REQUIRE( make_string( popped_wg->first.items()[ 1UL ] ) == "header2" );
+		REQUIRE( make_string( popped_wg->first.items()[ 2UL ] ) == "header3" );
+		REQUIRE( popped_wg->first.items()[ 3UL ].write_type() ==
 				writable_item_type_t::file_write_operation );
-		CHECK_NOTHROW( popped_wg->items()[ 3UL ].sendfile_operation() );
+		CHECK_NOTHROW( popped_wg->first.items()[ 3UL ].sendfile_operation() );
 
 		REQUIRE_FALSE( coordinator.closed() );
 	}
@@ -1275,25 +1275,25 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 
 		REQUIRE( popped_wg );
 		// Groups merged
-		REQUIRE( 6UL == popped_wg->items_count() );
-		REQUIRE( make_string( popped_wg->items()[ 0UL ] ) == "header1" );
-		REQUIRE( make_string( popped_wg->items()[ 1UL ] ) == "header2" );
-		REQUIRE( make_string( popped_wg->items()[ 2UL ] ) == "header3" );
+		REQUIRE( 6UL == popped_wg->first.items_count() );
+		REQUIRE( make_string( popped_wg->first.items()[ 0UL ] ) == "header1" );
+		REQUIRE( make_string( popped_wg->first.items()[ 1UL ] ) == "header2" );
+		REQUIRE( make_string( popped_wg->first.items()[ 2UL ] ) == "header3" );
 
-		REQUIRE( popped_wg->items()[ 3UL ].write_type() ==
+		REQUIRE( popped_wg->first.items()[ 3UL ].write_type() ==
 				writable_item_type_t::file_write_operation );
-		REQUIRE( popped_wg->items()[ 3UL ].size() == 1024 );
-		CHECK_NOTHROW( popped_wg->items()[ 3UL ].sendfile_operation() );
+		REQUIRE( popped_wg->first.items()[ 3UL ].size() == 1024 );
+		CHECK_NOTHROW( popped_wg->first.items()[ 3UL ].sendfile_operation() );
 
-		REQUIRE( popped_wg->items()[ 4UL ].write_type() ==
+		REQUIRE( popped_wg->first.items()[ 4UL ].write_type() ==
 				writable_item_type_t::file_write_operation );
-		REQUIRE( popped_wg->items()[ 4UL ].size() == 2048 );
-		CHECK_NOTHROW( popped_wg->items()[ 4UL ].sendfile_operation() );
+		REQUIRE( popped_wg->first.items()[ 4UL ].size() == 2048 );
+		CHECK_NOTHROW( popped_wg->first.items()[ 4UL ].sendfile_operation() );
 
-		REQUIRE( popped_wg->items()[ 5UL ].write_type() ==
+		REQUIRE( popped_wg->first.items()[ 5UL ].write_type() ==
 				writable_item_type_t::file_write_operation );
-		REQUIRE( popped_wg->items()[ 5UL ].size() == 4096 );
-		CHECK_NOTHROW( popped_wg->items()[ 5UL ].sendfile_operation() );
+		REQUIRE( popped_wg->first.items()[ 5UL ].size() == 4096 );
+		CHECK_NOTHROW( popped_wg->first.items()[ 5UL ].sendfile_operation() );
 
 		REQUIRE( coordinator.closed() );
 	}
@@ -1358,29 +1358,29 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 
 		REQUIRE( popped_wg );
 		// Groups merged
-		REQUIRE( 9UL == popped_wg->items_count() );
-		REQUIRE( make_string( popped_wg->items()[ 0UL ] ) == "header1" );
-		REQUIRE( make_string( popped_wg->items()[ 1UL ] ) == "header2" );
-		REQUIRE( make_string( popped_wg->items()[ 2UL ] ) == "header3" );
+		REQUIRE( 9UL == popped_wg->first.items_count() );
+		REQUIRE( make_string( popped_wg->first.items()[ 0UL ] ) == "header1" );
+		REQUIRE( make_string( popped_wg->first.items()[ 1UL ] ) == "header2" );
+		REQUIRE( make_string( popped_wg->first.items()[ 2UL ] ) == "header3" );
 
-		REQUIRE( popped_wg->items()[ 3UL ].write_type() ==
+		REQUIRE( popped_wg->first.items()[ 3UL ].write_type() ==
 				writable_item_type_t::file_write_operation );
-		REQUIRE( popped_wg->items()[ 3UL ].size() == 1024 );
-		CHECK_NOTHROW( popped_wg->items()[ 3UL ].sendfile_operation() );
+		REQUIRE( popped_wg->first.items()[ 3UL ].size() == 1024 );
+		CHECK_NOTHROW( popped_wg->first.items()[ 3UL ].sendfile_operation() );
 
-		REQUIRE( popped_wg->items()[ 4UL ].write_type() ==
+		REQUIRE( popped_wg->first.items()[ 4UL ].write_type() ==
 				writable_item_type_t::file_write_operation );
-		REQUIRE( popped_wg->items()[ 4UL ].size() == 2048 );
-		CHECK_NOTHROW( popped_wg->items()[ 4UL ].sendfile_operation() );
+		REQUIRE( popped_wg->first.items()[ 4UL ].size() == 2048 );
+		CHECK_NOTHROW( popped_wg->first.items()[ 4UL ].sendfile_operation() );
 
-		REQUIRE( popped_wg->items()[ 5UL ].write_type() ==
+		REQUIRE( popped_wg->first.items()[ 5UL ].write_type() ==
 				writable_item_type_t::file_write_operation );
-		REQUIRE( popped_wg->items()[ 5UL ].size() == 4096 );
-		CHECK_NOTHROW( popped_wg->items()[ 5UL ].sendfile_operation() );
+		REQUIRE( popped_wg->first.items()[ 5UL ].size() == 4096 );
+		CHECK_NOTHROW( popped_wg->first.items()[ 5UL ].sendfile_operation() );
 
-		REQUIRE( make_string( popped_wg->items()[ 6UL ] ) == "END" );
-		REQUIRE( make_string( popped_wg->items()[ 7UL ] ) == "OF" );
-		REQUIRE( make_string( popped_wg->items()[ 8UL ] ) == "RESPONSE" );
+		REQUIRE( make_string( popped_wg->first.items()[ 6UL ] ) == "END" );
+		REQUIRE( make_string( popped_wg->first.items()[ 7UL ] ) == "OF" );
+		REQUIRE( make_string( popped_wg->first.items()[ 8UL ] ) == "RESPONSE" );
 
 		REQUIRE( coordinator.closed() );
 	}
@@ -1462,41 +1462,41 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 		REQUIRE_FALSE( coordinator.closed() );
 
 		// Groups merged
-		REQUIRE( 4UL == popped_wg->items_count() );
-		REQUIRE( make_string( popped_wg->items()[ 0UL ] ) == "header1" );
-		REQUIRE( make_string( popped_wg->items()[ 1UL ] ) == "header2" );
-		REQUIRE( make_string( popped_wg->items()[ 2UL ] ) == "header3" );
+		REQUIRE( 4UL == popped_wg->first.items_count() );
+		REQUIRE( make_string( popped_wg->first.items()[ 0UL ] ) == "header1" );
+		REQUIRE( make_string( popped_wg->first.items()[ 1UL ] ) == "header2" );
+		REQUIRE( make_string( popped_wg->first.items()[ 2UL ] ) == "header3" );
 
-		REQUIRE( popped_wg->items()[ 3UL ].write_type() ==
+		REQUIRE( popped_wg->first.items()[ 3UL ].write_type() ==
 				writable_item_type_t::file_write_operation );
-		REQUIRE( popped_wg->items()[ 3UL ].size() == 1024 );
-		CHECK_NOTHROW( popped_wg->items()[ 3UL ].sendfile_operation() );
+		REQUIRE( popped_wg->first.items()[ 3UL ].size() == 1024 );
+		CHECK_NOTHROW( popped_wg->first.items()[ 3UL ].sendfile_operation() );
 
-		REQUIRE( static_cast< bool >( popped_wg->after_write_notificator() ) );
+		REQUIRE( static_cast< bool >( popped_wg->first.after_write_notificator() ) );
 
 		popped_wg = coordinator.pop_ready_buffers();
 		REQUIRE( popped_wg );
 		REQUIRE_FALSE( coordinator.closed() );
-		REQUIRE( 2UL == popped_wg->items_count() );
-		REQUIRE( popped_wg->items()[ 0UL ].write_type() ==
+		REQUIRE( 2UL == popped_wg->first.items_count() );
+		REQUIRE( popped_wg->first.items()[ 0UL ].write_type() ==
 				writable_item_type_t::file_write_operation );
-		REQUIRE( popped_wg->items()[ 0UL ].size() == 2048 );
-		CHECK_NOTHROW( popped_wg->items()[ 0UL ].sendfile_operation() );
-		REQUIRE( popped_wg->items()[ 1UL ].write_type() ==
+		REQUIRE( popped_wg->first.items()[ 0UL ].size() == 2048 );
+		CHECK_NOTHROW( popped_wg->first.items()[ 0UL ].sendfile_operation() );
+		REQUIRE( popped_wg->first.items()[ 1UL ].write_type() ==
 				writable_item_type_t::file_write_operation );
-		REQUIRE( popped_wg->items()[ 1UL ].size() == 4096 );
-		CHECK_NOTHROW( popped_wg->items()[ 1UL ].sendfile_operation() );
+		REQUIRE( popped_wg->first.items()[ 1UL ].size() == 4096 );
+		CHECK_NOTHROW( popped_wg->first.items()[ 1UL ].sendfile_operation() );
 
-		REQUIRE( static_cast< bool >( popped_wg->after_write_notificator() ) );
+		REQUIRE( static_cast< bool >( popped_wg->first.after_write_notificator() ) );
 
 
 		popped_wg = coordinator.pop_ready_buffers();
 		REQUIRE( popped_wg );
 		REQUIRE( coordinator.closed() );
-		REQUIRE( 3UL == popped_wg->items_count() );
-		REQUIRE( make_string( popped_wg->items()[ 0UL ] ) == "END" );
-		REQUIRE( make_string( popped_wg->items()[ 1UL ] ) == "OF" );
-		REQUIRE( make_string( popped_wg->items()[ 2UL ] ) == "RESPONSE" );
+		REQUIRE( 3UL == popped_wg->first.items_count() );
+		REQUIRE( make_string( popped_wg->first.items()[ 0UL ] ) == "END" );
+		REQUIRE( make_string( popped_wg->first.items()[ 1UL ] ) == "OF" );
+		REQUIRE( make_string( popped_wg->first.items()[ 2UL ] ) == "RESPONSE" );
 	}
 }
 
@@ -1627,8 +1627,8 @@ TEST_CASE( "response_coordinator merge write groups" , "[response_coordinator][m
 	auto popped_wg = coordinator.pop_ready_buffers();
 	REQUIRE( popped_wg );
 
-	REQUIRE( 12UL == popped_wg->items_count() );
-	REQUIRE( concat_bufs( *popped_wg ) ==
+	REQUIRE( 12UL == popped_wg->first.items_count() );
+	REQUIRE( concat_bufs( popped_wg->first ) ==
 		"0a0b0c0a0b0c0a0b0c0a0b0c" );
 
 	// #0: 1 group
@@ -1638,8 +1638,8 @@ TEST_CASE( "response_coordinator merge write groups" , "[response_coordinator][m
 	popped_wg = coordinator.pop_ready_buffers();
 	REQUIRE( popped_wg );
 
-	REQUIRE( 12UL == popped_wg->items_count() );
-	REQUIRE( concat_bufs( *popped_wg ) ==
+	REQUIRE( 12UL == popped_wg->first.items_count() );
+	REQUIRE( concat_bufs( popped_wg->first ) ==
 		"0a0b0c0a0b0c0a0b0c0a0b0c" );
 
 	// #0: <nothing>
@@ -1659,8 +1659,8 @@ TEST_CASE( "response_coordinator merge write groups" , "[response_coordinator][m
 	popped_wg = coordinator.pop_ready_buffers();
 	REQUIRE( popped_wg );
 
-	REQUIRE( 3UL == popped_wg->items_count() );
-	REQUIRE( concat_bufs( *popped_wg ) == "LAST PARTS" );
+	REQUIRE( 3UL == popped_wg->first.items_count() );
+	REQUIRE( concat_bufs( popped_wg->first ) == "LAST PARTS" );
 	REQUIRE_FALSE( coordinator.empty() );
 	REQUIRE_FALSE( coordinator.is_full() );
 	REQUIRE_FALSE( coordinator.closed() );
@@ -1671,8 +1671,8 @@ TEST_CASE( "response_coordinator merge write groups" , "[response_coordinator][m
 	popped_wg = coordinator.pop_ready_buffers();
 	REQUIRE( popped_wg );
 
-	REQUIRE( 6UL == popped_wg->items_count() );
-	REQUIRE( concat_bufs( *popped_wg ) ==
+	REQUIRE( 6UL == popped_wg->first.items_count() );
+	REQUIRE( concat_bufs( popped_wg->first ) ==
 		"1a1b1c1a1b1c" );
 
 	// #1: 2 groups
@@ -1681,8 +1681,8 @@ TEST_CASE( "response_coordinator merge write groups" , "[response_coordinator][m
 	popped_wg = coordinator.pop_ready_buffers();
 	REQUIRE( popped_wg );
 
-	REQUIRE( 12UL == popped_wg->items_count() );
-	REQUIRE( concat_bufs( *popped_wg ) ==
+	REQUIRE( 12UL == popped_wg->first.items_count() );
+	REQUIRE( concat_bufs( popped_wg->first ) ==
 		"1a1b1c1a1b1c1a1b1c1a1b1c" );
 
 	// #1: 1 group
@@ -1691,8 +1691,8 @@ TEST_CASE( "response_coordinator merge write groups" , "[response_coordinator][m
 	popped_wg = coordinator.pop_ready_buffers();
 	REQUIRE( popped_wg );
 
-	REQUIRE( 6UL == popped_wg->items_count() );
-	REQUIRE( concat_bufs( *popped_wg ) ==
+	REQUIRE( 6UL == popped_wg->first.items_count() );
+	REQUIRE( concat_bufs( popped_wg->first ) ==
 		"1a1b1c1a1b1c" );
 
 	// #1: <nothing>

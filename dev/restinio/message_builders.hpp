@@ -164,8 +164,8 @@ class base_response_builder_t
 		std::size_t
 		calculate_status_line_size() const noexcept
 		{
-			// "HTTP *** <reason-phrase>"
-			return 4 + 1 + 3 + 1 + m_header.status_line().reason_phrase().size();
+			// "HTTP/1.1 *** <reason-phrase>"
+			return 8 + 1 + 3 + 1 + m_header.status_line().reason_phrase().size();
 		}
 
 		http_response_header_t m_header;
