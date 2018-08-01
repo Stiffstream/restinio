@@ -30,6 +30,50 @@ using asio_bufs_container_t = std::vector< asio_ns::const_buffer >;
 //
 
 //! Helper class for writting response data.
+/*!
+	The usage scenario is some kind of the following:
+	\code{.cpp}
+	  write_group_output_ctx_t output_ctx;
+	  wtite_group_t wg = ...
+
+	  // Feed write group to context:
+	  output_ctx.start_next_write_group( std::move( wg ) );
+
+	  try
+	  {
+	    // start handling loop:
+	    for(
+	      // Extract next solid output piece.
+	      auto wo = output_ctx.extract_next_write_operation();
+	      // Are we done with consuming a given write_group_t instance?
+	      !holds_alternative< none_write_operation_t >( wo );
+	      // Get next output piece.
+	      wo = output_ctx.extract_next_write_operation() )
+	    {
+	      if( holds_alternative< trivial_write_operation_t >( wo ) )
+	      {
+	        handle_trivial_bufs( get< trivial_write_operation_t >( wo ) );
+	      }
+	      else
+	      {
+	        handle_sendfile( get< file_write_operation_t >( wo ) );
+	      }
+	    }
+
+	    // Finalize.
+	    output_ctx.finish_write_group();
+	  }
+	  catch( ec ) // asio error code
+	  {
+	    // Loop failed, so we finish write group abnormally.
+	    output_ctx.fail_write_group( ec )
+	  }
+	\endcode
+
+	Of course, the real usage is complicated by spreading in time and
+	running plenty of other logic cooperatively.
+
+*/
 class write_group_output_ctx_t
 {
 	//! Get the maximum number of buffers that can be written with
@@ -63,7 +107,7 @@ class write_group_output_ctx_t
 					//! Container of asio buf objects.
 					const asio_bufs_container_t & asio_bufs,
 					//! Total size of data represented by buffers.
-					std::size_t total_size )
+					std::size_t total_size ) noexcept
 					:	m_asio_bufs{ &asio_bufs }
 					,	m_total_size{ total_size }
 				{}
@@ -82,6 +126,7 @@ class write_group_output_ctx_t
 					return *m_asio_bufs;
 				}
 
+				//! The size of data within this operation.
 				auto size() const noexcept { return m_total_size; }
 
 			private:
@@ -96,7 +141,7 @@ class write_group_output_ctx_t
 
 				explicit file_write_operation_t(
 					const sendfile_t & sendfile,
-					sendfile_operation_shared_ptr_t & sendfile_operation )
+					sendfile_operation_shared_ptr_t & sendfile_operation ) noexcept
 					:	m_sendfile{ &sendfile }
 					,	m_sendfile_operation{ &sendfile_operation }
 				{}
@@ -108,6 +153,7 @@ class write_group_output_ctx_t
 				file_write_operation_t( file_write_operation_t && ) = default;
 				file_write_operation_t & operator = ( file_write_operation_t && ) = default;
 
+				//! Start a sendfile operation.
 				template< typename Socket, typename After_Write_CB >
 				void
 				start_sendfile_operation(
@@ -134,8 +180,9 @@ class write_group_output_ctx_t
 					(*m_sendfile_operation)->start();
 				}
 
+				//! Get the timelimit on this sendfile operation.
 				auto
-				timelimit() const
+				timelimit() const noexcept
 				{
 					assert( m_sendfile->is_valid() );
 
@@ -219,6 +266,7 @@ class write_group_output_ctx_t
 			return result;
 		}
 
+		//! Handle current group write process failed.
 		void
 		fail_write_group( const asio_ns::error_code & ec )
 		{

@@ -406,8 +406,8 @@ class response_coordinator_t
 		//! Indicate whether a response with connection close flag was emitted.
 		bool m_connection_closed_response_occured{ false };
 
+		//! A storage for resp-context items.
 		response_context_table_t m_context_table;
-
 };
 
 } /* namespace impl */
