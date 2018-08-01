@@ -42,8 +42,11 @@ class response_context_t
 			return ctx.m_write_groups;
 		}
 
+		//! Reinitialize context.
 		void
-		reinit( request_id_t request_id )
+		reinit(
+			//! New request id.
+			request_id_t request_id )
 		{
 			m_request_id = request_id;
 			m_response_output_flags =
@@ -71,6 +74,7 @@ class response_context_t
 
 		}
 
+		//! Is context empty.
 		bool empty() const noexcept { return m_write_groups.empty(); }
 
 		//! Extract write group from data queue.

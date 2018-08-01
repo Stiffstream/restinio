@@ -295,9 +295,6 @@ enum class writable_item_type_t
 
 	//! Item is a sendfile operation and implicates file write operation.
 	file_write_operation,
-
-	//! Nothing to write.
-	none
 };
 
 //
@@ -487,6 +484,9 @@ using writable_items_container_t = std::vector< writable_item_t >;
 
 //! An alias for a callback to be invoked after the write operation of
 //! a particular group of "buffers".
+/*!
+	@since v.0.4.8
+*/
 using write_status_cb_t =
 		std::function< void( const asio_ns::error_code & ec ) >;
 

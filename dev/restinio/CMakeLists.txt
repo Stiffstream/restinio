@@ -105,7 +105,7 @@ SET(RESTINIO_HEADERS_ALL
 	impl/os_unknown.inl
 	impl/os_win.inl
 	impl/parser_callbacks.inl
-	impl/raw_resp_output_ctx.hpp
+	impl/write_group_output_ctx.hpp
 	impl/response_coordinator.hpp
 	impl/sendfile_operation_default.inl
 	impl/sendfile_operation.hpp

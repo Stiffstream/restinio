@@ -234,8 +234,6 @@ TEST_CASE( "notificators error" , "[error]" )
 			} )
 	);
 
-	std::this_thread::sleep_for( std::chrono::milliseconds(10) );
-
 	other_thread.stop_and_join();
 
 	REQUIRE( notificator_was_called );
@@ -253,6 +251,10 @@ TEST_CASE( "notificators on not written data" , "[error]" )
 
 	std::atomic< bool > notificator_was_called{ false };
 	std::atomic< bool > was_error{ false };
+
+	// Control response generation order.
+	std::promise<void> resp_order_barrier;
+	auto resp_order_barrier_future = resp_order_barrier.get_future();
 
 	http_server_t http_server{
 		restinio::own_io_context(),
@@ -276,15 +278,18 @@ TEST_CASE( "notificators on not written data" , "[error]" )
 
 								if( req->header().request_target() == "/1")
 								{
-									std::this_thread::sleep_for( std::chrono::milliseconds(5) );
+									resp_order_barrier_future.wait();
 									resp.connection_close().done();
 								}
-
-								resp.done(
-									[&]( const auto & ec ) mutable{
-										notificator_was_called = true;
-										if( ec ) was_error = true;
-									} );
+								else
+								{
+									resp.done(
+										[&]( const auto & ec ) mutable{
+											notificator_was_called = true;
+											if( ec ) was_error = true;
+										} );
+									resp_order_barrier.set_value();
+								}
 							} };
 
 						t.detach();
@@ -307,8 +312,6 @@ TEST_CASE( "notificators on not written data" , "[error]" )
 
 	std::string response;
 	REQUIRE_NOTHROW( response = do_request( request ) );
-
-	std::this_thread::sleep_for( std::chrono::milliseconds(10) );
 
 	other_thread.stop_and_join();
 

@@ -872,9 +872,11 @@ class connection_t final
 					} );
 				}
 
+				// Initialize write context with a new write group.
 				m_write_output_ctx.start_next_write_group(
 					std::move( next_write_group->first ) );
 
+				// Start the loop of sending data from current write group.
 				handle_current_write_ctx();
 			}
 			else
@@ -883,10 +885,20 @@ class connection_t final
 			}
 		}
 
+		// Use aliases for shorter names.
 		using none_write_operation_t = write_group_output_ctx_t::none_write_operation_t;
 		using trivial_write_operation_t = write_group_output_ctx_t::trivial_write_operation_t;
 		using file_write_operation_t = write_group_output_ctx_t::file_write_operation_t;
 
+		//! Start/continue/continue handling output data of current write group.
+		/*!
+			This function is a starting point of a loop process of sending data
+			from a given write group.
+			It extracts the next bunch of trivial buffers or a
+			sendfile-runner and starts an appropriate write operation.
+			In data of a given write group finishes,
+			finish_handling_current_write_ctx() is invoked thus breaking the loop.
+		*/
 		void
 		handle_current_write_ctx()
 		{
@@ -919,6 +931,7 @@ class connection_t final
 			}
 		}
 
+		//! Run trivial buffers write operation.
 		void
 		handle_trivial_write_operation( const trivial_write_operation_t & op )
 		{
@@ -980,6 +993,7 @@ class connection_t final
 			guard_write_operation();
 		}
 
+		//! Run sendfile write operation.
 		void
 		handle_file_write_operation( const file_write_operation_t & op )
 		{
@@ -1052,6 +1066,7 @@ class connection_t final
 
 		}
 
+		//! Do post write actions for current write group.
 		void
 		finish_handling_current_write_ctx()
 		{

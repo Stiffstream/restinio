@@ -117,7 +117,6 @@ public:
 			m_server.io_context(),
 			[&]{
 				m_server.close_sync();
-				m_server.io_context().stop();
 			} );
 
 		m_thread.join();

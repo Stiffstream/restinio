@@ -116,7 +116,7 @@ TEST_CASE( "response_context_t" , "[response_context]" )
 		REQUIRE_FALSE( utest_access( ctx ).front().after_write_notificator() );
 
 		write_group_t wg2{ make_buffers( {"0123456789", "0123456789" } ) };
-		wg2.after_write_notificator( []( const auto & ec ){} );
+		wg2.after_write_notificator( []( const auto & ){} );
 		ctx.enqueue_group( std::move( wg2 ) );
 
 		REQUIRE( 1 == utest_access( ctx ).size() );
@@ -131,7 +131,7 @@ TEST_CASE( "response_context_t" , "[response_context]" )
 		response_context_t ctx;
 
 		write_group_t wg{ make_buffers( {"0123456789", "0123456789" } ) };
-		wg.after_write_notificator( []( const auto & ec ){} );
+		wg.after_write_notificator( []( const auto & ){} );
 
 		ctx.enqueue_group( std::move( wg ) );
 		ctx.enqueue_group( write_group_t{ make_buffers( {"qqqqqqqqqq", "wwwwwwwwww" } ) } );
