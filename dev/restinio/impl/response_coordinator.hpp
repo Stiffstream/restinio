@@ -62,7 +62,7 @@ class response_context_t
 			// There is at least one group.
 			// So we check if this group can be merged with existing (the last one).
 			if( !m_write_groups.empty() &&
-				!m_write_groups.back().after_write_notificator() &&
+				!m_write_groups.back().has_after_write_notificator() &&
 				std::size_t{ 0 } == wg.status_line_size() )
 			{
 				m_write_groups.back().merge( std::move( wg ) );
@@ -379,22 +379,21 @@ class response_coordinator_t
 		{
 			for(; !m_context_table.empty(); m_context_table.pop_response_context() )
 			{
-				const asio_ns::error_code ec{ asio_ns::error::connection_aborted };
+				const auto ec =
+					make_asio_compaible_error(
+						asio_convertible_error_t::write_was_not_executed );
 
 				auto & current_ctx = m_context_table.front();
 				while( !current_ctx.empty() )
 				{
 					auto wg = current_ctx.dequeue_group();
 
-					if( wg.after_write_notificator() )
+					try
 					{
-						try
-						{
-							wg.after_write_notificator()( ec );
-						}
-						catch( ... )
-						{}
+						wg.invoke_after_write_notificator_if_exists( ec );
 					}
+					catch( ... )
+					{}
 				}
 			}
 		}

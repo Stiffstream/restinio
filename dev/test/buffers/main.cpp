@@ -630,7 +630,7 @@ TEST_CASE( "write_group_t" , "[write_group][ctor/move]" )
 		write_group_t wg{ std::move( wic ) };
 
 		REQUIRE( 0 == wg.status_line_size() );
-		REQUIRE_FALSE( wg.after_write_notificator() );
+		REQUIRE_FALSE( wg.has_after_write_notificator() );
 		REQUIRE( 0 == wg.items_count() );
 	}
 
@@ -646,31 +646,31 @@ TEST_CASE( "write_group_t" , "[write_group][ctor/move]" )
 		wg1.after_write_notificator( []( const auto & ){} );
 
 		REQUIRE( 4 == wg1.status_line_size() );
-		REQUIRE( wg1.after_write_notificator() );
+		REQUIRE( wg1.has_after_write_notificator() );
 		REQUIRE( 2 == wg1.items_count() );
 		REQUIRE( 0 == wg2.status_line_size() );
-		REQUIRE_FALSE( wg2.after_write_notificator() );
+		REQUIRE_FALSE( wg2.has_after_write_notificator() );
 		REQUIRE( 0 == wg2.items_count() );
 
 		wg2 = std::move( wg1 );
 		REQUIRE( 0 == wg1.status_line_size() );
-		REQUIRE_FALSE( wg1.after_write_notificator() );
+		REQUIRE_FALSE( wg1.has_after_write_notificator() );
 		REQUIRE( 0 == wg1.items_count() );
 		REQUIRE( 4 == wg2.status_line_size() );
-		REQUIRE( wg2.after_write_notificator() );
+		REQUIRE( wg2.has_after_write_notificator() );
 		REQUIRE( 2 == wg2.items_count() );
 
 		write_group_t wg3{ std::move( wg2 ) };
 		REQUIRE( 0 == wg2.status_line_size() );
-		REQUIRE_FALSE( wg2.after_write_notificator() );
+		REQUIRE_FALSE( wg2.has_after_write_notificator() );
 		REQUIRE( 0 == wg2.items_count() );
 		REQUIRE( 4 == wg3.status_line_size() );
-		REQUIRE( wg3.after_write_notificator() );
+		REQUIRE( wg3.has_after_write_notificator() );
 		REQUIRE( 2 == wg3.items_count() );
 
 		wg3.reset();
 		REQUIRE( 0 == wg3.status_line_size() );
-		REQUIRE_FALSE( wg3.after_write_notificator() );
+		REQUIRE_FALSE( wg3.has_after_write_notificator() );
 		REQUIRE( 0 == wg3.items_count() );
 	}
 }
@@ -725,5 +725,72 @@ TEST_CASE( "write_group_t merge" , "[write_group][merge]" )
 		wg1.merge( std::move( wg2 ) );
 		REQUIRE( 2 == wg1.items_count() );
 		REQUIRE( 0 == wg2.items_count() );
+	}
+}
+
+TEST_CASE( "write_group_t after_write_notificator" , "[write_group][after_write_notificator]" )
+{
+	{
+		writable_items_container_t wic;
+
+		write_group_t wg{ std::move( wic ) };
+		REQUIRE_FALSE( wg.has_after_write_notificator() );
+
+		wg.after_write_notificator( []( const auto & ){} );
+		REQUIRE( wg.has_after_write_notificator() );
+
+		write_group_t wg_second = std::move( wg );
+		REQUIRE_FALSE( wg.has_after_write_notificator() );
+		REQUIRE( wg_second.has_after_write_notificator() );
+	}
+
+	{
+		int counter{ 0 };
+
+		{
+			writable_items_container_t wic;
+
+			write_group_t wg{ std::move( wic ) };
+
+
+			wg.after_write_notificator( [&]( const auto & ){ ++counter; } );
+
+			REQUIRE( wg.has_after_write_notificator() );
+			REQUIRE_NOTHROW(
+				wg.invoke_after_write_notificator_if_exists( asio_ns::error_code{} ) );
+
+			REQUIRE( 1 == counter );
+
+			REQUIRE_NOTHROW(
+				wg.invoke_after_write_notificator_if_exists( asio_ns::error_code{} ) );
+
+			// No second call!
+			REQUIRE( 1 == counter );
+		}
+
+		// No call from dtor!
+		REQUIRE( 1 == counter );
+	}
+
+	{
+		int counter{ 0 };
+
+		{
+			writable_items_container_t wic;
+
+			write_group_t wg{ std::move( wic ) };
+
+			wg.after_write_notificator(
+				[&]( const auto & ec ){
+					++counter;
+					REQUIRE(
+						ec ==
+						make_asio_compaible_error(
+							asio_convertible_error_t::write_group_destroyed_passively ) );
+				} );
+		}
+
+		// Call from dtor!
+		REQUIRE( 1 == counter );
 	}
 }

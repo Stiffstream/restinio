@@ -302,10 +302,7 @@ class write_group_output_ctx_t
 		{
 			try
 			{
-				if( m_current_wg->after_write_notificator() )
-				{
-					m_current_wg->after_write_notificator()( ec );
-				}
+				m_current_wg->invoke_after_write_notificator_if_exists( ec );
 			}
 			catch( const std::exception & ex )
 			{

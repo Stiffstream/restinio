@@ -741,7 +741,57 @@ class connection_t final
 			//! Part of the response data.
 			write_group_t wg )
 		{
-			if( !m_socket.is_open() )
+			if( m_socket.is_open() )
+			{
+				if( connection_upgrade_stage_t::
+						wait_for_upgrade_handling_result_or_nothing ==
+					m_input.m_connection_upgrade_stage )
+				{
+					// It is response for a connection-upgrade request.
+					// If we receive it here then it is constructed via
+					// message builder and so connection was not transformed
+					// to websocket connection.
+					// So it is necessary to resume pipeline logic that was stopped
+					// for upgrade-request to be handled as the only request
+					// on the connection for that moment.
+					if( !m_response_coordinator.is_full() )
+					{
+						wait_for_http_message();
+					}
+				}
+
+				if( !m_response_coordinator.closed() )
+				{
+					m_logger.trace( [&]{
+						return fmt::format(
+							"[connection:{}] append response (#{}), "
+							"flags: {}, write group size: {}",
+							connection_id(),
+							request_id,
+							response_output_flags,
+							wg.items_count() );
+					} );
+
+					m_response_coordinator.append_response(
+						request_id,
+						response_output_flags,
+						std::move( wg ) );
+
+					init_write_if_necessary();
+				}
+				else
+				{
+					m_logger.warn( [&]{
+						return fmt::format(
+								"[connection:{}] receive response parts for "
+								"request (#{}), but response with connection-close "
+								"attribute happened before",
+								connection_id(),
+								request_id );
+					} );
+				}
+			}
+			else
 			{
 				m_logger.warn( [&]{
 					return fmt::format(
@@ -749,57 +799,16 @@ class connection_t final
 							"while socket is closed",
 							connection_id() );
 				} );
-				return;
-			}
 
-			if( connection_upgrade_stage_t::
-					wait_for_upgrade_handling_result_or_nothing ==
-				m_input.m_connection_upgrade_stage )
-			{
-				// It is response for a connection-upgrade request.
-				// If we receive it here then it is constructed via
-				// message builder and so connection was not transformed
-				// to websocket connection.
-				// So it is necessary to resume pipeline logic that was stopped
-				// for upgrade-request to be handled as the only request
-				// on the connection for that moment.
-				if( !m_response_coordinator.is_full() )
+				try
 				{
-					wait_for_http_message();
+					wg.invoke_after_write_notificator_if_exists(
+						make_asio_compaible_error(
+							asio_convertible_error_t::write_was_not_executed ) );
 				}
+				catch( ... )
+				{}
 			}
-
-			if( !m_response_coordinator.closed() )
-			{
-				m_logger.trace( [&]{
-					return fmt::format(
-						"[connection:{}] append response (#{}), "
-						"flags: {}, write group size: {}",
-						connection_id(),
-						request_id,
-						response_output_flags,
-						wg.items_count() );
-				} );
-
-				m_response_coordinator.append_response(
-					request_id,
-					response_output_flags,
-					std::move( wg ) );
-
-				init_write_if_necessary();
-			}
-			else
-			{
-				m_logger.warn( [&]{
-					return fmt::format(
-							"[connection:{}] receive response parts for "
-							"request (#{}), but response with connection-close "
-							"attribute happened before",
-							connection_id(),
-							request_id );
-				} );
-			}
-
 		}
 
 		// Check if there is something to write,

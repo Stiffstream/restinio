@@ -173,6 +173,11 @@ class base_response_builder_t
 		impl::connection_handle_t m_connection;
 		const request_id_t m_request_id;
 
+		void
+		throw_done_must_be_called_once() const
+		{
+			throw exception_t{ "done() cannot be called twice" };
+		}
 
 	private:
 		Response_Builder &
@@ -266,6 +271,10 @@ class response_builder_t< restinio_controlled_output_t > final
 					m_request_id,
 					response_output_flags,
 					std::move( wg ) );
+			}
+			else
+			{
+				throw_done_must_be_called_once();
 			}
 
 			return restinio::request_accepted();
@@ -401,6 +410,10 @@ class response_builder_t< user_controlled_output_t > final
 					std::move( m_connection ),
 					response_parts_attr_t::final_parts,
 					std::move( wscb ) );
+			}
+			else
+			{
+				throw_done_must_be_called_once();
 			}
 
 			return restinio::request_accepted();
@@ -579,6 +592,11 @@ class response_builder_t< chunked_output_t > final
 					response_parts_attr_t::final_parts,
 					std::move( wscb ) );
 			}
+			else
+			{
+				throw_done_must_be_called_once();
+			}
+
 			return restinio::request_accepted();
 		}
 

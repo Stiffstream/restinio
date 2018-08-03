@@ -537,6 +537,7 @@ class write_group_t
 			,	m_status_line_size{ wg.m_status_line_size }
 			,	m_after_write_notificator{ std::move( wg.m_after_write_notificator ) }
 		{
+			wg.m_after_write_notificator = write_status_cb_t{}; // Make sure src is cleaned.
 			wg.m_status_line_size = 0;
 		}
 
@@ -551,6 +552,25 @@ class write_group_t
 			return *this;
 		}
 		///@}
+
+		//! Destruct object.
+		/*!
+			If notificator was not called it would be invoked with error.
+		*/
+		~write_group_t()
+		{
+			if( m_after_write_notificator )
+			{
+				try
+				{
+					invoke_after_write_notificator_if_exists(
+						make_asio_compaible_error(
+							asio_convertible_error_t::write_group_destroyed_passively ) );
+				}
+				catch( ... )
+				{}
+			}
+		}
 
 		/** @name Auxiliary data.
 		 * @brief Accessors for working with auxiliary data.
@@ -600,11 +620,34 @@ class write_group_t
 			m_after_write_notificator = std::move( notificator );
 		}
 
-		//! Get after write notificator.
-		const write_status_cb_t &
-		after_write_notificator() const noexcept
+		//! Is there an after write notificator set?
+		bool
+		has_after_write_notificator() const noexcept
 		{
-			return m_after_write_notificator;
+			return static_cast< bool >( m_after_write_notificator );
+		}
+
+		// //! Get after write notificator.
+
+		// after_write_notificator() const noexcept
+		// {
+		// 	return m_after_write_notificator;
+		// }
+
+		//! Get after write notificator.
+		void
+		invoke_after_write_notificator_if_exists( const asio_ns::error_code & ec )
+		{
+			if( m_after_write_notificator )
+			{
+				auto tmp = std::move( m_after_write_notificator );
+
+				// Make sure we clean notificator,
+				// because on some platforms/compilers `std::move()` does not clean it.
+				m_after_write_notificator = write_status_cb_t{};
+
+				tmp( ec );
+			}
 		}
 		///@}
 

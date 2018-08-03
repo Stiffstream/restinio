@@ -240,7 +240,6 @@ TEST_CASE( "notificators error" , "[error]" )
 	REQUIRE( was_error );
 }
 
-
 TEST_CASE( "notificators on not written data" , "[error]" )
 {
 	using http_server_t =
@@ -289,6 +288,86 @@ TEST_CASE( "notificators on not written data" , "[error]" )
 											if( ec ) was_error = true;
 										} );
 									resp_order_barrier.set_value();
+								}
+							} };
+
+						t.detach();
+
+						return restinio::request_accepted();
+					} );
+		}
+	};
+
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
+
+	const std::string request{ g_raw_request +
+		"GET /2 HTTP/1.0\r\n"
+		"From: unit-test\r\n"
+		"User-Agent: unit-test\r\n"
+		"Content-Type: application/x-www-form-urlencoded\r\n"
+		"Connection: close\r\n"
+		"\r\n" };
+
+	std::string response;
+	REQUIRE_NOTHROW( response = do_request( request ) );
+
+	other_thread.stop_and_join();
+
+	REQUIRE( notificator_was_called );
+	REQUIRE( was_error );
+}
+
+TEST_CASE( "notificators on already closed connection" , "[error]" )
+{
+	using http_server_t =
+		restinio::http_server_t<
+			restinio::traits_t<
+				restinio::asio_timer_manager_t,
+				utest_logger_t > >;
+
+	std::atomic< bool > notificator_was_called{ false };
+	std::atomic< bool > was_error{ false };
+
+	// Control response generation order.
+	std::promise<void> resp_order_barrier;
+	auto resp_order_barrier_future = resp_order_barrier.get_future();
+
+	http_server_t http_server{
+		restinio::own_io_context(),
+		[&]( auto & settings ){
+			settings
+				.port( utest_default_port() )
+				.address( "127.0.0.1" )
+				.max_pipelined_requests( 2 )
+				.request_handler(
+					[&]( restinio::request_handle_t req ){
+
+						std::thread t{
+							[&, req = std::move( req )]() mutable {
+
+								auto resp = req->create_response();
+								resp
+									.append_header( "Server", "RESTinio utest server" )
+									.append_header_date_field()
+									.append_header( "Content-Type", "text/plain; charset=utf-8" )
+									.set_body( "0123456789" );
+
+								if( req->header().request_target() == "/1")
+								{
+									resp.connection_close().done(
+										[&]( const auto & ec ){
+											resp_order_barrier.set_value();
+										} );
+								}
+								else
+								{
+									resp_order_barrier_future.wait();
+									resp.done(
+										[&]( const auto & ec ) mutable{
+											notificator_was_called = true;
+											if( ec ) was_error = true;
+										} );
 								}
 							} };
 

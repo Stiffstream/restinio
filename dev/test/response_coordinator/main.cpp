@@ -87,14 +87,14 @@ TEST_CASE( "response_context_t" , "[response_context]" )
 		REQUIRE( 1 == utest_access( ctx ).size() );
 		REQUIRE( 4 == utest_access( ctx ).front().items_count() );
 		REQUIRE( 0 == utest_access( ctx ).front().status_line_size() );
-		REQUIRE_FALSE( utest_access( ctx ).front().after_write_notificator() );
+		REQUIRE_FALSE( utest_access( ctx ).front().has_after_write_notificator() );
 
 		ctx.enqueue_group( write_group_t{ make_buffers( {"eeeeeeeeeee", "333333333" } ) } );
 
 		REQUIRE( 1 == utest_access( ctx ).size() );
 		REQUIRE( 6 == utest_access( ctx ).front().items_count() );
 		REQUIRE( 0 == utest_access( ctx ).front().status_line_size() );
-		REQUIRE_FALSE( utest_access( ctx ).front().after_write_notificator() );
+		REQUIRE_FALSE( utest_access( ctx ).front().has_after_write_notificator() );
 
 		ctx.dequeue_group();
 		REQUIRE( 0 == utest_access( ctx ).size() );
@@ -113,7 +113,7 @@ TEST_CASE( "response_context_t" , "[response_context]" )
 		REQUIRE( 1 == utest_access( ctx ).size() );
 		REQUIRE( 4 == utest_access( ctx ).front().items_count() );
 		REQUIRE( 4 == utest_access( ctx ).front().status_line_size() );
-		REQUIRE_FALSE( utest_access( ctx ).front().after_write_notificator() );
+		REQUIRE_FALSE( utest_access( ctx ).front().has_after_write_notificator() );
 
 		write_group_t wg2{ make_buffers( {"0123456789", "0123456789" } ) };
 		wg2.after_write_notificator( []( const auto & ){} );
@@ -122,7 +122,7 @@ TEST_CASE( "response_context_t" , "[response_context]" )
 		REQUIRE( 1 == utest_access( ctx ).size() );
 		REQUIRE( 6 == utest_access( ctx ).front().items_count() );
 		REQUIRE( 4 == utest_access( ctx ).front().status_line_size() );
-		REQUIRE( static_cast< bool >( utest_access( ctx ).front().after_write_notificator() ) );
+		REQUIRE( static_cast< bool >( utest_access( ctx ).front().has_after_write_notificator() ) );
 	}
 
 	{
@@ -138,7 +138,7 @@ TEST_CASE( "response_context_t" , "[response_context]" )
 
 		REQUIRE( 2 == utest_access( ctx ).size() );
 		REQUIRE( 2 == utest_access( ctx ).front().items_count() );
-		REQUIRE( static_cast< bool >( utest_access( ctx ).front().after_write_notificator() ) );
+		REQUIRE( static_cast< bool >( utest_access( ctx ).front().has_after_write_notificator() ) );
 	}
 
 	{
@@ -1472,7 +1472,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 		REQUIRE( popped_wg->first.items()[ 3UL ].size() == 1024 );
 		CHECK_NOTHROW( popped_wg->first.items()[ 3UL ].sendfile_operation() );
 
-		REQUIRE( static_cast< bool >( popped_wg->first.after_write_notificator() ) );
+		REQUIRE( static_cast< bool >( popped_wg->first.has_after_write_notificator() ) );
 
 		popped_wg = coordinator.pop_ready_buffers();
 		REQUIRE( popped_wg );
@@ -1487,7 +1487,7 @@ TEST_CASE( "response_coordinator sendfile" , "[response_coordinator][sendfile][s
 		REQUIRE( popped_wg->first.items()[ 1UL ].size() == 4096 );
 		CHECK_NOTHROW( popped_wg->first.items()[ 1UL ].sendfile_operation() );
 
-		REQUIRE( static_cast< bool >( popped_wg->first.after_write_notificator() ) );
+		REQUIRE( static_cast< bool >( popped_wg->first.has_after_write_notificator() ) );
 
 
 		popped_wg = coordinator.pop_ready_buffers();
@@ -1768,5 +1768,29 @@ TEST_CASE( "response_coordinator reset" , "[response_coordinator][connection_clo
 		REQUIRE( callbacks_called[0] );
 		REQUIRE( callbacks_called[1] );
 		REQUIRE( callbacks_called[2] );
+	}
+	{
+		response_coordinator_t coordinator{ 3 };
+
+		request_id_t req_id;
+		CHECK_NOTHROW( req_id = coordinator.register_new_request() );
+
+		write_group_t wg{ make_buffers( { "111", "111" } ) };
+		wg.after_write_notificator(
+			[&]( const auto & ec ){
+				REQUIRE(
+					ec ==
+					make_asio_compaible_error(
+						asio_convertible_error_t::write_was_not_executed ) );
+			});
+
+		CHECK_NOTHROW( coordinator.append_response(
+			req_id,
+			response_output_flags_t{
+				response_is_not_complete(),
+				connection_should_keep_alive() },
+			std::move( wg ) ) );
+
+		coordinator.reset();
 	}
 }
