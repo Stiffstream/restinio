@@ -32,6 +32,7 @@ namespace restinio
 	namespace asio_ec
 	{
 		constexpr auto  eof = asio_ns::error::eof;
+		inline const auto & system_category() { return asio_ns::system_category(); }
 	} /* namespace err */
 	//! \}
 
@@ -74,6 +75,9 @@ namespace restinio
 	namespace asio_ec
 	{
 		constexpr auto eof = asio_ns::error::misc_errors::eof;
+
+		inline const auto & system_category() { return ::boost::system::system_category(); }
+
 	} /* namespace err */
 
 	using error_category_base_t = ::boost::system::error_category;

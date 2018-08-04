@@ -741,6 +741,24 @@ class connection_t final
 			//! Part of the response data.
 			write_group_t wg )
 		{
+			auto invoke_after_write_cb_with_error = [&]{
+				try
+				{
+					wg.invoke_after_write_notificator_if_exists(
+						make_asio_compaible_error(
+							asio_convertible_error_t::write_was_not_executed ) );
+				}
+				catch( const std::exception & ex )
+				{
+					m_logger.error( [&]{
+						return fmt::format(
+							"[connection:{}] notificator error: {}",
+							connection_id(),
+							ex.what() );
+					} );
+				}
+			};
+
 			if( m_socket.is_open() )
 			{
 				if( connection_upgrade_stage_t::
@@ -789,6 +807,7 @@ class connection_t final
 								connection_id(),
 								request_id );
 					} );
+					invoke_after_write_cb_with_error();
 				}
 			}
 			else
@@ -799,15 +818,7 @@ class connection_t final
 							"while socket is closed",
 							connection_id() );
 				} );
-
-				try
-				{
-					wg.invoke_after_write_notificator_if_exists(
-						make_asio_compaible_error(
-							asio_convertible_error_t::write_was_not_executed ) );
-				}
-				catch( ... )
-				{}
+				invoke_after_write_cb_with_error();
 			}
 		}
 
@@ -1177,7 +1188,7 @@ class connection_t final
 		}
 
 		//! Handle write response finished.
-		inline void
+		void
 		after_write( const asio_ns::error_code & ec )
 		{
 			if( !ec )
@@ -1195,21 +1206,22 @@ class connection_t final
 							ec.message() );
 					} );
 
-					try
-					{
-						m_write_output_ctx.fail_write_group( ec );
-					}
-					catch( const std::exception & ex )
-					{
-						m_logger.error( [&]{
-							return fmt::format(
-								"[connection:{}] notificator error: {}",
-								connection_id(),
-								ex.what() );
-						} );
-					}
 				}
 				// else: Operation aborted only in case of close was called.
+
+				try
+				{
+					m_write_output_ctx.fail_write_group( ec );
+				}
+				catch( const std::exception & ex )
+				{
+					m_logger.error( [&]{
+						return fmt::format(
+							"[connection:{}] notificator error: {}",
+							connection_id(),
+							ex.what() );
+					} );
+				}
 			}
 		}
 

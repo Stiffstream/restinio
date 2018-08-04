@@ -106,7 +106,8 @@ class ws_t
 		send_message(
 			bool final,
 			opcode_t opcode,
-			writable_item_t payload )
+			writable_item_t payload,
+			write_status_cb_t wscb = write_status_cb_t{} )
 		{
 			if( m_ws_connection_handle )
 			{
@@ -122,6 +123,13 @@ class ws_t
 
 				bufs.emplace_back( std::move( payload ) );
 
+				write_group_t wg{ std::move( bufs ) };
+
+				if( wscb )
+				{
+					wg.after_write_notificator( std::move( wscb ) );
+				}
+
 				// TODO: set flag.
 				const bool is_close_frame =
 					opcode_t::connection_close_frame == opcode;
@@ -130,13 +138,13 @@ class ws_t
 				{
 					auto con = std::move( m_ws_connection_handle );
 					con->write_data(
-						std::move( bufs ),
+						std::move( wg ),
 						is_close_frame );
 				}
 				else
 				{
 					m_ws_connection_handle->write_data(
-						std::move( bufs ),
+						std::move( wg ),
 						is_close_frame );
 				}
 			}
@@ -147,12 +155,13 @@ class ws_t
 		}
 
 		void
-		send_message( message_t msg )
+		send_message( message_t msg, write_status_cb_t wscb = write_status_cb_t{} )
 		{
 			send_message(
 				msg.is_final(),
 				msg.opcode(),
-				writable_item_t{ std::move(msg.payload()) } );
+				writable_item_t{ std::move( msg.payload() ) },
+				std::move( wscb ) );
 		}
 
 	private:
@@ -253,7 +262,10 @@ upgrade(
 				upgrade_response_header,
 				content_length_flag ) );
 	}
-	ws_connection->write_data( std::move( upgrade_response_bufs ), false );
+
+	ws_connection->write_data(
+		write_group_t{ std::move( upgrade_response_bufs ) },
+		false );
 
 	auto result = std::make_shared< ws_t >( std::move( ws_connection ) );
 

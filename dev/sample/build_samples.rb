@@ -15,12 +15,12 @@ MxxRu::Cpp::composite_target {
 	required_prj 'sample/async_handling_with_sobjectizer/prj.rb'
 	required_prj 'sample/compression/prj.rb'
 	required_prj 'sample/decompression/prj.rb'
-	# required_prj 'sample/websocket/prj.rb'
-	# required_prj 'sample/websocket_detailed/prj.rb'
+	required_prj 'sample/websocket/prj.rb'
+	required_prj 'sample/websocket_detailed/prj.rb'
 
 	if RestinioOpenSSLFind.has_openssl(toolset)
 		required_prj 'sample/hello_world_https/prj.rb'
 		required_prj 'sample/hello_world_sendfile_https/prj.rb'
-		# required_prj 'sample/websocket_wss/prj.rb'
+		required_prj 'sample/websocket_wss/prj.rb'
 	end
 }

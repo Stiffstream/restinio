@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <queue>
+
 #include <restinio/asio_include.hpp>
 
 #include <http_parser.h>
@@ -16,6 +18,7 @@
 
 #include <restinio/all.hpp>
 #include <restinio/impl/executor_wrapper.hpp>
+#include <restinio/impl/write_group_output_ctx.hpp>
 #include <restinio/websocket/message.hpp>
 #include <restinio/websocket/impl/ws_parser.hpp>
 #include <restinio/websocket/impl/ws_protocol_validator.hpp>
@@ -34,6 +37,8 @@ namespace basic
 namespace impl
 {
 
+using write_groups_queue_t = std::queue< write_group_t >;
+
 //! Max possible size of websocket frame header (a part before payload).
 constexpr size_t
 websocket_header_max_size()
@@ -51,52 +56,20 @@ class ws_outgoing_data_t
 	public:
 		//! Add buffers to queue.
 		void
-		append( writable_items_container_t bufs )
+		append( write_group_t wg )
 		{
-			if( m_awaiting_buffers.empty() )
-			{
-				m_awaiting_buffers = std::move( bufs );
-			}
-			else
-			{
-				m_awaiting_buffers.reserve( m_awaiting_buffers.size() + bufs.size() );
-				for( auto & buf : bufs )
-					m_awaiting_buffers.emplace_back( std::move( buf ) );
-			}
+			m_awaiting_write_groups.emplace( std::move( wg ) );
 		}
 
-		writable_item_type_t
-		pop_ready_buffers(
-			std::size_t max_buf_count,
-			writable_items_container_t & bufs )
+		optional_t< write_group_t >
+		pop_ready_buffers()
 		{
-			if( m_awaiting_buffers.empty() )
-				return writable_item_type_t::none;
+			optional_t< write_group_t > result;
 
-			auto result = writable_item_type_t::trivial_write_operation;
-
-			if( writable_item_type_t::file_write_operation ==
-				m_awaiting_buffers.front().write_type() )
+			if( !m_awaiting_write_groups.empty() )
 			{
-				result = writable_item_type_t::file_write_operation;
-				max_buf_count = 1;
-			}
-
-			if( max_buf_count >= m_awaiting_buffers.size() )
-				bufs = std::move( m_awaiting_buffers );
-			else
-			{
-				const auto begin_of_bunch = m_awaiting_buffers.begin();
-				const auto end_of_bunch = begin_of_bunch
-						+ static_cast< std::ptrdiff_t >( max_buf_count );
-
-				bufs.reserve( max_buf_count );
-				for( auto it = begin_of_bunch; it != end_of_bunch; ++it )
-				{
-					bufs.emplace_back( std::move( *it ) );
-				}
-
-				m_awaiting_buffers.erase( begin_of_bunch, end_of_bunch );
+				result = std::move( m_awaiting_write_groups.front() );
+				m_awaiting_write_groups.pop();
 			}
 
 			return result;
@@ -104,7 +77,7 @@ class ws_outgoing_data_t
 
 	private:
 		//! A queue of buffers.
-		writable_items_container_t m_awaiting_buffers;
+		write_groups_queue_t m_awaiting_write_groups;
 };
 
 //
@@ -316,21 +289,21 @@ class ws_connection_t final
 		//! Write pieces of outgoing data.
 		virtual void
 		write_data(
-			writable_items_container_t bufs,
+			write_group_t wg,
 			bool is_close_frame ) override
 		{
 			//! Run write message on io_context loop if possible.
 			asio_ns::dispatch(
 				this->get_executor(),
 				[ this,
-					actual_bufs = std::move( bufs ),
+					actual_wg = std::move( wg ),
 					ctx = shared_from_this(),
 					is_close_frame ]() mutable {
 						try
 						{
 							if( write_state_t::write_enabled == m_write_state )
 								write_data_impl(
-									std::move( actual_bufs ),
+									std::move( actual_wg ),
 									is_close_frame );
 							else
 							{
@@ -409,7 +382,7 @@ class ws_connection_t final
 					payload.size() ) );
 
 			bufs.emplace_back( std::move( payload ) );
-			m_awaiting_buffers.append( std::move( bufs ) );
+			m_outgoing_data.append( write_group_t{ std::move( bufs ) } );
 
 			init_write_if_necessary();
 
@@ -977,39 +950,49 @@ class ws_connection_t final
 
 		//! Implementation of writing data performed on the asio_ns::io_context.
 		void
-		write_data_impl( writable_items_container_t bufs, bool is_close_frame )
+		write_data_impl( write_group_t wg, bool is_close_frame )
 		{
-			if( !m_socket.is_open() )
+			if( m_socket.is_open() )
+			{
+				if( is_close_frame )
+				{
+					m_logger.trace( [&]{
+						return fmt::format(
+								"[ws_connection:{}] user sends close frame",
+								connection_id() );
+					} );
+
+					m_close_frame_to_peer.disable(); // It is formed and sent by user
+					m_close_frame_to_user.disable(); // And user knows that websocket is closed.
+					// No more writes.
+					m_write_state = write_state_t::write_disabled;
+
+					// Start waiting only close-frame.
+					start_waiting_close_frame_only();
+				}
+
+				// Push write_group to queue.
+				m_outgoing_data.append( std::move( wg ) );
+
+				init_write_if_necessary();
+			}
+			else
 			{
 				m_logger.warn( [&]{
 					return fmt::format(
 							"[ws_connection:{}] try to write while socket is closed",
 							connection_id() );
 				} );
-				return;
+
+				try
+				{
+					wg.invoke_after_write_notificator_if_exists(
+						make_asio_compaible_error(
+							asio_convertible_error_t::write_was_not_executed ) );
+				}
+				catch( ... )
+				{}
 			}
-
-			// Push buffers to queue.
-			m_awaiting_buffers.append( std::move( bufs ) );
-
-			if( is_close_frame )
-			{
-				m_logger.trace( [&]{
-					return fmt::format(
-							"[ws_connection:{}] user sends close frame",
-							connection_id() );
-				} );
-
-				m_close_frame_to_peer.disable(); // It is formed and sent by user
-				m_close_frame_to_user.disable(); // And user knows that websocket is closed.
-				// No more writes.
-				m_write_state = write_state_t::write_disabled;
-
-				// Start waiting only close-frame.
-				start_waiting_close_frame_only();
-			}
-
-			init_write_if_necessary();
 		}
 
 		//! Checks if there is something to write,
@@ -1017,41 +1000,93 @@ class ws_connection_t final
 		void
 		init_write_if_necessary()
 		{
-			if( !m_resp_out_ctx.transmitting() )
+			if( !m_write_output_ctx.transmitting() )
 			{
-				// Here: not writing anything to socket, so
-				// write operation can be initiated.
+				init_write();
+			}
+		}
 
-				switch( m_resp_out_ctx.obtain_bufs( m_awaiting_buffers ) )
+		//! Initiate write operation.
+		void
+		init_write()
+		{
+			// Here: not writing anything to socket, so
+			// write operation can be initiated.
+			auto next_write_group = m_outgoing_data.pop_ready_buffers();
+
+			if( next_write_group )
+			{
+				m_logger.trace( [&]{
+					return fmt::format(
+						"[ws_connection:{}] start next write group, "
+						"size: {}",
+						this->connection_id(),
+						next_write_group->items_count() );
+				} );
+
+				// Initialize write context with a new write group.
+				m_write_output_ctx.start_next_write_group(
+					std::move( next_write_group ) );
+
+				// Start the loop of sending data from current write group.
+				handle_current_write_ctx();
+			}
+		}
+
+		// Use aliases for shorter names.
+		using none_write_operation_t = ::restinio::impl::write_group_output_ctx_t::none_write_operation_t;
+		using trivial_write_operation_t = ::restinio::impl::write_group_output_ctx_t::trivial_write_operation_t;
+		using file_write_operation_t = ::restinio::impl::write_group_output_ctx_t::file_write_operation_t;
+
+		void
+		handle_current_write_ctx()
+		{
+			try
+			{
+				auto wo = m_write_output_ctx.extract_next_write_operation();
+
+				if( holds_alternative< trivial_write_operation_t >( wo ) )
 				{
-					case writable_item_type_t::trivial_write_operation:
-						// Here: and there is smth trivial to write.
-						handle_trivial_write_operation();
-						break;
-
-					case writable_item_type_t::file_write_operation:
-						// Here: and there is custom write operation to start.
-						handle_custom_write_operation();
-						break;
-
-					case writable_item_type_t::none:
-						;/* Do nothing.*/
+					handle_trivial_write_operation( get< trivial_write_operation_t >( wo ) );
 				}
+				else if( holds_alternative< file_write_operation_t >( wo ) )
+				{
+					handle_file_write_operation( get< file_write_operation_t >( wo ) );
+				}
+				else
+				{
+					assert( holds_alternative< none_write_operation_t >( wo ) );
+					finish_handling_current_write_ctx();
+				}
+			}
+			catch( const std::exception & ex )
+			{
+				trigger_error_and_close(
+					status_code_t::unexpected_condition,
+					[&]{
+						return fmt::format(
+							"[ws_connection:{}] handle_current_write_ctx failed: {}",
+							connection_id(),
+							ex.what() );
+					} );
 			}
 		}
 
 		void
-		handle_trivial_write_operation()
+		handle_trivial_write_operation( const trivial_write_operation_t & op )
 		{
 			// Asio buffers (param for async write):
-			auto & bufs = m_resp_out_ctx.create_bufs();
+			auto & bufs = op.get_trivial_bufs();
 
 			m_logger.trace( [&]{
 				return fmt::format(
-					"[ws_connection:{}] sending data, "
-					"buf count: {}",
+					"[ws_connection:{}] sending resp data with "
+					"connection-close attribute "
+					"buf count: {}, "
+					"total size: {}",
 					connection_id(),
-					bufs.size() ); } );
+					bufs.size(),
+					op.size() ); } );
 
 			guard_write_operation();
 
@@ -1066,7 +1101,17 @@ class ws_connection_t final
 						( const asio_ns::error_code & ec, std::size_t written ){
 							try
 							{
-								after_write( ec, written );
+								if( !ec )
+								{
+									m_logger.trace( [&]{
+										return fmt::format(
+												"[ws_connection:{}] outgoing data was sent: {} bytes",
+												connection_id(),
+												written );
+									} );
+								}
+
+								after_write( ec );
 							}
 							catch( const std::exception & ex )
 							{
@@ -1083,35 +1128,77 @@ class ws_connection_t final
 		}
 
 		void
-		handle_custom_write_operation()
+		handle_file_write_operation( const file_write_operation_t & op )
 		{
-			// TODO: handle custom write operation.
+			guard_sendfile_operation( op.timelimit() );
+
+			auto op_ctx = op;
+
+			op_ctx.start_sendfile_operation(
+				this->get_executor(),
+				m_socket,
+				asio_ns::bind_executor(
+					this->get_executor(),
+					[ this,
+						ctx = shared_from_this(),
+						// Store operation context till the end
+						op_ctx ](
+							const asio_ns::error_code & ec,
+							file_size_t written ) mutable{
+
+							// Reset sendfile operation context.
+							op_ctx.reset();
+
+							if( !ec )
+							{
+								m_logger.trace( [&]{
+									return fmt::format(
+											"[ws_connection:{}] file data was sent: {} bytes",
+											connection_id(),
+											written );
+								} );
+							}
+							else
+							{
+								m_logger.error( [&]{
+									return fmt::format(
+											"[ws_connection:{}] send file data error: {} ({}) bytes",
+											connection_id(),
+											ec.value(),
+											ec.message() );
+								} );
+							}
+
+							after_write( ec );
+						} ) );
+		}
+
+		//! Do post write actions for current write group.
+		void
+		finish_handling_current_write_ctx()
+		{
+			// Finishing writing this group.
+			m_logger.trace( [&]{
+				return fmt::format(
+						"[ws_connection:{}] finishing current write group",
+						this->connection_id() );
+			} );
+
+			// Group notificators are called from here (if exist):
+			m_write_output_ctx.finish_write_group();
+
+			// Start another write opertion
+			// if there is something to send.
+			init_write_if_necessary();
 		}
 
 		//! Handle write response finished.
-		inline void
-		after_write(
-			const asio_ns::error_code & ec,
-			std::size_t written )
+		void
+		after_write( const asio_ns::error_code & ec )
 		{
 			if( !ec )
 			{
-				// Release buffers.
-				m_resp_out_ctx.done();
-
-				m_logger.trace( [&]{
-					return fmt::format(
-							"[ws_connection:{}] outgoing data was sent: {} bytes",
-							connection_id(),
-							written );
-				} );
-
-				if( m_socket.is_open() )
-				{
-					// Start another write opertion
-					// if there is something to send.
-					init_write_if_necessary();
-				}
+				handle_current_write_ctx();
 			}
 			else
 			{
@@ -1123,6 +1210,20 @@ class ws_connection_t final
 							connection_id(),
 							ec.message() );
 					} );
+
+				try
+				{
+					m_write_output_ctx.fail_write_group( ec );
+				}
+				catch( const std::exception & ex )
+				{
+					m_logger.error( [&]{
+						return fmt::format(
+							"[ws_connection:{}] notificator error: {}",
+							connection_id(),
+							ex.what() );
+					} );
+				}
 			}
 		}
 
@@ -1160,7 +1261,7 @@ class ws_connection_t final
 		check_timeout_impl()
 		{
 			const auto now = std::chrono::steady_clock::now();
-			if( m_resp_out_ctx.transmitting() && now > m_write_operation_timeout_after )
+			if( m_write_output_ctx.transmitting() && now > m_write_operation_timeout_after )
 			{
 				m_logger.trace( [&]{
 					return fmt::format(
@@ -1201,6 +1302,17 @@ class ws_connection_t final
 				std::chrono::steady_clock::now() + m_settings->m_write_http_response_timelimit;
 		}
 
+		//! Start guard write operation if necessary.
+		void
+		guard_sendfile_operation( std::chrono::steady_clock::duration timelimit )
+		{
+			if( std::chrono::steady_clock::duration::zero() == timelimit )
+				timelimit = m_settings->m_write_http_response_timelimit;
+
+			m_write_operation_timeout_after =
+				std::chrono::steady_clock::now() + timelimit;
+		}
+
 		void
 		guard_close_frame_from_peer_operation()
 		{
@@ -1222,10 +1334,10 @@ class ws_connection_t final
 		logger_t & m_logger;
 
 		//! Write to socket operation context.
-		restinio::impl::raw_resp_output_ctx_t m_resp_out_ctx;
+		restinio::impl::write_group_output_ctx_t m_write_output_ctx;
 
 		//! Output buffers queue.
-		ws_outgoing_data_t m_awaiting_buffers;
+		ws_outgoing_data_t m_outgoing_data;
 
 		//! A waek handler for owning ws_t to use it when call message handler.
 		ws_weak_handle_t m_websocket_weak_handle;

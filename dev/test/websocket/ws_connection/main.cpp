@@ -332,6 +332,82 @@ TEST_CASE( "Simple echo" , "[ws_connection][echo][normal_close]" )
 	REQUIRE( 1000 == g_last_close_code );
 }
 
+TEST_CASE( "Simple echo" , "[ws_connection][echo][normal_close]" )
+{
+	sobj_t sobj;
+
+	do_with_socket(
+		[&]( auto & socket, auto & /*io_context*/ ){
+			REQUIRE_NOTHROW(
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( upgrade_request.data(), upgrade_request.size() ) )
+			);
+
+			std::array< std::uint8_t, 1024 > data;
+
+			std::size_t len{ 0 };
+			REQUIRE_NOTHROW(
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
+			);
+
+			std::vector< std::uint8_t > msg_frame =
+					{ 0x81, 0x85, 0xAA,0xBB,0xCC,0xDD,
+					  0xAA ^ 'H', 0xBB ^ 'e', 0xCC ^ 'l', 0xDD ^ 'l', 0xAA ^ 'o' };
+			SECTION( "simple msg_frame")
+			{
+				REQUIRE_NOTHROW(
+					restinio::asio_ns::write( socket, restinio::asio_ns::buffer( msg_frame.data(), msg_frame.size() ) )
+				);
+			}
+			SECTION( "fragmentated msg_frame")
+			{
+				REQUIRE_NOTHROW(
+					fragmented_send( socket, msg_frame.data(), msg_frame.size() )
+				);
+			}
+
+			REQUIRE_NOTHROW(
+				len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
+			);
+
+			REQUIRE( 7 == len );
+			REQUIRE( 0x81 == data[ 0 ] );
+			REQUIRE( 0x05 == data[ 1 ] );
+			REQUIRE( 'H' == data[ 2 ] );
+			REQUIRE( 'e' == data[ 3 ] );
+			REQUIRE( 'l' == data[ 4 ] );
+			REQUIRE( 'l' == data[ 5 ] );
+			REQUIRE( 'o' == data[ 6 ] );
+
+			std::vector< std::uint8_t > close_frame =
+				{0x88, 0x82, 0xFF,0xFF,0xFF,0xFF, 0xFF ^ 0x03, 0xFF ^ 0xe8 };
+
+			REQUIRE_NOTHROW(
+				restinio::asio_ns::write(
+					socket, restinio::asio_ns::buffer( close_frame.data(), close_frame.size() ) )
+			);
+
+			REQUIRE_NOTHROW(
+					len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ) )
+				);
+			REQUIRE( 4 == len );
+			REQUIRE( 0x88 == data[ 0 ] );
+			REQUIRE( 0x02 == data[ 1 ] );
+			REQUIRE( 0x03 == data[ 2 ] );
+			REQUIRE( 0xe8 == data[ 3 ] );
+
+			restinio::asio_ns::error_code ec;
+			len = socket.read_some( restinio::asio_ns::buffer( data.data(), data.size() ), ec );
+			REQUIRE( ec );
+			REQUIRE( restinio::asio_ns::error::eof == ec.value() );
+
+		} );
+
+	sobj.stop_and_join();
+
+	REQUIRE( 1000 == g_last_close_code );
+}
+
 TEST_CASE( "Ping" , "[ws_connection][ping][normal_close]" )
 {
 	sobj_t sobj;

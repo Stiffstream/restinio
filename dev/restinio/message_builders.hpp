@@ -442,23 +442,28 @@ class response_builder_t< user_controlled_output_t > final
 				status_line_size = calculate_status_line_size();
 			}
 
-			const response_output_flags_t
-				response_output_flags{
-					response_parts_attr,
-					response_connection_attr( m_should_keep_alive_when_header_was_sent ) };
-
-			write_group_t wg{ std::move( m_response_parts ) };
-			wg.status_line_size( status_line_size );
-
-			if( wscb )
+			if( !m_response_parts.empty() ||
+				wscb ||
+				response_parts_attr_t::final_parts == response_parts_attr )
 			{
-				wg.after_write_notificator( std::move( wscb ) );
-			}
+				const response_output_flags_t
+					response_output_flags{
+						response_parts_attr,
+						response_connection_attr( m_should_keep_alive_when_header_was_sent ) };
 
-			conn->write_response_parts(
-				m_request_id,
-				response_output_flags,
-				std::move( wg ) );
+				write_group_t wg{ std::move( m_response_parts ) };
+				wg.status_line_size( status_line_size );
+
+				if( wscb )
+				{
+					wg.after_write_notificator( std::move( wscb ) );
+				}
+
+				conn->write_response_parts(
+					m_request_id,
+					response_output_flags,
+					std::move( wg ) );
+			}
 		}
 
 		self_type_t &
@@ -622,8 +627,8 @@ class response_builder_t< chunked_output_t > final
 					response_parts_attr,
 					response_connection_attr( m_should_keep_alive_when_header_was_sent ) };
 
-
-			if( !bufs.empty() )
+			// We have buffers or at least we have after-write notificator.
+			if( !bufs.empty() || wscb )
 			{
 				write_group_t wg{ std::move( bufs ) };
 				wg.status_line_size( status_line_size );
