@@ -111,41 +111,49 @@ class ws_t
 		{
 			if( m_ws_connection_handle )
 			{
-				writable_items_container_t bufs;
-				bufs.reserve( 2 );
-
-				// Create header serialize it and append to bufs .
-				impl::message_details_t details{
-					final, opcode, asio_ns::buffer_size( payload.buf() ) };
-
-				bufs.emplace_back(
-					impl::write_message_details( details ) );
-
-				bufs.emplace_back( std::move( payload ) );
-
-				write_group_t wg{ std::move( bufs ) };
-
-				if( wscb )
+				if( restinio::writable_item_type_t::trivial_write_operation ==
+					payload.write_type() )
 				{
-					wg.after_write_notificator( std::move( wscb ) );
-				}
+					writable_items_container_t bufs;
+					bufs.reserve( 2 );
 
-				// TODO: set flag.
-				const bool is_close_frame =
-					opcode_t::connection_close_frame == opcode;
+					// Create header serialize it and append to bufs .
+					impl::message_details_t details{
+						final, opcode, asio_ns::buffer_size( payload.buf() ) };
 
-				if( is_close_frame )
-				{
-					auto con = std::move( m_ws_connection_handle );
-					con->write_data(
-						std::move( wg ),
-						is_close_frame );
+					bufs.emplace_back(
+						impl::write_message_details( details ) );
+
+					bufs.emplace_back( std::move( payload ) );
+
+					write_group_t wg{ std::move( bufs ) };
+
+					if( wscb )
+					{
+						wg.after_write_notificator( std::move( wscb ) );
+					}
+
+					// TODO: set flag.
+					const bool is_close_frame =
+						opcode_t::connection_close_frame == opcode;
+
+					if( is_close_frame )
+					{
+						auto con = std::move( m_ws_connection_handle );
+						con->write_data(
+							std::move( wg ),
+							is_close_frame );
+					}
+					else
+					{
+						m_ws_connection_handle->write_data(
+							std::move( wg ),
+							is_close_frame );
+					}
 				}
 				else
 				{
-					m_ws_connection_handle->write_data(
-						std::move( wg ),
-						is_close_frame );
+					throw exception_t{ "ws doesn't support sendfile" };
 				}
 			}
 			else

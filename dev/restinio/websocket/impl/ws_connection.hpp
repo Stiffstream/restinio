@@ -1049,14 +1049,14 @@ class ws_connection_t final
 				{
 					handle_trivial_write_operation( get< trivial_write_operation_t >( wo ) );
 				}
-				else if( holds_alternative< file_write_operation_t >( wo ) )
+				else if( holds_alternative< none_write_operation_t >( wo ) )
 				{
-					handle_file_write_operation( get< file_write_operation_t >( wo ) );
+					finish_handling_current_write_ctx();
 				}
 				else
 				{
-					assert( holds_alternative< none_write_operation_t >( wo ) );
-					finish_handling_current_write_ctx();
+					assert( holds_alternative< file_write_operation_t >( wo ) );
+					throw exception_t{ "sendfile write operation not implemented" };
 				}
 			}
 			catch( const std::exception & ex )
@@ -1125,52 +1125,6 @@ class ws_connection_t final
 									} );
 							}
 					} ) );
-		}
-
-		void
-		handle_file_write_operation( const file_write_operation_t & op )
-		{
-			guard_sendfile_operation( op.timelimit() );
-
-			auto op_ctx = op;
-
-			op_ctx.start_sendfile_operation(
-				this->get_executor(),
-				m_socket,
-				asio_ns::bind_executor(
-					this->get_executor(),
-					[ this,
-						ctx = shared_from_this(),
-						// Store operation context till the end
-						op_ctx ](
-							const asio_ns::error_code & ec,
-							file_size_t written ) mutable{
-
-							// Reset sendfile operation context.
-							op_ctx.reset();
-
-							if( !ec )
-							{
-								m_logger.trace( [&]{
-									return fmt::format(
-											"[ws_connection:{}] file data was sent: {} bytes",
-											connection_id(),
-											written );
-								} );
-							}
-							else
-							{
-								m_logger.error( [&]{
-									return fmt::format(
-											"[ws_connection:{}] send file data error: {} ({}) bytes",
-											connection_id(),
-											ec.value(),
-											ec.message() );
-								} );
-							}
-
-							after_write( ec );
-						} ) );
 		}
 
 		//! Do post write actions for current write group.
@@ -1300,17 +1254,6 @@ class ws_connection_t final
 		{
 			m_write_operation_timeout_after =
 				std::chrono::steady_clock::now() + m_settings->m_write_http_response_timelimit;
-		}
-
-		//! Start guard write operation if necessary.
-		void
-		guard_sendfile_operation( std::chrono::steady_clock::duration timelimit )
-		{
-			if( std::chrono::steady_clock::duration::zero() == timelimit )
-				timelimit = m_settings->m_write_http_response_timelimit;
-
-			m_write_operation_timeout_after =
-				std::chrono::steady_clock::now() + timelimit;
 		}
 
 		void
