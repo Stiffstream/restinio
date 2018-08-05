@@ -89,5 +89,5 @@ MxxRu::Cpp::composite_target {
 	required_prj( "test/websocket/parser/prj.ut.rb" )
 	required_prj( "test/websocket/validators/prj.ut.rb" )
 	required_prj( "test/websocket/ws_connection/prj.ut.rb" )
-	required_prj( "test/websocket/sendfile/prj.ut.rb" )
+	required_prj( "test/websocket/notificators/prj.ut.rb" )
 }

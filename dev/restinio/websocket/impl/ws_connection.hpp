@@ -1080,8 +1080,7 @@ class ws_connection_t final
 
 			m_logger.trace( [&]{
 				return fmt::format(
-					"[ws_connection:{}] sending resp data with "
-					"connection-close attribute "
+					"[ws_connection:{}] sending data with "
 					"buf count: {}, "
 					"total size: {}",
 					connection_id(),
