@@ -15,6 +15,8 @@ MxxRu::Cpp::composite_target {
 	required_prj 'sample/async_handling_with_sobjectizer/prj.rb'
 	required_prj 'sample/compression/prj.rb'
 	required_prj 'sample/decompression/prj.rb'
+	required_prj 'sample/notificatos/prj.rb'
+
 	required_prj 'sample/websocket/prj.rb'
 	required_prj 'sample/websocket_detailed/prj.rb'
 
