@@ -320,8 +320,7 @@ TEST_CASE( "notificators error" , "[error]" )
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
-	std::atomic< bool > notificator_was_called{ false };
-	std::atomic< bool > was_error{ false };
+	std::promise< restinio::asio_ns::error_code > ec_promise;
 
 	http_server_t http_server{
 		restinio::own_io_context(),
@@ -345,8 +344,7 @@ TEST_CASE( "notificators error" , "[error]" )
 						}
 
 						return resp.done( [& ]( const auto & ec ) mutable{
-									notificator_was_called = true;
-									if( ec ) was_error = true;
+									ec_promise.set_value( ec );
 								} );
 					} );
 		}
@@ -366,10 +364,11 @@ TEST_CASE( "notificators error" , "[error]" )
 			} )
 	);
 
-	other_thread.stop_and_join();
+	auto ec = ec_promise.get_future();
+	ec.wait();
+	REQUIRE( ec.get() );
 
-	REQUIRE( notificator_was_called );
-	REQUIRE( was_error );
+	other_thread.stop_and_join();
 }
 
 TEST_CASE( "notificators on not written data" , "[error]" )
