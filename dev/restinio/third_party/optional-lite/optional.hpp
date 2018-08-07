@@ -1,39 +1,38 @@
 //
-// Copyright (c) 2014-2017 Martin Moene
+// Copyright (c) 2014-2018 Martin Moene
 //
 // https://github.com/martinmoene/optional-lite
 //
-// This code is licensed under the MIT License (MIT).
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
+// Distributed under the Boost Software License, Version 1.0.
+// (See accompanying file LICENSE.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #pragma once
 
 #ifndef NONSTD_OPTIONAL_LITE_HPP
 #define NONSTD_OPTIONAL_LITE_HPP
 
-#define  optional_lite_VERSION "2.3.2"
+#define  optional_lite_VERSION "3.1.0"
 
-// Compiler detection (C++20 is speculative):
-// Note: MSVC supports C++14 since it supports C++17.
+// C++ language version detection (C++20 is speculative):
+// Note: VC14.0/1900 (VS2015) lacks too much from C++14.
 
-#ifdef _MSVC_LANG
-# define optional_MSVC_LANG  _MSVC_LANG
-#else
-# define optional_MSVC_LANG  0
+#ifndef   optional_CPLUSPLUS
+# ifdef  _MSVC_LANG
+#  define optional_CPLUSPLUS  (_MSC_VER == 1900 ? 201103L : _MSVC_LANG )
+# else
+#  define optional_CPLUSPLUS  __cplusplus
+# endif
 #endif
 
-#define optional_CPP11             (__cplusplus == 201103L )
-#define optional_CPP11_OR_GREATER  (__cplusplus >= 201103L || optional_MSVC_LANG >= 201103L )
-#define optional_CPP14_OR_GREATER  (__cplusplus >= 201402L || optional_MSVC_LANG >= 201703L )
-#define optional_CPP17_OR_GREATER  (__cplusplus >= 201703L || optional_MSVC_LANG >= 201703L )
-#define optional_CPP20_OR_GREATER  (__cplusplus >= 202000L || optional_MSVC_LANG >= 202000L )
+#define optional_CPP98_OR_GREATER  ( optional_CPLUSPLUS >= 199711L )
+#define optional_CPP11_OR_GREATER  ( optional_CPLUSPLUS >= 201103L )
+#define optional_CPP14_OR_GREATER  ( optional_CPLUSPLUS >= 201402L )
+#define optional_CPP17_OR_GREATER  ( optional_CPLUSPLUS >= 201703L )
+#define optional_CPP20_OR_GREATER  ( optional_CPLUSPLUS >= 202000L )
+
+// C++ language version (represent 98 as 3):
+
+#define optional_CPLUSPLUS_V  ( optional_CPLUSPLUS / 100 - (optional_CPLUSPLUS > 200000 ? 2000 : 1994) )
 
 // use C++17 std::optional if available:
 
@@ -108,23 +107,31 @@ namespace nonstd {
 #define optional_BETWEEN( v, lo, hi ) ( lo <= v && v < hi )
 
 #if defined(_MSC_VER) && !defined(__clang__)
-# define optional_COMPILER_MSVC_VERSION   (_MSC_VER / 100 - 5 - (_MSC_VER < 1900))
+# define optional_COMPILER_MSVC_VERSION   (_MSC_VER / 10 - 10 * ( 5 + (_MSC_VER < 1900)) )
 #else
 # define optional_COMPILER_MSVC_VERSION   0
 #endif
 
+#define optional_COMPILER_VERSION( major, minor, patch )  ( 10 * (10 * major + minor ) + patch )
+
 #if defined __GNUC__
-# define optional_COMPILER_GNUC_VERSION  __GNUC__
+# define optional_COMPILER_GNUC_VERSION   optional_COMPILER_VERSION(__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__)
 #else
-# define optional_COMPILER_GNUC_VERSION    0
+# define optional_COMPILER_GNUC_VERSION   0
 #endif
 
-#if optional_BETWEEN(optional_COMPILER_MSVC_VERSION, 7, 14 )
+#if defined __clang__
+# define optional_COMPILER_CLANG_VERSION  optional_COMPILER_VERSION(__clang_major__, __clang_minor__, __clang_patchlevel__)
+#else
+# define optional_COMPILER_CLANG_VERSION  0
+#endif
+
+#if optional_BETWEEN(optional_COMPILER_MSVC_VERSION, 70, 140 )
 # pragma warning( push )
 # pragma warning( disable: 4345 )   // initialization behavior changed
 #endif
 
-#if optional_BETWEEN(optional_COMPILER_MSVC_VERSION, 7, 15 )
+#if optional_BETWEEN(optional_COMPILER_MSVC_VERSION, 70, 150 )
 # pragma warning( push )
 # pragma warning( disable: 4814 )   // in C++14 'constexpr' will not imply 'const'
 #endif
@@ -135,18 +142,18 @@ namespace nonstd {
 
 // Presence of C++11 language features:
 
-#if optional_CPP11_OR_GREATER || optional_COMPILER_MSVC_VERSION >= 10
+#if optional_CPP11_OR_GREATER || optional_COMPILER_MSVC_VERSION >= 100
 # define optional_HAVE_AUTO  1
 # define optional_HAVE_NULLPTR  1
 # define optional_HAVE_STATIC_ASSERT  1
 #endif
 
-#if optional_CPP11_OR_GREATER || optional_COMPILER_MSVC_VERSION >= 12
+#if optional_CPP11_OR_GREATER || optional_COMPILER_MSVC_VERSION >= 120
 # define optional_HAVE_DEFAULT_FUNCTION_TEMPLATE_ARG  1
 # define optional_HAVE_INITIALIZER_LIST  1
 #endif
 
-#if optional_CPP11_OR_GREATER || optional_COMPILER_MSVC_VERSION >= 14
+#if optional_CPP11_OR_GREATER || optional_COMPILER_MSVC_VERSION >= 140
 # define optional_HAVE_ALIAS_TEMPLATE  1
 # define optional_HAVE_CONSTEXPR_11  1
 # define optional_HAVE_ENUM_CLASS  1
@@ -176,34 +183,34 @@ namespace nonstd {
 # define optional_HAVE_TR1_ADD_POINTER  1
 #endif
 
-#if optional_CPP11_OR_GREATER || optional_COMPILER_MSVC_VERSION >= 9
+#if optional_CPP11_OR_GREATER || optional_COMPILER_MSVC_VERSION >= 90
 # define optional_HAVE_TYPE_TRAITS  1
 # define optional_HAVE_STD_ADD_POINTER  1
 #endif
 
-#if optional_CPP11_OR_GREATER || optional_COMPILER_MSVC_VERSION >= 11
+#if optional_CPP11_OR_GREATER || optional_COMPILER_MSVC_VERSION >= 110
 # define optional_HAVE_ARRAY  1
 #endif
 
-#if optional_CPP11_OR_GREATER || optional_COMPILER_MSVC_VERSION >= 12
+#if optional_CPP11_OR_GREATER || optional_COMPILER_MSVC_VERSION >= 120
 # define optional_HAVE_CONDITIONAL  1
 #endif
 
-#if optional_CPP11_OR_GREATER || optional_COMPILER_MSVC_VERSION >= 14 || (optional_COMPILER_MSVC_VERSION >= 9 && _HAS_CPP0X)
+#if optional_CPP11_OR_GREATER || optional_COMPILER_MSVC_VERSION >= 140 || (optional_COMPILER_MSVC_VERSION >= 90 && _HAS_CPP0X)
 # define optional_HAVE_CONTAINER_DATA_METHOD  1
 #endif
 
-#if optional_CPP11_OR_GREATER || optional_COMPILER_MSVC_VERSION >= 12
+#if optional_CPP11_OR_GREATER || optional_COMPILER_MSVC_VERSION >= 120
 # define optional_HAVE_REMOVE_CV  1
 #endif
 
-#if optional_CPP11_OR_GREATER || optional_COMPILER_MSVC_VERSION >= 14
+#if optional_CPP11_OR_GREATER || optional_COMPILER_MSVC_VERSION >= 140
 # define optional_HAVE_SIZED_TYPES  1
 #endif
 
 // For the rest, consider VC14 as C++11 for optional-lite:
 
-#if optional_COMPILER_MSVC_VERSION >= 14
+#if optional_COMPILER_MSVC_VERSION >= 140
 # undef  optional_CPP11_OR_GREATER
 # define optional_CPP11_OR_GREATER  1
 #endif
@@ -529,6 +536,18 @@ private:
         ::new( value_ptr() ) value_type( std::move( v ) );
     }
 
+    template< class... Args >
+    void emplace( Args&&... args )
+    {
+        ::new( value_ptr() ) value_type( std::forward<Args>(args)... );
+    }
+
+    template< class U, class... Args >
+    void emplace( std::initializer_list<U> il, Args&&... args )
+    {
+        ::new( value_ptr() ) value_type( il, std::forward<Args>(args)... );
+    }
+
 #endif
 
     void destruct_value()
@@ -560,12 +579,12 @@ private:
 
     value_type const && value() const optional_refref_qual
     {
-        return * value_ptr();
+        return std::move( value() );
     }
 
     value_type && value() optional_refref_qual
     {
-        return * value_ptr();
+        return std::move( value() );
     }
 
 #endif
@@ -752,14 +771,17 @@ public:
     void emplace( Args&&... args )
     {
         *this = nullopt;
-        initialize( T( std::forward<Args>(args)...) );
+        contained.emplace( std::forward<Args>(args)...  );
+        has_value_ = true;
     }
+
 
     template< class U, class... Args >
     void emplace( std::initializer_list<U> il, Args&&... args )
     {
         *this = nullopt;
-        initialize( T( il, std::forward<Args>(args)...) );
+        contained.emplace( il, std::forward<Args>(args)...  );
+        has_value_ = true;
     }
 
 #endif // optional_CPP11_OR_GREATER
@@ -807,14 +829,12 @@ public:
 
     optional_constexpr value_type const && operator *() const optional_refref_qual
     {
-        return assert( has_value() ),
-            std::move( contained.value() );
+        return std::move( **this );
     }
 
     optional_constexpr14 value_type && operator *() optional_refref_qual
     {
-        return assert( has_value() ),
-            std::move( contained.value() );
+        return std::move( **this );
     }
 
 #endif
@@ -856,18 +876,12 @@ public:
 
     optional_constexpr14 value_type const && value() const optional_refref_qual
     {
-        if ( ! has_value() )
-            throw bad_optional_access();
-
-        return std::move( contained.value() );
+        return std::move( value() );
     }
 
     optional_constexpr14 value_type && value() optional_refref_qual
     {
-        if ( ! has_value() )
-            throw bad_optional_access();
-
-        return std::move( contained.value() );
+        return std::move( value() );
     }
 
 #endif
@@ -925,6 +939,7 @@ private:
         contained.construct_value( std::move( value ) );
         has_value_ = true;
     }
+
 #endif
 
 private:
