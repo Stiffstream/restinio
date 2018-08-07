@@ -64,6 +64,7 @@ class base_response_builder_t
 		base_response_builder_t & operator = ( const base_response_builder_t & ) = delete;
 
 		base_response_builder_t( base_response_builder_t && ) = default;
+		base_response_builder_t & operator =( base_response_builder_t && ) = default;
 
 		virtual ~base_response_builder_t()
 		{}
@@ -99,7 +100,7 @@ class base_response_builder_t
 		Response_Builder &
 		append_header(
 			std::string field_name,
-			std::string field_value )
+			std::string field_value ) &
 		{
 			m_header.set_field(
 				std::move( field_name ),
@@ -108,18 +109,37 @@ class base_response_builder_t
 		}
 
 		//! Add header field.
+		Response_Builder &&
+		append_header(
+			std::string field_name,
+			std::string field_value ) &&
+		{
+			return std::move( this->append_header(
+										std::move( field_name ),
+										std::move( field_value ) ) );
+		}
+
+		//! Add header field.
 		Response_Builder &
-		append_header( http_header_field_t http_header_field )
+		append_header( http_header_field_t http_header_field ) &
 		{
 			m_header.set_field( std::move( http_header_field ) );
 			return upcast_reference();
 		}
 
 		//! Add header field.
+		Response_Builder &&
+		append_header( http_header_field_t http_header_field ) &&
+		{
+			return std::move( this->append_header(
+										std::move( http_header_field ) ) );
+		}
+
+		//! Add header field.
 		Response_Builder &
 		append_header(
 			http_field_t field_id,
-			std::string field_value )
+			std::string field_value ) &
 		{
 			m_header.set_field(
 				field_id,
@@ -127,14 +147,35 @@ class base_response_builder_t
 			return upcast_reference();
 		}
 
+		//! Add header field.
+		Response_Builder &&
+		append_header(
+			http_field_t field_id,
+			std::string field_value ) &&
+		{
+			return std::move( this->append_header(
+										field_id,
+										std::move( field_value ) ) );
+		}
+
 
 		//! Add header `Date` field.
 		Response_Builder &
 		append_header_date_field(
-			std::chrono::system_clock::time_point tp = std::chrono::system_clock::now() )
+			std::chrono::system_clock::time_point tp =
+				std::chrono::system_clock::now() ) &
 		{
 			m_header.set_field( http_field_t::date, make_date_field_value( tp ) );
 			return upcast_reference();
+		}
+
+		//! Add header `Date` field.
+		Response_Builder &&
+		append_header_date_field(
+			std::chrono::system_clock::time_point tp =
+				std::chrono::system_clock::now() ) &&
+		{
+			return std::move( this->append_header_date_field( tp ) );
 		}
 
 		//! Add header `Date` field.
@@ -146,18 +187,34 @@ class base_response_builder_t
 			return upcast_reference();
 		}
 
+		//! Set connection close.
 		Response_Builder &
-		connection_close()
+		connection_close() &
 		{
 			m_header.should_keep_alive( false );
 			return upcast_reference();
 		}
 
+		//! Set connection close.
+		Response_Builder &&
+		connection_close() &&
+		{
+			return std::move( this->connection_close() );
+		}
+
+
+		//! Set connection keep-alive.
 		Response_Builder &
-		connection_keep_alive()
+		connection_keep_alive() &
 		{
 			m_header.should_keep_alive();
 			return upcast_reference();
+		}
+
+		Response_Builder &&
+		connection_keep_alive() &&
+		{
+			return std::move( this->connection_keep_alive() );
 		}
 
 	protected:
@@ -223,21 +280,33 @@ class response_builder_t< restinio_controlled_output_t > final
 
 		//! Set body.
 		self_type_t &
-		set_body( writable_item_t body )
+		set_body( writable_item_t body ) &
 		{
 			auto size = body.size();
 			return set_body_impl( body, size );
 		}
 
+		//! Set body.
+		self_type_t &&
+		set_body( writable_item_t body ) &&
+		{
+			return std::move( this->set_body( std::move( body ) ) );
+		}
+
 		//! Append body.
-		//! \{
 		self_type_t &
-		append_body( writable_item_t body_part )
+		append_body( writable_item_t body_part ) &
 		{
 			auto size = body_part.size();
 			return append_body_impl( body_part, size );
 		}
-		//! \}
+
+		//! Append body.
+		self_type_t &&
+		append_body( writable_item_t body_part ) &&
+		{
+			return std::move( this->append_body( std::move( body_part ) ) );
+		}
 
 		//! Complete response.
 		request_handling_status_t
@@ -347,31 +416,44 @@ class response_builder_t< user_controlled_output_t > final
 		using self_type_t =
 			response_builder_t< user_controlled_output_t >;
 
+		response_builder_t( response_builder_t && ) = default;
+
 		// Reuse construstors from base.
 		using base_type_t::base_type_t;
 
 		//! Manualy set content length.
-		auto &
-		set_content_length( std::size_t content_length )
+		self_type_t &
+		set_content_length( std::size_t content_length ) &
 		{
 			m_header.content_length( content_length );
 			return *this;
 		}
 
+		//! Manualy set content length.
+		self_type_t &&
+		set_content_length( std::size_t content_length ) &&
+		{
+			return std::move( this->set_content_length( content_length ) );
+		}
+
 		//! Set body (part).
-		//! \{
 		self_type_t &
-		set_body( writable_item_t body )
+		set_body( writable_item_t body ) &
 		{
 			auto size = body.size();
 			return set_body_impl( body, size );
 		}
-		//! \}
+
+		//! Set body (part).
+		self_type_t &&
+		set_body( writable_item_t body ) &&
+		{
+			return std::move( this->set_body( std::move( body ) ) );
+		}
 
 		//! Append body.
-		//! \{
 		self_type_t &
-		append_body( writable_item_t body_part )
+		append_body( writable_item_t body_part ) &
 		{
 			auto size = body_part.size();
 
@@ -380,14 +462,20 @@ class response_builder_t< user_controlled_output_t > final
 
 			return append_body_impl( body_part );
 		}
-		//! \}
+
+		//! Append body.
+		self_type_t &&
+		append_body( writable_item_t body_part ) &&
+		{
+			return std::move( this->append_body( std::move( body_part ) ) );
+		}
 
 		//! Flush ready outgoing data.
 		/*!
 			Schedules for sending currently ready data.
 		*/
 		self_type_t &
-		flush( write_status_cb_t wscb = write_status_cb_t{} )
+		flush( write_status_cb_t wscb = write_status_cb_t{} ) &
 		{
 			if( m_connection )
 			{
@@ -398,6 +486,13 @@ class response_builder_t< user_controlled_output_t > final
 			}
 
 			return *this;
+		}
+
+		//! Flush ready outgoing data.
+		self_type_t &&
+		flush( write_status_cb_t wscb = write_status_cb_t{} ) &&
+		{
+			return std::move( this->flush( std::move( wscb ) ) );
 		}
 
 		//! Complete response.
@@ -538,9 +633,12 @@ template <>
 class response_builder_t< chunked_output_t > final
 	:	public base_response_builder_t< response_builder_t< chunked_output_t > >
 {
+	public:
 		using base_type_t =
 			base_response_builder_t< response_builder_t< chunked_output_t > >;
-	public:
+		using self_type_t =
+			response_builder_t< chunked_output_t >;
+
 		response_builder_t(
 			http_status_line_t status_line,
 			impl::connection_handle_t connection,
@@ -555,10 +653,11 @@ class response_builder_t< chunked_output_t > final
 			m_chunks.reserve( 4 );
 		}
 
+		response_builder_t( response_builder_t && ) = default;
+
 		//! Append current chunk.
-		//! \{
-		auto &
-		append_chunk( writable_item_t chunk )
+		self_type_t &
+		append_chunk( writable_item_t chunk ) &
 		{
 			auto size = chunk.size();
 
@@ -568,14 +667,19 @@ class response_builder_t< chunked_output_t > final
 			return *this;
 		}
 
-		//! \}
+		//! Append current chunk.
+		self_type_t &&
+		append_chunk( writable_item_t chunk ) &&
+		{
+			return std::move( this->append_chunk( std::move( chunk ) ) );
+		}
 
 		//! Flush ready outgoing data.
 		/*!
 			Schedules for sending currently ready data.
 		*/
-		void
-		flush( write_status_cb_t wscb = write_status_cb_t{} )
+		self_type_t &
+		flush( write_status_cb_t wscb = write_status_cb_t{} ) &
 		{
 			if( m_connection )
 			{
@@ -584,6 +688,15 @@ class response_builder_t< chunked_output_t > final
 					response_parts_attr_t::not_final_parts,
 					std::move( wscb ) );
 			}
+
+			return *this;
+		}
+
+		//! Flush ready outgoing data.
+		self_type_t &&
+		flush( write_status_cb_t wscb = write_status_cb_t{} ) &&
+		{
+			return std::move( this->flush( std::move( wscb ) ) );
 		}
 
 		//! Complete response.
@@ -759,3 +872,4 @@ class response_builder_t< chunked_output_t > final
 };
 
 } /* namespace restinio */
+
