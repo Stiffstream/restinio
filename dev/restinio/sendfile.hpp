@@ -69,8 +69,8 @@ class sendfile_chunk_size_guarded_value_t
 			- If chunk_size_value is greater than sendfile_max_chunk_size returns sendfile_max_chunk_size.
 			- Otherwise returns chunk_size_value itself.
 		*/
-		static file_size_t
-		clarify_chunk_size( file_size_t chunk_size_value )
+		static constexpr file_size_t
+		clarify_chunk_size( file_size_t chunk_size_value ) noexcept
 		{
 			if( 0 == chunk_size_value )
 				return sendfile_default_chunk_size;
@@ -83,16 +83,12 @@ class sendfile_chunk_size_guarded_value_t
 
 	public:
 
-		sendfile_chunk_size_guarded_value_t( file_size_t chunk_size_value )
+		constexpr sendfile_chunk_size_guarded_value_t( file_size_t chunk_size_value ) noexcept
 			:	m_chunk_size{ clarify_chunk_size( chunk_size_value ) }
 		{}
 
 		//! Get the valid value of a chunk size.
-		file_size_t
-		value( ) const
-		{
-			return m_chunk_size;
-		}
+		constexpr auto value() const noexcept { return m_chunk_size; }
 
 	private:
 		//! Valid value of the chunk size.
@@ -121,7 +117,7 @@ class file_descriptor_holder_t
 		}
 
 		//! Init constructor.
-		file_descriptor_holder_t( file_descriptor_t fd )
+		file_descriptor_holder_t( file_descriptor_t fd ) noexcept
 			:	m_file_descriptor{ fd }
 		{}
 
@@ -186,27 +182,26 @@ class file_descriptor_holder_t
 class file_meta_t
 {
 	public:
-		file_meta_t()
-		{}
-
-		file_meta_t(
-			file_size_t file_total_size,
-			std::chrono::system_clock::time_point last_modified_at )
-			:	m_file_total_size{ file_total_size }
-			,	m_last_modified_at{ last_modified_at }
-		{}
-
-		file_size_t file_total_size() const noexcept { return m_file_total_size; }
-
-		std::chrono::system_clock::time_point
-		last_modified_at() const noexcept { return m_last_modified_at; }
-
 		friend void
 		swap( file_meta_t & r, file_meta_t & l ) noexcept
 		{
 			std::swap( r.m_file_total_size, l.m_file_total_size );
 			std::swap( r.m_last_modified_at, l.m_last_modified_at );
 		}
+
+		file_meta_t() noexcept
+		{}
+
+		file_meta_t(
+			file_size_t file_total_size,
+			std::chrono::system_clock::time_point last_modified_at ) noexcept
+			:	m_file_total_size{ file_total_size }
+			,	m_last_modified_at{ last_modified_at }
+		{}
+
+		file_size_t file_total_size() const noexcept { return m_file_total_size; }
+
+		auto last_modified_at() const noexcept { return m_last_modified_at; }
 
 	private:
 		//! Total file size.
@@ -229,7 +224,10 @@ class file_meta_t
 */
 class sendfile_t
 {
-		friend sendfile_t sendfile( file_descriptor_holder_t , file_meta_t , file_size_t );
+		friend sendfile_t sendfile(
+			file_descriptor_holder_t ,
+			file_meta_t ,
+			file_size_t ) noexcept;
 
 		sendfile_t(
 			//! File descriptor.
@@ -237,7 +235,7 @@ class sendfile_t
 			//! File meta data.
 			file_meta_t meta,
 			//! Send chunk size.
-			sendfile_chunk_size_guarded_value_t chunk )
+			sendfile_chunk_size_guarded_value_t chunk ) noexcept
 			:	m_file_descriptor{ std::move( fdh ) }
 			,	m_meta{ std::move( meta ) }
 			,	m_offset{ 0 }
@@ -358,9 +356,7 @@ class sendfile_t
 		}
 		///@}
 
-
-
-		auto chunk_size() const { return m_chunk_size; }
+		auto chunk_size() const noexcept { return m_chunk_size; }
 
 		/** @name Set prefered chunk size to use in  write operation.
 		 * @brief Set the maximum possible size of the portion of data
@@ -463,7 +459,7 @@ sendfile(
 	//! File meta data.
 	file_meta_t meta,
 	//! The max size of a data to be send on a single iteration.
-	file_size_t chunk_size = sendfile_default_chunk_size )
+	file_size_t chunk_size = sendfile_default_chunk_size ) noexcept
 {
 	return sendfile_t{ std::move( fd ), std::move( meta ), chunk_size };
 }

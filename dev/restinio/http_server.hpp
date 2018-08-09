@@ -227,11 +227,7 @@ class http_server_t
 		}
 
 		//! Get io_context on which server runs.
-		asio_ns::io_context &
-		io_context()
-		{
-			return *m_io_context;
-		}
+		asio_ns::io_context & io_context() noexcept { return *m_io_context; }
 
 		//! Starts server in async way.
 		/*!

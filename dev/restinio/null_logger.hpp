@@ -24,22 +24,22 @@ class null_logger_t
 	public:
 		template< typename Message_Builder >
 		constexpr void
-		trace( Message_Builder && ) const
+		trace( Message_Builder && ) const noexcept
 		{}
 
 		template< typename Message_Builder >
 		constexpr void
-		info( Message_Builder && ) const
+		info( Message_Builder && ) const noexcept
 		{}
 
 		template< typename Message_Builder >
 		constexpr void
-		warn( Message_Builder && ) const
+		warn( Message_Builder && ) const noexcept
 		{}
 
 		template< typename Message_Builder >
 		constexpr void
-		error( Message_Builder && ) const
+		error( Message_Builder && ) const noexcept
 		{}
 };
 

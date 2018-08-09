@@ -29,27 +29,20 @@ struct null_timer_manager_t final
 	{
 		// Schedule timeouts check invocation.
 		template <typename... Args >
-		constexpr void
-		schedule( Args &&... ) const
-		{}
+		constexpr void schedule( Args &&... ) const noexcept {}
 
 		// Cancel timeout guard if any.
-		constexpr void
-		cancel() const
-		{}
+		constexpr void cancel() const noexcept {}
 	};
 
 	// Create guard for connection.
 	constexpr timer_guard_t
-	create_timer_guard() const
-	{
-		return timer_guard_t{};
-	}
+	create_timer_guard() const noexcept { return timer_guard_t{}; }
 
 	//! Start/stop timer manager.
 	//! \{
-	constexpr void start() const {}
-	constexpr void stop() const {}
+	constexpr void start() const noexcept {}
+	constexpr void stop() const noexcept {}
 	//! \}
 
 	struct factory_t final

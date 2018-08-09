@@ -84,13 +84,13 @@ class base_response_builder_t
 		//! Accessors for header.
 		//! \{
 		http_response_header_t &
-		header()
+		header() noexcept
 		{
 			return m_header;
 		}
 
 		const http_response_header_t &
-		header() const
+		header() const noexcept
 		{
 			return m_header;
 		}
@@ -189,7 +189,7 @@ class base_response_builder_t
 
 		//! Set connection close.
 		Response_Builder &
-		connection_close() &
+		connection_close() & noexcept
 		{
 			m_header.should_keep_alive( false );
 			return upcast_reference();
@@ -197,7 +197,7 @@ class base_response_builder_t
 
 		//! Set connection close.
 		Response_Builder &&
-		connection_close() &&
+		connection_close() && noexcept
 		{
 			return std::move( this->connection_close() );
 		}
@@ -205,14 +205,14 @@ class base_response_builder_t
 
 		//! Set connection keep-alive.
 		Response_Builder &
-		connection_keep_alive() &
+		connection_keep_alive() & noexcept
 		{
 			m_header.should_keep_alive();
 			return upcast_reference();
 		}
 
 		Response_Builder &&
-		connection_keep_alive() &&
+		connection_keep_alive() && noexcept
 		{
 			return std::move( this->connection_keep_alive() );
 		}
@@ -238,7 +238,7 @@ class base_response_builder_t
 
 	private:
 		Response_Builder &
-		upcast_reference()
+		upcast_reference() noexcept
 		{
 			return static_cast< Response_Builder & >( *this );
 		}
@@ -248,12 +248,14 @@ class base_response_builder_t
 // response_builder_t
 //
 
+//! Forbid arbitrary response_builder_t instantiations.
 template < typename Response_Output_Strategy >
 class response_builder_t
 {
 	response_builder_t() = delete;
 };
 
+//! Tag type for RESTinio controlled output response builder.
 struct restinio_controlled_output_t {};
 
 //! Simple standard response builder.
@@ -397,6 +399,7 @@ class response_builder_t< restinio_controlled_output_t > final
 		writable_items_container_t m_response_parts;
 };
 
+//! Tag type for user controlled output response builder.
 struct user_controlled_output_t {};
 
 //! User controlled response output builder.
@@ -622,6 +625,7 @@ class response_builder_t< user_controlled_output_t > final
 		writable_items_container_t m_response_parts;
 };
 
+//! Tag type for chunked output response builder.
 struct chunked_output_t {};
 
 //! Chunked transfer encoding output builder.

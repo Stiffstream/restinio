@@ -30,13 +30,13 @@ enum class request_handling_status_t : std::uint8_t
 //! Helper funcs for working with request_handling_status_t
 // \{
 constexpr request_handling_status_t
-request_accepted()
+request_accepted() noexcept
 {
 	return request_handling_status_t::accepted;
 }
 
 constexpr request_handling_status_t
-request_rejected()
+request_rejected() noexcept
 {
 	return request_handling_status_t::rejected;
 }
@@ -99,7 +99,7 @@ struct response_output_flags_t
 {
 	response_output_flags_t(
 		response_parts_attr_t response_parts,
-		response_connection_attr_t response_connection )
+		response_connection_attr_t response_connection ) noexcept
 		:	m_response_parts{ response_parts }
 		,	m_response_connection{ response_connection }
 	{}

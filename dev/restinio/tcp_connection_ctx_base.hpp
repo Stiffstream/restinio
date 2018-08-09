@@ -35,11 +35,7 @@ class tcp_connection_ctx_base_t
 		virtual ~tcp_connection_ctx_base_t() = default;
 
 		//! Get connection id.
-		connection_id_t
-		connection_id() const
-		{
-			return m_connection_id;
-		}
+		connection_id_t connection_id() const noexcept { return m_connection_id; }
 
 		//! Check timeouts for all activities.
 		virtual void

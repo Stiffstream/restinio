@@ -71,7 +71,7 @@ class buf_iface_t : public writable_base_t
 class empty_buf_t final : public buf_iface_t
 {
 	public:
-		empty_buf_t() {}
+		empty_buf_t() noexcept {}
 
 		empty_buf_t( const empty_buf_t & ) = delete;
 		empty_buf_t & operator = ( const empty_buf_t & ) = delete;
@@ -98,7 +98,7 @@ class const_buf_t final : public buf_iface_t
 	public:
 		const_buf_t() = delete;
 
-		const_buf_t( const void * data, std::size_t size )
+		constexpr const_buf_t( const void * data, std::size_t size ) noexcept
 			:	m_data{ data }
 			,	m_size{ size }
 		{}
@@ -119,11 +119,11 @@ class const_buf_t final : public buf_iface_t
 			new( storage ) const_buf_t{ std::move( *this ) };
 		}
 
-		virtual std::size_t size() const override { return  m_size; }
+		virtual std::size_t size() const override { return m_size; }
 
 	private:
-		const void * m_data;
-		std::size_t m_size;
+		const void * const m_data;
+		const std::size_t m_size;
 };
 
 //! Buffer entity based on std::string.
@@ -166,7 +166,7 @@ class shared_datasizeable_buf_t final : public buf_iface_t
 
 		shared_datasizeable_buf_t() = delete;
 
-		shared_datasizeable_buf_t( shared_ptr_t buf_ptr )
+		shared_datasizeable_buf_t( shared_ptr_t buf_ptr ) noexcept
 			:	m_buf_ptr{ std::move( buf_ptr ) }
 		{}
 
@@ -186,7 +186,7 @@ class shared_datasizeable_buf_t final : public buf_iface_t
 			new( storage ) shared_datasizeable_buf_t{ std::move( *this ) };
 		}
 
-		virtual std::size_t size() const override { return  m_buf_ptr->size(); }
+		virtual std::size_t size() const override { return m_buf_ptr->size(); }
 
 	private:
 		shared_ptr_t m_buf_ptr;
@@ -257,9 +257,9 @@ constexpr std::size_t needed_storage_max_size =
 //! Helper class for setting a constant buffer storage explicitly.
 struct const_buffer_t
 {
-	const_buffer_t(
+	constexpr const_buffer_t(
 		const void * str,
-		std::size_t size )
+		std::size_t size ) noexcept
 		:	m_str{ str }
 		,	m_size{ size }
 	{}
@@ -270,14 +270,14 @@ struct const_buffer_t
 
 //! Create const buffers
 //! \{
-inline const_buffer_t
-const_buffer( const void * str, std::size_t size )
+inline constexpr const_buffer_t
+const_buffer( const void * str, std::size_t size ) noexcept
 {
 	return const_buffer_t{ str, size };
 }
 
 inline const_buffer_t
-const_buffer( const char * str )
+const_buffer( const char * str ) noexcept
 {
 	return const_buffer( str, std::strlen( str ) );
 }
@@ -385,21 +385,13 @@ class writable_item_t
 		}
 
 		//! Get the size of the underlying buffer object.
-		std::size_t
-		size() const
-		{
-			return get_writable_base()->size();
-		}
+		std::size_t size() const { return get_writable_base()->size(); }
 
 		//! Create a buf reference object used by ASIO.
 		/*!
 			\note Stored buffer must be of writable_item_type_t::trivial_write_operation.
 		*/
-		asio_ns::const_buffer
-		buf() const
-		{
-			return get_buf()->buffer();
-		}
+		asio_ns::const_buffer buf() const { return get_buf()->buffer(); }
 
 		//! Get a reference to a sendfile operation.
 		/*!

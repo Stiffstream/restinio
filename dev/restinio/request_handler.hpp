@@ -25,7 +25,7 @@ namespace impl
 {
 
 connection_handle_t &
-access_req_connection( request_t & );
+access_req_connection( request_t & ) noexcept;
 
 } /* namespace impl */
 
@@ -42,7 +42,7 @@ class request_t final
 	:	public std::enable_shared_from_this< request_t >
 {
 	friend impl::connection_handle_t &
-	impl::access_req_connection( request_t & );
+	impl::access_req_connection( request_t & ) noexcept;
 
 	public:
 		request_t(
@@ -59,22 +59,21 @@ class request_t final
 
 		//! Get request header.
 		const http_request_header_t &
-		header() const
+		header() const noexcept
 		{
 			return m_header;
 		}
 
 		//! Get request body.
 		const std::string &
-		body() const
+		body() const noexcept
 		{
 			return m_body;
 		}
 
 		template < typename Output = restinio_controlled_output_t >
 		auto
-		create_response(
-			http_status_line_t status_line = status_ok() )
+		create_response( http_status_line_t status_line = status_ok() )
 		{
 			check_connection();
 
@@ -105,18 +104,10 @@ class request_t final
 		}
 
 		//! Get request id.
-		request_id_t
-		request_id() const
-		{
-			return m_request_id;
-		}
+		auto request_id() const noexcept { return m_request_id; }
 
 		//! Get connection id.
-		connection_id_t
-		connection_id() const
-		{
-			return m_connection_id;
-		}
+		connection_id_t connection_id() const noexcept { return m_connection_id; }
 
 	private:
 		void
@@ -161,7 +152,7 @@ namespace impl
 {
 
 inline connection_handle_t &
-access_req_connection( request_t & req )
+access_req_connection( request_t & req ) noexcept
 {
 	return req.m_connection;
 }

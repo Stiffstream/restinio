@@ -27,19 +27,11 @@ namespace restinio
 //! Fake lock.
 struct null_lock_t
 {
-	constexpr void
-	lock() const
-	{}
+	constexpr void lock() const noexcept {}
 
-	constexpr bool
-	try_lock() const
-	{
-		return true;
-	}
+	constexpr bool try_lock() const noexcept { return true; }
 
-	constexpr void
-	unlock() const
-	{}
+	constexpr void unlock() const noexcept {}
 };
 
 //
@@ -57,11 +49,11 @@ class ostream_logger_t
 		ostream_logger_t( const ostream_logger_t & ) = delete;
 		ostream_logger_t & operator = ( const ostream_logger_t & ) = delete;
 
-		ostream_logger_t()
+		ostream_logger_t() noexcept
 			:	m_out{ &std::cout }
 		{}
 
-		ostream_logger_t( std::ostream & out )
+		ostream_logger_t( std::ostream & out ) noexcept
 			:	m_out{ &out }
 		{}
 
