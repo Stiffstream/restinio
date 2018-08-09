@@ -67,7 +67,7 @@ class query_string_params_t final
 
 		//! Check parameter.
 		bool
-		has( string_view_t key ) const
+		has( string_view_t key ) const noexcept
 		{
 			return m_parameters.end() != find_parameter( key );
 		}
@@ -75,7 +75,7 @@ class query_string_params_t final
 		//! Get the value of a parameter if it exists.
 		//! @since v.0.4.4
 		optional_t< string_view_t >
-		get_param( string_view_t key ) const
+		get_param( string_view_t key ) const noexcept
 		{
 			const auto it = find_parameter( key );
 
@@ -85,27 +85,32 @@ class query_string_params_t final
 		}
 
 		//! Get the size of parameters.
-		auto size() const { return m_parameters.size(); }
+		auto size() const noexcept { return m_parameters.size(); }
+
+		//! Is there any parameters?
+		//! @since v.0.4.8
+		bool empty() const noexcept { return m_parameters.empty(); }
 
 		//! Iterate parameters.
 		//! //{
 		parameters_container_t::const_iterator
-		begin() const
+		begin() const noexcept
 		{
 			return m_parameters.begin();
 		}
 
 		parameters_container_t::const_iterator
-		end() const
+		end() const noexcept
 		{
 			return m_parameters.end();
 		}
 		//! //}
 
+		//
 
 	private:
 		parameters_container_t::const_iterator
-		find_parameter( string_view_t key ) const
+		find_parameter( string_view_t key ) const noexcept
 		{
 			return
 				std::find_if(
