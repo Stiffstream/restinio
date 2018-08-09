@@ -1,9 +1,11 @@
 #include <iostream>
 
+#include <so_5/all.hpp>
 #include <restinio/all.hpp>
 
 using resp_parts_container_t = std::vector< std::string >;
 
+// Response divided into parts.
 resp_parts_container_t g_response_parts{
 	R"-STR-(<!doctype html>
 	<html>)-STR-",
@@ -23,72 +25,105 @@ resp_parts_container_t g_response_parts{
 	R"-STR-(
 </html>)-STR-" };
 
-
-using resp_builder_t = restinio::response_builder_t< restinio::chunked_output_t >;
-using resp_builder_shared_ptr_t = std::shared_ptr< resp_builder_t >;
-
-void
-stream_response_chunks(
-	resp_builder_shared_ptr_t resp,
-	resp_parts_container_t::const_iterator it )
+// Request handler object.
+// Iterates over g_response_parts sending portions of response data
+// waiting for a previous portion to be written before sending next porion.
+class a_req_handler_t final : public so_5::agent_t
 {
-	if( end( g_response_parts ) == it )
-	{
-		resp->done();
-	}
-	else
-	{
-		resp->append_chunk( restinio::const_buffer( it->data(), it->size() ) );
+		using so_base_type_t = so_5::agent_t;
 
-		resp->flush( [ r = resp,
-				it = ++it ]( const restinio::asio_ns::error_code & ec ) mutable {
+	public:
+		a_req_handler_t(
+			context_t ctx,
+			restinio::request_handle_t req )
+			:	so_base_type_t{ std::move( ctx ) }
+			,	m_resp{ req->create_response< restinio::chunked_output_t >() }
+			,	m_part_it{ begin( g_response_parts ) }
+		{
+			so_subscribe_self().event( &a_req_handler_t::evt_stream_next_chunk );
+		};
 
-				if( !ec )
-				{
-					stream_response_chunks( std::move( r ), it );
-				}
-			} );
-	}
-}
+		virtual void so_evt_start() override
+		{
+			// Set header and start response sending circle.
 
-// Create request handler.
-restinio::request_handling_status_t handler( restinio::request_handle_t req )
-{
-	if( restinio::http_method_get() == req->header().method() &&
-		req->header().request_target() == "/" )
-	{
-		std::thread handler_thread{ [ req = std::move( req ) ]{
-
-			auto resp = req->create_response< restinio::chunked_output_t >()
-				.append_header( restinio::http_field::server, "RESTinio notificators sample" )
+			m_resp
+				.append_header(
+					restinio::http_field::server,
+					"RESTinio notificators sample" )
 				.append_header_date_field()
 				.append_header(
 					restinio::http_field::content_type,
 					"text/html; charset=utf-8" );
 
-			stream_response_chunks(
-				std::make_shared< resp_builder_t >( std::move( resp ) ),
-				begin( g_response_parts ) );
-		} };
+			evt_stream_next_chunk( restinio::asio_ns::error_code{} );
+		}
 
-		handler_thread.detach();
+	private:
+		// An iteration of sending data to client.
+		void evt_stream_next_chunk( const restinio::asio_ns::error_code & ec )
+		{
+			if( !ec )
+			{
+				// If previous part finished with seccess status
+				// We can move to the next part.
 
-		return restinio::request_accepted();
-	}
+				if( end( g_response_parts ) != m_part_it )
+				{
+					// Send next part.
+					m_resp.append_chunk(
+						restinio::const_buffer(
+							m_part_it->data(),
+							m_part_it->size() ) );
 
-	return restinio::request_rejected();
-}
+					m_resp.flush( [ mbox = so_direct_mbox()]( const auto & ec ){
+							so_5::send< restinio::asio_ns::error_code >( mbox, ec );
+						} );
+
+					++m_part_it;
+
+					// No dereg must be invoked
+					return;
+				}
+				else
+				{
+					// Response was served.
+					// Complete the response:
+					m_resp.done();
+				}
+			}
+
+			// In case of error or response complete - deregister the agent.
+			so_deregister_agent_coop( so_5::dereg_reason::normal );
+		}
+
+		restinio::response_builder_t< restinio::chunked_output_t > m_resp;
+		resp_parts_container_t::const_iterator m_part_it;
+};
 
 int main()
 {
 	try
 	{
+		so_5::wrapped_env_t sobj{};
+
 		restinio::run(
 			restinio::on_thread_pool( std::thread::hardware_concurrency() )
 				.port( 8080 )
 				.address( "localhost" )
 				.max_pipelined_requests( 4 )
-				.request_handler( handler ) );
+				.request_handler( [&]( restinio::request_handle_t req ){
+					sobj.environment()
+						.register_agent_as_coop(
+							so_5::autoname,
+							std::make_unique< a_req_handler_t >(
+								sobj.environment(),
+								std::move( req ) ) );
+
+					return restinio::request_accepted();
+				} ) );
+
+		sobj.stop_then_join();
 	}
 	catch( const std::exception & ex )
 	{

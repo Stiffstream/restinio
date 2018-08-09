@@ -118,7 +118,7 @@ enum class asio_convertible_error_t : int
 namespace impl
 {
 
-//! Error category for asio compatible error code.
+//! Error category for asio compatible error codes.
 /*
 	@since v.0.4.8
 */
