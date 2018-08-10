@@ -129,7 +129,7 @@ class regex_t final
 
 			if( nullptr == m_route_regex )
 			{
-				throw std::runtime_error{
+				throw exception_t{
 						fmt::format(
 							"unable to compile regex \"{}\": {}",
 							route,

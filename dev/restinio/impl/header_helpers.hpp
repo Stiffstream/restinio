@@ -9,6 +9,7 @@
 #pragma once
 
 #include <array>
+#include <numeric>
 
 #include <restinio/buffers.hpp>
 
@@ -24,8 +25,7 @@ namespace impl
 
 //! Compile time c-string length.
 template< std::size_t N >
-inline std::size_t
-ct_string_len( const char (&)[N] )
+inline constexpr std::size_t ct_string_len( const char (&)[N] ) noexcept
 {
 	return N-1;
 }
@@ -50,14 +50,15 @@ calculate_approx_buffer_size_for_header(
 	result += 26; // "Connection: keep-alive\r\n" is also enough for "Connection: close\r\n" (21).
 	result += 20 + 18; // "Content-Length: %llu\r\n" assume size is size_t, and 18 is always ok.
 
-	for( const auto & f : h )
-	{
-		result += f.name().size() + 2 + f.value().size() + 2;
-	}
-
 	result += 2; // Final "\r\n\r\n".
 
-	return result;
+	return std::accumulate(
+		h.begin(),
+		h.end(),
+		result,
+		[]( auto res, const auto & f ){
+			return res + f.name().size() + 2 + f.value().size() + 2;
+		} );
 }
 
 //
@@ -153,16 +154,6 @@ create_header_string(
 
 	return result;
 }
-
-// inline auto
-// create_error_resp( std::uint16_t status, std::string phrase )
-// {
-// 	http_response_header_t h{ status, std::move( phrase ) };
-// 	h.should_keep_alive( false );
-// 	h.http_major( 1 );
-// 	h.http_minor( 1 );
-// 	return create_header_string( h );
-// }
 
 inline auto
 create_not_implemented_resp()

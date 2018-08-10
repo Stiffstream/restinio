@@ -87,8 +87,7 @@ class route_params_t final
 		route_params_t & operator = ( const route_params_t & ) = delete;
 
 		//! Matched route.
-		string_view_t
-		match() const { return m_match; }
+		string_view_t match() const noexcept { return m_match; }
 
 		//! Get named parameter.
 		string_view_t
@@ -99,7 +98,7 @@ class route_params_t final
 
 		//! Check parameter.
 		bool
-		has( string_view_t key ) const
+		has( string_view_t key ) const noexcept
 		{
 			return m_named_parameters.end() != find_named_parameter( key );
 		}
@@ -107,7 +106,7 @@ class route_params_t final
 		//! Get the value of a parameter if it exists.
 		//! @since v.0.4.4
 		optional_t< string_view_t >
-		get_param( string_view_t key ) const
+		get_param( string_view_t key ) const noexcept
 		{
 			const auto it = find_named_parameter( key );
 
@@ -128,13 +127,13 @@ class route_params_t final
 
 		//! Get number of parameters.
 		//! \{
-		auto named_parameters_size() const { return m_named_parameters.size(); }
-		auto indexed_parameters_size() const { return m_indexed_parameters.size(); }
+		auto named_parameters_size() const noexcept { return m_named_parameters.size(); }
+		auto indexed_parameters_size() const noexcept { return m_indexed_parameters.size(); }
 		//! \}
 
 	private:
 		named_parameters_container_t::const_iterator
-		find_named_parameter( string_view_t key ) const
+		find_named_parameter( string_view_t key ) const noexcept
 		{
 			return
 				std::find_if(
@@ -217,13 +216,13 @@ struct route_params_accessor_t
 	//! Get values containers for all parameters (used in unit tests).
 	//! \{
 	static const auto &
-	named_parameters( const route_params_t & rp )
+	named_parameters( const route_params_t & rp ) noexcept
 	{
 		return rp.m_named_parameters;
 	}
 
 	static const auto &
-	indexed_parameters( const route_params_t & rp )
+	indexed_parameters( const route_params_t & rp ) noexcept
 	{
 		return rp.m_indexed_parameters;
 	}

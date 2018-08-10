@@ -1450,7 +1450,6 @@ class connection_t final
 				&connection_t::handle_write_response_timeout );
 		}
 
-
 		void
 		handle_sendfile_timeout()
 		{

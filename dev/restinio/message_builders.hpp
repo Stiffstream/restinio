@@ -832,7 +832,7 @@ class response_builder_t< chunked_output_t > final
 
 			}
 
-			const char * ending_representation = "\r\n" "0\r\n\r\n";
+			const char * const ending_representation = "\r\n" "0\r\n\r\n";
 			const char * appendix_begin = ending_representation + 2;
 			const char * appendix_end = appendix_begin;
 

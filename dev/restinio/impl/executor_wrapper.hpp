@@ -32,11 +32,7 @@ class executor_wrapper_t
 		virtual ~executor_wrapper_t() = default;
 
 		//! An executor for callbacks on async operations.
-		inline Executor &
-		get_executor()
-		{
-			return m_executor;
-		}
+		Executor & get_executor() noexcept { return m_executor; }
 
 	private:
 		//! Sync object for connection events.

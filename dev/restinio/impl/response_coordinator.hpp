@@ -46,7 +46,7 @@ class response_context_t
 		void
 		reinit(
 			//! New request id.
-			request_id_t request_id )
+			request_id_t request_id ) noexcept
 		{
 			m_request_id = request_id;
 			m_response_output_flags =

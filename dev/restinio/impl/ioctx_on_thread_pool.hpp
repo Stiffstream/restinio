@@ -30,7 +30,7 @@ public:
 	own_io_context_for_thread_pool_t() {}
 
 	//! Get access to io_context object.
-	auto & io_context() { return m_ioctx; }
+	auto & io_context() noexcept { return m_ioctx; }
 };
 
 /*!
@@ -56,7 +56,7 @@ public:
 	{}
 
 	//! Get access to io_context object.
-	auto & io_context() { return m_ioctx; }
+	auto & io_context() noexcept { return m_ioctx; }
 };
 
 /*!
@@ -110,12 +110,17 @@ class ioctx_on_thread_pool_t
 
 			try
 			{
-				for( auto & t : m_pool )
-					t = std::thread( [this] {
-						asio_ns::executor_work_guard< asio_ns::io_context::executor_type >
-							work{ asio_ns::make_work_guard( m_ioctx_holder.io_context() ) };
+				std::generate(
+					begin( m_pool ),
+					end( m_pool ),
+					[this]{
+						return
+							std::thread{ [this] {
+								auto work{ asio_ns::make_work_guard(
+											m_ioctx_holder.io_context() ) };
 
-						m_ioctx_holder.io_context().run();
+								m_ioctx_holder.io_context().run();
+							} };
 					} );
 
 				// When all thread started successfully
@@ -153,11 +158,13 @@ class ioctx_on_thread_pool_t
 			}
 		}
 
-		bool
-		started() const { return status_t::started == m_status; }
+		bool started() const noexcept { return status_t::started == m_status; }
 
 		asio_ns::io_context &
-		io_context() { return m_ioctx_holder.io_context(); }
+		io_context() noexcept
+		{
+			return m_ioctx_holder.io_context();
+		}
 
 	private:
 		enum class status_t : std::uint8_t { stopped, started };

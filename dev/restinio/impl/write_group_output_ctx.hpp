@@ -79,7 +79,7 @@ class write_group_output_ctx_t
 	//! Get the maximum number of buffers that can be written with
 	//! gather write operation.
 	static constexpr auto
-	max_iov_len()
+	max_iov_len() noexcept
 	{
 		using len_t = decltype( asio_ns::detail::max_iov_len );
 		return std::min< len_t >( asio_ns::detail::max_iov_len, 64 );

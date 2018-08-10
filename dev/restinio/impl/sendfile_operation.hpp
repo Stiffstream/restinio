@@ -15,6 +15,9 @@
 namespace restinio
 {
 
+namespace impl
+{
+
 //
 // sendfile_operation_base_t
 //
@@ -63,7 +66,7 @@ class sendfile_operation_runner_base_t
 			,	m_after_sendfile_cb{ std::move( after_sendfile_cb ) }
 		{}
 
-		auto expires_after() const { return m_expires_after; }
+		auto expires_after() const noexcept { return m_expires_after; }
 
 	protected:
 		file_descriptor_t m_file_descriptor;
@@ -84,8 +87,10 @@ template<typename Error_Type>
 auto
 make_error_code( const Error_Type & e )
 {
-   return asio_ns::error_code{ static_cast<int>(e), asio_ns::error::get_system_category() };
+	return asio_ns::error_code{ static_cast<int>(e), asio_ns::error::get_system_category() };
 }
+
+} /* namespace impl */
 
 } /* namespace restinio */
 

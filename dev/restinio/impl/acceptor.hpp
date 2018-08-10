@@ -48,10 +48,14 @@ class socket_supplier_t
 		{
 			m_sockets.reserve( settings.concurrent_accepts_count() );
 
-			while( m_sockets.size() < settings.concurrent_accepts_count() )
-			{
-				m_sockets.emplace_back( m_io_context );
-			}
+			std::generate_n(
+				std::back_inserter( m_sockets ),
+				settings.concurrent_accepts_count(),
+				[this]{
+					return Socket{m_io_context};
+				} );
+
+			assert( m_sockets.size() == settings.concurrent_accepts_count() );
 		}
 
 		//! Get the reference to socket.
@@ -69,14 +73,13 @@ class socket_supplier_t
 			//! Index of a socket in the pool.
 			std::size_t idx )
 		{
-			auto res = std::move( m_sockets.at( idx ) );
-			return res;
+			return std::move( socket(idx ) );
 		}
 
 		//! The number of sockets that can be used for
 		//! cuncurrent accept operations.
 		auto
-		cuncurrent_accept_sockets_count() const
+		cuncurrent_accept_sockets_count() const noexcept
 		{
 			return m_sockets.size();
 		}
@@ -217,20 +220,18 @@ class acceptor_t final
 			}
 		}
 
+		//! Get an executor for close operation.
 		auto &
-		get_open_close_operations_executor()
+		get_open_close_operations_executor() noexcept
 		{
 			return m_open_close_operations_executor;
 		}
 
 	private:
-		auto &
-		get_executor()
-		{
-			return m_executor;
-		}
+		//! Get executor for acceptor.
+		auto & get_executor() noexcept { return m_executor; }
 
-		// Set a callback for a new connection.
+		//! Set a callback for a new connection.
 		void
 		accept_next( std::size_t i )
 		{

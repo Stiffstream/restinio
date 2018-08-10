@@ -352,7 +352,6 @@ class string_view_buffer_storage_appender_t final
 
 using names_buffer_appender_t = string_view_buffer_storage_appender_t< std::string >;
 
-
 //! The main path matching expression.
 constexpr auto path_regex_str =
 	R"((\\.)|(?:\:(\w+)(?:\(((?:\\.|[^\\()])+)\))?|\(((?:\\.|[^\\()])+)\))([+*?])?)";
@@ -384,7 +383,7 @@ class token_t
 			names_buffer_appender_t & names_buffer_appender ) const = 0;
 
 		virtual bool
-		is_end_delimited( const std::string & ) const
+		is_end_delimited( const std::string & ) const noexcept
 		{
 			return false;
 		}
@@ -422,7 +421,7 @@ class plain_string_token_t final : public token_t< Route_Param_Appender >
 		}
 
 		virtual bool
-		is_end_delimited( const std::string & delimiters ) const override
+		is_end_delimited( const std::string & delimiters ) const noexcept override
 		{
 			return std::string::npos != delimiters.find( m_last_char );
 		}

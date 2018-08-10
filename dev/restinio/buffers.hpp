@@ -674,11 +674,13 @@ class write_group_t
 		void
 		merge( write_group_t second )
 		{
-			m_items.reserve( m_items.size() + second.m_items.size() );
-			for( auto & i : second.m_items )
-			{
-				m_items.emplace_back( std::move( i ) );
-			}
+			auto & second_items = second.m_items;
+			m_items.reserve( m_items.size() + second_items.size() );
+
+			std::move(
+				begin( second_items ),
+				end( second_items ),
+				std::back_inserter( m_items ) );
 
 			m_after_write_notificator = std::move( second.m_after_write_notificator );
 		}
