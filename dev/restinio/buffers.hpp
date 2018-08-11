@@ -126,36 +126,52 @@ class const_buf_t final : public buf_iface_t
 		const std::size_t m_size;
 };
 
-//! Buffer entity based on std::string.
-class string_buf_t final : public buf_iface_t
+//! User defined datasizable object.
+template < typename Datasizeable >
+class datasizeable_buf_t final : public buf_iface_t
 {
+	static_assert(
+		std::is_member_function_pointer< decltype(&Datasizeable::data) >::value,
+			"Datasizeable requires 'data()' member function" );
+
+	static_assert(
+		std::is_member_function_pointer< decltype(&Datasizeable::size) >::value,
+			"Datasizeable requires const data member function" );
+
+	static_assert(
+		std::is_move_constructible< Datasizeable >::value,
+			"Datasizeable must be move constructible" );
+
 	public:
-		string_buf_t() = delete;
-		string_buf_t( std::string buf )
-			:	m_buf{ std::move( buf ) }
+		datasizeable_buf_t() = delete;
+
+		datasizeable_buf_t( Datasizeable buf )
+			:	m_custom_buffer{ std::move( buf ) }
 		{}
 
-		string_buf_t( const string_buf_t & ) = delete;
-		string_buf_t & operator = ( const string_buf_t & ) = delete;
-
-		string_buf_t( string_buf_t && ) = default; // allow only explicit move.
-		string_buf_t & operator = ( string_buf_t && ) = delete;
+		datasizeable_buf_t( datasizeable_buf_t && ) = default; // allow only explicit move.
 
 		virtual asio_ns::const_buffer buffer() const override
 		{
-			return asio_ns::const_buffer{ m_buf.data(), m_buf.size() };
+			return asio_ns::const_buffer{
+				m_custom_buffer.data(),
+				m_custom_buffer.size() };
 		}
 
 		virtual void relocate_to( void * storage ) override
 		{
-			new( storage ) string_buf_t{ std::move( *this ) };
+			new( storage ) datasizeable_buf_t{ std::move( *this ) };
 		}
 
-		virtual std::size_t size() const override { return  m_buf.size(); }
+		virtual std::size_t size() const override { return m_custom_buffer.size(); }
 
 	private:
-		std::string m_buf;
+		Datasizeable m_custom_buffer;
 };
+
+//
+// shared_datasizeable_buf_t
+//
 
 //! Buffer entity based on shared_ptr of data-sizeable entity.
 template < typename T >
@@ -235,7 +251,7 @@ constexpr std::size_t buffer_storage_align =
 	std::max< std::size_t >( {
 		alignof( empty_buf_t ),
 		alignof( const_buf_t ),
-		alignof( string_buf_t ),
+		alignof( datasizeable_buf_t< std::string > ),
 		alignof( shared_datasizeable_buf_t< std::string > ),
 		alignof( sendfile_write_operation_t ) } );
 
@@ -244,7 +260,7 @@ constexpr std::size_t needed_storage_max_size =
 	std::max< std::size_t >( {
 		sizeof( empty_buf_t ),
 		sizeof( const_buf_t ),
-		sizeof( string_buf_t ),
+		sizeof( datasizeable_buf_t< std::string > ),
 		sizeof( shared_datasizeable_buf_t< std::string > ),
 		sizeof( sendfile_write_operation_t ) } );
 
@@ -321,10 +337,21 @@ class writable_item_t
 			new( &m_storage ) impl::const_buf_t{ const_buf.m_str, const_buf.m_size };
 		}
 
-		writable_item_t( std::string str )
+		template <
+			typename Datasizeable,
+			typename S = typename
+				std::enable_if_t<
+					!std::is_same<
+						std::vector< writable_item_t >,
+						Datasizeable >::value > >
+		writable_item_t( Datasizeable ds )
 			:	m_write_type{ writable_item_type_t::trivial_write_operation }
 		{
-			new( &m_storage ) impl::string_buf_t{ std::move( str ) };
+			static_assert(
+				sizeof( impl::datasizeable_buf_t< Datasizeable > ) <= impl::needed_storage_max_size,
+				"size of type is too big" );
+
+			new( &m_storage ) impl::datasizeable_buf_t< Datasizeable >{ std::move( ds ) };
 		}
 
 		writable_item_t( const char * str )
@@ -333,18 +360,18 @@ class writable_item_t
 			:	writable_item_t{ std::string{ str } }
 		{}
 
-		template < typename T >
-		writable_item_t( std::shared_ptr< T > sp )
+		template < typename Datasizeable >
+		writable_item_t( std::shared_ptr< Datasizeable > sp )
 			:	m_write_type{ writable_item_type_t::trivial_write_operation }
 		{
 			static_assert(
-				sizeof( std::shared_ptr< T > ) <= impl::needed_storage_max_size,
+				sizeof( impl::shared_datasizeable_buf_t< Datasizeable > ) <= impl::needed_storage_max_size,
 				"size of shared_ptr on a type is too big" );
 
 			if( !sp )
 				throw exception_t{ "empty shared_ptr cannot be used as buffer" };
 
-			new( &m_storage ) impl::shared_datasizeable_buf_t< T >{ std::move( sp ) };
+			new( &m_storage ) impl::shared_datasizeable_buf_t< Datasizeable >{ std::move( sp ) };
 		}
 
 		writable_item_t( sendfile_t sf_opts )
