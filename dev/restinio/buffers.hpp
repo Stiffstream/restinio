@@ -448,37 +448,37 @@ class writable_item_t
 		///@{
 
 		//! Access as writable_base_t item.
-		const impl::writable_base_t * get_writable_base() const
+		const impl::writable_base_t * get_writable_base() const noexcept
 		{
 			return reinterpret_cast< const impl::writable_base_t * >( &m_storage );
 		}
 
 		//! Access as writable_base_t item.
-		impl::writable_base_t * get_writable_base()
+		impl::writable_base_t * get_writable_base() noexcept
 		{
 			return reinterpret_cast< impl::writable_base_t * >( &m_storage );
 		}
 
 		//! Access as trivial buf item.
-		const impl::buf_iface_t * get_buf() const
+		const impl::buf_iface_t * get_buf() const noexcept
 		{
 			return reinterpret_cast< const impl::buf_iface_t * >( &m_storage );
 		}
 
 		//! Access as trivial buf item.
-		impl::buf_iface_t * get_buf()
+		impl::buf_iface_t * get_buf() noexcept
 		{
 			return reinterpret_cast< impl::buf_iface_t * >( &m_storage );
 		}
 
 		//! Access as sendfile_write_operation_t item.
-		const impl::sendfile_write_operation_t * get_sfwo() const
+		const impl::sendfile_write_operation_t * get_sfwo() const noexcept
 		{
 			return reinterpret_cast< const impl::sendfile_write_operation_t * >( &m_storage );
 		}
 
 		//! Access as sendfile_write_operation_t item.
-		impl::sendfile_write_operation_t * get_sfwo()
+		impl::sendfile_write_operation_t * get_sfwo() noexcept
 		{
 			return reinterpret_cast< impl::sendfile_write_operation_t * >( &m_storage );
 		}
