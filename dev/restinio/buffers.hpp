@@ -28,7 +28,7 @@ namespace impl
 // writable_base_t
 //
 
-//! A base class fora writable items.
+//! A base class for writable items.
 /*!
 	Having a condition to put heterogeneous writable-items sequence in vector
 	and to transfer it from builders to connection context,
@@ -59,7 +59,7 @@ class writable_base_t
 		virtual std::size_t size() const = 0;
 };
 
-//! Inernaml interface for a buffer-like entity.
+//! Internal interface for a buffer-like entity.
 class buf_iface_t : public writable_base_t
 {
 	public:
@@ -136,7 +136,7 @@ class datasizeable_buf_t final : public buf_iface_t
 
 	static_assert(
 		std::is_member_function_pointer< decltype(&Datasizeable::size) >::value,
-			"Datasizeable requires const data member function" );
+			"Datasizeable requires 'size()' member function" );
 
 	static_assert(
 		std::is_move_constructible< Datasizeable >::value,
@@ -408,7 +408,7 @@ class writable_item_t
 
 		//! Get a type of a stored buffer object.
 		writable_item_type_t
-		write_type() const
+		write_type() const noexcept
 		{
 			return m_write_type;
 		}
