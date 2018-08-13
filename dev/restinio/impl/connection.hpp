@@ -264,7 +264,6 @@ class connection_t final
 		{
 			try
 			{
-				// Notify of a new connection instance.
 				m_logger.trace( [&]{
 					return fmt::format(
 						"[connection:{}] destructor called",
