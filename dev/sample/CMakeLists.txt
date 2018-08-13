@@ -16,6 +16,7 @@ add_subdirectory(async_handling_with_sobjectizer)
 add_subdirectory(compression)
 add_subdirectory(decompression)
 add_subdirectory(notificators)
+add_subdirectory(custom_buffer)
 
 if ( OPENSSL_FOUND )
 	add_subdirectory(hello_world_https)
