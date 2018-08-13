@@ -564,11 +564,8 @@ class write_group_t
 
 		write_group_t & operator = ( write_group_t && wg )
 		{
-			if( this != &wg )
-			{
-				write_group_t tmp{ std::move( wg ) };
-				swap( *this, tmp );
-			}
+			write_group_t tmp{ std::move( wg ) };
+			swap( *this, tmp );
 
 			return *this;
 		}
@@ -647,13 +644,6 @@ class write_group_t
 		{
 			return static_cast< bool >( m_after_write_notificator );
 		}
-
-		// //! Get after write notificator.
-
-		// after_write_notificator() const noexcept
-		// {
-		// 	return m_after_write_notificator;
-		// }
 
 		//! Get after write notificator.
 		void
