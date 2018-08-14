@@ -131,20 +131,26 @@ template < typename Datasizeable >
 class datasizeable_buf_t final : public buf_iface_t
 {
 	static_assert(
-		std::is_member_function_pointer< decltype(&Datasizeable::data) >::value,
-			"Datasizeable requires 'data()' member function" );
+		std::is_convertible<
+				decltype( std::declval< const Datasizeable >().data() ),
+				const void *
+			>::value,
+			"Datasizeable requires 'T* data() const' member function, "
+			"where 'T*' is convertible to 'void*' " );
 
 	static_assert(
-		std::is_member_function_pointer< decltype(&Datasizeable::size) >::value,
-			"Datasizeable requires 'size()' member function" );
+		std::is_convertible<
+				decltype( std::declval< const Datasizeable >().size() ),
+				std::size_t
+			>::value,
+			"Datasizeable requires 'N size() const' member function, "
+			"where 'N' is convertible to 'std::size_t'" );
 
 	static_assert(
 		std::is_move_constructible< Datasizeable >::value,
 			"Datasizeable must be move constructible" );
 
 	public:
-		datasizeable_buf_t() = delete;
-
 		datasizeable_buf_t( Datasizeable buf )
 			:	m_custom_buffer{ std::move( buf ) }
 		{}
