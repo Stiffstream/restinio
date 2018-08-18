@@ -89,7 +89,7 @@ encode( string_view_t str )
 						static_cast<unsigned char>(ch) ]);
 	};
 
-	const std::size_t group_size = 3u;
+	constexpr std::size_t group_size = 3u;
 	const auto remaining = str.size() % group_size;
 
 	result.reserve( (str.size()/group_size + (remaining ? 1:0)) * 4 );
