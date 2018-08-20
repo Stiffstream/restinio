@@ -59,11 +59,14 @@ class writable_base_t
 		virtual std::size_t size() const = 0;
 };
 
-//! Internal interface for a buffer-like entity.
+//! Internal interface for a trivial buffer-like entity.
 class buf_iface_t : public writable_base_t
 {
 	public:
 		//! Get asio buf entity.
+		/*!
+			Prepares an item for being used with ASIO API.
+		*/
 		virtual asio_ns::const_buffer buffer() const = 0;
 };
 
@@ -79,6 +82,12 @@ class empty_buf_t final : public buf_iface_t
 		empty_buf_t( empty_buf_t && ) = default; // allow only explicit move.
 		empty_buf_t & operator = ( empty_buf_t && ) = delete;
 
+		/*!
+			@name An implementation of writable_base_t interface.
+
+			\see writable_base_t
+		*/
+		///@{
 		virtual asio_ns::const_buffer buffer() const override
 		{
 			return asio_ns::const_buffer{ nullptr, 0 };
@@ -88,8 +97,16 @@ class empty_buf_t final : public buf_iface_t
 		{
 			new( storage ) empty_buf_t{};
 		}
+		///@}
 
+		/*!
+			@name An implementation of buf_iface_t interface.
+
+			\see buf_iface_t
+		*/
+		///@{
 		virtual std::size_t size() const override { return  0; }
+		///@}
 };
 
 //! Buffer entity for const buffer.
@@ -109,6 +126,12 @@ class const_buf_t final : public buf_iface_t
 		const_buf_t( const_buf_t && ) = default; // allow only explicit move.
 		const_buf_t & operator = ( const_buf_t && ) = delete;
 
+		/*!
+			@name An implementation of writable_base_t interface.
+
+			\see writable_base_t
+		*/
+		///@{
 		virtual asio_ns::const_buffer buffer() const override
 		{
 			return asio_ns::const_buffer{ m_data, m_size };
@@ -118,18 +141,36 @@ class const_buf_t final : public buf_iface_t
 		{
 			new( storage ) const_buf_t{ std::move( *this ) };
 		}
+		///@}
 
+		/*!
+			@name An implementation of buf_iface_t interface.
+
+			\see buf_iface_t
+		*/
+		///@{
 		virtual std::size_t size() const override { return m_size; }
+		///@}
 
 	private:
+		//! A pointer to data.
 		const void * const m_data;
+		//! The size of data.
 		const std::size_t m_size;
 };
 
 //! User defined datasizable object.
+/*!
+	\note there is a limitation on how large a `Datasizeable` type can be.
+	The limitation is checked with a following predicate:
+	\code
+		sizeof(datasizeable_buf_t<D>) <= needed_storage_max_size;
+	\endcode
+*/
 template < typename Datasizeable >
 class datasizeable_buf_t final : public buf_iface_t
 {
+	// Check datasizeable contract:
 	static_assert(
 		std::is_convertible<
 				decltype( std::declval< const Datasizeable >().data() ),
@@ -157,6 +198,12 @@ class datasizeable_buf_t final : public buf_iface_t
 
 		datasizeable_buf_t( datasizeable_buf_t && ) = default; // allow only explicit move.
 
+		/*!
+			@name An implementation of writable_base_t interface.
+
+			\see writable_base_t
+		*/
+		///@{
 		virtual asio_ns::const_buffer buffer() const override
 		{
 			return asio_ns::const_buffer{
@@ -168,25 +215,39 @@ class datasizeable_buf_t final : public buf_iface_t
 		{
 			new( storage ) datasizeable_buf_t{ std::move( *this ) };
 		}
+		///@}
 
+		/*!
+			@name An implementation of buf_iface_t interface.
+
+			\see buf_iface_t
+		*/
+		///@{
 		virtual std::size_t size() const override { return m_custom_buffer.size(); }
+		///@}
 
 	private:
+		//! A datasizeable item that represents buffer.
 		Datasizeable m_custom_buffer;
 };
 
+//! An alias for a std::string instantiation of datasizeable_buf_t<D> template.
+/*!
+	Used to figure out buffer_storage_align and needed_storage_max_size
+	constants.
+*/
 using string_buf_t = datasizeable_buf_t< std::string >;
 
 //
 // shared_datasizeable_buf_t
 //
 
-//! Buffer entity based on shared_ptr of data-sizeable entity.
-template < typename T >
+//! Buffer based on shared_ptr of data-sizeable entity.
+template < typename Datasizeable >
 class shared_datasizeable_buf_t final : public buf_iface_t
 {
 	public:
-		using shared_ptr_t = std::shared_ptr< T >;
+		using shared_ptr_t = std::shared_ptr< Datasizeable >;
 
 		shared_datasizeable_buf_t() = delete;
 
@@ -200,6 +261,12 @@ class shared_datasizeable_buf_t final : public buf_iface_t
 		shared_datasizeable_buf_t( shared_datasizeable_buf_t && ) = default; // allow only explicit move.
 		shared_datasizeable_buf_t & operator = ( shared_datasizeable_buf_t && ) = delete;
 
+		/*!
+			@name An implementation of writable_base_t interface.
+
+			\see writable_base_t
+		*/
+		///@{
 		virtual asio_ns::const_buffer buffer() const override
 		{
 			return asio_ns::const_buffer{ m_buf_ptr->data(), m_buf_ptr->size() };
@@ -209,10 +276,19 @@ class shared_datasizeable_buf_t final : public buf_iface_t
 		{
 			new( storage ) shared_datasizeable_buf_t{ std::move( *this ) };
 		}
+		///@}
 
+		/*!
+			@name An implementation of buf_iface_t interface.
+
+			\see buf_iface_t
+		*/
+		///@{
 		virtual std::size_t size() const override { return m_buf_ptr->size(); }
+		///@}
 
 	private:
+		//! A shared pointer to a datasizeable entity.
 		shared_ptr_t m_buf_ptr;
 };
 
@@ -235,6 +311,12 @@ struct sendfile_write_operation_t : public writable_base_t
 		sendfile_write_operation_t( sendfile_write_operation_t && ) = default;
 		sendfile_write_operation_t & operator = ( sendfile_write_operation_t && ) = default;
 
+		/*!
+			@name An implementation of writable_base_t interface.
+
+			\see writable_base_t
+		*/
+		///@{
 		virtual void relocate_to( void * storage ) override
 		{
 			new( storage ) sendfile_write_operation_t{ std::move( *this ) };
@@ -244,17 +326,21 @@ struct sendfile_write_operation_t : public writable_base_t
 		{
 			return m_sendfile_options ? m_sendfile_options->size() : 0;
 		}
+		///@}
 
+		//! Get sendfile operation detaiols.
 		const sendfile_t &
-		sendfile_options() const
+		sendfile_options() const noexcept
 		{
 			return *m_sendfile_options;
 		}
 
 	private:
+		//! A pointer to sendfile operation details.
 		std::unique_ptr< sendfile_t > m_sendfile_options;
 };
 
+// Constant for suitable alignment of any entity in writable_base_t hierarchy.
 constexpr std::size_t buffer_storage_align =
 	std::max< std::size_t >( {
 		alignof( empty_buf_t ),
@@ -263,7 +349,7 @@ constexpr std::size_t buffer_storage_align =
 		alignof( shared_datasizeable_buf_t< std::string > ),
 		alignof( sendfile_write_operation_t ) } );
 
-//! An amount of memory that is to be enough to hold any possible buffer entity.
+//! An of memory that is to be enough to hold any possible buffer entity.
 constexpr std::size_t needed_storage_max_size =
 	std::max< std::size_t >( {
 		sizeof( empty_buf_t ),
@@ -275,10 +361,14 @@ constexpr std::size_t needed_storage_max_size =
 } /* namespace impl */
 
 //
-// const_buffer_t
-//
+// const_buffer_t/
 
 //! Helper class for setting a constant buffer storage explicitly.
+/*
+	A proxy DTO type.
+	Its instances are emitted with const_buffer functions and
+	are possible to converted to writable_item_t as it has a constructor for it.
+*/
 struct const_buffer_t
 {
 	constexpr const_buffer_t(
@@ -292,8 +382,8 @@ struct const_buffer_t
 	const std::size_t m_size;
 };
 
-//! Create const buffers
-//! \{
+//! @name Create const buffers.
+///@{
 inline constexpr const_buffer_t
 const_buffer( const void * str, std::size_t size ) noexcept
 {
@@ -305,7 +395,7 @@ const_buffer( const char * str ) noexcept
 {
 	return const_buffer( str, std::strlen( str ) );
 }
-//! \}
+///@}
 
 //
 // writable_item_type_t
@@ -326,9 +416,48 @@ enum class writable_item_type_t
 //
 
 //! Class for storing the buffers used for streaming body (request/response).
+/*!
+	Supporting different types of entities that eventually result in
+	output data sent to peer is a bit tricky.
+	In the first step RESTionio distinguish two types of output data sources:
+	  - trivial buffers (those ones that can be presented as a pair
+	  of a pointer to data and the size of the data).
+	  - sendfile (send a piece of data from file utilizing native
+	  sendfile support Linux/FreeBSD/macOS and TransmitFile on windows).
+
+	Also trivial buffers are implemented diferently for different cases,
+	includeing a template classes `impl::datasizeable_buf_t<Datasizeable>` and
+	`impl::shared_datasizeable_buf_t<Datasizeable>`.
+
+	When using RESTinio response builder, response body can be constructed
+	using different types of buffers, and once the result
+	is flushed to the connection it must be sent to the socket.
+	A couple of issues arises here.
+	And one of them is how to store all these heterogeneous buffers
+	with fewer allocations and less boilerplate necessary
+	to handle each corner case.
+	Storing and moving a bunch of buffers as a vector would be
+	nice, but vector demands a single type to be used.
+	And writable_item_t represents a custom variant-like abstraction
+	for storing an arbitrary buffer object (`std::variant` itself is not the option
+	as it is restricted to types defined beforehand and cannot benifit
+	from the knowledge that all stored items are types derrived from
+	impl::writable_base_t).
+
+	For storing the data of buffers #m_storage is used.
+	It is an aligned buffer sufficient to store
+	any impl::writable_base_t descendant (there is a limitation
+	concerned with impl::datasizeable_buf_t).
+	Also writable_item_t exposes interface to treat it
+	like a trivial buffer or a sendfile operation.
+	The type of buffer currently stored in writable_item_t
+	instance a write_type() function used.
+
+	Having such writable_item_t class, RESTinio  can store a sequence
+	of arbitrary buffers in `std::vector`.
+*/
 class writable_item_t
 {
-		//! Get size of storage.
 	public:
 		writable_item_t( const writable_item_t & ) = delete;
 		writable_item_t & operator = ( const writable_item_t & ) = delete;

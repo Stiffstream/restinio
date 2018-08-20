@@ -17,8 +17,8 @@ namespace restinio
 {
 	namespace asio_ns = ::asio;
 
-	//! Adoptation functions to cover differences between snad-alone and beast asio.
-	//! \{
+	//! @name Adoptation functions to cover differences between snad-alone and beast asio.
+	///@{
 	inline bool error_is_operation_aborted( const asio_ns::error_code & ec )
 	{
 		return ec == asio_ns::error::operation_aborted;
@@ -28,6 +28,7 @@ namespace restinio
 	{
 		return ec == asio_ns::error::eof;
 	}
+	///@}
 
 	namespace asio_ec
 	{
@@ -36,8 +37,10 @@ namespace restinio
 	} /* namespace err */
 	//! \}
 
+	//! An alias for base class of error category entity.
 	using error_category_base_t = asio_ns::error_category;
 
+// Define a proxy macro for having the same name for asio stand-alone and boost.
 #define RESTINIO_ERROR_CATEGORY_NAME_NOEXCEPT ASIO_ERROR_CATEGORY_NOEXCEPT
 
 } /* namespace restinio */
@@ -61,6 +64,8 @@ namespace restinio
 		using error_code = ::boost::system::error_code;
 	} /* namespace asio_ns */
 
+	//! @name Adoptation functions to cover differences between snad-alone and beast asio.
+	///@{
 	inline bool error_is_operation_aborted( const asio_ns::error_code & ec )
 	{
 		return ec == asio_ns::error::basic_errors::operation_aborted;
@@ -70,7 +75,7 @@ namespace restinio
 	{
 		return ec == asio_ns::error::misc_errors::eof;
 	}
-
+	///@}
 
 	namespace asio_ec
 	{
@@ -80,8 +85,10 @@ namespace restinio
 
 	} /* namespace err */
 
+	//! An alias for base class of error category entity.
 	using error_category_base_t = ::boost::system::error_category;
 
+	// Define a proxy macro for having the same name for asio stand-alone and boost.
 	#define RESTINIO_ERROR_CATEGORY_NAME_NOEXCEPT BOOST_SYSTEM_NOEXCEPT
 
 } /* namespace restinio */
@@ -177,4 +184,3 @@ make_asio_compaible_error( asio_convertible_error_t err ) noexcept
 }
 
 } /* namespace restinio */
-

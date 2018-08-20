@@ -45,7 +45,7 @@ class asio_timer_manager_t final
 					,	m_check_period{ check_period }
 				{}
 
-				// Schedule timeouts check invocation.
+				//! Schedule timeouts check invocation.
 				void
 				schedule( tcp_connection_ctx_weak_handle_t weak_handle )
 				{
@@ -62,7 +62,7 @@ class asio_timer_manager_t final
 								} );
 				}
 
-				// Cancel timeout guard if any.
+				//! Cancel timeout guard if any.
 				void
 				cancel()
 				{
@@ -75,28 +75,31 @@ class asio_timer_manager_t final
 			//! \}
 		};
 
-		// Create guard for connection.
+		//! Create guard for connection.
 		timer_guard_t
-		create_timer_guard()
+		create_timer_guard() const
 		{
 			return timer_guard_t{ m_io_context, m_check_period };
 		}
 
-		//! Start/stop timer manager.
-		//! \{
-		void start() const {}
-		void stop() const {}
-		//! \}
+		//! @name Start/stop timer manager.
+		///@{
+		void start() const noexcept {}
+		void stop() const noexcept {}
+		///@}
 
 		struct factory_t final
 		{
-			const std::chrono::steady_clock::duration m_check_period{ std::chrono::seconds{ 1 } };
+			//! Check period for timer events.
+			const std::chrono::steady_clock::duration
+				m_check_period{ std::chrono::seconds{ 1 } };
 
-			factory_t() {}
-			factory_t( std::chrono::steady_clock::duration check_period )
+			factory_t() noexcept {}
+			factory_t( std::chrono::steady_clock::duration check_period ) noexcept
 				:	m_check_period{ check_period }
 			{}
 
+			//! Create an instance of timer manager.
 			auto
 			create( asio_ns::io_context & io_context ) const
 			{
@@ -105,7 +108,10 @@ class asio_timer_manager_t final
 		};
 
 	private:
+		//! An instanse of io_context to work with.
 		asio_ns::io_context & m_io_context;
+
+		//! Check period for timer events.
 		const std::chrono::steady_clock::duration m_check_period;
 };
 

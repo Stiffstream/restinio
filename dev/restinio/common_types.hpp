@@ -27,8 +27,9 @@ enum class request_handling_status_t : std::uint8_t
 	rejected
 };
 
-//! Helper funcs for working with request_handling_status_t
-// \{
+//! @name Helper funcs for working with request_handling_status_t
+//! \see request_handling_status_t.
+///@{
 constexpr request_handling_status_t
 request_accepted() noexcept
 {
@@ -40,7 +41,7 @@ request_rejected() noexcept
 {
 	return request_handling_status_t::rejected;
 }
-// \}
+///@}
 
 //! Request id in scope of single connection.
 using request_id_t = unsigned int;
