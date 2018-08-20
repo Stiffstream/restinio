@@ -93,6 +93,7 @@ SET(RESTINIO_HEADERS_ALL
 	traits.hpp
 	uri_helpers.hpp
 	value_or.hpp
+	variant.hpp
 	impl/acceptor.hpp
 	impl/connection_base.hpp
 	impl/connection.hpp
