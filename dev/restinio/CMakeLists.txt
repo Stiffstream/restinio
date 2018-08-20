@@ -126,6 +126,7 @@ SET(RESTINIO_HEADERS_ALL
 
 	third_party/optional-lite/optional.hpp
 	third_party/string-view-lite/string_view.hpp
+	third_party/variant-lite/variant.hpp
 
 	transforms/zlib.hpp
 
