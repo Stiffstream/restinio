@@ -4,7 +4,8 @@
 
 #include <fstream>
 
-#include <args.hxx>
+#include <clara/clara.hpp>
+#include <fmt/format.h>
 
 #include <restinio/all.hpp>
 
@@ -14,44 +15,55 @@ struct app_args_t
 {
 	bool m_help{ false };
 
+	std::string m_address{ "loalhost" };
 	std::uint16_t m_port{ 8080 };
 	std::size_t m_pool_size{ 1 };
 
-	app_args_t( int argc, const char * argv[] )
+	static app_args_t
+	parse( int argc, const char * argv[] )
 	{
-		args::ArgumentParser parser( "HardcodedRouter benchmark", "" );
-		args::HelpFlag help( parser, "Help", "Usage example", { 'h', "help" } );
+		using namespace clara;
 
-		args::ValueFlag< std::uint16_t > arg_port(
-				parser, "port",
-				"HTTP server port",
-				{ 'p', "port" } );
+		app_args_t result;
 
-		args::ValueFlag< std::size_t > arg_pool_size(
-				parser, "size",
-				"The size of a thread pool to run the server",
-				{ 'n', "pool-size" } );
+		const auto make_opt =
+			[]( auto & val, const char * name, const char * short_name,
+				const char * long_name, const char * description) {
 
-		try
+				return Opt( val, name )[ short_name ][ long_name ]
+					( fmt::format( description, val ) );
+		};
+
+		auto cli = make_opt(
+					result.m_address, "address",
+					"-a", "--address",
+					"address to listen (default: {})" )
+			| make_opt(
+					result.m_port, "port",
+					"-p", "--port",
+					"port to listen (default: {})" )
+			| make_opt(
+					result.m_pool_size, "thread-pool size",
+					"-n", "--thread-pool-size",
+					"The size of a thread pool to run server (default: {})" )
+			| Help(result.m_help);
+
+
+		auto parse_result = cli.parse( Args(argc, argv) );
+		if( !parse_result )
 		{
-			parser.ParseCLI( argc, argv );
+			throw std::runtime_error{
+				fmt::format(
+					"Invalid command-line arguments: {}",
+					parse_result.errorMessage() ) };
 		}
-		catch( const args::Help & )
+
+		if( result.m_help )
 		{
-			m_help = true;
-			std::cout << parser;
+			std::cout << cli << std::endl;
 		}
 
-		if( arg_port )
-			m_port = args::get( arg_port );
-
-		if( arg_pool_size )
-		{
-			m_pool_size = args::get( arg_pool_size );
-
-			if( m_pool_size < 1 )
-				throw std::runtime_error{ "invalid pool size" };
-		}
+		return result;
 	}
 };
 
@@ -88,7 +100,7 @@ void run_app( const app_args_t args )
 	using namespace std::chrono;
 	restinio::run(
 		restinio::on_thread_pool< TRAITS >( args.m_pool_size )
-			.address( "localhost" )
+			.address( args.m_address )
 			.port( args.m_port )
 			.buffer_size( 1024 )
 			.max_pipelined_requests( 4 ) );
@@ -99,7 +111,7 @@ main( int argc, const char *argv[] )
 {
 	try
 	{
-		const app_args_t args{ argc, argv };
+		const auto args = app_args_t::parse( argc, argv );
 
 		if( !args.m_help )
 		{

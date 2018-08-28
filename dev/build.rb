@@ -6,7 +6,6 @@ MxxRu::Cpp::composite_target( MxxRu::BUILD_ROOT ) {
 
 	toolset.force_cpp14
 	global_include_path "."
-	global_include_path "args"
 
 	if not $sanitizer_build
 		if 'gcc' == toolset.name || 'clang' == toolset.name

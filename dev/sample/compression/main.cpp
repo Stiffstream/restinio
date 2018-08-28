@@ -5,7 +5,8 @@
 #include <iostream>
 #include <random>
 
-#include <args.hxx>
+#include <clara/clara.hpp>
+#include <fmt/format.h>
 
 #include <restinio/all.hpp>
 #include <restinio/transforms/zlib.hpp>
@@ -14,56 +15,57 @@
 // app_args_t
 //
 
+//
+// app_args_t
+//
+
 struct app_args_t
 {
 	bool m_help{ false };
-	std::uint16_t m_port{ 8080 };
 	std::string m_address{ "localhost" };
+	std::uint16_t m_port{ 8080 };
 	std::size_t m_pool_size{ 1 };
 	bool m_trace_server{ false };
 
-	app_args_t( int argc, const char * argv[] )
+	static app_args_t
+	parse( int argc, const char * argv[] )
 	{
-		args::ArgumentParser parser( "Sendfile hello server", "" );
-		args::HelpFlag help( parser, "Help", "Usage example", { 'h', "help" } );
+		using namespace clara;
 
-		args::ValueFlag< std::uint16_t > arg_port(
-				parser, "port", "tcp port to run server on (default: 8080)",
-				{ 'p', "port" } );
+		app_args_t result;
 
-		args::ValueFlag< std::string > arg_address(
-				parser, "ip", "tcp address of server (default: localhost), "
-						"examples: 0.0.0.0, 192.168.1.42",
-				{ 'a', "address" } );
+		auto cli =
+			Opt( result.m_address, "address" )
+					["-a"]["--address"]
+					( fmt::format( "address to listen (default: {})", result.m_address ) )
+			| Opt( result.m_port, "port" )
+					["-p"]["--port"]
+					( fmt::format( "port to listen (default: {})", result.m_port ) )
+			| Opt( result.m_pool_size, "thread-pool size" )
+					[ "-n" ][ "--thread-pool-size" ]
+					( fmt::format(
+						"The size of a thread pool to run server (default: {})",
+						result.m_pool_size ) )
+			| Opt( result.m_trace_server )
+					[ "-t" ][ "--trace" ]
+					( "Enable trace server" )
+			| Help(result.m_help);
 
-		args::ValueFlag< std::size_t > arg_pool_size(
-				parser, "size",
-				"The size of a thread pool to run the server",
-				{ 'n', "thread-pool-size" } );
-
-		args::Flag arg_trace_server(
-				parser, "trace server",
-				"Enable trace server",
-				{'t', "trace"} );
-
-		try
+		auto parse_result = cli.parse( Args(argc, argv) );
+		if( !parse_result )
 		{
-			parser.ParseCLI( argc, argv );
-		}
-		catch( const args::Help & )
-		{
-			m_help = true;
-			std::cout << parser;
-			return;
+			throw std::runtime_error{
+				fmt::format(
+					"Invalid command-line arguments: {}",
+					parse_result.errorMessage() ) };
 		}
 
-		if( arg_port )
-			m_port = args::get( arg_port );
+		if( result.m_help )
+		{
+			std::cout << cli << std::endl;
+		}
 
-		if( arg_address )
-			m_address = args::get( arg_address );
-
-		m_trace_server = arg_trace_server;
+		return result;
 	}
 };
 
@@ -210,7 +212,7 @@ int main( int argc, const char * argv[] )
 {
 	try
 	{
-		const app_args_t args{ argc, argv };
+		const auto args = app_args_t::parse( argc, argv );
 
 		if( !args.m_help )
 		{

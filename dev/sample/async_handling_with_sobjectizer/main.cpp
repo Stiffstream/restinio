@@ -2,7 +2,8 @@
 #include <iostream>
 #include <chrono>
 
-#include <args.hxx>
+#include <clara/clara.hpp>
+#include <fmt/format.h>
 
 #include <restinio/all.hpp>
 #include <restinio/so5/so_timer_manager.hpp>
@@ -13,33 +14,43 @@
 //
 // app_args_t
 //
-
 struct app_args_t
 {
 	bool m_help{ false };
+	std::string m_address{ "localhost" };
 	std::uint16_t m_port{ 8080 };
 
-	app_args_t( int argc, const char * argv[] )
+	static app_args_t
+	parse( int argc, const char * argv[] )
 	{
-		args::ArgumentParser parser( "RESTinio with SObjectizer sample", "" );
-		args::HelpFlag help( parser, "Help", "Usage example", { 'h', "help" } );
+		using namespace clara;
 
-		args::ValueFlag< std::uint16_t > server_port(
-				parser, "port", "tcp port to run server on (default: 8080)",
-				{ 'p', "port" } );
+		app_args_t result;
 
-		try
+		auto cli =
+			Opt( result.m_address, "address" )
+					["-a"]["--address"]
+					( fmt::format( "address to listen (default: {})", result.m_address ) )
+			| Opt( result.m_port, "port" )
+					["-p"]["--port"]
+					( fmt::format( "port to listen (default: {})", result.m_port ) )
+			| Help(result.m_help);
+
+		auto parse_result = cli.parse( Args(argc, argv) );
+		if( !parse_result )
 		{
-			parser.ParseCLI( argc, argv );
-		}
-		catch( const args::Help & )
-		{
-			m_help = true;
-			std::cout << parser;
+			throw std::runtime_error{
+				fmt::format(
+					"Invalid command-line arguments: {}",
+					parse_result.errorMessage() ) };
 		}
 
-		if( server_port )
-			m_port = args::get( server_port );
+		if( result.m_help )
+		{
+			std::cout << cli << std::endl;
+		}
+
+		return result;
 	}
 };
 
@@ -113,7 +124,7 @@ int main( int argc, char const *argv[] )
 {
 	try
 	{
-		const app_args_t args{ argc, argv };
+		const auto args = app_args_t::parse( argc, argv );
 
 		if( args.m_help )
 			return 0;

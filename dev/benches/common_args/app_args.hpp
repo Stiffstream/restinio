@@ -2,7 +2,8 @@
 
 #include <iostream>
 
-#include <args/args.hxx>
+#include <clara/clara.hpp>
+#include <fmt/format.h>
 
 //
 // app_args_t
@@ -11,38 +12,45 @@
 struct app_args_t
 {
 	bool m_help{ false };
-
+	std::string m_address{ "localhost" };
 	std::uint16_t m_port{ 8080 };
 	std::size_t m_pool_size{ 1 };
 
-	app_args_t( int argc, const char * argv[] )
+	static app_args_t
+	parse( int argc, const char * argv[] )
 	{
-		args::ArgumentParser parser( "Single handler benchmark", "" );
-		args::HelpFlag help( parser, "Help", "Usage example", { 'h', "help" } );
+		using namespace clara;
 
-		args::ValueFlag< std::size_t > arg_port(
-				parser, "port",
-				"HTTP server port",
-				{ 'p', "port" } );
+		app_args_t result;
 
-		args::ValueFlag< std::size_t > arg_pool_size(
-				parser, "size",
-				"The size of a thread pool to run the server",
-				{ 'n', "asio-pool-size" } );
+		auto cli =
+			Opt( result.m_address, "address" )
+					["-a"]["--address"]
+					( fmt::format( "address to listen (default: {})", result.m_address ) )
+			| Opt( result.m_port, "port" )
+					["-p"]["--port"]
+					( fmt::format( "port to listen (default: {})", result.m_port ) )
+			| Opt( result.m_pool_size, "thread-pool size" )
+					[ "-n" ][ "--thread-pool-size" ]
+					( fmt::format(
+						"The size of a thread pool to run server (default: {})",
+						result.m_pool_size ) )
+			| Help(result.m_help);
 
-		try
+		auto parse_result = cli.parse( Args(argc, argv) );
+		if( !parse_result )
 		{
-			parser.ParseCLI( argc, argv );
-		}
-		catch( const args::Help & )
-		{
-			m_help = true;
-			std::cout << parser;
+			throw std::runtime_error{
+				fmt::format(
+					"Invalid command-line arguments: {}",
+					parse_result.errorMessage() ) };
 		}
 
-		if( arg_port )
-			m_port = args::get( arg_port );
-		if( arg_pool_size )
-			m_pool_size = args::get( arg_pool_size );
+		if( result.m_help )
+		{
+			std::cout << cli << std::endl;
+		}
+
+		return result;
 	}
 };

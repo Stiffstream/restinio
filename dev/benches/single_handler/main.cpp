@@ -50,7 +50,7 @@ int main(int argc, const char *argv[])
 {
 	try
 	{
-		const app_args_t args{ argc, argv };
+		const auto args = app_args_t::parse( argc, argv );
 
 		if( !args.m_help )
 		{

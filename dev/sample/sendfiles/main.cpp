@@ -1,12 +1,11 @@
 #include <iostream>
 #include <map>
 
-#include <args.hxx>
-
-#include <restinio/all.hpp>
-
+#include <clara/clara.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
+
+#include <restinio/all.hpp>
 
 const char *
 content_type_by_file_extention( const restinio::string_view_t & ext )
@@ -186,53 +185,52 @@ auto server_handler( const std::string & root_dir )
 	return router;
 }
 
-//
-// app_args_t
-//
-
 struct app_args_t
 {
 	bool m_help{ false };
+	std::string m_address{ "localhost" };
 	std::uint16_t m_port{ 8080 };
 	std::size_t m_pool_size{ 1 };
 	std::string m_root_dir{ "." };
 
-	app_args_t( int argc, const char * argv[] )
+	static app_args_t
+	parse( int argc, const char * argv[] )
 	{
-		args::ArgumentParser parser( "RESTinio sendfile sample", "" );
-		args::HelpFlag help( parser, "Help", "Usage example", { 'h', "help" } );
+		using namespace clara;
 
-		args::ValueFlag< std::uint16_t > arg_port(
-				parser, "port", "tcp port to run server on (default: 8080)",
-				{ 'p', "port" } );
+		app_args_t result;
 
-		args::ValueFlag< std::size_t > arg_pool_size(
-				parser, "size",
-				"The size of a thread pool to run the server",
-				{ 'n', "thread-pool-size" } );
+		auto cli =
+			Opt( result.m_address, "address" )
+					["-a"]["--address"]
+					( fmt::format( "address to listen (default: {})", result.m_address ) )
+			| Opt( result.m_port, "port" )
+					["-p"]["--port"]
+					( fmt::format( "port to listen (default: {})", result.m_port ) )
+			| Opt( result.m_pool_size, "thread-pool size" )
+					[ "-n" ][ "--thread-pool-size" ]
+					( fmt::format(
+						"The size of a thread pool to run server (default: {})",
+						result.m_pool_size ) )
+			| Arg( result.m_root_dir, "root-dir" )
+					( fmt::format( "server root dir (default: '{}')", result.m_root_dir) )
+			| Help(result.m_help);
 
-		args::ValueFlag< std::string > arg_root_dir(
-				parser, "root", "server root dir (default: '.')",
-				{ 'r', "root-dir" } );
-
-		try
+		auto parse_result = cli.parse( Args(argc, argv) );
+		if( !parse_result )
 		{
-			parser.ParseCLI( argc, argv );
+			throw std::runtime_error{
+				fmt::format(
+					"Invalid command-line arguments: {}",
+					parse_result.errorMessage() ) };
 		}
-		catch( const args::Help & )
+
+		if( result.m_help )
 		{
-			m_help = true;
-			std::cout << parser;
+			std::cout << cli << std::endl;
 		}
 
-		if( arg_port )
-			m_port = args::get( arg_port );
-
-		if( arg_pool_size )
-			m_pool_size = args::get( arg_pool_size );
-
-		if( arg_root_dir )
-			m_root_dir = args::get( arg_root_dir );
+		return result;
 	}
 };
 
@@ -242,7 +240,7 @@ int main( int argc, char const *argv[] )
 
 	try
 	{
-		const app_args_t args{ argc, argv };
+		const auto args = app_args_t::parse( argc, argv );
 
 		if( !args.m_help )
 		{

@@ -59,19 +59,19 @@ MxxRu::arch_externals :rapidjson_mxxru do |e|
 end
 
 MxxRu::arch_externals :json_dto do |e|
-  e.url 'https://bitbucket.org/sobjectizerteam/json_dto-0.2/downloads/json_dto-0.2.5-full.zip'
+  e.url 'https://bitbucket.org/sobjectizerteam/json_dto-0.2/downloads/json_dto-0.2.6-full.zip'
 
   e.map_dir 'dev/json_dto' => 'dev'
 end
 
-MxxRu::arch_externals :args do |e|
-  e.url 'https://github.com/Taywee/args/archive/6.2.0.zip'
+MxxRu::arch_externals :clara do |e|
+  e.url 'https://github.com/catchorg/Clara/archive/v1.1.4.tar.gz'
 
-  e.map_file 'args.hxx' => 'dev/args/*'
+  e.map_file 'single_include/clara.hpp' => 'dev/clara/*'
 end
 
 MxxRu::arch_externals :catch do |e|
-  e.url 'https://github.com/catchorg/Catch2/archive/v2.2.3.zip'
+  e.url 'https://github.com/catchorg/Catch2/archive/v2.3.0.tar.gz'
 
-  e.map_file 'single_include/catch.hpp' => 'dev/catch/*'
+  e.map_dir 'single_include/catch2' => 'dev'
 end

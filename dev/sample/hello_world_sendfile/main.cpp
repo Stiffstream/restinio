@@ -4,7 +4,8 @@
 
 #include <iostream>
 
-#include <args.hxx>
+#include <clara/clara.hpp>
+#include <fmt/format.h>
 
 #include <restinio/all.hpp>
 
@@ -15,8 +16,8 @@
 struct app_args_t
 {
 	bool m_help{ false };
-	std::uint16_t m_port{ 8080 };
 	std::string m_address{ "localhost" };
+	std::uint16_t m_port{ 8080 };
 	std::size_t m_pool_size{ 1 };
 	std::string m_file;
 	restinio::file_offset_t m_data_offset{ 0 };
@@ -24,93 +25,62 @@ struct app_args_t
 	std::string m_content_type{ "text/plain" };
 	bool m_trace_server{ false };
 
-	app_args_t( int argc, const char * argv[] )
+	static app_args_t
+	parse( int argc, const char * argv[] )
 	{
-		args::ArgumentParser parser( "Sendfile hello server", "" );
-		args::HelpFlag help( parser, "Help", "Usage example", { 'h', "help" } );
+		using namespace clara;
 
-		args::ValueFlag< std::uint16_t > arg_port(
-				parser, "port", "tcp port to run server on (default: 8080)",
-				{ 'p', "port" } );
+		app_args_t result;
 
-		args::ValueFlag< std::string > arg_address(
-				parser, "ip", "tcp address of server (default: localhost), "
-						"examples: 0.0.0.0, 192.168.1.42",
-				{ 'a', "address" } );
+		auto cli =
+			Opt( result.m_address, "address" )
+					["-a"]["--address"]
+					( fmt::format( "address to listen (default: {})", result.m_address ) )
+			| Opt( result.m_port, "port" )
+					["-p"]["--port"]
+					( fmt::format( "port to listen (default: {})", result.m_port ) )
+			| Opt( result.m_pool_size, "thread-pool size" )
+					[ "-n" ][ "--thread-pool-size" ]
+					( fmt::format(
+						"The size of a thread pool to run server (default: {})",
+						result.m_pool_size ) )
+			| Opt( result.m_data_offset, "offset" )
+					["-o"]["--data-offset"]
+					( fmt::format(
+						"Offset of the data portion in file (default: {})",
+						result.m_data_offset ) )
+			| Opt( result.m_data_size, "size" )
+					["-s"]["--data-size"]
+					( "size of the data portion in file (default: to the end of file)" )
+			| Opt( result.m_content_type, "content-type" )
+					["--content-type"]
+					( fmt::format(
+						"A value of 'Content-Type' header field (default: {})",
+						result.m_content_type ) )
+			| Opt( result.m_trace_server )
+					[ "-t" ][ "--trace" ]
+					( "Enable trace server" )
+			| Arg( result.m_file, "file" ).required()
+					( "Path to a file that will be served as response" )
+			| Help(result.m_help);
 
-		args::ValueFlag< std::size_t > arg_pool_size(
-				parser, "size",
-				"The size of a thread pool to run the server",
-				{ 'n', "thread-pool-size" } );
-
-		args::ValueFlag< std::string > arg_file(
-				parser, "path", "path to a file that will be served as response",
-				{ 'f', "file" } );
-		args::ValueFlag< restinio::file_offset_t > arg_data_offset(
-				parser, "N", "offset of the data portion in file",
-				{ 'o', "data-offset" } );
-		args::ValueFlag< restinio::file_size_t > arg_data_size(
-				parser, "N", "size of the data portion in file",
-				{ 's', "data-size" } );
-
-		args::ValueFlag< std::string > arg_content_type(
-				parser, "T", "a value of 'Content-Type' header field"
-							"default value is: '" + m_content_type + "'",
-				{ "content-type" } );
-
-		args::Flag arg_trace_server(
-				parser, "trace server",
-				"Enable trace server",
-				{'t', "trace"} );
-
-		try
+		auto parse_result = cli.parse( Args(argc, argv) );
+		if( !parse_result )
 		{
-			parser.ParseCLI( argc, argv );
-		}
-		catch( const args::Help & )
-		{
-			m_help = true;
-			std::cout << parser;
-			return;
+			throw std::runtime_error{
+				fmt::format(
+					"Invalid command-line arguments: {}",
+					parse_result.errorMessage() ) };
 		}
 
-		if( arg_port )
-			m_port = args::get( arg_port );
-
-		if( arg_address )
-			m_address = args::get( arg_address );
-
-		if( arg_pool_size )
-			m_pool_size = args::get( arg_pool_size );
-
-		if( arg_file )
+		if( result.m_help )
 		{
-			m_file = args::get( arg_file );
-		}
-		else
-		{
-			throw std::runtime_error{ "file is mandatory" };
+			std::cout << cli << std::endl;
 		}
 
-		if( arg_data_offset )
-		{
-			m_data_offset = args::get( arg_data_offset );
-		}
-
-		if( arg_data_size )
-		{
-			m_data_size = args::get( arg_data_size );
-		}
-
-		if( arg_content_type )
-		{
-			m_content_type = args::get( arg_content_type );
-		}
-
-		m_trace_server = arg_trace_server;
+		return result;
 	}
 };
-
 
 template < typename Server_Traits >
 void run_server( const app_args_t & args )
@@ -161,7 +131,7 @@ int main( int argc, const char * argv[] )
 {
 	try
 	{
-		const app_args_t args{ argc, argv };
+		const auto args = app_args_t::parse( argc, argv );
 
 		if( !args.m_help )
 		{
