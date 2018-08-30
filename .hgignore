@@ -15,8 +15,8 @@ dev/fmt_mxxru
 dev/rapidjson_mxxru
 dev/rapidjson
 dev/json_dto
-dev/args
-dev/catch
+dev/catch2
+dev/clara
 dev/cmake_build*
 vcpkg
 dev/doc/*
