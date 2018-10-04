@@ -58,7 +58,9 @@ IF (RESTINIO_MASTER_PROJECT)
 		# Require necessary packages.
 
 		# HTTP parser
-		# http_parser is linked as raw static lib file.
+		# Try finding a shared http_parser.
+		set(RESTINIO_HTTP_PARSER_SHARED ON)
+		add_subdirectory(nodejs/http_parser)
 
 		# fmtlib
 		find_package(fmt REQUIRED)
@@ -106,9 +108,9 @@ IF (RESTINIO_MASTER_PROJECT)
 
 	# ------------------------------------------------------------------------------
 	# SObjectizer
-	SET(SOBJECTIZER_BUILD_STATIC ON)
-	SET(SOBJECTIZER_LIBS sobjectizer::StaticLib)
-	add_subdirectory(so_5)
+#	SET(SOBJECTIZER_BUILD_STATIC ON)
+#	SET(SOBJECTIZER_LIBS sobjectizer::StaticLib)
+#	add_subdirectory(so_5)
 
 	# ------------------------------------------------------------------------------
 	# Zlib
