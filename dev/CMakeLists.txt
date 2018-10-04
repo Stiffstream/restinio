@@ -79,8 +79,8 @@ IF (RESTINIO_MASTER_PROJECT)
 	# OpenSSL
 	find_package(OpenSSL)
 	IF ( OPENSSL_FOUND )
-		message("OpenSSL include dir: ${OPENSSL_INCLUDE_DIR}")
-		message("OpenSSL libraries: ${OPENSSL_LIBRARIES}")
+		message(STATUS "OpenSSL include dir: ${OPENSSL_INCLUDE_DIR}")
+		message(STATUS "OpenSSL libraries: ${OPENSSL_LIBRARIES}")
 	ENDIF ( OPENSSL_FOUND )
 
 	# PCRE
