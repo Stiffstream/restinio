@@ -16,6 +16,9 @@ option(RESTINIO_SAMPLE "Build samples." ${RESTINIO_MASTER_PROJECT})
 option(RESTINIO_INSTALL_SAMPLES "Build install samples." ${RESTINIO_MASTER_PROJECT})
 option(RESTINIO_BENCH "Build the test target." ${RESTINIO_MASTER_PROJECT})
 option(RESTINIO_INSTALL_BENCHES "Build install samples." ${RESTINIO_MASTER_PROJECT})
+option(RESTINIO_USE_BOOST_REGEX "Include Boost.Regex support." ON)
+option(RESTINIO_USE_PCRE "Include PCRE support." ON)
+option(RESTINIO_USE_PCRE2 "Include PCRE2 support." ON)
 option(RESTINIO_FIND_DEPS "Use `find_package()` for including RESTinio dependencies." OFF)
 
 SET(RESTINIO_USE_BOOST_ASIO "none" CACHE STRING "Use boost version of ASIO")
@@ -37,12 +40,14 @@ IF (RESTINIO_MASTER_PROJECT)
 		SET( RESTINIO_STAND_ALONE_ASIO_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/asio/include )
 		SET( RESTINIO_STAND_ALONE_ASIO_DEFINES -DASIO_STANDALONE -DASIO_HAS_STD_CHRONO -DASIO_DISABLE_STD_STRING_VIEW)
 
-		# Try to find boost for boost regex.
-		SET(Boost_USE_MULTITHREADED ON)
-		find_package(Boost COMPONENTS regex)
-		if ( Boost_FOUND )
-			message(STATUS "Found Boost for regex.")
-		endif ()
+		IF(RESTINIO_USE_BOOST_REGEX)
+			# Try to find boost for boost regex.
+			SET(Boost_USE_MULTITHREADED ON)
+			find_package(Boost REQUIRED COMPONENTS regex)
+			if ( Boost_FOUND )
+				message(STATUS "Found Boost for regex.")
+			endif ()
+		ENDIF()
 	ELSE ()
 		SET(Boost_USE_MULTITHREADED ON)
 		IF ( RESTINIO_USE_BOOST_ASIO MATCHES "shared" )
@@ -51,7 +56,14 @@ IF (RESTINIO_MASTER_PROJECT)
 			SET(Boost_USE_STATIC_LIBS ON)
 		ENDIF ()
 
-		find_package(Boost 1.66.0 REQUIRED COMPONENTS system regex)
+		IF(RESTINIO_USE_BOOST_REGEX)
+			find_package(Boost 1.66.0 REQUIRED COMPONENTS system regex)
+			if ( Boost_FOUND )
+				message(STATUS "Found Boost for regex.")
+			endif ()
+		ELSE()
+			find_package(Boost 1.66.0 REQUIRED COMPONENTS system regex)
+		ENDIF()
 	ENDIF ()
 
 	IF (RESTINIO_FIND_DEPS)
@@ -84,27 +96,24 @@ IF (RESTINIO_MASTER_PROJECT)
 		message(STATUS "OpenSSL include dir: ${OPENSSL_INCLUDE_DIR}")
 		message(STATUS "OpenSSL libraries: ${OPENSSL_LIBRARIES}")
 	ENDIF ( OPENSSL_FOUND )
-
+	
+IF (RESTINIO_USE_PCRE)
 	# PCRE
-	find_package(PCRE)
+	find_package(PCRE REQUIRED)
 	IF (PCRE_FOUND)
 		message( STATUS "PCRE_LIBRARIES='" ${PCRE_LIBRARIES} "'" )
 		message( STATUS "PCRE_INCLUDE_DIRS='" ${PCRE_INCLUDE_DIRS} "'" )
 	ENDIF ()
+ENDIF()
 
+IF (RESTINIO_USE_PCRE2)
 	# PCRE2
-	find_package(PCRE2)
+	find_package(PCRE2 REQUIRED)
 	IF (PCRE2_FOUND)
 		message( STATUS "PCRE2_LIBRARIES='" ${PCRE2_LIBRARIES} "'" )
 		message( STATUS "PCRE2_INCLUDE_DIRS='" ${PCRE2_INCLUDE_DIRS} "'" )
 	ENDIF ()
-
-	# PCRE2
-	find_package(PCRE2)
-	IF (PCRE2_FOUND)
-		message( STATUS "PCRE2_LIBRARIES='" ${PCRE2_LIBRARIES} "'" )
-		message( STATUS "PCRE2_INCLUDE_DIRS='" ${PCRE2_INCLUDE_DIRS} "'" )
-	ENDIF ()
+ENDIF()
 
 	# ------------------------------------------------------------------------------
 	# SObjectizer
