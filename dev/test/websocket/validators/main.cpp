@@ -8,7 +8,7 @@
 
 #define CATCH_CONFIG_MAIN
 
-#include <catch/catch.hpp>
+#include <catch2/catch.hpp>
 
 #include <restinio/websocket/impl/utf8.hpp>
 #include <restinio/websocket/impl/ws_protocol_validator.hpp>

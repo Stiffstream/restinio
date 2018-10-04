@@ -71,7 +71,7 @@ MxxRu::arch_externals :args do |e|
 end
 
 MxxRu::arch_externals :catch do |e|
-  e.url 'https://github.com/catchorg/Catch2/archive/v2.2.3.zip'
+  e.url 'https://github.com/catchorg/Catch2/archive/v2.4.1.zip'
 
-  e.map_file 'single_include/catch.hpp' => 'dev/catch/*'
+  e.map_file 'single_include/catch2/catch.hpp' => 'dev/catch2/*'
 end
