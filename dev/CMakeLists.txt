@@ -108,9 +108,13 @@ IF (RESTINIO_MASTER_PROJECT)
 
 	# ------------------------------------------------------------------------------
 	# SObjectizer
-#	SET(SOBJECTIZER_BUILD_STATIC ON)
-#	SET(SOBJECTIZER_LIBS sobjectizer::StaticLib)
-#	add_subdirectory(so_5)
+	IF (EXISTS "${CMAKE_SOURCE_DIR}/so_5")
+		SET(SOBJECTIZER_BUILD_STATIC ON)
+		SET(SOBJECTIZER_LIBS sobjectizer::StaticLib)
+		add_subdirectory(so_5)
+	ELSE()
+		MESSAGE (STATUS "Could NOT find SObjectizer; this will disable some tests.")
+	ENDIF()
 
 	# ------------------------------------------------------------------------------
 	# Zlib
