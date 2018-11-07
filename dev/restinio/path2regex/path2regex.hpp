@@ -678,12 +678,15 @@ parse( string_view_t route_sv, const options_t & options )
 	token_list_t< Route_Param_Appender > result;
 
 	std::string path{};
-	std::regex main_path_regex{ path_regex_str };
+	const std::regex main_path_regex{ path_regex_str };
 	bool path_escaped = false;
 
-	auto token_it =
-		std::cregex_iterator( route_sv.begin(), route_sv.end(), main_path_regex );
-	auto token_end = std::cregex_iterator{};
+	std::cregex_iterator token_it{
+			sv_it2ptr(route_sv.begin()),
+			sv_it2ptr(route_sv.end()),
+			main_path_regex
+	};
+	std::cregex_iterator token_end{};
 
 	if( token_it == token_end )
 	{
@@ -697,8 +700,7 @@ parse( string_view_t route_sv, const options_t & options )
 
 		assert( 6 == match.size() );
 
-		const string_view_t
-			prefix{
+		const string_view_t prefix{
 				match.prefix().first,
 				static_cast<std::size_t>( match.prefix().length() ) };
 
