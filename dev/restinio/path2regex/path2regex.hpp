@@ -681,13 +681,6 @@ parse( string_view_t route_sv, const options_t & options )
 	const std::regex main_path_regex{ path_regex_str };
 	bool path_escaped = false;
 
-	// Some implementations of string_view_t have string_view_t::iterator
-	// type that is not 'const char *'. So we can't use iterator for
-	// initialization of std::cregex_iterator.
-	const auto sv_it2ptr = [](string_view_t::iterator it) -> const char * {
-		return std::addressof(*it);
-	};
-
 	std::cregex_iterator token_it{
 			sv_it2ptr(route_sv.begin()),
 			sv_it2ptr(route_sv.end()),
