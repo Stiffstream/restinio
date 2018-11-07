@@ -10,7 +10,7 @@
 
 #include <bitset>
 
-#include <catch/catch.hpp>
+#include <catch2/catch.hpp>
 
 #include <restinio/all.hpp>
 #include <restinio/websocket/impl/ws_parser.hpp>

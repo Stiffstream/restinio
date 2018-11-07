@@ -7,7 +7,7 @@
 */
 
 #define CATCH_CONFIG_MAIN
-#include <catch/catch.hpp>
+#include <catch2/catch.hpp>
 
 #include <restinio/utils/from_string.hpp>
 

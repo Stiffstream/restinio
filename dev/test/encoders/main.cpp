@@ -9,7 +9,7 @@
 #define CATCH_CONFIG_MAIN
 // #include <bitset>
 
-#include <catch/catch.hpp>
+#include <catch2/catch.hpp>
 
 #include <restinio/utils/base64.hpp>
 #include <restinio/utils/sha1.hpp>

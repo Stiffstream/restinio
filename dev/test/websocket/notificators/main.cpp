@@ -7,7 +7,7 @@
 */
 
 #define CATCH_CONFIG_MAIN
-#include <catch/catch.hpp>
+#include <catch2/catch.hpp>
 
 #include <so_5/all.hpp>
 #include <restinio/all.hpp>

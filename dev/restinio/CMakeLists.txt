@@ -116,11 +116,8 @@ SET(RESTINIO_HEADERS_ALL
 	impl/to_lower_lut.inl
 
 	path2regex/path2regex.hpp
-
-	router/boost_regex_engine.hpp
+	
 	router/express.hpp
-	router/pcre2_regex_engine.hpp
-	router/pcre_regex_engine.hpp
 	router/std_regex_engine.hpp
 
 	so5/so_timer_manager.hpp
@@ -151,6 +148,18 @@ SET(RESTINIO_HEADERS_ALL
 	websocket/impl/ws_protocol_validator.hpp
 	)
 
+IF (BOOST_FOUND AND RESTINIO_USE_BOOST_REGEX)
+	LIST(APPEND RESTINIO_HEADERS_ALL router/boost_regex_engine.hpp)
+ENDIF()
+
+IF (PCRE_FOUND AND RESTINIO_USE_PCRE)
+	LIST(APPEND RESTINIO_HEADERS_ALL router/pcre_regex_engine.hpp)
+ENDIF()
+
+IF (PCRE2_FOUND AND RESTINIO_USE_PCRE2)
+	LIST(APPEND RESTINIO_HEADERS_ALL router/pcre2_regex_engine.hpp)
+ENDIF()
+	
 IF (RESTINIO_INSTALL)
 	include(GNUInstallDirs)
 	include(CMakePackageConfigHelpers)
