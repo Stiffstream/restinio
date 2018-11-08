@@ -1,11 +1,11 @@
 #include <iostream>
 #include <map>
 
+#include <restinio/all.hpp>
+
 #include <clara/clara.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
-
-#include <restinio/all.hpp>
 
 const char *
 content_type_by_file_extention( const restinio::string_view_t & ext )

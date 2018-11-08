@@ -2,11 +2,11 @@
 #include <iostream>
 #include <chrono>
 
-#include <clara/clara.hpp>
-#include <fmt/format.h>
-
 #include <restinio/all.hpp>
 #include <restinio/so5/so_timer_manager.hpp>
+
+#include <clara/clara.hpp>
+#include <fmt/format.h>
 
 // Application agents.
 #include "app.hpp"

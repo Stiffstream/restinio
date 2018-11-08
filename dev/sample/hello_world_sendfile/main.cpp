@@ -4,10 +4,10 @@
 
 #include <iostream>
 
-#include <clara/clara.hpp>
-#include <fmt/format.h>
-
 #include <restinio/all.hpp>
+
+#include <fmt/format.h>
+#include <clara/clara.hpp>
 
 //
 // app_args_t

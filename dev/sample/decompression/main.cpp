@@ -5,11 +5,11 @@
 #include <iostream>
 #include <random>
 
-#include <clara/clara.hpp>
-#include <fmt/format.h>
-
 #include <restinio/all.hpp>
 #include <restinio/transforms/zlib.hpp>
+
+#include <clara/clara.hpp>
+#include <fmt/format.h>
 
 //
 // app_args_t
