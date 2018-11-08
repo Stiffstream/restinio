@@ -9,6 +9,7 @@ MxxRu::Cpp::exe_target {
 	required_prj 'fmt_mxxru/prj.rb'
 	required_prj 'restinio/platform_specific_libs.rb'
 	required_prj 'restinio/zlib_libs.rb'
+	required_prj 'test/catch_main/prj.rb'
 
 	target( "_unit.test.transforms.zlib_body_appender" )
 

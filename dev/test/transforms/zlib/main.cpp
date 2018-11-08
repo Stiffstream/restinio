@@ -3,10 +3,9 @@
 */
 
 /*!
-	Echo server.
+	Zlib.
 */
 
-#define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
 #include <restinio/transforms/zlib.hpp>

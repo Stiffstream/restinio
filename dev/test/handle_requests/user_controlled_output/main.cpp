@@ -6,8 +6,6 @@
 	Test for user controlled output.
 */
 
-#define CATCH_CONFIG_MAIN
-
 #include <cstdlib>
 #include <thread>
 

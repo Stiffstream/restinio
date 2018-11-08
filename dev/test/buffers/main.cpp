@@ -6,7 +6,7 @@
 	Tests for settings parameters that have default constructor.
 */
 
-#define CATCH_CONFIG_MAIN
+// #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
 #include <restinio/buffers.hpp>

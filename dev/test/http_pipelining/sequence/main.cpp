@@ -6,8 +6,6 @@
 	Test http pipelining support.
 */
 
-#define CATCH_CONFIG_MAIN
-
 #include <algorithm>
 #include <cctype>
 #include <sstream>

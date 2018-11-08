@@ -761,7 +761,7 @@ class ws_connection_t final
 				}
 				catch( const std::exception & ex )
 				{
-					m_logger.trace( [&]{
+					m_logger.error( [&]{
 						return fmt::format(
 								"[ws_connection:{}] execute handler error: {}",
 								connection_id(),

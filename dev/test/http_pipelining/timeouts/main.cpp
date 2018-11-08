@@ -3,10 +3,8 @@
 */
 
 /*!
-	Test timputs with http pipelining.
+	Test timeouts with http pipelining.
 */
-
-#define CATCH_CONFIG_MAIN
 
 #include <algorithm>
 #include <cctype>

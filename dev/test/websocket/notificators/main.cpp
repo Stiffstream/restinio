@@ -6,7 +6,6 @@
 	Test upgrade request.
 */
 
-#define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
 #include <so_5/all.hpp>

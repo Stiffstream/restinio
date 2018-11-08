@@ -6,8 +6,6 @@
 	Tests for specific websocket protocol validations.
 */
 
-#define CATCH_CONFIG_MAIN
-
 #include <catch2/catch.hpp>
 
 #include <restinio/websocket/impl/utf8.hpp>

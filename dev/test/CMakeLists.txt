@@ -1,5 +1,6 @@
 project(tests)
 
+add_subdirectory(catch_main)
 add_subdirectory(default_constructed_settings)
 add_subdirectory(ref_qualifiers_settings)
 add_subdirectory(header)

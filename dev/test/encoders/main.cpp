@@ -6,9 +6,6 @@
 	Tests for settings parameters that have default constructor.
 */
 
-#define CATCH_CONFIG_MAIN
-// #include <bitset>
-
 #include <catch2/catch.hpp>
 
 #include <restinio/utils/base64.hpp>

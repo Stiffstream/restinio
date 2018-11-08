@@ -3,7 +3,7 @@
 */
 
 /*!
-	Echo server.
+	Socket options tls.
 */
 
 #define CATCH_CONFIG_MAIN

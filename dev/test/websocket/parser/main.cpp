@@ -6,8 +6,6 @@
 	Tests for websocket parser.
 */
 
-#define CATCH_CONFIG_MAIN
-
 #include <bitset>
 
 #include <catch2/catch.hpp>
