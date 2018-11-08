@@ -91,6 +91,11 @@ public:
 		Http_Server & server )
 		: m_server(server)
 	{}
+	~other_work_thread_for_server_t()
+	{
+		if( m_thread.joinable() )
+			stop_and_join();
+	}
 
 	void
 	run()

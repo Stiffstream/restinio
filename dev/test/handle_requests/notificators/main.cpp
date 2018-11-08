@@ -460,8 +460,11 @@ TEST_CASE( "notificators on already closed connection" , "[error]" )
 	std::atomic< bool > was_error{ false };
 
 	// Control response generation order.
-	std::promise< void > resp_order_barrier;
-	auto resp_order_barrier_future = resp_order_barrier.get_future();
+	std::promise< void > close_notificator_barrier;
+	auto close_notificator_future = close_notificator_barrier.get_future();
+
+	std::promise< void > done_notificator_barrier;
+	auto done_notificator_future = done_notificator_barrier.get_future();
 
 	http_server_t http_server{
 		restinio::own_io_context(),
@@ -487,17 +490,19 @@ TEST_CASE( "notificators on already closed connection" , "[error]" )
 								{
 									resp.connection_close().done(
 										[&]( const auto & ){
-											resp_order_barrier.set_value();
+											close_notificator_barrier.set_value();
+											done_notificator_future.wait();
 										} );
 								}
 								else
 								{
-									resp_order_barrier_future.wait();
+									close_notificator_future.wait();
 									resp.done(
 										[&]( const auto & ec ) mutable{
 											notificator_was_called = true;
 											if( ec ) was_error = true;
 										} );
+									done_notificator_barrier.set_value();
 								}
 							} };
 

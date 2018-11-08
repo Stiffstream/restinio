@@ -13,6 +13,9 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+using logger_to_use_t = restinio::null_logger_t;
+//using logger_to_use_t = utest_logger_t;
+
 TEST_CASE( "sendfile offset/size representation" , "[sendfile]" )
 {
 	REQUIRE( 8 == sizeof( restinio::file_offset_t ) );
@@ -25,7 +28,7 @@ TEST_CASE( "simple sendfile" , "[sendfile]" )
 		restinio::http_server_t<
 			restinio::traits_t<
 				restinio::asio_timer_manager_t,
-				utest_logger_t > >;
+				logger_to_use_t > >;
 
 	http_server_t http_server{
 		restinio::own_io_context(),
@@ -124,7 +127,7 @@ TEST_CASE( "sendfile 2 files" , "[sendfile][n-files]" )
 		restinio::http_server_t<
 			restinio::traits_t<
 				restinio::asio_timer_manager_t,
-				utest_logger_t,
+				logger_to_use_t,
 				router_t > >;
 
 	http_server_t http_server{
@@ -254,7 +257,7 @@ TEST_CASE( "sendfile offsets_and_size" , "[sendfile][offset][size]" )
 		restinio::http_server_t<
 			restinio::traits_t<
 				restinio::asio_timer_manager_t,
-				utest_logger_t,
+				logger_to_use_t,
 				router_t > >;
 
 	http_server_t http_server{
@@ -351,7 +354,7 @@ TEST_CASE( "sendfile chunks" , "[sendfile][chunk]" )
 		restinio::http_server_t<
 			restinio::traits_t<
 				restinio::asio_timer_manager_t,
-				utest_logger_t,
+				logger_to_use_t,
 				router_t > >;
 
 	http_server_t http_server{
@@ -493,7 +496,7 @@ TEST_CASE( "sendfile errors" , "[sendfile][error]" )
 		restinio::http_server_t<
 			restinio::traits_t<
 				restinio::asio_timer_manager_t,
-				utest_logger_t,
+				logger_to_use_t,
 				router_t > >;
 
 	http_server_t http_server{

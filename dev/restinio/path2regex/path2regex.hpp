@@ -682,8 +682,8 @@ parse( string_view_t route_sv, const options_t & options )
 	bool path_escaped = false;
 
 	std::cregex_iterator token_it{
-			sv_it2ptr(route_sv.begin()),
-			sv_it2ptr(route_sv.end()),
+			route_sv.data(),
+			route_sv.data() + route_sv.size(),
 			main_path_regex
 	};
 	std::cregex_iterator token_end{};
