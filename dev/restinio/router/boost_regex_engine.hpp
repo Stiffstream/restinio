@@ -63,8 +63,8 @@ struct boost_regex_engine_t
 		boost::cmatch matches;
 		if(
 			boost::regex_search(
-				sv_it2ptr( target_path.begin() ),
-				sv_it2ptr( target_path.end() ),
+				target_path.data(),
+				target_path.data() + target_path.size(),
 				matches,
 				r ) )
 		{
