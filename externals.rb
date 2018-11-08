@@ -5,7 +5,7 @@ MxxRu::arch_externals :so5 do |e|
 end
 
 MxxRu::arch_externals :asio do |e|
-  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-12-0.zip'
+  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-12-1.tar.gz'
 
   e.map_dir 'asio/include' => 'dev/asio'
 end
@@ -30,7 +30,7 @@ MxxRu::arch_externals :nodejs_http_parser_mxxru do |e|
 end
 
 MxxRu::arch_externals :fmt do |e|
-  e.url 'https://github.com/fmtlib/fmt/archive/5.1.0.zip'
+  e.url 'https://github.com/fmtlib/fmt/archive/5.2.1.zip'
 
   e.map_dir 'include' => 'dev/fmt'
   e.map_dir 'src' => 'dev/fmt'
@@ -65,13 +65,13 @@ MxxRu::arch_externals :json_dto do |e|
 end
 
 MxxRu::arch_externals :clara do |e|
-  e.url 'https://github.com/catchorg/Clara/archive/v1.1.4.tar.gz'
+  e.url 'https://github.com/catchorg/Clara/archive/v1.1.5.tar.gz'
 
   e.map_file 'single_include/clara.hpp' => 'dev/clara/*'
 end
 
 MxxRu::arch_externals :catch do |e|
-  e.url 'https://github.com/catchorg/Catch2/archive/v2.3.0.tar.gz'
+  e.url 'https://github.com/catchorg/Catch2/archive/v2.4.2.tar.gz'
 
   e.map_dir 'single_include/catch2' => 'dev'
 end
