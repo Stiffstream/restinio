@@ -8,8 +8,8 @@
 
 #include <catch2/catch.hpp>
 
-#include <restinio/websocket/impl/utf8.hpp>
-#include <restinio/websocket/impl/ws_protocol_validator.hpp>
+#include <restinio/all.hpp>
+#include <restinio/websocket/websocket.hpp>
 
 #include <test/common/pub.hpp>
 #include <test/websocket/common/pub.hpp>

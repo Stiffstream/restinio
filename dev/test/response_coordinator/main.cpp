@@ -10,7 +10,7 @@
 
 #include <iterator>
 
-#include <restinio/impl/response_coordinator.hpp>
+#include <restinio/all.hpp>
 
 using namespace restinio;
 using namespace restinio::impl;

@@ -4,10 +4,10 @@
 
 #include <fstream>
 
+#include <restinio/all.hpp>
+
 #include <clara/clara.hpp>
 #include <fmt/format.h>
-
-#include <restinio/all.hpp>
 
 #ifndef RESTINIO_EXPRESS_ROUTER_BENCH_APP_TITLE
 	#define RESTINIO_EXPRESS_ROUTER_BENCH_APP_TITLE "Express router benchmark"

@@ -4,10 +4,10 @@
 
 #include <fstream>
 
+#include <restinio/all.hpp>
+
 #include <clara/clara.hpp>
 #include <fmt/format.h>
-
-#include <restinio/all.hpp>
 
 #include "route_parser.hpp"
 

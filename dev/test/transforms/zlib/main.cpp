@@ -8,6 +8,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <restinio/all.hpp>
 #include <restinio/transforms/zlib.hpp>
 
 #include "../random_data_generators.inl"

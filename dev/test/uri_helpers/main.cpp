@@ -8,9 +8,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <restinio/uri_helpers.hpp>
-#include <restinio/cast_to.hpp>
-#include <restinio/value_or.hpp>
+#include <restinio/all.hpp>
 
 using namespace restinio;
 
