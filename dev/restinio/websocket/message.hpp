@@ -109,7 +109,7 @@ status_code_to_bin( status_code_t code )
 }
 
 inline status_code_t
-status_code_from_bin( std::string data )
+status_code_from_bin( string_view_t data )
 {
 	using namespace ::restinio::utils::impl::bitops;
 
