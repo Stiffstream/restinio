@@ -185,7 +185,7 @@ using ws_handle_t = std::shared_ptr< ws_t >;
 
 //! Activate websocket: start receiving messages.
 void
-activate( ws_t & ws )
+inline activate( ws_t & ws )
 {
 	ws.m_ws_connection_handle->init_read( ws.shared_from_this() );
 }
