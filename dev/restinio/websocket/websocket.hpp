@@ -25,11 +25,6 @@ namespace websocket
 namespace basic
 {
 
-class ws_t;
-
-void
-activate( ws_t & ws );
-
 //
 // ws_t
 //
@@ -43,9 +38,17 @@ activate( ws_t & ws );
 class ws_t
 	:	public std::enable_shared_from_this< ws_t >
 {
-	friend void activate( ws_t & ws );
-
 	public:
+		//
+		// activate()
+		//
+
+		//! Activate websocket: start receiving messages.
+		friend void activate( ws_t & ws )
+		{
+			ws.m_ws_connection_handle->init_read( ws.shared_from_this() );
+		}
+
 		ws_t( const ws_t & ) = delete;
 		ws_t( ws_t && ) = delete;
 		ws_t & operator = ( const ws_t & ) = delete;
@@ -178,17 +181,6 @@ class ws_t
 
 //! Alias for ws_t handle.
 using ws_handle_t = std::shared_ptr< ws_t >;
-
-//
-// activate()
-//
-
-//! Activate websocket: start receiving messages.
-void
-inline activate( ws_t & ws )
-{
-	ws.m_ws_connection_handle->init_read( ws.shared_from_this() );
-}
 
 //
 // activation_t
