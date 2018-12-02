@@ -150,7 +150,7 @@ class a_server_t
 					if( req.payload() == "close" )
 					{
 						m_ws->send_message(
-							true,
+							rws::final_frame,
 							rws::opcode_t::connection_close_frame,
 							rws::status_code_to_bin( rws::status_code_t::normal_closure ) );
 					}

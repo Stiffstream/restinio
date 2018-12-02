@@ -64,19 +64,22 @@ class message_details_t
 	public:
 		message_details_t() = default;
 
-		message_details_t( bool final, opcode_t opcode, size_t payload_len )
-			:	m_final_flag{ final }
+		message_details_t(
+			final_frame_flag_t final_flag,
+			opcode_t opcode,
+			size_t payload_len ) noexcept
+			:	m_final_flag{ final_frame == final_flag }
 			,	m_opcode{ opcode }
 		{
 			init_payload_len( payload_len );
 		}
 
 		message_details_t(
-			bool final,
+			final_frame_flag_t final_flag,
 			opcode_t opcode,
 			size_t payload_len,
 			std::uint32_t masking_key )
-			:	m_final_flag{ final }
+			:	m_final_flag{ final_frame == final_flag }
 			,	m_opcode{ opcode }
 			,	m_mask_flag( true )
 			,	m_masking_key( masking_key )
@@ -581,11 +584,12 @@ write_message_details( const message_details_t & message )
 */
 inline raw_data_t
 write_message_details(
-	bool final,
+	final_frame_flag_t final_flag,
 	opcode_t opcode,
 	size_t payload_len )
 {
-	return write_message_details( message_details_t{ final, opcode, payload_len } );
+	return write_message_details(
+			message_details_t{ final_flag, opcode, payload_len } );
 }
 
 //! Serialize websocket message details into bytes buffer.
@@ -594,12 +598,13 @@ write_message_details(
 */
 inline raw_data_t
 write_message_details(
-	bool final,
+	final_frame_flag_t final_flag,
 	opcode_t opcode,
 	size_t payload_len,
 	std::uint32_t masking_key )
 {
-	return write_message_details( message_details_t{ final, opcode, payload_len, masking_key } );
+	return write_message_details(
+			message_details_t{ final_flag, opcode, payload_len, masking_key } );
 }
 
 } /* namespace impl */

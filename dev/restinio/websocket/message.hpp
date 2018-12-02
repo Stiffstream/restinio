@@ -126,6 +126,16 @@ status_code_from_bin( string_view_t data )
 }
 
 //
+// final_frame_flag_t
+//
+
+//! WS frame (message) "final"/"not final" flag.
+enum class final_frame_flag_t : std::uint8_t { final_frame, not_final_frame };
+
+constexpr final_frame_flag_t final_frame = final_frame_flag_t::final_frame;
+constexpr final_frame_flag_t not_final_frame = final_frame_flag_t::not_final_frame;
+
+//
 // message_t
 //
 
@@ -138,47 +148,77 @@ class message_t final
 		message_t() = default;
 
 		message_t(
-			bool is_final,
+			final_frame_flag_t final_flag,
 			opcode_t opcode )
-			:	m_is_final{ is_final }
+			:	m_final_flag{ final_flag }
 			,	m_opcode{ opcode }
 		{}
 
 		message_t(
-			bool is_final,
+			final_frame_flag_t final_flag,
 			opcode_t opcode,
 			std::string payload )
-			:	m_is_final{ is_final }
+			:	m_final_flag{ final_flag }
 			,	m_opcode{ opcode }
 			,	m_payload{ std::move( payload ) }
 		{}
 
-		bool
-		is_final() const
+		[[deprecated("use override with final_frame_flag_t type for the first argument instead")]]
+		message_t(
+			bool is_final,
+			opcode_t opcode )
+			:	message_t{ is_final ? final_frame : not_final_frame, opcode }
+		{}
+
+		[[deprecated("use override with final_frame_flag_t type for the first argument instead")]]
+		message_t(
+			bool is_final,
+			opcode_t opcode,
+			std::string payload )
+			:	message_t{ is_final ? final_frame : not_final_frame,
+					opcode,
+					std::move( payload ) }
+		{}
+
+		//! Get final flag.
+		final_frame_flag_t
+		final_flag() const noexcept
 		{
-			return m_is_final;
+			return m_final_flag;
+		}
+
+		void
+		set_final_flag( final_frame_flag_t final_flag ) noexcept
+		{
+			m_final_flag = final_flag;
+		}
+
+		bool
+		is_final() const noexcept
+		{
+			return final_frame == final_flag();
 		}
 
 		opcode_t
-		opcode() const
+		opcode() const noexcept
 		{
 			return m_opcode;
 		}
 
 		void
-		set_opcode( opcode_t opcode )
+		set_opcode( opcode_t opcode ) noexcept
 		{
 			m_opcode = opcode;
 		}
 
 		const std::string&
-		payload() const
+		payload() const noexcept
 		{
 			return m_payload;
 		}
 
 		std::string&
-		payload()
+		payload() noexcept
 		{
 			return m_payload;
 		}
@@ -190,9 +230,8 @@ class message_t final
 		}
 
 	private:
-
 		//! Final flag.
-		bool m_is_final = true;
+		final_frame_flag_t m_final_flag{ final_frame };
 
 		//! Opcode.
 		opcode_t m_opcode = opcode_t::continuation_frame;

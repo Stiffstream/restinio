@@ -194,7 +194,7 @@ TEST_CASE(
 		ws_protocol_validator_t validator;
 
 		message_details_t pong{
-			true, opcode_t::pong_frame, 5, 0xFFFFFFFF};
+			final_frame, opcode_t::pong_frame, 5, 0xFFFFFFFF};
 
 		REQUIRE_NOTHROW( validator.process_new_frame(pong) );
 		REQUIRE_THROWS_AS( validator.process_new_frame(pong), std::runtime_error );
@@ -204,70 +204,70 @@ TEST_CASE(
 		{
 			ws_protocol_validator_t validator;
 			message_details_t frame{
-				true, static_cast<opcode_t>(0x03), 125, 0xFFFFFFFF};
+				final_frame, static_cast<opcode_t>(0x03), 125, 0xFFFFFFFF};
 			REQUIRE( validator.process_new_frame(frame) ==
 				validation_state_t::invalid_opcode );
 		}
 		{
 			ws_protocol_validator_t validator;
 			message_details_t frame{
-				true, static_cast<opcode_t>(0x04), 125, 0xFFFFFFFF};
+				final_frame, static_cast<opcode_t>(0x04), 125, 0xFFFFFFFF};
 			REQUIRE( validator.process_new_frame(frame) ==
 				validation_state_t::invalid_opcode );
 		}
 		{
 			ws_protocol_validator_t validator;
 			message_details_t frame{
-				true, static_cast<opcode_t>(0x05), 125, 0xFFFFFFFF};
+				final_frame, static_cast<opcode_t>(0x05), 125, 0xFFFFFFFF};
 			REQUIRE( validator.process_new_frame(frame) ==
 				validation_state_t::invalid_opcode );
 		}
 		{
 			ws_protocol_validator_t validator;
 			message_details_t frame{
-				true, static_cast<opcode_t>(0x06), 125, 0xFFFFFFFF};
+				final_frame, static_cast<opcode_t>(0x06), 125, 0xFFFFFFFF};
 			REQUIRE( validator.process_new_frame(frame) ==
 				validation_state_t::invalid_opcode );
 		}
 		{
 			ws_protocol_validator_t validator;
 			message_details_t frame{
-				true, static_cast<opcode_t>(0x07), 125, 0xFFFFFFFF};
+				final_frame, static_cast<opcode_t>(0x07), 125, 0xFFFFFFFF};
 			REQUIRE( validator.process_new_frame(frame) ==
 				validation_state_t::invalid_opcode );
 		}
 		{
 			ws_protocol_validator_t validator;
 			message_details_t frame{
-				true, static_cast<opcode_t>(0x0B), 125, 0xFFFFFFFF};
+				final_frame, static_cast<opcode_t>(0x0B), 125, 0xFFFFFFFF};
 			REQUIRE( validator.process_new_frame(frame) ==
 				validation_state_t::invalid_opcode );
 		}
 		{
 			ws_protocol_validator_t validator;
 			message_details_t frame{
-				true, static_cast<opcode_t>(0x0C), 125, 0xFFFFFFFF};
+				final_frame, static_cast<opcode_t>(0x0C), 125, 0xFFFFFFFF};
 			REQUIRE( validator.process_new_frame(frame) ==
 				validation_state_t::invalid_opcode );
 		}
 		{
 			ws_protocol_validator_t validator;
 			message_details_t frame{
-				true, static_cast<opcode_t>(0x0D), 125, 0xFFFFFFFF};
+				final_frame, static_cast<opcode_t>(0x0D), 125, 0xFFFFFFFF};
 			REQUIRE( validator.process_new_frame(frame) ==
 				validation_state_t::invalid_opcode );
 		}
 		{
 			ws_protocol_validator_t validator;
 			message_details_t frame{
-				true, static_cast<opcode_t>(0x0E), 125, 0xFFFFFFFF};
+				final_frame, static_cast<opcode_t>(0x0E), 125, 0xFFFFFFFF};
 			REQUIRE( validator.process_new_frame(frame) ==
 				validation_state_t::invalid_opcode );
 		}
 		{
 			ws_protocol_validator_t validator;
 			message_details_t frame{
-				true, static_cast<opcode_t>(0x0F), 125, 0xFFFFFFFF};
+				final_frame, static_cast<opcode_t>(0x0F), 125, 0xFFFFFFFF};
 			REQUIRE( validator.process_new_frame(frame) ==
 				validation_state_t::invalid_opcode );
 		}
@@ -278,11 +278,11 @@ TEST_CASE(
 		ws_protocol_validator_t validator;
 
 		message_details_t close{
-			false, opcode_t::connection_close_frame, 125, 0xFFFFFFFF};
+			not_final_frame, opcode_t::connection_close_frame, 125, 0xFFFFFFFF};
 		message_details_t ping{
-			false, opcode_t::ping_frame, 125, 0xFFFFFFFF};
+			not_final_frame, opcode_t::ping_frame, 125, 0xFFFFFFFF};
 			message_details_t pong{
-			false, opcode_t::pong_frame, 125, 0xFFFFFFFF};
+			not_final_frame, opcode_t::pong_frame, 125, 0xFFFFFFFF};
 
 		REQUIRE( validator.process_new_frame(close) ==
 			validation_state_t::non_final_control_frame );
@@ -295,11 +295,11 @@ TEST_CASE(
 	{
 		ws_protocol_validator_t validator;
 
-		message_details_t frame1{true, opcode_t::binary_frame, 126, 0xFFFFFFFF};
+		message_details_t frame1{final_frame, opcode_t::binary_frame, 126, 0xFFFFFFFF};
 		frame1.m_rsv1_flag = true;
-		message_details_t frame2{true, opcode_t::binary_frame, 126, 0xFFFFFFFF};
+		message_details_t frame2{final_frame, opcode_t::binary_frame, 126, 0xFFFFFFFF};
 		frame2.m_rsv2_flag = true;
-		message_details_t frame3{true, opcode_t::binary_frame, 126, 0xFFFFFFFF};
+		message_details_t frame3{final_frame, opcode_t::binary_frame, 126, 0xFFFFFFFF};
 		frame3.m_rsv3_flag = true;
 
 		REQUIRE( validator.process_new_frame(frame1) ==
@@ -313,7 +313,7 @@ TEST_CASE(
 	{
 		ws_protocol_validator_t validator;
 
-		message_details_t frame1{true, opcode_t::binary_frame, 126};
+		message_details_t frame1{final_frame, opcode_t::binary_frame, 126};
 
 		REQUIRE( validator.process_new_frame(frame1) ==
 			validation_state_t::empty_mask_from_client_side );
@@ -323,11 +323,11 @@ TEST_CASE(
 		ws_protocol_validator_t validator;
 
 		message_details_t close{
-			true, opcode_t::connection_close_frame, 126, 0xFFFFFFFF};
+			final_frame, opcode_t::connection_close_frame, 126, 0xFFFFFFFF};
 		message_details_t ping{
-			true, opcode_t::ping_frame, 126, 0xFFFFFFFF};
+			final_frame, opcode_t::ping_frame, 126, 0xFFFFFFFF};
 		message_details_t pong{
-			true, opcode_t::pong_frame, 126, 0xFFFFFFFF};
+			final_frame, opcode_t::pong_frame, 126, 0xFFFFFFFF};
 
 		REQUIRE( validator.process_new_frame(close) ==
 			validation_state_t::payload_len_is_too_big );
@@ -342,7 +342,7 @@ TEST_CASE(
 		ws_protocol_validator_t validator;
 
 		message_details_t frame{
-			true, opcode_t::continuation_frame, 5, 0xFFFFFFFF};
+			final_frame, opcode_t::continuation_frame, 5, 0xFFFFFFFF};
 
 		REQUIRE( validator.process_new_frame(frame) ==
 			validation_state_t::continuation_frame_without_data_frame );
@@ -356,14 +356,14 @@ TEST_CASE(
 		ws_protocol_validator_t validator;
 
 		message_details_t frame1{
-			false, opcode_t::text_frame, 5, 0xFFFFFFFF};
+			not_final_frame, opcode_t::text_frame, 5, 0xFFFFFFFF};
 
 		REQUIRE_NOTHROW( validator.process_new_frame(frame1) );
 
 		validator.finish_frame();
 
 		message_details_t frame2{
-			false, opcode_t::text_frame, 5, 0xFFFFFFFF};
+			not_final_frame, opcode_t::text_frame, 5, 0xFFFFFFFF};
 
 		REQUIRE( validator.process_new_frame(frame2) ==
 			validation_state_t::new_data_frame_without_finishing_previous );
@@ -378,7 +378,7 @@ TEST_CASE(
 		ws_protocol_validator_t validator;
 
 		message_details_t frame1{
-			false, opcode_t::text_frame, 5, 0xFFFFFFFF};
+			not_final_frame, opcode_t::text_frame, 5, 0xFFFFFFFF};
 
 		REQUIRE( validator.process_new_frame(frame1) ==
 			validation_state_t::frame_header_is_valid );
@@ -387,7 +387,7 @@ TEST_CASE(
 			validation_state_t::frame_is_valid );
 
 		message_details_t frame2{
-			true, opcode_t::continuation_frame, 5, 0xFFFFFFFF};
+			final_frame, opcode_t::continuation_frame, 5, 0xFFFFFFFF};
 
 		REQUIRE( validator.process_new_frame(frame2) ==
 			validation_state_t::frame_header_is_valid );
@@ -401,7 +401,7 @@ TEST_CASE(
 		ws_protocol_validator_t validator;
 
 		message_details_t frame1{
-			false, opcode_t::text_frame, 5, 0xFFFFFFFF};
+			not_final_frame, opcode_t::text_frame, 5, 0xFFFFFFFF};
 
 		REQUIRE( validator.process_new_frame(frame1) ==
 			validation_state_t::frame_header_is_valid );
@@ -410,7 +410,7 @@ TEST_CASE(
 			validation_state_t::frame_is_valid );
 
 		message_details_t frame2{
-			true, opcode_t::ping_frame, 5, 0xFFFFFFFF};
+			final_frame, opcode_t::ping_frame, 5, 0xFFFFFFFF};
 
 		REQUIRE( validator.process_new_frame(frame2) ==
 			validation_state_t::frame_header_is_valid );
@@ -419,7 +419,7 @@ TEST_CASE(
 			validation_state_t::frame_is_valid );
 
 		message_details_t frame3{
-			true, opcode_t::continuation_frame, 5, 0xFFFFFFFF};
+			final_frame, opcode_t::continuation_frame, 5, 0xFFFFFFFF};
 
 		REQUIRE( validator.process_new_frame(frame3) ==
 			validation_state_t::frame_header_is_valid );
@@ -433,7 +433,7 @@ TEST_CASE(
 			0xed, 0x9f, 0xbf }) };
 
 		message_details_t frame{
-			true, opcode_t::text_frame, payload.size(), 0xFFFFFFFF};
+			final_frame, opcode_t::text_frame, payload.size(), 0xFFFFFFFF};
 
 		REQUIRE( validator.process_new_frame(frame) ==
 			validation_state_t::frame_header_is_valid );
@@ -454,7 +454,7 @@ TEST_CASE(
 			0xed, 0x9f }) };
 
 		message_details_t frame{
-			true, opcode_t::text_frame, payload.size(), 0xFFFFFFFF};
+			final_frame, opcode_t::text_frame, payload.size(), 0xFFFFFFFF};
 
 		REQUIRE( validator.process_new_frame(frame) ==
 			validation_state_t::frame_header_is_valid );
@@ -475,7 +475,7 @@ TEST_CASE(
 			0x7F, 0x9F, 0x4D, 0x51, 0x58 }) };
 
 		message_details_t frame{
-			false, opcode_t::text_frame, payload.size(), 0x37FA213D };
+			not_final_frame, opcode_t::text_frame, payload.size(), 0x37FA213D };
 
 		REQUIRE( validator.process_new_frame(frame) ==
 			validation_state_t::frame_header_is_valid );
@@ -496,7 +496,7 @@ TEST_CASE(
 			0xf8, 0x88, 0x80, 0x80, 0x80 }) };
 
 		message_details_t frame{
-			false, opcode_t::text_frame, payload.size(), 0xFFFFFFFF};
+			not_final_frame, opcode_t::text_frame, payload.size(), 0xFFFFFFFF};
 
 		REQUIRE( validator.process_new_frame(frame) ==
 			validation_state_t::frame_header_is_valid );
@@ -519,7 +519,7 @@ TEST_CASE(
 			0xa1, 0x2d, 0x55, 0x54, 0x46, 0x2d, 0x38, 0x21, 0x21 }) };
 
 		message_details_t frame{
-			true, opcode_t::text_frame, payload.size(), 0xFFFFFFFF};
+			final_frame, opcode_t::text_frame, payload.size(), 0xFFFFFFFF};
 
 		REQUIRE( validator.process_new_frame(frame) ==
 			validation_state_t::frame_header_is_valid );
@@ -549,13 +549,13 @@ TEST_CASE(
 			0xa1, 0x2d, 0x55, 0x54, 0x46, 0x2d, 0x38, 0x21, 0x21 }) };
 
 		message_details_t text_frame{
-			false, opcode_t::text_frame, payload.size(), 0xFFFFFFFF};
+			not_final_frame, opcode_t::text_frame, payload.size(), 0xFFFFFFFF};
 
 		message_details_t continuation_frame1{
-			false, opcode_t::continuation_frame, payload1.size(), 0xFFFFFFFF};
+			not_final_frame, opcode_t::continuation_frame, payload1.size(), 0xFFFFFFFF};
 
 		message_details_t continuation_frame2{
-			true, opcode_t::continuation_frame, payload2.size(), 0xFFFFFFFF};
+			final_frame, opcode_t::continuation_frame, payload2.size(), 0xFFFFFFFF};
 
 		// TEXT
 		REQUIRE( validator.process_new_frame(text_frame) ==
@@ -605,13 +605,13 @@ TEST_CASE(
 			0xa1, 0x2d, 0xFF, 0x54, 0xFF, 0x2d, 0x38, 0xFF, 0x21 }) };
 
 		message_details_t text_frame{
-			false, opcode_t::text_frame, payload.size(), 0xFFFFFFFF};
+			not_final_frame, opcode_t::text_frame, payload.size(), 0xFFFFFFFF};
 
 		message_details_t continuation_frame1{
-			false, opcode_t::continuation_frame, payload1.size(), 0xFFFFFFFF};
+			not_final_frame, opcode_t::continuation_frame, payload1.size(), 0xFFFFFFFF};
 
 		message_details_t continuation_frame2{
-			true, opcode_t::continuation_frame, payload2.size(), 0xFFFFFFFF};
+			final_frame, opcode_t::continuation_frame, payload2.size(), 0xFFFFFFFF};
 
 		// TEXT
 		REQUIRE( validator.process_new_frame(text_frame) ==
@@ -654,7 +654,7 @@ TEST_CASE(
 		std::string payload = status_code_to_bin(1000);
 
 		message_details_t close_frame{
-			true, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
+			final_frame, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
 
 		REQUIRE( validator.process_new_frame( close_frame ) ==
 			validation_state_t::frame_header_is_valid );
@@ -673,7 +673,7 @@ TEST_CASE(
 			std::string payload = status_code_to_bin(999);
 
 			message_details_t close_frame{
-				true, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
+				final_frame, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
 
 			REQUIRE( validator.process_new_frame( close_frame ) ==
 				validation_state_t::frame_header_is_valid );
@@ -689,7 +689,7 @@ TEST_CASE(
 			std::string payload = status_code_to_bin(1012);
 
 			message_details_t close_frame{
-				true, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
+				final_frame, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
 
 			REQUIRE( validator.process_new_frame( close_frame ) ==
 				validation_state_t::frame_header_is_valid );
@@ -705,7 +705,7 @@ TEST_CASE(
 			std::string payload = status_code_to_bin(1013);
 
 			message_details_t close_frame{
-				true, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
+				final_frame, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
 
 			REQUIRE( validator.process_new_frame( close_frame ) ==
 				validation_state_t::frame_header_is_valid );
@@ -719,7 +719,7 @@ TEST_CASE(
 			std::string payload = status_code_to_bin(1014);
 
 			message_details_t close_frame{
-				true, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
+				final_frame, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
 
 			REQUIRE( validator.process_new_frame( close_frame ) ==
 				validation_state_t::frame_header_is_valid );
@@ -735,7 +735,7 @@ TEST_CASE(
 			std::string payload = status_code_to_bin(1015);
 
 			message_details_t close_frame{
-				true, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
+				final_frame, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
 
 			REQUIRE( validator.process_new_frame( close_frame ) ==
 				validation_state_t::frame_header_is_valid );
@@ -751,7 +751,7 @@ TEST_CASE(
 			std::string payload = status_code_to_bin(1016);
 
 			message_details_t close_frame{
-				true, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
+				final_frame, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
 
 			REQUIRE( validator.process_new_frame( close_frame ) ==
 				validation_state_t::frame_header_is_valid );
@@ -770,7 +770,7 @@ TEST_CASE(
 		std::string payload = status_code_to_bin(1000) + "Hello";
 
 		message_details_t close_frame{
-			true, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
+			final_frame, opcode_t::connection_close_frame, payload.size(), 0xFFFFFFFF};
 
 		REQUIRE( validator.process_new_frame( close_frame ) ==
 			validation_state_t::frame_header_is_valid );
@@ -789,7 +789,7 @@ TEST_CASE(
 			0x7F, 0x9F, 0x4D, 0x51, 0x58 }) };
 
 		message_details_t frame{
-			false, opcode_t::text_frame, payload.size(), 0x37FA213D };
+			final_frame, opcode_t::text_frame, payload.size(), 0x37FA213D };
 
 		REQUIRE( validator.process_new_frame(frame) ==
 			validation_state_t::frame_header_is_valid );
