@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.3)
 
-SET(CMAKE_CXX_STANDARD 17)
+SET(CMAKE_CXX_STANDARD 14)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Determine if RESTinio is built as a subproject (using add_subdirectory)

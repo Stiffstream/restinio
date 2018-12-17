@@ -25,11 +25,6 @@ namespace websocket
 namespace basic
 {
 
-class ws_t;
-
-void
-activate( ws_t & ws );
-
 //
 // ws_t
 //
@@ -43,9 +38,17 @@ activate( ws_t & ws );
 class ws_t
 	:	public std::enable_shared_from_this< ws_t >
 {
-	friend void activate( ws_t & ws );
-
 	public:
+		//
+		// activate()
+		//
+
+		//! Activate websocket: start receiving messages.
+		friend void activate( ws_t & ws )
+		{
+			ws.m_ws_connection_handle->init_read( ws.shared_from_this() );
+		}
+
 		ws_t( const ws_t & ) = delete;
 		ws_t( ws_t && ) = delete;
 		ws_t & operator = ( const ws_t & ) = delete;
@@ -101,10 +104,10 @@ class ws_t
 			}
 		}
 
-		//! Send_websocket message
+		//! Send_websocket message.
 		void
 		send_message(
-			bool final,
+			final_frame_flag_t final_flag,
 			opcode_t opcode,
 			writable_item_t payload,
 			write_status_cb_t wscb = write_status_cb_t{} )
@@ -119,7 +122,7 @@ class ws_t
 
 					// Create header serialize it and append to bufs .
 					impl::message_details_t details{
-						final, opcode, asio_ns::buffer_size( payload.buf() ) };
+						final_flag, opcode, asio_ns::buffer_size( payload.buf() ) };
 
 					bufs.emplace_back(
 						impl::write_message_details( details ) );
@@ -162,11 +165,27 @@ class ws_t
 			}
 		}
 
+		//! Send_websocket message.
+		[[deprecated("use override with final_frame_flag_t type for the first argument instead")]]
+		void
+		send_message(
+			bool final,
+			opcode_t opcode,
+			writable_item_t payload,
+			write_status_cb_t wscb = write_status_cb_t{} )
+		{
+			send_message(
+				final ? final_frame : not_final_frame,
+				opcode,
+				std::move( payload ),
+				std::move( wscb ) );
+		}
+
 		void
 		send_message( message_t msg, write_status_cb_t wscb = write_status_cb_t{} )
 		{
 			send_message(
-				msg.is_final(),
+				msg.final_flag(),
 				msg.opcode(),
 				writable_item_t{ std::move( msg.payload() ) },
 				std::move( wscb ) );
@@ -178,17 +197,6 @@ class ws_t
 
 //! Alias for ws_t handle.
 using ws_handle_t = std::shared_ptr< ws_t >;
-
-//
-// activate()
-//
-
-//! Activate websocket: start receiving messages.
-void
-activate( ws_t & ws )
-{
-	ws.m_ws_connection_handle->init_read( ws.shared_from_this() );
-}
 
 //
 // activation_t

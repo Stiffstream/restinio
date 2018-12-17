@@ -377,7 +377,7 @@ class ws_connection_t final
 
 			bufs.emplace_back(
 				impl::write_message_details(
-					true,
+					final_frame,
 					opcode_t::connection_close_frame,
 					payload.size() ) );
 
@@ -898,7 +898,7 @@ class ws_connection_t final
 
 					call_message_handler(
 						std::make_shared< message_t >(
-							md.m_final_flag,
+							md.m_final_flag ? final_frame : not_final_frame,
 							md.m_opcode,
 							std::move( m_input.m_payload ) ) );
 
@@ -942,7 +942,7 @@ class ws_connection_t final
 				[&]{
 					call_message_handler(
 						std::make_shared< message_t >(
-							true,
+							final_frame,
 							opcode_t::connection_close_frame,
 							status_code_to_bin( status ) ) );
 				} );

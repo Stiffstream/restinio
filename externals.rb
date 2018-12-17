@@ -1,11 +1,11 @@
 MxxRu::arch_externals :so5 do |e|
-  e.url 'https://github.com/eao197/so-5-5/archive/v5.5.22.1.zip'
+  e.url 'https://github.com/eao197/so-5-5/archive/v5.5.23.tar.gz'
   e.map_dir 'dev/so_5' => 'dev'
   e.map_dir 'dev/timertt' => 'dev'
 end
 
 MxxRu::arch_externals :asio do |e|
-  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-12-1.zip'
+  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-12-2.tar.gz'
 
   e.map_dir 'asio/include' => 'dev/asio'
 end
@@ -71,7 +71,7 @@ MxxRu::arch_externals :clara do |e|
 end
 
 MxxRu::arch_externals :catch do |e|
-  e.url 'https://github.com/catchorg/Catch2/archive/v2.4.2.tar.gz'
+  e.url 'https://github.com/catchorg/Catch2/archive/v2.5.0.tar.gz'
 
   e.map_dir 'single_include/catch2' => 'dev'
 end

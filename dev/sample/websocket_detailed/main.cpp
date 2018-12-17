@@ -37,7 +37,7 @@ struct ws_message_handler_t
 
 			if( m->is_final() )
 				wsh->send_message(
-					true, m_continued_frame_opcode, m_continuation_frame_buffer );
+					rws::final_frame, m_continued_frame_opcode, m_continuation_frame_buffer );
 		}
 		else if( m->opcode() == rws::opcode_t::ping_frame )
 		{
