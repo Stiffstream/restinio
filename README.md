@@ -1,5 +1,7 @@
 # What Is RESTinio?
 
+[![CodeFactor](https://www.codefactor.io/repository/github/moeryomenko/restinio/badge)](https://www.codefactor.io/repository/github/moeryomenko/restinio)
+
 RESTinio is a header-only C++14 library that gives you an embedded
 HTTP/Websocket server. It is based on standalone version of ASIO
 and targeted primarily for asynchronous processing of HTTP-requests.
