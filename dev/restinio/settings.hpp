@@ -101,7 +101,7 @@ create_default_shared_object_instance< default_request_handler_t >()
 }
 
 //
-// unsure_created()
+// ensure_created()
 //
 
 //! Ensure that object was created.
@@ -618,7 +618,7 @@ class basic_server_settings_t
 		Derived &
 		acceptor_options_setter( acceptor_options_setter_t aos ) &
 		{
-			if( m_acceptor_options_setter )
+			if( !aos )
 				throw exception_t{ "acceptor options setter cannot be empty" };
 
 			return set_unique_instance(
@@ -646,7 +646,7 @@ class basic_server_settings_t
 		Derived &
 		socket_options_setter( socket_options_setter_t sos ) &
 		{
-			if( m_socket_options_setter )
+			if( !sos )
 				throw exception_t{ "socket options setter cannot be empty" };
 
 			return set_unique_instance(
