@@ -109,9 +109,22 @@ class request_t final
 		//! Get connection id.
 		connection_id_t connection_id() const noexcept { return m_connection_id; }
 
+		//! Get the remote endpoint.
+		/*!
+		 * \note
+		 * Can throw.
+		 */
+		asio_ns::ip::tcp::endpoint
+		remote_endpoint() const
+		{
+			check_connection();
+
+			return m_connection->remote_endpoint();
+		}
+
 	private:
 		void
-		check_connection()
+		check_connection() const
 		{
 			if( !m_connection )
 			{
