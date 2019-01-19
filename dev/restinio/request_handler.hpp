@@ -49,12 +49,14 @@ class request_t final
 			request_id_t request_id,
 			http_request_header_t header,
 			std::string body,
-			impl::connection_handle_t connection )
+			impl::connection_handle_t connection,
+			endpoint_t remote_endpoint )
 			:	m_request_id{ request_id }
 			,	m_header{ std::move( header ) }
 			,	m_body{ std::move( body ) }
 			,	m_connection{ std::move( connection ) }
 			,	m_connection_id{ m_connection->connection_id() }
+			,	m_remote_endpoint{ std::move( remote_endpoint ) }
 		{}
 
 		//! Get request header.
@@ -109,6 +111,9 @@ class request_t final
 		//! Get connection id.
 		connection_id_t connection_id() const noexcept { return m_connection_id; }
 
+		//! Get the remote endpoint of the underlying connection.
+		const endpoint_t & remote_endpoint() const noexcept { return m_remote_endpoint; }
+
 	private:
 		void
 		check_connection()
@@ -125,6 +130,9 @@ class request_t final
 
 		impl::connection_handle_t m_connection;
 		const connection_id_t m_connection_id;
+
+		//! Remote endpoint for underlying connection.
+		const endpoint_t m_remote_endpoint;
 };
 
 inline std::ostream &

@@ -234,11 +234,14 @@ class connection_t final
 			//! Connection socket.
 			stream_socket_t && socket,
 			//! Settings that are common for connections.
-			connection_settings_handle_t< Traits > settings )
+			connection_settings_handle_t< Traits > settings,
+			//! Remote endpoint for that connection.
+			endpoint_t remote_endpoint )
 			:	connection_base_t{ conn_id }
 			,	executor_wrapper_base_t{ socket.get_executor() }
 			,	m_socket{ std::move( socket ) }
 			,	m_settings{ std::move( settings ) }
+			,	m_remote_endpoint{ std::move( remote_endpoint ) }
 			,	m_input{ m_settings->m_buffer_size }
 			,	m_response_coordinator{ m_settings->m_max_pipelined_requests }
 			,	m_timer_guard{ m_settings->create_timer_guard() }
@@ -250,7 +253,7 @@ class connection_t final
 					return fmt::format(
 						"[connection:{}] start connection with {}",
 						connection_id(),
-						m_socket.remote_endpoint() );
+						m_remote_endpoint );
 			} );
 		}
 
@@ -544,7 +547,8 @@ class connection_t final
 								request_id,
 								std::move( parser_ctx.m_header ),
 								std::move( parser_ctx.m_body ),
-								shared_from_concrete< connection_base_t >() ) ) )
+								shared_from_concrete< connection_base_t >(),
+								m_remote_endpoint ) ) )
 					{
 						// If handler refused request, say not implemented.
 						write_response_parts_impl(
@@ -652,7 +656,8 @@ class connection_t final
 						request_id,
 						std::move( parser_ctx.m_header ),
 						std::move( parser_ctx.m_body ),
-						shared_from_concrete< connection_base_t >() ) ) )
+						shared_from_concrete< connection_base_t >(),
+						m_remote_endpoint) ) )
 			{
 				if( m_socket.is_open() )
 				{
@@ -1288,6 +1293,9 @@ class connection_t final
 		//! Common paramaters of a connection.
 		connection_settings_handle_t< Traits > m_settings;
 
+		//! Remote endpoint for this connection.
+		const endpoint_t m_remote_endpoint;
+
 		//! Input routine.
 		connection_input_t m_input;
 
@@ -1496,7 +1504,8 @@ class connection_factory_t
 
 		auto
 		create_new_connection(
-			stream_socket_t socket )
+			stream_socket_t socket,
+			endpoint_t remote_endpoint )
 		{
 			using connection_type_t = connection_t< Traits >;
 			std::shared_ptr< connection_type_t > result;
@@ -1510,7 +1519,8 @@ class connection_factory_t
 				result = std::make_shared< connection_type_t >(
 					m_connection_id_counter++,
 					std::move( socket ),
-					m_connection_settings );
+					m_connection_settings,
+					std::move( remote_endpoint ) );
 			}
 			catch( const std::exception & ex )
 			{

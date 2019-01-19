@@ -256,16 +256,22 @@ class acceptor_t final
 		{
 			if( !ec )
 			{
+				auto remote_endpoint =
+						this->socket( i ).lowest_layer().remote_endpoint();
+
 				m_logger.trace( [&]{
 					return fmt::format(
 							"accept connection from {} on socket #{}",
-							this->socket( i ).lowest_layer().remote_endpoint(), i );
+							remote_endpoint, i );
 				} );
 
 				auto create_and_init_connection =
-					[ sock = this->move_socket( i ), factory = m_connection_factory ]() mutable {
+					[sock = this->move_socket( i ),
+					factory = m_connection_factory,
+					ep = std::move(remote_endpoint)]() mutable {
 						// Create new connection handler.
-						auto conn = factory->create_new_connection( std::move( sock ) );
+						auto conn = factory->create_new_connection(
+								std::move(sock), std::move(ep) );
 
 						//! If connection handler was created,
 						// then start waiting for request message.
