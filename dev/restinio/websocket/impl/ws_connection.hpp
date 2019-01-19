@@ -328,13 +328,6 @@ class ws_connection_t final
 						}
 				} );
 		}
-
-		asio_ns::ip::tcp::endpoint
-		remote_endpoint() const override
-		{
-			return m_socket.remote_endpoint();
-		}
-
 	private:
 		//! Standard close routine.
 		void

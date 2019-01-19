@@ -8,8 +8,6 @@
 
 #pragma once
 
-#include <restinio/asio_include.hpp>
-
 #include <memory>
 
 namespace restinio
@@ -44,10 +42,6 @@ class tcp_connection_ctx_base_t
 		check_timeout(
 			//! A handle to itself (eliminates one shared_ptr instantiation).
 			std::shared_ptr< tcp_connection_ctx_base_t > & self ) = 0;
-
-		//! Get the remove endpoint for the connection.
-		virtual asio_ns::ip::tcp::endpoint
-		remote_endpoint() const = 0;
 
 	protected:
 

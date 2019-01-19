@@ -12,7 +12,7 @@ restinio::request_handling_status_t handler( restinio::request_handle_t req )
 			.append_header( restinio::http_field::server, "RESTinio hello world server" )
 			.append_header_date_field()
 			.append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
-			.set_body( "Hello world!" )
+			.set_body( "Hello world!")
 			.done();
 
 		return restinio::request_accepted();

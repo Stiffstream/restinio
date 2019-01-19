@@ -17,11 +17,6 @@ init_resp( RESP resp )
 
 using router_t = restinio::router::express_router_t<>;
 
-std::string identify_remote( restinio::asio_ns::ip::tcp::endpoint addr )
-{
-	return fmt::format( "Client from [{}]", addr );
-}
-
 auto create_request_handler()
 {
 	auto router = std::make_unique< router_t >();
@@ -31,7 +26,7 @@ auto create_request_handler()
 		[]( auto req, auto ){
 				init_resp( req->create_response() )
 					.append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
-					.set_body( identify_remote( req->remote_endpoint() ) + ": Hello world!" )
+					.set_body( "Hello world!")
 					.done();
 
 				return restinio::request_accepted();

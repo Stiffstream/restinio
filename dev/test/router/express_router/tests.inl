@@ -13,12 +13,6 @@ struct fake_connection_t : public restinio::impl::connection_base_t
 		response_output_flags_t ,
 		write_group_t ) override
 	{}
-
-	restinio::asio_ns::ip::tcp::endpoint
-	remote_endpoint() const override
-	{
-		return {};
-	}
 };
 
 

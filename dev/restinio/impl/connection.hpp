@@ -361,12 +361,6 @@ class connection_t final
 				this->get_executor() };
 		}
 
-		asio_ns::ip::tcp::endpoint
-		remote_endpoint() const override
-		{
-			return m_socket.remote_endpoint();
-		}
-
 	private:
 		//! Start (continue) a chain of read-parse-read-... operations.
 		inline void
