@@ -55,8 +55,10 @@ class ws_t
 		ws_t & operator = ( ws_t && ) = delete;
 
 		ws_t(
-			impl::ws_connection_handle_t ws_connection_handle )
+			impl::ws_connection_handle_t ws_connection_handle,
+			endpoint_t remote_endpoint )
 			:	m_ws_connection_handle{ std::move( ws_connection_handle ) }
+			,	m_remote_endpoint{ std::move( remote_endpoint ) }
 		{}
 
 		~ws_t()
@@ -191,8 +193,14 @@ class ws_t
 				std::move( wscb ) );
 		}
 
+		//! Get the remote endpoint of the underlying connection.
+		const endpoint_t & remote_endpoint() const noexcept { return m_remote_endpoint; }
+
 	private:
 		impl::ws_connection_handle_t m_ws_connection_handle;
+
+		//! Remote endpoint for this ws-connection.
+		const endpoint_t m_remote_endpoint;
 };
 
 //! Alias for ws_t handle.
@@ -261,7 +269,6 @@ upgrade(
 			con.connection_id(),
 			std::move( upgrade_internals.m_settings ),
 			std::move( upgrade_internals.m_socket ),
-			std::move( upgrade_internals.m_strand ),
 			std::move( ws_message_handler ) );
 
 	writable_items_container_t upgrade_response_bufs;
@@ -283,7 +290,8 @@ upgrade(
 		write_group_t{ std::move( upgrade_response_bufs ) },
 		false );
 
-	auto result = std::make_shared< ws_t >( std::move( ws_connection ) );
+	auto result =
+		std::make_shared< ws_t >( std::move( ws_connection ), req.remote_endpoint() );
 
 	if( activation_t::immediate == activation_flag )
 	{

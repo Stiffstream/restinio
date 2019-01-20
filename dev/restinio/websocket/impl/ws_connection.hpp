@@ -142,7 +142,6 @@ class ws_connection_t final
 			//! \{
 			restinio::impl::connection_settings_handle_t< Traits > settings,
 			stream_socket_t socket,
-			strand_t /*strand*/,
 			//! \}
 			message_handler_t msg_handler )
 			:	ws_connection_base_t{ conn_id }

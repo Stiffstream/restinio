@@ -342,16 +342,13 @@ class connection_t final
 
 			upgrade_internals_t(
 				connection_settings_handle_t< Traits > settings,
-				stream_socket_t socket,
-				strand_t strand )
+				stream_socket_t socket )
 				:	m_settings{ std::move( settings ) }
 				,	m_socket{ std::move( socket ) }
-				,	m_strand{ std::move( strand ) }
 			{}
 
 			connection_settings_handle_t< Traits > m_settings;
 			stream_socket_t m_socket;
-			strand_t m_strand;
 		};
 
 		//! Move socket out of connection.
@@ -360,8 +357,7 @@ class connection_t final
 		{
 			return upgrade_internals_t{
 				m_settings,
-				std::move( m_socket ),
-				this->get_executor() };
+				std::move( m_socket ) };
 		}
 
 	private:
@@ -693,9 +689,10 @@ class connection_t final
 			// of a connection was already determined.
 			//
 			// In both cases: here do nothing.
-			// We can't even do read-only access because upgrade handling might take place
-			// in distinct execution context
-			// Son no even log messages here.
+			// We can't even do read-only access because
+			// upgrade handling might take place
+			// in distinct execution context.
+			// So no even a log messages here.
 		}
 
 		//! Write parts for specified request.
