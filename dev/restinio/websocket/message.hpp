@@ -114,7 +114,7 @@ status_code_from_bin( string_view_t data )
 	using namespace ::restinio::utils::impl::bitops;
 
 	std::uint16_t result{ 0 };
-	if( 2 >= data.size() )
+	if( 2 <= data.size() )
 	{
 		result |= static_cast< std::uint8_t >( data[ 0 ] );
 		result <<= 8;
