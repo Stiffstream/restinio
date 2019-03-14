@@ -111,15 +111,13 @@ ensure_created(
 	std::unique_ptr< Object > mb_created_one,
 	string_view_t fail_description )
 {
-	auto result{ std::move( mb_created_one ) };
+	if( !mb_created_one )
+		mb_created_one = create_default_unique_object_instance< Object >();
 
-	if( !result )
-		result = create_default_unique_object_instance< Object >();
-
-	if( !result )
+	if( !mb_created_one )
 		throw exception_t{ fail_description };
 
-	return result;
+	return mb_created_one;
 }
 
 //
