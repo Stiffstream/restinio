@@ -184,7 +184,7 @@ struct handler_proxy_t
 
 	handler_proxy_t(
 		actual_handler_t & handler )
-		:	m_handler{ std::move(handler) }
+		:	m_handler{ handler }
 	{}
 
 	void operator()( rws::ws_handle_t wsh, rws::message_handle_t m )
