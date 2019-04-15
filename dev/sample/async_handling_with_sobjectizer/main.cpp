@@ -1,155 +1,126 @@
-#include <type_traits>
-#include <iostream>
-#include <chrono>
-
 #include <restinio/all.hpp>
-#include <restinio/so5/so_timer_manager.hpp>
 
-#include <clara/clara.hpp>
-#include <fmt/format.h>
+#include <so_5/all.hpp>
 
-// Application agents.
-#include "app.hpp"
+#include <random>
 
-//
-// app_args_t
-//
-struct app_args_t
+// Message for transfer requests from RESTinio's thread to processing thread.
+struct handle_request
 {
-	bool m_help{ false };
-	std::string m_address{ "localhost" };
-	std::uint16_t m_port{ 8080 };
-
-	static app_args_t
-	parse( int argc, const char * argv[] )
-	{
-		using namespace clara;
-
-		app_args_t result;
-
-		auto cli =
-			Opt( result.m_address, "address" )
-					["-a"]["--address"]
-					( fmt::format( "address to listen (default: {})", result.m_address ) )
-			| Opt( result.m_port, "port" )
-					["-p"]["--port"]
-					( fmt::format( "port to listen (default: {})", result.m_port ) )
-			| Help(result.m_help);
-
-		auto parse_result = cli.parse( Args(argc, argv) );
-		if( !parse_result )
-		{
-			throw std::runtime_error{
-				fmt::format(
-					"Invalid command-line arguments: {}",
-					parse_result.errorMessage() ) };
-		}
-
-		if( result.m_help )
-		{
-			std::cout << cli << std::endl;
-		}
-
-		return result;
-	}
+	restinio::request_handle_t m_req;
 };
 
-//
-// a_http_server_t
-//
-
-// Agent that starts/stops a server.
-template < typename TRAITS >
-class a_http_server_t :	public so_5::agent_t
+// Message for delaying actual requests processing.
+struct timeout_elapsed
 {
-	public:
-		a_http_server_t(
-			context_t ctx,
-			restinio::server_settings_t< TRAITS > settings )
-			:	so_5::agent_t{ std::move( ctx ) }
-			,	m_server{
-					restinio::own_io_context(),
-					std::move( settings ) }
-		{}
-
-		virtual void so_evt_start() override
-		{
-			m_server_thread = std::thread{ [&] {
-				m_server.open_async(
-						[]{ /* Ok. */ },
-						[]( auto ex ) { std::rethrow_exception( ex ); } );
-				m_server.io_context().run();
-			} };
-		}
-
-		virtual void so_evt_finish() override
-		{
-			m_server.close_async(
-					[&]{ m_server.io_context().stop(); },
-					[]( auto ex ) { std::rethrow_exception( ex ); } );
-			m_server_thread.join();
-		}
-
-	private:
-		restinio::http_server_t< TRAITS > m_server;
-		std::thread m_server_thread;
+	restinio::request_handle_t m_req;
+	std::chrono::milliseconds m_pause;
 };
 
-void create_main_coop(
-	const app_args_t & args,
-	so_5::coop_t & coop )
+void processing_thread_func(so_5::mchain_t req_ch)
 {
-	using traits_t =
-		restinio::traits_t<
-			restinio::so5::so_timer_manager_t,
-			restinio::single_threaded_ostream_logger_t >;
+	// The stuff necessary for random pause generation.
+	std::random_device rd;
+	std::mt19937 generator{rd()};
+	std::uniform_int_distribution<> pause_generator{350, 3500};
 
-	restinio::server_settings_t< traits_t > settings{};
+	// The channel for delayed timeout_elapsed messages.
+	auto delayed_ch = so_5::create_mchain(req_ch->environment());
 
-	settings
-		.port( args.m_port )
-		.address( "localhost" )
-		.timer_manager(
-			coop.environment(),
-			coop.make_agent< restinio::so5::a_timeout_handler_t >()->so_direct_mbox() )
-		.request_handler(
-			create_request_handler(
-				// Add application agent to cooperation.
-				coop.make_agent< a_main_handler_t >()->so_direct_mbox() ) );
+	// This flag will be set to 'true' when some of channels will be closed.
+	bool stop = false;
+	select(
+		so_5::from_all()
+			// If some channel become closed we should set out 'stop' flag.
+			.on_close([&stop](const auto &) { stop = true; })
+			// A predicate for stopping select() function.
+			.stop_on([&stop]{ return stop; }),
 
-	coop.make_agent< a_http_server_t< traits_t > >( std::move( settings ) );
+		// Read and handle handle_request messages from req_ch.
+		case_(req_ch,
+			[&](handle_request cmd) {
+				// Generate a random pause for processing of that request.
+				const std::chrono::milliseconds pause{pause_generator(generator)};
+
+				// Delay processing of that request by using delayed message.
+				so_5::send_delayed<timeout_elapsed>(delayed_ch,
+						// This the pause for send_delayed.
+						pause,
+						// The further arguments are going to timeout_elapsed's
+						// constructor.
+						cmd.m_req,
+						pause);
+			}),
+
+		// Read and handle timeout_elapsed messages from delayed_ch.
+		case_(delayed_ch,
+			[](timeout_elapsed cmd) {
+				// Now we can create an actual response to the request.
+				cmd.m_req->create_response()
+						.set_body("Hello, World! (pause:"
+								+ std::to_string(cmd.m_pause.count())
+								+ "ms)")
+						.done();
+			})
+	);
 }
 
-int main( int argc, char const *argv[] )
+int main()
 {
-	try
+	// Launching SObjectizer on a separate thread.
+	// There is no need to start and shutdown SObjectize:
+	// the wrapped_env_t instance does it automatically.
+	so_5::wrapped_env_t sobj;
+
+	// Thread object for processing thread.
+	std::thread processing_thread;
+	// This thread should be automatically joined at exit
+	// (this is necessary for exception safety).
+	auto processing_thread_joiner = so_5::auto_join(processing_thread);
+
+	// A channel for sending requests from RESTinio's thread to
+	// separate processing thread.
+	auto req_ch = so_5::create_mchain(sobj);
+	// This channel should be automatically closed at scope exit
+	// (this is necessary for exception safety).
+	auto ch_closer = so_5::auto_close_drop_content(req_ch);
+
+	// Now we can start processing thread.
+	// If some exception will be thrown somewhere later the thread
+	// will be automatically stopped and joined.
+	processing_thread = std::thread{
+			processing_thread_func, req_ch
+	};
+
+	// Traits for our simple server.
+	struct traits_t : public restinio::default_traits_t
 	{
-		const auto args = app_args_t::parse( argc, argv );
+		using logger_t = restinio::shared_ostream_logger_t;
+	};
 
-		if( args.m_help )
-			return 0;
-
-		so_5::wrapped_env_t sobj{ [&]( auto & env )
-			{
-				env.introduce_coop(
-					[ & ]( so_5::coop_t & coop ) {
-						create_main_coop( args, coop );
-					} );
-			} };
-
-		std::string cmd;
-		do
-		{
-			// Wait for quit command.
-			std::cout << "Type \"quit\" or \"q\" to quit." << std::endl;
-			std::cin >> cmd;
-		} while( cmd != "quit" && cmd != "q" );
-	}
-	catch( const std::exception & ex )
-	{
-		std::cerr << "Error: " << ex.what() << std::endl;
-		return 1;
-	}
+	restinio::run(
+		restinio::on_this_thread<traits_t>()
+			.port(8080)
+			.address("localhost")
+			.request_handler([req_ch](auto req) {
+				// Handle only HTTP GET requests for the root.
+				if(restinio::http_method_t::http_get == req->header().method() &&
+						"/" == req->header().path())
+				{
+					// Request will be delegated to the actual processing.
+					so_5::send<handle_request>(req_ch, req);
+					return restinio::request_accepted();
+				}
+				else
+					return restinio::request_rejected();
+			})
+			.cleanup_func([&] {
+				// Processing thread needs to be closed.
+				// It is better to do it manually because there can
+				// be requests waiting in req_ch.
+				so_5::close_drop_content(req_ch);
+			}));
 
 	return 0;
 }
+
