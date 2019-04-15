@@ -1,5 +1,5 @@
 MxxRu::arch_externals :so5 do |e|
-  e.url 'https://github.com/eao197/so-5-5/archive/v5.5.24.1.tar.gz'
+  e.url 'https://github.com/eao197/so-5-5/archive/v5.5.24.3.tar.gz'
   e.map_dir 'dev/so_5' => 'dev'
   e.map_dir 'dev/timertt' => 'dev'
 end
@@ -59,7 +59,7 @@ MxxRu::arch_externals :rapidjson_mxxru do |e|
 end
 
 MxxRu::arch_externals :json_dto do |e|
-  e.url 'https://bitbucket.org/sobjectizerteam/json_dto-0.2/downloads/json_dto-0.2.6-full.zip'
+  e.url 'https://bitbucket.org/sobjectizerteam/json_dto-0.2/downloads/json_dto-0.2.8-full.zip'
 
   e.map_dir 'dev/json_dto' => 'dev'
 end
@@ -71,7 +71,7 @@ MxxRu::arch_externals :clara do |e|
 end
 
 MxxRu::arch_externals :catch do |e|
-  e.url 'https://github.com/catchorg/Catch2/archive/v2.5.0.tar.gz'
+  e.url 'https://github.com/catchorg/Catch2/archive/v2.7.1.tar.gz'
 
   e.map_dir 'single_include/catch2' => 'dev'
 end
