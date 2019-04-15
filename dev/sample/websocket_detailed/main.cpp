@@ -163,7 +163,7 @@ private :
 							restinio::writable_item_t{} );
 
 					// Restart the timer.
-					schedule_next_ping();
+					this->schedule_next_ping();
 				}
 			} );
 	}
