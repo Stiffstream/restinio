@@ -153,6 +153,8 @@ protected :
 	~socket_type_dependent_settings_t() = default;
 
 public :
+	socket_type_dependent_settings_t() = default;
+
 	socket_type_dependent_settings_t(const socket_type_dependent_settings_t &) = default;
 	socket_type_dependent_settings_t(socket_type_dependent_settings_t &&) = default;
 

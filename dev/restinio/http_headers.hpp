@@ -622,7 +622,7 @@ field_to_string( http_field_t f ) noexcept
 		#undef RESTINIO_HTTP_FIELD_STR_GEN
 
 		case http_field_t::field_unspecified: break; // Ignore.
-	};
+	}
 
 	return result;
 }
@@ -1292,7 +1292,7 @@ method_to_string( http_method_t m ) noexcept
 		#undef RESTINIO_HTTP_METHOD_STR_GEN
 
 		case http_method_t::http_unknown: break; // Ignore.
-	};
+	}
 
 	return result;
 }

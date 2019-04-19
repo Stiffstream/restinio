@@ -151,9 +151,6 @@ class restinio_err_category_t : public error_category_base_t
 					result.assign(
 						"write group destroyed without external notificato invokation" );
 					break;
-
-				default:
-					result.assign( "unknown error" );
 			}
 
 			return result;
