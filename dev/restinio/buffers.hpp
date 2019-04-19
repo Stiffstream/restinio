@@ -309,7 +309,7 @@ struct sendfile_write_operation_t : public writable_base_t
 		sendfile_write_operation_t( const sendfile_write_operation_t & ) = delete;
 		sendfile_write_operation_t & operator = ( const sendfile_write_operation_t & ) = delete;
 		sendfile_write_operation_t( sendfile_write_operation_t && ) = default;
-		sendfile_write_operation_t & operator = ( sendfile_write_operation_t && ) = default;
+		sendfile_write_operation_t & operator = ( sendfile_write_operation_t && ) = delete;
 
 		/*!
 			@name An implementation of writable_base_t interface.
