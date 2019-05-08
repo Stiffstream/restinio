@@ -20,6 +20,7 @@
 
 #include <restinio/exception.hpp>
 #include <restinio/string_view.hpp>
+#include <restinio/optional.hpp>
 
 namespace restinio
 {
@@ -919,6 +920,28 @@ class http_header_fields_t
 			return it->value();
 		}
 
+		//! Get optional field by name.
+		/*!
+			@note
+			If the field is found the pointer returned can't be nullptr.
+
+			Usage example:
+			\code
+			auto f = headers().get_opt_field("Content-Type");
+			if(f && **f == "text/plain")
+				...
+			\endcode
+		*/
+		optional_t< const std::string * >
+		get_opt_field( string_view_t field_name ) const noexcept
+		{
+			const auto it = cfind( field_name );
+			if( m_fields.end() == it )
+				return {};
+			else
+				return { std::addressof(it->value()) };
+		}
+
 		//! Get field by id.
 		const std::string &
 		get_field( http_field_t field_id ) const
@@ -941,6 +964,31 @@ class http_header_fields_t
 			}
 
 			return it->value();
+		}
+
+		//! Get optional field by id.
+		/*!
+			@note
+			If the field is found the pointer returned can't be nullptr.
+
+			Usage example:
+			\code
+			auto f = headers().get_opt_field(restinio::http_field::content_type);
+			if(f && **f == "text/plain")
+				...
+			\endcode
+		*/
+		optional_t< const std::string * >
+		get_opt_field( http_field_t field_id ) const noexcept
+		{
+			if( http_field_t::field_unspecified != field_id )
+			{
+				const auto it = cfind( field_id );
+				if( m_fields.end() != it )
+					return { std::addressof(it->value()) };
+			}
+
+			return {};
 		}
 
 		//! Get field value by field name or default value if the field not found.

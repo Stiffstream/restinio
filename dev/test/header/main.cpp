@@ -153,6 +153,33 @@ TEST_CASE( "get_field_or(name, value) overloads" ,
 	}
 }
 
+TEST_CASE( "Working with optional fields (by name)",
+		"[header][opt_fields][by_name]" )
+{
+	http_header_fields_t fields;
+
+	REQUIRE( 0 == fields.fields_count() ); // No fields yet.
+
+	{
+		const auto f = fields.get_opt_field( "Content-Type" );
+		REQUIRE( !f );
+	}
+
+	fields.set_field( "Content-Type", "text/plain" );
+	REQUIRE( 1 == fields.fields_count() );
+
+	{
+		const auto f = fields.get_opt_field( "Content-Type" );
+		REQUIRE( f );
+		REQUIRE( **f == "text/plain" );
+	}
+	{
+		const auto f = fields.get_opt_field( "CONTENT-Type" );
+		REQUIRE( f );
+		REQUIRE( **f == "text/plain" );
+	}
+}
+
 TEST_CASE( "Working with fields (by id)" , "[header][fields][by_id]" )
 {
 	http_header_fields_t fields;
@@ -301,6 +328,28 @@ TEST_CASE( "get_field_or(field_id, value) overloads" ,
 				http_field::content_type, std::move(long_value) );
 		REQUIRE( v == long_value2 );
 		REQUIRE( v.data() == long_value_ptr );
+	}
+}
+
+TEST_CASE( "Working with optional fields (by id)",
+		"[header][opt_fields][by_id]" )
+{
+	http_header_fields_t fields;
+
+	REQUIRE( 0 == fields.fields_count() ); // No fields yet.
+
+	{
+		const auto f = fields.get_opt_field( http_field::content_type );
+		REQUIRE( !f );
+	}
+
+	fields.set_field( "Content-Type", "text/plain" );
+	REQUIRE( 1 == fields.fields_count() );
+
+	{
+		const auto f = fields.get_opt_field( http_field::content_type );
+		REQUIRE( f );
+		REQUIRE( **f == "text/plain" );
 	}
 }
 
