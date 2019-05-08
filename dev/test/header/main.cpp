@@ -21,15 +21,15 @@ TEST_CASE( "Working with fields (by name)" , "[header][fields][by_name]" )
 	REQUIRE( 0 == fields.fields_count() ); // No fields yet.
 
 	REQUIRE(
-		fields.get_field( "Content-Type", "default-value" )
+		fields.get_field_or( "Content-Type", "default-value" )
 			== "default-value" );
 
 	REQUIRE(
-		fields.get_field( "CONTENT-Type", "default-value-2" )
+		fields.get_field_or( "CONTENT-Type", "default-value-2" )
 			== "default-value-2" );
 
 	REQUIRE(
-		fields.get_field( "CONTENT-TYPE", "default-value-3" )
+		fields.get_field_or( "CONTENT-TYPE", "default-value-3" )
 			== "default-value-3" );
 
 	fields.set_field( "Content-Type", "text/plain" );
@@ -37,20 +37,20 @@ TEST_CASE( "Working with fields (by name)" , "[header][fields][by_name]" )
 
 	REQUIRE( fields.get_field( "Content-Type" ) == "text/plain" );
 	REQUIRE( fields.get_field( "CONTENT-TYPE" ) == "text/plain" );
-	REQUIRE( fields.get_field( "content-type", "WRONG1" ) == "text/plain" );
+	REQUIRE( fields.get_field_or( "content-type", "WRONG1" ) == "text/plain" );
 	// By id nust also be available:
 	REQUIRE( fields.get_field( http_field::content_type ) == "text/plain" );
-	REQUIRE( fields.get_field( http_field::content_type, "WRONG2" ) == "text/plain" );
+	REQUIRE( fields.get_field_or( http_field::content_type, "WRONG2" ) == "text/plain" );
 
 	REQUIRE(
-		fields.get_field( "Content-Type", "Default-Value" ) == "text/plain" );
+		fields.get_field_or( "Content-Type", "Default-Value" ) == "text/plain" );
 	REQUIRE(
-		fields.get_field( "CONTENT-TYPE", "DEFAULT-VALUE" ) == "text/plain" );
+		fields.get_field_or( "CONTENT-TYPE", "DEFAULT-VALUE" ) == "text/plain" );
 	REQUIRE(
-		fields.get_field( "content-type", "default-value" ) == "text/plain" );
+		fields.get_field_or( "content-type", "default-value" ) == "text/plain" );
 
 	REQUIRE(
-		fields.get_field( "Content-Type-XXX", "default-value" )
+		fields.get_field_or( "Content-Type-XXX", "default-value" )
 			== "default-value" );
 
 	impl::append_last_field_accessor( fields, "; charset=utf-8" );
@@ -58,18 +58,18 @@ TEST_CASE( "Working with fields (by name)" , "[header][fields][by_name]" )
 	REQUIRE(
 		fields.get_field( "Content-Type" ) == "text/plain; charset=utf-8" );
 	REQUIRE(
-		fields.get_field( "Content-Type", "Default-Value" )
+		fields.get_field_or( "Content-Type", "Default-Value" )
 			== "text/plain; charset=utf-8" );
 
 	fields.append_field( "Server", "Unit Test" );
 	REQUIRE( 2 == fields.fields_count() );
 
 	REQUIRE( fields.get_field( "server" ) == "Unit Test" );
-	REQUIRE( fields.get_field( "SERVER", "EMPTY" ) == "Unit Test" );
+	REQUIRE( fields.get_field_or( "SERVER", "EMPTY" ) == "Unit Test" );
 
 	fields.append_field( "sERVER", "; Fields Test" );
 	REQUIRE( fields.get_field( "sERVEr" ) == "Unit Test; Fields Test" );
-	REQUIRE( fields.get_field( "SeRveR", "EMPTY" ) == "Unit Test; Fields Test" );
+	REQUIRE( fields.get_field_or( "SeRveR", "EMPTY" ) == "Unit Test; Fields Test" );
 
 	{
 		const auto & f = *( fields.begin() );
@@ -99,6 +99,60 @@ TEST_CASE( "Working with fields (by name)" , "[header][fields][by_name]" )
 	REQUIRE( 0 == fields.fields_count() );
 }
 
+TEST_CASE( "get_field_or(name, value) overloads" ,
+		"[header][get_field_or][by_name][overloads]" )
+{
+	http_header_fields_t fields;
+
+	REQUIRE(
+		fields.get_field_or( "Content-Type", "default-value" )
+			== "default-value" );
+
+	REQUIRE(
+		fields.get_field_or( "Content-Type",
+			restinio::string_view_t{ "default-value" } ) == "default-value" );
+
+	std::string dv1{ "default-value" };
+	const std::string dv2{ "default-value" };
+
+	REQUIRE(
+		fields.get_field_or( "Content-Type", dv1 ) == "default-value" );
+	REQUIRE(
+		fields.get_field_or( "Content-Type", dv2 ) == "default-value" );
+
+	REQUIRE(
+		fields.get_field_or( "Content-Type",
+			std::string{ "default-value" } ) == "default-value" );
+
+	{
+		std::string long_value{
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+		};
+		const std::string long_value2{ long_value };
+
+		REQUIRE( long_value == long_value2 );
+		REQUIRE( long_value.data() != long_value2.data() );
+
+		const char * long_value_ptr{ long_value.data() };
+
+		auto v = fields.get_field_or( "Content-Type", std::move(long_value) );
+		REQUIRE( v == long_value2 );
+		REQUIRE( v.data() == long_value_ptr );
+	}
+}
+
 TEST_CASE( "Working with fields (by id)" , "[header][fields][by_id]" )
 {
 	http_header_fields_t fields;
@@ -106,21 +160,21 @@ TEST_CASE( "Working with fields (by id)" , "[header][fields][by_id]" )
 	REQUIRE( 0 == fields.fields_count() ); // No fields yet.
 
 	REQUIRE(
-		fields.get_field( http_field::content_type, "default-value" )
+		fields.get_field_or( http_field::content_type, "default-value" )
 			== "default-value" );
 
 	REQUIRE(
-		fields.get_field( http_field::content_type, "default-value-2" )
+		fields.get_field_or( http_field::content_type, "default-value-2" )
 			== "default-value-2" );
 
 	fields.set_field( http_field::content_type, "text/plain" );
 	REQUIRE( 1 == fields.fields_count() );
 
 	REQUIRE( fields.get_field( http_field::content_type ) == "text/plain" );
-	REQUIRE( fields.get_field( http_field::content_type, "WRONG1" ) == "text/plain" );
+	REQUIRE( fields.get_field_or( http_field::content_type, "WRONG1" ) == "text/plain" );
 	// By name must be also availabl.
 	REQUIRE( fields.get_field( "Content-Type" ) == "text/plain" );
-	REQUIRE( fields.get_field( "CONTENT-TYPE", "WRONG2" ) == "text/plain" );
+	REQUIRE( fields.get_field_or( "CONTENT-TYPE", "WRONG2" ) == "text/plain" );
 	REQUIRE( fields.get_field( "content-type" ) == "text/plain" );
 
 	impl::append_last_field_accessor( fields, "; charset=utf-8" );
@@ -128,20 +182,20 @@ TEST_CASE( "Working with fields (by id)" , "[header][fields][by_id]" )
 	REQUIRE(
 		fields.get_field( http_field::content_type ) == "text/plain; charset=utf-8" );
 	REQUIRE(
-		fields.get_field( http_field::content_type, "Default-Value" )
+		fields.get_field_or( http_field::content_type, "Default-Value" )
 			== "text/plain; charset=utf-8" );
 
 	fields.append_field( http_field::server, "Unit Test" );
 	REQUIRE( 2 == fields.fields_count() );
 
 	REQUIRE( fields.get_field( http_field::server ) == "Unit Test" );
-	REQUIRE( fields.get_field( http_field::server, "EMPTY" ) == "Unit Test" );
+	REQUIRE( fields.get_field_or( http_field::server, "EMPTY" ) == "Unit Test" );
 
 	fields.append_field( http_field::server, "; Fields Test" );
 	REQUIRE( fields.get_field( http_field::server ) == "Unit Test; Fields Test" );
-	REQUIRE( fields.get_field( http_field::server, "EMPTY" ) == "Unit Test; Fields Test" );
+	REQUIRE( fields.get_field_or( http_field::server, "EMPTY" ) == "Unit Test; Fields Test" );
 	REQUIRE( fields.get_field( "sERVEr" ) == "Unit Test; Fields Test" );
-	REQUIRE( fields.get_field( "SeRveR", "EMPTY" ) == "Unit Test; Fields Test" );
+	REQUIRE( fields.get_field_or( "SeRveR", "EMPTY" ) == "Unit Test; Fields Test" );
 
 	// Must add nothing.
 	fields.set_field( http_field::field_unspecified, "NOWAY" );
@@ -159,7 +213,7 @@ TEST_CASE( "Working with fields (by id)" , "[header][fields][by_id]" )
 
 	REQUIRE_THROWS( fields.get_field( http_field::field_unspecified ) );
 
-	REQUIRE( fields.get_field( http_field::field_unspecified, "?" ) == "?" );
+	REQUIRE( fields.get_field_or( http_field::field_unspecified, "?" ) == "?" );
 
 	{
 		const auto & f = *( fields.begin() );
@@ -193,6 +247,61 @@ TEST_CASE( "Working with fields (by id)" , "[header][fields][by_id]" )
 	REQUIRE( 2 == fields.fields_count() );
 	fields.remove_field( http_field::server );
 	REQUIRE( 1 == fields.fields_count() );
+}
+
+TEST_CASE( "get_field_or(field_id, value) overloads" ,
+		"[header][get_field_or][by_id][overloads]" )
+{
+	http_header_fields_t fields;
+
+	REQUIRE(
+		fields.get_field_or( http_field::content_type, "default-value" )
+			== "default-value" );
+
+	REQUIRE(
+		fields.get_field_or( http_field::content_type,
+			restinio::string_view_t{ "default-value" } ) == "default-value" );
+
+	std::string dv1{ "default-value" };
+	const std::string dv2{ "default-value" };
+
+	REQUIRE(
+		fields.get_field_or( http_field::content_type, dv1 ) == "default-value" );
+	REQUIRE(
+		fields.get_field_or( http_field::content_type, dv2 ) == "default-value" );
+
+	REQUIRE(
+		fields.get_field_or( http_field::content_type,
+			std::string{ "default-value" } ) == "default-value" );
+
+	{
+		std::string long_value{
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+			"This is a long value to avoid SSO. "
+		};
+		const std::string long_value2{ long_value };
+
+		REQUIRE( long_value == long_value2 );
+		REQUIRE( long_value.data() != long_value2.data() );
+
+		const char * long_value_ptr{ long_value.data() };
+
+		auto v = fields.get_field_or(
+				http_field::content_type, std::move(long_value) );
+		REQUIRE( v == long_value2 );
+		REQUIRE( v.data() == long_value_ptr );
+	}
 }
 
 TEST_CASE( "Working with fields (by http_header_field_t)" , "[header][fields][by_http_header_field_t]" )

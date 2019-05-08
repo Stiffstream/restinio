@@ -943,10 +943,141 @@ class http_header_fields_t
 			return it->value();
 		}
 
+		//! Get field value by field name or default value if the field not found.
+		/*!
+			@note
+			This method returns field value as a new std::string instance,
+			not a const reference to std::string.
+		*/
+		std::string
+		get_field_or(
+			string_view_t field_name,
+			string_view_t default_value ) const
+		{
+			const auto it = cfind( field_name );
+
+			if( m_fields.end() == it )
+				return std::string( default_value.data(), default_value.size() );
+
+			return it->value();
+		}
+
+		//! Get field value by field name or default value if the field not found.
+		/*!
+			@note
+			This method returns field value as a new std::string instance,
+			not a const reference to std::string.
+		*/
+		std::string
+		get_field_or(
+			string_view_t field_name,
+			std::string && default_value ) const
+		{
+			const auto it = cfind( field_name );
+
+			if( m_fields.end() == it )
+				return std::move(default_value);
+
+			return it->value();
+		}
+
+		//! Get field by name or default value if the field not found.
+		/*!
+			This is just overload for get_field_or(string_view_t,string_view_t);
+		*/
+		auto
+		get_field_or(
+			string_view_t field_name,
+			const char * default_value ) const
+		{
+			return this->get_field_or( field_name, string_view_t{ default_value } );
+		}
+
+		//! Get field by name or default value if the field not found.
+		/*!
+			This is just overload for get_field_or(string_view_t,string_view_t);
+		*/
+		auto
+		get_field_or(
+			string_view_t field_name,
+			const std::string & default_value ) const
+		{
+			return this->get_field_or( field_name, string_view_t{ default_value } );
+		}
+
+		//! Get field by id or default value if the field not found.
+		/*!
+			@note
+			This method returns field value as a new std::string instance,
+			not a const reference to std::string.
+		*/
+		std::string
+		get_field_or(
+			http_field_t field_id,
+			string_view_t default_value ) const
+		{
+			if( http_field_t::field_unspecified != field_id )
+			{
+				const auto it = cfind( field_id );
+
+				if( m_fields.end() != it )
+					return it->value();
+			}
+
+			return std::string( default_value.data(), default_value.size() );
+		}
+
+		//! Get field by id or default value if the field not found.
+		/*!
+			This is just overload for get_field_or(http_field_t,string_view_t);
+		*/
+		auto
+		get_field_or(
+			http_field_t field_id,
+			const char * default_value ) const
+		{
+			return this->get_field_or( field_id, string_view_t{ default_value } );
+		}
+
+		//! Get field by id or default value if the field not found.
+		/*!
+			This is just overload for get_field_or(http_field_t,string_view_t);
+		*/
+		auto
+		get_field_or(
+			http_field_t field_id,
+			const std::string & default_value ) const
+		{
+			return this->get_field_or( field_id, string_view_t{ default_value } );
+		}
+
+		//! Get field by id or default value if the field not found.
+		/*!
+			@note
+			This method returns field value as a new std::string instance,
+			not a const reference to std::string.
+		*/
+		std::string
+		get_field_or(
+			http_field_t field_id,
+			std::string && default_value ) const
+		{
+			if( http_field_t::field_unspecified != field_id )
+			{
+				const auto it = cfind( field_id );
+
+				if( m_fields.end() != it )
+					return it->value();
+			}
+
+			return std::move( default_value );
+		}
+
 		//! Get field by name.
 		/*!
 			If field exists return field value, otherwise return default_value.
 		*/
+		[[deprecated("use get_field_or() method instead")]]
 		const std::string &
 		get_field(
 			string_view_t field_name,
@@ -964,6 +1095,7 @@ class http_header_fields_t
 		/*!
 			If field exists return field value, otherwise return default_value.
 		*/
+		[[deprecated("use get_field_or() method instead")]]
 		const std::string &
 		get_field(
 			http_field_t field_id,

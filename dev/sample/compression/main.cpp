@@ -94,7 +94,7 @@ auto make_transform_params(
 	const restinio::query_string_params_t & qp )
 {
 	const auto accept_encoding =
-		req.header().get_field(
+		req.header().get_field_or(
 			restinio::http_field::accept_encoding,
 			"deflate" );
 

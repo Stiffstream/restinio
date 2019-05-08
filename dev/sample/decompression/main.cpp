@@ -83,7 +83,7 @@ auto make_router()
 				.append_header(
 					// Inherit content-type from request (if it is set).
 					restinio::http_field::content_type,
-					req->header().get_field(
+					req->header().get_field_or(
 						restinio::http_field::content_type,
 						"text/plain" ) )
 				.set_body(
