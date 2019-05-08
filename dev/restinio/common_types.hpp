@@ -116,4 +116,19 @@ operator << ( std::ostream & o, const response_output_flags_t & flags )
 		<< flags.m_response_connection << " }";
 }
 
+//
+// not_null_pointer_t
+//
+/*!
+ * @brief Type for pointer that is not null by design.
+ *
+ * @note
+ * There is no any compile-time or run-time checks for a value of the pointer.
+ * It is just a flag that we don't expect a nullptr here by design.
+ *
+ * @since v.0.4.9
+ */
+template< typename T >
+using not_null_pointer_t = T*;
+
 } /* namespace restinio */

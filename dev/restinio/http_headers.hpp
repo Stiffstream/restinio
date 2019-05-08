@@ -21,6 +21,7 @@
 #include <restinio/exception.hpp>
 #include <restinio/string_view.hpp>
 #include <restinio/optional.hpp>
+#include <restinio/common_types.hpp>
 
 namespace restinio
 {
@@ -932,7 +933,7 @@ class http_header_fields_t
 				...
 			\endcode
 		*/
-		optional_t< const std::string * >
+		optional_t< not_null_pointer_t<const std::string> >
 		get_opt_field( string_view_t field_name ) const noexcept
 		{
 			const auto it = cfind( field_name );
@@ -978,7 +979,7 @@ class http_header_fields_t
 				...
 			\endcode
 		*/
-		optional_t< const std::string * >
+		optional_t< not_null_pointer_t<const std::string> >
 		get_opt_field( http_field_t field_id ) const noexcept
 		{
 			if( http_field_t::field_unspecified != field_id )
