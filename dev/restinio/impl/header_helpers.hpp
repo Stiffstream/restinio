@@ -52,13 +52,11 @@ calculate_approx_buffer_size_for_header(
 
 	result += 2; // Final "\r\n\r\n".
 
-	return std::accumulate(
-		h.begin(),
-		h.end(),
-		result,
-		[]( auto res, const auto & f ){
-			return res + f.name().size() + 2 + f.value().size() + 2;
+	h.for_each_field( [&result](const auto & f) noexcept {
+			result += f.name().size() + 2 + f.value().size() + 2;
 		} );
+
+	return result;
 }
 
 //
@@ -142,13 +140,12 @@ create_header_string(
 	}
 
 	constexpr const char header_field_sep[] = ": ";
-	for( const auto & f : h )
-	{
+	h.for_each_field( [&result](const auto & f) {
 		result += f.name();
 		result.append( header_field_sep, ct_string_len( header_field_sep ) );
 		result += f.value();
 		result.append( header_rn, ct_string_len( header_rn ) );
-	}
+	} );
 
 	result.append( header_rn, ct_string_len( header_rn ) );
 

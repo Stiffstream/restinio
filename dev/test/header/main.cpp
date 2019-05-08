@@ -9,6 +9,7 @@
 #include <catch2/catch.hpp>
 
 #include <iterator>
+#include <set>
 
 #include <restinio/all.hpp>
 
@@ -72,14 +73,20 @@ TEST_CASE( "Working with fields (by name)" , "[header][fields][by_name]" )
 	REQUIRE( fields.get_field_or( "SeRveR", "EMPTY" ) == "Unit Test; Fields Test" );
 
 	{
-		const auto & f = *( fields.begin() );
-		REQUIRE( f.name() == "Content-Type" );
-		REQUIRE( f.value() == "text/plain; charset=utf-8" );
-	}
-	{
-		const auto & f = *( std::next( fields.begin() ) );
-		REQUIRE( f.name() == "Server" );
-		REQUIRE( f.value() == "Unit Test; Fields Test" );
+		int counter = 0;
+		fields.for_each_field( [&counter](const auto & f) {
+			if( 0 == counter ) {
+				REQUIRE( f.name() == "Content-Type" );
+				REQUIRE( f.value() == "text/plain; charset=utf-8" );
+			}
+			else if( 1 == counter ) {
+				REQUIRE( f.name() == "Server" );
+				REQUIRE( f.value() == "Unit Test; Fields Test" );
+			}
+			// Just ignore all other values.
+
+			++counter;
+		} );
 	}
 
 	// Fields that don't exist
@@ -243,16 +250,22 @@ TEST_CASE( "Working with fields (by id)" , "[header][fields][by_id]" )
 	REQUIRE( fields.get_field_or( http_field::field_unspecified, "?" ) == "?" );
 
 	{
-		const auto & f = *( fields.begin() );
-		REQUIRE( f.field_id() == http_field::content_type );
-		REQUIRE( f.name() == field_to_string( http_field::content_type ) );
-		REQUIRE( f.value() == "text/plain; charset=utf-8" );
-	}
-	{
-		const auto & f = *( std::next( fields.begin() ) );
-		REQUIRE( f.field_id() == http_field::server );
-		REQUIRE( f.name() == field_to_string( http_field::server ) );
-		REQUIRE( f.value() == "Unit Test; Fields Test" );
+		int counter = 0;
+		fields.for_each_field( [&counter](const auto & f) {
+			if( 0 == counter ) {
+				REQUIRE( f.field_id() == http_field::content_type );
+				REQUIRE( f.name() == field_to_string( http_field::content_type ) );
+				REQUIRE( f.value() == "text/plain; charset=utf-8" );
+			}
+			else if( 1 == counter ) {
+				REQUIRE( f.field_id() == http_field::server );
+				REQUIRE( f.name() == field_to_string( http_field::server ) );
+				REQUIRE( f.value() == "Unit Test; Fields Test" );
+			}
+			// Just ignore all other values.
+
+			++counter;
+		} );
 	}
 
 	// Fields that don't exist
@@ -362,6 +375,31 @@ TEST_CASE( "Working with fields (by http_header_field_t)" , "[header][fields][by
 
 	REQUIRE( fields.get_field( http_field::content_type ) == "text/plain" );
 	REQUIRE( fields.get_field( "Server" ) == "UNIT-TEST" );
+}
+
+TEST_CASE( "Enumeration of fields" , "[header][fields][for_each]" )
+{
+	http_header_fields_t fields;
+
+	fields.set_field( "Content-Type", "text/plain" );
+	fields.set_field( "Accept-Encoding", "utf-8" );
+	fields.set_field( "Server", "Unknown" );
+
+	REQUIRE( 3 == fields.fields_count() );
+
+	std::set< std::string > names, values;
+
+	fields.for_each_field( [&](const auto & hf) {
+			names.insert( hf.name() );
+			values.insert( hf.value() );
+		} );
+
+	REQUIRE( names == std::set< std::string >{
+			"Content-Type", "Accept-Encoding", "Server"
+		} );
+	REQUIRE( values == std::set< std::string >{
+			"text/plain", "utf-8", "Unknown"
+		} );
 }
 
 TEST_CASE( "Working with common header" , "[header][common]" )

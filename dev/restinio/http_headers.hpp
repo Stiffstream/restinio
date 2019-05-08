@@ -1187,11 +1187,26 @@ class http_header_fields_t
 			}
 		}
 
+		//! Enumeration of fields.
+		/*!
+		*/
+		template< typename Lambda >
+		void
+		for_each_field( Lambda && lambda ) const
+				noexcept(noexcept(lambda(
+						std::declval<const http_header_field_t &>())))
+		{
+			for( const auto & f : m_fields )
+				lambda( f );
+		}
+
+		[[deprecated("use for_each_field() method instead")]]
 		auto begin() const noexcept
 		{
 			return m_fields.cbegin();
 		}
 
+		[[deprecated("use for_each_field() method instead")]]
 		auto end() const noexcept
 		{
 			return m_fields.cend();
