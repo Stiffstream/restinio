@@ -71,26 +71,26 @@ class tls_socket_t
 		auto
 		get_executor()
 		{
-			return lowest_layer().get_executor();
+			return this->lowest_layer().get_executor();
 		}
 
 		auto
 		remote_endpoint() const
 		{
-			return lowest_layer().remote_endpoint();
+			return this->lowest_layer().remote_endpoint();
 		}
 
 		auto
 		is_open() const
 		{
-			return lowest_layer().is_open();
+			return this->lowest_layer().is_open();
 		}
 
 		template< typename... Args >
 		void
 		cancel( Args &&... args )
 		{
-			lowest_layer().cancel( std::forward< Args >( args )... );
+			this->lowest_layer().cancel( std::forward< Args >( args )... );
 		}
 
 		template< typename... Args >
@@ -111,14 +111,14 @@ class tls_socket_t
 		void
 		shutdown( Args &&... args )
 		{
-			lowest_layer().shutdown( std::forward< Args >( args )... );
+			this->lowest_layer().shutdown( std::forward< Args >( args )... );
 		}
 
 		template< typename... Args >
 		void
 		close( Args &&... args )
 		{
-			lowest_layer().close( std::forward< Args >( args )... );
+			this->lowest_layer().close( std::forward< Args >( args )... );
 		}
 
 		template< typename... Args >
