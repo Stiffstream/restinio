@@ -744,6 +744,22 @@ append_last_field_accessor( http_header_fields_t &, string_view_t );
 	have checks on each field manipulation checking whether
 	field name is `Connection` or `Content-Length` it is important
 	to use proper member functions in derived classes for manipulating them.
+
+	@par Getting values of fields
+
+	Since v.0.4.9 there are two groups of methods for accessing values of
+	fields. The first group returns `std::string` (or references/pointers
+	to `std::string`). This group includes the following methods: get_field(),
+	get_field_or(), try_get_field().
+
+	The second group returns `string_view_t` or `optional_t<string_view_t>`.
+	This group includes the following methods: value_of() and opt_value_of().
+
+	The first group was created in early versions of RESTinio and is present
+	here for historical and compatibility reasons. They are not deprecated
+	yet but they could be deprecated in newer versions of RESTinio.
+	Because of that the usage of value_of() and opt_value_of() is more
+	preferable.
 */
 class http_header_fields_t
 {
@@ -1188,6 +1204,82 @@ class http_header_fields_t
 			}
 		}
 
+		/*!
+		 * @name Getters of field value which return string_view.
+		 * @{
+		 */
+		//! Get the value of a field or throw if the field not found.
+		string_view_t
+		value_of(
+			//! Name of a field.
+			string_view_t name ) const
+		{
+			return { this->get_field(name) };
+		}
+
+		//! Get the value of a field or throw if the field not found.
+		string_view_t
+		value_of(
+			//! ID of a field.
+			http_field_t field_id ) const
+		{
+			return { this->get_field(field_id) };
+		}
+
+		//! Get optional value of a field.
+		/*!
+			Doesn't throw exception if the field is not found. Empty optional
+			will be returned instead.
+
+			Usage example:
+			\code
+			auto f = headers().opt_value_of("Content-Type");
+			if(f && *f == "text/plain")
+				...
+			\endcode
+		*/
+		optional_t< string_view_t >
+		opt_value_of(
+			//! Name of a field.
+			string_view_t name ) const noexcept
+		{
+			optional_t< string_view_t > result;
+
+			if( auto * ptr = this->try_get_field(name) )
+				result = string_view_t{ *ptr };
+
+			return result;
+		}
+
+		//! Get optional value of a field.
+		/*!
+			Doesn't throw exception if the field is not found. Empty optional
+			will be returned instead.
+
+			Usage example:
+			\code
+			auto f = headers().opt_value_of(restinio::http_field::content_type);
+			if(f && *f == "text/plain")
+				...
+			\endcode
+		*/
+		optional_t< string_view_t >
+		opt_value_of(
+			//! ID of a field.
+			http_field_t field_id ) const noexcept
+		{
+			optional_t< string_view_t > result;
+
+			if( auto * ptr = this->try_get_field(field_id) )
+				result = string_view_t{ *ptr };
+
+			return result;
+		}
+		/*!
+		 * @}
+		 */
+
+//FIXME: usage example should be provided in the comment!
 		//! Enumeration of fields.
 		/*!
 		*/

@@ -140,7 +140,7 @@ create_header_string(
 	}
 
 	constexpr const char header_field_sep[] = ": ";
-	h.for_each_field( [&result](const auto & f) {
+	h.for_each_field( [&result, header_field_sep, header_rn](const auto & f) {
 		result += f.name();
 		result.append( header_field_sep, ct_string_len( header_field_sep ) );
 		result += f.value();

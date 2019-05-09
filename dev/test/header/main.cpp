@@ -37,10 +37,13 @@ TEST_CASE( "Working with fields (by name)" , "[header][fields][by_name]" )
 	REQUIRE( 1 == fields.fields_count() );
 
 	REQUIRE( fields.get_field( "Content-Type" ) == "text/plain" );
+	REQUIRE( fields.value_of( "Content-Type" ) == "text/plain" );
 	REQUIRE( fields.get_field( "CONTENT-TYPE" ) == "text/plain" );
+	REQUIRE( fields.value_of( "CONTENT-TYPE" ) == "text/plain" );
 	REQUIRE( fields.get_field_or( "content-type", "WRONG1" ) == "text/plain" );
-	// By id nust also be available:
+	// By id must also be available:
 	REQUIRE( fields.get_field( http_field::content_type ) == "text/plain" );
+	REQUIRE( fields.value_of( http_field::content_type ) == "text/plain" );
 	REQUIRE( fields.get_field_or( http_field::content_type, "WRONG2" ) == "text/plain" );
 
 	REQUIRE(
@@ -59,6 +62,8 @@ TEST_CASE( "Working with fields (by name)" , "[header][fields][by_name]" )
 	REQUIRE(
 		fields.get_field( "Content-Type" ) == "text/plain; charset=utf-8" );
 	REQUIRE(
+		fields.value_of( "Content-Type" ) == "text/plain; charset=utf-8" );
+	REQUIRE(
 		fields.get_field_or( "Content-Type", "Default-Value" )
 			== "text/plain; charset=utf-8" );
 
@@ -66,10 +71,12 @@ TEST_CASE( "Working with fields (by name)" , "[header][fields][by_name]" )
 	REQUIRE( 2 == fields.fields_count() );
 
 	REQUIRE( fields.get_field( "server" ) == "Unit Test" );
+	REQUIRE( fields.value_of( "server" ) == "Unit Test" );
 	REQUIRE( fields.get_field_or( "SERVER", "EMPTY" ) == "Unit Test" );
 
 	fields.append_field( "sERVER", "; Fields Test" );
 	REQUIRE( fields.get_field( "sERVEr" ) == "Unit Test; Fields Test" );
+	REQUIRE( fields.value_of( "sERVEr" ) == "Unit Test; Fields Test" );
 	REQUIRE( fields.get_field_or( "SeRveR", "EMPTY" ) == "Unit Test; Fields Test" );
 
 	{
@@ -171,6 +178,10 @@ TEST_CASE( "Working with optional fields (by name)",
 		const auto f = fields.try_get_field( "Content-Type" );
 		REQUIRE( !f );
 	}
+	{
+		const auto f = fields.opt_value_of( "Content-Type" );
+		REQUIRE( !f );
+	}
 
 	fields.set_field( "Content-Type", "text/plain" );
 	REQUIRE( 1 == fields.fields_count() );
@@ -181,7 +192,17 @@ TEST_CASE( "Working with optional fields (by name)",
 		REQUIRE( *f == "text/plain" );
 	}
 	{
+		const auto f = fields.opt_value_of( "Content-Type" );
+		REQUIRE( f );
+		REQUIRE( *f == "text/plain" );
+	}
+	{
 		const auto f = fields.try_get_field( "CONTENT-Type" );
+		REQUIRE( f );
+		REQUIRE( *f == "text/plain" );
+	}
+	{
+		const auto f = fields.opt_value_of( "CONTENT-Type" );
 		REQUIRE( f );
 		REQUIRE( *f == "text/plain" );
 	}
@@ -205,6 +226,7 @@ TEST_CASE( "Working with fields (by id)" , "[header][fields][by_id]" )
 	REQUIRE( 1 == fields.fields_count() );
 
 	REQUIRE( fields.get_field( http_field::content_type ) == "text/plain" );
+	REQUIRE( fields.value_of( http_field::content_type ) == "text/plain" );
 	REQUIRE( fields.get_field_or( http_field::content_type, "WRONG1" ) == "text/plain" );
 	// By name must be also availabl.
 	REQUIRE( fields.get_field( "Content-Type" ) == "text/plain" );
@@ -216,6 +238,8 @@ TEST_CASE( "Working with fields (by id)" , "[header][fields][by_id]" )
 	REQUIRE(
 		fields.get_field( http_field::content_type ) == "text/plain; charset=utf-8" );
 	REQUIRE(
+		fields.value_of( http_field::content_type ) == "text/plain; charset=utf-8" );
+	REQUIRE(
 		fields.get_field_or( http_field::content_type, "Default-Value" )
 			== "text/plain; charset=utf-8" );
 
@@ -223,10 +247,12 @@ TEST_CASE( "Working with fields (by id)" , "[header][fields][by_id]" )
 	REQUIRE( 2 == fields.fields_count() );
 
 	REQUIRE( fields.get_field( http_field::server ) == "Unit Test" );
+	REQUIRE( fields.value_of( http_field::server ) == "Unit Test" );
 	REQUIRE( fields.get_field_or( http_field::server, "EMPTY" ) == "Unit Test" );
 
 	fields.append_field( http_field::server, "; Fields Test" );
 	REQUIRE( fields.get_field( http_field::server ) == "Unit Test; Fields Test" );
+	REQUIRE( fields.value_of( http_field::server ) == "Unit Test; Fields Test" );
 	REQUIRE( fields.get_field_or( http_field::server, "EMPTY" ) == "Unit Test; Fields Test" );
 	REQUIRE( fields.get_field( "sERVEr" ) == "Unit Test; Fields Test" );
 	REQUIRE( fields.get_field_or( "SeRveR", "EMPTY" ) == "Unit Test; Fields Test" );
@@ -356,11 +382,22 @@ TEST_CASE( "Working with optional fields (by id)",
 		REQUIRE( !f );
 	}
 
+	{
+		const auto f = fields.opt_value_of( http_field::content_type );
+		REQUIRE( !f );
+	}
+
 	fields.set_field( "Content-Type", "text/plain" );
 	REQUIRE( 1 == fields.fields_count() );
 
 	{
 		const auto f = fields.try_get_field( http_field::content_type );
+		REQUIRE( f );
+		REQUIRE( *f == "text/plain" );
+	}
+
+	{
+		const auto f = fields.opt_value_of( http_field::content_type );
 		REQUIRE( f );
 		REQUIRE( *f == "text/plain" );
 	}
