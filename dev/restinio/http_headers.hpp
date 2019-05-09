@@ -921,26 +921,26 @@ class http_header_fields_t
 			return it->value();
 		}
 
-		//! Get optional field by name.
+		//! Try to get the value of a field by field name.
 		/*!
 			@note
-			If the field is found the pointer returned can't be nullptr.
+			Returns nullptr if the field is not found.
 
 			Usage example:
 			\code
-			auto f = headers().get_opt_field("Content-Type");
-			if(f && **f == "text/plain")
+			auto f = headers().try_get_field("Content-Type");
+			if(f && *f == "text/plain")
 				...
 			\endcode
 		*/
-		optional_t< not_null_pointer_t<const std::string> >
-		get_opt_field( string_view_t field_name ) const noexcept
+		nullable_pointer_t<const std::string>
+		try_get_field( string_view_t field_name ) const noexcept
 		{
 			const auto it = cfind( field_name );
 			if( m_fields.end() == it )
-				return {};
+				return nullptr;
 			else
-				return { std::addressof(it->value()) };
+				return std::addressof(it->value());
 		}
 
 		//! Get field by id.
@@ -967,29 +967,29 @@ class http_header_fields_t
 			return it->value();
 		}
 
-		//! Get optional field by id.
+		//! Try to get the value of a field by field ID.
 		/*!
 			@note
-			If the field is found the pointer returned can't be nullptr.
+			Returns nullptr if the field is not found.
 
 			Usage example:
 			\code
-			auto f = headers().get_opt_field(restinio::http_field::content_type);
-			if(f && **f == "text/plain")
+			auto f = headers().try_get_field(restinio::http_field::content_type);
+			if(f && *f == "text/plain")
 				...
 			\endcode
 		*/
-		optional_t< not_null_pointer_t<const std::string> >
-		get_opt_field( http_field_t field_id ) const noexcept
+		nullable_pointer_t<const std::string>
+		try_get_field( http_field_t field_id ) const noexcept
 		{
 			if( http_field_t::field_unspecified != field_id )
 			{
 				const auto it = cfind( field_id );
 				if( m_fields.end() != it )
-					return { std::addressof(it->value()) };
+					return std::addressof(it->value());
 			}
 
-			return {};
+			return nullptr;
 		}
 
 		//! Get field value by field name or default value if the field not found.

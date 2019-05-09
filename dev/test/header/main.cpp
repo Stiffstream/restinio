@@ -168,7 +168,7 @@ TEST_CASE( "Working with optional fields (by name)",
 	REQUIRE( 0 == fields.fields_count() ); // No fields yet.
 
 	{
-		const auto f = fields.get_opt_field( "Content-Type" );
+		const auto f = fields.try_get_field( "Content-Type" );
 		REQUIRE( !f );
 	}
 
@@ -176,14 +176,14 @@ TEST_CASE( "Working with optional fields (by name)",
 	REQUIRE( 1 == fields.fields_count() );
 
 	{
-		const auto f = fields.get_opt_field( "Content-Type" );
+		const auto f = fields.try_get_field( "Content-Type" );
 		REQUIRE( f );
-		REQUIRE( **f == "text/plain" );
+		REQUIRE( *f == "text/plain" );
 	}
 	{
-		const auto f = fields.get_opt_field( "CONTENT-Type" );
+		const auto f = fields.try_get_field( "CONTENT-Type" );
 		REQUIRE( f );
-		REQUIRE( **f == "text/plain" );
+		REQUIRE( *f == "text/plain" );
 	}
 }
 
@@ -352,7 +352,7 @@ TEST_CASE( "Working with optional fields (by id)",
 	REQUIRE( 0 == fields.fields_count() ); // No fields yet.
 
 	{
-		const auto f = fields.get_opt_field( http_field::content_type );
+		const auto f = fields.try_get_field( http_field::content_type );
 		REQUIRE( !f );
 	}
 
@@ -360,9 +360,9 @@ TEST_CASE( "Working with optional fields (by id)",
 	REQUIRE( 1 == fields.fields_count() );
 
 	{
-		const auto f = fields.get_opt_field( http_field::content_type );
+		const auto f = fields.try_get_field( http_field::content_type );
 		REQUIRE( f );
-		REQUIRE( **f == "text/plain" );
+		REQUIRE( *f == "text/plain" );
 	}
 }
 
