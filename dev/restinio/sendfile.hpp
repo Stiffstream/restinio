@@ -249,12 +249,12 @@ class sendfile_t
 		swap( sendfile_t & left, sendfile_t & right ) noexcept
 		{
 			using std::swap;
-			std::swap( left.m_file_descriptor, right.m_file_descriptor );
-			std::swap( left.m_meta, right.m_meta );
-			std::swap( left.m_offset, right.m_offset );
-			std::swap( left.m_size, right.m_size );
-			std::swap( left.m_chunk_size, right.m_chunk_size );
-			std::swap( left.m_timelimit, right.m_timelimit );
+			swap( left.m_file_descriptor, right.m_file_descriptor );
+			swap( left.m_meta, right.m_meta );
+			swap( left.m_offset, right.m_offset );
+			swap( left.m_size, right.m_size );
+			swap( left.m_chunk_size, right.m_chunk_size );
+			swap( left.m_timelimit, right.m_timelimit );
 		}
 
 		/** @name Copy semantics.
