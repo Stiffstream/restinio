@@ -1279,9 +1279,24 @@ class http_header_fields_t
 		 * @}
 		 */
 
-//FIXME: usage example should be provided in the comment!
 		//! Enumeration of fields.
 		/*!
+			Calls \a lambda for each field in the container.
+
+			Lambda should have one of the following formats:
+			\code
+			void(const http_header_field_t &);
+			void(http_header_field_t);
+			\endcode
+
+			This method is `noexcept` if \a lambda is `noexcept`.
+
+			Usage example:
+			\code
+			headers().for_each_field( [](const auto & f) {
+				std::cout << f.name() << ": " << f.value() << std::endl;
+			} );
+			\endcode
 		*/
 		template< typename Lambda >
 		void
