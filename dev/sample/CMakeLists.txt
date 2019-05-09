@@ -23,3 +23,7 @@ if ( OPENSSL_FOUND )
 	add_subdirectory(hello_world_sendfile_https)
 	add_subdirectory(websocket_wss)
 endif ()
+
+if( WIN32 )
+	add_subdirectory(hello_world_sendfile_w32_unicode)
+endif()

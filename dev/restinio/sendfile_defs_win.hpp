@@ -40,7 +40,9 @@ inline file_descriptor_t
 open_file( const char * file_path )
 {
 	file_descriptor_t file_descriptor =
-		::CreateFile(
+		// We don't support Unicode on Windows, so call Ansi-version of
+		// CreateFile directly.
+		::CreateFileA(
 			file_path,
 			GENERIC_READ,
 			0,
