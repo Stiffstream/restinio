@@ -34,12 +34,19 @@ class sendfile_operation_runner_t final
 		sendfile_operation_runner_t & operator = ( sendfile_operation_runner_t && ) = delete;
 
 		sendfile_operation_runner_t(
-			const sendfile_t & sf,
+			sendfile_t & sf,
 			asio_ns::executor executor,
 			Socket & socket,
 			after_sendfile_cb_t after_sendfile_cb )
 			:	base_type_t{ sf, std::move( executor), socket, std::move( after_sendfile_cb ) }
-		{}
+		{
+			// We have passed sf.file_descriptor() to m_file_handle object.
+			// It means that file description will be closed automatically
+			// by m_file_handle.
+			// But sf still holds the same file_descriptor. Because of that
+			// we should tell sf to release this file_descriptor.
+			takeaway_file_descriptor(sf).release();
+		}
 
 		virtual void
 		start() override
@@ -141,12 +148,19 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 		sendfile_operation_runner_t & operator = ( sendfile_operation_runner_t && ) = delete;
 
 		sendfile_operation_runner_t(
-			const sendfile_t & sf,
+			sendfile_t & sf,
 			asio_ns::executor executor,
 			asio_ns::ip::tcp::socket & socket,
 			after_sendfile_cb_t after_sendfile_cb )
 			:	base_type_t{ sf, std::move( executor), socket, std::move( after_sendfile_cb ) }
-		{}
+		{
+			// We have passed sf.file_descriptor() to m_file_handle object.
+			// It means that file description will be closed automatically
+			// by m_file_handle.
+			// But sf still holds the same file_descriptor. Because of that
+			// we should tell sf to release this file_descriptor.
+			takeaway_file_descriptor(sf).release();
+		}
 
 		virtual void
 		start() override

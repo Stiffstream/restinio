@@ -410,6 +410,25 @@ class sendfile_t
 			return m_file_descriptor.fd();
 		}
 
+		//! Take away the file description form sendfile object.
+		/*!
+			This helper function takes the file description from sendfile
+			object. After it the sendfile object will hold invalid file
+			descriptor and will not try to close the file in the constructor.
+
+			The take of the file description can be necessary, for example,
+			on Windows platform where an instance of Asio's random_access_handle
+			is used for file's content transmision. That instance also
+			closes the file in the destructor.
+
+			@since v.0.4.9
+		*/
+		friend file_descriptor_holder_t
+		takeaway_file_descriptor( sendfile_t & target )
+		{
+			return std::move(target.m_file_descriptor);
+		}
+
 	private:
 		//! Check if stored file descriptor is valid, and throws if it is not.
 		void
