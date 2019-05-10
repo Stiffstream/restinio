@@ -18,6 +18,7 @@ dev/json_dto
 dev/catch2
 dev/clara
 dev/cmake_build*
+cmake_build*
 vcpkg
 dev/doc/*
 dev/zlib

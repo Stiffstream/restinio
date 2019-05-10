@@ -140,7 +140,7 @@ class write_group_output_ctx_t
 				friend class write_group_output_ctx_t;
 
 				explicit file_write_operation_t(
-					const sendfile_t & sendfile,
+					sendfile_t & sendfile,
 					sendfile_operation_shared_ptr_t & sendfile_operation ) noexcept
 					:	m_sendfile{ &sendfile }
 					,	m_sendfile_operation{ &sendfile_operation }
@@ -154,12 +154,17 @@ class write_group_output_ctx_t
 				file_write_operation_t & operator = ( file_write_operation_t && ) = default;
 
 				//! Start a sendfile operation.
+				/*!
+					@note
+					Since v.0.4.9 it is non-const method. This is necessary
+					to get a non-const reference to sendfile operation.
+				*/
 				template< typename Socket, typename After_Write_CB >
 				void
 				start_sendfile_operation(
 					asio_ns::executor executor,
 					Socket & socket,
-					After_Write_CB after_sendfile_cb ) const
+					After_Write_CB after_sendfile_cb )
 				{
 					assert( m_sendfile->is_valid() );
 
@@ -201,7 +206,7 @@ class write_group_output_ctx_t
 
 			private:
 				//! A pointer to sendfile.
-				const sendfile_t * m_sendfile; // Pointer is used to be able to copy/assign.
+				sendfile_t * m_sendfile; // Pointer is used to be able to copy/assign.
 
 				//! A curernt sendfile operation.
 				/*!
@@ -345,7 +350,7 @@ class write_group_output_ctx_t
 		file_write_operation_t
 		prepare_sendfile_wo()
 		{
-			const auto & sf =
+			auto & sf =
 				m_current_wg->items()[ m_next_writable_item_index++ ].sendfile_operation();
 
 			return file_write_operation_t{ sf, m_sendfile_operation };

@@ -575,7 +575,8 @@ class connection_t final
 								http_method_str(
 									static_cast<http_method>( parser.method ) ),
 								parser_ctx.m_header.request_target(),
-								parser_ctx.m_header.get_field( http_field::upgrade, default_value ) );
+								parser_ctx.m_header.get_field_or(
+									http_field::upgrade, default_value ) );
 					} );
 
 					if( m_response_coordinator.empty() )
@@ -1016,7 +1017,7 @@ class connection_t final
 
 		//! Run sendfile write operation.
 		void
-		handle_file_write_operation( const file_write_operation_t & op )
+		handle_file_write_operation( file_write_operation_t & op )
 		{
 			if( m_response_coordinator.closed() )
 			{

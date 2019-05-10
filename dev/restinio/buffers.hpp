@@ -330,8 +330,13 @@ struct sendfile_write_operation_t : public writable_base_t
 		///@}
 
 		//! Get sendfile operation detaiols.
-		const sendfile_t &
-		sendfile_options() const noexcept
+		/*!
+			@note
+			Since v.0.4.9 it is non-const method. It is because we have
+			to work with mutable sendfile_t on some platform (like Windows).
+		*/
+		sendfile_t &
+		sendfile_options() noexcept
 		{
 			return *m_sendfile_options;
 		}
@@ -560,10 +565,13 @@ class writable_item_t
 
 		//! Get a reference to a sendfile operation.
 		/*!
-			\note Stored buffer must be of writable_item_type_t::file_write_operation.
+			@note Stored buffer must be of writable_item_type_t::file_write_operation.
+			@note
+			Since v.0.4.9 it is non-const method. It is because we have
+			to work with mutable sendfile_t on some platform (like Windows).
 		*/
-		const sendfile_t &
-		sendfile_operation() const
+		sendfile_t &
+		sendfile_operation()
 		{
 			return get_sfwo()->sendfile_options();
 		}
@@ -605,12 +613,6 @@ class writable_item_t
 		impl::buf_iface_t * get_buf() noexcept
 		{
 			return reinterpret_cast< impl::buf_iface_t * >( &m_storage );
-		}
-
-		//! Access as sendfile_write_operation_t item.
-		const impl::sendfile_write_operation_t * get_sfwo() const noexcept
-		{
-			return reinterpret_cast< const impl::sendfile_write_operation_t * >( &m_storage );
 		}
 
 		//! Access as sendfile_write_operation_t item.
@@ -805,9 +807,22 @@ class write_group_t
 			return m_items.size();
 		}
 
-		//! Get the count of stored items.
+		//! Get access to the stored items.
 		const auto &
 		items() const noexcept
+		{
+			return m_items;
+		}
+
+		//! Get access to the stored items.
+		/*!
+			Should be used for cases where we should have a non-const
+			access to writeable items.
+
+			@since v.0.4.9
+		*/
+		auto &
+		items() noexcept
 		{
 			return m_items;
 		}

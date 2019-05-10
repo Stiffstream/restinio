@@ -1315,7 +1315,7 @@ decltype(auto)
 handle_body( const request_t & req, Handler handler )
 {
 	const auto content_encoding =
-		req.header().get_field( restinio::http_field::content_encoding, "identity" );
+		req.header().get_field_or( restinio::http_field::content_encoding, "identity" );
 
 	if( caseless_cmp( content_encoding, "deflate" ) )
 	{

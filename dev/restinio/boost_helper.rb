@@ -2,11 +2,13 @@ require File.join( File.dirname(__FILE__), 'lib_finder.rb' )
 
 module RestinioBoostHelper
 	@@msvc_libs_vc_tag = {
+		'16'=>"vc142-mt",
 		'15'=>"vc141-mt",
 		'14'=>"vc140-mt"
 	}
 
 	@@msvc_libs_dir_tag = {
+		'16'=>"msvc-14.2",
 		'15'=>"msvc-14.1",
 		'14'=>"msvc-14.0"
 	}
@@ -183,7 +185,7 @@ module RestinioBoostHelper
 		vc_ver = target_prj.toolset.tag( "ver_hi" )
 
 		if not @@msvc_libs_vc_tag.has_key?( vc_ver )
-			raise "current msvc toolset is not supported: must be vc14, vc15"
+			raise "current msvc toolset is not supported: must be vc14, vc15, vc16"
 		end
 
 		flags = ""

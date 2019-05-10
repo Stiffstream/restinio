@@ -140,7 +140,7 @@ TEST_CASE( "Parse header (2 bytes + 2 bytes ext length)" , "[websocket][parser][
 		// 127
 		raw_data_t bin_data{ to_char_each({0x82, 0x7E, 0x00, 0x7F}) };
 		ws_parser_t parser;
-		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+		(void)parser.parser_execute( bin_data.data(), bin_data.size() );
 
 		REQUIRE( parser.current_message().payload_len() == 127 );
 	}
@@ -148,7 +148,7 @@ TEST_CASE( "Parse header (2 bytes + 2 bytes ext length)" , "[websocket][parser][
 		// 128
 		raw_data_t bin_data{ to_char_each({0x82, 0x7E, 0x00, 0x80}) };
 		ws_parser_t parser;
-		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+		(void)parser.parser_execute( bin_data.data(), bin_data.size() );
 
 		REQUIRE( parser.current_message().payload_len() == 128 );
 	}
@@ -156,14 +156,14 @@ TEST_CASE( "Parse header (2 bytes + 2 bytes ext length)" , "[websocket][parser][
 		// 1000
 		raw_data_t bin_data{ to_char_each({0x82, 0x7E, 0x03, 0xE8}) };
 		ws_parser_t parser;
-		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+		(void)parser.parser_execute( bin_data.data(), bin_data.size() );
 		REQUIRE( parser.current_message().payload_len() == 1000 );
 	}
 	{
 		// 32783
 		raw_data_t bin_data{ to_char_each({0x82, 0x7E, 0x80, 0x0F}) };
 		ws_parser_t parser;
-		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+		(void)parser.parser_execute( bin_data.data(), bin_data.size() );
 		REQUIRE( parser.current_message().payload_len() == 32783 );
 	}
 }
@@ -174,7 +174,7 @@ TEST_CASE( "Parse header (2 bytes + 8 bytes ext length)" , "[websocket][parser][
 		raw_data_t bin_data{ to_char_each(
 			{0x82, 0x7F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7F}) };
 		ws_parser_t parser;
-		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+		(void)parser.parser_execute( bin_data.data(), bin_data.size() );
 
 		REQUIRE( parser.current_message().payload_len() == 0x7F );
 	}
@@ -182,7 +182,7 @@ TEST_CASE( "Parse header (2 bytes + 8 bytes ext length)" , "[websocket][parser][
 		raw_data_t bin_data{ to_char_each(
 			{0x82, 0x7F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80}) };
 		ws_parser_t parser;
-		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+		(void)parser.parser_execute( bin_data.data(), bin_data.size() );
 
 		REQUIRE( parser.current_message().payload_len() == 0x80 );
 	}
@@ -190,7 +190,7 @@ TEST_CASE( "Parse header (2 bytes + 8 bytes ext length)" , "[websocket][parser][
 		raw_data_t bin_data{ to_char_each(
 			{0x82, 0x7F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7F, 0x7F}) };
 		ws_parser_t parser;
-		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+		(void)parser.parser_execute( bin_data.data(), bin_data.size() );
 
 		REQUIRE( parser.current_message().payload_len() == 0x7F7F );
 	}
@@ -198,7 +198,7 @@ TEST_CASE( "Parse header (2 bytes + 8 bytes ext length)" , "[websocket][parser][
 		raw_data_t bin_data{ to_char_each(
 			{0x82, 0x7F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x11}) };
 		ws_parser_t parser;
-		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+		(void)parser.parser_execute( bin_data.data(), bin_data.size() );
 
 		REQUIRE( parser.current_message().payload_len() == 0x8011 );
 	}
@@ -211,7 +211,7 @@ TEST_CASE( "Parse header (2 bytes + 4 bytes masking key )" ,
 		raw_data_t bin_data{ to_char_each({
 			0x81, 0x85, 0x37, 0xFA, 0x21, 0x3D}) };
 		ws_parser_t parser;
-		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
+		(void)parser.parser_execute( bin_data.data(), bin_data.size() );
 
 		REQUIRE( parser.current_message().m_mask_flag == true );
 		REQUIRE( parser.current_message().m_masking_key == 0x37FA213D );

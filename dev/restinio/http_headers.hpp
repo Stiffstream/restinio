@@ -20,6 +20,8 @@
 
 #include <restinio/exception.hpp>
 #include <restinio/string_view.hpp>
+#include <restinio/optional.hpp>
+#include <restinio/common_types.hpp>
 
 namespace restinio
 {
@@ -742,6 +744,22 @@ append_last_field_accessor( http_header_fields_t &, string_view_t );
 	have checks on each field manipulation checking whether
 	field name is `Connection` or `Content-Length` it is important
 	to use proper member functions in derived classes for manipulating them.
+
+	@par Getting values of fields
+
+	Since v.0.4.9 there are two groups of methods for accessing values of
+	fields. The first group returns `std::string` (or references/pointers
+	to `std::string`). This group includes the following methods: get_field(),
+	get_field_or(), try_get_field().
+
+	The second group returns `string_view_t` or `optional_t<string_view_t>`.
+	This group includes the following methods: value_of() and opt_value_of().
+
+	The first group was created in early versions of RESTinio and is present
+	here for historical and compatibility reasons. They are not deprecated
+	yet but they could be deprecated in newer versions of RESTinio.
+	Because of that the usage of value_of() and opt_value_of() is more
+	preferable.
 */
 class http_header_fields_t
 {
@@ -919,6 +937,28 @@ class http_header_fields_t
 			return it->value();
 		}
 
+		//! Try to get the value of a field by field name.
+		/*!
+			@note
+			Returns nullptr if the field is not found.
+
+			Usage example:
+			\code
+			auto f = headers().try_get_field("Content-Type");
+			if(f && *f == "text/plain")
+				...
+			\endcode
+		*/
+		nullable_pointer_t<const std::string>
+		try_get_field( string_view_t field_name ) const noexcept
+		{
+			const auto it = cfind( field_name );
+			if( m_fields.end() == it )
+				return nullptr;
+			else
+				return std::addressof(it->value());
+		}
+
 		//! Get field by id.
 		const std::string &
 		get_field( http_field_t field_id ) const
@@ -943,10 +983,166 @@ class http_header_fields_t
 			return it->value();
 		}
 
+		//! Try to get the value of a field by field ID.
+		/*!
+			@note
+			Returns nullptr if the field is not found.
+
+			Usage example:
+			\code
+			auto f = headers().try_get_field(restinio::http_field::content_type);
+			if(f && *f == "text/plain")
+				...
+			\endcode
+		*/
+		nullable_pointer_t<const std::string>
+		try_get_field( http_field_t field_id ) const noexcept
+		{
+			if( http_field_t::field_unspecified != field_id )
+			{
+				const auto it = cfind( field_id );
+				if( m_fields.end() != it )
+					return std::addressof(it->value());
+			}
+
+			return nullptr;
+		}
+
+		//! Get field value by field name or default value if the field not found.
+		/*!
+			@note
+			This method returns field value as a new std::string instance,
+			not a const reference to std::string.
+		*/
+		std::string
+		get_field_or(
+			string_view_t field_name,
+			string_view_t default_value ) const
+		{
+			const auto it = cfind( field_name );
+
+			if( m_fields.end() == it )
+				return std::string( default_value.data(), default_value.size() );
+
+			return it->value();
+		}
+
+		//! Get field value by field name or default value if the field not found.
+		/*!
+			@note
+			This method returns field value as a new std::string instance,
+			not a const reference to std::string.
+		*/
+		std::string
+		get_field_or(
+			string_view_t field_name,
+			std::string && default_value ) const
+		{
+			const auto it = cfind( field_name );
+
+			if( m_fields.end() == it )
+				return std::move(default_value);
+
+			return it->value();
+		}
+
+		//! Get field by name or default value if the field not found.
+		/*!
+			This is just overload for get_field_or(string_view_t,string_view_t);
+		*/
+		auto
+		get_field_or(
+			string_view_t field_name,
+			const char * default_value ) const
+		{
+			return this->get_field_or( field_name, string_view_t{ default_value } );
+		}
+
+		//! Get field by name or default value if the field not found.
+		/*!
+			This is just overload for get_field_or(string_view_t,string_view_t);
+		*/
+		auto
+		get_field_or(
+			string_view_t field_name,
+			const std::string & default_value ) const
+		{
+			return this->get_field_or( field_name, string_view_t{ default_value } );
+		}
+
+		//! Get field by id or default value if the field not found.
+		/*!
+			@note
+			This method returns field value as a new std::string instance,
+			not a const reference to std::string.
+		*/
+		std::string
+		get_field_or(
+			http_field_t field_id,
+			string_view_t default_value ) const
+		{
+			if( http_field_t::field_unspecified != field_id )
+			{
+				const auto it = cfind( field_id );
+
+				if( m_fields.end() != it )
+					return it->value();
+			}
+
+			return std::string( default_value.data(), default_value.size() );
+		}
+
+		//! Get field by id or default value if the field not found.
+		/*!
+			This is just overload for get_field_or(http_field_t,string_view_t);
+		*/
+		auto
+		get_field_or(
+			http_field_t field_id,
+			const char * default_value ) const
+		{
+			return this->get_field_or( field_id, string_view_t{ default_value } );
+		}
+
+		//! Get field by id or default value if the field not found.
+		/*!
+			This is just overload for get_field_or(http_field_t,string_view_t);
+		*/
+		auto
+		get_field_or(
+			http_field_t field_id,
+			const std::string & default_value ) const
+		{
+			return this->get_field_or( field_id, string_view_t{ default_value } );
+		}
+
+		//! Get field by id or default value if the field not found.
+		/*!
+			@note
+			This method returns field value as a new std::string instance,
+			not a const reference to std::string.
+		*/
+		std::string
+		get_field_or(
+			http_field_t field_id,
+			std::string && default_value ) const
+		{
+			if( http_field_t::field_unspecified != field_id )
+			{
+				const auto it = cfind( field_id );
+
+				if( m_fields.end() != it )
+					return it->value();
+			}
+
+			return std::move( default_value );
+		}
+
 		//! Get field by name.
 		/*!
 			If field exists return field value, otherwise return default_value.
 		*/
+		[[deprecated("use get_field_or() method instead")]]
 		const std::string &
 		get_field(
 			string_view_t field_name,
@@ -964,6 +1160,7 @@ class http_header_fields_t
 		/*!
 			If field exists return field value, otherwise return default_value.
 		*/
+		[[deprecated("use get_field_or() method instead")]]
 		const std::string &
 		get_field(
 			http_field_t field_id,
@@ -1007,11 +1204,117 @@ class http_header_fields_t
 			}
 		}
 
+		/*!
+		 * @name Getters of field value which return string_view.
+		 * @{
+		 */
+		//! Get the value of a field or throw if the field not found.
+		string_view_t
+		value_of(
+			//! Name of a field.
+			string_view_t name ) const
+		{
+			return { this->get_field(name) };
+		}
+
+		//! Get the value of a field or throw if the field not found.
+		string_view_t
+		value_of(
+			//! ID of a field.
+			http_field_t field_id ) const
+		{
+			return { this->get_field(field_id) };
+		}
+
+		//! Get optional value of a field.
+		/*!
+			Doesn't throw exception if the field is not found. Empty optional
+			will be returned instead.
+
+			Usage example:
+			\code
+			auto f = headers().opt_value_of("Content-Type");
+			if(f && *f == "text/plain")
+				...
+			\endcode
+		*/
+		optional_t< string_view_t >
+		opt_value_of(
+			//! Name of a field.
+			string_view_t name ) const noexcept
+		{
+			optional_t< string_view_t > result;
+
+			if( auto * ptr = this->try_get_field(name) )
+				result = string_view_t{ *ptr };
+
+			return result;
+		}
+
+		//! Get optional value of a field.
+		/*!
+			Doesn't throw exception if the field is not found. Empty optional
+			will be returned instead.
+
+			Usage example:
+			\code
+			auto f = headers().opt_value_of(restinio::http_field::content_type);
+			if(f && *f == "text/plain")
+				...
+			\endcode
+		*/
+		optional_t< string_view_t >
+		opt_value_of(
+			//! ID of a field.
+			http_field_t field_id ) const noexcept
+		{
+			optional_t< string_view_t > result;
+
+			if( auto * ptr = this->try_get_field(field_id) )
+				result = string_view_t{ *ptr };
+
+			return result;
+		}
+		/*!
+		 * @}
+		 */
+
+		//! Enumeration of fields.
+		/*!
+			Calls \a lambda for each field in the container.
+
+			Lambda should have one of the following formats:
+			\code
+			void(const http_header_field_t &);
+			void(http_header_field_t);
+			\endcode
+
+			This method is `noexcept` if \a lambda is `noexcept`.
+
+			Usage example:
+			\code
+			headers().for_each_field( [](const auto & f) {
+				std::cout << f.name() << ": " << f.value() << std::endl;
+			} );
+			\endcode
+		*/
+		template< typename Lambda >
+		void
+		for_each_field( Lambda && lambda ) const
+				noexcept(noexcept(lambda(
+						std::declval<const http_header_field_t &>())))
+		{
+			for( const auto & f : m_fields )
+				lambda( f );
+		}
+
+		[[deprecated("use for_each_field() method instead")]]
 		auto begin() const noexcept
 		{
 			return m_fields.cbegin();
 		}
 
+		[[deprecated("use for_each_field() method instead")]]
 		auto end() const noexcept
 		{
 			return m_fields.cend();
