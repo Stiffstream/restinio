@@ -329,9 +329,10 @@ struct sendfile_write_operation_t : public writable_base_t
 		}
 		///@}
 
+//FIXME: add a note that since v.0.4.9 it is non-const method
 		//! Get sendfile operation detaiols.
-		const sendfile_t &
-		sendfile_options() const noexcept
+		sendfile_t &
+		sendfile_options() noexcept
 		{
 			return *m_sendfile_options;
 		}
@@ -558,12 +559,13 @@ class writable_item_t
 		*/
 		asio_ns::const_buffer buf() const { return get_buf()->buffer(); }
 
+//FIXME: add a note that since v.0.4.9 it is not a const method.
 		//! Get a reference to a sendfile operation.
 		/*!
 			\note Stored buffer must be of writable_item_type_t::file_write_operation.
 		*/
-		const sendfile_t &
-		sendfile_operation() const
+		sendfile_t &
+		sendfile_operation()
 		{
 			return get_sfwo()->sendfile_options();
 		}
@@ -605,12 +607,6 @@ class writable_item_t
 		impl::buf_iface_t * get_buf() noexcept
 		{
 			return reinterpret_cast< impl::buf_iface_t * >( &m_storage );
-		}
-
-		//! Access as sendfile_write_operation_t item.
-		const impl::sendfile_write_operation_t * get_sfwo() const noexcept
-		{
-			return reinterpret_cast< const impl::sendfile_write_operation_t * >( &m_storage );
 		}
 
 		//! Access as sendfile_write_operation_t item.
@@ -805,9 +801,17 @@ class write_group_t
 			return m_items.size();
 		}
 
-		//! Get the count of stored items.
+		//! Get access to the stored items.
 		const auto &
 		items() const noexcept
+		{
+			return m_items;
+		}
+
+//FIXME: document this!
+		//! Get access to the stored items.
+		auto &
+		items() noexcept
 		{
 			return m_items;
 		}

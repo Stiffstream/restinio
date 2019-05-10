@@ -410,6 +410,17 @@ class sendfile_t
 			return m_file_descriptor.fd();
 		}
 
+//FIXME: document this!
+		friend file_descriptor_holder_t
+		takeaway_file_descriptor( sendfile_t & target )
+		{
+			file_descriptor_holder_t result { std::move(target.m_file_descriptor) };
+			std::cout << "*** is valid after takeaway: "
+					<< target.is_valid() << std::endl;
+
+			return result;
+		}
+
 	private:
 		//! Check if stored file descriptor is valid, and throws if it is not.
 		void
