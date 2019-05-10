@@ -3,7 +3,7 @@ FROM ubuntu:18.04
 # Prepare build environment
 RUN apt-get update && \
     apt-get -qq -y install gcc g++ ruby \
-    autoconf curl wget libpcre2-dev libpcre3-dev pkg-config \
+    wget libpcre2-dev libpcre3-dev pkg-config \
 	 libboost-all-dev \
 	 libssl-dev \
     libtool

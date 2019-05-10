@@ -1,12 +1,10 @@
-FROM ubuntu:16.04
+FROM archlinux/base:latest
 
 # Prepare build environment
-RUN apt-get update && \
-    apt-get -qq -y install gcc g++ ruby \
-    wget libpcre2-dev libpcre3-dev pkg-config \
-	 libboost-all-dev \
-	 libssl-dev \
-    libtool
+RUN pacman -Sy --noconfirm gcc \
+	&& pacman -Sy --noconfirm ruby rubygems \
+	&& pacman -Sy --noconfirm wget 
+
 RUN gem install Mxx_ru
 
 RUN mkdir /tmp/restinio
@@ -14,6 +12,7 @@ COPY externals.rb /tmp/restinio
 COPY dev /tmp/restinio/dev
 
 RUN echo "*** Extracting RESTinio's Dependencies ***" \
+	&& export PATH=${PATH}:~/.gem/ruby/2.6.0/bin \
 	&& cd /tmp/restinio \
 	&& mxxruexternals
 
