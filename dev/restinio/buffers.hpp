@@ -329,8 +329,12 @@ struct sendfile_write_operation_t : public writable_base_t
 		}
 		///@}
 
-//FIXME: add a note that since v.0.4.9 it is non-const method
 		//! Get sendfile operation detaiols.
+		/*!
+			@note
+			Since v.0.4.9 it is non-const method. It is because we have
+			to work with mutable sendfile_t on some platform (like Windows).
+		*/
 		sendfile_t &
 		sendfile_options() noexcept
 		{
@@ -559,10 +563,12 @@ class writable_item_t
 		*/
 		asio_ns::const_buffer buf() const { return get_buf()->buffer(); }
 
-//FIXME: add a note that since v.0.4.9 it is not a const method.
 		//! Get a reference to a sendfile operation.
 		/*!
-			\note Stored buffer must be of writable_item_type_t::file_write_operation.
+			@note Stored buffer must be of writable_item_type_t::file_write_operation.
+			@note
+			Since v.0.4.9 it is non-const method. It is because we have
+			to work with mutable sendfile_t on some platform (like Windows).
 		*/
 		sendfile_t &
 		sendfile_operation()
@@ -808,8 +814,13 @@ class write_group_t
 			return m_items;
 		}
 
-//FIXME: document this!
 		//! Get access to the stored items.
+		/*!
+			Should be used for cases where we should have a non-const
+			access to writeable items.
+
+			@since v.0.4.9
+		*/
 		auto &
 		items() noexcept
 		{

@@ -153,8 +153,12 @@ class write_group_output_ctx_t
 				file_write_operation_t( file_write_operation_t && ) = default;
 				file_write_operation_t & operator = ( file_write_operation_t && ) = default;
 
-//FIXME: add a note that since v.0.4.9 it is non-const method
 				//! Start a sendfile operation.
+				/*!
+					@note
+					Since v.0.4.9 it is non-const method. This is necessary
+					to get a non-const reference to sendfile operation.
+				*/
 				template< typename Socket, typename After_Write_CB >
 				void
 				start_sendfile_operation(
