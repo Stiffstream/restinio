@@ -45,11 +45,22 @@ class query_string_params_t final
 	public:
 		using parameters_container_t = std::vector< std::pair< string_view_t, string_view_t > >;
 
+		//! Constructor for the case when query string empty of
+		//! contains a set of key-value pairs.
 		query_string_params_t(
 			std::unique_ptr< char[] > data_buffer,
 			parameters_container_t parameters )
 			:	m_data_buffer{ std::move( data_buffer ) }
 			,	m_parameters{ std::move( parameters ) }
+		{}
+
+		//! Constructor for the case when query string contains only tag
+		//! (web beacon).
+		query_string_params_t(
+			std::unique_ptr< char[] > data_buffer,
+			optional_t< string_view_t > tag )
+			:	m_data_buffer{ std::move( data_buffer ) }
+			,	m_tag{ tag }
 		{}
 
 		query_string_params_t( query_string_params_t && ) = default;
@@ -106,7 +117,11 @@ class query_string_params_t final
 		}
 		//! //}
 
-		//
+		//! Get the tag (web beacon) part.
+		/*!
+			@since v.0.4.9
+		*/
+		auto tag() const noexcept { return m_tag; }
 
 	private:
 		parameters_container_t::const_iterator
@@ -140,6 +155,10 @@ class query_string_params_t final
 		//! Shared buffer for string_view of named parameterts names.
 		std::unique_ptr< char[] > m_data_buffer;
 		parameters_container_t m_parameters;
+
+		//! Tag (or web beacon) part.
+		/*! @since v.0.4.9 */
+		optional_t< string_view_t > m_tag;
 };
 
 //! Cast query string parameter to a given type.
@@ -239,8 +258,7 @@ parse_query(
 	//! Query part of the request target.
 	string_view_t query_string )
 {
-	const char * const very_first_pos = query_string.data();
-	const char * query_remainder = very_first_pos;
+	const char * query_remainder = query_string.data();
 	const char * query_end = query_remainder + query_string.size();
 
 	std::unique_ptr< char[] > data_buffer;
@@ -249,13 +267,13 @@ parse_query(
 	if( query_end > query_remainder )
 	{
 		const auto params_offset = static_cast<std::size_t>(
-				std::distance( very_first_pos, query_remainder ));
+				std::distance( query_string.data(), query_remainder ));
 
 		{
 			const auto data_size = static_cast<std::size_t>(
 					query_end - query_remainder);
 			data_buffer.reset( new char[ data_size] );
-			std::memcpy( data_buffer.get(), query_remainder, data_size );
+			std::memcpy( data_buffer.get(), query_string.data(), data_size );
 
 			// Work with created buffer:
 			query_remainder = data_buffer.get();
@@ -269,15 +287,33 @@ parse_query(
 
 			if( query_end == eq_symbol )
 			{
-				throw exception_t{
-					fmt::format(
-						"invalid format of key-value pairs in query_string: {}, "
-						"no '=' symbol starting from position {}",
-						query_string,
-						params_offset + static_cast<std::size_t>(
-							std::distance(
-								static_cast<const char *>( data_buffer.get() ),
-								query_remainder) )) };
+				// Since v.0.4.9 we should check the presence of tag (web beacon)
+				// in query string.
+				// Tag can be the only item in query string.
+				if( query_remainder != data_buffer.get() )
+					// The query string has illegal format.
+					throw exception_t{
+						fmt::format(
+							"invalid format of key-value pairs in query_string: {}, "
+							"no '=' symbol starting from position {}",
+							query_string,
+							params_offset + static_cast<std::size_t>(
+								std::distance(
+									static_cast<const char *>( data_buffer.get() ),
+									query_remainder) )) };
+				else
+				{
+					// Query string contains only tag (web beacon).
+					string_view_t tag{
+						query_remainder,
+						utils::inplace_unescape_percent_encoding(
+								const_cast< char * >( query_remainder ),
+								static_cast< std::size_t >(
+										std::distance( query_remainder, query_end ) ) )
+					};
+
+					return query_string_params_t{ std::move( data_buffer ), tag };
+				}
 			}
 
 			const char * const amp_symbol_or_end =

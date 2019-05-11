@@ -394,3 +394,47 @@ TEST_CASE( "opt_value" , "[opt_value]" )
 	REQUIRE_FALSE( restinio::opt_value< double >( params, "pi" ) );
 	REQUIRE_FALSE( restinio::opt_value< std::string >( params, "e" ) );
 }
+
+TEST_CASE( "Query string with only web-beacon" , "[web-beacon]" )
+{
+	{
+		const restinio::string_view_t
+			query{ "a=b&123456" };
+
+		REQUIRE_THROWS( restinio::parse_query( query ) );
+	}
+
+	{
+		const restinio::string_view_t
+			query{ "123456" };
+
+		auto params = restinio::parse_query( query );
+
+		auto tag = params.tag();
+		REQUIRE( tag );
+		REQUIRE( *tag == "123456" );
+	}
+
+	{
+		const restinio::string_view_t
+			query{ "12%33456" };
+
+		auto params = restinio::parse_query( query );
+
+		auto tag = params.tag();
+		REQUIRE( tag );
+		REQUIRE( *tag == "123456" );
+	}
+
+	{
+		const restinio::string_view_t
+			query{ "12%33+456" };
+
+		auto params = restinio::parse_query( query );
+
+		auto tag = params.tag();
+		REQUIRE( tag );
+		REQUIRE( *tag == "123 456" );
+	}
+}
+
