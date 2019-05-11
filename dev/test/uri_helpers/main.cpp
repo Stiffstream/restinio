@@ -238,13 +238,8 @@ TEST_CASE( "In-place unescape percent encoding" , "[unescape][percent_encoding][
 
 TEST_CASE( "Parse query params" , "[parse_query]" )
 {
+	const auto case_1 = []( const restinio::string_view_t query )
 	{
-		const restinio::string_view_t
-			query{ "toDate=815875200&"
-				"fromDate=1133136000&"
-				"toAge=38&"
-				"gender=f" };
-
 		auto params = restinio::parse_query( query );
 
 		REQUIRE( 4 == params.size() );
@@ -257,7 +252,23 @@ TEST_CASE( "Parse query params" , "[parse_query]" )
 		REQUIRE( restinio::cast_to< std::uint64_t >( params[ "fromDate" ] ) == 1133136000ULL );
 		REQUIRE( restinio::cast_to< std::uint8_t >( params[ "toAge" ] ) == 38 );
 		REQUIRE( restinio::cast_to< std::string >( params[ "gender" ] ) == "f" );
-	}
+	};
+	case_1(
+			"toDate=815875200&"
+			"fromDate=1133136000&"
+			"toAge=38&"
+			"gender=f" );
+	case_1(
+			"toDate=815875200;"
+			"fromDate=1133136000;"
+			"toAge=38;"
+			"gender=f" );
+	case_1(
+			"toDate=815875200&"
+			"fromDate=1133136000;"
+			"toAge=38&"
+			"gender=f" );
+
 	{
 		const restinio::string_view_t
 			query{ "country=%D0%9C%D0%B0%D0%BB%D1%8C%D1%82%D0%B0" };
@@ -282,8 +293,8 @@ TEST_CASE( "Parse query params" , "[parse_query]" )
 		REQUIRE( params[ "my name" ] == "my value" );
 	}
 
+	const auto case_2 = []( const restinio::string_view_t query )
 	{
-		const restinio::string_view_t query{ "k1=v1&k2=v2" };
 
 		auto params = restinio::parse_query( query );
 
@@ -291,7 +302,9 @@ TEST_CASE( "Parse query params" , "[parse_query]" )
 
 		REQUIRE( params[ "k1" ] == "v1" );
 		REQUIRE( params[ "k2" ] == "v2" );
-	}
+	};
+	case_2( "k1=v1&k2=v2" );
+	case_2( "k1=v1;k2=v2" );
 }
 
 TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_multi_map]" )
@@ -394,3 +407,57 @@ TEST_CASE( "opt_value" , "[opt_value]" )
 	REQUIRE_FALSE( restinio::opt_value< double >( params, "pi" ) );
 	REQUIRE_FALSE( restinio::opt_value< std::string >( params, "e" ) );
 }
+
+TEST_CASE( "Query string with only web-beacon" , "[web-beacon]" )
+{
+	{
+		const restinio::string_view_t
+			query{ "a=b&123456" };
+
+		REQUIRE_THROWS( restinio::parse_query( query ) );
+	}
+
+	{
+		const restinio::string_view_t
+			query{ "123456" };
+
+		auto params = restinio::parse_query( query );
+
+		auto tag = params.tag();
+		REQUIRE( tag );
+		REQUIRE( *tag == "123456" );
+	}
+
+	{
+		const restinio::string_view_t
+			query{ "12%33456" };
+
+		auto params = restinio::parse_query( query );
+
+		auto tag = params.tag();
+		REQUIRE( tag );
+		REQUIRE( *tag == "123456" );
+	}
+
+	{
+		const restinio::string_view_t
+			query{ "12%33+456" };
+
+		auto params = restinio::parse_query( query );
+
+		auto tag = params.tag();
+		REQUIRE( tag );
+		REQUIRE( *tag == "123 456" );
+	}
+
+	{
+		const restinio::string_view_t
+			query{ "" };
+
+		auto params = restinio::parse_query( query );
+
+		auto tag = params.tag();
+		REQUIRE( !tag );
+	}
+}
+

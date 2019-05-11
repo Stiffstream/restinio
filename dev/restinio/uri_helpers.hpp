@@ -45,11 +45,22 @@ class query_string_params_t final
 	public:
 		using parameters_container_t = std::vector< std::pair< string_view_t, string_view_t > >;
 
+		//! Constructor for the case when query string empty of
+		//! contains a set of key-value pairs.
 		query_string_params_t(
 			std::unique_ptr< char[] > data_buffer,
 			parameters_container_t parameters )
 			:	m_data_buffer{ std::move( data_buffer ) }
 			,	m_parameters{ std::move( parameters ) }
+		{}
+
+		//! Constructor for the case when query string contains only tag
+		//! (web beacon).
+		query_string_params_t(
+			std::unique_ptr< char[] > data_buffer,
+			optional_t< string_view_t > tag )
+			:	m_data_buffer{ std::move( data_buffer ) }
+			,	m_tag{ tag }
 		{}
 
 		query_string_params_t( query_string_params_t && ) = default;
@@ -91,8 +102,8 @@ class query_string_params_t final
 		//! @since v.0.4.8
 		bool empty() const noexcept { return m_parameters.empty(); }
 
-		//! Iterate parameters.
-		//! //{
+		//! @name Iterate parameters.
+		//! @{
 		parameters_container_t::const_iterator
 		begin() const noexcept
 		{
@@ -104,9 +115,21 @@ class query_string_params_t final
 		{
 			return m_parameters.end();
 		}
-		//! //}
+		//! @}
 
-		//
+		//! Get the tag (web beacon) part.
+		/*!
+			A value of "tag" (also known as web beacon) is available only
+			if URI looks like that:
+			\verbatim
+			http://example.com/resource?value
+			\endverbatim
+			In that case tag will contain `value`. For URI with different
+			formats tag() will return empty optional.
+
+			@since v.0.4.9
+		*/
+		auto tag() const noexcept { return m_tag; }
 
 	private:
 		parameters_container_t::const_iterator
@@ -140,6 +163,10 @@ class query_string_params_t final
 		//! Shared buffer for string_view of named parameterts names.
 		std::unique_ptr< char[] > m_data_buffer;
 		parameters_container_t m_parameters;
+
+		//! Tag (or web beacon) part.
+		/*! @since v.0.4.9 */
+		optional_t< string_view_t > m_tag;
 };
 
 //! Cast query string parameter to a given type.
@@ -152,7 +179,10 @@ get( const query_string_params_t & params, string_view_t key )
 
 //! Parse query key-value parts.
 /*!
-	\deprecated Obsolete in v.4.1.0. Use restinio::parse_query() instead.
+	\deprecated Obsolete in v.0.4.1. Use restinio::parse_query() instead.
+
+	\attention Because this function is obsolete it doesn't receive fixes and
+	new features of restinio::parse_query().
 */
 [[deprecated("use restinio::parse_query() instead")]]
 inline query_string_params_t
@@ -234,77 +264,106 @@ parse_query_string( string_view_t query_string )
 }
 
 //! Parse query key-value parts.
+/*!
+	Since v.0.4.9 this function correctly handles the following cases:
+
+	- presence of tag (web beacon) in URI. For example, when URI looks like
+	`http://example.com/resource?tag`. In that case value of the tag (web
+	beacon) can be obtained via query_string_params_t::tag() method.
+   References: [web beacon](https://en.wikipedia.org/wiki/Web_beacon) and
+	[query-string-tracking](https://en.wikipedia.org/wiki/Query_string#Tracking);
+	- usage of `;` instead of `&` as parameter separator.
+*/
 inline query_string_params_t
 parse_query(
 	//! Query part of the request target.
-	string_view_t query_string )
+	string_view_t original_query_string )
 {
-	const char * const very_first_pos = query_string.data();
-	const char * query_remainder = very_first_pos;
-	const char * query_end = query_remainder + query_string.size();
+	constexpr const string_view_t separators{ "&;", 2u };
 
 	std::unique_ptr< char[] > data_buffer;
 	query_string_params_t::parameters_container_t parameters;
 
-	if( query_end > query_remainder )
+	if( !original_query_string.empty() )
 	{
-		const auto params_offset = static_cast<std::size_t>(
-				std::distance( very_first_pos, query_remainder ));
+		// Because query string is not empty a new buffer should be
+		// allocated and query string should be copied to it.
+		data_buffer.reset( new char[ original_query_string.size() ] );
+		std::memcpy(
+				data_buffer.get(),
+				original_query_string.data(),
+				original_query_string.size() );
 
+		// Work with created buffer:
+		string_view_t work_query_string{
+				data_buffer.get(), 
+				original_query_string.size()
+		};
+		string_view_t::size_type pos{ 0 };
+		const string_view_t::size_type end_pos = work_query_string.size();
+
+		while( pos < end_pos )
 		{
-			const auto data_size = static_cast<std::size_t>(
-					query_end - query_remainder);
-			data_buffer.reset( new char[ data_size] );
-			std::memcpy( data_buffer.get(), query_remainder, data_size );
+			const auto eq_pos = work_query_string.find_first_of( '=', pos );
 
-			// Work with created buffer:
-			query_remainder = data_buffer.get();
-			query_end = query_remainder + data_size;
-		}
-
-		while( query_end > query_remainder )
-		{
-			const char * const eq_symbol =
-				impl::modified_memchr( '=', query_remainder, query_end );
-
-			if( query_end == eq_symbol )
+			if( string_view_t::npos == eq_pos )
 			{
-				throw exception_t{
-					fmt::format(
-						"invalid format of key-value pairs in query_string: {}, "
-						"no '=' symbol starting from position {}",
-						query_string,
-						params_offset + static_cast<std::size_t>(
-							std::distance(
-								static_cast<const char *>( data_buffer.get() ),
-								query_remainder) )) };
+				// Since v.0.4.9 we should check the presence of tag (web beacon)
+				// in query string.
+				// Tag can be the only item in query string.
+				if( pos != 0u )
+					// The query string has illegal format.
+					throw exception_t{
+						fmt::format(
+							"invalid format of key-value pairs in query_string: {}, "
+							"no '=' symbol starting from position {}",
+							original_query_string,
+							pos ) };
+				else
+				{
+					// Query string contains only tag (web beacon).
+					const auto tag_size = utils::inplace_unescape_percent_encoding(
+							&data_buffer[ pos ],
+							end_pos - pos );
+
+					const string_view_t tag = work_query_string.substr(
+							pos, tag_size );
+
+					return query_string_params_t{ std::move( data_buffer ), tag };
+				}
 			}
 
-			const char * const amp_symbol_or_end =
-				impl::modified_memchr( '&', eq_symbol + 1, query_end );
+			const auto eq_pos_next = eq_pos + 1u;
+			auto separator_pos = work_query_string.find_first_of(
+					separators, eq_pos_next );
+			if( string_view_t::npos == separator_pos )
+				separator_pos = work_query_string.size();
 
 			// Handle next pair of parameters found.
 			string_view_t key{
-							query_remainder,
-							utils::inplace_unescape_percent_encoding(
-								const_cast< char * >( query_remainder ), // Legal: we are refering buffer.
-								static_cast< std::size_t >(
-									std::distance( query_remainder, eq_symbol ) ) ) };
+					&data_buffer[ pos ],
+					utils::inplace_unescape_percent_encoding(
+							&data_buffer[ pos ],
+							eq_pos - pos )
+			};
 
 			string_view_t value{
-							eq_symbol + 1,
-							utils::inplace_unescape_percent_encoding(
-								const_cast< char * >( eq_symbol + 1 ), // Legal: we are refering buffer.
-								static_cast< std::size_t >(
-									std::distance( eq_symbol + 1, amp_symbol_or_end ) ) ) };
+					&data_buffer[ eq_pos_next ],
+					utils::inplace_unescape_percent_encoding(
+							&data_buffer[ eq_pos_next ],
+							separator_pos - eq_pos_next )
+			};
 
 			parameters.emplace_back( std::move( key ), std::move( value ) );
 
-			query_remainder = amp_symbol_or_end + 1;
+			pos = separator_pos + 1u;
 		}
 	}
 
-	return query_string_params_t{ std::move( data_buffer ), std::move( parameters ) };
+	return query_string_params_t{
+			std::move( data_buffer ),
+			std::move( parameters )
+	};
 }
 
 } /* namespace restinio */
