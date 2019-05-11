@@ -256,91 +256,93 @@ parse_query_string( string_view_t query_string )
 inline query_string_params_t
 parse_query(
 	//! Query part of the request target.
-	string_view_t query_string )
+	string_view_t original_query_string )
 {
-	const char * query_remainder = query_string.data();
-	const char * query_end = query_remainder + query_string.size();
+	constexpr const string_view_t separators{ "&;", 2u };
 
 	std::unique_ptr< char[] > data_buffer;
 	query_string_params_t::parameters_container_t parameters;
 
-	if( query_end > query_remainder )
+	if( !original_query_string.empty() )
 	{
-		const auto params_offset = static_cast<std::size_t>(
-				std::distance( query_string.data(), query_remainder ));
+		// Because query string is not empty a new buffer should be
+		// allocated and query string should be copied to it.
+		data_buffer.reset( new char[ original_query_string.size() ] );
+		std::memcpy(
+				data_buffer.get(),
+				original_query_string.data(),
+				original_query_string.size() );
 
+		// Work with created buffer:
+		string_view_t work_query_string{
+				data_buffer.get(), 
+				original_query_string.size()
+		};
+		string_view_t::size_type pos{ 0 };
+		const string_view_t::size_type end_pos = work_query_string.size();
+
+		while( pos < end_pos )
 		{
-			const auto data_size = static_cast<std::size_t>(
-					query_end - query_remainder);
-			data_buffer.reset( new char[ data_size] );
-			std::memcpy( data_buffer.get(), query_string.data(), data_size );
+			const auto eq_pos = work_query_string.find_first_of( '=', pos );
 
-			// Work with created buffer:
-			query_remainder = data_buffer.get();
-			query_end = query_remainder + data_size;
-		}
-
-		while( query_end > query_remainder )
-		{
-			const char * const eq_symbol =
-				impl::modified_memchr( '=', query_remainder, query_end );
-
-			if( query_end == eq_symbol )
+			if( string_view_t::npos == eq_pos )
 			{
 				// Since v.0.4.9 we should check the presence of tag (web beacon)
 				// in query string.
 				// Tag can be the only item in query string.
-				if( query_remainder != data_buffer.get() )
+				if( pos != 0u )
 					// The query string has illegal format.
 					throw exception_t{
 						fmt::format(
 							"invalid format of key-value pairs in query_string: {}, "
 							"no '=' symbol starting from position {}",
-							query_string,
-							params_offset + static_cast<std::size_t>(
-								std::distance(
-									static_cast<const char *>( data_buffer.get() ),
-									query_remainder) )) };
+							original_query_string,
+							pos ) };
 				else
 				{
 					// Query string contains only tag (web beacon).
-					string_view_t tag{
-						query_remainder,
-						utils::inplace_unescape_percent_encoding(
-								const_cast< char * >( query_remainder ),
-								static_cast< std::size_t >(
-										std::distance( query_remainder, query_end ) ) )
-					};
+					const auto tag_size = utils::inplace_unescape_percent_encoding(
+							&data_buffer[ pos ],
+							end_pos - pos );
+
+					const string_view_t tag = work_query_string.substr(
+							pos, tag_size );
 
 					return query_string_params_t{ std::move( data_buffer ), tag };
 				}
 			}
 
-			const char * const amp_symbol_or_end =
-				impl::modified_memchr( '&', eq_symbol + 1, query_end );
+			const auto eq_pos_next = eq_pos + 1u;
+			auto separator_pos = work_query_string.find_first_of(
+					separators, eq_pos_next );
+			if( string_view_t::npos == separator_pos )
+				separator_pos = work_query_string.size();
 
 			// Handle next pair of parameters found.
 			string_view_t key{
-							query_remainder,
-							utils::inplace_unescape_percent_encoding(
-								const_cast< char * >( query_remainder ), // Legal: we are refering buffer.
-								static_cast< std::size_t >(
-									std::distance( query_remainder, eq_symbol ) ) ) };
+					&data_buffer[ pos ],
+					utils::inplace_unescape_percent_encoding(
+							&data_buffer[ pos ],
+							eq_pos - pos )
+			};
 
 			string_view_t value{
-							eq_symbol + 1,
-							utils::inplace_unescape_percent_encoding(
-								const_cast< char * >( eq_symbol + 1 ), // Legal: we are refering buffer.
-								static_cast< std::size_t >(
-									std::distance( eq_symbol + 1, amp_symbol_or_end ) ) ) };
+					&data_buffer[ eq_pos_next ],
+					utils::inplace_unescape_percent_encoding(
+							&data_buffer[ eq_pos_next ],
+							separator_pos - eq_pos_next )
+			};
 
 			parameters.emplace_back( std::move( key ), std::move( value ) );
 
-			query_remainder = amp_symbol_or_end + 1;
+			pos = separator_pos + 1u;
 		}
 	}
 
-	return query_string_params_t{ std::move( data_buffer ), std::move( parameters ) };
+	return query_string_params_t{
+			std::move( data_buffer ),
+			std::move( parameters )
+	};
 }
 
 } /* namespace restinio */
