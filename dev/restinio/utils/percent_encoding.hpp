@@ -109,12 +109,6 @@ escape_percent_encoding( const string_view_t data )
 	return result;
 }
 
-// inline std::string
-// escape_percent_encoding( const std::string & data )
-// {
-// 	return escape_percent_encoding( string_view_t{ data.data(), data.size() } );
-// }
-
 inline std::string
 unescape_percent_encoding( const string_view_t data )
 {
@@ -217,12 +211,6 @@ inplace_unescape_percent_encoding( char * data, std::size_t size )
 
 	return result_size;
 }
-
-// inline std::string
-// unescape_percent_encoding( const std::string & data )
-// {
-// 	return unescape_percent_encoding( string_view_t{ data.data(), data.size() } );
-// }
 
 //! \}
 
