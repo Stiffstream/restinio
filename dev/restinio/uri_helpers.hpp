@@ -102,8 +102,8 @@ class query_string_params_t final
 		//! @since v.0.4.8
 		bool empty() const noexcept { return m_parameters.empty(); }
 
-		//! Iterate parameters.
-		//! //{
+		//! @name Iterate parameters.
+		//! @{
 		parameters_container_t::const_iterator
 		begin() const noexcept
 		{
@@ -115,10 +115,18 @@ class query_string_params_t final
 		{
 			return m_parameters.end();
 		}
-		//! //}
+		//! @}
 
 		//! Get the tag (web beacon) part.
 		/*!
+			A value of "tag" (also known as web beacon) is available only
+			if URI looks like that:
+			\verbatim
+			http://example.com/resource?value
+			\endverbatim
+			In that case tag will contain `value`. For URI with different
+			formats tag() will return empty optional.
+
 			@since v.0.4.9
 		*/
 		auto tag() const noexcept { return m_tag; }
@@ -171,7 +179,10 @@ get( const query_string_params_t & params, string_view_t key )
 
 //! Parse query key-value parts.
 /*!
-	\deprecated Obsolete in v.4.1.0. Use restinio::parse_query() instead.
+	\deprecated Obsolete in v.0.4.1. Use restinio::parse_query() instead.
+
+	\attention Because this function is obsolete it doesn't receive fixes and
+	new features of restinio::parse_query().
 */
 [[deprecated("use restinio::parse_query() instead")]]
 inline query_string_params_t
@@ -253,6 +264,16 @@ parse_query_string( string_view_t query_string )
 }
 
 //! Parse query key-value parts.
+/*!
+	Since v.0.4.9 this function correctly handles the following cases:
+
+	- presence of tag (web beacon) in URI. For example, when URI looks like
+	`http://example.com/resource?tag`. In that case value of the tag (web
+	beacon) can be obtained via query_string_params_t::tag() method.
+   References: [web beacon](https://en.wikipedia.org/wiki/Web_beacon) and
+	[query-string-tracking](https://en.wikipedia.org/wiki/Query_string#Tracking);
+	- usage of `;` instead of `&` as parameter separator.
+*/
 inline query_string_params_t
 parse_query(
 	//! Query part of the request target.
