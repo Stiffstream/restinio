@@ -769,6 +769,9 @@ class http_header_fields_t
 	public:
 		using fields_container_t = std::vector< http_header_field_t >;
 
+		//! Type of const_iterator for enumeration of fields.
+		using const_iterator = fields_container_t::const_iterator;
+
 		http_header_fields_t()
 		{
 			m_fields.reserve( RESTINIO_HEADER_FIELDS_DEFAULT_RESERVE_COUNT );
@@ -1308,14 +1311,14 @@ class http_header_fields_t
 				lambda( f );
 		}
 
-		[[deprecated("use for_each_field() method instead")]]
-		auto begin() const noexcept
+		const_iterator
+		begin() const noexcept
 		{
 			return m_fields.cbegin();
 		}
 
-		[[deprecated("use for_each_field() method instead")]]
-		auto end() const noexcept
+		const_iterator
+		end() const noexcept
 		{
 			return m_fields.cend();
 		}
