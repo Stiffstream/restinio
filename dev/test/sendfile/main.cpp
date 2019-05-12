@@ -79,6 +79,66 @@ TEST_CASE( "simple sendfile" , "[sendfile]" )
 	other_thread.stop_and_join();
 }
 
+TEST_CASE( "sendfile the same file several times" , "[sendfile][same-several-times]" )
+{
+	using http_server_t =
+		restinio::http_server_t<
+			restinio::traits_t<
+				restinio::asio_timer_manager_t,
+				utest_logger_t > >;
+
+	http_server_t http_server{
+		restinio::own_io_context(),
+		[]( auto & settings ){
+			settings
+				.port( utest_default_port() )
+				.address( "127.0.0.1" )
+				.request_handler(
+					[]( auto req ){
+						if( restinio::http_method_get() == req->header().method() )
+						{
+							req->create_response()
+								.append_header( "Server", "RESTinio utest server" )
+								.append_header_date_field()
+								.append_header( "Content-Type", "text/plain; charset=utf-8" )
+								.set_body( restinio::sendfile( "test/sendfile/f1.txt" ) )
+								.set_body( restinio::sendfile( "test/sendfile/f1.txt" ) )
+								.set_body( restinio::sendfile( "test/sendfile/f1.txt" ) )
+								.set_body( restinio::sendfile( "test/sendfile/f1.txt" ) )
+								.done();
+							return restinio::request_accepted();
+						}
+
+						return restinio::request_rejected();
+					} );
+		}
+	};
+
+	other_work_thread_for_server_t<http_server_t> other_thread{ http_server };
+	other_thread.run();
+
+	const std::string request{
+			"GET / HTTP/1.0\r\n"
+			"From: unit-test\r\n"
+			"User-Agent: unit-test\r\n"
+			"Content-Type: application/x-www-form-urlencoded\r\n"
+			"Connection: close\r\n"
+			"\r\n"
+	};
+	std::string response;
+
+	REQUIRE_NOTHROW( response = do_request( request ) );
+
+	REQUIRE_THAT(
+		response,
+		Catch::Matchers::EndsWith(
+			"0123456789\n"
+			"FILE1\n"
+			"0123456789\n" ) );
+
+	other_thread.stop_and_join();
+}
+
 TEST_CASE( "sendfile 2 files" , "[sendfile][n-files]" )
 {
 	using router_t = restinio::router::express_router_t<>;
