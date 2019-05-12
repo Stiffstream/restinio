@@ -45,7 +45,7 @@ open_file( const char * file_path )
 		::CreateFileA(
 			file_path,
 			GENERIC_READ,
-			0,
+			FILE_SHARE_READ,
 			0,
 			OPEN_EXISTING,
 			FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
