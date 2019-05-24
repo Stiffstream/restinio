@@ -21,7 +21,14 @@ namespace restinio
 namespace utils
 {
 
-//FIXME: document this!
+/*!
+ * @brief The default traits for escaping and unexcaping symbols in
+ * a query string.
+ *
+ * Unescaped asterisk is not allowed.
+ *
+ * @since v.0.4.9.1
+ */
 struct restinio_default_unescape_traits
 {
 	static constexpr bool
@@ -38,7 +45,14 @@ struct restinio_default_unescape_traits
 	}
 };
 
-//FIXME: document this!
+/*!
+ * @brief The traits for escaping and unexcaping symbols in
+ * JavaScript-compatible mode.
+ *
+ * Unescaped asterisk is allowed.
+ *
+ * @since v.0.4.9.1
+ */
 struct javascript_compatible_unescape_traits
 {
 	static constexpr bool
@@ -58,22 +72,6 @@ struct javascript_compatible_unescape_traits
 
 namespace impl
 {
-
-//FIXME: remove after refactoring!
-#if 0
-inline bool
-ordinary_char( char c )
-{
-	return
-		( '0' <= c && c <= '9' ) ||
-		( 'a' <= c && c <= 'z' ) ||
-		( 'A' <= c && c <= 'Z' ) ||
-		'-' == c ||
-		'.' == c ||
-		'~' == c ||
-		'_' == c;
-};
-#endif
 
 inline bool
 is_hexdigit( char c )
