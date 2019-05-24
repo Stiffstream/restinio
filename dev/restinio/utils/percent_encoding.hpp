@@ -21,9 +21,46 @@ namespace restinio
 namespace utils
 {
 
+//FIXME: document this!
+struct restinio_default_unescape_traits
+{
+	static constexpr bool
+	ordinary_char( char c ) noexcept
+	{
+		return
+			( '0' <= c && c <= '9' ) ||
+			( 'a' <= c && c <= 'z' ) ||
+			( 'A' <= c && c <= 'Z' ) ||
+			'-' == c ||
+			'.' == c ||
+			'~' == c ||
+			'_' == c;
+	}
+};
+
+//FIXME: document this!
+struct javascript_compatible_unescape_traits
+{
+	static constexpr bool
+	ordinary_char( char c ) noexcept
+	{
+		return
+			( '0' <= c && c <= '9' ) ||
+			( 'a' <= c && c <= 'z' ) ||
+			( 'A' <= c && c <= 'Z' ) ||
+			'-' == c ||
+			'.' == c ||
+			'~' == c ||
+			'_' == c ||
+			'*' == c;
+	}
+};
+
 namespace impl
 {
 
+//FIXME: remove after refactoring!
+#if 0
 inline bool
 ordinary_char( char c )
 {
@@ -36,6 +73,7 @@ ordinary_char( char c )
 		'~' == c ||
 		'_' == c;
 };
+#endif
 
 inline bool
 is_hexdigit( char c )
@@ -76,7 +114,8 @@ extract_escaped_char( char c1,  char c2 )
 
 //! Percent encoding.
 //! \{
-inline std::string
+template< typename Traits = restinio_default_unescape_traits >
+std::string
 escape_percent_encoding( const string_view_t data )
 {
 	std::string result;
@@ -84,7 +123,7 @@ escape_percent_encoding( const string_view_t data )
 			std::count_if(
 					data.begin(),
 					data.end(),
-					[]( auto c ){ return !impl::ordinary_char(c); } ));
+					[]( auto c ){ return !Traits::ordinary_char(c); } ));
 
 	if( 0 == escaped_chars_count )
 	{
@@ -97,7 +136,7 @@ escape_percent_encoding( const string_view_t data )
 		result.reserve( data.size() + 2*escaped_chars_count );
 		for( auto c : data )
 		{
-			if( impl::ordinary_char( c ) )
+			if( Traits::ordinary_char( c ) )
 				result += c;
 			else
 			{
@@ -109,7 +148,8 @@ escape_percent_encoding( const string_view_t data )
 	return result;
 }
 
-inline std::string
+template< typename Traits = restinio_default_unescape_traits >
+std::string
 unescape_percent_encoding( const string_view_t data )
 {
 	std::string result;
@@ -121,7 +161,7 @@ unescape_percent_encoding( const string_view_t data )
 	while( 0 < chars_to_handle )
 	{
 		char c = *d;
-		if( impl::ordinary_char( c ) )
+		if( Traits::ordinary_char( c ) )
 		{
 			result += c;
 			--chars_to_handle;
@@ -159,7 +199,8 @@ unescape_percent_encoding( const string_view_t data )
 	return result;
 }
 
-inline std::size_t
+template< typename Traits = restinio_default_unescape_traits >
+std::size_t
 inplace_unescape_percent_encoding( char * data, std::size_t size )
 {
 	std::size_t result_size = size;
@@ -170,7 +211,7 @@ inplace_unescape_percent_encoding( char * data, std::size_t size )
 	while( 0 < chars_to_handle )
 	{
 		char c = *d;
-		if( impl::ordinary_char( c ) )
+		if( Traits::ordinary_char( c ) )
 		{
 			// Skip.
 			*dest++ = c;
