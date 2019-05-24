@@ -305,6 +305,19 @@ TEST_CASE( "Parse query params" , "[parse_query]" )
 	};
 	case_2( "k1=v1&k2=v2" );
 	case_2( "k1=v1;k2=v2" );
+
+	{
+		const restinio::string_view_t
+			query{ "name=A*" };
+
+		using traits_t = restinio::parse_query_traits::javascript_compatible;
+		auto params = restinio::parse_query< traits_t >( query );
+
+		REQUIRE( 1 == params.size() );
+
+		REQUIRE( params.has( "name" ) );
+		REQUIRE( params[ "name" ] == "A*" );
+	}
 }
 
 TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_multi_map]" )

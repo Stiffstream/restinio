@@ -263,6 +263,44 @@ parse_query_string( string_view_t query_string )
 	return query_string_params_t{ std::move( data_buffer ), std::move( parameters ) };
 }
 
+namespace parse_query_traits
+{
+
+/*!
+ * @brief Traits for the default RESTinio parser for query string.
+ *
+ * The default RESTinio parser prohibit usage of unexcaped asterisk.
+ *
+ * @note
+ * This traits type is used by default. It means that a call:
+ * @code
+ * auto result = restinio::parse_query<restinio::parse_query_traits::restinio_defaults>("name=value");
+ * @endcode
+ * is equivalent to:
+ * @code
+ * auto result = restinio::parse_query("name=value");
+ * @endcode
+ *
+ * @since v.0.4.9.1
+ */
+using restinio_defaults = restinio::utils::restinio_default_unescape_traits;
+
+/*!
+ * @brief Traits for parsing a query string in JavaScript-compatible mode.
+ *
+ * In that mode unexcaped asterisk is alowed.
+ *
+ * Usage example:
+ * @code
+ * auto result = restinio::parse_query<restinio::parse_query_traits::javascript_compatible>("name=A*");
+ * @endcode
+ *
+ * @since v.0.4.9.1
+ */
+using javascript_compatible = restinio::utils::javascript_compatible_unescape_traits;
+
+} /* namespace parse_query_traits */
+
 //! Parse query key-value parts.
 /*!
 	Since v.0.4.9 this function correctly handles the following cases:
@@ -273,7 +311,14 @@ parse_query_string( string_view_t query_string )
    References: [web beacon](https://en.wikipedia.org/wiki/Web_beacon) and
 	[query-string-tracking](https://en.wikipedia.org/wiki/Query_string#Tracking);
 	- usage of `;` instead of `&` as parameter separator.
+
+	Since v.0.4.9.1 this function can be parametrized by parser traits. For
+	example:
+	@code
+	auto result = restinio::parse_query<restinio::parse_query_traits::javascript_compatible>("name=A*");
+	@endcode
 */
+template< typename Parse_Traits = parse_query_traits::restinio_defaults >
 inline query_string_params_t
 parse_query(
 	//! Query part of the request target.
@@ -322,9 +367,10 @@ parse_query(
 				else
 				{
 					// Query string contains only tag (web beacon).
-					const auto tag_size = utils::inplace_unescape_percent_encoding(
-							&data_buffer[ pos ],
-							end_pos - pos );
+					const auto tag_size =
+							utils::inplace_unescape_percent_encoding< Parse_Traits >(
+									&data_buffer[ pos ],
+									end_pos - pos );
 
 					const string_view_t tag = work_query_string.substr(
 							pos, tag_size );
@@ -342,14 +388,14 @@ parse_query(
 			// Handle next pair of parameters found.
 			string_view_t key{
 					&data_buffer[ pos ],
-					utils::inplace_unescape_percent_encoding(
+					utils::inplace_unescape_percent_encoding< Parse_Traits >(
 							&data_buffer[ pos ],
 							eq_pos - pos )
 			};
 
 			string_view_t value{
 					&data_buffer[ eq_pos_next ],
-					utils::inplace_unescape_percent_encoding(
+					utils::inplace_unescape_percent_encoding< Parse_Traits >(
 							&data_buffer[ eq_pos_next ],
 							separator_pos - eq_pos_next )
 			};
