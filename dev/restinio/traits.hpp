@@ -27,6 +27,9 @@ template <
 		typename Socket = asio_ns::ip::tcp::socket >
 struct traits_t
 {
+	//FIXME: document this!
+	using http_methods_t = default_http_methods_t;
+
 	using timer_manager_t = Timer_Manager;
 	using logger_t = Logger;
 	using request_handler_t = Request_Handler;

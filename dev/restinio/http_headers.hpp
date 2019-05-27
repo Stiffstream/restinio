@@ -1533,12 +1533,16 @@ enum class well_known_http_methods_t : int
 #define RESTINIO_HTTP_METHOD_GEN( name, ignored1, ignored2 ) name,
 	RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_GEN )
 #undef RESTINIO_HTTP_METHOD_GEN
+	terminator_value,
 	http_unknown = -1
 };
 
 //
 // http_method_id_t
 //
+enum class http_method_id_t : int {};
+
+#if 0
 class http_method_id_t
 {
 	int m_value;
@@ -1574,66 +1578,88 @@ public:
 		return a.raw_id() < b.raw_id();
 	}
 };
+#endif
 
 //
-// http_method_t
+// http_method_impl_t
 //
 
 //FIXME: document this!
-class http_method_t
+class default_http_method_impl_t {};
+
+template< typename Impl = default_http_method_impl_t >
+class http_method_impl_t
 {
 	http_method_id_t m_value;
 
 public:
-	constexpr http_method_t( http_method_id_t value ) noexcept
+	constexpr http_method_impl_t() noexcept
+		:	m_value{ static_cast<http_method_id_t>(
+				well_known_http_methods_t::http_unknown ) }
+		{}
+
+	constexpr http_method_impl_t( http_method_id_t value ) noexcept
 		:	m_value{ value }
 		{}
 
-	constexpr http_method_t( const http_method_t & ) noexcept = default;
-	constexpr http_method_t &
-	operator=( const http_method_t & ) noexcept = default;
+	constexpr http_method_impl_t( const http_method_impl_t & ) noexcept = default;
+	constexpr http_method_impl_t &
+	operator=( const http_method_impl_t & ) noexcept = default;
 
-	constexpr http_method_t( http_method_t && ) noexcept = default;
-	constexpr http_method_t &
-	operator=( http_method_t && ) noexcept = default;
+	constexpr http_method_impl_t( http_method_impl_t && ) noexcept = default;
+	constexpr http_method_impl_t &
+	operator=( http_method_impl_t && ) noexcept = default;
 
 	constexpr auto
 	value() const noexcept { return m_value; }
 
 	constexpr auto
-	raw_id() const noexcept { return m_value.raw_id(); }
+	raw_id() const noexcept { return m_value; }
 
 	friend constexpr bool
-	operator==( const http_method_t & a, const http_method_t & b ) noexcept {
+	operator==( const http_method_impl_t & a, const http_method_impl_t & b ) noexcept {
 		return a.value() == b.value();
 	}
 
 	friend constexpr bool
-	operator!=( const http_method_t & a, const http_method_t & b ) noexcept {
+	operator!=( const http_method_impl_t & a, const http_method_impl_t & b ) noexcept {
 		return a.value() != b.value();
 	}
 
 	friend constexpr bool
-	operator<( const http_method_t & a, const http_method_t & b ) noexcept {
+	operator<( const http_method_impl_t & a, const http_method_impl_t & b ) noexcept {
 		return a.value() < b.value();
 	}
 
 #define RESTINIO_HTTP_METHOD_GEN( name, ignored1, ignored2 ) \
-	static constexpr const http_method_id_t name{ \
-			static_cast<int>( well_known_http_methods_t:: name ) };
+	static constexpr const http_method_id_t name =\
+			static_cast<http_method_id_t>( well_known_http_methods_t:: name );
 
 	RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_GEN )
 #undef RESTINIO_HTTP_METHOD_GEN
 
 	// Unknown method.
 	static constexpr const http_method_id_t http_unknown{
-			static_cast<int>( well_known_http_methods_t::http_unknown ) };
+			static_cast<http_method_id_t>( well_known_http_methods_t::http_unknown ) };
 };
+
+#define RESTINIO_HTTP_METHOD_GEN( name, ignored1, ignored2 ) \
+template<typename Impl> \
+constexpr const http_method_id_t http_method_impl_t<Impl>::name;
+
+	RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_GEN )
+#undef RESTINIO_HTTP_METHOD_GEN
+
+//
+// http_method_t
+//
+//FIXME: document this!
+using http_method_t = http_method_impl_t<>;
 
 inline std::ostream &
 operator<<( std::ostream & to, const http_method_t & m )
 {
-	return to << m.value();
+	return to << static_cast<int>(m.value());
 }
 
 #if 0
@@ -1661,6 +1687,46 @@ http_method_unknown()
 	return http_method_t::http_unknown;
 }
 
+//FIXME: document this!
+//
+// default_http_methods_t
+//
+struct default_http_methods_t
+{
+	inline static constexpr http_method_t
+	from_nodejs( int value ) noexcept 
+	{
+		// Use the fact that normal values in well_known_http_methods_t
+		// are in the range [0, terminator_value).
+		http_method_t result{ http_method_t::http_unknown };
+		if( 0 <= value &&
+				value <= static_cast<int>(well_known_http_methods_t::terminator_value) )
+			result = http_method_t{ static_cast<http_method_id_t>(value) };
+
+		return result;
+	}
+
+	inline static constexpr const char *
+	to_string( http_method_t method ) noexcept
+	{
+		const char * result = "<unknown>";
+		switch( method.raw_id() )
+		{
+			#define RESTINIO_HTTP_METHOD_STR_GEN( name, ignored2, str ) \
+				case http_method_t::name: result = #str; break;
+
+				RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_STR_GEN )
+			#undef RESTINIO_HTTP_METHOD_STR_GEN
+
+			case http_method_t::http_unknown: break; // Ignore.
+		}
+
+		return result;
+	}
+};
+
+//FIXME: remove after refactoring!
+#if 0
 //
 // http_method_from_nodejs()
 //
@@ -1712,6 +1778,7 @@ method_to_string( http_method_t m ) noexcept
 
 	return result;
 }
+#endif
 
 //
 // http_request_header
