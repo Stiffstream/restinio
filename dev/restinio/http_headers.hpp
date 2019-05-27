@@ -1524,10 +1524,119 @@ struct http_header_common_t
 	RESTINIO_GEN( http_link,        http_method_link,         LINK )         \
 	RESTINIO_GEN( http_unlink,      http_method_unlink,       UNLINK )       \
 
+//FIXME: document this!
+//
+// well_known_http_methods_t
+//
+enum class well_known_http_methods_t : int
+{
+#define RESTINIO_HTTP_METHOD_GEN( name, ignored1, ignored2 ) name,
+	RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_GEN )
+#undef RESTINIO_HTTP_METHOD_GEN
+	http_unknown = -1
+};
+
+//
+// http_method_id_t
+//
+class http_method_id_t
+{
+	int m_value;
+
+public:
+	explicit constexpr http_method_id_t( int value ) noexcept
+		:	m_value{ value }
+		{}
+
+	constexpr http_method_id_t( const http_method_id_t & ) noexcept = default;
+	constexpr http_method_id_t &
+	operator=( const http_method_id_t & ) noexcept = default;
+
+	constexpr http_method_id_t( http_method_id_t && ) noexcept = default;
+	constexpr http_method_id_t &
+	operator=( http_method_id_t && ) noexcept = default;
+
+	constexpr auto
+	raw_id() const noexcept { return m_value; }
+
+	friend constexpr bool
+	operator==( const http_method_id_t & a, const http_method_id_t & b ) noexcept {
+		return a.raw_id() == b.raw_id();
+	}
+
+	friend constexpr bool
+	operator!=( const http_method_id_t & a, const http_method_id_t & b ) noexcept {
+		return a.raw_id() != b.raw_id();
+	}
+
+	friend constexpr bool
+	operator<( const http_method_id_t & a, const http_method_id_t & b ) noexcept {
+		return a.raw_id() < b.raw_id();
+	}
+};
+
 //
 // http_method_t
 //
 
+//FIXME: document this!
+class http_method_t
+{
+	http_method_id_t m_value;
+
+public:
+	constexpr http_method_t( http_method_id_t value ) noexcept
+		:	m_value{ value }
+		{}
+
+	constexpr http_method_t( const http_method_t & ) noexcept = default;
+	constexpr http_method_t &
+	operator=( const http_method_t & ) noexcept = default;
+
+	constexpr http_method_t( http_method_t && ) noexcept = default;
+	constexpr http_method_t &
+	operator=( http_method_t && ) noexcept = default;
+
+	constexpr auto
+	value() const noexcept { return m_value; }
+
+	constexpr auto
+	raw_id() const noexcept { return m_value.raw_id(); }
+
+	friend constexpr bool
+	operator==( const http_method_t & a, const http_method_t & b ) noexcept {
+		return a.value() == b.value();
+	}
+
+	friend constexpr bool
+	operator!=( const http_method_t & a, const http_method_t & b ) noexcept {
+		return a.value() != b.value();
+	}
+
+	friend constexpr bool
+	operator<( const http_method_t & a, const http_method_t & b ) noexcept {
+		return a.value() < b.value();
+	}
+
+#define RESTINIO_HTTP_METHOD_GEN( name, ignored1, ignored2 ) \
+	static constexpr const http_method_id_t name{ \
+			static_cast<int>( well_known_http_methods_t:: name ) };
+
+	RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_GEN )
+#undef RESTINIO_HTTP_METHOD_GEN
+
+	// Unknown method.
+	static constexpr const http_method_id_t http_unknown{
+			static_cast<int>( well_known_http_methods_t::http_unknown ) };
+};
+
+inline std::ostream &
+operator<<( std::ostream & to, const http_method_t & m )
+{
+	return to << m.value();
+}
+
+#if 0
 //! C++ enum that repeats nodejs c-style enum.
 enum class http_method_t : std::uint8_t
 {
@@ -1537,10 +1646,11 @@ enum class http_method_t : std::uint8_t
 	// Unknown method.
 	http_unknown
 };
+#endif
 
 // Generate helper funcs.
 #define RESTINIO_HTTP_METHOD_FUNC_GEN( name, func_name, ignored ) \
-	constexpr auto func_name(){ return http_method_t::name; }
+	constexpr http_method_t func_name(){ return { http_method_t::name }; }
 
 	RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_FUNC_GEN )
 #undef RESTINIO_HTTP_METHOD_FUNC_GEN
@@ -1559,7 +1669,7 @@ http_method_unknown()
 inline http_method_t
 http_method_from_nodejs( int m ) noexcept
 {
-	auto method = http_method_t::http_unknown;
+	http_method_t method = http_method_t::http_unknown;
 
 	constexpr http_method_t method_maping[] =
 	{
@@ -1589,15 +1699,15 @@ inline const char *
 method_to_string( http_method_t m ) noexcept
 {
 	const char * result = "<unknown>";
-	switch( m )
+	switch( m.raw_id() )
 	{
 		#define RESTINIO_HTTP_METHOD_STR_GEN( name, ignored2, str ) \
-			case http_method_t::name: result = #str; break;
+			case http_method_t::name.raw_id(): result = #str; break;
 
 			RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_STR_GEN )
 		#undef RESTINIO_HTTP_METHOD_STR_GEN
 
-		case http_method_t::http_unknown: break; // Ignore.
+		case http_method_t::http_unknown.raw_id(): break; // Ignore.
 	}
 
 	return result;
