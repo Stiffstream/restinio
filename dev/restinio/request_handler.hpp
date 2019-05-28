@@ -86,25 +86,6 @@ class request_t final
 				m_header.should_keep_alive() };
 		}
 
-		//! Create response.
-		/*!
-			Creates response object if is called for the first time
-			all further calls will throw exception.
-		*/
-		template < typename Output = restinio_controlled_output_t >
-		[[deprecated("use override with http_status_line_t argument instead")]]
-		auto
-		create_response(
-			std::uint16_t status_code,
-			std::string reason_phrase )
-		{
-			return
-				create_response(
-					http_status_line_t{
-						http_status_code_t{ status_code },
-						std::move( reason_phrase ) } );
-		}
-
 		//! Get request id.
 		auto request_id() const noexcept { return m_request_id; }
 

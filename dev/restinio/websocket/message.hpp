@@ -163,23 +163,6 @@ class message_t final
 			,	m_payload{ std::move( payload ) }
 		{}
 
-		[[deprecated("use override with final_frame_flag_t type for the first argument instead")]]
-		message_t(
-			bool is_final,
-			opcode_t opcode )
-			:	message_t{ is_final ? final_frame : not_final_frame, opcode }
-		{}
-
-		[[deprecated("use override with final_frame_flag_t type for the first argument instead")]]
-		message_t(
-			bool is_final,
-			opcode_t opcode,
-			std::string payload )
-			:	message_t{ is_final ? final_frame : not_final_frame,
-					opcode,
-					std::move( payload ) }
-		{}
-
 		//! Get final flag.
 		final_frame_flag_t
 		final_flag() const noexcept
