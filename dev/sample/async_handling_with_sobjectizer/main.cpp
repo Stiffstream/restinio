@@ -104,7 +104,7 @@ int main()
 			.address("localhost")
 			.request_handler([req_ch](auto req) {
 				// Handle only HTTP GET requests for the root.
-				if(restinio::http_method_t::http_get == req->header().method() &&
+				if(restinio::http_method_get() == req->header().method() &&
 						"/" == req->header().path())
 				{
 					// Request will be delegated to the actual processing.
