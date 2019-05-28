@@ -1483,46 +1483,46 @@ struct http_header_common_t
 
 //! HTTP methods mapping with nodejs http methods
 #define RESTINIO_HTTP_METHOD_MAP(RESTINIO_GEN)         \
-	RESTINIO_GEN( http_delete,      http_method_delete,       DELETE )       \
-	RESTINIO_GEN( http_get,         http_method_get,          GET )          \
-	RESTINIO_GEN( http_head,        http_method_head,         HEAD )         \
-	RESTINIO_GEN( http_post,        http_method_post,         POST )         \
-	RESTINIO_GEN( http_put,         http_method_put,          PUT )          \
+	RESTINIO_GEN( http_delete,      http_method_delete,       HTTP_DELETE,       DELETE )       \
+	RESTINIO_GEN( http_get,         http_method_get,          HTTP_GET,          GET )          \
+	RESTINIO_GEN( http_head,        http_method_head,         HTTP_HEAD,         HEAD )         \
+	RESTINIO_GEN( http_post,        http_method_post,         HTTP_POST,         POST )         \
+	RESTINIO_GEN( http_put,         http_method_put,          HTTP_PUT,          PUT )          \
   /* pathological */                \
-	RESTINIO_GEN( http_connect,     http_method_connect,      CONNECT )      \
-	RESTINIO_GEN( http_options,     http_method_options,      OPTIONS )      \
-	RESTINIO_GEN( http_trace,       http_method_trace,        TRACE )        \
+	RESTINIO_GEN( http_connect,     http_method_connect,      HTTP_CONNECT,      CONNECT )      \
+	RESTINIO_GEN( http_options,     http_method_options,      HTTP_OPTIONS,      OPTIONS )      \
+	RESTINIO_GEN( http_trace,       http_method_trace,        HTTP_TRACE,        TRACE )        \
   /* WebDAV */                      \
-	RESTINIO_GEN( http_copy,        http_method_copy,         COPY )         \
-	RESTINIO_GEN( http_lock,        http_method_lock,         LOCK )         \
-	RESTINIO_GEN( http_mkcol,       http_method_mkcol,        MKCOL )        \
-	RESTINIO_GEN( http_move,        http_method_move,         MOVE )         \
-	RESTINIO_GEN( http_propfind,    http_method_propfind,     PROPFIND )     \
-	RESTINIO_GEN( http_proppatch,   http_method_proppatch,    PROPPATCH )    \
-	RESTINIO_GEN( http_search,      http_method_search,       SEARCH )       \
-	RESTINIO_GEN( http_unlock,      http_method_unlock,       UNLOCK )       \
-	RESTINIO_GEN( http_bind,        http_method_bind, BIND )         \
-	RESTINIO_GEN( http_rebind,      http_method_rebind,       REBIND )       \
-	RESTINIO_GEN( http_unbind,      http_method_unbind,       UNBIND )       \
-	RESTINIO_GEN( http_acl,         http_method_acl,          ACL )          \
+	RESTINIO_GEN( http_copy,        http_method_copy,         HTTP_COPY,         COPY )         \
+	RESTINIO_GEN( http_lock,        http_method_lock,         HTTP_LOCK,         LOCK )         \
+	RESTINIO_GEN( http_mkcol,       http_method_mkcol,        HTTP_MKCOL,        MKCOL )        \
+	RESTINIO_GEN( http_move,        http_method_move,         HTTP_MOVE,         MOVE )         \
+	RESTINIO_GEN( http_propfind,    http_method_propfind,     HTTP_PROPFIND,     PROPFIND )     \
+	RESTINIO_GEN( http_proppatch,   http_method_proppatch,    HTTP_PROPPATCH,    PROPPATCH )    \
+	RESTINIO_GEN( http_search,      http_method_search,       HTTP_SEARCH,       SEARCH )       \
+	RESTINIO_GEN( http_unlock,      http_method_unlock,       HTTP_UNLOCK,       UNLOCK )       \
+	RESTINIO_GEN( http_bind,        http_method_bind,         HTTP_BIND,         BIND )         \
+	RESTINIO_GEN( http_rebind,      http_method_rebind,       HTTP_REBIND,       REBIND )       \
+	RESTINIO_GEN( http_unbind,      http_method_unbind,       HTTP_UNBIND,       UNBIND )       \
+	RESTINIO_GEN( http_acl,         http_method_acl,          HTTP_ACL,          ACL )          \
   /* subversion */                  \
-	RESTINIO_GEN( http_report,      http_method_report,       REPORT )       \
-	RESTINIO_GEN( http_mkactivity,  http_method_mkactivity,   MKACTIVITY )   \
-	RESTINIO_GEN( http_checkout,    http_method_checkout,     CHECKOUT )     \
-	RESTINIO_GEN( http_merge,       http_method_merge,        MERGE )        \
+	RESTINIO_GEN( http_report,      http_method_report,       HTTP_REPORT,       REPORT )       \
+	RESTINIO_GEN( http_mkactivity,  http_method_mkactivity,   HTTP_MKACTIVITY,   MKACTIVITY )   \
+	RESTINIO_GEN( http_checkout,    http_method_checkout,     HTTP_CHECKOUT,     CHECKOUT )     \
+	RESTINIO_GEN( http_merge,       http_method_merge,        HTTP_MERGE,        MERGE )        \
   /* upnp */                        \
-	RESTINIO_GEN( http_msearch,     http_method_msearch,      M-SEARCH)      \
-	RESTINIO_GEN( http_notify,      http_method_notify,       NOTIFY )       \
-	RESTINIO_GEN( http_subscribe,   http_method_subscribe,    SUBSCRIBE )    \
-	RESTINIO_GEN( http_unsubscribe, http_method_unsubscribe,  UNSUBSCRIBE )  \
+	RESTINIO_GEN( http_msearch,     http_method_msearch,      HTTP_MSEARCH,      M-SEARCH)      \
+	RESTINIO_GEN( http_notify,      http_method_notify,       HTTP_NOTIFY,       NOTIFY )       \
+	RESTINIO_GEN( http_subscribe,   http_method_subscribe,    HTTP_SUBSCRIBE,    SUBSCRIBE )    \
+	RESTINIO_GEN( http_unsubscribe, http_method_unsubscribe,  HTTP_UNSUBSCRIBE,  UNSUBSCRIBE )  \
   /* RFC-5789 */                    \
-	RESTINIO_GEN( http_patch,       http_method_patch,        PATCH )        \
-	RESTINIO_GEN( http_purge,       http_method_purge,        PURGE )        \
+	RESTINIO_GEN( http_patch,       http_method_patch,        HTTP_PATCH,        PATCH )        \
+	RESTINIO_GEN( http_purge,       http_method_purge,        HTTP_PURGE,        PURGE )        \
   /* CalDAV */                      \
-	RESTINIO_GEN( http_mkcalendar,  http_method_mkcalendar,   MKCALENDAR )   \
+	RESTINIO_GEN( http_mkcalendar,  http_method_mkcalendar,   HTTP_MKCALENDAR,   MKCALENDAR )   \
   /* RFC-2068, section 19.6.1.2 */  \
-	RESTINIO_GEN( http_link,        http_method_link,         LINK )         \
-	RESTINIO_GEN( http_unlink,      http_method_unlink,       UNLINK )       \
+	RESTINIO_GEN( http_link,        http_method_link,         HTTP_LINK,         LINK )         \
+	RESTINIO_GEN( http_unlink,      http_method_unlink,       HTTP_UNLINK,       UNLINK )       \
 
 //FIXME: document this!
 //
@@ -1530,7 +1530,7 @@ struct http_header_common_t
 //
 enum class well_known_http_methods_t : int
 {
-#define RESTINIO_HTTP_METHOD_GEN( name, ignored1, ignored2 ) name,
+#define RESTINIO_HTTP_METHOD_GEN( name, ignored1, nodejs_code, ignored2 ) name = nodejs_code,
 	RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_GEN )
 #undef RESTINIO_HTTP_METHOD_GEN
 	terminator_value,
@@ -1590,7 +1590,7 @@ operator<<( std::ostream & to, const http_method_id_t & m )
 }
 
 // Generate helper funcs.
-#define RESTINIO_HTTP_METHOD_FUNC_GEN( name, func_name, ignored ) \
+#define RESTINIO_HTTP_METHOD_FUNC_GEN( name, func_name, ignored1, ignored2 ) \
 	constexpr http_method_id_t func_name() { \
 		return well_known_http_methods_t::name; \
 	}
@@ -1608,11 +1608,39 @@ http_method_unknown()
 //
 // default_http_methods_t
 //
-struct default_http_methods_t
+class default_http_methods_t
 {
+private :
+	inline static constexpr bool
+	is_method_id_sequence_monotonic() noexcept
+	{
+		constexpr int ids[] = {
+			#define RESTINIO_HTTP_METHOD_STR_GEN( ignored1, ignored2, code, ignored3 ) \
+				code,
+
+				RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_STR_GEN )
+			#undef RESTINIO_HTTP_METHOD_STR_GEN
+				0
+		};
+
+		int expected_value = 0;
+		constexpr const std::size_t ids_count =
+				std::extent<decltype(ids)>::value - 1u;
+
+		for( std::size_t i = 0; i != ids_count; ++i, ++expected_value )
+			if( expected_value != ids[i] )
+				return false;
+
+		return true;
+	};
+
+public :
 	inline static constexpr http_method_id_t
 	from_nodejs( int value ) noexcept 
 	{
+		static_assert( is_method_id_sequence_monotonic(),
+				"HTTP method should form a monotonic sequence started from 0" );
+
 		// Use the fact that normal values in well_known_http_methods_t
 		// are in the range [0, terminator_value).
 		http_method_id_t result{ http_method_unknown() };
@@ -1629,7 +1657,7 @@ struct default_http_methods_t
 		const char * result = "<unknown>";
 		switch( method.raw_id() )
 		{
-			#define RESTINIO_HTTP_METHOD_STR_GEN( ignored1, func_name, str ) \
+			#define RESTINIO_HTTP_METHOD_STR_GEN( ignored1, func_name, ignored2, str ) \
 				case func_name().raw_id(): result = #str; break;
 
 				RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_STR_GEN )
