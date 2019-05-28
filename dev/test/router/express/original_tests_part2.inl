@@ -11,7 +11,7 @@ TEST_CASE( "Original tests #20", "[path2regex][original][generated][n20]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -54,7 +54,7 @@ TEST_CASE( "Original tests #21", "[path2regex][original][generated][n21]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -109,7 +109,7 @@ TEST_CASE( "Original tests #22", "[path2regex][original][generated][n22]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -176,7 +176,7 @@ TEST_CASE( "Original tests #23", "[path2regex][original][generated][n23]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -225,7 +225,7 @@ TEST_CASE( "Original tests #24", "[path2regex][original][generated][n24]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -292,7 +292,7 @@ TEST_CASE( "Original tests #25", "[path2regex][original][generated][n25]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -329,7 +329,7 @@ TEST_CASE( "Original tests #26", "[path2regex][original][generated][n26]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -384,7 +384,7 @@ TEST_CASE( "Original tests #27", "[path2regex][original][generated][n27]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -457,7 +457,7 @@ TEST_CASE( "Original tests #28", "[path2regex][original][generated][n28]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -524,7 +524,7 @@ TEST_CASE( "Original tests #29", "[path2regex][original][generated][n29]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -567,7 +567,7 @@ TEST_CASE( "Original tests #30", "[path2regex][original][generated][n30]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -634,7 +634,7 @@ TEST_CASE( "Original tests #31", "[path2regex][original][generated][n31]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -713,7 +713,7 @@ TEST_CASE( "Original tests #32", "[path2regex][original][generated][n32]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -792,7 +792,7 @@ TEST_CASE( "Original tests #33", "[path2regex][original][generated][n33]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -841,7 +841,7 @@ TEST_CASE( "Original tests #34", "[path2regex][original][generated][n34]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -902,7 +902,7 @@ TEST_CASE( "Original tests #35", "[path2regex][original][generated][n35]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -957,7 +957,7 @@ TEST_CASE( "Original tests #36", "[path2regex][original][generated][n36]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -1000,7 +1000,7 @@ TEST_CASE( "Original tests #37", "[path2regex][original][generated][n37]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -1061,7 +1061,7 @@ TEST_CASE( "Original tests #38", "[path2regex][original][generated][n38]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -1176,7 +1176,7 @@ TEST_CASE( "Original tests #39", "[path2regex][original][generated][n39]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };

@@ -17,7 +17,7 @@ struct fake_connection_t : public restinio::impl::connection_base_t
 
 
 request_handle_t
-create_fake_request( std::string target, http_method_t method = http_method_get() )
+create_fake_request( std::string target, http_method_id_t method = http_method_get() )
 {
 	return
 		std::make_shared< request_t >(
@@ -198,11 +198,11 @@ TEST_CASE( "Simple indexed param" , "[express][simple][indexed_params]" )
 TEST_CASE( "Http methods" , "[express][simple][http_methods]" )
 {
 
-	http_method_t last_http_method = http_method_t::http_unknown;
+	http_method_id_t last_http_method = http_method_unknown();
 
 	auto extract_last_http_method = [&]{
-		http_method_t result = last_http_method;
-		last_http_method = http_method_t::http_unknown;
+		http_method_id_t result = last_http_method;
+		last_http_method = http_method_unknown();
 		return result;
 	};
 
@@ -211,54 +211,54 @@ TEST_CASE( "Http methods" , "[express][simple][http_methods]" )
 	router.http_delete(
 		"/",
 		[&]( auto , auto ){
-			last_http_method = http_method_t::http_delete;
+			last_http_method = http_method_delete();
 			return request_accepted();
 		} );
 
 	router.http_get(
 		"/",
 		[&]( auto , auto ){
-			last_http_method = http_method_t::http_get;
+			last_http_method = http_method_get();
 			return request_accepted();
 		} );
 
 	router.http_head(
 		"/",
 		[&]( auto , auto ){
-			last_http_method = http_method_t::http_head;
+			last_http_method = http_method_head();
 			return request_accepted();
 		} );
 
 	router.http_post(
 		"/",
 		[&]( auto , auto ){
-			last_http_method = http_method_t::http_post;
+			last_http_method = http_method_post();
 			return request_accepted();
 		} );
 
 	router.http_put(
 		"/",
 		[&]( auto , auto ){
-			last_http_method = http_method_t::http_put;
+			last_http_method = http_method_put();
 			return request_accepted();
 		} );
 
-	REQUIRE( request_rejected() == router( create_fake_request( "/xxx", http_method_t::http_delete ) ) );
-	REQUIRE( request_rejected() == router( create_fake_request( "/xxx", http_method_t::http_get ) ) );
-	REQUIRE( request_rejected() == router( create_fake_request( "/xxx", http_method_t::http_head ) ) );
-	REQUIRE( request_rejected() == router( create_fake_request( "/xxx", http_method_t::http_post ) ) );
-	REQUIRE( request_rejected() == router( create_fake_request( "/xxx", http_method_t::http_put ) ) );
+	REQUIRE( request_rejected() == router( create_fake_request( "/xxx", http_method_delete() ) ) );
+	REQUIRE( request_rejected() == router( create_fake_request( "/xxx", http_method_get() ) ) );
+	REQUIRE( request_rejected() == router( create_fake_request( "/xxx", http_method_head() ) ) );
+	REQUIRE( request_rejected() == router( create_fake_request( "/xxx", http_method_post() ) ) );
+	REQUIRE( request_rejected() == router( create_fake_request( "/xxx", http_method_put() ) ) );
 
-	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_t::http_delete ) ) );
-	REQUIRE( http_method_t::http_delete == extract_last_http_method() );
-	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_t::http_get ) ) );
-	REQUIRE( http_method_t::http_get == extract_last_http_method() );
-	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_t::http_head ) ) );
-	REQUIRE( http_method_t::http_head == extract_last_http_method() );
-	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_t::http_post ) ) );
-	REQUIRE( http_method_t::http_post == extract_last_http_method() );
-	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_t::http_put ) ) );
-	REQUIRE( http_method_t::http_put == extract_last_http_method() );
+	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_delete() ) ) );
+	REQUIRE( http_method_delete() == extract_last_http_method() );
+	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_get() ) ) );
+	REQUIRE( http_method_get() == extract_last_http_method() );
+	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_head() ) ) );
+	REQUIRE( http_method_head() == extract_last_http_method() );
+	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_post() ) ) );
+	REQUIRE( http_method_post() == extract_last_http_method() );
+	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_put() ) ) );
+	REQUIRE( http_method_put() == extract_last_http_method() );
 }
 
 TEST_CASE( "Many params" , "[express][named_params][indexed_params]" )
@@ -389,44 +389,44 @@ TEST_CASE( "Non matched request handler" , "[express][non_matched_request_handle
 			return request_accepted();
 		} );
 
-	REQUIRE( request_accepted() == router( create_fake_request( "/xxx", http_method_t::http_delete ) ) );
+	REQUIRE( request_accepted() == router( create_fake_request( "/xxx", http_method_delete() ) ) );
 	REQUIRE( request_matched_type == 0 );
 	request_matched_type = -1;
 
-	REQUIRE( request_accepted() == router( create_fake_request( "/xxx", http_method_t::http_get ) ) );
+	REQUIRE( request_accepted() == router( create_fake_request( "/xxx", http_method_get() ) ) );
 	REQUIRE( request_matched_type == 0 );
 	request_matched_type = -1;
 
-	REQUIRE( request_accepted() == router( create_fake_request( "/xxx", http_method_t::http_head ) ) );
+	REQUIRE( request_accepted() == router( create_fake_request( "/xxx", http_method_head() ) ) );
 	REQUIRE( request_matched_type == 0 );
 	request_matched_type = -1;
 
-	REQUIRE( request_accepted() == router( create_fake_request( "/xxx", http_method_t::http_post ) ) );
+	REQUIRE( request_accepted() == router( create_fake_request( "/xxx", http_method_post() ) ) );
 	REQUIRE( request_matched_type == 0 );
 	request_matched_type = -1;
 
-	REQUIRE( request_accepted() == router( create_fake_request( "/xxx", http_method_t::http_put ) ) );
+	REQUIRE( request_accepted() == router( create_fake_request( "/xxx", http_method_put() ) ) );
 	REQUIRE( request_matched_type == 0 );
 	request_matched_type = -1;
 
-	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_t::http_delete ) ) );
+	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_delete() ) ) );
 	REQUIRE( request_matched_type == 1 );
 	request_matched_type = -1;
 
 
-	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_t::http_get ) ) );
+	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_get() ) ) );
 	REQUIRE( request_matched_type == 1 );
 	request_matched_type = -1;
 
-	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_t::http_head ) ) );
+	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_head() ) ) );
 	REQUIRE( request_matched_type == 1 );
 	request_matched_type = -1;
 
-	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_t::http_post ) ) );
+	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_post() ) ) );
 	REQUIRE( request_matched_type == 1 );
 	request_matched_type = -1;
 
-	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_t::http_put ) ) );
+	REQUIRE( request_accepted() == router( create_fake_request( "/", http_method_put() ) ) );
 	REQUIRE( request_matched_type == 1 );
 	request_matched_type = -1;
 }

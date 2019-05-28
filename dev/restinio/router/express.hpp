@@ -283,7 +283,7 @@ class route_matcher_t
 
 		//! Creates matcher with a given parameters.
 		route_matcher_t(
-			http_method_t method,
+			http_method_id_t method,
 			regex_t route_regex,
 			std::shared_ptr< std::string > named_params_buffer,
 			param_appender_sequence_t param_appender_sequence )
@@ -374,7 +374,7 @@ class route_matcher_t
 
 	private:
 		//! HTTP method to match.
-		http_method_t m_method;
+		http_method_id_t m_method;
 
 		//! Regex of a given route.
 		regex_t m_route_regex;
@@ -418,7 +418,7 @@ class express_route_entry_t
 		using matcher_init_data_t =
 			path2regex::impl::route_regex_matcher_data_t< impl::route_params_appender_t, Regex_Engine >;
 		express_route_entry_t(
-			http_method_t method,
+			http_method_id_t method,
 			matcher_init_data_t matcher_data,
 			express_request_handler_t handler )
 			:	m_matcher{
@@ -439,7 +439,7 @@ class express_route_entry_t
 		operator = ( express_route_entry_t && ) = default;
 
 		express_route_entry_t(
-			http_method_t method,
+			http_method_id_t method,
 			string_view_t route_path,
 			const path2regex::options_t & options,
 			express_request_handler_t handler )
@@ -452,7 +452,7 @@ class express_route_entry_t
 		{}
 
 		express_route_entry_t(
-			http_method_t method,
+			http_method_id_t method,
 			string_view_t route_path,
 			express_request_handler_t handler )
 			:	express_route_entry_t{
@@ -547,7 +547,7 @@ class express_router_t
 		//! \{
 		void
 		add_handler(
-			http_method_t method,
+			http_method_id_t method,
 			string_view_t route_path,
 			express_request_handler_t handler )
 		{
@@ -560,7 +560,7 @@ class express_router_t
 
 		void
 		add_handler(
-			http_method_t method,
+			http_method_id_t method,
 			string_view_t route_path,
 			const path2regex::options_t & options,
 			express_request_handler_t handler )
@@ -574,7 +574,7 @@ class express_router_t
 			express_request_handler_t handler )
 		{
 			add_handler(
-				http_method_t::http_delete,
+				http_method_delete(),
 				route_path,
 				std::move( handler ) );
 		}
@@ -586,7 +586,7 @@ class express_router_t
 			express_request_handler_t handler )
 		{
 			add_handler(
-				http_method_t::http_delete,
+				http_method_delete(),
 				route_path,
 				options,
 				std::move( handler ) );
@@ -598,7 +598,7 @@ class express_router_t
 			express_request_handler_t handler )
 		{
 			add_handler(
-				http_method_t::http_get,
+				http_method_get(),
 				route_path,
 				std::move( handler ) );
 		}
@@ -610,7 +610,7 @@ class express_router_t
 			express_request_handler_t handler )
 		{
 			add_handler(
-				http_method_t::http_get,
+				http_method_get(),
 				route_path,
 				options,
 				std::move( handler ) );
@@ -622,7 +622,7 @@ class express_router_t
 			express_request_handler_t handler )
 		{
 			add_handler(
-				http_method_t::http_head,
+				http_method_head(),
 				route_path,
 				std::move( handler ) );
 		}
@@ -634,7 +634,7 @@ class express_router_t
 			express_request_handler_t handler )
 		{
 			add_handler(
-				http_method_t::http_head,
+				http_method_head(),
 				route_path,
 				options,
 				std::move( handler ) );
@@ -646,7 +646,7 @@ class express_router_t
 			express_request_handler_t handler )
 		{
 			add_handler(
-				http_method_t::http_post,
+				http_method_post(),
 				route_path,
 				std::move( handler ) );
 		}
@@ -658,7 +658,7 @@ class express_router_t
 			express_request_handler_t handler )
 		{
 			add_handler(
-				http_method_t::http_post,
+				http_method_post(),
 				route_path,
 				options,
 				std::move( handler ) );
@@ -670,7 +670,7 @@ class express_router_t
 			express_request_handler_t handler )
 		{
 			add_handler(
-				http_method_t::http_put,
+				http_method_put(),
 				route_path,
 				std::move( handler ) );
 		}
@@ -682,7 +682,7 @@ class express_router_t
 			express_request_handler_t handler )
 		{
 			add_handler(
-				http_method_t::http_put,
+				http_method_put(),
 				route_path,
 				options,
 				std::move( handler ) );

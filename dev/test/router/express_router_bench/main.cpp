@@ -80,7 +80,7 @@ struct app_args_t
 
 struct route_line_t
 {
-	restinio::http_method_t m_method;
+	restinio::http_method_id_t m_method;
 	std::string m_route;
 };
 
@@ -108,11 +108,11 @@ read_route_lines_from_file( const std::string & file_name )
 		{
 
 			int m = 0;
-			restinio::http_method_t mm{ restinio::http_method_t::http_unknown };
-			restinio::http_method_t method = restinio::http_method_t::http_unknown;
+			restinio::http_method_id_t mm{ restinio::http_method_unknown() };
+			restinio::http_method_id_t method = restinio::http_method_unknown();
 
 			while( ( mm = restinio::default_http_methods_t::from_nodejs( m++ ) ) !=
-				restinio::http_method_t::http_unknown )
+				restinio::http_method_unknown() )
 			{
 				if( method_str == restinio::default_http_methods_t::to_string( mm ) )
 				{
@@ -121,7 +121,7 @@ read_route_lines_from_file( const std::string & file_name )
 				}
 			}
 
-			if( restinio::http_method_t::http_unknown == method )
+			if( restinio::http_method_unknown() == method )
 			{
 				throw std::runtime_error{ "invalid method: " + method_str };
 			}

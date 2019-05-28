@@ -10,7 +10,7 @@ TEST_CASE( "Original tests #0", "[path2regex][original][generated][n0]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -50,7 +50,7 @@ TEST_CASE( "Original tests #1", "[path2regex][original][generated][n1]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -111,7 +111,7 @@ TEST_CASE( "Original tests #2", "[path2regex][original][generated][n2]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -166,7 +166,7 @@ TEST_CASE( "Original tests #3", "[path2regex][original][generated][n3]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -206,7 +206,7 @@ TEST_CASE( "Original tests #4", "[path2regex][original][generated][n4]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -246,7 +246,7 @@ TEST_CASE( "Original tests #5", "[path2regex][original][generated][n5]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -301,7 +301,7 @@ TEST_CASE( "Original tests #6", "[path2regex][original][generated][n6]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -347,7 +347,7 @@ TEST_CASE( "Original tests #7", "[path2regex][original][generated][n7]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -417,7 +417,7 @@ TEST_CASE( "Original tests #8", "[path2regex][original][generated][n8]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -487,7 +487,7 @@ TEST_CASE( "Original tests #9", "[path2regex][original][generated][n9]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -524,7 +524,7 @@ TEST_CASE( "Original tests #10", "[path2regex][original][generated][n10]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -567,7 +567,7 @@ TEST_CASE( "Original tests #11", "[path2regex][original][generated][n11]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -631,7 +631,7 @@ TEST_CASE( "Original tests #12", "[path2regex][original][generated][n12]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -701,7 +701,7 @@ TEST_CASE( "Original tests #13", "[path2regex][original][generated][n13]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -756,7 +756,7 @@ TEST_CASE( "Original tests #14", "[path2regex][original][generated][n14]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -811,7 +811,7 @@ TEST_CASE( "Original tests #15", "[path2regex][original][generated][n15]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -859,7 +859,7 @@ TEST_CASE( "Original tests #17", "[path2regex][original][generated][n17]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -893,7 +893,7 @@ TEST_CASE( "Original tests #18", "[path2regex][original][generated][n18]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
@@ -1026,7 +1026,7 @@ TEST_CASE( "Original tests #19", "[path2regex][original][generated][n19]")
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
