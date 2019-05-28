@@ -114,7 +114,7 @@ read_route_lines_from_file( const std::string & file_name )
 			while( ( mm = restinio::default_http_methods_t::from_nodejs( m++ ) ) !=
 				restinio::http_method_unknown() )
 			{
-				if( method_str == restinio::default_http_methods_t::to_string( mm ) )
+				if( method_str == mm.c_str() )
 				{
 					method = mm;
 					break;
@@ -149,7 +149,7 @@ create_server_handler( route_lines_container_t routes )
 	for( auto & r : routes )
 	{
 		std::cout << "Add route: "
-			<< restinio::default_http_methods_t::to_string( r.m_method) << " '"
+			<< r.m_method.c_str() << " '"
 			<< r.m_route << "'" << std::endl;
 
 		router->add_handler(

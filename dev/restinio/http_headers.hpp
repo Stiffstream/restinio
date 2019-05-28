@@ -1537,22 +1537,47 @@ enum class well_known_http_methods_t : int
 	http_unknown = -1
 };
 
+//FIXME: document this!
+inline constexpr const char *
+to_string( well_known_http_methods_t value ) noexcept
+{
+	const char * result = "<unknown>";
+	switch( value )
+	{
+		#define RESTINIO_HTTP_METHOD_STR_GEN( name, ignored1, ignored2, str ) \
+			case well_known_http_methods_t::name: result = #str; break;
+
+			RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_STR_GEN )
+		#undef RESTINIO_HTTP_METHOD_STR_GEN
+
+		default: ; // Nothing to do.
+	}
+
+	return result;
+}
+
 //
 // http_method_id_t
 //
 class http_method_id_t
 {
 	int m_value;
+	const char * m_name;
 
 public:
 	constexpr http_method_id_t() noexcept
 		:	m_value{ static_cast<int>(well_known_http_methods_t::http_unknown) }
+		,	m_name{ "<undefined>" }
 		{}
-	explicit constexpr http_method_id_t( int value ) noexcept
+	constexpr http_method_id_t(
+		int value,
+		const char * name ) noexcept
 		:	m_value{ value }
+		,	m_name{ name }
 		{}
 	constexpr http_method_id_t( well_known_http_methods_t value ) noexcept
 		:	m_value{ static_cast<int>(value) }
+		,	m_name{ to_string(value) }
 		{}
 
 	constexpr http_method_id_t( const http_method_id_t & ) noexcept = default;
@@ -1565,6 +1590,9 @@ public:
 
 	constexpr auto
 	raw_id() const noexcept { return m_value; }
+
+	constexpr const char *
+	c_str() const noexcept { return m_name; }
 
 	friend constexpr bool
 	operator==( const http_method_id_t & a, const http_method_id_t & b ) noexcept {
@@ -1585,8 +1613,7 @@ public:
 inline std::ostream &
 operator<<( std::ostream & to, const http_method_id_t & m )
 {
-//FIXME: it isn't a good format for http_method!
-	return to << m.raw_id();
+	return to << m.c_str();
 }
 
 // Generate helper funcs.
@@ -1646,25 +1673,8 @@ public :
 		http_method_id_t result{ http_method_unknown() };
 		if( 0 <= value &&
 				value <= static_cast<int>(well_known_http_methods_t::terminator_value) )
-			result = http_method_id_t{ value };
-
-		return result;
-	}
-
-	inline static constexpr const char *
-	to_string( http_method_id_t method ) noexcept
-	{
-		const char * result = "<unknown>";
-		switch( method.raw_id() )
-		{
-			#define RESTINIO_HTTP_METHOD_STR_GEN( ignored1, func_name, ignored2, str ) \
-				case func_name().raw_id(): result = #str; break;
-
-				RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_STR_GEN )
-			#undef RESTINIO_HTTP_METHOD_STR_GEN
-
-			case http_method_unknown().raw_id(): break; // Ignore.
-		}
+			result = http_method_id_t{
+					static_cast<well_known_http_methods_t>(value) };
 
 		return result;
 	}

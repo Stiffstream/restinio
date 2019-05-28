@@ -34,8 +34,7 @@ TEST_CASE( "HTTP method" , "[method]" )
 							.append_header_date_field()
 							.append_header( "Content-Type", "text/plain; charset=utf-8" )
 							.set_body(
-								restinio::const_buffer(
-									http_server_t::traits_t::http_methods_t::to_string( req->header().method() ) ) )
+								restinio::const_buffer( req->header().method().c_str() ) )
 							.done();
 
 						return restinio::request_accepted();
