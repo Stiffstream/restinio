@@ -125,7 +125,7 @@ int main()
 	{
 		struct traits_t : public restinio::default_single_thread_traits_t
 		{
-			using http_methods_t = custom_http_methods_t;
+			using http_methods_mapper_t = custom_http_methods_t;
 			using logger_t = restinio::single_threaded_ostream_logger_t;
 			using request_handler_t = my_router_t;
 		};
