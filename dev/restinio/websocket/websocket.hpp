@@ -167,22 +167,6 @@ class ws_t
 			}
 		}
 
-		//! Send_websocket message.
-		[[deprecated("use override with final_frame_flag_t type for the first argument instead")]]
-		void
-		send_message(
-			bool final,
-			opcode_t opcode,
-			writable_item_t payload,
-			write_status_cb_t wscb = write_status_cb_t{} )
-		{
-			send_message(
-				final ? final_frame : not_final_frame,
-				opcode,
-				std::move( payload ),
-				std::move( wscb ) );
-		}
-
 		void
 		send_message( message_t msg, write_status_cb_t wscb = write_status_cb_t{} )
 		{

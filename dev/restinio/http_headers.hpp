@@ -1141,45 +1141,6 @@ class http_header_fields_t
 			return std::move( default_value );
 		}
 
-		//! Get field by name.
-		/*!
-			If field exists return field value, otherwise return default_value.
-		*/
-		[[deprecated("use get_field_or() method instead")]]
-		const std::string &
-		get_field(
-			string_view_t field_name,
-			const std::string & default_value ) const noexcept
-		{
-			const auto it = cfind( field_name );
-
-			if( m_fields.end() == it )
-				return default_value;
-
-			return it->value();
-		}
-
-		//! Get field by id.
-		/*!
-			If field exists return field value, otherwise return default_value.
-		*/
-		[[deprecated("use get_field_or() method instead")]]
-		const std::string &
-		get_field(
-			http_field_t field_id,
-			const std::string & default_value ) const noexcept
-		{
-			if( http_field_t::field_unspecified != field_id )
-			{
-				const auto it = cfind( field_id );
-
-				if( m_fields.end() != it )
-					return it->value();
-			}
-
-			return default_value;
-		}
-
 		//! Remove field by name.
 		void
 		remove_field( string_view_t field_name )
