@@ -17,21 +17,12 @@ MxxRu::arch_externals :asio_mxxru do |e|
   e.map_dir 'dev/asio_mxxru' => 'dev'
 end
 
-MxxRu::git_externals :nodejs_http_parser do |e|
-  e.url 'https://github.com/eao197/http-parser'
-
-  e.map_file 'http_parser.h' => 'dev/nodejs/http_parser/*'
-  e.map_file 'http_parser.c' => 'dev/nodejs/http_parser/*'
-end
-
-=begin
 MxxRu::arch_externals :nodejs_http_parser do |e|
-  e.url 'https://github.com/nodejs/http-parser/archive/v2.9.0.tar.gz'
+  e.url 'https://github.com/nodejs/http-parser/archive/v2.9.2.tar.gz'
 
   e.map_file 'http_parser.h' => 'dev/nodejs/http_parser/*'
   e.map_file 'http_parser.c' => 'dev/nodejs/http_parser/*'
 end
-=end
 
 MxxRu::arch_externals :nodejs_http_parser_mxxru do |e|
   e.url 'https://bitbucket.org/sobjectizerteam/nodejs_http_parser_mxxru-0.2/get/v.0.2.0.tar.bz2'
