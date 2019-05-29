@@ -1483,39 +1483,7 @@ struct http_header_common_t
 	RESTINIO_GEN( http_mkcalendar,  http_method_mkcalendar,   HTTP_MKCALENDAR,   MKCALENDAR )   \
   /* RFC-2068, section 19.6.1.2 */  \
 	RESTINIO_GEN( http_link,        http_method_link,         HTTP_LINK,         LINK )         \
-	RESTINIO_GEN( http_unlink,      http_method_unlink,       HTTP_UNLINK,       UNLINK )       \
-
-//FIXME: document this!
-//
-// well_known_http_methods_t
-//
-enum class well_known_http_methods_t : int
-{
-#define RESTINIO_HTTP_METHOD_GEN( name, ignored1, nodejs_code, ignored2 ) name = nodejs_code,
-	RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_GEN )
-#undef RESTINIO_HTTP_METHOD_GEN
-	terminator_value,
-	http_unknown = -1
-};
-
-//FIXME: document this!
-inline constexpr const char *
-to_string( well_known_http_methods_t value ) noexcept
-{
-	const char * result = "<unknown>";
-	switch( value )
-	{
-		#define RESTINIO_HTTP_METHOD_STR_GEN( name, ignored1, ignored2, str ) \
-			case well_known_http_methods_t::name: result = #str; break;
-
-			RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_STR_GEN )
-		#undef RESTINIO_HTTP_METHOD_STR_GEN
-
-		default: ; // Nothing to do.
-	}
-
-	return result;
-}
+	RESTINIO_GEN( http_unlink,      http_method_unlink,       HTTP_UNLINK,       UNLINK ) 
 
 //
 // http_method_id_t
@@ -1526,8 +1494,10 @@ class http_method_id_t
 	const char * m_name;
 
 public:
+	static constexpr const int unknown_method = -1;
+
 	constexpr http_method_id_t() noexcept
-		:	m_value{ static_cast<int>(well_known_http_methods_t::http_unknown) }
+		:	m_value{ unknown_method }
 		,	m_name{ "<undefined>" }
 		{}
 	constexpr http_method_id_t(
@@ -1535,10 +1505,6 @@ public:
 		const char * name ) noexcept
 		:	m_value{ value }
 		,	m_name{ name }
-		{}
-	constexpr http_method_id_t( well_known_http_methods_t value ) noexcept
-		:	m_value{ static_cast<int>(value) }
-		,	m_name{ to_string(value) }
 		{}
 
 	constexpr http_method_id_t( const http_method_id_t & ) noexcept = default;
@@ -1578,18 +1544,18 @@ operator<<( std::ostream & to, const http_method_id_t & m )
 }
 
 // Generate helper funcs.
-#define RESTINIO_HTTP_METHOD_FUNC_GEN( name, func_name, ignored1, ignored2 ) \
-	constexpr http_method_id_t func_name() { \
-		return well_known_http_methods_t::name; \
+#define RESTINIO_HTTP_METHOD_FUNC_GEN( ignored1, func_name, nodejs_code, method_name ) \
+	inline constexpr http_method_id_t func_name() { \
+		return { nodejs_code, #method_name }; \
 	}
 
 	RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_FUNC_GEN )
 #undef RESTINIO_HTTP_METHOD_FUNC_GEN
 
-constexpr http_method_id_t
+inline constexpr http_method_id_t
 http_method_unknown()
 {
-	return well_known_http_methods_t::http_unknown;
+	return http_method_id_t{};
 }
 
 //FIXME: document this!
@@ -1598,44 +1564,20 @@ http_method_unknown()
 //
 class default_http_methods_t
 {
-private :
-	inline static constexpr bool
-	is_method_id_sequence_monotonic() noexcept
-	{
-		constexpr int ids[] = {
-			#define RESTINIO_HTTP_METHOD_STR_GEN( ignored1, ignored2, code, ignored3 ) \
-				code,
-
-				RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_STR_GEN )
-			#undef RESTINIO_HTTP_METHOD_STR_GEN
-				0
-		};
-
-		int expected_value = 0;
-		constexpr const std::size_t ids_count =
-				std::extent<decltype(ids)>::value - 1u;
-
-		for( std::size_t i = 0; i != ids_count; ++i, ++expected_value )
-			if( expected_value != ids[i] )
-				return false;
-
-		return true;
-	};
-
 public :
 	inline static constexpr http_method_id_t
 	from_nodejs( int value ) noexcept 
 	{
-		static_assert( is_method_id_sequence_monotonic(),
-				"HTTP method should form a monotonic sequence started from 0" );
+		http_method_id_t result;
+		switch( value )
+		{
+#define RESTINIO_HTTP_METHOD_FUNC_GEN( ignored1, func_name, nodejs_code, method_name ) \
+			case nodejs_code : result = func_name(); break;
 
-		// Use the fact that normal values in well_known_http_methods_t
-		// are in the range [0, terminator_value).
-		http_method_id_t result{ http_method_unknown() };
-		if( 0 <= value &&
-				value <= static_cast<int>(well_known_http_methods_t::terminator_value) )
-			result = http_method_id_t{
-					static_cast<well_known_http_methods_t>(value) };
+	RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_FUNC_GEN )
+#undef RESTINIO_HTTP_METHOD_FUNC_GEN
+			default : ; // Nothing to do.
+		}
 
 		return result;
 	}
