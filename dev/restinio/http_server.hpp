@@ -174,7 +174,11 @@ class http_server_t
 		using timer_manager_handle_t = std::shared_ptr< timer_manager_t >;
 
 	public:
-		//FIXME: document this!
+		/*!
+		 * @brief An alias for Traits type.
+		 *
+		 * @since v.0.5.0
+		 */
 		using traits_t = Traits;
 
 		template<typename D>

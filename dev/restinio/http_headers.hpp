@@ -1488,6 +1488,52 @@ struct http_header_common_t
 //
 // http_method_id_t
 //
+/*!
+ * @brief A type for representation of HTTP method ID.
+ *
+ * RESTinio uses http_parser for working with HTTP-protocol.
+ * HTTP-methods in http_parser are identified by `int`s like
+ * HTTP_GET, HTTP_POST and so on.
+ *
+ * Usage of plain `int` is error prone. So since v.0.5.0 RESTinio contain
+ * type http_method_id_t as type for ID of HTTP method.
+ *
+ * An instance of http_method_id_t contains two values:
+ * * integer identifier from http_parser (like HTTP_GET, HTTP_POST and so on);
+ * * a string representation of HTTP method ID (like "GET", "POST", "DELETE"
+ * and so on).
+ *
+ * There is an important requirement for user-defined HTTP method IDs:
+ * a pointer to string representation of HTTP method ID must outlive
+ * the instance of http_method_id_t. It means that is safe to use string
+ * literals or static strings, for example:
+ * @code
+ * constexpr const restinio::http_method_id_t my_http_method(255, "MY-METHOD");
+ * @endcode
+ *
+ * @note 
+ * Instances of http_method_id_t can't be used in switch() operator.
+ * For example, you can't write that way:
+ * @code
+ * const int method_id = ...;
+ * switch(method_id) {
+ * 	case restinio::http_method_get(): ...; break;
+ * 	case restinio::http_method_post(): ...; break;
+ * 	case restinio::http_method_delete(): ...; break;
+ * }
+ * @endcode
+ * In that case raw_id() method can be used:
+ * @code
+ * const int method_id = ...;
+ * switch(method_id) {
+ * 	case restinio::http_method_get().raw_id(): ...; break;
+ * 	case restinio::http_method_post().raw_id(): ...; break;
+ * 	case restinio::http_method_delete().raw_id(): ...; break;
+ * }
+ * @endcode
+ *
+ * @since v.0.5.0
+ */
 class http_method_id_t
 {
 	int m_value;
@@ -1558,10 +1604,24 @@ http_method_unknown()
 	return http_method_id_t{};
 }
 
-//FIXME: document this!
 //
 // default_http_methods_t
 //
+/*!
+ * @brief The default implementation for http_method_mapper.
+ *
+ * Since v.0.5.0 RESTinio allows to use modified versions of http_parser
+ * libraries. Such modified versions can handle non-standard HTTP methods.
+ * In that case a user should define its own http_method_mapper-type.
+ * That http_method_mapper must contain static method from_nodejs for
+ * mapping the http_parser's ID of HTTP method to an instance of
+ * http_method_id_t.
+ *
+ * Class default_http_methods_t is the default implementation of
+ * http_method_mapper-type for vanila version of http_parser.
+ *
+ * @since v.0.5.0
+ */
 class default_http_methods_t
 {
 public :

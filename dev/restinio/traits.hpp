@@ -28,6 +28,41 @@ template <
 struct traits_t
 {
 	//FIXME: document this!
+	/*!
+	 * @brief A type for HTTP methods mapping.
+	 *
+	 * If RESTinio is used with vanila version of http_parser then
+	 * the default value of http_methods_mapper_t is enough. But if a user
+	 * uses modified version of http_parser with support of additional,
+	 * not-standard HTTP methods then the user should provide its
+	 * http_methods_mapper. For example:
+	 * \code
+	 * // Definition for non-standard HTTP methods.
+	 * // Note: values of HTTP_ENCODE and HTTP_DECODE are from modified
+	 * // http_parser version.
+	 * constexpr const restinio::http_method_id_t http_encode(HTTP_ENCODE, "ENCODE");
+	 * constexpr const restinio::http_method_id_t http_decode(HTTP_DECODE, "DECODE");
+	 *
+	 * // Definition of non-standard http_method_mapper.
+	 * struct my_http_method_mapper {
+	 * 	inline constexpr restinio::http_method_id_t
+	 * 	from_nodejs(int value) noexcept {
+	 * 		switch(value) {
+	 * 			case HTTP_ENCODE: return http_encode;
+	 * 			case HTTP_DECODE: return http_decode;
+	 * 			default: return restinio::default_http_methods_t::from_nodejs(value);
+	 * 		}
+	 * 	}
+	 * };
+	 * ...
+	 * // Make a custom traits with non-standard http_method_mapper.
+	 * struct my_server_traits : public restinio::default_traits_t {
+	 * 	using http_methods_mapper_t = my_http_method_mapper;
+	 * };
+	 * \endcode
+	 *
+	 * @since v.0.5.0
+	 */
 	using http_methods_mapper_t = default_http_methods_t;
 
 	using timer_manager_t = Timer_Manager;
