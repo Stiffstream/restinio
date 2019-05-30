@@ -4,6 +4,6 @@
 
 #include <restinio/all.hpp>
 
-#include "usings.inl"
+#include "usings.ipp"
 
-#include "original_tests_part3.inl"
+#include "original_tests_part3.ipp"

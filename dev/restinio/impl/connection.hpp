@@ -73,7 +73,7 @@ struct http_parser_ctx_t
 };
 
 //! Include parser callbacks.
-#include "parser_callbacks.inl"
+#include "parser_callbacks.ipp"
 
 //
 // create_parser_settings()

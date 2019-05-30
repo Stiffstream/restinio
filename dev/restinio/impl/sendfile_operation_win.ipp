@@ -250,6 +250,6 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 
 #else // #if defined(RESTINIO_ASIO_HAS_WINDOWS_OVERLAPPED_PTR)
 
-#include "sendfile_operation_default.inl"
+#include "sendfile_operation_default.ipp"
 
 #endif // #if defined(RESTINIO_ASIO_HAS_WINDOWS_OVERLAPPED_PTR)

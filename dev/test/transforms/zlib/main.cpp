@@ -11,7 +11,7 @@
 #include <restinio/all.hpp>
 #include <restinio/transforms/zlib.hpp>
 
-#include "../random_data_generators.inl"
+#include "../random_data_generators.ipp"
 
 TEST_CASE( "Create parameters for zlib transformators" , "[zlib][params][create_params]" )
 {

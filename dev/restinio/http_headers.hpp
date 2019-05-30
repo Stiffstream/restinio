@@ -29,7 +29,7 @@ namespace restinio
 namespace impl
 {
 
-#include "impl/to_lower_lut.inl"
+#include "impl/to_lower_lut.ipp"
 
 constexpr auto
 uchar_at( const char * const from, const std::size_t at ) noexcept

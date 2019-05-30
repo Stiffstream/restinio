@@ -99,12 +99,12 @@ make_error_code( const Error_Type & e )
 */
 
 #if defined( _MSC_VER ) || defined( __MINGW32__ )
-	#include "sendfile_operation_win.inl"
+	#include "sendfile_operation_win.ipp"
 #elif (defined( __clang__ ) || defined( __GNUC__ )) && !defined(__WIN32__)
-	#include "sendfile_operation_posix.inl"
+	#include "sendfile_operation_posix.ipp"
 #else
 	#if defined (RESTINIO_ENABLE_SENDFILE_DEFAULT_IMPL)
-		#include "sendfile_operation_default.inl"
+		#include "sendfile_operation_default.ipp"
 	#else
 		#error "Sendfile not supported, to enable default implementation define RESTINIO_ENABLE_SENDFILE_DEFAULT_IMPL macro"
 	#endif
