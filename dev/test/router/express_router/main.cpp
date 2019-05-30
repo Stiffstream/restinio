@@ -17,4 +17,4 @@ using namespace restinio;
 using express_router_t = restinio::router::express_router_t<>;
 using restinio::router::route_params_t;
 
-#include "tests.inl"
+#include "tests.ipp"

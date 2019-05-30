@@ -19,7 +19,7 @@
 #include <restinio/string_view.hpp>
 #include <restinio/exception.hpp>
 
-#include "from_string_details.inl"
+#include "from_string_details.ipp"
 
 namespace restinio
 {

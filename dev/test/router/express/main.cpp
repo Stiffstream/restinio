@@ -12,8 +12,8 @@
 
 #include <restinio/all.hpp>
 
-#include "usings.inl"
+#include "usings.ipp"
 
-#include "additional_tests.inl"
+#include "additional_tests.ipp"
 
 

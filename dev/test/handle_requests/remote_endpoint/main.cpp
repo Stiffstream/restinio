@@ -39,8 +39,7 @@ TEST_CASE( "remote_endpoint extraction" , "[remote_endpoint]" )
 							.append_header_date_field()
 							.append_header( "Content-Type", "text/plain; charset=utf-8" )
 							.set_body(
-								restinio::const_buffer(
-									method_to_string( req->header().method() ) ) )
+								restinio::const_buffer( req->header().method().c_str() ) )
 							.done();
 
 						return restinio::request_accepted();

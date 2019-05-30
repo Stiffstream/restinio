@@ -30,7 +30,7 @@ namespace utils
 namespace base64
 {
 
-#include "base64_lut.inl"
+#include "base64_lut.ipp"
 
 using uint_type_t = std::uint_fast32_t;
 

@@ -9,7 +9,7 @@ TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 
 		route_matcher_t
 			rm{
-				http_method_t::http_get,
+				http_method_get(),
 				std::move( matcher_data.m_regex ),
 				std::move( matcher_data.m_named_params_buffer ),
 				std::move( matcher_data.m_param_appender_sequence ) };
@@ -38,7 +38,7 @@ TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 
 		route_matcher_t
 			rm{
-				http_method_t::http_get,
+				http_method_get(),
 				std::move( matcher_data.m_regex ),
 				std::move( matcher_data.m_named_params_buffer ),
 				std::move( matcher_data.m_param_appender_sequence ) };
@@ -131,7 +131,7 @@ TEST_CASE( "value_or" , "[value_or]" )
 
 	route_matcher_t
 		rm{
-			http_method_t::http_get,
+			http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };

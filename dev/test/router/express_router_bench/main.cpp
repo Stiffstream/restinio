@@ -80,7 +80,7 @@ struct app_args_t
 
 struct route_line_t
 {
-	restinio::http_method_t m_method;
+	restinio::http_method_id_t m_method;
 	std::string m_route;
 };
 
@@ -108,20 +108,20 @@ read_route_lines_from_file( const std::string & file_name )
 		{
 
 			int m = 0;
-			restinio::http_method_t mm;
-			restinio::http_method_t method = restinio::http_method_t::http_unknown;
+			restinio::http_method_id_t mm{ restinio::http_method_unknown() };
+			restinio::http_method_id_t method = restinio::http_method_unknown();
 
-			while( ( mm = restinio::http_method_from_nodejs( m++ ) ) !=
-				restinio::http_method_t::http_unknown )
+			while( ( mm = restinio::default_http_methods_t::from_nodejs( m++ ) ) !=
+				restinio::http_method_unknown() )
 			{
-				if( method_str == restinio::method_to_string( mm ) )
+				if( method_str == mm.c_str() )
 				{
 					method = mm;
 					break;
 				}
 			}
 
-			if( restinio::http_method_t::http_unknown == method )
+			if( restinio::http_method_unknown() == method )
 			{
 				throw std::runtime_error{ "invalid method: " + method_str };
 			}
@@ -149,7 +149,7 @@ create_server_handler( route_lines_container_t routes )
 	for( auto & r : routes )
 	{
 		std::cout << "Add route: "
-			<< restinio::method_to_string( r.m_method) << " '"
+			<< r.m_method.c_str() << " '"
 			<< r.m_route << "'" << std::endl;
 
 		router->add_handler(

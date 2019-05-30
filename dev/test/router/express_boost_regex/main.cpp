@@ -12,6 +12,6 @@
 
 #include <restinio/all.hpp>
 
-#include "usings.inl"
+#include "usings.ipp"
 
-#include "../express/additional_tests.inl"
+#include "../express/additional_tests.ipp"

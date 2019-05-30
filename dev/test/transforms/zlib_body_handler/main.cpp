@@ -14,7 +14,7 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
-#include "../random_data_generators.inl"
+#include "../random_data_generators.ipp"
 
 TEST_CASE( "body_handler" , "[zlib][body_handler]" )
 {

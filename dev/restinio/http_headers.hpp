@@ -29,7 +29,7 @@ namespace restinio
 namespace impl
 {
 
-#include "impl/to_lower_lut.inl"
+#include "impl/to_lower_lut.ipp"
 
 constexpr auto
 uchar_at( const char * const from, const std::size_t at ) noexcept
@@ -283,7 +283,7 @@ caseless_cmp( string_view_t a, string_view_t b ) noexcept
 	// SPECIAL CASE: RESTINIO_GEN( content_length,               Content-Length )
 
 //
-// http_method_t
+// http_field_t
 //
 
 //! C++ enum that repeats nodejs c-style enum.
@@ -1141,45 +1141,6 @@ class http_header_fields_t
 			return std::move( default_value );
 		}
 
-		//! Get field by name.
-		/*!
-			If field exists return field value, otherwise return default_value.
-		*/
-		[[deprecated("use get_field_or() method instead")]]
-		const std::string &
-		get_field(
-			string_view_t field_name,
-			const std::string & default_value ) const noexcept
-		{
-			const auto it = cfind( field_name );
-
-			if( m_fields.end() == it )
-				return default_value;
-
-			return it->value();
-		}
-
-		//! Get field by id.
-		/*!
-			If field exists return field value, otherwise return default_value.
-		*/
-		[[deprecated("use get_field_or() method instead")]]
-		const std::string &
-		get_field(
-			http_field_t field_id,
-			const std::string & default_value ) const noexcept
-		{
-			if( http_field_t::field_unspecified != field_id )
-			{
-				const auto it = cfind( field_id );
-
-				if( m_fields.end() != it )
-					return it->value();
-			}
-
-			return default_value;
-		}
-
 		//! Remove field by name.
 		void
 		remove_field( string_view_t field_name )
@@ -1483,125 +1444,204 @@ struct http_header_common_t
 
 //! HTTP methods mapping with nodejs http methods
 #define RESTINIO_HTTP_METHOD_MAP(RESTINIO_GEN)         \
-	RESTINIO_GEN( http_delete,      http_method_delete,       DELETE )       \
-	RESTINIO_GEN( http_get,         http_method_get,          GET )          \
-	RESTINIO_GEN( http_head,        http_method_head,         HEAD )         \
-	RESTINIO_GEN( http_post,        http_method_post,         POST )         \
-	RESTINIO_GEN( http_put,         http_method_put,          PUT )          \
+	RESTINIO_GEN( http_method_delete,       HTTP_DELETE,       DELETE )       \
+	RESTINIO_GEN( http_method_get,          HTTP_GET,          GET )          \
+	RESTINIO_GEN( http_method_head,         HTTP_HEAD,         HEAD )         \
+	RESTINIO_GEN( http_method_post,         HTTP_POST,         POST )         \
+	RESTINIO_GEN( http_method_put,          HTTP_PUT,          PUT )          \
   /* pathological */                \
-	RESTINIO_GEN( http_connect,     http_method_connect,      CONNECT )      \
-	RESTINIO_GEN( http_options,     http_method_options,      OPTIONS )      \
-	RESTINIO_GEN( http_trace,       http_method_trace,        TRACE )        \
+	RESTINIO_GEN( http_method_connect,      HTTP_CONNECT,      CONNECT )      \
+	RESTINIO_GEN( http_method_options,      HTTP_OPTIONS,      OPTIONS )      \
+	RESTINIO_GEN( http_method_trace,        HTTP_TRACE,        TRACE )        \
   /* WebDAV */                      \
-	RESTINIO_GEN( http_copy,        http_method_copy,         COPY )         \
-	RESTINIO_GEN( http_lock,        http_method_lock,         LOCK )         \
-	RESTINIO_GEN( http_mkcol,       http_method_mkcol,        MKCOL )        \
-	RESTINIO_GEN( http_move,        http_method_move,         MOVE )         \
-	RESTINIO_GEN( http_propfind,    http_method_propfind,     PROPFIND )     \
-	RESTINIO_GEN( http_proppatch,   http_method_proppatch,    PROPPATCH )    \
-	RESTINIO_GEN( http_search,      http_method_search,       SEARCH )       \
-	RESTINIO_GEN( http_unlock,      http_method_unlock,       UNLOCK )       \
-	RESTINIO_GEN( http_bind,        http_method_bind, BIND )         \
-	RESTINIO_GEN( http_rebind,      http_method_rebind,       REBIND )       \
-	RESTINIO_GEN( http_unbind,      http_method_unbind,       UNBIND )       \
-	RESTINIO_GEN( http_acl,         http_method_acl,          ACL )          \
+	RESTINIO_GEN( http_method_copy,         HTTP_COPY,         COPY )         \
+	RESTINIO_GEN( http_method_lock,         HTTP_LOCK,         LOCK )         \
+	RESTINIO_GEN( http_method_mkcol,        HTTP_MKCOL,        MKCOL )        \
+	RESTINIO_GEN( http_method_move,         HTTP_MOVE,         MOVE )         \
+	RESTINIO_GEN( http_method_propfind,     HTTP_PROPFIND,     PROPFIND )     \
+	RESTINIO_GEN( http_method_proppatch,    HTTP_PROPPATCH,    PROPPATCH )    \
+	RESTINIO_GEN( http_method_search,       HTTP_SEARCH,       SEARCH )       \
+	RESTINIO_GEN( http_method_unlock,       HTTP_UNLOCK,       UNLOCK )       \
+	RESTINIO_GEN( http_method_bind,         HTTP_BIND,         BIND )         \
+	RESTINIO_GEN( http_method_rebind,       HTTP_REBIND,       REBIND )       \
+	RESTINIO_GEN( http_method_unbind,       HTTP_UNBIND,       UNBIND )       \
+	RESTINIO_GEN( http_method_acl,          HTTP_ACL,          ACL )          \
   /* subversion */                  \
-	RESTINIO_GEN( http_report,      http_method_report,       REPORT )       \
-	RESTINIO_GEN( http_mkactivity,  http_method_mkactivity,   MKACTIVITY )   \
-	RESTINIO_GEN( http_checkout,    http_method_checkout,     CHECKOUT )     \
-	RESTINIO_GEN( http_merge,       http_method_merge,        MERGE )        \
+	RESTINIO_GEN( http_method_report,       HTTP_REPORT,       REPORT )       \
+	RESTINIO_GEN( http_method_mkactivity,   HTTP_MKACTIVITY,   MKACTIVITY )   \
+	RESTINIO_GEN( http_method_checkout,     HTTP_CHECKOUT,     CHECKOUT )     \
+	RESTINIO_GEN( http_method_merge,        HTTP_MERGE,        MERGE )        \
   /* upnp */                        \
-	RESTINIO_GEN( http_msearch,     http_method_msearch,      M-SEARCH)      \
-	RESTINIO_GEN( http_notify,      http_method_notify,       NOTIFY )       \
-	RESTINIO_GEN( http_subscribe,   http_method_subscribe,    SUBSCRIBE )    \
-	RESTINIO_GEN( http_unsubscribe, http_method_unsubscribe,  UNSUBSCRIBE )  \
+	RESTINIO_GEN( http_method_msearch,      HTTP_MSEARCH,      M-SEARCH)      \
+	RESTINIO_GEN( http_method_notify,       HTTP_NOTIFY,       NOTIFY )       \
+	RESTINIO_GEN( http_method_subscribe,    HTTP_SUBSCRIBE,    SUBSCRIBE )    \
+	RESTINIO_GEN( http_method_unsubscribe,  HTTP_UNSUBSCRIBE,  UNSUBSCRIBE )  \
   /* RFC-5789 */                    \
-	RESTINIO_GEN( http_patch,       http_method_patch,        PATCH )        \
-	RESTINIO_GEN( http_purge,       http_method_purge,        PURGE )        \
+	RESTINIO_GEN( http_method_patch,        HTTP_PATCH,        PATCH )        \
+	RESTINIO_GEN( http_method_purge,        HTTP_PURGE,        PURGE )        \
   /* CalDAV */                      \
-	RESTINIO_GEN( http_mkcalendar,  http_method_mkcalendar,   MKCALENDAR )   \
+	RESTINIO_GEN( http_method_mkcalendar,   HTTP_MKCALENDAR,   MKCALENDAR )   \
   /* RFC-2068, section 19.6.1.2 */  \
-	RESTINIO_GEN( http_link,        http_method_link,         LINK )         \
-	RESTINIO_GEN( http_unlink,      http_method_unlink,       UNLINK )       \
+	RESTINIO_GEN( http_method_link,         HTTP_LINK,         LINK )         \
+	RESTINIO_GEN( http_method_unlink,       HTTP_UNLINK,       UNLINK ) 
 
 //
-// http_method_t
+// http_method_id_t
 //
-
-//! C++ enum that repeats nodejs c-style enum.
-enum class http_method_t : std::uint8_t
+/*!
+ * @brief A type for representation of HTTP method ID.
+ *
+ * RESTinio uses http_parser for working with HTTP-protocol.
+ * HTTP-methods in http_parser are identified by `int`s like
+ * HTTP_GET, HTTP_POST and so on.
+ *
+ * Usage of plain `int` is error prone. So since v.0.5.0 RESTinio contain
+ * type http_method_id_t as type for ID of HTTP method.
+ *
+ * An instance of http_method_id_t contains two values:
+ * * integer identifier from http_parser (like HTTP_GET, HTTP_POST and so on);
+ * * a string representation of HTTP method ID (like "GET", "POST", "DELETE"
+ * and so on).
+ *
+ * There is an important requirement for user-defined HTTP method IDs:
+ * a pointer to string representation of HTTP method ID must outlive
+ * the instance of http_method_id_t. It means that is safe to use string
+ * literals or static strings, for example:
+ * @code
+ * constexpr const restinio::http_method_id_t my_http_method(255, "MY-METHOD");
+ * @endcode
+ *
+ * @note 
+ * Instances of http_method_id_t can't be used in switch() operator.
+ * For example, you can't write that way:
+ * @code
+ * const int method_id = ...;
+ * switch(method_id) {
+ * 	case restinio::http_method_get(): ...; break;
+ * 	case restinio::http_method_post(): ...; break;
+ * 	case restinio::http_method_delete(): ...; break;
+ * }
+ * @endcode
+ * In that case raw_id() method can be used:
+ * @code
+ * const int method_id = ...;
+ * switch(method_id) {
+ * 	case restinio::http_method_get().raw_id(): ...; break;
+ * 	case restinio::http_method_post().raw_id(): ...; break;
+ * 	case restinio::http_method_delete().raw_id(): ...; break;
+ * }
+ * @endcode
+ *
+ * @since v.0.5.0
+ */
+class http_method_id_t
 {
-#define RESTINIO_HTTP_METHOD_GEN( name, ignored1, ignored2 ) name,
-	RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_GEN )
-#undef RESTINIO_HTTP_METHOD_GEN
-	// Unknown method.
-	http_unknown
+	int m_value;
+	const char * m_name;
+
+public:
+	static constexpr const int unknown_method = -1;
+
+	constexpr http_method_id_t() noexcept
+		:	m_value{ unknown_method }
+		,	m_name{ "<undefined>" }
+		{}
+	constexpr http_method_id_t(
+		int value,
+		const char * name ) noexcept
+		:	m_value{ value }
+		,	m_name{ name }
+		{}
+
+	constexpr http_method_id_t( const http_method_id_t & ) noexcept = default;
+	constexpr http_method_id_t &
+	operator=( const http_method_id_t & ) noexcept = default;
+
+	constexpr http_method_id_t( http_method_id_t && ) noexcept = default;
+	constexpr http_method_id_t &
+	operator=( http_method_id_t && ) noexcept = default;
+
+	constexpr auto
+	raw_id() const noexcept { return m_value; }
+
+	constexpr const char *
+	c_str() const noexcept { return m_name; }
+
+	friend constexpr bool
+	operator==( const http_method_id_t & a, const http_method_id_t & b ) noexcept {
+		return a.raw_id() == b.raw_id();
+	}
+
+	friend constexpr bool
+	operator!=( const http_method_id_t & a, const http_method_id_t & b ) noexcept {
+		return a.raw_id() != b.raw_id();
+	}
+
+	friend constexpr bool
+	operator<( const http_method_id_t & a, const http_method_id_t & b ) noexcept {
+		return a.raw_id() < b.raw_id();
+	}
 };
 
+inline std::ostream &
+operator<<( std::ostream & to, const http_method_id_t & m )
+{
+	return to << m.c_str();
+}
+
 // Generate helper funcs.
-#define RESTINIO_HTTP_METHOD_FUNC_GEN( name, func_name, ignored ) \
-	constexpr auto func_name(){ return http_method_t::name; }
+#define RESTINIO_HTTP_METHOD_FUNC_GEN( func_name, nodejs_code, method_name ) \
+	inline constexpr http_method_id_t func_name() { \
+		return { nodejs_code, #method_name }; \
+	}
 
 	RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_FUNC_GEN )
 #undef RESTINIO_HTTP_METHOD_FUNC_GEN
 
-constexpr auto
+inline constexpr http_method_id_t
 http_method_unknown()
 {
-	return http_method_t::http_unknown;
+	return http_method_id_t{};
 }
 
 //
-// http_method_from_nodejs()
+// default_http_methods_t
 //
-
-//! Map nodejs http method to http_method_t.
-inline http_method_t
-http_method_from_nodejs( int m ) noexcept
+/*!
+ * @brief The default implementation for http_method_mapper.
+ *
+ * Since v.0.5.0 RESTinio allows to use modified versions of http_parser
+ * libraries. Such modified versions can handle non-standard HTTP methods.
+ * In that case a user should define its own http_method_mapper-type.
+ * That http_method_mapper must contain static method from_nodejs for
+ * mapping the http_parser's ID of HTTP method to an instance of
+ * http_method_id_t.
+ *
+ * Class default_http_methods_t is the default implementation of
+ * http_method_mapper-type for vanila version of http_parser.
+ *
+ * @since v.0.5.0
+ */
+class default_http_methods_t
 {
-	auto method = http_method_t::http_unknown;
-
-	constexpr http_method_t method_maping[] =
+public :
+	inline static constexpr http_method_id_t
+	from_nodejs( int value ) noexcept 
 	{
-		#define RESTINIO_HTTP_METHOD_BY_ID_GEN( restinio_name, ignored1, ignored2 ) \
-			http_method_t::restinio_name,
+		http_method_id_t result;
+		switch( value )
+		{
+#define RESTINIO_HTTP_METHOD_FUNC_GEN( func_name, nodejs_code, method_name ) \
+			case nodejs_code : result = func_name(); break;
 
-			RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_BY_ID_GEN )
-		#undef RESTINIO_HTTP_METHOD_BY_ID_GEN
-		http_method_t::http_unknown
-	};
+	RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_FUNC_GEN )
+#undef RESTINIO_HTTP_METHOD_FUNC_GEN
+			default : ; // Nothing to do.
+		}
 
-	if( m >= 0 &&
-		std::distance(std::begin(method_maping), std::end(method_maping)) > m)
-	{
-		method = method_maping[ m ];
+		return result;
 	}
-
-	return method;
-}
-
-//
-// method_to_string()
-//
-
-//! Helper sunction to get method string name.
-inline const char *
-method_to_string( http_method_t m ) noexcept
-{
-	const char * result = "<unknown>";
-	switch( m )
-	{
-		#define RESTINIO_HTTP_METHOD_STR_GEN( name, ignored2, str ) \
-			case http_method_t::name: result = #str; break;
-
-			RESTINIO_HTTP_METHOD_MAP( RESTINIO_HTTP_METHOD_STR_GEN )
-		#undef RESTINIO_HTTP_METHOD_STR_GEN
-
-		case http_method_t::http_unknown: break; // Ignore.
-	}
-
-	return result;
-}
+};
 
 //
 // http_request_header
@@ -1624,19 +1664,19 @@ struct http_request_header_t final
 		http_request_header_t() = default;
 
 		http_request_header_t(
-			http_method_t method,
+			http_method_id_t method,
 			std::string request_target_ )
 			:	m_method{ method }
 		{
 			request_target( std::move( request_target_ ) );
 		}
 
-		http_method_t
+		http_method_id_t
 		method() const noexcept
 		{ return m_method; }
 
 		void
-		method( http_method_t m ) noexcept
+		method( http_method_id_t m ) noexcept
 		{ m_method = m; }
 
 		const std::string &
@@ -1732,7 +1772,7 @@ struct http_request_header_t final
 		}
 
 	private:
-		http_method_t m_method{ http_method_get() };
+		http_method_id_t m_method{ http_method_get() };
 		std::string m_request_target;
 		std::size_t m_query_separator_pos{ 0 };
 		std::size_t m_fragment_separator_pos{ 0 };

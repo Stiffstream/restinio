@@ -132,7 +132,8 @@ restinio_body_cb( http_parser * parser, const char *at, size_t length )
 	return 0;
 }
 
-inline int
+template< typename Http_Methods >
+int
 restinio_message_complete_cb( http_parser * parser )
 {
 	// If entire http-message consumed, we need to stop parser.
@@ -143,7 +144,7 @@ restinio_message_complete_cb( http_parser * parser )
 			parser->data );
 
 	ctx->m_message_complete = true;
-	ctx->m_header.method( restinio::http_method_from_nodejs( parser->method ) );
+	ctx->m_header.method( Http_Methods::from_nodejs( parser->method ) );
 
 	if( 0 == parser->upgrade )
 		ctx->m_header.should_keep_alive( 0 != http_should_keep_alive( parser ) );

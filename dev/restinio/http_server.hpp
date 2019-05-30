@@ -174,6 +174,13 @@ class http_server_t
 		using timer_manager_handle_t = std::shared_ptr< timer_manager_t >;
 
 	public:
+		/*!
+		 * @brief An alias for Traits type.
+		 *
+		 * @since v.0.5.0
+		 */
+		using traits_t = Traits;
+
 		template<typename D>
 		http_server_t(
 			io_context_holder_t io_context,
@@ -189,7 +196,7 @@ class http_server_t
 			auto conn_settings =
 				std::make_shared< connection_settings_t >(
 					std::forward< actual_settings_type >(settings),
-					impl::create_parser_settings(),
+					impl::create_parser_settings< typename Traits::http_methods_mapper_t >(),
 					m_timer_manager );
 
 			m_acceptor =

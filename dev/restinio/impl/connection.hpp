@@ -73,7 +73,7 @@ struct http_parser_ctx_t
 };
 
 //! Include parser callbacks.
-#include "parser_callbacks.inl"
+#include "parser_callbacks.ipp"
 
 //
 // create_parser_settings()
@@ -83,6 +83,7 @@ struct http_parser_ctx_t
 /*!
 	Is used to initialize const value in connection_settings_t ctor.
 */
+template< typename Http_Methods >
 inline http_parser_settings
 create_parser_settings() noexcept
 {
@@ -116,7 +117,7 @@ create_parser_settings() noexcept
 
 	parser_settings.on_message_complete =
 		[]( http_parser * parser ) -> int {
-			return restinio_message_complete_cb( parser );
+			return restinio_message_complete_cb< Http_Methods >( parser );
 		};
 
 	return parser_settings;
