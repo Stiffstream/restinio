@@ -109,9 +109,11 @@ RESTinio is distributed under BSD-3-CLAUSE license.
 
 # How To Use It?
 
-The full documentation for RESTinio can be found [here](https://stiffstream.com/en/docs/restinio/0.4).
+The full documentation for RESTinio can be found [here](https://stiffstream.com/en/docs/restinio/0.5).
 
 # More
 
 * Issues and bugs:
-[Issue Tracker on BitBucket](https://bitbucket.org/sobjectizerteam/restinio-0.4/issues).
+[Issue Tracker on BitBucket](https://bitbucket.org/sobjectizerteam/restinio/issues).
+* Discussion group: [restinio](https://groups.google.com/forum/#!forum/restinio).
+
