@@ -102,18 +102,18 @@ SET(RESTINIO_HEADERS_ALL
 	impl/fixed_buffer.hpp
 	impl/header_helpers.hpp
 	impl/ioctx_on_thread_pool.hpp
-	impl/os_posix.inl
-	impl/os_unknown.inl
-	impl/os_win.inl
-	impl/parser_callbacks.inl
+	impl/os_posix.ipp
+	impl/os_unknown.ipp
+	impl/os_win.ipp
+	impl/parser_callbacks.ipp
 	impl/write_group_output_ctx.hpp
 	impl/response_coordinator.hpp
-	impl/sendfile_operation_default.inl
+	impl/sendfile_operation_default.ipp
 	impl/sendfile_operation.hpp
-	impl/sendfile_operation_posix.inl
-	impl/sendfile_operation_win.inl
+	impl/sendfile_operation_posix.ipp
+	impl/sendfile_operation_win.ipp
 	impl/tls_socket.hpp
-	impl/to_lower_lut.inl
+	impl/to_lower_lut.ipp
 
 	path2regex/path2regex.hpp
 
@@ -132,8 +132,8 @@ SET(RESTINIO_HEADERS_ALL
 	transforms/zlib.hpp
 
 	utils/base64.hpp
-	utils/base64_lut.inl
-	utils/from_string_details.inl
+	utils/base64_lut.ipp
+	utils/from_string_details.ipp
 	utils/from_string.hpp
 	utils/percent_encoding.hpp
 	utils/sha1.hpp
