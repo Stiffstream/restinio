@@ -36,6 +36,14 @@ struct state_listener_holder_t
 		const Settings & settings )
 		:	m_connection_state_listener{ settings.connection_state_listener() }
 	{}
+
+	void
+	call_state_listener(
+		connection_id_t conn_id,
+		connection_state_notify_t notify ) const noexcept
+	{
+		m_connection_state_listener->state_changed( conn_id, notify );
+	}
 };
 
 template<>
@@ -43,6 +51,14 @@ struct state_listener_holder_t< noop_connection_state_listener_t >
 {
 	template< typename Settings >
 	state_listener_holder_t( const Settings & ) { /* nothing to do */ }
+
+	void
+	call_state_listener(
+		connection_id_t /*conn_id*/,
+		connection_state_notify_t /*notify*/ ) const noexcept
+	{
+		/* nothing to do */
+	}
 };
 
 } /* namespace connection_settings_details */

@@ -231,7 +231,7 @@ class connection_t final
 
 		connection_t(
 			//! Connection id.
-			std::uint64_t conn_id,
+			connection_id_t conn_id,
 			//! Connection socket.
 			stream_socket_t && socket,
 			//! Settings that are common for connections.
@@ -285,6 +285,11 @@ class connection_t final
 				m_socket,
 				*this,
 				[ & ]{
+					// Inform state listener if it used.
+					m_settings->call_state_listener(
+							connection_id(),
+							connection_state_notify_t::accepted );
+
 					// Start timeout checking.
 					m_prepared_weak_ctx = shared_from_this();
 					init_next_timeout_checking();
@@ -1269,6 +1274,11 @@ class connection_t final
 					"[connection:{}] close: reset responses data",
 					connection_id() );
 			} );
+
+			// Inform state listener if it used.
+			m_settings->call_state_listener(
+					connection_id(),
+					connection_state_notify_t::closed );
 		}
 
 		//! Trigger an error.
@@ -1534,7 +1544,7 @@ class connection_factory_t
 		}
 
 	private:
-		std::uint64_t m_connection_id_counter{ 1 };
+		connection_id_t m_connection_id_counter{ 1 };
 
 		connection_settings_handle_t< Traits > m_connection_settings;
 

@@ -137,7 +137,7 @@ class ws_connection_t final
 
 		ws_connection_t(
 			//! Connection id.
-			std::uint64_t conn_id,
+			connection_id_t conn_id,
 			//! Data inherited from http-connection.
 			//! \{
 			restinio::impl::connection_settings_handle_t< Traits > settings,
@@ -167,6 +167,11 @@ class ws_connection_t final
 						connection_id(),
 						m_socket.remote_endpoint() );
 			} );
+
+			// Inform state listener if it used.
+			m_settings->call_state_listener(
+					connection_id(),
+					connection_state_notify_t::upgraded_to_websocket );
 		}
 
 		ws_connection_t( const ws_connection_t & ) = delete;

@@ -10,6 +10,7 @@ MxxRu::Cpp::composite_target {
 		notificators
 		output_and_buffers
 		remote_endpoint
+		connection_state
 		slow_transmit
 		throw_exception
 		timeouts
