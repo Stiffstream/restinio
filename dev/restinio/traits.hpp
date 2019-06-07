@@ -11,6 +11,7 @@
 #include <restinio/request_handler.hpp>
 #include <restinio/asio_timer_manager.hpp>
 #include <restinio/null_logger.hpp>
+#include <restinio/connection_state_listener.hpp>
 
 namespace restinio
 {
@@ -64,6 +65,9 @@ struct traits_t
 	 * @since v.0.5.0
 	 */
 	using http_methods_mapper_t = default_http_methods_t;
+
+	//FIXME: document this!
+	using connection_state_listener_t = noop_connection_state_listener_t;
 
 	using timer_manager_t = Timer_Manager;
 	using logger_t = Logger;

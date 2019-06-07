@@ -303,6 +303,24 @@ create_default_unique_object_instance< socket_options_setter_t >()
  */
 using cleanup_functor_t = std::function< void(void) >;
 
+//FIXME: document this!
+//
+// connection_state_listener_holder_t
+//
+template< typename Listener >
+struct connection_state_listener_holder_t
+{
+	std::shared_ptr< Listener > m_connection_state_listener;
+
+	static constexpr bool has_actual_connection_state_listener = true;
+};
+
+template<>
+struct connection_state_listener_holder_t< noop_connection_state_listener_t >
+{
+	static constexpr bool has_actual_connection_state_listener = false;
+};
+
 //
 // basic_server_settings_t
 //
@@ -321,9 +339,16 @@ using cleanup_functor_t = std::function< void(void) >;
 template<typename Derived, typename Traits>
 class basic_server_settings_t
 	:	public socket_type_dependent_settings_t< Derived, typename Traits::stream_socket_t >
+	,	protected connection_state_listener_holder_t<
+			typename Traits::connection_state_listener_t >
 {
 		using base_type_t = socket_type_dependent_settings_t<
 				Derived, typename Traits::stream_socket_t>;
+
+		static constexpr bool has_actual_connection_state_listener =
+				connection_state_listener_holder_t<
+						typename Traits::connection_state_listener_t
+					>::has_actual_connection_state_listener;
 
 	public:
 		basic_server_settings_t(
@@ -752,6 +777,38 @@ class basic_server_settings_t
 			return std::move(m_cleanup_functor);
 		}
 		//! \}
+
+		Derived &
+		connection_state_listener(
+			std::shared_ptr< typename Traits::connection_state_listener_t > listener ) &
+		{
+			static_assert(
+					has_actual_connection_state_listener,
+					"connection_state_listener(listener) can't be used "
+					"for the default noop_connection_state_listener_t" );
+
+			this->m_connection_state_listener = std::move(listener);
+			return reference_to_derived();
+		}
+
+		Derived &&
+		connection_state_listener(
+			std::shared_ptr< typename Traits::connection_state_listener_t > listener ) &&
+		{
+			return std::move(this->connection_state_listener(
+					std::move(listener)));
+		}
+
+		const std::shared_ptr< typename Traits::connection_state_listener_t > &
+		connection_state_listener() const noexcept
+		{
+			static_assert(
+					has_actual_connection_state_listener,
+					"connection_state_listener() can't be used "
+					"for the default noop_connection_state_listener_t" );
+
+			return this->m_connection_state_listener;
+		}
 
 	private:
 		Derived &
