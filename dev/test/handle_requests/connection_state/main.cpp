@@ -36,6 +36,32 @@ struct state_listener_t
 	}
 };
 
+TEST_CASE( "no connection state listener" , "[no_listener]" )
+{
+	struct test_traits : public restinio::traits_t<
+			restinio::asio_timer_manager_t,
+			utest_logger_t >
+	{
+		using connection_state_listener_t = state_listener_t;
+	};
+
+	using http_server_t = restinio::http_server_t< test_traits >; 
+
+	REQUIRE_THROWS( std::unique_ptr<http_server_t>{
+		new http_server_t{
+				restinio::own_io_context(),
+				[]( auto & settings ){
+					settings
+						.port( utest_default_port() )
+						.address( "127.0.0.1" )
+						.request_handler(
+							[]( auto ){
+								return restinio::request_rejected();
+							} );
+				} }
+	} );
+}
+
 TEST_CASE( "ordinary connection" , "[ordinary_connection]" )
 {
 	std::string endpoint_value;
@@ -98,7 +124,7 @@ TEST_CASE( "ordinary connection" , "[ordinary_connection]" )
 	REQUIRE( 0 == state_listener->m_upgraded_to_websocket.load() );
 }
 
-TEST_CASE( "remote_endpoint for WS" , "[remote_endpoint][ws]" )
+TEST_CASE( "connection state for WS" , "[connection_state][ws]" )
 {
 	std::string endpoint_value;
 	std::string endpoint_value_ws;

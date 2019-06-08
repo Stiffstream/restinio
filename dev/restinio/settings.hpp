@@ -313,12 +313,29 @@ struct connection_state_listener_holder_t
 	std::shared_ptr< Listener > m_connection_state_listener;
 
 	static constexpr bool has_actual_connection_state_listener = true;
+
+	//! Checks that pointer to state listener is not null.
+	/*!
+	 * Throws an exception if m_connection_state_listener is nullptr.
+	 */
+	void
+	check_valid_connection_state_listener_pointer() const
+	{
+		if( !m_connection_state_listener )
+			throw exception_t{ "connection state listener it not specified" };
+	}
 };
 
 template<>
 struct connection_state_listener_holder_t< connection_state::noop_listener_t >
 {
 	static constexpr bool has_actual_connection_state_listener = false;
+
+	void
+	check_valid_connection_state_listener_pointer() const
+	{
+		// Nothing to do.
+	}
 };
 
 //
@@ -778,6 +795,7 @@ class basic_server_settings_t
 		}
 		//! \}
 
+//FIXME: document this!
 		Derived &
 		connection_state_listener(
 			std::shared_ptr< typename Traits::connection_state_listener_t > listener ) &
@@ -791,6 +809,7 @@ class basic_server_settings_t
 			return reference_to_derived();
 		}
 
+//FIXME: document this!
 		Derived &&
 		connection_state_listener(
 			std::shared_ptr< typename Traits::connection_state_listener_t > listener ) &&
@@ -799,6 +818,7 @@ class basic_server_settings_t
 					std::move(listener)));
 		}
 
+//FIXME: document this!
 		const std::shared_ptr< typename Traits::connection_state_listener_t > &
 		connection_state_listener() const noexcept
 		{
@@ -808,6 +828,13 @@ class basic_server_settings_t
 					"for the default connection_state::noop_listener_t" );
 
 			return this->m_connection_state_listener;
+		}
+
+//FIXME: document this!
+		void
+		ensure_valid_connection_state_listener()
+		{
+			this->check_valid_connection_state_listener_pointer();
 		}
 
 	private:

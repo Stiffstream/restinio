@@ -188,6 +188,12 @@ class http_server_t
 			:	m_io_context{ io_context.giveaway_context() }
 			,	m_cleanup_functor{ settings.giveaway_cleanup_func() }
 		{
+			// Since v.0.5.1 the presence of custom connection state
+			// listener should be checked before the start of HTTP server.
+			settings.ensure_valid_connection_state_listener();
+
+			// Now we can continue preparation of HTTP server.
+
 			using actual_settings_type = basic_server_settings_t<D, Traits>;
 
 			auto timer_factory = settings.timer_factory();
