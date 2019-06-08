@@ -39,10 +39,9 @@ struct state_listener_holder_t
 
 	void
 	call_state_listener(
-		connection_id_t conn_id,
-		connection_state::notice_t notice ) const noexcept
+		const connection_state::notice_t & notice ) const noexcept
 	{
-		m_connection_state_listener->state_changed( conn_id, notice );
+		m_connection_state_listener->state_changed( notice );
 	}
 };
 
@@ -54,8 +53,7 @@ struct state_listener_holder_t< connection_state::noop_listener_t >
 
 	void
 	call_state_listener(
-		connection_id_t /*conn_id*/,
-		connection_state::notice_t /*notice*/ ) const noexcept
+		const connection_state::notice_t & /*notice*/ ) const noexcept
 	{
 		/* nothing to do */
 	}

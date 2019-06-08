@@ -16,9 +16,6 @@
 namespace restinio
 {
 
-//! An alias for endpoint type from Asio.
-using endpoint_t = asio_ns::ip::tcp::endpoint;
-
 namespace impl
 {
 

@@ -17,20 +17,19 @@ struct state_listener_t
 	std::atomic< int > m_upgraded_to_websocket{ 0 };
 
 	void state_changed(
-		restinio::connection_id_t,
-		restinio::connection_state::notice_t notice )
+		const restinio::connection_state::notice_t & notice )
 	{
-		switch( notice )
+		switch( notice.cause() )
 		{
-			case restinio::connection_state::notice_t::accepted:
+			case restinio::connection_state::cause_t::accepted:
 				++m_accepted;
 			break;
 
-			case restinio::connection_state::notice_t::closed:
+			case restinio::connection_state::cause_t::closed:
 				++m_closed;
 			break;
 
-			case restinio::connection_state::notice_t::upgraded_to_websocket:
+			case restinio::connection_state::cause_t::upgraded_to_websocket:
 				++m_upgraded_to_websocket;
 			break;
 		}
