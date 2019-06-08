@@ -24,8 +24,14 @@ namespace impl
 namespace connection_settings_details
 {
 
-//FIXME: document this!
-
+/*!
+ * @brief A class for holding actual state listener.
+ *
+ * This class holds shared pointer to actual state listener object and
+ * provides actual call_state_listener() implementation.
+ *
+ * @since v.0.5.1
+ */
 template< typename Listener >
 struct state_listener_holder_t
 {
@@ -45,6 +51,14 @@ struct state_listener_holder_t
 	}
 };
 
+/*!
+ * @brief A specialization of state_listener_holder for case of
+ * noop_listener.
+ *
+ * This class doesn't hold anything and doesn't do anything.
+ *
+ * @since v.0.5.1
+ */
 template<>
 struct state_listener_holder_t< connection_state::noop_listener_t >
 {

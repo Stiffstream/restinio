@@ -17,7 +17,7 @@ struct state_listener_t
 	std::atomic< int > m_upgraded_to_websocket{ 0 };
 
 	void state_changed(
-		const restinio::connection_state::notice_t & notice )
+		const restinio::connection_state::notice_t & notice ) noexcept
 	{
 		switch( notice.cause() )
 		{

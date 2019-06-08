@@ -28,7 +28,6 @@ template <
 		typename Socket = asio_ns::ip::tcp::socket >
 struct traits_t
 {
-	//FIXME: document this!
 	/*!
 	 * @brief A type for HTTP methods mapping.
 	 *
@@ -66,7 +65,34 @@ struct traits_t
 	 */
 	using http_methods_mapper_t = default_http_methods_t;
 
-	//FIXME: document this!
+	/*!
+	 * @brief A type for connection state listener.
+	 *
+	 * By default RESTinio doesn't inform about changes with connection state.
+	 * But if a user specify its type of connection state listener then
+	 * RESTinio will call this listener object when the state of connection
+	 * changes.
+	 *
+	 * An example:
+	 * @code
+	 * // Definition of user's state listener.
+	 * class my_state_listener {
+	 * 	...
+	 * public:
+	 * 	...
+	 * 	void state_changed(const restinio::connection_state::notice_t & notice) noexcept {
+	 * 		... // some reaction to state change.
+	 * 	}
+	 * };
+	 *
+	 * // Definition of custom traits for HTTP server.
+	 * struct my_server_traits : public restinio::default_traits_t {
+	 * 	using connection_state_listener_t = my_state_listener;
+	 * };
+	 * @endcode
+	 *
+	 * @since v.0.5.1
+	 */
 	using connection_state_listener_t = connection_state::noop_listener_t;
 
 	using timer_manager_t = Timer_Manager;
