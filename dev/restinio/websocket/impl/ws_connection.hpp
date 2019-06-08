@@ -171,7 +171,7 @@ class ws_connection_t final
 			// Inform state listener if it used.
 			m_settings->call_state_listener(
 					connection_id(),
-					connection_state_notify_t::upgraded_to_websocket );
+					connection_state::notice_t::upgraded_to_websocket );
 		}
 
 		ws_connection_t( const ws_connection_t & ) = delete;

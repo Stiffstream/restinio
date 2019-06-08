@@ -288,7 +288,7 @@ class connection_t final
 					// Inform state listener if it used.
 					m_settings->call_state_listener(
 							connection_id(),
-							connection_state_notify_t::accepted );
+							connection_state::notice_t::accepted );
 
 					// Start timeout checking.
 					m_prepared_weak_ctx = shared_from_this();
@@ -1278,7 +1278,7 @@ class connection_t final
 			// Inform state listener if it used.
 			m_settings->call_state_listener(
 					connection_id(),
-					connection_state_notify_t::closed );
+					connection_state::notice_t::closed );
 		}
 
 		//! Trigger an error.

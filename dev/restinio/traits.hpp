@@ -67,7 +67,7 @@ struct traits_t
 	using http_methods_mapper_t = default_http_methods_t;
 
 	//FIXME: document this!
-	using connection_state_listener_t = noop_connection_state_listener_t;
+	using connection_state_listener_t = connection_state::noop_listener_t;
 
 	using timer_manager_t = Timer_Manager;
 	using logger_t = Logger;

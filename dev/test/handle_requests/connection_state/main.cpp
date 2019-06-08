@@ -18,19 +18,19 @@ struct state_listener_t
 
 	void state_changed(
 		restinio::connection_id_t,
-		restinio::connection_state_notify_t notify )
+		restinio::connection_state::notice_t notice )
 	{
-		switch( notify )
+		switch( notice )
 		{
-			case restinio::connection_state_notify_t::accepted:
+			case restinio::connection_state::notice_t::accepted:
 				++m_accepted;
 			break;
 
-			case restinio::connection_state_notify_t::closed:
+			case restinio::connection_state::notice_t::closed:
 				++m_closed;
 			break;
 
-			case restinio::connection_state_notify_t::upgraded_to_websocket:
+			case restinio::connection_state::notice_t::upgraded_to_websocket:
 				++m_upgraded_to_websocket;
 			break;
 		}

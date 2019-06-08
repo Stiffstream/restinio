@@ -316,7 +316,7 @@ struct connection_state_listener_holder_t
 };
 
 template<>
-struct connection_state_listener_holder_t< noop_connection_state_listener_t >
+struct connection_state_listener_holder_t< connection_state::noop_listener_t >
 {
 	static constexpr bool has_actual_connection_state_listener = false;
 };
@@ -785,7 +785,7 @@ class basic_server_settings_t
 			static_assert(
 					has_actual_connection_state_listener,
 					"connection_state_listener(listener) can't be used "
-					"for the default noop_connection_state_listener_t" );
+					"for the default connection_state::noop_listener_t" );
 
 			this->m_connection_state_listener = std::move(listener);
 			return reference_to_derived();
@@ -805,7 +805,7 @@ class basic_server_settings_t
 			static_assert(
 					has_actual_connection_state_listener,
 					"connection_state_listener() can't be used "
-					"for the default noop_connection_state_listener_t" );
+					"for the default connection_state::noop_listener_t" );
 
 			return this->m_connection_state_listener;
 		}

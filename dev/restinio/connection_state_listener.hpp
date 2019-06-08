@@ -19,8 +19,11 @@ namespace restinio
 //FIXME: document this!
 using connection_id_t = std::uint64_t;
 
+namespace connection_state
+{
+
 //FIXME: document this!
-enum class connection_state_notify_t
+enum class notice_t
 {
 	accepted,
 	closed,
@@ -28,10 +31,12 @@ enum class connection_state_notify_t
 };
 
 //FIXME: document this!
-struct noop_connection_state_listener_t
+struct noop_listener_t
 {
 	// empty type by design.
 };
+
+} /* namespace connection_state */
 
 } /* namespace restinio */
 
