@@ -37,11 +37,11 @@ struct state_listener_holder_t
 		:	m_connection_state_listener{ settings.connection_state_listener() }
 	{}
 
+	template< typename Lambda >
 	void
-	call_state_listener(
-		const connection_state::notice_t & notice ) const noexcept
+	call_state_listener( Lambda && lambda ) const noexcept
 	{
-		m_connection_state_listener->state_changed( notice );
+		m_connection_state_listener->state_changed( lambda() );
 	}
 };
 
@@ -51,9 +51,9 @@ struct state_listener_holder_t< connection_state::noop_listener_t >
 	template< typename Settings >
 	state_listener_holder_t( const Settings & ) { /* nothing to do */ }
 
+	template< typename Lambda >
 	void
-	call_state_listener(
-		const connection_state::notice_t & /*notice*/ ) const noexcept
+	call_state_listener( Lambda && /*lambda*/ ) const noexcept
 	{
 		/* nothing to do */
 	}

@@ -286,11 +286,12 @@ class connection_t final
 				*this,
 				[ & ]{
 					// Inform state listener if it used.
-					m_settings->call_state_listener(
-							connection_state::notice_t{
-									connection_id(),
-									m_remote_endpoint,
-									connection_state::cause_t::accepted } );
+					m_settings->call_state_listener( [this]() noexcept {
+							return connection_state::notice_t{
+									this->connection_id(),
+									this->m_remote_endpoint,
+									connection_state::cause_t::accepted };
+						} );
 
 					// Start timeout checking.
 					m_prepared_weak_ctx = shared_from_this();
@@ -1278,11 +1279,12 @@ class connection_t final
 			} );
 
 			// Inform state listener if it used.
-			m_settings->call_state_listener(
-					connection_state::notice_t{
-							connection_id(),
-							m_remote_endpoint,
-							connection_state::cause_t::closed } );
+			m_settings->call_state_listener( [this]() noexcept {
+					return connection_state::notice_t{
+							this->connection_id(),
+							this->m_remote_endpoint,
+							connection_state::cause_t::closed };
+				} );
 		}
 
 		//! Trigger an error.
