@@ -336,7 +336,7 @@ struct connection_state_listener_holder_t
 	check_valid_connection_state_listener_pointer() const
 	{
 		if( !m_connection_state_listener )
-			throw exception_t{ "connection state listener it not specified" };
+			throw exception_t{ "connection state listener is not specified" };
 	}
 };
 
