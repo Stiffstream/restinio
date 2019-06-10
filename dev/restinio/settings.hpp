@@ -303,6 +303,63 @@ create_default_unique_object_instance< socket_options_setter_t >()
  */
 using cleanup_functor_t = std::function< void(void) >;
 
+//FIXME: document this!
+//
+// connection_state_listener_holder_t
+//
+/*!
+ * @brief A special class for holding actual connection state listener.
+ *
+ * This class holds shared pointer to actual connection state listener
+ * and provides an actual implementation of
+ * check_valid_connection_state_listener_pointer() method.
+ *
+ * @since v.0.5.1
+ */
+template< typename Listener >
+struct connection_state_listener_holder_t
+{
+	static_assert(
+			noexcept( std::declval<Listener>().state_changed(
+					std::declval<connection_state::notice_t>() ) ),
+			"Listener::state_changed() method should be noexcept" );
+
+	std::shared_ptr< Listener > m_connection_state_listener;
+
+	static constexpr bool has_actual_connection_state_listener = true;
+
+	//! Checks that pointer to state listener is not null.
+	/*!
+	 * Throws an exception if m_connection_state_listener is nullptr.
+	 */
+	void
+	check_valid_connection_state_listener_pointer() const
+	{
+		if( !m_connection_state_listener )
+			throw exception_t{ "connection state listener it not specified" };
+	}
+};
+
+/*!
+ * @brief A special class for case when no-op state listener is used.
+ *
+ * Doesn't hold anything and contains empty
+ * check_valid_connection_state_listener_pointer() method.
+ *
+ * @since v.0.5.1
+ */
+template<>
+struct connection_state_listener_holder_t< connection_state::noop_listener_t >
+{
+	static constexpr bool has_actual_connection_state_listener = false;
+
+	void
+	check_valid_connection_state_listener_pointer() const
+	{
+		// Nothing to do.
+	}
+};
+
 //
 // basic_server_settings_t
 //
@@ -321,9 +378,16 @@ using cleanup_functor_t = std::function< void(void) >;
 template<typename Derived, typename Traits>
 class basic_server_settings_t
 	:	public socket_type_dependent_settings_t< Derived, typename Traits::stream_socket_t >
+	,	protected connection_state_listener_holder_t<
+			typename Traits::connection_state_listener_t >
 {
 		using base_type_t = socket_type_dependent_settings_t<
 				Derived, typename Traits::stream_socket_t>;
+
+		static constexpr bool has_actual_connection_state_listener =
+				connection_state_listener_holder_t<
+						typename Traits::connection_state_listener_t
+					>::has_actual_connection_state_listener;
 
 	public:
 		basic_server_settings_t(
@@ -752,6 +816,122 @@ class basic_server_settings_t
 			return std::move(m_cleanup_functor);
 		}
 		//! \}
+
+		/*!
+		 * @brief Setter for connection state listener.
+		 *
+		 * @note connection_state_listener() method should be called if
+		 * user specify its type for connection_state_listener_t traits.
+		 * For example:
+		 * @code
+		 * class my_state_listener_t {
+		 * 	...
+		 * public:
+		 * 	...
+		 * 	void state_changed(const restinio::connection_state::notice_t & notice) noexcept {
+		 * 		...
+		 * 	}
+		 * };
+		 *
+		 * struct my_traits_t : public restinio::default_traits_t {
+		 * 	using connection_state_listener_t = my_state_listener_t;
+		 * };
+		 *
+		 * restinio::server_setting_t<my_traits_t> settings;
+		 * setting.connection_state_listener( std::make_shared<my_state_listener_t>(...) );
+		 * ...
+		 * @endcode
+		 *
+		 * @attention This method can't be called if the default no-op
+		 * state listener is used in server traits.
+		 *
+		 * @since v.0.5.1
+		 */
+		Derived &
+		connection_state_listener(
+			std::shared_ptr< typename Traits::connection_state_listener_t > listener ) &
+		{
+			static_assert(
+					has_actual_connection_state_listener,
+					"connection_state_listener(listener) can't be used "
+					"for the default connection_state::noop_listener_t" );
+
+			this->m_connection_state_listener = std::move(listener);
+			return reference_to_derived();
+		}
+
+		/*!
+		 * @brief Setter for connection state listener.
+		 *
+		 * @note connection_state_listener() method should be called if
+		 * user specify its type for connection_state_listener_t traits.
+		 * For example:
+		 * @code
+		 * class my_state_listener_t {
+		 * 	...
+		 * public:
+		 * 	...
+		 * 	void state_changed(const restinio::connection_state::notice_t & notice) noexcept {
+		 * 		...
+		 * 	}
+		 * };
+		 *
+		 * struct my_traits_t : public restinio::default_traits_t {
+		 * 	using connection_state_listener_t = my_state_listener_t;
+		 * };
+		 *
+		 * restinio::run( restinio::on_this_thread<my_traits_t>()
+		 * 		.connection_state_listener( std::make_shared<my_state_listener_t>(...) )
+		 * 		.port(...)
+		 * 		...);
+		 * @endcode
+		 *
+		 * @attention This method can't be called if the default no-op
+		 * state listener is used in server traits.
+		 *
+		 * @since v.0.5.1
+		 */
+		Derived &&
+		connection_state_listener(
+			std::shared_ptr< typename Traits::connection_state_listener_t > listener ) &&
+		{
+			return std::move(this->connection_state_listener(
+					std::move(listener)));
+		}
+
+		/*!
+		 * @brief Get reference to connection state listener.
+		 *
+		 * @attention This method can't be called if the default no-op
+		 * state listener is used in server traits.
+		 *
+		 * @since v.0.5.1
+		 */
+		const std::shared_ptr< typename Traits::connection_state_listener_t > &
+		connection_state_listener() const noexcept
+		{
+			static_assert(
+					has_actual_connection_state_listener,
+					"connection_state_listener() can't be used "
+					"for the default connection_state::noop_listener_t" );
+
+			return this->m_connection_state_listener;
+		}
+
+		/*!
+		 * @brief Internal method for checking presence of state listener
+		 * object.
+		 *
+		 * If a user specifies custom state listener type but doesn't
+		 * set a pointer to listener object that method throws an exception.
+		 *
+		 * @since v.0.5.1
+		 */
+		void
+		ensure_valid_connection_state_listener()
+		{
+			this->check_valid_connection_state_listener_pointer();
+		}
 
 	private:
 		Derived &

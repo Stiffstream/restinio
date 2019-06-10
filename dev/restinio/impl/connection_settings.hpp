@@ -13,11 +13,67 @@
 
 #include <http_parser.h>
 
+#include <restinio/connection_state_listener.hpp>
+
 namespace restinio
 {
 
 namespace impl
 {
+
+namespace connection_settings_details
+{
+
+/*!
+ * @brief A class for holding actual state listener.
+ *
+ * This class holds shared pointer to actual state listener object and
+ * provides actual call_state_listener() implementation.
+ *
+ * @since v.0.5.1
+ */
+template< typename Listener >
+struct state_listener_holder_t
+{
+	std::shared_ptr< Listener > m_connection_state_listener;
+
+	template< typename Settings >
+	state_listener_holder_t(
+		const Settings & settings )
+		:	m_connection_state_listener{ settings.connection_state_listener() }
+	{}
+
+	template< typename Lambda >
+	void
+	call_state_listener( Lambda && lambda ) const noexcept
+	{
+		m_connection_state_listener->state_changed( lambda() );
+	}
+};
+
+/*!
+ * @brief A specialization of state_listener_holder for case of
+ * noop_listener.
+ *
+ * This class doesn't hold anything and doesn't do anything.
+ *
+ * @since v.0.5.1
+ */
+template<>
+struct state_listener_holder_t< connection_state::noop_listener_t >
+{
+	template< typename Settings >
+	state_listener_holder_t( const Settings & ) { /* nothing to do */ }
+
+	template< typename Lambda >
+	void
+	call_state_listener( Lambda && /*lambda*/ ) const noexcept
+	{
+		/* nothing to do */
+	}
+};
+
+} /* namespace connection_settings_details */
 
 //
 // connection_settings_t
@@ -31,11 +87,17 @@ namespace impl
 template < typename Traits >
 struct connection_settings_t final
 	:	public std::enable_shared_from_this< connection_settings_t< Traits > >
+	,	public connection_settings_details::state_listener_holder_t<
+				typename Traits::connection_state_listener_t >
 {
 	using timer_manager_t = typename Traits::timer_manager_t;
 	using timer_manager_handle_t = std::shared_ptr< timer_manager_t >;
 	using request_handler_t = typename Traits::request_handler_t;
 	using logger_t = typename Traits::logger_t;
+
+	using connection_state_listener_holder_t =
+			connection_settings_details::state_listener_holder_t<
+					typename Traits::connection_state_listener_t >;
 
 	connection_settings_t( const connection_settings_t & ) = delete;
 	connection_settings_t( const connection_settings_t && ) = delete;
@@ -47,7 +109,8 @@ struct connection_settings_t final
 		Settings && settings,
 		http_parser_settings parser_settings,
 		timer_manager_handle_t timer_manager )
-		:	m_request_handler{ settings.request_handler() }
+		:	connection_state_listener_holder_t{ settings }
+		,	m_request_handler{ settings.request_handler() }
 		,	m_parser_settings{ parser_settings }
 		,	m_buffer_size{ settings.buffer_size() }
 		,	m_read_next_http_message_timelimit{

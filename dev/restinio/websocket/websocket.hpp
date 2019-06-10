@@ -76,7 +76,7 @@ class ws_t
 			If connection exists then its id is returned,
 			otherwise retursn zero.
 		*/
-		std::uint64_t
+		connection_id_t
 		connection_id() const
 		{
 			return m_ws_connection_handle ? m_ws_connection_handle->connection_id() : 0;
