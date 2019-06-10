@@ -17,6 +17,7 @@ add_subdirectory(compression)
 add_subdirectory(decompression)
 add_subdirectory(notificators)
 add_subdirectory(custom_buffer)
+add_subdirectory(connection_state)
 
 if ( OPENSSL_FOUND )
 	add_subdirectory(hello_world_https)
