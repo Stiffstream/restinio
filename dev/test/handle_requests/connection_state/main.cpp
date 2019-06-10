@@ -62,6 +62,27 @@ TEST_CASE( "no connection state listener" , "[no_listener]" )
 	} );
 }
 
+TEST_CASE( "settings for http_server" , "[http_server]" )
+{
+	struct test_traits : public restinio::traits_t<
+			restinio::asio_timer_manager_t,
+			utest_logger_t >
+	{
+		using connection_state_listener_t = state_listener_t;
+	};
+
+	using server_settings_t = restinio::run_on_thread_pool_settings_t<test_traits>;
+	using http_server_t = restinio::http_server_t< test_traits >; 
+	server_settings_t settings{ 2u };
+	settings.connection_state_listener( std::make_shared< state_listener_t >() );
+	settings.request_handler( []( auto ){ return restinio::request_rejected(); } );
+
+	http_server_t server{
+		restinio::own_io_context(),
+		std::move(settings)
+	};
+}
+
 TEST_CASE( "ordinary connection" , "[ordinary_connection]" )
 {
 	std::string endpoint_value;
