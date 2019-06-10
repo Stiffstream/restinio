@@ -70,6 +70,7 @@ SET(RESTINIO_HEADERS_ALL
 	buffers.hpp
 	cast_to.hpp
 	common_types.hpp
+	connection_state_listener.hpp
 	exception.hpp
 	http_headers.hpp
 	http_server.hpp

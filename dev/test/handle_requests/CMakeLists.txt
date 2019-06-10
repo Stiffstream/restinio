@@ -8,3 +8,5 @@ add_subdirectory(chunked_output)
 add_subdirectory(output_and_buffers)
 add_subdirectory(notificators)
 add_subdirectory(remote_endpoint)
+add_subdirectory(connection_state)
+

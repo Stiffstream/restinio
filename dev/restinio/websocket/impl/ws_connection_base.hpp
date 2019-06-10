@@ -38,7 +38,7 @@ class ws_connection_base_t
 	:	public tcp_connection_ctx_base_t
 {
 	public:
-		ws_connection_base_t( std::uint64_t id )
+		ws_connection_base_t( connection_id_t id )
 			:	tcp_connection_ctx_base_t{ id }
 		{}
 

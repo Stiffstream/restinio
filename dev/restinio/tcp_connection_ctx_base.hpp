@@ -10,10 +10,10 @@
 
 #include <memory>
 
+#include <restinio/connection_state_listener.hpp>
+
 namespace restinio
 {
-
-using connection_id_t = std::uint64_t;
 
 //
 // tcp_connection_ctx_base_t
@@ -28,7 +28,7 @@ class tcp_connection_ctx_base_t
 	:	public std::enable_shared_from_this< tcp_connection_ctx_base_t >
 {
 	public:
-		tcp_connection_ctx_base_t(std::uint64_t id )
+		tcp_connection_ctx_base_t(connection_id_t id )
 			:	m_connection_id{ id }
 		{}
 
