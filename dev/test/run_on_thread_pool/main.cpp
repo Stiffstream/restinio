@@ -50,6 +50,13 @@ TEST_CASE( "on thread pool with own Asio" , "[own_asio]" )
 		run( restinio::on_thread_pool( 2, http_server ) );
 	} };
 
+	// Wait for HTTP server to run.
+	std::promise<void> started;
+	http_server.io_context().post( [&started] {
+			started.set_value();
+		} );
+	started.get_future().get();
+
 	std::string response;
 	const char * request_str =
 		"GET / HTTP/1.1\r\n"
@@ -65,6 +72,7 @@ TEST_CASE( "on thread pool with own Asio" , "[own_asio]" )
 
 	http_server.io_context().post( [&http_server] {
 			http_server.close_sync();
+			http_server.io_context().stop();
 		} );
 	other_thread.join();
 
