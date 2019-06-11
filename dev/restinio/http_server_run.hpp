@@ -508,5 +508,19 @@ run( run_existing_server_on_thread_pool_t<Traits> && params )
 		impl::run_without_break_signal_handling( pool, params.server() );
 }
 
+//
+// initiate_shutdown
+//
+//FIXME: document this!
+template<typename Traits>
+inline void
+initiate_shutdown( http_server_t<Traits> & server )
+{
+	server.io_context().post( [&server] {
+			server.close_sync();
+			server.io_context().stop();
+		} );
+}
+
 } /* namespace restinio */
 

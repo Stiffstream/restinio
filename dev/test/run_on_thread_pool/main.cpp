@@ -14,6 +14,36 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+// The first request can be refused because it can be issued when server
+// is not fully started yet.
+std::string
+repeat_request( const char * request )
+{
+	std::string result;
+
+	int attempts = 0;
+	do
+	{
+		try
+		{
+			result = do_request( request );
+			return result;
+		}
+		catch( const std::exception & x )
+		{
+			fmt::print( "Attempt {} failed: {}\n", attempts, x.what() );
+
+			++attempts;
+			std::this_thread::sleep_for( std::chrono::milliseconds(125) );
+		}
+	}
+	while( attempts < 8 );
+
+	throw std::runtime_error(
+			fmt::format( "Unable to get response after {} attempts",
+					attempts ) );
+}
+
 TEST_CASE( "on thread pool with break signals" , "[with_break_signal]" )
 {
 	std::string endpoint_value;
@@ -69,14 +99,11 @@ TEST_CASE( "on thread pool with break signals" , "[with_break_signal]" )
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = repeat_request( request_str ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
-	http_server.io_context().post( [&http_server] {
-			http_server.close_sync();
-			http_server.io_context().stop();
-		} );
+	restinio::initiate_shutdown( http_server );
 	other_thread.join();
 
 	REQUIRE( "" != endpoint_value );
@@ -137,14 +164,11 @@ TEST_CASE( "on thread pool without break signals" , "[without_break_signal]" )
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = repeat_request( request_str ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
-	http_server.io_context().post( [&http_server] {
-			http_server.close_sync();
-			http_server.io_context().stop();
-		} );
+	restinio::initiate_shutdown( http_server );
 	other_thread.join();
 
 	REQUIRE( "" != endpoint_value );
