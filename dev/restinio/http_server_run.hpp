@@ -522,5 +522,72 @@ initiate_shutdown( http_server_t<Traits> & server )
 		} );
 }
 
+//
+// on_pool_runner_t
+//
+//FIXME: document this!
+template<typename Http_Server>
+class on_pool_runner_t
+{
+	//! HTTP-server to be run.
+	Http_Server & m_server;
+
+	//! Thread pool for running the server.
+	impl::ioctx_on_thread_pool_t< impl::external_io_context_for_thread_pool_t >
+			m_pool;
+
+public :
+	on_pool_runner_t( const on_pool_runner_t & ) = delete;
+	on_pool_runner_t( on_pool_runner_t && ) = delete;
+
+	//! Initializing constructor.
+	on_pool_runner_t(
+		//! Size of thread pool.
+		std::size_t pool_size,
+		//! Server instance to be run.
+		//! NOTE. This reference must be valid for all life-time
+		//! of on_pool_runner instance.
+		Http_Server & server )
+		:	m_server{ server }
+		,	m_pool{ pool_size, server.io_context() }
+	{}
+
+	//! Start the server.
+	void
+	start()
+	{
+		m_server.open_async(
+			[]{ /* Ok. */},
+			[]( std::exception_ptr ex ){
+				std::rethrow_exception( ex );
+			} );
+
+		m_pool.start();
+	}
+
+
+	//! Is server started.
+	bool
+	started() const noexcept { return m_pool.started(); }
+
+	//! Stop the server.
+	void
+	stop()
+	{
+		m_server.close_async(
+			[this]{
+				// Stop running io_service.
+				m_pool.stop();
+			},
+			[]( std::exception_ptr ex ){
+				std::rethrow_exception( ex );
+			} );
+	}
+
+	//! Wait for full stop of the server.
+	void
+	wait() { m_pool.wait(); }
+};
+
 } /* namespace restinio */
 

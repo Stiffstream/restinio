@@ -30,6 +30,8 @@ MxxRu::Cpp::composite_target {
 
 	required_prj( "test/handle_requests/build_tests.rb" )
 
+	required_prj( "test/run_on_thread_pool/prj.rb" )
+
 	required_prj( "test/http_pipelining/sequence/prj.ut.rb" )
 	required_prj( "test/http_pipelining/timeouts/prj.ut.rb" )
 
