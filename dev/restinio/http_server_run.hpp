@@ -334,5 +334,113 @@ run(
 	impl::run( pool, std::move(settings) );
 }
 
+//FIXME: document this!
+//
+// run_existing_server_on_thread_pool_t
+//
+template<typename Traits>
+class run_existing_server_on_thread_pool_t
+{
+	std::size_t m_pool_size;
+	http_server_t<Traits> * m_server;
+
+public:
+	run_existing_server_on_thread_pool_t(
+		std::size_t pool_size,
+		http_server_t<Traits> & server )
+		:	m_pool_size{ pool_size }
+		,	m_server{ &server }
+	{}
+
+	std::size_t
+	pool_size() const noexcept { return m_pool_size; }
+
+	http_server_t<Traits> &
+	server() const noexcept { return *m_server; }
+};
+
+//FIXME: document this!
+template<typename Traits>
+run_existing_server_on_thread_pool_t<Traits>
+on_thread_pool(
+	std::size_t pool_size,
+	http_server_t<Traits> & server )
+{
+	return { pool_size, server };
+}
+
+namespace impl {
+
+/*!
+ * \brief An implementation of run-function for thread pool case
+ * with existing http_server instance.
+ *
+ * This function receives an already created thread pool object and
+ * already created http-server and run it on this thread pool.
+ *
+ * \since
+ * v.0.5.1
+ */
+template<typename Io_Context_Holder, typename Traits>
+void
+run(
+	ioctx_on_thread_pool_t<Io_Context_Holder> & pool,
+	http_server_t<Traits> & server )
+{
+	asio_ns::signal_set break_signals{ server.io_context(), SIGINT };
+	break_signals.async_wait(
+		[&]( const asio_ns::error_code & ec, int ){
+			if( !ec )
+			{
+				server.close_async(
+					[&]{
+						// Stop running io_service.
+						pool.stop();
+					},
+					[]( std::exception_ptr ex ){
+						std::rethrow_exception( ex );
+					} );
+			}
+		} );
+
+	server.open_async(
+		[]{ /* Ok. */},
+		[]( std::exception_ptr ex ){
+			std::rethrow_exception( ex );
+		} );
+
+	pool.start();
+	pool.wait();
+}
+
+} /* namespace impl */
+
+//FIXME: actualize docs!
+//! Helper function for running http server until ctrl+c is hit.
+/*!
+ * This function creates its own instance of Asio's io_context and
+ * uses it exclusively.
+ *
+ * Usage example:
+ * \code
+ * restinio::run(
+ * 		restinio::on_thread_pool<my_traits>(4)
+ * 			.port(8080)
+ * 			.address("localhost")
+ * 			.request_handler([](auto req) {...}));
+ * \endcode
+ */
+template<typename Traits>
+inline void
+run( run_existing_server_on_thread_pool_t<Traits> && params )
+{
+	using thread_pool_t = impl::ioctx_on_thread_pool_t<
+			impl::external_io_context_for_thread_pool_t >;
+
+	thread_pool_t pool{ params.pool_size(), params.server().io_context() };
+
+	impl::run( pool, params.server() );
+}
+
 } /* namespace restinio */
 
