@@ -19,20 +19,52 @@ namespace restinio
 //
 // break_signal_handling_t
 //
-//FIXME: document this!
+/*!
+ * @brief Indication of usage of break signal handlers for some forms
+ * of run functions.
+ *
+ * @since v.0.5.1
+ */
 enum class break_signal_handling_t
 {
+	//! Signal handler should be used by run() function.
 	used,
+	//! Signal handler should not be used by run() function.
 	skipped
 };
 
-//FIXME: document this!
+/*!
+ * @brief Make the indicator for usage of break signal handler.
+ *
+ * Usage example:
+ * @code
+ * restinio::run( restinio::on_thread_pool(
+ * 		std::thread::hardware_concurrency(),
+ * 		restinio::use_break_signal_handling(),
+ * 		my_server) );
+ * @endcode
+ *
+ * @since v.0.5.1
+ */
 inline constexpr break_signal_handling_t
 use_break_signal_handling() noexcept
 {
 	return break_signal_handling_t::used;
 }
 
+/*!
+ * @brief Make the indicator for absence of break signal handler.
+ *
+ * Usage example:
+ * @code
+ * restinio::run( restinio::on_thread_pool(
+ * 		std::thread::hardware_concurrency(),
+ * 		restinio::skip_break_signal_handling(),
+ * 		my_server) );
+ * @endcode
+ *
+ * @since v.0.5.1
+ */
 inline constexpr break_signal_handling_t
 skip_break_signal_handling() noexcept
 {
@@ -357,21 +389,41 @@ run(
 	impl::run( pool, std::move(settings) );
 }
 
-//FIXME: document this!
 //
 // run_existing_server_on_thread_pool_t
 //
+/*!
+ * @brief Helper type for holding parameters necessary for running
+ * HTTP-server on a thread pool.
+ *
+ * @note This class is not intended for direct use. It is used by
+ * RESTinio itself.
+ *
+ * @since v.0.5.1
+ */
 template<typename Traits>
 class run_existing_server_on_thread_pool_t
 {
+	//! Size of thread pool.
 	std::size_t m_pool_size;
+	//! Should break signal handler be used?
 	break_signal_handling_t m_break_handling;
+	//! HTTP-server to be used on a thread pool.
+	/*!
+	 * We assume that this pointer will be valid pointer.
+	 */
 	http_server_t<Traits> * m_server;
 
 public:
+	//! Initializing constructor.
 	run_existing_server_on_thread_pool_t(
+		//! Size of the pool.
 		std::size_t pool_size,
+		//! Should break signal handler be used?
 		break_signal_handling_t break_handling,
+		//! A reference to HTTP-server to be run on a thread pool.
+		//! This reference should outlive an instance of
+		//! run_existing_server_on_thread_pool_t.
 		http_server_t<Traits> & server )
 		:	m_pool_size{ pool_size }
 		,	m_break_handling{ break_handling }
@@ -388,7 +440,31 @@ public:
 	server() const noexcept { return *m_server; }
 };
 
-//FIXME: document this!
+/*!
+ * @brief Helper function for running an existing HTTP-server on
+ * a thread pool.
+ *
+ * Usage example:
+ * @code
+ * using my_server_t = restinio::http_server_t< my_server_traits_t >;
+ * my_server_t server{
+ * 	restinio::own_io_context(),
+ * 	[](auto & settings) {
+ * 		settings.port(...);
+ * 		settings.address(...);
+ * 		settings.request_handler(...);
+ * 		...
+ * 	}
+ * };
+ * ...
+ * restinio::run( restinio::on_thread_pool(
+ * 	std::thread::hardware_concurrency(),
+ * 	restinio::use_break_signal_handling(),
+ * 	server) );
+ * @endcode
+ *
+ * @since v.0.5.1
+ */
 template<typename Traits>
 run_existing_server_on_thread_pool_t<Traits>
 on_thread_pool(
@@ -478,20 +554,32 @@ run_without_break_signal_handling(
 
 } /* namespace impl */
 
-//FIXME: actualize docs!
-//! Helper function for running http server until ctrl+c is hit.
 /*!
- * This function creates its own instance of Asio's io_context and
- * uses it exclusively.
+ * @brief Helper function for running an existing HTTP-server on
+ * a thread pool.
  *
  * Usage example:
- * \code
- * restinio::run(
- * 		restinio::on_thread_pool<my_traits>(4)
- * 			.port(8080)
- * 			.address("localhost")
- * 			.request_handler([](auto req) {...}));
- * \endcode
+ * @code
+ * using my_server_t = restinio::http_server_t< my_server_traits_t >;
+ * my_server_t server{
+ * 	restinio::own_io_context(),
+ * 	[](auto & settings) {
+ * 		settings.port(...);
+ * 		settings.address(...);
+ * 		settings.request_handler(...);
+ * 		...
+ * 	}
+ * };
+ * ...
+ * // run() returns if Ctrl+C is pressed or if HTTP-server will
+ * // be shut down from elsewhere.
+ * restinio::run( restinio::on_thread_pool(
+ * 	std::thread::hardware_concurrency(),
+ * 	restinio::use_break_signal_handling(),
+ * 	server) );
+ * @endcode
+ *
+ * @since v.0.5.1
  */
 template<typename Traits>
 inline void
@@ -511,7 +599,37 @@ run( run_existing_server_on_thread_pool_t<Traits> && params )
 //
 // initiate_shutdown
 //
-//FIXME: document this!
+/*!
+ * @brief Helper function for initiation of server shutdown.
+ *
+ * Can be useful if an existing HTTP-server is run via run() function.
+ * For example:
+ * @code
+ * restinio::http_server_t< my_traits > server{ ... };
+ * // Launch another thread that will perform some application logic.
+ * std::thread app_logic_thread{ [&server] {
+ * 	while(some_condition) {
+ * 		...
+ * 		if(exit_case) {
+ * 			// HTTP-server should be shut down.
+ * 			restinio::initiate_shutdown( server );
+ * 			// Our work should be finished.
+ * 			return;
+ * 		}
+ * 	}
+ * } };
+ * // Start HTTP-server. The current thread will be blocked until
+ * // run() returns.
+ * restinio::run( restinio::on_thread_pool(
+ * 	4,
+ * 	restinio::skip_break_signal_handling(),
+ * 	server) );
+ * // Now app_logic_thread can be joined.
+ * app_logic_thread.join();
+ * @endcode
+ *
+ * @since v.0.5.1
+ */
 template<typename Traits>
 inline void
 initiate_shutdown( http_server_t<Traits> & server )
@@ -525,7 +643,58 @@ initiate_shutdown( http_server_t<Traits> & server )
 //
 // on_pool_runner_t
 //
-//FIXME: document this!
+/*!
+ * @brief Helper class for running an existing HTTP-server on a thread pool
+ * without blocking the current thread.
+ *
+ * Usage of run() functions has some drawbacks. For example, the current thread
+ * on that run() is called, will be blocked until run() returns.
+ *
+ * Sometimes it is not appropriate and leads to tricks like that:
+ * @code
+ * // HTTP-server to be run on a thread pool.
+ * restinio::http_server_t< my_traits > server{...};
+ *
+ * // Separate worker thread for calling restinio::run().
+ * std::thread run_thread{ [&server] {
+ * 	restinio::run( restinio::on_thread_pool(
+ * 			16,
+ * 			restinio::skip_break_signal_handling(),
+ * 			server) );
+ * 	// Now this thread is blocked until HTTP-server will be finished.
+ * } };
+ *
+ * ... // Some application specific code here.
+ *
+ * // Now the server can be stopped.
+ * restinio::initiate_shutdown( server );
+ * run_thread.join();
+ * @endcode
+ *
+ * Writing such code is a boring and error-prone task. The class
+ * on_pool_runner_t can be used instead:
+ * @code
+ * // HTTP-server to be run on a thread pool.
+ * restinio::http_server_t< my_traits > server{...};
+ *
+ * // Launch HTTP-server on a thread pool.
+ * restinio::on_pool_runner_t< restinio::http_server_t<my_traits> > runner{
+ * 		16,
+ * 		server
+ * };
+ *
+ * ... // Some application specific code here.
+ *
+ * // Now the server can be stopped.
+ * runner.stop(); // (1)
+ * runner.wait();
+ * @endcode
+ *
+ * Moreover the code at point (1) in the example above it not necessary
+ * because on_pool_runner_t automatically stops the server in the destructor.
+ *
+ * @since v.0.5.1
+ */
 template<typename Http_Server>
 class on_pool_runner_t
 {
