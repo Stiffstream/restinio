@@ -17,6 +17,29 @@ namespace restinio
 {
 
 //
+// break_signal_handling_t
+//
+//FIXME: document this!
+enum class break_signal_handling_t
+{
+	used,
+	skipped
+};
+
+//FIXME: document this!
+inline constexpr break_signal_handling_t
+use_break_signal_handling() noexcept
+{
+	return break_signal_handling_t::used;
+}
+
+inline constexpr break_signal_handling_t
+skip_break_signal_handling() noexcept
+{
+	return break_signal_handling_t::skipped;
+}
+
+//
 // run_on_this_thread_settings_t
 //
 /*!
@@ -342,18 +365,24 @@ template<typename Traits>
 class run_existing_server_on_thread_pool_t
 {
 	std::size_t m_pool_size;
+	break_signal_handling_t m_break_handling;
 	http_server_t<Traits> * m_server;
 
 public:
 	run_existing_server_on_thread_pool_t(
 		std::size_t pool_size,
+		break_signal_handling_t break_handling,
 		http_server_t<Traits> & server )
 		:	m_pool_size{ pool_size }
+		,	m_break_handling{ break_handling }
 		,	m_server{ &server }
 	{}
 
 	std::size_t
 	pool_size() const noexcept { return m_pool_size; }
+
+	break_signal_handling_t
+	break_handling() const noexcept { return m_break_handling; }
 
 	http_server_t<Traits> &
 	server() const noexcept { return *m_server; }
@@ -364,9 +393,10 @@ template<typename Traits>
 run_existing_server_on_thread_pool_t<Traits>
 on_thread_pool(
 	std::size_t pool_size,
+	break_signal_handling_t break_handling,
 	http_server_t<Traits> & server )
 {
-	return { pool_size, server };
+	return { pool_size, break_handling, server };
 }
 
 namespace impl {
@@ -378,12 +408,16 @@ namespace impl {
  * This function receives an already created thread pool object and
  * already created http-server and run it on this thread pool.
  *
+ * \attention
+ * This function installs break signal handler and stops server when
+ * break signal is raised.
+ *
  * \since
  * v.0.5.1
  */
 template<typename Io_Context_Holder, typename Traits>
 void
-run(
+run_with_break_signal_handling(
 	ioctx_on_thread_pool_t<Io_Context_Holder> & pool,
 	http_server_t<Traits> & server )
 {
@@ -403,6 +437,35 @@ run(
 			}
 		} );
 
+	server.open_async(
+		[]{ /* Ok. */},
+		[]( std::exception_ptr ex ){
+			std::rethrow_exception( ex );
+		} );
+
+	pool.start();
+	pool.wait();
+}
+
+/*!
+ * \brief An implementation of run-function for thread pool case
+ * with existing http_server instance.
+ *
+ * This function receives an already created thread pool object and
+ * already created http-server and run it on this thread pool.
+ *
+ * \note
+ * This function doesn't install break signal handlers.
+ *
+ * \since
+ * v.0.5.1
+ */
+template<typename Io_Context_Holder, typename Traits>
+void
+run_without_break_signal_handling(
+	ioctx_on_thread_pool_t<Io_Context_Holder> & pool,
+	http_server_t<Traits> & server )
+{
 	server.open_async(
 		[]{ /* Ok. */},
 		[]( std::exception_ptr ex ){
@@ -439,7 +502,10 @@ run( run_existing_server_on_thread_pool_t<Traits> && params )
 
 	thread_pool_t pool{ params.pool_size(), params.server().io_context() };
 
-	impl::run( pool, params.server() );
+	if( break_signal_handling_t::used == params.break_handling() )
+		impl::run_with_break_signal_handling( pool, params.server() );
+	else
+		impl::run_without_break_signal_handling( pool, params.server() );
 }
 
 } /* namespace restinio */
