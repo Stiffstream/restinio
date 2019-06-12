@@ -119,8 +119,10 @@ struct ip_blocker_holder_t
 	restinio::ip_blocker::inspection_result_t
 	inspect_incoming( Socket & socket ) const noexcept
 	{
-//FIXME: implement this!
-return restinio::ip_blocker::inspection_result_t::deny;
+		return m_ip_blocker->inspect(
+				restinio::ip_blocker::incoming_info_t{
+					socket.lowest_layer().remote_endpoint()
+				} );
 	}
 };
 
@@ -325,29 +327,31 @@ class acceptor_t final
 							remote_endpoint, i );
 				} );
 
-				auto create_and_init_connection =
-					[sock = this->move_socket( i ),
-					factory = m_connection_factory,
-					ep = std::move(remote_endpoint)]() mutable {
-						// Create new connection handler.
-						auto conn = factory->create_new_connection(
-								std::move(sock), std::move(ep) );
+				// Since v.0.5.1 the incoming connection must be
+				// inspected by IP-blocker.
+				auto incoming_socket = this->move_socket( i );
+				const auto inspection_result = this->inspect_incoming(
+						incoming_socket );
 
-						//! If connection handler was created,
-						// then start waiting for request message.
-						if( conn )
-							conn->init();
-					};
+				switch( inspection_result )
+				{
+				case restinio::ip_blocker::inspection_result_t::deny:
+					// New connection can be used. It is disabled by IP-blocker.
+					m_logger.warn( [&]{
+						return fmt::format(
+								"accepted connection from {} on socket #{} denied by"
+								" IP-blocker",
+								remote_endpoint, i );
+					} );
+					// incoming_socket will be closed automatically.
+				break;
 
-				if( m_separate_accept_and_create_connect )
-				{
-					asio_ns::post(
-						get_executor(),
-						std::move( create_and_init_connection ) );
-				}
-				else
-				{
-					create_and_init_connection();
+				case restinio::ip_blocker::inspection_result_t::allow:
+					// Acception of the connection can be continued.
+					do_accept_current_connection(
+							std::move(incoming_socket),
+							remote_endpoint );
+				break;
 				}
 			}
 			else
@@ -363,6 +367,37 @@ class acceptor_t final
 
 			// Continue accepting.
 			accept_next( i );
+		}
+
+		void
+		do_accept_current_connection(
+			stream_socket_t incoming_socket,
+			endpoint_t remote_endpoint )
+		{
+			auto create_and_init_connection =
+				[sock = std::move(incoming_socket),
+				factory = m_connection_factory,
+				ep = std::move(remote_endpoint)]() mutable {
+					// Create new connection handler.
+					auto conn = factory->create_new_connection(
+							std::move(sock), std::move(ep) );
+
+					//! If connection handler was created,
+					// then start waiting for request message.
+					if( conn )
+						conn->init();
+				};
+
+			if( m_separate_accept_and_create_connect )
+			{
+				asio_ns::post(
+					get_executor(),
+					std::move( create_and_init_connection ) );
+			}
+			else
+			{
+				create_and_init_connection();
+			}
 		}
 
 		//! Close opened acceptor.
