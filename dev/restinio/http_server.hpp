@@ -181,6 +181,10 @@ class http_server_t
 		 */
 		using traits_t = Traits;
 
+		// This is not Copyable nor Moveable type.
+		http_server_t( const http_server_t & ) = delete;
+		http_server_t( http_server_t && ) = delete;
+
 		template<typename D>
 		http_server_t(
 			io_context_holder_t io_context,
