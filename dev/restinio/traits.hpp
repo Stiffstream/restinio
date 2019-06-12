@@ -12,6 +12,7 @@
 #include <restinio/asio_timer_manager.hpp>
 #include <restinio/null_logger.hpp>
 #include <restinio/connection_state_listener.hpp>
+#include <restinio/ip_blocker.hpp>
 
 namespace restinio
 {
@@ -94,6 +95,33 @@ struct traits_t
 	 * @since v.0.5.1
 	 */
 	using connection_state_listener_t = connection_state::noop_listener_t;
+
+	//FIXME: document this!
+	//FIXME: fix code example in the comment!
+	/*!
+	 * @brief A type for IP-blocker.
+	 *
+	 * An example:
+	 * @code
+	 * // Definition of user's IP-blocker.
+	 * class my_ip_blocker {
+	 * 	...
+	 * public:
+	 * 	...
+	 * 	void state_changed(const restinio::connection_state::notice_t & notice) noexcept {
+	 * 		... // some reaction to state change.
+	 * 	}
+	 * };
+	 *
+	 * // Definition of custom traits for HTTP server.
+	 * struct my_server_traits : public restinio::default_traits_t {
+	 * 	using ip_blocker_t = my_ip_blocker;
+	 * };
+	 * @endcode
+	 *
+	 * @since v.0.5.1
+	 */
+	using ip_blocker_t = ip_blocker::noop_ip_blocker_t;
 
 	using timer_manager_t = Timer_Manager;
 	using logger_t = Logger;

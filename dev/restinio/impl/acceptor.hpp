@@ -93,6 +93,61 @@ class socket_supplier_t
 		std::vector< Socket > m_sockets;
 };
 
+namespace acceptor_details
+{
+
+/*!
+ * @brief A class for holding actual IP-blocker.
+ *
+ * This class holds shared pointer to actual IP-blocker object and
+ * provides actual inspect_incoming() implementation.
+ *
+ * @since v.0.5.1
+ */
+template< typename Ip_Blocker >
+struct ip_blocker_holder_t
+{
+	std::shared_ptr< Ip_Blocker > m_ip_blocker;
+
+	template< typename Settings >
+	ip_blocker_holder_t(
+		const Settings & settings )
+		:	m_ip_blocker{ settings.ip_blocker() }
+	{}
+
+	template< typename Socket >
+	restinio::ip_blocker::inspection_result_t
+	inspect_incoming( Socket & socket ) const noexcept
+	{
+//FIXME: implement this!
+return restinio::ip_blocker::inspection_result_t::deny;
+	}
+};
+
+/*!
+ * @brief A specialization of ip_blocker_holder for case of
+ * noop_ip_blocker.
+ *
+ * This class doesn't hold anything and doesn't do anything.
+ *
+ * @since v.0.5.1
+ */
+template<>
+struct ip_blocker_holder_t< restinio::ip_blocker::noop_ip_blocker_t >
+{
+	template< typename Settings >
+	ip_blocker_holder_t( const Settings & ) { /* nothing to do */ }
+
+	template< typename Socket >
+	restinio::ip_blocker::inspection_result_t
+	inspect_incoming( Socket & socket ) const noexcept
+	{
+		return restinio::ip_blocker::inspection_result_t::allow;
+	}
+};
+
+} /* namespace acceptor_details */
+
 //
 // acceptor_t
 //
@@ -102,7 +157,11 @@ template < typename Traits >
 class acceptor_t final
 	:	public std::enable_shared_from_this< acceptor_t< Traits > >
 	,	protected socket_supplier_t< typename Traits::stream_socket_t >
+	,	protected acceptor_details::ip_blocker_holder_t< typename Traits::ip_blocker_t >
 {
+		using ip_blocker_base_t = acceptor_details::ip_blocker_holder_t<
+				typename Traits::ip_blocker_t >;
+
 	public:
 		using connection_factory_t = impl::connection_factory_t< Traits >;
 		using connection_factory_shared_ptr_t =
@@ -122,6 +181,7 @@ class acceptor_t final
 			//! Logger.
 			logger_t & logger )
 			:	socket_holder_base_t{ settings, io_context }
+			,	ip_blocker_base_t{ settings }
 			,	m_port{ settings.port() }
 			,	m_protocol{ settings.protocol() }
 			,	m_address{ settings.address() }
