@@ -96,10 +96,16 @@ struct traits_t
 	 */
 	using connection_state_listener_t = connection_state::noop_listener_t;
 
-	//FIXME: document this!
-	//FIXME: fix code example in the comment!
 	/*!
 	 * @brief A type for IP-blocker.
+	 *
+	 * By default RESTinio's accepts all incoming connections.
+	 * But since v.0.5.1 a user can specify IP-blocker object that
+	 * will be called for every new connection. This IP-blocker can
+	 * deny or allow a new connection.
+	 *
+	 * Type of that IP-blocker object is specified by typedef
+	 * ip_blocker_t.
 	 *
 	 * An example:
 	 * @code
@@ -108,8 +114,9 @@ struct traits_t
 	 * 	...
 	 * public:
 	 * 	...
-	 * 	void state_changed(const restinio::connection_state::notice_t & notice) noexcept {
-	 * 		... // some reaction to state change.
+	 * 	restinio::ip_blocker::inspection_result_t
+	 * 	state_changed(const restinio::ip_blocker::incoming_info_t & info) noexcept {
+	 * 		... // some checking for new connection.
 	 * 	}
 	 * };
 	 *

@@ -359,7 +359,6 @@ struct connection_state_listener_holder_t< connection_state::noop_listener_t >
 	}
 };
 
-//FIXME: document this!
 //
 // ip_blocker_holder_t
 //
@@ -1002,7 +1001,6 @@ class basic_server_settings_t
 			this->check_valid_connection_state_listener_pointer();
 		}
 
-		//FIXME: verify code example in comment!
 		/*!
 		 * @brief Setter for IP-blocker.
 		 *
@@ -1014,7 +1012,8 @@ class basic_server_settings_t
 		 * 	...
 		 * public:
 		 * 	...
-		 * 	void state_changed(const restinio::connection_state::notice_t & notice) noexcept {
+		 * 	restinio::ip_blocker::inspection_result_t
+		 * 	inspect(const restinio::ip_blocker::incoming_info_t & info) noexcept {
 		 * 		...
 		 * 	}
 		 * };
@@ -1046,7 +1045,6 @@ class basic_server_settings_t
 			return reference_to_derived();
 		}
 
-		//FIXME: verify code example in comment!
 		/*!
 		 * @brief Setter for IP-blocker.
 		 *
@@ -1058,7 +1056,8 @@ class basic_server_settings_t
 		 * 	...
 		 * public:
 		 * 	...
-		 * 	void state_changed(const restinio::connection_state::notice_t & notice) noexcept {
+		 * 	restinio::ip_blocker::inspection_result_t
+		 * 	inspect(const restinio::ip_blocker::incoming_info_t & info) noexcept {
 		 * 		...
 		 * 	}
 		 * };
