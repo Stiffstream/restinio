@@ -375,13 +375,18 @@ struct connection_state_listener_holder_t< connection_state::noop_listener_t >
 template< typename Ip_Blocker >
 struct ip_blocker_holder_t
 {
-//FIXME: implement that check!
-#if 0
 	static_assert(
-			noexcept( std::declval<Listener>().state_changed(
-					std::declval<connection_state::notice_t>() ) ),
-			"Listener::state_changed() method should be noexcept" );
-#endif
+			noexcept( std::declval<Ip_Blocker>().inspect(
+					std::declval<ip_blocker::incoming_info_t>() ) ),
+			"Ip_Blocker::inspect() method should be noexcept" );
+
+	static_assert(
+			std::is_same<
+					restinio::ip_blocker::inspection_result_t,
+					decltype(std::declval<Ip_Blocker>().inspect(
+							std::declval<ip_blocker::incoming_info_t>())) >::value,
+			"Ip_Blocker::inspect() should return "
+			"restinio::ip_blocker::inspection_result_t" );
 
 	std::shared_ptr< Ip_Blocker > m_ip_blocker;
 
