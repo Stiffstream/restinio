@@ -415,7 +415,7 @@ struct ip_blocker_holder_t
 template<>
 struct ip_blocker_holder_t< ip_blocker::noop_ip_blocker_t >
 {
-	static constexpr bool has_actual_ip_blocker_listener = false;
+	static constexpr bool has_actual_ip_blocker = false;
 
 	void
 	check_valid_ip_blocker_pointer() const
