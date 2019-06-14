@@ -75,6 +75,7 @@ SET(RESTINIO_HEADERS_ALL
 	http_headers.hpp
 	http_server.hpp
 	http_server_run.hpp
+	ip_blocker.hpp
 	message_builders.hpp
 	null_logger.hpp
 	null_timer_manager.hpp
