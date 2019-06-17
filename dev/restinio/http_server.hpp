@@ -181,6 +181,10 @@ class http_server_t
 		 */
 		using traits_t = Traits;
 
+		// This is not Copyable nor Moveable type.
+		http_server_t( const http_server_t & ) = delete;
+		http_server_t( http_server_t && ) = delete;
+
 		template<typename D>
 		http_server_t(
 			io_context_holder_t io_context,
@@ -191,6 +195,8 @@ class http_server_t
 			// Since v.0.5.1 the presence of custom connection state
 			// listener should be checked before the start of HTTP server.
 			settings.ensure_valid_connection_state_listener();
+			// The presence of IP-blocker should also be checked.
+			settings.ensure_valid_ip_blocker();
 
 			// Now we can continue preparation of HTTP server.
 

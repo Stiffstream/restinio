@@ -133,6 +133,8 @@ class ioctx_on_thread_pool_t
 				for( auto & t : m_pool )
 					if( t.joinable() )
 						t.join();
+
+				throw;
 			}
 		}
 

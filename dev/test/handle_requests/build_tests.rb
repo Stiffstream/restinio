@@ -11,6 +11,7 @@ MxxRu::Cpp::composite_target {
 		output_and_buffers
 		remote_endpoint
 		connection_state
+		ip_blocker
 		slow_transmit
 		throw_exception
 		timeouts

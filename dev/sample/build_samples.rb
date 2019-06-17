@@ -7,6 +7,8 @@ MxxRu::Cpp::composite_target {
 	required_prj 'sample/hello_world/prj.rb'
 	required_prj 'sample/hello_world_sendfile/prj.rb'
 	required_prj 'sample/hello_world_delayed/prj.rb'
+	required_prj 'sample/run_existing_server/prj.rb'
+	required_prj 'sample/run_for_minute/prj.rb'
 	required_prj 'sample/express_router/prj.rb'
 	required_prj 'sample/express_router_tutorial/prj.rb'
 	required_prj 'sample/sendfiles/prj.rb'
@@ -18,6 +20,7 @@ MxxRu::Cpp::composite_target {
 	required_prj 'sample/notificators/prj.rb'
 	required_prj 'sample/custom_buffer/prj.rb'
 	required_prj 'sample/connection_state/prj.rb'
+	required_prj 'sample/ip_blocker/prj.rb'
 
 	required_prj 'sample/websocket/prj.rb'
 	required_prj 'sample/websocket_detailed/prj.rb'

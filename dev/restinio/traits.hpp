@@ -12,6 +12,7 @@
 #include <restinio/asio_timer_manager.hpp>
 #include <restinio/null_logger.hpp>
 #include <restinio/connection_state_listener.hpp>
+#include <restinio/ip_blocker.hpp>
 
 namespace restinio
 {
@@ -94,6 +95,40 @@ struct traits_t
 	 * @since v.0.5.1
 	 */
 	using connection_state_listener_t = connection_state::noop_listener_t;
+
+	/*!
+	 * @brief A type for IP-blocker.
+	 *
+	 * By default RESTinio's accepts all incoming connections.
+	 * But since v.0.5.1 a user can specify IP-blocker object that
+	 * will be called for every new connection. This IP-blocker can
+	 * deny or allow a new connection.
+	 *
+	 * Type of that IP-blocker object is specified by typedef
+	 * ip_blocker_t.
+	 *
+	 * An example:
+	 * @code
+	 * // Definition of user's IP-blocker.
+	 * class my_ip_blocker {
+	 * 	...
+	 * public:
+	 * 	...
+	 * 	restinio::ip_blocker::inspection_result_t
+	 * 	state_changed(const restinio::ip_blocker::incoming_info_t & info) noexcept {
+	 * 		... // some checking for new connection.
+	 * 	}
+	 * };
+	 *
+	 * // Definition of custom traits for HTTP server.
+	 * struct my_server_traits : public restinio::default_traits_t {
+	 * 	using ip_blocker_t = my_ip_blocker;
+	 * };
+	 * @endcode
+	 *
+	 * @since v.0.5.1
+	 */
+	using ip_blocker_t = ip_blocker::noop_ip_blocker_t;
 
 	using timer_manager_t = Timer_Manager;
 	using logger_t = Logger;

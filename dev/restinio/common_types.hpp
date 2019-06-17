@@ -8,6 +8,10 @@
 
 #pragma once
 
+#include <cstdint>
+
+#include <restinio/asio_include.hpp>
+
 namespace restinio
 {
 
@@ -145,4 +149,13 @@ using nullable_pointer_t = T*;
 template< typename T >
 using not_null_pointer_t = T*;
 
+/*!
+ * @brief Type for ID of connection.
+ */
+using connection_id_t = std::uint64_t;
+
+//! An alias for endpoint type from Asio.
+using endpoint_t = asio_ns::ip::tcp::endpoint;
+
 } /* namespace restinio */
+

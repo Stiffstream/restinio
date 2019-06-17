@@ -303,7 +303,6 @@ create_default_unique_object_instance< socket_options_setter_t >()
  */
 using cleanup_functor_t = std::function< void(void) >;
 
-//FIXME: document this!
 //
 // connection_state_listener_holder_t
 //
@@ -361,6 +360,70 @@ struct connection_state_listener_holder_t< connection_state::noop_listener_t >
 };
 
 //
+// ip_blocker_holder_t
+//
+/*!
+ * @brief A special class for holding actual IP-blocker object.
+ *
+ * This class holds shared pointer to actual IP-blocker
+ * and provides an actual implementation of
+ * check_valid_ip_blocker_pointer() method.
+ *
+ * @since v.0.5.1
+ */
+template< typename Ip_Blocker >
+struct ip_blocker_holder_t
+{
+	static_assert(
+			noexcept( std::declval<Ip_Blocker>().inspect(
+					std::declval<ip_blocker::incoming_info_t>() ) ),
+			"Ip_Blocker::inspect() method should be noexcept" );
+
+	static_assert(
+			std::is_same<
+					restinio::ip_blocker::inspection_result_t,
+					decltype(std::declval<Ip_Blocker>().inspect(
+							std::declval<ip_blocker::incoming_info_t>())) >::value,
+			"Ip_Blocker::inspect() should return "
+			"restinio::ip_blocker::inspection_result_t" );
+
+	std::shared_ptr< Ip_Blocker > m_ip_blocker;
+
+	static constexpr bool has_actual_ip_blocker = true;
+
+	//! Checks that pointer to IP-blocker is not null.
+	/*!
+	 * Throws an exception if m_ip_blocker is nullptr.
+	 */
+	void
+	check_valid_ip_blocker_pointer() const
+	{
+		if( !m_ip_blocker )
+			throw exception_t{ "IP-blocker is not specified" };
+	}
+};
+
+/*!
+ * @brief A special class for case when no-op IP-blocker is used.
+ *
+ * Doesn't hold anything and contains empty
+ * check_valid_ip_blocker_pointer() method.
+ *
+ * @since v.0.5.1
+ */
+template<>
+struct ip_blocker_holder_t< ip_blocker::noop_ip_blocker_t >
+{
+	static constexpr bool has_actual_ip_blocker = false;
+
+	void
+	check_valid_ip_blocker_pointer() const
+	{
+		// Nothing to do.
+	}
+};
+
+//
 // basic_server_settings_t
 //
 
@@ -380,6 +443,7 @@ class basic_server_settings_t
 	:	public socket_type_dependent_settings_t< Derived, typename Traits::stream_socket_t >
 	,	protected connection_state_listener_holder_t<
 			typename Traits::connection_state_listener_t >
+	,	protected ip_blocker_holder_t< typename Traits::ip_blocker_t >
 {
 		using base_type_t = socket_type_dependent_settings_t<
 				Derived, typename Traits::stream_socket_t>;
@@ -388,6 +452,10 @@ class basic_server_settings_t
 				connection_state_listener_holder_t<
 						typename Traits::connection_state_listener_t
 					>::has_actual_connection_state_listener;
+
+		static constexpr bool has_actual_ip_blocker =
+				ip_blocker_holder_t< typename Traits::ip_blocker_t >::
+						has_actual_ip_blocker;
 
 	public:
 		basic_server_settings_t(
@@ -933,6 +1001,122 @@ class basic_server_settings_t
 			this->check_valid_connection_state_listener_pointer();
 		}
 
+		/*!
+		 * @brief Setter for IP-blocker.
+		 *
+		 * @note ip_blocker() method should be called if
+		 * user specify its type for ip_blocker_t traits.
+		 * For example:
+		 * @code
+		 * class my_ip_blocker_t {
+		 * 	...
+		 * public:
+		 * 	...
+		 * 	restinio::ip_blocker::inspection_result_t
+		 * 	inspect(const restinio::ip_blocker::incoming_info_t & info) noexcept {
+		 * 		...
+		 * 	}
+		 * };
+		 *
+		 * struct my_traits_t : public restinio::default_traits_t {
+		 * 	using ip_blocker_t = my_ip_blocker_t;
+		 * };
+		 *
+		 * restinio::server_setting_t<my_traits_t> settings;
+		 * setting.ip_blocker( std::make_shared<my_ip_blocker_t>(...) );
+		 * ...
+		 * @endcode
+		 *
+		 * @attention This method can't be called if the default no-op
+		 * IP-blocker is used in server traits.
+		 *
+		 * @since v.0.5.1
+		 */
+		Derived &
+		ip_blocker(
+			std::shared_ptr< typename Traits::ip_blocker_t > blocker ) &
+		{
+			static_assert(
+					has_actual_ip_blocker,
+					"ip_blocker(blocker) can't be used "
+					"for the default ip_blocker::noop_ip_blocker_t" );
+
+			this->m_ip_blocker = std::move(blocker);
+			return reference_to_derived();
+		}
+
+		/*!
+		 * @brief Setter for IP-blocker.
+		 *
+		 * @note ip_blocker() method should be called if
+		 * user specify its type for ip_blocker_t traits.
+		 * For example:
+		 * @code
+		 * class my_ip_blocker_t {
+		 * 	...
+		 * public:
+		 * 	...
+		 * 	restinio::ip_blocker::inspection_result_t
+		 * 	inspect(const restinio::ip_blocker::incoming_info_t & info) noexcept {
+		 * 		...
+		 * 	}
+		 * };
+		 *
+		 * struct my_traits_t : public restinio::default_traits_t {
+		 * 	using ip_blocker_t = my_ip_blocker_t;
+		 * };
+		 *
+		 * restinio::run( restinio::on_this_thread<my_traits_t>()
+		 * 		.ip_blocker( std::make_shared<my_ip_blocker_t>(...) )
+		 * 		.port(...)
+		 * 		...);
+		 * @endcode
+		 *
+		 * @attention This method can't be called if the default no-op
+		 * state listener is used in server traits.
+		 *
+		 * @since v.0.5.1
+		 */
+		Derived &&
+		ip_blocker(
+			std::shared_ptr< typename Traits::ip_blocker_t > blocker ) &&
+		{
+			return std::move(this->ip_blocker(std::move(blocker)));
+		}
+
+		/*!
+		 * @brief Get reference to IP-blocker.
+		 *
+		 * @attention This method can't be called if the default no-op
+		 * IP-blocker is used in server traits.
+		 *
+		 * @since v.0.5.1
+		 */
+		const std::shared_ptr< typename Traits::ip_blocker_t > &
+		ip_blocker() const noexcept
+		{
+			static_assert(
+					has_actual_ip_blocker,
+					"ip_blocker() can't be used "
+					"for the default ip_blocker::noop_ip_blocker_t" );
+
+			return this->m_ip_blocker;
+		}
+
+		/*!
+		 * @brief Internal method for checking presence of IP-blocker object.
+		 *
+		 * If a user specifies custom IP-blocker type but doesn't
+		 * set a pointer to blocker object that method throws an exception.
+		 *
+		 * @since v.0.5.1
+		 */
+		void
+		ensure_valid_ip_blocker()
+		{
+			this->check_valid_ip_blocker_pointer();
+		}
+
 	private:
 		Derived &
 		reference_to_derived()
@@ -1038,3 +1222,4 @@ exec_configurator( Configurator && configurator )
 }
 
 } /* namespace restinio */
+
