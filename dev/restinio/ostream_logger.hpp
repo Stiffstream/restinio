@@ -91,12 +91,13 @@ class ostream_logger_t
 		{
 			std::unique_lock< Lock > lock{ m_lock };
 
-			using namespace std;
-			using namespace chrono;
+			namespace stdchrono = std::chrono;
 
-			auto now = system_clock::now();
-			auto ms = duration_cast< milliseconds >( now.time_since_epoch() );
-			time_t unix_time = duration_cast< seconds >( ms ).count();
+			auto now = stdchrono::system_clock::now();
+			auto ms = stdchrono::duration_cast<
+					stdchrono::milliseconds >( now.time_since_epoch() );
+			std::time_t unix_time = stdchrono::duration_cast<
+					stdchrono::seconds >( ms ).count();
 
 			( *m_out )
 				<< fmt::format(
