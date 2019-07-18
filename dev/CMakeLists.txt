@@ -18,10 +18,17 @@ option(RESTINIO_BENCH "Build the test target." ${RESTINIO_MASTER_PROJECT})
 option(RESTINIO_INSTALL_BENCHES "Build install samples." ${RESTINIO_MASTER_PROJECT})
 option(RESTINIO_FIND_DEPS "Use `find_package()` for including RESTinio dependencies." OFF)
 
+option(RESTINIO_ALLOW_SOBJECTIZER "Allow add_subdirectory(so_5) in the main RESTinio CMakeLists.txt" ${RESTINIO_MASTER_PROJECT})
+
 SET(RESTINIO_USE_BOOST_ASIO "none" CACHE STRING "Use boost version of ASIO")
 SET(RESTINIO_USE_BOOST_ASIO_VALUES "none;static;shared")
 
 set_property(CACHE RESTINIO_USE_BOOST_ASIO PROPERTY STRINGS ${RESTINIO_USE_BOOST_ASIO_VALUES})
+
+IF ((RESTINIO_TEST OR RESTINIO_SAMPLE OR RESTINIO_BENCH)
+		AND (NOT RESTINIO_ALLOW_SOBJECTIZER))
+	message(FATAL_ERROR "RESTINIO_ALLOW_SOBJECTIZER can't be OFF if RESTINIO_TEST or RESTINIO_SAMPLE or RESTINIO_BENCH is used")
+ENDIF ()
 
 IF (RESTINIO_MASTER_PROJECT)
 	# RESTinio is a main project (not subproject)
@@ -106,9 +113,11 @@ IF (RESTINIO_MASTER_PROJECT)
 
 	# ------------------------------------------------------------------------------
 	# SObjectizer
-	SET(SOBJECTIZER_BUILD_STATIC ON)
-	SET(SOBJECTIZER_LIBS sobjectizer::StaticLib)
-	add_subdirectory(so_5)
+	IF (RESTINIO_ALLOW_SOBJECTIZER)
+		SET(SOBJECTIZER_BUILD_STATIC ON)
+		SET(SOBJECTIZER_LIBS sobjectizer::StaticLib)
+		add_subdirectory(so_5)
+	ENDIF ()
 
 	# ------------------------------------------------------------------------------
 	# Zlib
