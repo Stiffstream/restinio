@@ -144,6 +144,7 @@ struct ip_blocker_holder_t< restinio::ip_blocker::noop_ip_blocker_t >
 	restinio::ip_blocker::inspection_result_t
 	inspect_incoming( Socket & socket ) const noexcept
 	{
+		static_cast<void>(socket); // fix unused warning
 		return restinio::ip_blocker::inspection_result_t::allow;
 	}
 };
