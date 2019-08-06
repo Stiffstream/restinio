@@ -123,6 +123,20 @@ class tls_socket_t
 
 		template< typename... Args >
 		auto
+		set_verify_mode( Args &&... args )
+		{
+			return m_socket->set_verify_mode( std::forward< Args >( args )... );
+		}
+
+		template< typename... Args >
+		auto
+		set_verify_callback( Args &&... args )
+		{
+			return m_socket->set_verify_callback( std::forward< Args >( args )... );
+		}
+
+		template< typename... Args >
+		auto
 		async_handshake( Args &&... args )
 		{
 			return m_socket->async_handshake( std::forward< Args >( args )... );
