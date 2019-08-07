@@ -142,7 +142,7 @@ struct ip_blocker_holder_t< restinio::ip_blocker::noop_ip_blocker_t >
 
 	template< typename Socket >
 	restinio::ip_blocker::inspection_result_t
-	inspect_incoming( Socket & socket ) const noexcept
+	inspect_incoming( Socket & /*socket*/ ) const noexcept
 	{
 		return restinio::ip_blocker::inspection_result_t::allow;
 	}

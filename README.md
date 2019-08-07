@@ -86,7 +86,7 @@ int main() {
 
     router->non_matched_request_handler(
             [](auto req){
-                return req->create_response( 404, "Not found").connection_close().done();
+                return req->create_response(restinio::status_not_found()).connection_close().done();
             });
 
     // Launching a server with custom traits.
