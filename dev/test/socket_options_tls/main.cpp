@@ -74,3 +74,15 @@ TEST_CASE( "Socket_options TLS" , "[socket][options][tls]" )
 
 	other_thread.stop_and_join();
 }
+
+TEST_CASE( "Usage of asio_ssl_stream() method", "[socket][tls][asio_ssl_stream]" )
+{
+	restinio::asio_ns::io_context ctx;
+	auto ssl_context = std::make_shared< restinio::asio_ns::ssl::context >(
+			restinio::asio_ns::ssl::context::sslv23 );
+
+	restinio::tls_socket_t socket{ ctx, ssl_context };
+
+	REQUIRE( nullptr != socket.asio_ssl_stream().native_handle() );
+}
+

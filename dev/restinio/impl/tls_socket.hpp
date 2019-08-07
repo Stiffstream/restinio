@@ -68,6 +68,36 @@ class tls_socket_t
 			return m_socket->lowest_layer();
 		}
 
+		/*!
+		 * \brief Get an access to underlying Asio's socket.
+		 *
+		 * This feature can be useful if there is a need to call some
+		 * Asio's socket specific methods like `native_handle`.
+		 *
+		 * \since
+		 * v.0.5.2
+		 */
+		socket_t &
+		asio_ssl_stream()
+		{
+			return *m_socket;
+		}
+
+		/*!
+		 * \brief Get an access to underlying Asio's socket.
+		 *
+		 * This feature can be useful if there is a need to call some
+		 * Asio's socket specific methods like `native_handle`.
+		 *
+		 * \since
+		 * v.0.5.2
+		 */
+		const socket_t &
+		asio_ssl_stream() const
+		{
+			return *m_socket;
+		}
+
 		auto
 		get_executor()
 		{
