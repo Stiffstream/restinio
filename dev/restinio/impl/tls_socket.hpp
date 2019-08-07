@@ -6,6 +6,8 @@
 	Socket adapter for asio::ssl::stream< asio::ip::tcp::socket >.
 */
 
+#pragma once
+
 #include <restinio/asio_include.hpp>
 
 #if !defined(RESTINIO_USE_BOOST_ASIO)
