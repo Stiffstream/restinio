@@ -295,10 +295,14 @@ class connection_t final
 				[ & ]{
 					// Inform state listener if it used.
 					m_settings->call_state_listener( [this]() noexcept {
-							return connection_state::accepted_t{
+							return connection_state::notice_t{
 									this->connection_id(),
 									this->m_remote_endpoint,
-									make_tls_socket_pointer_for_state_listener( m_socket ) };
+									connection_state::accepted_t{
+											make_tls_socket_pointer_for_state_listener(
+													m_socket )
+									}
+								};
 						} );
 
 					// Start timeout checking.
@@ -1288,9 +1292,11 @@ class connection_t final
 
 			// Inform state listener if it used.
 			m_settings->call_state_listener( [this]() noexcept {
-					return connection_state::closed_t{
+					return connection_state::notice_t{
 							this->connection_id(),
-							this->m_remote_endpoint };
+							this->m_remote_endpoint,
+							connection_state::closed_t{}
+						};
 				} );
 		}
 

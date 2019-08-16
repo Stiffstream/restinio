@@ -45,31 +45,30 @@ public:
 	void state_changed(
 		const restinio::connection_state::notice_t & notice ) noexcept
 	{
+		using namespace restinio::connection_state;
+
 		std::lock_guard<std::mutex> l{ m_lock };
 
 		auto & connections = m_connections[ notice.remote_endpoint().address() ];
-		switch( notice.cause() )
+		const auto cause = notice.cause();
+		if( restinio::holds_alternative< accepted_t >( cause ) )
 		{
-			case restinio::connection_state::cause_t::accepted:
-				// Info about a new connection must be stored.
-				connections.push_back( notice.connection_id() );
-			break;
-
-			case restinio::connection_state::cause_t::closed:
-				// Info about closed connection must be removed.
-				connections.erase(
-						std::find( std::begin(connections), std::end(connections),
-								notice.connection_id() ) );
-
-				// There is no need to hold IP address if there is no
-				// more connections for it.
-				if( connections.empty() )
-					m_connections.erase( notice.remote_endpoint().address() );
-			break;
-
-			default:
-				; // All other cases just ignored in that example.
+			// Info about a new connection must be stored.
+			connections.push_back( notice.connection_id() );
 		}
+		else if( restinio::holds_alternative< closed_t >( cause ) )
+		{
+			// Info about closed connection must be removed.
+			connections.erase(
+					std::find( std::begin(connections), std::end(connections),
+							notice.connection_id() ) );
+
+			// There is no need to hold IP address if there is no
+			// more connections for it.
+			if( connections.empty() )
+				m_connections.erase( notice.remote_endpoint().address() );
+		}
+		// All other cases just ignored in that example.
 	}
 };
 

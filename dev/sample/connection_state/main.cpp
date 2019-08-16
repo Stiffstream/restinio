@@ -10,19 +10,19 @@ class connection_listener_t
 	// listener.
 	std::mutex m_lock;
 
-	static std::pair<
-			const restinio::connection_state::common_notice_info_t *,
-			const char *>
+	static const char *
 	cause_to_str( const restinio::connection_state::notice_t & notice ) noexcept
 	{
 		using namespace restinio::connection_state;
-		if( auto * p = restinio::get_if< accepted_t >( &notice ) )
-			return { p, "accepted" };
-		else if( auto * p = restinio::get_if< closed_t >( &notice ) )
-			return { p, "closed" };
+		const auto cause = notice.cause();
+		if( restinio::holds_alternative< accepted_t >( cause ) )
+			return "accepted";
+		else if( restinio::holds_alternative< closed_t >( cause ) )
+			return "closed";
+		else if( restinio::holds_alternative< upgraded_to_websocket_t >( cause ) )
+			return "upgraded_to_websocket";
 		else
-			return { &restinio::get< upgraded_to_websocket_t >( notice ),
-					"upgraded_to_websocket" };
+			return "unknown";
 	}
 
 public:
@@ -30,14 +30,12 @@ public:
 	void state_changed(
 		const restinio::connection_state::notice_t & notice ) noexcept
 	{
-		const auto t = cause_to_str( notice );
-
 		std::lock_guard<std::mutex> l{ m_lock };
 
 		fmt::print( "connection-notice: {} (from {}) => {}\n",
-				t.first->connection_id(),
-				t.first->remote_endpoint(),
-				t.second );
+				notice.connection_id(),
+				notice.remote_endpoint(),
+				cause_to_str( notice ) );
 	}
 };
 

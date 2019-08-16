@@ -16,18 +16,32 @@ struct state_listener_t
 	std::atomic< int > m_closed{ 0 };
 	std::atomic< int > m_upgraded_to_websocket{ 0 };
 
+	struct cause_visitor_t {
+		state_listener_t & m_self;
+
+		void operator()(
+			const restinio::connection_state::accepted_t & ) const noexcept
+		{
+			++m_self.m_accepted;
+		}
+
+		void operator()(
+			const restinio::connection_state::closed_t & ) const noexcept
+		{
+			++m_self.m_closed;
+		}
+
+		void operator()(
+			const restinio::connection_state::upgraded_to_websocket_t & ) const noexcept
+		{
+			++m_self.m_upgraded_to_websocket;
+		}
+	};
+
 	void state_changed(
 		const restinio::connection_state::notice_t & notice ) noexcept
 	{
-		using namespace restinio::connection_state;
-
-		if( restinio::holds_alternative< accepted_t >( notice ) )
-			++m_accepted;
-		else if( restinio::holds_alternative< closed_t >( notice ) )
-			++m_closed;
-		else if( restinio::holds_alternative< upgraded_to_websocket_t >( notice ) )
-
-			++m_upgraded_to_websocket;
+		restinio::visit( cause_visitor_t{ *this }, notice.cause() );
 	}
 };
 
