@@ -201,14 +201,14 @@ private :
 			.append_header( "Content-Type", "text/plain; charset=utf-8" );
 
 		return resp;
-	};
+	}
 
 	template < typename RESP >
 	static void
 	mark_as_bad_request( RESP & resp )
 	{
 		resp.header().status_line( restinio::status_bad_request() );
-	};
+	}
 };
 
 auto server_handler( book_collection_t & book_collection )
