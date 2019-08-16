@@ -48,7 +48,7 @@ concat_bufs( write_group_t & wg )
 	}
 
 	return res;
-};
+}
 
 
 writable_items_container_t

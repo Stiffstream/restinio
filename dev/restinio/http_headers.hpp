@@ -35,7 +35,7 @@ constexpr auto
 uchar_at( const char * const from, const std::size_t at ) noexcept
 {
 	return static_cast< unsigned char >( from[ at ] );
-};
+}
 
 } /* namespace impl */
 

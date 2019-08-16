@@ -39,7 +39,7 @@ concat_bufs( const asio_bufs_container_t & bufs )
 	}
 
 	return res;
-};
+}
 
 writable_items_container_t
 make_buffers(
