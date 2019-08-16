@@ -14,7 +14,60 @@
 namespace restinio
 {
 
-using tls_socket_t = impl::tls_socket_t;
+namespace connection_state
+{
+
+//FIXME: document this!
+class tls_accessor_t
+{
+	tls_socket_t & m_tls_socket;
+
+public:
+	tls_accessor_t( tls_socket_t & tls_socket ) : m_tls_socket{tls_socket} {}
+
+	//FIXME: document this!
+	auto native_handle() const noexcept
+	{
+		return m_tls_socket.asio_ssl_stream().native_handle();
+	}
+};
+
+//
+// The implementation of TLS-related part of notice_t.
+//
+
+template< typename Lambda >
+void
+notice_t::try_inspect_tls( Lambda && lambda ) const
+{
+	if( m_tls_socket )
+		lambda( tls_accessor_t{*m_tls_socket} );
+}
+
+//FIXME: document this!
+template< typename Lambda >
+decltype(auto)
+notice_t::inspect_tls_or_throw( Lambda && lambda ) const
+{
+	if( !m_tls_socket )
+		throw exception_t{ "an attempt to call inspect_tls for "
+				"non-TLS-connection" };
+
+	return lambda( tls_accessor_t{*m_tls_socket} );
+}
+
+//FIXME: document this!
+template< typename Lambda, typename T >
+T
+notice_t::inspect_tls_or_default( Lambda && lambda, T && default_value ) const
+{
+	if( m_tls_socket )
+		return lambda( tls_accessor_t{*m_tls_socket} );
+
+	return default_value;
+}
+
+} /* namespace connection_state */
 
 //
 // tls_traits_t
@@ -118,6 +171,14 @@ public:
 
 namespace impl
 {
+
+// An overload for the case of non-TLS-connection.
+inline tls_socket_t *
+make_tls_socket_pointer_for_state_listener(
+	tls_socket_t & socket ) noexcept
+{
+	return &socket;
+}
 
 //
 // socket_supplier_t
