@@ -19,7 +19,7 @@ init_resp( RESP resp )
 	.append_header( "Content-Type", "text/plain; charset=utf-8" );
 
 	return resp;
-};
+}
 
 auto server_handler()
 {
