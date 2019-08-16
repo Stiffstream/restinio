@@ -116,6 +116,51 @@ auto server_handler( user_connections_shptr_t user_connections )
 	return router;
 }
 
+struct openssl_free_t {
+	void operator()(void * ptr) const noexcept
+	{
+		OPENSSL_free( ptr );
+	}
+};
+
+std::string extract_user_name_from_client_certificate(
+	const restinio::connection_state::tls_accessor_t & info )
+{
+	auto nhandle = info.native_handle();
+
+	std::unique_ptr<X509, decltype(&X509_free)> client_cert{
+			SSL_get_peer_certificate(nhandle),
+			X509_free
+	};
+	if( !client_cert )
+		throw std::runtime_error( "Unable to get client certificate!" );
+
+	X509_NAME * subject_name = X509_get_subject_name( client_cert.get() );
+
+	int last_pos = -1;
+	last_pos = X509_NAME_get_index_by_NID(
+			subject_name,
+			NID_commonName,
+			last_pos );
+	if( last_pos < 0 )
+		throw std::runtime_error( "commonName is not found!" );
+
+	unsigned char * common_name_utf8{};
+	if( ASN1_STRING_to_UTF8(
+			&common_name_utf8,
+			X509_NAME_ENTRY_get_data(
+					X509_NAME_get_entry( subject_name, last_pos ) ) ) < 0 )
+	{
+		throw std::runtime_error( "ASN1_STRING_to_UTF8 failed!" );
+	}
+
+	std::unique_ptr<unsigned char, openssl_free_t > common_name_deleter{
+			common_name_utf8
+		};
+
+	return { reinterpret_cast<char *>(common_name_utf8) };
+}
+
 class my_tls_inspector_t
 {
 public:
@@ -127,95 +172,55 @@ public:
 	void state_changed(
 		const restinio::connection_state::notice_t & notice) noexcept
 	{
-		using restinio::connection_state::cause_t;
-
-		switch( notice.cause() )
-		{
-			case cause_t::accepted:
-				inspect_tls( notice );
-			break;
-
-			case cause_t::closed:
-				m_user_connections->remove( notice.connection_id() );
-			break;
-
-			case cause_t::upgraded_to_websocket:
-				m_user_connections->remove( notice.connection_id() );
-			break;
-		}
+		restinio::visit( notice_visitor_t{ *m_user_connections }, notice );
    }
 
 public:
 	user_connections_shptr_t m_user_connections;
 
-	void inspect_tls(
-		const restinio::connection_state::notice_t & notice ) noexcept
-	{
-		try
-		{
-			notice.inspect_tls_or_throw(
-				[&]( const restinio::connection_state::tls_accessor_t & tls ) {
-					m_user_connections->add(
-							notice.connection_id(),
-							extract_user_name_from_client_certificate( tls ) );
-				} );
-		}
-		catch( const std::exception & x )
-		{
-			std::cerr << "error in my_tls_inspector_t::inspect: "
-					<< x.what() << std::endl;
-		}
-		catch( ... )
-		{
-			std::cerr << "unknown error in my_tls_inspector_t::inspect!"
-					<< std::endl;
-		}
-	}
+	struct notice_visitor_t {
+		user_connections_t & m_user_connections;
 
-	struct openssl_free_t {
-		void operator()(void * ptr) const noexcept
+		notice_visitor_t( user_connections_t & user_connections )
+			:	m_user_connections{ user_connections }
+		{}
+
+		void operator()(
+			const restinio::connection_state::accepted_t & notice ) const noexcept
 		{
-			OPENSSL_free( ptr );
+			try
+			{
+				notice.inspect_tls_or_throw(
+					[&]( const restinio::connection_state::tls_accessor_t & tls ) {
+						m_user_connections.add(
+								notice.connection_id(),
+								extract_user_name_from_client_certificate( tls ) );
+					} );
+			}
+			catch( const std::exception & x )
+			{
+				std::cerr << "error in my_tls_inspector_t::inspect: "
+						<< x.what() << std::endl;
+			}
+			catch( ... )
+			{
+				std::cerr << "unknown error in my_tls_inspector_t::inspect!"
+						<< std::endl;
+			}
+		}
+
+		void operator()(
+			const restinio::connection_state::closed_t & notice ) const noexcept
+		{
+			m_user_connections.remove( notice.connection_id() );
+		}
+
+		void operator()(
+			const restinio::connection_state::upgraded_to_websocket_t & notice ) const noexcept
+		{
+			m_user_connections.remove( notice.connection_id() );
 		}
 	};
-
-	static std::string extract_user_name_from_client_certificate(
-		const restinio::connection_state::tls_accessor_t & info )
-	{
-		auto nhandle = info.native_handle();
-
-		std::unique_ptr<X509, decltype(&X509_free)> client_cert{
-				SSL_get_peer_certificate(nhandle),
-				X509_free
-		};
-		if( !client_cert )
-			throw std::runtime_error( "Unable to get client certificate!" );
-
-		X509_NAME * subject_name = X509_get_subject_name( client_cert.get() );
-
-		int last_pos = -1;
-		last_pos = X509_NAME_get_index_by_NID(
-				subject_name,
-				NID_commonName,
-				last_pos );
-		if( last_pos < 0 )
-			throw std::runtime_error( "commonName is not found!" );
-
-		unsigned char * common_name_utf8{};
-		if( ASN1_STRING_to_UTF8(
-				&common_name_utf8,
-				X509_NAME_ENTRY_get_data(
-						X509_NAME_get_entry( subject_name, last_pos ) ) ) < 0 )
-		{
-			throw std::runtime_error( "ASN1_STRING_to_UTF8 failed!" );
-		}
-
-		std::unique_ptr<unsigned char, openssl_free_t > common_name_deleter{
-				common_name_utf8
-			};
-
-		return { reinterpret_cast<char *>(common_name_utf8) };
-	}
 };
 
 int main( int argc, const char * argv[] )

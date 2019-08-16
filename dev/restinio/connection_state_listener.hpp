@@ -12,6 +12,7 @@
 #pragma once
 
 #include <restinio/common_types.hpp>
+#include <restinio/variant.hpp>
 #include <restinio/tls_fwd.hpp>
 
 namespace restinio
@@ -20,72 +21,18 @@ namespace restinio
 namespace connection_state
 {
 
-/*!
- * @brief Enumeration for available causes for invocation of state listener.
- *
- * @since v.0.5.1
- */
-enum class cause_t
-{
-	//! Connection from a client has been accepted.
-	accepted,
-	//! Connection from a client has been closed.
-	//! Connection can be closed as result of an error or as a normal
-	//! finishing of request handling.
-	closed,
-	//! Connection has been upgraded to WebSocket.
-	//! State listener won't be invoked for that connection anymore.
-	upgraded_to_websocket
-};
-
-/*!
- * @brief An object with info about connection to be passed to state listener.
- *
- * That object contains available information of the connection for that
- * state listener is called.
- *
- * NOTE. Content of this type can be changed in future versions of RESTinio.
- *
- * @since v.0.5.1
- */
-class notice_t
+//FIXME: document this!
+class common_notice_info_t
 {
 	connection_id_t m_conn_id;
 	endpoint_t m_remote_endpoint;
-	cause_t m_cause;
 
-	/*!
-	 * \brief An optional pointer to TLS-related connection.
-	 *
-	 * Will be nullptr for non-TLS connections.
-	 *
-	 * \since
-	 * v.0.5.2
-	 */
-	tls_socket_t * m_tls_socket;
-
-public :
-	//! Initializing constructor.
-	notice_t(
+public:
+	common_notice_info_t(
 		connection_id_t conn_id,
-		endpoint_t remote_endpoint,
-		cause_t cause,
-		tls_socket_t * tls_socket )
+		endpoint_t remote_endpoint )
 		:	m_conn_id{ conn_id }
 		,	m_remote_endpoint{ remote_endpoint }
-		,	m_cause{ cause }
-		,	m_tls_socket{ tls_socket }
-	{}
-
-//FIXME: document this!
-	notice_t(
-		connection_id_t conn_id,
-		endpoint_t remote_endpoint,
-		cause_t cause )
-		:	m_conn_id{ conn_id }
-		,	m_remote_endpoint{ remote_endpoint }
-		,	m_cause{ cause }
-		,	m_tls_socket{ nullptr }
 	{}
 
 	//! Get the connection id.
@@ -95,10 +42,29 @@ public :
 	//! Get the remote endpoint for the connection.
 	endpoint_t
 	remote_endpoint() const noexcept { return m_remote_endpoint; }
+};
 
-	//! Get the cause for the notification.
-	cause_t
-	cause() const noexcept { return m_cause; }
+//FIXME: document this!
+class accepted_t final : public common_notice_info_t
+{
+	/*!
+	 * \brief An optional pointer to TLS-related connection.
+	 *
+	 * Will be nullptr for non-TLS connections.
+	 *
+	 * \since
+	 * v.0.6.0
+	 */
+	tls_socket_t * m_tls_socket;
+
+public:
+	accepted_t(
+		connection_id_t conn_id,
+		endpoint_t remote_endpoint,
+		tls_socket_t * tls_socket )
+		:	common_notice_info_t{ conn_id, remote_endpoint }
+		,	m_tls_socket{ tls_socket }
+	{}
 
 //FIXME: document this!
 	template< typename Lambda >
@@ -115,6 +81,23 @@ public :
 	T
 	inspect_tls_or_default( Lambda && lambda, T && default_value ) const;
 };
+
+//FIXME: document this!
+class closed_t final : public common_notice_info_t
+{
+public:
+	using common_notice_info_t::common_notice_info_t;
+};
+
+//FIXME: document this!
+class upgraded_to_websocket_t final : public common_notice_info_t
+{
+public:
+	using common_notice_info_t::common_notice_info_t;
+};
+
+//FIXME: document this!
+using notice_t = variant_t<accepted_t, closed_t, upgraded_to_websocket_t>;
 
 /*!
  * @brief The default no-op state listener.

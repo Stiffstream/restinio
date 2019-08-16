@@ -19,20 +19,15 @@ struct state_listener_t
 	void state_changed(
 		const restinio::connection_state::notice_t & notice ) noexcept
 	{
-		switch( notice.cause() )
-		{
-			case restinio::connection_state::cause_t::accepted:
-				++m_accepted;
-			break;
+		using namespace restinio::connection_state;
 
-			case restinio::connection_state::cause_t::closed:
-				++m_closed;
-			break;
+		if( restinio::holds_alternative< accepted_t >( notice ) )
+			++m_accepted;
+		else if( restinio::holds_alternative< closed_t >( notice ) )
+			++m_closed;
+		else if( restinio::holds_alternative< upgraded_to_websocket_t >( notice ) )
 
-			case restinio::connection_state::cause_t::upgraded_to_websocket:
-				++m_upgraded_to_websocket;
-			break;
-		}
+			++m_upgraded_to_websocket;
 	}
 };
 

@@ -295,10 +295,9 @@ class connection_t final
 				[ & ]{
 					// Inform state listener if it used.
 					m_settings->call_state_listener( [this]() noexcept {
-							return connection_state::notice_t{
+							return connection_state::accepted_t{
 									this->connection_id(),
 									this->m_remote_endpoint,
-									connection_state::cause_t::accepted,
 									make_tls_socket_pointer_for_state_listener( m_socket ) };
 						} );
 
@@ -1289,10 +1288,9 @@ class connection_t final
 
 			// Inform state listener if it used.
 			m_settings->call_state_listener( [this]() noexcept {
-					return connection_state::notice_t{
+					return connection_state::closed_t{
 							this->connection_id(),
-							this->m_remote_endpoint,
-							connection_state::cause_t::closed };
+							this->m_remote_endpoint };
 				} );
 		}
 

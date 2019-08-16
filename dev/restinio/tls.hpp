@@ -38,7 +38,7 @@ public:
 
 template< typename Lambda >
 void
-notice_t::try_inspect_tls( Lambda && lambda ) const
+accepted_t::try_inspect_tls( Lambda && lambda ) const
 {
 	if( m_tls_socket )
 		lambda( tls_accessor_t{*m_tls_socket} );
@@ -47,7 +47,7 @@ notice_t::try_inspect_tls( Lambda && lambda ) const
 //FIXME: document this!
 template< typename Lambda >
 decltype(auto)
-notice_t::inspect_tls_or_throw( Lambda && lambda ) const
+accepted_t::inspect_tls_or_throw( Lambda && lambda ) const
 {
 	if( !m_tls_socket )
 		throw exception_t{ "an attempt to call inspect_tls for "
@@ -59,7 +59,7 @@ notice_t::inspect_tls_or_throw( Lambda && lambda ) const
 //FIXME: document this!
 template< typename Lambda, typename T >
 T
-notice_t::inspect_tls_or_default( Lambda && lambda, T && default_value ) const
+accepted_t::inspect_tls_or_default( Lambda && lambda, T && default_value ) const
 {
 	if( m_tls_socket )
 		return lambda( tls_accessor_t{*m_tls_socket} );

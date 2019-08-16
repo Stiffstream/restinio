@@ -170,10 +170,9 @@ class ws_connection_t final
 
 			// Inform state listener if it used.
 			m_settings->call_state_listener( [this]() noexcept {
-					return connection_state::notice_t{
+					return connection_state::upgraded_to_websocket_t{
 							connection_id(),
-							m_socket.remote_endpoint(),
-							connection_state::cause_t::upgraded_to_websocket };
+							m_socket.remote_endpoint() };
 				} );
 		}
 
