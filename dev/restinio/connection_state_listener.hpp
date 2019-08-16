@@ -12,6 +12,7 @@
 #pragma once
 
 #include <restinio/common_types.hpp>
+#include <restinio/tls_fwd.hpp>
 
 namespace restinio
 {
@@ -53,8 +54,30 @@ class notice_t
 	endpoint_t m_remote_endpoint;
 	cause_t m_cause;
 
+	/*!
+	 * \brief An optional pointer to TLS-related connection.
+	 *
+	 * Will be nullptr for non-TLS connections.
+	 *
+	 * \since
+	 * v.0.5.2
+	 */
+	tls_socket_t * m_tls_socket;
+
 public :
 	//! Initializing constructor.
+	notice_t(
+		connection_id_t conn_id,
+		endpoint_t remote_endpoint,
+		cause_t cause,
+		tls_socket_t * tls_socket )
+		:	m_conn_id{ conn_id }
+		,	m_remote_endpoint{ remote_endpoint }
+		,	m_cause{ cause }
+		,	m_tls_socket{ tls_socket }
+	{}
+
+//FIXME: document this!
 	notice_t(
 		connection_id_t conn_id,
 		endpoint_t remote_endpoint,
@@ -62,6 +85,7 @@ public :
 		:	m_conn_id{ conn_id }
 		,	m_remote_endpoint{ remote_endpoint }
 		,	m_cause{ cause }
+		,	m_tls_socket{ nullptr }
 	{}
 
 	//! Get the connection id.
@@ -75,6 +99,21 @@ public :
 	//! Get the cause for the notification.
 	cause_t
 	cause() const noexcept { return m_cause; }
+
+//FIXME: document this!
+	template< typename Lambda >
+	void
+	try_inspect_tls( Lambda && lambda ) const;
+
+//FIXME: document this!
+	template< typename Lambda >
+	decltype(auto)
+	inspect_tls_or_throw( Lambda && lambda ) const;
+
+//FIXME: document this!
+	template< typename Lambda, typename T >
+	T
+	inspect_tls_or_default( Lambda && lambda, T && default_value ) const;
 };
 
 /*!

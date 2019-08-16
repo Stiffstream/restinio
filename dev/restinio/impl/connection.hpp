@@ -195,6 +195,14 @@ prepare_connection_and_start_read(
 	start_read_cb();
 }
 
+// An overload for the case of non-TLS-connection.
+inline tls_socket_t *
+make_tls_socket_pointer_for_state_listener(
+	asio_ns::ip::tcp::socket & ) noexcept
+{
+	return nullptr;
+}
+
 //
 // connection_t
 //
@@ -290,7 +298,8 @@ class connection_t final
 							return connection_state::notice_t{
 									this->connection_id(),
 									this->m_remote_endpoint,
-									connection_state::cause_t::accepted };
+									connection_state::cause_t::accepted,
+									make_tls_socket_pointer_for_state_listener( m_socket ) };
 						} );
 
 					// Start timeout checking.
