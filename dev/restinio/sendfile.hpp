@@ -14,7 +14,7 @@
 #include <chrono>
 #include <array>
 
-#include <fmt/format.h>
+#include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/asio_include.hpp>
 #include <restinio/string_view.hpp>

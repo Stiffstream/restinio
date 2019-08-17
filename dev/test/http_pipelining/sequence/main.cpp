@@ -87,7 +87,7 @@ create_request(
 		"Connection: " + conn_field_value +"\r\n"
 		"\r\n" +
 		body;
-};
+}
 
 std::vector< unsigned int >
 get_response_sequence( const std::string responses )

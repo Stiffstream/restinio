@@ -13,7 +13,7 @@ init_resp( RESP resp )
 	resp.append_header_date_field();
 
 	return resp;
-};
+}
 
 using router_t = restinio::router::express_router_t<>;
 

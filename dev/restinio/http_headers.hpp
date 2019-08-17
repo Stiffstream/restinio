@@ -13,10 +13,9 @@
 #include <vector>
 #include <algorithm>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-
 #include <http_parser.h>
+
+#include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/exception.hpp>
 #include <restinio/string_view.hpp>
@@ -35,7 +34,7 @@ constexpr auto
 uchar_at( const char * const from, const std::size_t at ) noexcept
 {
 	return static_cast< unsigned char >( from[ at ] );
-};
+}
 
 } /* namespace impl */
 
