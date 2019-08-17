@@ -12,7 +12,7 @@
 #include <string>
 #include <deque>
 
-#include <fmt/format.h>
+#include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/exception.hpp>
 #include <restinio/request_handler.hpp>

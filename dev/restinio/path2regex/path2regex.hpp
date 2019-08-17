@@ -17,7 +17,7 @@
 #include <functional>
 #include <iterator>
 
-#include <fmt/format.h>
+#include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/exception.hpp>
 #include <restinio/string_view.hpp>

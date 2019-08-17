@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include <fmt/format.h>
+#include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/string_view.hpp>
 #include <restinio/exception.hpp>

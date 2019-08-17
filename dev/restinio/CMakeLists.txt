@@ -103,6 +103,7 @@ SET(RESTINIO_HEADERS_ALL
 	impl/executor_wrapper.hpp
 	impl/fixed_buffer.hpp
 	impl/header_helpers.hpp
+	impl/include_fmtlib.hpp
 	impl/ioctx_on_thread_pool.hpp
 	impl/os_posix.ipp
 	impl/os_unknown.ipp
