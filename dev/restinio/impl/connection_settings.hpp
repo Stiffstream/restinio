@@ -15,6 +15,8 @@
 
 #include <restinio/connection_state_listener.hpp>
 
+#include <restinio/utils/suppress_exceptions.hpp>
+
 namespace restinio
 {
 
@@ -24,6 +26,7 @@ namespace impl
 namespace connection_settings_details
 {
 
+//FIXME: call_state_listener_suppressing_exceptions should be described.
 /*!
  * @brief A class for holding actual state listener.
  *
@@ -45,9 +48,19 @@ struct state_listener_holder_t
 
 	template< typename Lambda >
 	void
-	call_state_listener( Lambda && lambda ) const noexcept
+	call_state_listener( Lambda && lambda ) const
 	{
 		m_connection_state_listener->state_changed( lambda() );
+	}
+
+	template< typename Lambda >
+	void
+	call_state_listener_suppressing_exceptions(
+		Lambda && lambda ) const noexcept
+	{
+		restinio::utils::suppress_exceptions_quietly( [&] {
+				m_connection_state_listener->state_changed( lambda() );
+			} );
 	}
 };
 
@@ -68,6 +81,14 @@ struct state_listener_holder_t< connection_state::noop_listener_t >
 	template< typename Lambda >
 	void
 	call_state_listener( Lambda && /*lambda*/ ) const noexcept
+	{
+		/* nothing to do */
+	}
+
+	template< typename Lambda >
+	void
+	call_state_listener_suppressing_exceptions(
+		Lambda && /*lambda*/ ) const noexcept
 	{
 		/* nothing to do */
 	}

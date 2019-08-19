@@ -1291,7 +1291,8 @@ class connection_t final
 			} );
 
 			// Inform state listener if it used.
-			m_settings->call_state_listener( [this]() noexcept {
+			m_settings->call_state_listener_suppressing_exceptions(
+				[this]() noexcept {
 					return connection_state::notice_t{
 							this->connection_id(),
 							this->m_remote_endpoint,

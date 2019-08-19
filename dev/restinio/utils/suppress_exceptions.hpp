@@ -70,6 +70,17 @@ void suppress_exceptions(
 	}
 }
 
+//FIXME: document this!
+template< typename Lambda >
+void suppress_exceptions_quietly( Lambda && lambda ) noexcept
+{
+	try
+	{
+		lambda();
+	}
+	catch( ... ) {}
+}
+
 } /* namespace utils */
 
 } /* namespace restinio */

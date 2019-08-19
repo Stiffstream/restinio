@@ -45,6 +45,78 @@ struct state_listener_t
 	}
 };
 
+struct state_listener_that_throws_on_accept_t
+{
+	std::atomic< int > m_accepted{ 0 };
+	std::atomic< int > m_closed{ 0 };
+	std::atomic< int > m_upgraded_to_websocket{ 0 };
+
+	struct cause_visitor_t {
+		state_listener_that_throws_on_accept_t & m_self;
+
+		void operator()(
+			const restinio::connection_state::accepted_t & ) const
+		{
+			++m_self.m_accepted;
+			throw std::runtime_error( "Something wrong!" );
+		}
+
+		void operator()(
+			const restinio::connection_state::closed_t & ) const noexcept
+		{
+			++m_self.m_closed;
+		}
+
+		void operator()(
+			const restinio::connection_state::upgraded_to_websocket_t & ) const noexcept
+		{
+			++m_self.m_upgraded_to_websocket;
+		}
+	};
+
+	void state_changed(
+		const restinio::connection_state::notice_t & notice )
+	{
+		restinio::visit( cause_visitor_t{ *this }, notice.cause() );
+	}
+};
+
+struct state_listener_that_throws_on_close_t
+{
+	std::atomic< int > m_accepted{ 0 };
+	std::atomic< int > m_closed{ 0 };
+	std::atomic< int > m_upgraded_to_websocket{ 0 };
+
+	struct cause_visitor_t {
+		state_listener_that_throws_on_close_t & m_self;
+
+		void operator()(
+			const restinio::connection_state::accepted_t & ) const noexcept
+		{
+			++m_self.m_accepted;
+		}
+
+		void operator()(
+			const restinio::connection_state::closed_t & ) const
+		{
+			++m_self.m_closed;
+			throw std::runtime_error( "Something wrong on close!" );
+		}
+
+		void operator()(
+			const restinio::connection_state::upgraded_to_websocket_t & ) const noexcept
+		{
+			++m_self.m_upgraded_to_websocket;
+		}
+	};
+
+	void state_changed(
+		const restinio::connection_state::notice_t & notice )
+	{
+		restinio::visit( cause_visitor_t{ *this }, notice.cause() );
+	}
+};
+
 TEST_CASE( "no connection state listener" , "[no_listener]" )
 {
 	struct test_traits : public restinio::traits_t<
@@ -235,5 +307,128 @@ TEST_CASE( "connection state for WS" , "[connection_state][ws]" )
 	REQUIRE( 1 == state_listener->m_accepted.load() );
 	REQUIRE( 0 == state_listener->m_closed.load() );
 	REQUIRE( 1 == state_listener->m_upgraded_to_websocket.load() );
+}
+
+TEST_CASE( "listener throws on accept" , "[throws_on_accept]" )
+{
+	std::string endpoint_value;
+
+	struct test_traits : public restinio::traits_t<
+			restinio::asio_timer_manager_t,
+			utest_logger_t >
+	{
+		using connection_state_listener_t = state_listener_that_throws_on_accept_t;
+	};
+
+	using http_server_t = restinio::http_server_t< test_traits >; 
+
+	auto state_listener = std::make_shared<
+			state_listener_that_throws_on_accept_t >();
+
+	http_server_t http_server{
+		restinio::own_io_context(),
+		[&endpoint_value, state_listener]( auto & settings ){
+			settings
+				.port( utest_default_port() )
+				.address( "127.0.0.1" )
+				.connection_state_listener( state_listener )
+				.request_handler(
+					[&endpoint_value]( auto req ){
+						endpoint_value = fmt::format( "{}", req->remote_endpoint() );
+
+						req->create_response()
+							.append_header( "Server", "RESTinio utest server" )
+							.append_header_date_field()
+							.append_header( "Content-Type", "text/plain; charset=utf-8" )
+							.set_body(
+								restinio::const_buffer( req->header().method().c_str() ) )
+							.done();
+
+						return restinio::request_accepted();
+					} );
+		} };
+
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
+
+	const char * request_str =
+		"GET / HTTP/1.1\r\n"
+		"Host: 127.0.0.1\r\n"
+		"User-Agent: unit-test\r\n"
+		"Accept: */*\r\n"
+		"Connection: close\r\n"
+		"\r\n";
+
+	REQUIRE_THROWS( do_request( request_str ) );
+
+	other_thread.stop_and_join();
+
+	REQUIRE( endpoint_value.empty() );
+	REQUIRE( 1 == state_listener->m_accepted.load() );
+	REQUIRE( 0 == state_listener->m_closed.load() );
+	REQUIRE( 0 == state_listener->m_upgraded_to_websocket.load() );
+}
+
+TEST_CASE( "listener throws on close" , "[throws_on_close]" )
+{
+	std::string endpoint_value;
+
+	struct test_traits : public restinio::traits_t<
+			restinio::asio_timer_manager_t,
+			utest_logger_t >
+	{
+		using connection_state_listener_t = state_listener_that_throws_on_close_t;
+	};
+
+	using http_server_t = restinio::http_server_t< test_traits >; 
+
+	auto state_listener = std::make_shared<
+			state_listener_that_throws_on_close_t >();
+
+	http_server_t http_server{
+		restinio::own_io_context(),
+		[&endpoint_value, state_listener]( auto & settings ){
+			settings
+				.port( utest_default_port() )
+				.address( "127.0.0.1" )
+				.connection_state_listener( state_listener )
+				.request_handler(
+					[&endpoint_value]( auto req ){
+						endpoint_value = fmt::format( "{}", req->remote_endpoint() );
+
+						req->create_response()
+							.append_header( "Server", "RESTinio utest server" )
+							.append_header_date_field()
+							.append_header( "Content-Type", "text/plain; charset=utf-8" )
+							.set_body(
+								restinio::const_buffer( req->header().method().c_str() ) )
+							.done();
+
+						return restinio::request_accepted();
+					} );
+		} };
+
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
+
+	std::string response;
+	const char * request_str =
+		"GET / HTTP/1.1\r\n"
+		"Host: 127.0.0.1\r\n"
+		"User-Agent: unit-test\r\n"
+		"Accept: */*\r\n"
+		"Connection: close\r\n"
+		"\r\n";
+
+	REQUIRE_NOTHROW( response = do_request( request_str ) );
+
+	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
+
+	other_thread.stop_and_join();
+
+	REQUIRE( "" != endpoint_value );
+	REQUIRE( 1 == state_listener->m_accepted.load() );
+	REQUIRE( 1 == state_listener->m_closed.load() );
+	REQUIRE( 0 == state_listener->m_upgraded_to_websocket.load() );
 }
 
