@@ -17,7 +17,16 @@ namespace restinio
 namespace connection_state
 {
 
-//FIXME: document this!
+/*!
+ * @brief Accessor to TLS-specific information related to a connection.
+ *
+ * @note
+ * You have to manually include `restinio/tls.hpp` to get the definition
+ * of that class. This definition is not present if you include only
+ * `restinio/all.hpp`
+ *
+ * @since v.0.6.0
+ */
 class tls_accessor_t
 {
 	tls_socket_t & m_tls_socket;
@@ -25,7 +34,57 @@ class tls_accessor_t
 public:
 	tls_accessor_t( tls_socket_t & tls_socket ) : m_tls_socket{tls_socket} {}
 
-	//FIXME: document this!
+	/*!
+	 * @brief Get the access to native handle behind Asio's ssl_stream.
+	 *
+	 * Usage example:
+	 * \code
+	 * struct openssl_free_t {
+	 *		void operator()(void * ptr) const noexcept
+	 * 	{
+	 *			OPENSSL_free( ptr );
+	 * 	}
+	 *	};
+	 * 
+	 *	std::string extract_user_name_from_client_certificate(
+	 * 	const restinio::connection_state::tls_accessor_t & info )
+	 *	{
+	 * 	auto nhandle = info.native_handle();
+	 *	
+	 * 	std::unique_ptr<X509, decltype(&X509_free)> client_cert{
+	 *				SSL_get_peer_certificate(nhandle),
+	 * 			X509_free
+	 *		};
+	 * 	if( !client_cert )
+	 *			throw std::runtime_error( "Unable to get client certificate!" );
+	 * 
+	 *		X509_NAME * subject_name = X509_get_subject_name( client_cert.get() );
+	 * 
+	 *		int last_pos = -1;
+	 * 	last_pos = X509_NAME_get_index_by_NID(
+	 *				subject_name,
+	 * 			NID_commonName,
+	 *				last_pos );
+	 * 	if( last_pos < 0 )
+	 *			throw std::runtime_error( "commonName is not found!" );
+	 * 
+	 *		unsigned char * common_name_utf8{};
+	 * 	if( ASN1_STRING_to_UTF8(
+	 *				&common_name_utf8,
+	 * 			X509_NAME_ENTRY_get_data(
+	 *						X509_NAME_get_entry( subject_name, last_pos ) ) ) < 0 )
+	 * 		throw std::runtime_error( "ASN1_STRING_to_UTF8 failed!" );
+	 *	
+	 * 	std::unique_ptr<unsigned char, openssl_free_t > common_name_deleter{
+	 *				common_name_utf8
+	 * 		};
+	 *	
+	 * 	return { reinterpret_cast<char *>(common_name_utf8) };
+	 *	}
+	 * \endcode
+	 *
+	 * @since v.0.6.0
+	 */
 	auto native_handle() const noexcept
 	{
 		return m_tls_socket.asio_ssl_stream().native_handle();
@@ -44,7 +103,6 @@ accepted_t::try_inspect_tls( Lambda && lambda ) const
 		lambda( tls_accessor_t{*m_tls_socket} );
 }
 
-//FIXME: document this!
 template< typename Lambda >
 decltype(auto)
 accepted_t::inspect_tls_or_throw( Lambda && lambda ) const
@@ -56,7 +114,6 @@ accepted_t::inspect_tls_or_throw( Lambda && lambda ) const
 	return lambda( tls_accessor_t{*m_tls_socket} );
 }
 
-//FIXME: document this!
 template< typename Lambda, typename T >
 T
 accepted_t::inspect_tls_or_default( Lambda && lambda, T && default_value ) const

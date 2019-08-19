@@ -26,12 +26,12 @@ namespace impl
 namespace connection_settings_details
 {
 
-//FIXME: call_state_listener_suppressing_exceptions should be described.
 /*!
  * @brief A class for holding actual state listener.
  *
  * This class holds shared pointer to actual state listener object and
- * provides actual call_state_listener() implementation.
+ * provides actual call_state_listener() and
+ * call_state_listener_suppressing_exceptions() implementations.
  *
  * @since v.0.5.1
  */

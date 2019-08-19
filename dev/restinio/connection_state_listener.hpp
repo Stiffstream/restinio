@@ -91,28 +91,122 @@ public:
 	void
 	try_inspect_tls( Lambda && lambda ) const;
 
-//FIXME: document this!
+	/*!
+	 * @brief Calls the specified lambda-function if the accepted
+	 * connection is a TLS-connection.
+	 *
+	 * Throws an instance of exception_t if the accepted connection doens't use
+	 * TLS.
+	 *
+	 * Lambda function should accept one argument of a type
+	 * restinio::connection_state::tls_accessor_t (by value of by const
+	 * reference).
+	 *
+	 * \return the value returned by \a lambda.
+	 *
+	 * Usage example:
+	 * \code
+	 * class my_cause_visitor_t {
+	 * 	void operator()(const restinio::connection_state::accepted_t & cause) const {
+	 * 		... // Some application-logic.
+	 * 		cause.inspect_tls_or_throw([&](const restinio::connection_state::tls_accessor_t & tls_info) {
+	 * 			... // Some application-specific work with TLS-params.
+	 * 		});
+	 * 		...
+	 * 	}
+	 * 	...
+	 * };
+	 * void some_state_listener_t::state_changed(
+	 * 	const restinio::connection_state::notice_t & notice) {
+	 * 	...
+	 * 	restinio::visit(my_cause_visitor_t{...}, notice.cause());
+	 * }
+	 * \endcode
+	 */
 	template< typename Lambda >
 	decltype(auto)
 	inspect_tls_or_throw( Lambda && lambda ) const;
 
-//FIXME: document this!
+	/*!
+	 * @brief Calls the specified lambda-function if the accepted
+	 * connection is a TLS-connection.
+	 *
+	 * Returns the value of \a default_value if the accepted connection doens't
+	 * use TLS.
+	 *
+	 * Lambda function should accept one argument of a type
+	 * restinio::connection_state::tls_accessor_t (by value of by const
+	 * reference).
+	 *
+	 * \return the value returned by \a lambda if it is TLS-connection or
+	 * \a default_value otherwise. Note that \a lambda can return a value
+	 * of a different type and in that case the returned value will be used
+	 * for constructing of a new value of type \a T.
+	 *
+	 * Usage example:
+	 * \code
+	 * class my_cause_visitor_t {
+	 * 	void operator()(const restinio::connection_state::accepted_t & cause) const {
+	 * 		... // Some application-logic.
+	 * 		auto user_name = cause.inspect_tls_or_default(
+	 * 				[&](const restinio::connection_state::tls_accessor_t & tls_info) {
+	 *		 			... // Some application-specific work with TLS-params.
+	 *		 			},
+	 *		 			std::string{"unknown-user"});
+	 * 		...
+	 * 	}
+	 * 	...
+	 * };
+	 * void some_state_listener_t::state_changed(
+	 * 	const restinio::connection_state::notice_t & notice) {
+	 * 	...
+	 * 	restinio::visit(my_cause_visitor_t{...}, notice.cause());
+	 * }
+	 * \endcode
+	 */
 	template< typename Lambda, typename T >
 	T
 	inspect_tls_or_default( Lambda && lambda, T && default_value ) const;
 };
 
-//FIXME: document this!
+/*!
+ * @brief Type of object that tells that the connection has been closed.
+ *
+ * @note
+ * This type is empty now, but it can be extended in some of future versions.
+ *
+ * @since v.0.6.0
+ */
 class closed_t final
 {
 };
 
-//FIXME: document this!
+/*!
+ * @brief Type of object that tells that the connection has been upgraded
+ * to WebSocket.
+ *
+ * @note
+ * This type is empty now, but it can be extended in some of future versions.
+ *
+ * @since v.0.6.0
+ */
 class upgraded_to_websocket_t final
 {
 };
 
-//FIXME: document this!
+/*!
+ * @brief A type for the representation of the current state of a connection.
+ *
+ * Please note that in C++17 and above it is just a `std::variant` and
+ * all tools from the C++ standard library (like `std::holds_alternative`,
+ * `std::get`, `std::get_if`, `std::visit`) can be used.
+ *
+ * But for C++14 a version of those tools from restinio namespace should
+ * be used (e.g. `restinio::holds_alternative`, `restinio::get`,
+ * `restinio::get_if`, `restinio::visit`).
+ *
+ * @since v.0.6.0
+ */
 using cause_t = variant_t< accepted_t, closed_t, upgraded_to_websocket_t >;
 
 /*!
@@ -151,6 +245,11 @@ public :
 	remote_endpoint() const noexcept { return m_remote_endpoint; }
 
 	//! Get the cause for the notification.
+	/*!
+	 * @attention
+	 * Since v.0.6.0 the type cause_t is a variant, not a simple
+	 * enumeration as in v.0.5.
+	 */
 	cause_t
 	cause() const noexcept { return m_cause; }
 };
