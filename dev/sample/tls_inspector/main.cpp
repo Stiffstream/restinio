@@ -17,6 +17,9 @@ public :
 		restinio::connection_id_t conn_id,
 		std::string user_name )
 	{
+		fmt::print( "*** Adding information about a user '{}', conn_id={} ***\n",
+				user_name, conn_id );
+
 		m_data.emplace( conn_id, std::move(user_name) );
 	}
 
@@ -32,6 +35,9 @@ public :
 
 	void remove( restinio::connection_id_t conn_id ) noexcept
 	{
+		fmt::print( "*** Removing information about conn_id={} ***\n",
+				conn_id );
+
 		m_data.erase( conn_id );
 	}
 
@@ -150,9 +156,7 @@ std::string extract_user_name_from_client_certificate(
 			&common_name_utf8,
 			X509_NAME_ENTRY_get_data(
 					X509_NAME_get_entry( subject_name, last_pos ) ) ) < 0 )
-	{
 		throw std::runtime_error( "ASN1_STRING_to_UTF8 failed!" );
-	}
 
 	std::unique_ptr<unsigned char, openssl_free_t > common_name_deleter{
 			common_name_utf8
@@ -172,7 +176,9 @@ public:
 	void state_changed(
 		const restinio::connection_state::notice_t & notice) noexcept
 	{
-		restinio::visit( notice_visitor_t{ *m_user_connections }, notice );
+		restinio::visit(
+				notice_visitor_t{ *m_user_connections, notice },
+				notice.cause() );
    }
 
 public:
@@ -180,45 +186,29 @@ public:
 
 	struct notice_visitor_t {
 		user_connections_t & m_user_connections;
-
-		notice_visitor_t( user_connections_t & user_connections )
-			:	m_user_connections{ user_connections }
-		{}
+		const restinio::connection_state::notice_t & m_notice;
 
 		void operator()(
-			const restinio::connection_state::accepted_t & notice ) const noexcept
+			const restinio::connection_state::accepted_t & cause ) const
 		{
-			try
-			{
-				notice.inspect_tls_or_throw(
-					[&]( const restinio::connection_state::tls_accessor_t & tls ) {
-						m_user_connections.add(
-								notice.connection_id(),
-								extract_user_name_from_client_certificate( tls ) );
-					} );
-			}
-			catch( const std::exception & x )
-			{
-				std::cerr << "error in my_tls_inspector_t::inspect: "
-						<< x.what() << std::endl;
-			}
-			catch( ... )
-			{
-				std::cerr << "unknown error in my_tls_inspector_t::inspect!"
-						<< std::endl;
-			}
+			cause.inspect_tls_or_throw(
+				[&]( const restinio::connection_state::tls_accessor_t & tls ) {
+					m_user_connections.add(
+							m_notice.connection_id(),
+							extract_user_name_from_client_certificate( tls ) );
+				} );
 		}
 
 		void operator()(
-			const restinio::connection_state::closed_t & notice ) const noexcept
+			const restinio::connection_state::closed_t & ) const noexcept
 		{
-			m_user_connections.remove( notice.connection_id() );
+			m_user_connections.remove( m_notice.connection_id() );
 		}
 
 		void operator()(
-			const restinio::connection_state::upgraded_to_websocket_t & notice ) const noexcept
+			const restinio::connection_state::upgraded_to_websocket_t & ) const noexcept
 		{
-			m_user_connections.remove( notice.connection_id() );
+			m_user_connections.remove( m_notice.connection_id() );
 		}
 	};
 };
