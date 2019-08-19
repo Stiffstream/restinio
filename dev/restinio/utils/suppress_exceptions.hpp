@@ -9,8 +9,6 @@
  * @since v.0.6.0
  */
 
-//FIXME: this file should be added to restinio/CMakeLists.txt
-
 #pragma once
 
 #include <exception>
@@ -26,7 +24,12 @@ namespace utils
 namespace suppress_exceptions_details
 {
 
-//FIXME: document this!
+/*!
+ * @brief Helper function for logging error with suppressing possible
+ * exceptions.
+ * 
+ * @since v.0.6.0
+ */
 template< typename Logger, typename Lambda >
 void safe_log_error( Logger && logger, Lambda && lambda ) noexcept
 {
@@ -39,13 +42,25 @@ void safe_log_error( Logger && logger, Lambda && lambda ) noexcept
 
 } /* namespace suppress_exceptions_details */
 
-//FIXME: document this!
+/*!
+ * @brief Helper function for execution a block of code with
+ * suppression of any exceptions raised inside that block.
+ *
+ * Exceptions caught are logged via \a logger. Exceptions thrown during
+ * this logging are suppressed.
+ *
+ * @since v.0.6.0
+ */
 template<
 	typename Logger,
 	typename Lambda >
 void suppress_exceptions(
+	//! Logger to be used.
 	Logger && logger,
+	//! Description of the block of code.
+	//! Will be used for logging about exceptions caught.
 	const char * block_description,
+	//! Block of code for execution.
 	Lambda && lambda ) noexcept
 {
 	using namespace suppress_exceptions_details;
@@ -70,7 +85,15 @@ void suppress_exceptions(
 	}
 }
 
-//FIXME: document this!
+/*!
+ * @brief Helper function for execution a block of code with
+ * suppression of any exceptions raised inside that block.
+ *
+ * All exceptions are simply intercepted. Nothing is logged in the
+ * case of an exception thrown.
+ *
+ * @since v.0.6.0
+ */
 template< typename Lambda >
 void suppress_exceptions_quietly( Lambda && lambda ) noexcept
 {

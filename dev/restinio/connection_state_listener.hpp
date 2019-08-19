@@ -21,7 +21,16 @@ namespace restinio
 namespace connection_state
 {
 
-//FIXME: document this!
+/*!
+ * @brief Type of object that tells that new connection has been accepted.
+ *
+ * If a new connection is a TLS-connection then is_tls_connection()
+ * returns `true` and the information about TLS-socket can be inspected
+ * via try_inspect_tls(), inspect_tls_or_throw() and
+ * inspect_tls_or_default() methods.
+ *
+ * @since v.0.6.0
+ */
 class accepted_t final
 {
 	/*!
@@ -40,11 +49,44 @@ public:
 		:	m_tls_socket{ tls_socket }
 	{}
 
-//FIXME: document this!
+	/*!
+	 * @brief Checks if the accepted connection is a TLS-connection.
+	 *
+	 * \retval true if the accepted connection is a TLS-connection.
+	 * \retval false if the accepted connection doesn't use TLS.
+	 */
 	bool
 	is_tls_connection() const noexcept { return nullptr != m_tls_socket; }
 
-//FIXME: document this!
+	/*!
+	 * @brief Calls the specified lambda-function if the accepted
+	 * connection is a TLS-connection.
+	 *
+	 * Do nothing if the accepted connection doens't use TLS.
+	 *
+	 * Lambda function should accept one argument of a type
+	 * restinio::connection_state::tls_accessor_t (by value of by const
+	 * reference).
+	 *
+	 * Usage example:
+	 * \code
+	 * class my_cause_visitor_t {
+	 * 	void operator()(const restinio::connection_state::accepted_t & cause) const {
+	 * 		... // Some application-logic.
+	 * 		cause.try_inspect_tls([&](const restinio::connection_state::tls_accessor_t & tls_info) {
+	 * 			... // Some application-specific work with TLS-params.
+	 * 		});
+	 * 		...
+	 * 	}
+	 * 	...
+	 * };
+	 * void some_state_listener_t::state_changed(
+	 * 	const restinio::connection_state::notice_t & notice) {
+	 * 	...
+	 * 	restinio::visit(my_cause_visitor_t{...}, notice.cause());
+	 * }
+	 * \endcode
+	 */
 	template< typename Lambda >
 	void
 	try_inspect_tls( Lambda && lambda ) const;

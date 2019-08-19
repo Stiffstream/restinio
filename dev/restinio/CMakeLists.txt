@@ -140,6 +140,7 @@ SET(RESTINIO_HEADERS_ALL
 	utils/from_string.hpp
 	utils/percent_encoding.hpp
 	utils/sha1.hpp
+	utils/suppress_exceptions.hpp
 
 	utils/impl/bitops.hpp
 	utils/impl/safe_uint_truncate.hpp
