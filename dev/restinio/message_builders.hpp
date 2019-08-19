@@ -11,8 +11,7 @@
 #include <ctime>
 #include <chrono>
 
-#include <fmt/format.h>
-#include <fmt/time.h>
+#include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/common_types.hpp>
 #include <restinio/http_headers.hpp>

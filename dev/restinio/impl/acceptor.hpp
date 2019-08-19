@@ -10,8 +10,7 @@
 
 #include <memory>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
+#include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/impl/connection.hpp>
 

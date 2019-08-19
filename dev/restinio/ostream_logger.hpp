@@ -13,9 +13,7 @@
 #include <chrono>
 #include <mutex>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-#include <fmt/time.h>
+#include <restinio/impl/include_fmtlib.hpp>
 
 namespace restinio
 {

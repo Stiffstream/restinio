@@ -12,7 +12,7 @@
 
 #include <http_parser.h>
 
-#include <fmt/format.h>
+#include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/exception.hpp>
 #include <restinio/http_headers.hpp>

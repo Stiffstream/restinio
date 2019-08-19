@@ -14,7 +14,7 @@
 
 #include <http_parser.h>
 
-#include <fmt/format.h>
+#include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/all.hpp>
 #include <restinio/impl/executor_wrapper.hpp>

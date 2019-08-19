@@ -12,8 +12,7 @@
 
 #include <restinio/utils/impl/bitops.hpp>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
+#include <restinio/impl/include_fmtlib.hpp>
 
 #include <string>
 #include <bitset>

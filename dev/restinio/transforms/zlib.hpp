@@ -13,7 +13,7 @@
 #include <string>
 #include <cstring>
 
-#include <fmt/format.h>
+#include <restinio/impl/include_fmtlib.hpp>
 
 #include <zlib.h>
 
