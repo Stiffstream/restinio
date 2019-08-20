@@ -14,6 +14,8 @@
 
 #include <restinio/impl/include_fmtlib.hpp>
 
+#include <restinio/utils/suppress_exceptions.hpp>
+
 #include <restinio/exception.hpp>
 #include <restinio/request_handler.hpp>
 #include <restinio/buffers.hpp>
@@ -388,12 +390,9 @@ class response_coordinator_t
 				{
 					auto wg = current_ctx.dequeue_group();
 
-					try
-					{
-						wg.invoke_after_write_notificator_if_exists( ec );
-					}
-					catch( ... )
-					{}
+					restinio::utils::suppress_exceptions_quietly( [&] {
+							wg.invoke_after_write_notificator_if_exists( ec );
+						} );
 				}
 			}
 		}

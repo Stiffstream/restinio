@@ -14,6 +14,8 @@
 #include <cstring>
 #include <type_traits>
 
+#include <restinio/utils/suppress_exceptions.hpp>
+
 #include <restinio/asio_include.hpp>
 #include <restinio/exception.hpp>
 #include <restinio/sendfile.hpp>
@@ -674,7 +676,7 @@ class write_group_t
 		//! Construct write group with a given bunch of writable items.
 		explicit write_group_t(
 			//! A buffer objects included in this group.
-			writable_items_container_t items )
+			writable_items_container_t items ) noexcept
 			:	m_items{ std::move( items ) }
 			,	m_status_line_size{ 0 }
 		{}
@@ -691,7 +693,7 @@ class write_group_t
 		 * @brief Moves object leaving a moved one in clean state.
 		*/
 		///@{
-		write_group_t( write_group_t && wg )
+		write_group_t( write_group_t && wg ) noexcept
 			:	m_items{ std::move( wg.m_items ) }
 			,	m_status_line_size{ wg.m_status_line_size }
 			,	m_after_write_notificator{ std::move( wg.m_after_write_notificator ) }
@@ -700,7 +702,7 @@ class write_group_t
 			wg.m_status_line_size = 0;
 		}
 
-		write_group_t & operator = ( write_group_t && wg )
+		write_group_t & operator = ( write_group_t && wg ) noexcept
 		{
 			write_group_t tmp{ std::move( wg ) };
 			swap( *this, tmp );
@@ -713,18 +715,15 @@ class write_group_t
 		/*!
 			If notificator was not called it would be invoked with error.
 		*/
-		~write_group_t()
+		~write_group_t() noexcept
 		{
 			if( m_after_write_notificator )
 			{
-				try
-				{
-					invoke_after_write_notificator_if_exists(
-						make_asio_compaible_error(
-							asio_convertible_error_t::write_group_destroyed_passively ) );
-				}
-				catch( ... )
-				{}
+				restinio::utils::suppress_exceptions_quietly( [&] {
+						invoke_after_write_notificator_if_exists(
+							make_asio_compaible_error(
+								asio_convertible_error_t::write_group_destroyed_passively ) );
+					} );
 			}
 		}
 
@@ -831,6 +830,7 @@ class write_group_t
 		void
 		reset()
 		{
+//FIXME: should this method be noexcept?
 			m_items.clear();
 			m_status_line_size = 0;
 			m_after_write_notificator = write_status_cb_t{};

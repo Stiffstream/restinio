@@ -1318,7 +1318,8 @@ class connection_t final
 		{
 			// An exception from logger/msg_builder shouldn't prevent
 			// a call to close().
-			restinio::utils::log_error_noexcept( m_logger,std::move(msg_builder) );
+			restinio::utils::log_error_noexcept(
+					m_logger, std::move(msg_builder) );
 
 			close();
 		}
