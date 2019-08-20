@@ -182,10 +182,9 @@ struct connection_settings_t final
 		return m_timer_manager->create_timer_guard();
 	}
 
-	private:
-
-		//! Timer factory for timout guards.
-		timer_manager_handle_t m_timer_manager;
+private:
+	//! Timer factory for timout guards.
+	timer_manager_handle_t m_timer_manager;
 };
 
 template < typename Traits >

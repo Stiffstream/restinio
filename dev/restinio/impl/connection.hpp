@@ -1253,7 +1253,7 @@ class connection_t final
 
 		//! Standard close routine.
 		void
-		close()
+		close() noexcept
 		{
 			restinio::utils::log_trace_noexcept( m_logger,
 				[&]{
@@ -1262,11 +1262,17 @@ class connection_t final
 						connection_id() );
 				} );
 
-			asio_ns::error_code ignored_ec;
-			m_socket.shutdown(
-				asio_ns::ip::tcp::socket::shutdown_both,
-				ignored_ec );
-			m_socket.close();
+			// shutdown() and close() should be called regardless of
+			// possible exceptions.
+			restinio::utils::suppress_exceptions_quietly( [this] {
+					asio_ns::error_code ignored_ec;
+					m_socket.shutdown(
+						asio_ns::ip::tcp::socket::shutdown_both,
+						ignored_ec );
+				} );
+			restinio::utils::suppress_exceptions_quietly( [this] {
+					m_socket.close();
+				} );
 
 			restinio::utils::log_trace_noexcept( m_logger,
 				[&]{
@@ -1276,8 +1282,7 @@ class connection_t final
 				} );
 
 			// Clear stuff.
-
-			cancel_timeout_checking();
+			RESTINIO_ENSURE_NOEXCEPT_CALL( cancel_timeout_checking() );
 
 			restinio::utils::log_trace_noexcept( m_logger,
 				[&]{
@@ -1286,6 +1291,7 @@ class connection_t final
 						connection_id() );
 				} );
 
+//FIXME: this call should be noexcept!
 			m_response_coordinator.reset();
 
 			restinio::utils::log_trace_noexcept( m_logger,
@@ -1313,15 +1319,14 @@ class connection_t final
 		*/
 		template< typename Message_Builder >
 		void
-		trigger_error_and_close( Message_Builder msg_builder )
-//FIXME: should this method be noexcept?
+		trigger_error_and_close( Message_Builder msg_builder ) noexcept
 		{
 			// An exception from logger/msg_builder shouldn't prevent
 			// a call to close().
 			restinio::utils::log_error_noexcept(
 					m_logger, std::move(msg_builder) );
 
-			close();
+			RESTINIO_ENSURE_NOEXCEPT_CALL( close() );
 		}
 		//! \}
 
@@ -1406,10 +1411,10 @@ class connection_t final
 
 		//! Stop timout guarding.
 		void
-		cancel_timeout_checking()
+		cancel_timeout_checking() noexcept
 		{
 			m_current_timeout_cb = nullptr;
-			m_timer_guard.cancel();
+			RESTINIO_ENSURE_NOEXCEPT_CALL( m_timer_guard.cancel() );
 		}
 
 		//! Helper function to work with timer guard.

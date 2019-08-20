@@ -26,3 +26,9 @@
 	#define RESTINIO_NODISCARD
 #endif
 
+//FIXME: document this!
+#define RESTINIO_ENSURE_NOEXCEPT_CALL(expr) \
+	static_assert(noexcept(expr), "this call is expected to be noexcept: " #expr); \
+	expr
+
+
