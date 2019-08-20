@@ -396,9 +396,10 @@ class connection_t final
 					m_input.m_buf.make_asio_buffer(),
 					asio_ns::bind_executor(
 						this->get_executor(),
-						[ this, ctx = shared_from_this() ](
+						[this, ctx = shared_from_this()](
 							const asio_ns::error_code & ec,
-							std::size_t length ){
+							std::size_t length ) {
+//FIXME: this lambda should be noexcept.
 							m_input.m_read_operation_is_running = false;
 							after_read( ec, length );
 						} ) );
@@ -730,7 +731,9 @@ class connection_t final
 					request_id,
 					response_output_flags,
 					actual_wg = std::move( wg ),
-					ctx = shared_from_this() ]() mutable {
+					ctx = shared_from_this() ]() mutable
+					{
+//FIXME: this lambda should be noexcept.
 						try
 						{
 							write_response_parts_impl(
@@ -1012,21 +1015,22 @@ class connection_t final
 				bufs,
 				asio_ns::bind_executor(
 					this->get_executor(),
-					[ this,
-						ctx = shared_from_this() ]
-						( const asio_ns::error_code & ec, std::size_t written ){
-
-							if( !ec )
-							{
-								m_logger.trace( [&]{
+					[this, ctx = shared_from_this()]
+					( const asio_ns::error_code & ec, std::size_t written )
+					{
+//FIXME: this lambda should be noexcept.
+						if( !ec )
+						{
+							restinio::utils::log_trace_noexcept( m_logger,
+								[&]{
 									return fmt::format(
 											"[connection:{}] outgoing data was sent: {} bytes",
 											connection_id(),
 											written );
 								} );
-							}
+						}
 
-							after_write( ec );
+						after_write( ec );
 					} ) );
 
 			guard_write_operation();
@@ -1070,39 +1074,39 @@ class connection_t final
 				m_socket,
 				asio_ns::bind_executor(
 					this->get_executor(),
-					[ this,
-						ctx = shared_from_this(),
+					[this, ctx = shared_from_this(),
 						// Store operation context till the end
-						op_ctx ](
-							const asio_ns::error_code & ec,
-							file_size_t written ) mutable{
+						op_ctx ]
+					(const asio_ns::error_code & ec, file_size_t written ) mutable
+					{
+//FIXME: this lambda should be noexcept.
+						// Reset sendfile operation context.
+						op_ctx.reset();
 
-							// Reset sendfile operation context.
-							op_ctx.reset();
-
-							if( !ec )
-							{
-								m_logger.trace( [&]{
+						if( !ec )
+						{
+							restinio::utils::log_trace_noexcept( m_logger,
+								[&]{
 									return fmt::format(
 											"[connection:{}] file data was sent: {} bytes",
 											connection_id(),
 											written );
 								} );
-							}
-							else
-							{
-								m_logger.error( [&]{
+						}
+						else
+						{
+							restinio::utils::log_error_noexcept( m_logger,
+								[&]{
 									return fmt::format(
 											"[connection:{}] send file data error: {} ({}) bytes",
 											connection_id(),
 											ec.value(),
 											ec.message() );
 								} );
-							}
+						}
 
-							after_write( ec );
-						} ) );
-
+						after_write( ec );
+					} ) );
 		}
 
 		//! Do post write actions for current write group.
@@ -1310,8 +1314,11 @@ class connection_t final
 		template< typename Message_Builder >
 		void
 		trigger_error_and_close( Message_Builder msg_builder )
+//FIXME: should this method be noexcept?
 		{
-			m_logger.error( std::move( msg_builder ) );
+			// An exception from logger/msg_builder shouldn't prevent
+			// a call to close().
+			restinio::utils::log_error_noexcept( m_logger,std::move(msg_builder) );
 
 			close();
 		}
@@ -1356,6 +1363,7 @@ class connection_t final
 			asio_ns::dispatch(
 				this->get_executor(),
 				[ ctx = std::move( self ) ]{
+//FIXME: this lambda should be noexcept.
 					cast_to_self( *ctx ).check_timeout_impl();
 				} );
 		}

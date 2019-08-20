@@ -311,7 +311,7 @@ class acceptor_t final
 				this->socket( i ).lowest_layer(),
 				asio_ns::bind_executor(
 					get_executor(),
-					[ i, ctx = this->shared_from_this() ]( const auto & ec ){
+					[i, ctx = this->shared_from_this()]( const auto & ec ) noexcept {
 						if( !ec )
 						{
 							ctx->accept_current_connection( i, ec );
@@ -342,12 +342,13 @@ class acceptor_t final
 			else
 			{
 				// Something goes wrong with connection.
-				m_logger.error( [&]{
-					return fmt::format(
-						"failed to accept connection on socket #{}: {}",
-						i,
-						ec.message() );
-				} );
+				restinio::utils::log_error_noexcept( m_logger,
+					[&]{
+						return fmt::format(
+							"failed to accept connection on socket #{}: {}",
+							i,
+							ec.message() );
+					} );
 			}
 
 			// Continue accepting.
@@ -448,9 +449,12 @@ class acceptor_t final
 		{
 			const auto ep = m_acceptor.local_endpoint();
 
-			m_logger.trace( [&]{
-				return fmt::format( "closing server on {}", ep );
-			} );
+			// An exception in logger should not prevent a call of close()
+			// for m_acceptor.
+			restinio::utils::log_trace_noexcept( m_logger,
+				[&]{
+					return fmt::format( "closing server on {}", ep );
+				} );
 
 			m_acceptor.close();
 
