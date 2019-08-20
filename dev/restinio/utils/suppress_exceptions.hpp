@@ -11,9 +11,11 @@
 
 #pragma once
 
-#include <exception>
-
 #include <restinio/impl/include_fmtlib.hpp>
+
+#include <restinio/null_logger.hpp>
+
+#include <exception>
 
 namespace restinio
 {
@@ -21,26 +23,61 @@ namespace restinio
 namespace utils
 {
 
-namespace suppress_exceptions_details
-{
+//
+// Wrappers for logging with suppressing of exceptions.
+//
 
-/*!
- * @brief Helper function for logging error with suppressing possible
- * exceptions.
- * 
- * @since v.0.6.0
- */
-template< typename Logger, typename Lambda >
-void safe_log_error( Logger && logger, Lambda && lambda ) noexcept
+template< typename Logger, typename Message_Builder >
+void
+log_trace_noexcept( Logger && logger, Message_Builder && builder ) noexcept
 {
-	try
-	{
-		logger.error( std::forward<Lambda>(lambda) );
-	}
-	catch( ... ) {} // All exceptions should be ignored here.
+	try { logger.trace( std::forward<Message_Builder>(builder) ); }
+	catch( ... ) {}
 }
 
-} /* namespace suppress_exceptions_details */
+template< typename Message_Builder >
+void
+log_trace_noexcept( null_logger_t &, Message_Builder && ) noexcept
+{}
+
+template< typename Logger, typename Message_Builder >
+void
+log_info_noexcept( Logger && logger, Message_Builder && builder ) noexcept
+{
+	try { logger.info( std::forward<Message_Builder>(builder) ); }
+	catch( ... ) {}
+}
+
+template< typename Message_Builder >
+void
+log_info_noexcept( null_logger_t &, Message_Builder && ) noexcept
+{}
+
+template< typename Logger, typename Message_Builder >
+void
+log_warn_noexcept( Logger && logger, Message_Builder && builder ) noexcept
+{
+	try { logger.warn( std::forward<Message_Builder>(builder) ); }
+	catch( ... ) {}
+}
+
+template< typename Message_Builder >
+void
+log_warn_noexcept( null_logger_t &, Message_Builder && ) noexcept
+{}
+
+template< typename Logger, typename Message_Builder >
+void
+log_error_noexcept( Logger && logger, Message_Builder && builder ) noexcept
+{
+	try { logger.error( std::forward<Message_Builder>(builder) ); }
+	catch( ... ) {}
+}
+
+template< typename Message_Builder >
+void
+log_error_noexcept( null_logger_t &, Message_Builder && ) noexcept
+{}
 
 /*!
  * @brief Helper function for execution a block of code with
@@ -63,22 +100,20 @@ void suppress_exceptions(
 	//! Block of code for execution.
 	Lambda && lambda ) noexcept
 {
-	using namespace suppress_exceptions_details;
-
 	try
 	{
 		lambda();
 	}
 	catch( const std::exception & x )
 	{
-		safe_log_error( logger, [&] {
+		log_error_noexcept( logger, [&] {
 				return fmt::format( "an exception in '{}': {}",
 						block_description, x.what() );
 			} );
 	}
 	catch( ... )
 	{
-		safe_log_error( logger, [&] {
+		log_error_noexcept( logger, [&] {
 				return fmt::format( "an unknown exception in '{}'",
 						block_description );
 			} );
@@ -103,6 +138,7 @@ void suppress_exceptions_quietly( Lambda && lambda ) noexcept
 	}
 	catch( ... ) {}
 }
+
 
 } /* namespace utils */
 

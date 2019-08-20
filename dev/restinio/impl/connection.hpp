@@ -274,16 +274,12 @@ class connection_t final
 
 		~connection_t() override
 		{
-			try
-			{
-				m_logger.trace( [&]{
+			restinio::utils::log_trace_noexcept( m_logger,
+				[&]{
 					return fmt::format(
 						"[connection:{}] destructor called",
 						connection_id() );
 				} );
-			}
-			catch( ... )
-			{}
 		}
 
 		void
@@ -1255,11 +1251,12 @@ class connection_t final
 		void
 		close()
 		{
-			m_logger.trace( [&]{
-				return fmt::format(
-					"[connection:{}] close",
-					connection_id() );
-			} );
+			restinio::utils::log_trace_noexcept( m_logger,
+				[&]{
+					return fmt::format(
+						"[connection:{}] close",
+						connection_id() );
+				} );
 
 			asio_ns::error_code ignored_ec;
 			m_socket.shutdown(
@@ -1267,28 +1264,32 @@ class connection_t final
 				ignored_ec );
 			m_socket.close();
 
-			m_logger.trace( [&]{
-				return fmt::format(
-					"[connection:{}] close: close socket",
-					connection_id() );
-			} );
+			restinio::utils::log_trace_noexcept( m_logger,
+				[&]{
+					return fmt::format(
+						"[connection:{}] close: close socket",
+						connection_id() );
+				} );
 
 			// Clear stuff.
 
 			cancel_timeout_checking();
-			m_logger.trace( [&]{
-				return fmt::format(
-					"[connection:{}] close: timer canceled",
-					connection_id() );
-			} );
+
+			restinio::utils::log_trace_noexcept( m_logger,
+				[&]{
+					return fmt::format(
+						"[connection:{}] close: timer canceled",
+						connection_id() );
+				} );
 
 			m_response_coordinator.reset();
 
-			m_logger.trace( [&]{
-				return fmt::format(
-					"[connection:{}] close: reset responses data",
-					connection_id() );
-			} );
+			restinio::utils::log_trace_noexcept( m_logger,
+				[&]{
+					return fmt::format(
+						"[connection:{}] close: reset responses data",
+						connection_id() );
+				} );
 
 			// Inform state listener if it used.
 			m_settings->call_state_listener_suppressing_exceptions(
