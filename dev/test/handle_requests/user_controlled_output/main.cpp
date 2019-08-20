@@ -101,7 +101,7 @@ create_request(
 		"Connection: " + conn_field_value +"\r\n"
 		"\r\n" +
 		body;
-};
+}
 
 TEST_CASE( "Using user controlled output response builder" , "[user_controlled_output]" )
 {

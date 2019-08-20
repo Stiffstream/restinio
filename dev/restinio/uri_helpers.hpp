@@ -11,8 +11,7 @@
 #include <string>
 #include <unordered_map>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
+#include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/exception.hpp>
 #include <restinio/utils/percent_encoding.hpp>

@@ -15,7 +15,7 @@ init_resp( RESP resp )
 	resp.append_header_date_field();
 
 	return resp;
-};
+}
 
 namespace rr = restinio::router;
 using router_t = rr::express_router_t<>;

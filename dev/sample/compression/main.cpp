@@ -110,7 +110,7 @@ auto make_transform_params(
 	}
 
 	return rtz::make_identity_params();
-};
+}
 
 constexpr std::size_t count_threshold = 10000u;
 

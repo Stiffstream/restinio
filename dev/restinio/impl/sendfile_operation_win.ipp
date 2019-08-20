@@ -69,7 +69,7 @@ class sendfile_operation_runner_t final
 						this->m_executor,
 						[ this, ctx = this->shared_from_this() ]
 						( const asio_ns::error_code & ec, std::size_t len ){
-
+//FIXME: this lambda should be noexcept.
 							if( ec || 0 == this->m_remained_size )
 							{
 								this->m_after_sendfile_cb( ec, this->m_transfered_size );
@@ -104,7 +104,7 @@ class sendfile_operation_runner_t final
 					this->m_executor,
 					[ this, ctx = this->shared_from_this() ]
 					( const asio_ns::error_code & ec, std::size_t written ){
-
+//FIXME: this lambda should be noexcept.
 						if( !ec )
 						{
 							this->m_remained_size -= written;
@@ -171,13 +171,14 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 		void
 		init_next_write()
 		{
-
 			asio_ns::windows::overlapped_ptr overlapped{
 				m_socket.get_executor().context(),
 				asio_ns::bind_executor(
 					m_executor,
 					[this, ctx = shared_from_this() ]
-					( const asio_ns::error_code & ec, std::size_t written ){
+					( const asio_ns::error_code & ec, std::size_t written )
+					{
+//FIXME: this lambda should be noexcept.
 						if( !ec )
 						{
 							m_remained_size -= written;

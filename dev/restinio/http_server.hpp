@@ -260,6 +260,8 @@ class http_server_t
 			Server_Open_Ok_CB open_ok_cb,
 			Server_Open_Error_CB open_err_cb )
 		{
+//FIXME: maybe there should be a check that open_ok_cb and open_err_cb is
+//noexcept functions?
 			asio_ns::post(
 				m_acceptor->get_open_close_operations_executor(),
 				[ this,
@@ -270,9 +272,11 @@ class http_server_t
 						open_sync();
 						call_nothrow_cb( ok_cb );
 					}
-					catch( const std::exception & )
+					catch( ... )
 					{
-						err_cb( std::current_exception() );
+						call_nothrow_cb( [&err_cb] {
+								err_cb( std::current_exception() );
+							} );
 					}
 				} );
 		}
@@ -306,6 +310,8 @@ class http_server_t
 			Server_Close_Ok_CB close_ok_cb,
 			Server_Close_Error_CB close_err_cb )
 		{
+//FIXME: maybe there should be a check that close_ok_cb and close_err_cb is
+//noexcept functions?
 			asio_ns::post(
 				m_acceptor->get_open_close_operations_executor(),
 				[ this,
@@ -316,9 +322,11 @@ class http_server_t
 						close_sync();
 						call_nothrow_cb( ok_cb );
 					}
-					catch( const std::exception & )
+					catch( ... )
 					{
-						err_cb( std::current_exception() );
+						call_nothrow_cb( [&err_cb] {
+								err_cb( std::current_exception() );
+							} );
 					}
 				} );
 		}

@@ -14,7 +14,7 @@
 
 #include <http_parser.h>
 
-#include <fmt/format.h>
+#include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/all.hpp>
 #include <restinio/impl/executor_wrapper.hpp>
@@ -170,10 +170,11 @@ class ws_connection_t final
 
 			// Inform state listener if it used.
 			m_settings->call_state_listener( [this]() noexcept {
-					return connection_state::notice_t{
+					return connection_state::notice_t {
 							connection_id(),
 							m_socket.remote_endpoint(),
-							connection_state::cause_t::upgraded_to_websocket };
+							connection_state::upgraded_to_websocket_t{}
+						};
 				} );
 		}
 
@@ -204,13 +205,17 @@ class ws_connection_t final
 			asio_ns::dispatch(
 				this->get_executor(),
 				[ this, ctx = shared_from_this() ](){
+//FIXME: this lambda should be noexcept.
 					try
 					{
-						m_logger.trace( [&]{
-							return fmt::format(
-								"[ws_connection:{}] shutdown",
-								connection_id() );
-						} );
+						// An exception from logger shouldn't prevent
+						// main shutdown actions.
+						restinio::utils::log_trace_noexcept( m_logger,
+							[&]{
+								return fmt::format(
+									"[ws_connection:{}] shutdown",
+									connection_id() );
+							} );
 
 						m_close_frame_to_user.disable();
 						graceful_close();
@@ -234,13 +239,17 @@ class ws_connection_t final
 			asio_ns::dispatch(
 				this->get_executor(),
 				[ this, ctx = shared_from_this() ](){
+//FIXME: this lambda should be noexcept.
 					try
 					{
-						m_logger.trace( [&]{
-							return fmt::format(
-								"[ws_connection:{}] kill",
-								connection_id() );
-						} );
+						// An exception from logger shouldn't prevent
+						// main kill actions.
+						restinio::utils::log_trace_noexcept( m_logger,
+							[&]{
+								return fmt::format(
+									"[ws_connection:{}] kill",
+									connection_id() );
+							} );
 
 						m_close_frame_to_user.disable();
 						m_close_frame_to_peer.disable();
@@ -268,7 +277,9 @@ class ws_connection_t final
 			// Run write message on io_context loop (direct invocation if possible).
 			asio_ns::dispatch(
 				this->get_executor(),
-				[ this, ctx = shared_from_this(), wswh = std::move( wswh ) ](){
+				[ this, ctx = shared_from_this(), wswh = std::move( wswh ) ]()
+				{
+//FIXME: this lambda should be noexcept.
 					try
 					{
 						// Start timeout checking.
@@ -305,7 +316,9 @@ class ws_connection_t final
 				[ this,
 					actual_wg = std::move( wg ),
 					ctx = shared_from_this(),
-					is_close_frame ]() mutable {
+					is_close_frame ]() mutable
+				{
+//FIXME: this lambda should be noexcept.
 						try
 						{
 							if( write_state_t::write_enabled == m_write_state )
@@ -465,7 +478,9 @@ class ws_connection_t final
 					this->get_executor(),
 					[ this, ctx = shared_from_this() ](
 						const asio_ns::error_code & ec,
-						std::size_t length ){
+						std::size_t length )
+					{
+//FIXME: this lambda should be noexcept.
 							try
 							{
 								after_read_header( ec, length );
@@ -661,8 +676,9 @@ class ws_connection_t final
 						length_remaining,
 						do_validate_payload_and_call_msg_handler ](
 						const asio_ns::error_code & ec,
-						std::size_t length ){
-
+						std::size_t length )
+						{
+//FIXME: this lambda should be noexcept.
 							try
 							{
 								after_read_payload(
@@ -1104,7 +1120,9 @@ class ws_connection_t final
 					this->get_executor(),
 					[ this,
 						ctx = shared_from_this() ]
-						( const asio_ns::error_code & ec, std::size_t written ){
+						( const asio_ns::error_code & ec, std::size_t written )
+						{
+//FIXME: this lambda should be noexcept.
 							try
 							{
 								if( !ec )
@@ -1206,7 +1224,8 @@ class ws_connection_t final
 		{
 			asio_ns::dispatch(
 				this->get_executor(),
-				[ ctx = std::move( self ) ]{
+				[ ctx = std::move( self ) ] {
+//FIXME: this lambda should be noexcept.
 					cast_to_self( *ctx ).check_timeout_impl();
 				} );
 		}

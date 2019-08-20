@@ -318,11 +318,6 @@ using cleanup_functor_t = std::function< void(void) >;
 template< typename Listener >
 struct connection_state_listener_holder_t
 {
-	static_assert(
-			noexcept( std::declval<Listener>().state_changed(
-					std::declval<connection_state::notice_t>() ) ),
-			"Listener::state_changed() method should be noexcept" );
-
 	std::shared_ptr< Listener > m_connection_state_listener;
 
 	static constexpr bool has_actual_connection_state_listener = true;
@@ -448,14 +443,13 @@ class basic_server_settings_t
 		using base_type_t = socket_type_dependent_settings_t<
 				Derived, typename Traits::stream_socket_t>;
 
-		static constexpr bool has_actual_connection_state_listener =
-				connection_state_listener_holder_t<
+		using connection_state_listener_holder_t<
 						typename Traits::connection_state_listener_t
 					>::has_actual_connection_state_listener;
 
-		static constexpr bool has_actual_ip_blocker =
-				ip_blocker_holder_t< typename Traits::ip_blocker_t >::
-						has_actual_ip_blocker;
+		using ip_blocker_holder_t<
+						typename Traits::ip_blocker_t
+					>::has_actual_ip_blocker;
 
 	public:
 		basic_server_settings_t(
@@ -1037,7 +1031,7 @@ class basic_server_settings_t
 			std::shared_ptr< typename Traits::ip_blocker_t > blocker ) &
 		{
 			static_assert(
-					has_actual_ip_blocker,
+					basic_server_settings_t::has_actual_ip_blocker,
 					"ip_blocker(blocker) can't be used "
 					"for the default ip_blocker::noop_ip_blocker_t" );
 
@@ -1096,7 +1090,7 @@ class basic_server_settings_t
 		ip_blocker() const noexcept
 		{
 			static_assert(
-					has_actual_ip_blocker,
+					basic_server_settings_t::has_actual_ip_blocker,
 					"ip_blocker() can't be used "
 					"for the default ip_blocker::noop_ip_blocker_t" );
 

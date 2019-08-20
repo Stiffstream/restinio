@@ -12,8 +12,7 @@
 
 #include <pcre2.h>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
+#include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/exception.hpp>
 

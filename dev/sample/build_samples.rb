@@ -33,5 +33,7 @@ MxxRu::Cpp::composite_target {
 		required_prj 'sample/hello_world_https/prj.rb'
 		required_prj 'sample/hello_world_sendfile_https/prj.rb'
 		required_prj 'sample/websocket_wss/prj.rb'
+      required_prj 'sample/tls_inspector/prj.rb'
 	end
 }
+

@@ -10,10 +10,11 @@
 
 #include <memory>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
+#include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/impl/connection.hpp>
+
+#include <restinio/utils/suppress_exceptions.hpp>
 
 namespace restinio
 {
@@ -294,14 +295,23 @@ class acceptor_t final
 		auto & get_executor() noexcept { return m_executor; }
 
 		//! Set a callback for a new connection.
+		/*!
+		 * @note
+		 * This method is marked as noexcept in v.0.6.0.
+		 * It seems that nothing prevents exceptions from a call to
+		 * async_accept. But we just don't know what to do in that case.
+		 * So at the moment the call to `std::terminate` because an
+		 * exception is raised inside `noexcept` method seems to be an
+		 * appropriate solution.
+		 */
 		void
-		accept_next( std::size_t i )
+		accept_next( std::size_t i ) noexcept
 		{
 			m_acceptor.async_accept(
 				this->socket( i ).lowest_layer(),
 				asio_ns::bind_executor(
 					get_executor(),
-					[ i, ctx = this->shared_from_this() ]( const auto & ec ){
+					[i, ctx = this->shared_from_this()]( const auto & ec ) noexcept {
 						if( !ec )
 						{
 							ctx->accept_current_connection( i, ec );
@@ -310,63 +320,89 @@ class acceptor_t final
 		}
 
 		//! Accept current connection.
+		/*!
+		 * @note
+		 * This method is marked as noexcept in v.0.6.0.
+		 */
 		void
 		accept_current_connection(
 			//! socket index in the pool of sockets.
 			std::size_t i,
-			const std::error_code & ec )
+			const std::error_code & ec ) noexcept
 		{
 			if( !ec )
 			{
-				auto remote_endpoint =
-						this->socket( i ).lowest_layer().remote_endpoint();
-
-				m_logger.trace( [&]{
-					return fmt::format(
-							"accept connection from {} on socket #{}",
-							remote_endpoint, i );
-				} );
-
-				// Since v.0.5.1 the incoming connection must be
-				// inspected by IP-blocker.
-				auto incoming_socket = this->move_socket( i );
-				const auto inspection_result = this->inspect_incoming(
-						incoming_socket );
-
-				switch( inspection_result )
-				{
-				case restinio::ip_blocker::inspection_result_t::deny:
-					// New connection can be used. It is disabled by IP-blocker.
-					m_logger.warn( [&]{
-						return fmt::format(
-								"accepted connection from {} on socket #{} denied by"
-								" IP-blocker",
-								remote_endpoint, i );
-					} );
-					// incoming_socket will be closed automatically.
-				break;
-
-				case restinio::ip_blocker::inspection_result_t::allow:
-					// Acception of the connection can be continued.
-					do_accept_current_connection(
-							std::move(incoming_socket),
-							remote_endpoint );
-				break;
-				}
+				restinio::utils::suppress_exceptions(
+						m_logger,
+						"accept_current_connection",
+						[this, i] {
+							accept_connection_for_socket_with_index( i );
+						} );
 			}
 			else
 			{
 				// Something goes wrong with connection.
-				m_logger.error( [&]{
-					return fmt::format(
-						"failed to accept connection on socket #{}: {}",
-						i,
-						ec.message() );
-				} );
+				restinio::utils::log_error_noexcept( m_logger,
+					[&]{
+						return fmt::format(
+							"failed to accept connection on socket #{}: {}",
+							i,
+							ec.message() );
+					} );
 			}
 
 			// Continue accepting.
 			accept_next( i );
+		}
+
+		/*!
+		 * @brief Performs actual actions for accepting a new connection.
+		 *
+		 * @note
+		 * This method can throw. An we expect that it can throw sometimes.
+		 *
+		 * @since v.0.6.0
+		 */
+		void
+		accept_connection_for_socket_with_index(
+			//! socket index in the pool of sockets.
+			std::size_t i )
+		{
+			auto remote_endpoint =
+					this->socket( i ).lowest_layer().remote_endpoint();
+
+			m_logger.trace( [&]{
+				return fmt::format(
+						"accept connection from {} on socket #{}",
+						remote_endpoint, i );
+			} );
+
+			// Since v.0.5.1 the incoming connection must be
+			// inspected by IP-blocker.
+			auto incoming_socket = this->move_socket( i );
+			const auto inspection_result = this->inspect_incoming(
+					incoming_socket );
+
+			switch( inspection_result )
+			{
+			case restinio::ip_blocker::inspection_result_t::deny:
+				// New connection can be used. It is disabled by IP-blocker.
+				m_logger.warn( [&]{
+					return fmt::format(
+							"accepted connection from {} on socket #{} denied by"
+							" IP-blocker",
+							remote_endpoint, i );
+				} );
+				// incoming_socket will be closed automatically.
+			break;
+
+			case restinio::ip_blocker::inspection_result_t::allow:
+				// Acception of the connection can be continued.
+				do_accept_current_connection(
+						std::move(incoming_socket),
+						remote_endpoint );
+			break;
+			}
 		}
 
 		void
@@ -377,15 +413,22 @@ class acceptor_t final
 			auto create_and_init_connection =
 				[sock = std::move(incoming_socket),
 				factory = m_connection_factory,
-				ep = std::move(remote_endpoint)]() mutable {
-					// Create new connection handler.
-					auto conn = factory->create_new_connection(
-							std::move(sock), std::move(ep) );
+				ep = std::move(remote_endpoint),
+				logger = &m_logger]() mutable noexcept {
+					// NOTE: this code block shouldn't throw!
+					restinio::utils::suppress_exceptions(
+							*logger,
+							"do_accept_current_connection.create_and_init_connection",
+							[&] {
+								// Create new connection handler.
+								auto conn = factory->create_new_connection(
+										std::move(sock), std::move(ep) );
 
-					//! If connection handler was created,
-					// then start waiting for request message.
-					if( conn )
-						conn->init();
+								// If connection handler was created,
+								// then start waiting for request message.
+								if( conn )
+									conn->init();
+							} );
 				};
 
 			if( m_separate_accept_and_create_connect )
@@ -406,9 +449,12 @@ class acceptor_t final
 		{
 			const auto ep = m_acceptor.local_endpoint();
 
-			m_logger.trace( [&]{
-				return fmt::format( "closing server on {}", ep );
-			} );
+			// An exception in logger should not prevent a call of close()
+			// for m_acceptor.
+			restinio::utils::log_trace_noexcept( m_logger,
+				[&]{
+					return fmt::format( "closing server on {}", ep );
+				} );
 
 			m_acceptor.close();
 

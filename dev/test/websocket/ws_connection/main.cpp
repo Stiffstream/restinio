@@ -8,7 +8,6 @@
 
 #include <catch2/catch.hpp>
 
-#include <so_5/all.hpp>
 #include <restinio/all.hpp>
 #include <restinio/websocket/websocket.hpp>
 #include <restinio/utils/base64.hpp>
@@ -18,6 +17,8 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 #include <test/websocket/common/pub.hpp>
+
+#include <so_5/all.hpp>
 
 namespace rws = restinio::websocket::basic;
 

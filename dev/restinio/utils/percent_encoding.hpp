@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include <fmt/format.h>
+#include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/string_view.hpp>
 #include <restinio/exception.hpp>
@@ -80,7 +80,7 @@ is_hexdigit( char c )
 		( '0' <= c && c <= '9' ) ||
 		( 'a' <= c && c <= 'f' ) ||
 		( 'A' <= c && c <= 'F' );
-};
+}
 
 inline char
 extract_escaped_char( char c1,  char c2 )
@@ -106,7 +106,7 @@ extract_escaped_char( char c1,  char c2 )
 	}
 
 	return result;
-};
+}
 
 } /* namespace impl */
 

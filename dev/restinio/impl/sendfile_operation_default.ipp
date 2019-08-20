@@ -86,8 +86,9 @@ class sendfile_operation_runner_t final
 					asio_ns::bind_executor(
 						this->m_executor,
 						[ this, ctx = this->shared_from_this() ]
-						( const asio_ns::error_code & ec, std::size_t written ){
-
+						( const asio_ns::error_code & ec, std::size_t written )
+						{
+//FIXME: this lambda should be noexcept.
 							if( !ec )
 							{
 								this->m_remained_size -= written;

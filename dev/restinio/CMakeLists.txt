@@ -70,6 +70,7 @@ SET(RESTINIO_HEADERS_ALL
 	buffers.hpp
 	cast_to.hpp
 	common_types.hpp
+	compiler_features.hpp
 	connection_state_listener.hpp
 	exception.hpp
 	http_headers.hpp
@@ -103,6 +104,7 @@ SET(RESTINIO_HEADERS_ALL
 	impl/executor_wrapper.hpp
 	impl/fixed_buffer.hpp
 	impl/header_helpers.hpp
+	impl/include_fmtlib.hpp
 	impl/ioctx_on_thread_pool.hpp
 	impl/os_posix.ipp
 	impl/os_unknown.ipp
@@ -139,6 +141,7 @@ SET(RESTINIO_HEADERS_ALL
 	utils/from_string.hpp
 	utils/percent_encoding.hpp
 	utils/sha1.hpp
+	utils/suppress_exceptions.hpp
 
 	utils/impl/bitops.hpp
 	utils/impl/safe_uint_truncate.hpp

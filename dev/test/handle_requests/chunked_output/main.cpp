@@ -119,7 +119,7 @@ create_request(
 		"Connection: " + conn_field_value +"\r\n"
 		"\r\n" +
 		body;
-};
+}
 
 const std::string standard_body =
 	"0\r\n"
