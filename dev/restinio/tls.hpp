@@ -85,6 +85,7 @@ public:
 	 *
 	 * @since v.0.6.0
 	 */
+	RESTINIO_NODISCARD
 	auto native_handle() const noexcept
 	{
 		return m_tls_socket.asio_ssl_stream().native_handle();

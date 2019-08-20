@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <restinio/compiler_features.hpp>
 #include <restinio/common_types.hpp>
 #include <restinio/variant.hpp>
 #include <restinio/tls_fwd.hpp>
@@ -55,6 +56,7 @@ public:
 	 * \retval true if the accepted connection is a TLS-connection.
 	 * \retval false if the accepted connection doesn't use TLS.
 	 */
+	RESTINIO_NODISCARD
 	bool
 	is_tls_connection() const noexcept { return nullptr != m_tls_socket; }
 
@@ -237,10 +239,12 @@ public :
 	{}
 
 	//! Get the connection id.
+	RESTINIO_NODISCARD
 	connection_id_t
 	connection_id() const noexcept { return m_conn_id; }
 
 	//! Get the remote endpoint for the connection.
+	RESTINIO_NODISCARD
 	endpoint_t
 	remote_endpoint() const noexcept { return m_remote_endpoint; }
 
@@ -250,6 +254,7 @@ public :
 	 * Since v.0.6.0 the type cause_t is a variant, not a simple
 	 * enumeration as in v.0.5.
 	 */
+	RESTINIO_NODISCARD
 	cause_t
 	cause() const noexcept { return m_cause; }
 };
