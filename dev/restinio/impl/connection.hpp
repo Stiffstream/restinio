@@ -1291,8 +1291,7 @@ class connection_t final
 						connection_id() );
 				} );
 
-//FIXME: this call should be noexcept!
-			m_response_coordinator.reset();
+			RESTINIO_ENSURE_NOEXCEPT_CALL( m_response_coordinator.reset() );
 
 			restinio::utils::log_trace_noexcept( m_logger,
 				[&]{

@@ -31,4 +31,11 @@
 	static_assert(noexcept(expr), "this call is expected to be noexcept: " #expr); \
 	expr
 
+//FIXME: document this!
+#define RESTINIO_STATIC_ASSERT_NOEXCEPT(expr) \
+	static_assert(noexcept(expr), #expr " is expected to be noexcept" )
+
+//FIXME: document this!
+#define RESTINIO_STATIC_ASSERT_NOT_NOEXCEPT(expr) \
+	static_assert(!noexcept(expr), #expr " is expected to be not noexcept" )
 
