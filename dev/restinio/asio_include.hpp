@@ -19,12 +19,14 @@ namespace restinio
 
 	//! @name Adoptation functions to cover differences between snad-alone and beast asio.
 	///@{
-	inline bool error_is_operation_aborted( const asio_ns::error_code & ec )
+	inline bool
+	error_is_operation_aborted( const asio_ns::error_code & ec ) noexcept
 	{
 		return ec == asio_ns::error::operation_aborted;
 	}
 
-	inline bool error_is_eof( const asio_ns::error_code & ec )
+	inline bool
+	error_is_eof( const asio_ns::error_code & ec ) noexcept
 	{
 		return ec == asio_ns::error::eof;
 	}

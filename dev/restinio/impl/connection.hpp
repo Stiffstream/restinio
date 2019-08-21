@@ -940,9 +940,12 @@ class connection_t final
 			sendfile-runner and starts an appropriate write operation.
 			In data of a given write group finishes,
 			finish_handling_current_write_ctx() is invoked thus breaking the loop.
+
+			@note
+			Since v.0.6.0 this method is noexcept.
 		*/
 		void
-		handle_current_write_ctx()
+		handle_current_write_ctx() noexcept
 		{
 			try
 			{
@@ -1016,9 +1019,9 @@ class connection_t final
 				asio_ns::bind_executor(
 					this->get_executor(),
 					[this, ctx = shared_from_this()]
-					( const asio_ns::error_code & ec, std::size_t written )
+					// NOTE: since v.0.6.0 this lambda is noexcept.
+					( const asio_ns::error_code & ec, std::size_t written ) noexcept
 					{
-//FIXME: this lambda should be noexcept.
 						if( !ec )
 						{
 							restinio::utils::log_trace_noexcept( m_logger,
@@ -1030,7 +1033,7 @@ class connection_t final
 								} );
 						}
 
-						after_write( ec );
+						RESTINIO_ENSURE_NOEXCEPT_CALL( after_write( ec ) );
 					} ) );
 
 			guard_write_operation();
@@ -1211,12 +1214,16 @@ class connection_t final
 		}
 
 		//! Handle write response finished.
+		/*!
+		 * @note
+		 * Since v.0.6.0 this method is noexcept.
+		 */
 		void
-		after_write( const asio_ns::error_code & ec )
+		after_write( const asio_ns::error_code & ec ) noexcept
 		{
 			if( !ec )
 			{
-				handle_current_write_ctx();
+				RESTINIO_ENSURE_NOEXCEPT_CALL( handle_current_write_ctx() );
 			}
 			else
 			{
@@ -1228,22 +1235,23 @@ class connection_t final
 							connection_id(),
 							ec.message() );
 					} );
-
 				}
 				// else: Operation aborted only in case of close was called.
 
+//FIXME: consider to replace that with suppress_exceptions call.
 				try
 				{
 					m_write_output_ctx.fail_write_group( ec );
 				}
 				catch( const std::exception & ex )
 				{
-					m_logger.error( [&]{
-						return fmt::format(
-							"[connection:{}] notificator error: {}",
-							connection_id(),
-							ex.what() );
-					} );
+					restinio::utils::log_error_noexcept( m_logger,
+						[&]{
+							return fmt::format(
+								"[connection:{}] notificator error: {}",
+								connection_id(),
+								ex.what() );
+						} );
 				}
 			}
 		}
