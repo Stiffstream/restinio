@@ -25,6 +25,8 @@
 
 #include <restinio/utils/impl/safe_uint_truncate.hpp>
 
+#include <restinio/compiler_features.hpp>
+
 namespace restinio
 {
 
@@ -204,8 +206,9 @@ class ws_connection_t final
 		{
 			asio_ns::dispatch(
 				this->get_executor(),
-				[ this, ctx = shared_from_this() ](){
-//FIXME: this lambda should be noexcept.
+				[ this, ctx = shared_from_this() ]
+				// NOTE: this lambda is noexcept since v.0.6.0.
+				() noexcept {
 					try
 					{
 						// An exception from logger shouldn't prevent
@@ -222,12 +225,13 @@ class ws_connection_t final
 					}
 					catch( const std::exception & ex )
 					{
-						m_logger.error( [&]{
-							return fmt::format(
-								"[ws_connection:{}] shutdown operation error: {}",
-								connection_id(),
-								ex.what() );
-						} );
+						restinio::utils::log_error_noexcept( m_logger,
+							[&]{
+								return fmt::format(
+									"[ws_connection:{}] shutdown operation error: {}",
+									connection_id(),
+									ex.what() );
+							} );
 					}
 			} );
 		}
@@ -238,8 +242,10 @@ class ws_connection_t final
 		{
 			asio_ns::dispatch(
 				this->get_executor(),
-				[ this, ctx = shared_from_this() ](){
-//FIXME: this lambda should be noexcept.
+				[ this, ctx = shared_from_this() ]
+				// NOTE: this lambda is noexcept since v.0.6.0.
+				() noexcept
+				{
 					try
 					{
 						// An exception from logger shouldn't prevent
@@ -258,12 +264,13 @@ class ws_connection_t final
 					}
 					catch( const std::exception & ex )
 					{
-						m_logger.error( [&]{
-							return fmt::format(
-								"[ws_connection:{}] kill operation error: {}",
-								connection_id(),
-								ex.what() );
-						} );
+						restinio::utils::log_error_noexcept( m_logger,
+							[&]{
+								return fmt::format(
+									"[ws_connection:{}] kill operation error: {}",
+									connection_id(),
+									ex.what() );
+							} );
 					}
 			} );
 		}
@@ -277,9 +284,10 @@ class ws_connection_t final
 			// Run write message on io_context loop (direct invocation if possible).
 			asio_ns::dispatch(
 				this->get_executor(),
-				[ this, ctx = shared_from_this(), wswh = std::move( wswh ) ]()
+				[ this, ctx = shared_from_this(), wswh = std::move( wswh ) ]
+				// NOTE: this lambda is noexcept since v.0.6.0.
+				() noexcept
 				{
-//FIXME: this lambda should be noexcept.
 					try
 					{
 						// Start timeout checking.
@@ -316,56 +324,75 @@ class ws_connection_t final
 				[ this,
 					actual_wg = std::move( wg ),
 					ctx = shared_from_this(),
-					is_close_frame ]() mutable
+					is_close_frame ]
+				// NOTE: this lambda is noexcept since v.0.6.0.
+				() mutable noexcept
 				{
-//FIXME: this lambda should be noexcept.
-						try
+					try
+					{
+						if( write_state_t::write_enabled == m_write_state )
+							write_data_impl(
+								std::move( actual_wg ),
+								is_close_frame );
+						else
 						{
-							if( write_state_t::write_enabled == m_write_state )
-								write_data_impl(
-									std::move( actual_wg ),
-									is_close_frame );
-							else
-							{
-								m_logger.warn( [&]{
-									return fmt::format(
-											"[ws_connection:{}] cannot write to websocket: "
-											"write operations disabled",
-											connection_id() );
-								} );
-							}
+							m_logger.warn( [&]{
+								return fmt::format(
+										"[ws_connection:{}] cannot write to websocket: "
+										"write operations disabled",
+										connection_id() );
+							} );
 						}
-						catch( const std::exception & ex )
-						{
-							trigger_error_and_close(
-								status_code_t::unexpected_condition,
-								[&]{
-									return fmt::format(
-										"[ws_connection:{}] unable to write data: {}",
-										connection_id(),
-										ex.what() );
-								} );
-						}
+					}
+					catch( const std::exception & ex )
+					{
+						trigger_error_and_close(
+							status_code_t::unexpected_condition,
+							[&]{
+								return fmt::format(
+									"[ws_connection:{}] unable to write data: {}",
+									connection_id(),
+									ex.what() );
+							} );
+					}
 				} );
 		}
 	private:
 		//! Standard close routine.
+		/*!
+		 * @note
+		 * This method is noexcept since v.0.6.0.
+		 */
 		void
-		close_impl()
+		close_impl() noexcept
 		{
 			m_close_impl.run_if_first(
-				[&]{
-					m_logger.trace( [&]{
-						return fmt::format(
-								"[ws_connection:{}] close socket",
-								connection_id() );
-					} );
+				[&]() noexcept {
+					restinio::utils::log_trace_noexcept( m_logger,
+						[&]{
+							return fmt::format(
+									"[ws_connection:{}] close socket",
+									connection_id() );
+						} );
 
-					asio_ns::error_code ignored_ec;
-					m_socket.shutdown(
-						asio_ns::ip::tcp::socket::shutdown_both,
-						ignored_ec );
-					m_socket.close();
+					// This actions can throw and because of that we have
+					// to wrap them...
+					restinio::utils::suppress_exceptions(
+							m_logger,
+							"ws_connection.close_impl.socket.shutdown",
+							[&] {
+								asio_ns::error_code ignored_ec;
+								m_socket.shutdown(
+									asio_ns::ip::tcp::socket::shutdown_both,
+									ignored_ec );
+							} );
+
+					restinio::utils::suppress_exceptions(
+							m_logger,
+							"ws_connection.close_impl.socket.close",
+							[&] {
+								m_socket.close();
+							} );
 				} );
 		}
 
@@ -424,16 +451,28 @@ class ws_connection_t final
 			Writes error message to log,
 			closes socket,
 			and sends close frame to user if necessary.
+
+			@note
+			This method is noexcept since v.0.6.0
 		*/
 		template< typename MSG_BUILDER >
 		void
 		trigger_error_and_close(
 			status_code_t status,
-			MSG_BUILDER msg_builder )
+			MSG_BUILDER msg_builder ) noexcept
 		{
-			m_logger.error( std::move( msg_builder ) );
-			call_close_handler_if_necessary( status );
-			close_impl();
+			// An exception in logger shouldn't prevent the main actions.
+			restinio::utils::log_error_noexcept(
+					m_logger, std::move( msg_builder ) );
+
+			// This can throw but we have to suppress any exceptions.
+			restinio::utils::suppress_exceptions(
+					m_logger, "ws_connection.call_close_handler_if_necessary",
+					[this, status] {
+						call_close_handler_if_necessary( status );
+					} );
+
+			RESTINIO_ENSURE_NOEXCEPT_CALL( close_impl() );
 		}
 
 
@@ -476,27 +515,26 @@ class ws_connection_t final
 				m_input.m_buf.make_asio_buffer(),
 				asio_ns::bind_executor(
 					this->get_executor(),
-					[ this, ctx = shared_from_this() ](
-						const asio_ns::error_code & ec,
-						std::size_t length )
+					[ this, ctx = shared_from_this() ]
+					// NOTE: this lambda is noexcept since v.0.6.0.
+					( const asio_ns::error_code & ec, std::size_t length ) noexcept
 					{
-//FIXME: this lambda should be noexcept.
-							try
-							{
-								after_read_header( ec, length );
-							}
-							catch( const std::exception & ex )
-							{
-								trigger_error_and_close(
-									status_code_t::unexpected_condition,
-									[&]{
-										return fmt::format(
-											"[ws_connection:{}] after read header callback error: {}",
-											connection_id(),
-											ex.what() );
-									} );
-							}
-						} ) );
+						try
+						{
+							after_read_header( ec, length );
+						}
+						catch( const std::exception & ex )
+						{
+							trigger_error_and_close(
+								status_code_t::unexpected_condition,
+								[&]{
+									return fmt::format(
+										"[ws_connection:{}] after read header callback error: {}",
+										connection_id(),
+										ex.what() );
+								} );
+						}
+					} ) );
 		}
 
 		//! Handle read error (reading header or payload)
@@ -674,11 +712,10 @@ class ws_connection_t final
 						ctx = shared_from_this(),
 						payload_data,
 						length_remaining,
-						do_validate_payload_and_call_msg_handler ](
-						const asio_ns::error_code & ec,
-						std::size_t length )
+						do_validate_payload_and_call_msg_handler ]
+						// NOTE: this lambda is noexcept since v.0.6.0.
+						( const asio_ns::error_code & ec, std::size_t length ) noexcept
 						{
-//FIXME: this lambda should be noexcept.
 							try
 							{
 								after_read_payload(
@@ -1120,35 +1157,35 @@ class ws_connection_t final
 					this->get_executor(),
 					[ this,
 						ctx = shared_from_this() ]
-						( const asio_ns::error_code & ec, std::size_t written )
+					// NOTE: this lambda is noexcept since v.0.6.0.
+					( const asio_ns::error_code & ec, std::size_t written ) noexcept
+					{
+						try
 						{
-//FIXME: this lambda should be noexcept.
-							try
+							if( !ec )
 							{
-								if( !ec )
-								{
-									m_logger.trace( [&]{
-										return fmt::format(
-												"[ws_connection:{}] outgoing data was sent: {} bytes",
-												connection_id(),
-												written );
-									} );
-								}
-
-								after_write( ec );
-							}
-							catch( const std::exception & ex )
-							{
-								trigger_error_and_close(
-									status_code_t::unexpected_condition,
-									[&]{
-										return fmt::format(
-											"[ws_connection:{}] after write callback error: {}",
+								m_logger.trace( [&]{
+									return fmt::format(
+											"[ws_connection:{}] outgoing data was sent: {} bytes",
 											connection_id(),
-											ex.what() );
-									} );
+											written );
+								} );
 							}
-					} ) );
+
+							after_write( ec );
+						}
+						catch( const std::exception & ex )
+						{
+							trigger_error_and_close(
+								status_code_t::unexpected_condition,
+								[&]{
+									return fmt::format(
+										"[ws_connection:{}] after write callback error: {}",
+										connection_id(),
+										ex.what() );
+								} );
+						}
+				} ) );
 		}
 
 		//! Do post write actions for current write group.
@@ -1224,9 +1261,28 @@ class ws_connection_t final
 		{
 			asio_ns::dispatch(
 				this->get_executor(),
-				[ ctx = std::move( self ) ] {
-//FIXME: this lambda should be noexcept.
-					cast_to_self( *ctx ).check_timeout_impl();
+				[ ctx = std::move( self ) ]
+				// NOTE: this lambda is noexcept since v.0.6.0.
+				() noexcept
+				{
+					auto & conn_object = cast_to_self( *ctx );
+					// If an exception will be thrown we can only
+					// close the connection.
+					try
+					{
+						conn_object.check_timeout_impl();
+					}
+					catch( const std::exception & x )
+					{
+						conn_object.trigger_error_and_close(
+							status_code_t::unexpected_condition,
+							[&] {
+								return fmt::format( "[connection: {}] unexpected "
+										"error during timeout handling: {}",
+										conn_object.connection_id(),
+										x.what() );
+							} );
+					}
 				} );
 		}
 
@@ -1343,7 +1399,7 @@ class ws_connection_t final
 			public:
 				template < typename Action >
 				void
-				run_if_first( Action && action )
+				run_if_first( Action && action ) noexcept(noexcept(action()))
 				{
 					if( m_not_executed_yet )
 					{

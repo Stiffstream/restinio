@@ -1290,13 +1290,19 @@ class connection_t final
 
 			// shutdown() and close() should be called regardless of
 			// possible exceptions.
-			restinio::utils::suppress_exceptions_quietly( [this] {
+			restinio::utils::suppress_exceptions(
+				m_logger,
+				"connection.socket.shutdown",
+				[this] {
 					asio_ns::error_code ignored_ec;
 					m_socket.shutdown(
 						asio_ns::ip::tcp::socket::shutdown_both,
 						ignored_ec );
 				} );
-			restinio::utils::suppress_exceptions_quietly( [this] {
+			restinio::utils::suppress_exceptions(
+				m_logger,
+				"connection.socket.close",
+				[this] {
 					m_socket.close();
 				} );
 
