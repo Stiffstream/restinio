@@ -14,13 +14,13 @@
 #include <cstring>
 #include <type_traits>
 
-#include <restinio/utils/suppress_exceptions.hpp>
-
 #include <restinio/asio_include.hpp>
 #include <restinio/exception.hpp>
 #include <restinio/sendfile.hpp>
 
 #include <restinio/compiler_features.hpp>
+#include <restinio/utils/suppress_exceptions.hpp>
+
 
 namespace restinio
 {
