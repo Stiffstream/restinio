@@ -20,6 +20,8 @@
 #include <restinio/exception.hpp>
 #include <restinio/sendfile.hpp>
 
+#include <restinio/compiler_features.hpp>
+
 namespace restinio
 {
 
@@ -828,12 +830,14 @@ class write_group_t
 
 		//! Reset group.
 		void
-		reset()
+		reset() noexcept
 		{
-//FIXME: should this method be noexcept?
-			m_items.clear();
+
+			RESTINIO_ENSURE_NOEXCEPT_CALL( m_items.clear() );
 			m_status_line_size = 0;
-			m_after_write_notificator = write_status_cb_t{};
+
+			RESTINIO_ENSURE_NOEXCEPT_CALL(
+					m_after_write_notificator = write_status_cb_t{} );
 		}
 
 		//! Merges with another group.
