@@ -396,12 +396,12 @@ class connection_t final
 					m_input.m_buf.make_asio_buffer(),
 					asio_ns::bind_executor(
 						this->get_executor(),
-						[this, ctx = shared_from_this()](
-							const asio_ns::error_code & ec,
-							std::size_t length ) {
-//FIXME: this lambda should be noexcept.
+						[this, ctx = shared_from_this()]
+						// NOTE: this lambda is noexcept since v.0.6.0.
+						( const asio_ns::error_code & ec,
+							std::size_t length ) noexcept {
 							m_input.m_read_operation_is_running = false;
-							after_read( ec, length );
+							RESTINIO_ENSURE_NOEXCEPT_CALL( after_read( ec, length ) );
 						} ) );
 			}
 			else
@@ -416,20 +416,36 @@ class connection_t final
 
 		//! Handle read operation result.
 		inline void
-		after_read( const asio_ns::error_code & ec, std::size_t length )
+		after_read( const asio_ns::error_code & ec, std::size_t length ) noexcept
 		{
 			if( !ec )
 			{
-				m_logger.trace( [&]{
-					return fmt::format(
-							"[connection:{}] received {} bytes",
-							this->connection_id(),
-							length );
-				} );
+				// Exceptions shouldn't go out of `after_read`.
+				// So intercept them and close the connection in the case
+				// of an exception.
+				try
+				{
+					m_logger.trace( [&]{
+						return fmt::format(
+								"[connection:{}] received {} bytes",
+								this->connection_id(),
+								length );
+					} );
 
-				m_input.m_buf.obtained_bytes( length );
+					m_input.m_buf.obtained_bytes( length );
 
-				consume_data( m_input.m_buf.bytes(), length );
+					consume_data( m_input.m_buf.bytes(), length );
+				}
+				catch( const std::exception & x )
+				{
+					trigger_error_and_close( [&] {
+							return fmt::format(
+									"[connection:{}] unexpected exception during the "
+									"handling of incoming data: {}",
+									connection_id(),
+									x.what() );
+						} );
+				}
 			}
 			else
 			{
@@ -452,14 +468,15 @@ class connection_t final
 						// on a connection (most probably keeped alive
 						// after previous request, but a new also applied)
 						// no bytes were consumed and remote peer closes connection.
-						m_logger.trace( [&]{
-							return fmt::format(
-									"[connection:{}] EOF and no request, "
-									"close connection",
-									connection_id() );
-						} );
+						restinio::utils::log_trace_noexcept( m_logger,
+							[&]{
+								return fmt::format(
+										"[connection:{}] EOF and no request, "
+										"close connection",
+										connection_id() );
+							} );
 
-						close();
+						RESTINIO_ENSURE_NOEXCEPT_CALL( close() );
 					}
 				}
 				// else: read operation was cancelled.
@@ -731,9 +748,10 @@ class connection_t final
 					request_id,
 					response_output_flags,
 					actual_wg = std::move( wg ),
-					ctx = shared_from_this() ]() mutable
+					ctx = shared_from_this() ]
+				// NOTE that this lambda is noexcept since v.0.6.0.
+				() mutable noexcept
 					{
-//FIXME: this lambda should be noexcept.
 						try
 						{
 							write_response_parts_impl(
@@ -1375,9 +1393,25 @@ class connection_t final
 		{
 			asio_ns::dispatch(
 				this->get_executor(),
-				[ ctx = std::move( self ) ]{
-//FIXME: this lambda should be noexcept.
-					cast_to_self( *ctx ).check_timeout_impl();
+				[ ctx = std::move( self ) ]
+				// NOTE: this lambda is noexcept since v.0.6.0.
+				() noexcept {
+					auto & conn_object = cast_to_self( *ctx );
+					// If an exception will be thrown we can only
+					// close the connection.
+					try
+					{
+						conn_object.check_timeout_impl();
+					}
+					catch( const std::exception & x )
+					{
+						conn_object.trigger_error_and_close( [&] {
+								return fmt::format( "[connection: {}] unexpected "
+										"error during timeout handling: {}",
+										conn_object.connection_id(),
+										x.what() );
+							} );
+					}
 				} );
 		}
 
