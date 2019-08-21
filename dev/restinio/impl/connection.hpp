@@ -1080,11 +1080,11 @@ class connection_t final
 					[this, ctx = shared_from_this(),
 						// Store operation context till the end
 						op_ctx ]
-					(const asio_ns::error_code & ec, file_size_t written ) mutable
+					// NOTE: since v.0.6.0 this lambda is noexcept
+					(const asio_ns::error_code & ec, file_size_t written ) mutable noexcept
 					{
-//FIXME: this lambda should be noexcept.
 						// Reset sendfile operation context.
-						op_ctx.reset();
+						RESTINIO_ENSURE_NOEXCEPT_CALL( op_ctx.reset() );
 
 						if( !ec )
 						{
@@ -1108,7 +1108,7 @@ class connection_t final
 								} );
 						}
 
-						after_write( ec );
+						RESTINIO_ENSURE_NOEXCEPT_CALL( after_write( ec ) );
 					} ) );
 		}
 
