@@ -120,8 +120,15 @@ enum class asio_convertible_error_t : int
 
 	//! After write notificator error: a notificator was set for a write_group_t
 	//! but no external invokation happened, so write_group_t destructor
-	// calls it with error.
-	write_group_destroyed_passively
+	//! calls it with error.
+	write_group_destroyed_passively,
+
+	//! A call to async_write failed.
+	//! The corresponding write operation didn't done.
+	/*!
+	 * @since v.0.6.0
+	 */
+	async_write_call_failed
 };
 
 namespace impl

@@ -1256,7 +1256,6 @@ class connection_t final
 				}
 				// else: Operation aborted only in case of close was called.
 
-//FIXME: consider to replace that with suppress_exceptions call.
 				try
 				{
 					m_write_output_ctx.fail_write_group( ec );
