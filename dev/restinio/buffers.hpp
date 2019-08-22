@@ -836,8 +836,14 @@ class write_group_t
 			RESTINIO_ENSURE_NOEXCEPT_CALL( m_items.clear() );
 			m_status_line_size = 0;
 
-			RESTINIO_ENSURE_NOEXCEPT_CALL(
-					m_after_write_notificator = write_status_cb_t{} );
+			// This assign is expected to be noexcept.
+			// And it is on some compilers.
+			// But for some compilers std::function::operator= is not noexcept
+			// (for example for Visual C++ from VisualStudio 2017).
+			// So we have to hope that this assign won't throw.
+			// Otherwise there is no way to recover from an exception
+			// from std::function::operator= in that place.
+			m_after_write_notificator = write_status_cb_t{};
 		}
 
 		//! Merges with another group.
