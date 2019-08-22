@@ -57,8 +57,12 @@ class sendfile_operation_runner_t final
 			}
 		}
 
+		/*!
+		 * @note
+		 * This method is noexcept since v.0.6.0.
+		 */
 		void
-		init_next_write()
+		init_next_write() noexcept
 		{
 			const auto desired_size =
 				std::min< file_size_t >( this->m_remained_size, this->m_chunk_size );
@@ -78,41 +82,58 @@ class sendfile_operation_runner_t final
 			}
 			else
 			{
-				asio_ns::async_write(
-					this->m_socket,
-					asio_ns::const_buffer{
-						this->m_buffer.get(),
-						static_cast< std::size_t >( desired_size ) },
-					asio_ns::bind_executor(
-						this->m_executor,
-						[ this, ctx = this->shared_from_this() ]
-						( const asio_ns::error_code & ec, std::size_t written )
-						{
-//FIXME: this lambda should be noexcept.
-							if( !ec )
-							{
-								this->m_remained_size -= written;
-								this->m_transfered_size += written;
-								if( 0 == this->m_remained_size )
-								{
-									this->m_after_sendfile_cb( ec, this->m_transfered_size );
-								}
-								else
-								{
-									this->init_next_write();
-								}
-							}
-							else
-							{
-								this->m_after_sendfile_cb( ec, this->m_transfered_size );
-							}
-						}
-					) );
+				// If asio_ns::async_write fails we'll call m_after_sendfile_cb.
+				try
+				{
+					asio_ns::async_write(
+						this->m_socket,
+						asio_ns::const_buffer{
+							this->m_buffer.get(),
+							static_cast< std::size_t >( desired_size ) },
+						asio_ns::bind_executor(
+							this->m_executor,
+							make_async_write_handler() ) );
+				}
+				catch( ... )
+				{
+					this->m_after_sendfile_cb(
+						make_asio_compaible_error(
+							asio_convertible_error_t::async_write_call_failed ),
+						this->m_transfered_size );
+				}
 			}
 		}
 
 	private:
 		std::unique_ptr< char[] > m_buffer{ new char [ this->m_chunk_size ] };
+
+		//! Helper method for making a lambda for async_write completion handler.
+		auto
+		make_async_write_handler() noexcept
+		{
+			return [ this, ctx = this->shared_from_this() ]
+				// NOTE: this lambda is noexcept since v.0.6.0.
+				( const asio_ns::error_code & ec, std::size_t written ) noexcept
+				{
+					if( !ec )
+					{
+						this->m_remained_size -= written;
+						this->m_transfered_size += written;
+						if( 0 == this->m_remained_size )
+						{
+							this->m_after_sendfile_cb( ec, this->m_transfered_size );
+						}
+						else
+						{
+							this->init_next_write();
+						}
+					}
+					else
+					{
+						this->m_after_sendfile_cb( ec, this->m_transfered_size );
+					}
+				};
+		}
 };
 
 } /* namespace impl */
