@@ -54,7 +54,7 @@ MxxRu::arch_externals :rapidjson do |e|
 end
 
 MxxRu::arch_externals :rapidjson_mxxru do |e|
-  e.url 'https://bitbucket.org/sobjectizerteam/rapidjson_mxxru-1.0/get/v.1.0.0.tar.bz2'
+  e.url 'https://github.com/Stiffstream/rapidjson_mxxru/archive/v.1.0.1.tar.gz'
 
   e.map_dir 'dev/rapidjson_mxxru' => 'dev'
 end
