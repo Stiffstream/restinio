@@ -12,7 +12,7 @@ MxxRu::arch_externals :asio do |e|
 end
 
 MxxRu::arch_externals :asio_mxxru do |e|
-  e.url 'https://bitbucket.org/sobjectizerteam/asio_mxxru-1.1/get/1.1.2.tar.bz2'
+  e.url 'https://github.com/Stiffstream/asio_mxxru/archive/1.1.2.tar.gz'
 
   e.map_dir 'dev/asio_mxxru' => 'dev'
 end
