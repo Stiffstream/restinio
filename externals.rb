@@ -25,7 +25,7 @@ MxxRu::arch_externals :nodejs_http_parser do |e|
 end
 
 MxxRu::arch_externals :nodejs_http_parser_mxxru do |e|
-  e.url 'https://bitbucket.org/sobjectizerteam/nodejs_http_parser_mxxru-0.2/get/v.0.2.0.tar.bz2'
+  e.url 'https://github.com/Stiffstream/nodejs_http_parser_mxxru/archive/v.0.2.1.tar.gz'
 
   e.map_dir 'dev/nodejs/http_parser_mxxru' => 'dev/nodejs'
 end
@@ -60,7 +60,7 @@ MxxRu::arch_externals :rapidjson_mxxru do |e|
 end
 
 MxxRu::arch_externals :json_dto do |e|
-  e.url 'https://bitbucket.org/sobjectizerteam/json_dto-0.2/downloads/json_dto-0.2.8-full.zip'
+  e.url 'https://github.com/Stiffstream/json_dto/archive/v.0.2.8.1.tar.gz'
 
   e.map_dir 'dev/json_dto' => 'dev'
 end
@@ -76,3 +76,4 @@ MxxRu::arch_externals :catch do |e|
 
   e.map_dir 'single_include/catch2' => 'dev'
 end
+
