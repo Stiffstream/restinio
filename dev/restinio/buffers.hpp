@@ -14,11 +14,13 @@
 #include <cstring>
 #include <type_traits>
 
-#include <restinio/utils/suppress_exceptions.hpp>
-
 #include <restinio/asio_include.hpp>
 #include <restinio/exception.hpp>
 #include <restinio/sendfile.hpp>
+
+#include <restinio/compiler_features.hpp>
+#include <restinio/utils/suppress_exceptions.hpp>
+
 
 namespace restinio
 {
@@ -828,11 +830,19 @@ class write_group_t
 
 		//! Reset group.
 		void
-		reset()
+		reset() noexcept
 		{
-//FIXME: should this method be noexcept?
-			m_items.clear();
+
+			RESTINIO_ENSURE_NOEXCEPT_CALL( m_items.clear() );
 			m_status_line_size = 0;
+
+			// This assign is expected to be noexcept.
+			// And it is on some compilers.
+			// But for some compilers std::function::operator= is not noexcept
+			// (for example for Visual C++ from VisualStudio 2017).
+			// So we have to hope that this assign won't throw.
+			// Otherwise there is no way to recover from an exception
+			// from std::function::operator= in that place.
 			m_after_write_notificator = write_status_cb_t{};
 		}
 

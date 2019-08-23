@@ -251,6 +251,12 @@ class http_server_t
 		//! Starts server in async way.
 		/*!
 			\note It is necessary to be sure that ioservice is running.
+
+			\attention
+			\a open_ok_cb and \a open_err_cb should be noexcept
+			functions/lambdas. This requirement is not enforced by
+			static_assert in RESTinio's code to avoid problems in
+			cases when `std::function` is used for these callbacks.
 		*/
 		template <
 				typename Server_Open_Ok_CB,
@@ -260,8 +266,6 @@ class http_server_t
 			Server_Open_Ok_CB open_ok_cb,
 			Server_Open_Error_CB open_err_cb )
 		{
-//FIXME: maybe there should be a check that open_ok_cb and open_err_cb is
-//noexcept functions?
 			asio_ns::post(
 				m_acceptor->get_open_close_operations_executor(),
 				[ this,
@@ -301,6 +305,12 @@ class http_server_t
 		/*!
 			\note It doesn't call io_context to stop
 			(\see stop_io_context()).
+
+			\attention
+			\a close_ok_cb and \a close_err_cb should be noexcept
+			functions/lambdas. This requirement is not enforced by
+			static_assert in RESTinio's code to avoid problems in
+			cases when `std::function` is used for these callbacks.
 		*/
 		template <
 				typename Server_Close_Ok_CB,
@@ -310,8 +320,6 @@ class http_server_t
 			Server_Close_Ok_CB close_ok_cb,
 			Server_Close_Error_CB close_err_cb )
 		{
-//FIXME: maybe there should be a check that close_ok_cb and close_err_cb is
-//noexcept functions?
 			asio_ns::post(
 				m_acceptor->get_open_close_operations_executor(),
 				[ this,

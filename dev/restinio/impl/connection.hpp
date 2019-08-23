@@ -396,12 +396,12 @@ class connection_t final
 					m_input.m_buf.make_asio_buffer(),
 					asio_ns::bind_executor(
 						this->get_executor(),
-						[this, ctx = shared_from_this()](
-							const asio_ns::error_code & ec,
-							std::size_t length ) {
-//FIXME: this lambda should be noexcept.
+						[this, ctx = shared_from_this()]
+						// NOTE: this lambda is noexcept since v.0.6.0.
+						( const asio_ns::error_code & ec,
+							std::size_t length ) noexcept {
 							m_input.m_read_operation_is_running = false;
-							after_read( ec, length );
+							RESTINIO_ENSURE_NOEXCEPT_CALL( after_read( ec, length ) );
 						} ) );
 			}
 			else
@@ -416,20 +416,36 @@ class connection_t final
 
 		//! Handle read operation result.
 		inline void
-		after_read( const asio_ns::error_code & ec, std::size_t length )
+		after_read( const asio_ns::error_code & ec, std::size_t length ) noexcept
 		{
 			if( !ec )
 			{
-				m_logger.trace( [&]{
-					return fmt::format(
-							"[connection:{}] received {} bytes",
-							this->connection_id(),
-							length );
-				} );
+				// Exceptions shouldn't go out of `after_read`.
+				// So intercept them and close the connection in the case
+				// of an exception.
+				try
+				{
+					m_logger.trace( [&]{
+						return fmt::format(
+								"[connection:{}] received {} bytes",
+								this->connection_id(),
+								length );
+					} );
 
-				m_input.m_buf.obtained_bytes( length );
+					m_input.m_buf.obtained_bytes( length );
 
-				consume_data( m_input.m_buf.bytes(), length );
+					consume_data( m_input.m_buf.bytes(), length );
+				}
+				catch( const std::exception & x )
+				{
+					trigger_error_and_close( [&] {
+							return fmt::format(
+									"[connection:{}] unexpected exception during the "
+									"handling of incoming data: {}",
+									connection_id(),
+									x.what() );
+						} );
+				}
 			}
 			else
 			{
@@ -452,14 +468,15 @@ class connection_t final
 						// on a connection (most probably keeped alive
 						// after previous request, but a new also applied)
 						// no bytes were consumed and remote peer closes connection.
-						m_logger.trace( [&]{
-							return fmt::format(
-									"[connection:{}] EOF and no request, "
-									"close connection",
-									connection_id() );
-						} );
+						restinio::utils::log_trace_noexcept( m_logger,
+							[&]{
+								return fmt::format(
+										"[connection:{}] EOF and no request, "
+										"close connection",
+										connection_id() );
+							} );
 
-						close();
+						RESTINIO_ENSURE_NOEXCEPT_CALL( close() );
 					}
 				}
 				// else: read operation was cancelled.
@@ -731,9 +748,10 @@ class connection_t final
 					request_id,
 					response_output_flags,
 					actual_wg = std::move( wg ),
-					ctx = shared_from_this() ]() mutable
+					ctx = shared_from_this() ]
+				// NOTE that this lambda is noexcept since v.0.6.0.
+				() mutable noexcept
 					{
-//FIXME: this lambda should be noexcept.
 						try
 						{
 							write_response_parts_impl(
@@ -940,9 +958,12 @@ class connection_t final
 			sendfile-runner and starts an appropriate write operation.
 			In data of a given write group finishes,
 			finish_handling_current_write_ctx() is invoked thus breaking the loop.
+
+			@note
+			Since v.0.6.0 this method is noexcept.
 		*/
 		void
-		handle_current_write_ctx()
+		handle_current_write_ctx() noexcept
 		{
 			try
 			{
@@ -1016,9 +1037,9 @@ class connection_t final
 				asio_ns::bind_executor(
 					this->get_executor(),
 					[this, ctx = shared_from_this()]
-					( const asio_ns::error_code & ec, std::size_t written )
+					// NOTE: since v.0.6.0 this lambda is noexcept.
+					( const asio_ns::error_code & ec, std::size_t written ) noexcept
 					{
-//FIXME: this lambda should be noexcept.
 						if( !ec )
 						{
 							restinio::utils::log_trace_noexcept( m_logger,
@@ -1030,7 +1051,7 @@ class connection_t final
 								} );
 						}
 
-						after_write( ec );
+						RESTINIO_ENSURE_NOEXCEPT_CALL( after_write( ec ) );
 					} ) );
 
 			guard_write_operation();
@@ -1077,11 +1098,11 @@ class connection_t final
 					[this, ctx = shared_from_this(),
 						// Store operation context till the end
 						op_ctx ]
-					(const asio_ns::error_code & ec, file_size_t written ) mutable
+					// NOTE: since v.0.6.0 this lambda is noexcept
+					(const asio_ns::error_code & ec, file_size_t written ) mutable noexcept
 					{
-//FIXME: this lambda should be noexcept.
 						// Reset sendfile operation context.
-						op_ctx.reset();
+						RESTINIO_ENSURE_NOEXCEPT_CALL( op_ctx.reset() );
 
 						if( !ec )
 						{
@@ -1105,7 +1126,7 @@ class connection_t final
 								} );
 						}
 
-						after_write( ec );
+						RESTINIO_ENSURE_NOEXCEPT_CALL( after_write( ec ) );
 					} ) );
 		}
 
@@ -1211,12 +1232,16 @@ class connection_t final
 		}
 
 		//! Handle write response finished.
+		/*!
+		 * @note
+		 * Since v.0.6.0 this method is noexcept.
+		 */
 		void
-		after_write( const asio_ns::error_code & ec )
+		after_write( const asio_ns::error_code & ec ) noexcept
 		{
 			if( !ec )
 			{
-				handle_current_write_ctx();
+				RESTINIO_ENSURE_NOEXCEPT_CALL( handle_current_write_ctx() );
 			}
 			else
 			{
@@ -1228,7 +1253,6 @@ class connection_t final
 							connection_id(),
 							ec.message() );
 					} );
-
 				}
 				// else: Operation aborted only in case of close was called.
 
@@ -1238,12 +1262,13 @@ class connection_t final
 				}
 				catch( const std::exception & ex )
 				{
-					m_logger.error( [&]{
-						return fmt::format(
-							"[connection:{}] notificator error: {}",
-							connection_id(),
-							ex.what() );
-					} );
+					restinio::utils::log_error_noexcept( m_logger,
+						[&]{
+							return fmt::format(
+								"[connection:{}] notificator error: {}",
+								connection_id(),
+								ex.what() );
+						} );
 				}
 			}
 		}
@@ -1253,7 +1278,7 @@ class connection_t final
 
 		//! Standard close routine.
 		void
-		close()
+		close() noexcept
 		{
 			restinio::utils::log_trace_noexcept( m_logger,
 				[&]{
@@ -1262,11 +1287,23 @@ class connection_t final
 						connection_id() );
 				} );
 
-			asio_ns::error_code ignored_ec;
-			m_socket.shutdown(
-				asio_ns::ip::tcp::socket::shutdown_both,
-				ignored_ec );
-			m_socket.close();
+			// shutdown() and close() should be called regardless of
+			// possible exceptions.
+			restinio::utils::suppress_exceptions(
+				m_logger,
+				"connection.socket.shutdown",
+				[this] {
+					asio_ns::error_code ignored_ec;
+					m_socket.shutdown(
+						asio_ns::ip::tcp::socket::shutdown_both,
+						ignored_ec );
+				} );
+			restinio::utils::suppress_exceptions(
+				m_logger,
+				"connection.socket.close",
+				[this] {
+					m_socket.close();
+				} );
 
 			restinio::utils::log_trace_noexcept( m_logger,
 				[&]{
@@ -1276,8 +1313,7 @@ class connection_t final
 				} );
 
 			// Clear stuff.
-
-			cancel_timeout_checking();
+			RESTINIO_ENSURE_NOEXCEPT_CALL( cancel_timeout_checking() );
 
 			restinio::utils::log_trace_noexcept( m_logger,
 				[&]{
@@ -1286,7 +1322,7 @@ class connection_t final
 						connection_id() );
 				} );
 
-			m_response_coordinator.reset();
+			RESTINIO_ENSURE_NOEXCEPT_CALL( m_response_coordinator.reset() );
 
 			restinio::utils::log_trace_noexcept( m_logger,
 				[&]{
@@ -1313,15 +1349,14 @@ class connection_t final
 		*/
 		template< typename Message_Builder >
 		void
-		trigger_error_and_close( Message_Builder msg_builder )
-//FIXME: should this method be noexcept?
+		trigger_error_and_close( Message_Builder msg_builder ) noexcept
 		{
 			// An exception from logger/msg_builder shouldn't prevent
 			// a call to close().
 			restinio::utils::log_error_noexcept(
 					m_logger, std::move(msg_builder) );
 
-			close();
+			RESTINIO_ENSURE_NOEXCEPT_CALL( close() );
 		}
 		//! \}
 
@@ -1363,9 +1398,25 @@ class connection_t final
 		{
 			asio_ns::dispatch(
 				this->get_executor(),
-				[ ctx = std::move( self ) ]{
-//FIXME: this lambda should be noexcept.
-					cast_to_self( *ctx ).check_timeout_impl();
+				[ ctx = std::move( self ) ]
+				// NOTE: this lambda is noexcept since v.0.6.0.
+				() noexcept {
+					auto & conn_object = cast_to_self( *ctx );
+					// If an exception will be thrown we can only
+					// close the connection.
+					try
+					{
+						conn_object.check_timeout_impl();
+					}
+					catch( const std::exception & x )
+					{
+						conn_object.trigger_error_and_close( [&] {
+								return fmt::format( "[connection: {}] unexpected "
+										"error during timeout handling: {}",
+										conn_object.connection_id(),
+										x.what() );
+							} );
+					}
 				} );
 		}
 
@@ -1406,10 +1457,10 @@ class connection_t final
 
 		//! Stop timout guarding.
 		void
-		cancel_timeout_checking()
+		cancel_timeout_checking() noexcept
 		{
 			m_current_timeout_cb = nullptr;
-			m_timer_guard.cancel();
+			RESTINIO_ENSURE_NOEXCEPT_CALL( m_timer_guard.cancel() );
 		}
 
 		//! Helper function to work with timer guard.

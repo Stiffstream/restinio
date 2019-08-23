@@ -13,7 +13,10 @@
 
 #include <restinio/asio_include.hpp>
 
+#include <restinio/utils/suppress_exceptions.hpp>
+
 #include <restinio/timer_common.hpp>
+#include <restinio/compiler_features.hpp>
 
 namespace restinio
 {
@@ -40,7 +43,7 @@ class asio_timer_manager_t final
 			public:
 				timer_guard_t(
 					asio_ns::io_context & io_context,
-					std::chrono::steady_clock::duration check_period )
+					std::chrono::steady_clock::duration check_period ) noexcept
 					:	m_operation_timer{ io_context }
 					,	m_check_period{ check_period }
 				{}
@@ -63,10 +66,15 @@ class asio_timer_manager_t final
 				}
 
 				//! Cancel timeout guard if any.
+				/*!
+				 * @note
+				 * Since v.0.6.0 this method is noexcept.
+				 */
 				void
-				cancel()
+				cancel() noexcept
 				{
-					m_operation_timer.cancel();
+					restinio::utils::suppress_exceptions_quietly(
+							[this]{ m_operation_timer.cancel(); } );
 				}
 
 			private:

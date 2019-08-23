@@ -145,7 +145,7 @@ class file_descriptor_holder_t
 			return *this;
 		}
 
-		~file_descriptor_holder_t()
+		~file_descriptor_holder_t() noexcept
 		{
 			if( is_valid() )
 				close_file( m_file_descriptor );
