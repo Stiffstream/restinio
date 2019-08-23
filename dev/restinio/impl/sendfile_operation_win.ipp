@@ -54,84 +54,125 @@ class sendfile_operation_runner_t final
 			init_next_read_some_from_file();
 		}
 
+		/*!
+		 * @note
+		 * This method is noexcept since v.0.6.0.
+		 */
 		void
-		init_next_read_some_from_file()
+		init_next_read_some_from_file() noexcept
 		{
 			const auto desired_size =
 				std::min< file_size_t >( this->m_remained_size, this->m_chunk_size );
 
-			this->m_file_handle.async_read_some_at(
-				this->m_next_write_offset,
-				asio_ns::buffer(
-					this->m_buffer.get(),
-					static_cast< std::size_t >( desired_size ) ),
+			try
+			{
+				this->m_file_handle.async_read_some_at(
+					this->m_next_write_offset,
+					asio_ns::buffer(
+						this->m_buffer.get(),
+						static_cast< std::size_t >( desired_size ) ),
 					asio_ns::bind_executor(
 						this->m_executor,
-						[ this, ctx = this->shared_from_this() ]
-						( const asio_ns::error_code & ec, std::size_t len ){
-
-							if( ec || 0 == this->m_remained_size )
-							{
-								this->m_after_sendfile_cb( ec, this->m_transfered_size );
-							}
-							if( !ec )
-							{
-								if( 0 != len )
-									init_next_write( len );
-								else
-								{
-									this->m_after_sendfile_cb(
-										make_error_code( asio_ec::eof ),
-										this->m_transfered_size );
-								}
-							}
-							else
-							{
-								this->m_after_sendfile_cb( ec, this->m_transfered_size );
-							}
-						} )	);
+						make_async_read_some_at_handler() ) );
+			}
+			catch( ... )
+			{
+				this->m_after_sendfile_cb(
+						make_asio_compaible_error(
+								asio_convertible_error_t::async_read_some_at_call_failed ),
+						this->m_transfered_size );
+			}
 		}
 
+		/*!
+		 * @note
+		 * This method is noexcept since v.0.6.0.
+		 */
 		void
-		init_next_write( std::size_t len )
+		init_next_write( std::size_t len ) noexcept
 		{
-			asio_ns::async_write(
-				this->m_socket,
-				asio_ns::const_buffer{
-					this->m_buffer.get(),
-					static_cast< std::size_t >( len ) },
-				asio_ns::bind_executor(
-					this->m_executor,
-					[ this, ctx = this->shared_from_this() ]
-					( const asio_ns::error_code & ec, std::size_t written ){
-
-						if( !ec )
-						{
-							this->m_remained_size -= written;
-							this->m_transfered_size += written;
-							this->m_next_write_offset += written;
-
-							if( 0 == this->m_remained_size )
-							{
-								this->m_after_sendfile_cb( ec, this->m_transfered_size );
-							}
-							else
-							{
-								this->init_next_read_some_from_file();
-							}
-						}
-						else
-						{
-							this->m_after_sendfile_cb( ec, this->m_transfered_size );
-						}
-					}
-				) );
+			try
+			{
+				asio_ns::async_write(
+					this->m_socket,
+					asio_ns::const_buffer{
+						this->m_buffer.get(),
+						static_cast< std::size_t >( len ) },
+					asio_ns::bind_executor(
+						this->m_executor,
+						make_async_write_handler() ) );
+			}
+			catch( ... )
+			{
+				this->m_after_sendfile_cb(
+						make_asio_compaible_error(
+								asio_convertible_error_t::async_write_call_failed ),
+						this->m_transfered_size );
+			}
 		}
 
 	private:
 		std::unique_ptr< char[] > m_buffer{ new char [ this->m_chunk_size ] };
 		asio_ns::windows::random_access_handle
 			m_file_handle{ this->m_socket.get_executor().context(), this->m_file_descriptor };
+
+		auto
+		make_async_read_some_at_handler() noexcept
+		{
+			return [this, ctx = this->shared_from_this()]
+				// NOTE: this lambda is noexcept since v.0.6.0.
+				( const asio_ns::error_code & ec, std::size_t len ) noexcept
+				{
+					if( ec || 0 == this->m_remained_size )
+					{
+						this->m_after_sendfile_cb( ec, this->m_transfered_size );
+					}
+					if( !ec )
+					{
+						if( 0 != len )
+							init_next_write( len );
+						else
+						{
+							this->m_after_sendfile_cb(
+								make_error_code( asio_ec::eof ),
+								this->m_transfered_size );
+						}
+					}
+					else
+					{
+						this->m_after_sendfile_cb( ec, this->m_transfered_size );
+					}
+				};
+		}
+
+		auto
+		make_async_write_handler() noexcept
+		{
+			return [ this, ctx = this->shared_from_this() ]
+				// NOTE: this lambda is noexcept since v.0.6.0.
+				( const asio_ns::error_code & ec, std::size_t written ) noexcept
+				{
+					if( !ec )
+					{
+						this->m_remained_size -= written;
+						this->m_transfered_size += written;
+						this->m_next_write_offset += written;
+
+						if( 0 == this->m_remained_size )
+						{
+							this->m_after_sendfile_cb( ec, this->m_transfered_size );
+						}
+						else
+						{
+							this->init_next_read_some_from_file();
+						}
+					}
+					else
+					{
+						this->m_after_sendfile_cb( ec, this->m_transfered_size );
+					}
+				};
+		}
 };
 
 //! A runner of sendfile operation for raw socket.
@@ -139,6 +180,35 @@ template <>
 class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 	:	public sendfile_operation_runner_base_t< asio_ns::ip::tcp::socket >
 {
+		auto
+		make_completion_handler() noexcept
+		{
+			return [this, ctx = shared_from_this() ]
+				// NOTE: this lambda is noexcept since v.0.6.0.
+				( const asio_ns::error_code & ec, std::size_t written )
+				{
+					if( !ec )
+					{
+						m_remained_size -= written;
+						m_transfered_size += written;
+						m_next_write_offset += written;
+
+						if( 0 == m_remained_size )
+						{
+							m_after_sendfile_cb( ec, m_transfered_size );
+						}
+						else
+						{
+							init_next_write();
+						}
+					}
+					else
+					{
+						m_after_sendfile_cb( ec, m_transfered_size );
+					}
+				};
+		}
+
 	public:
 		using base_type_t = sendfile_operation_runner_base_t< asio_ns::ip::tcp::socket >;
 
@@ -168,36 +238,24 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 			init_next_write();
 		}
 
+		/*!
+		 * @note
+		 * This method is noexcept since v.0.6.0.
+		 */
 		void
-		init_next_write()
+		init_next_write() noexcept
 		{
-
-			asio_ns::windows::overlapped_ptr overlapped{
-				m_socket.get_executor().context(),
-				asio_ns::bind_executor(
-					m_executor,
-					[this, ctx = shared_from_this() ]
-					( const asio_ns::error_code & ec, std::size_t written ){
-						if( !ec )
-						{
-							m_remained_size -= written;
-							m_transfered_size += written;
-							m_next_write_offset += written;
-
-							if( 0 == m_remained_size )
-							{
-								m_after_sendfile_cb( ec, m_transfered_size );
-							}
-							else
-							{
-								init_next_write();
-							}
-						}
-						else
-						{
-							m_after_sendfile_cb( ec, m_transfered_size );
-						}
-					} ) };
+			// In this function bind_executor is the main suspect
+			// for throwing an exception. Because of that the whole
+			// function's logic is wrapped by try-catch.
+			try
+			{
+				asio_ns::windows::overlapped_ptr overlapped{
+					m_socket.get_executor().context(),
+					asio_ns::bind_executor(
+						m_executor,
+						make_completion_handler() )
+				};
 
 				// Set offset.
 				overlapped.get()->Offset =
@@ -236,12 +294,22 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 					// OVERLAPPED-derived object has passed to the io_context.
 					overlapped.release();
 				}
+			}
+			catch( ... )
+			{
+				// Report that error as a failure of async_write.
+				this->m_after_sendfile_cb(
+						make_asio_compaible_error(
+								asio_convertible_error_t::async_write_call_failed ),
+						this->m_transfered_size );
+			}
 		}
 
 	private:
 		std::unique_ptr< char[] > m_buffer{ new char [ m_chunk_size ] };
 		asio_ns::windows::random_access_handle
 			m_file_handle{ m_socket.get_executor().context(), m_file_descriptor };
+
 };
 
 } /* namespace impl */

@@ -251,6 +251,12 @@ class http_server_t
 		//! Starts server in async way.
 		/*!
 			\note It is necessary to be sure that ioservice is running.
+
+			\attention
+			\a open_ok_cb and \a open_err_cb should be noexcept
+			functions/lambdas. This requirement is not enforced by
+			static_assert in RESTinio's code to avoid problems in
+			cases when `std::function` is used for these callbacks.
 		*/
 		template <
 				typename Server_Open_Ok_CB,
@@ -270,9 +276,11 @@ class http_server_t
 						open_sync();
 						call_nothrow_cb( ok_cb );
 					}
-					catch( const std::exception & )
+					catch( ... )
 					{
-						err_cb( std::current_exception() );
+						call_nothrow_cb( [&err_cb] {
+								err_cb( std::current_exception() );
+							} );
 					}
 				} );
 		}
@@ -297,6 +305,12 @@ class http_server_t
 		/*!
 			\note It doesn't call io_context to stop
 			(\see stop_io_context()).
+
+			\attention
+			\a close_ok_cb and \a close_err_cb should be noexcept
+			functions/lambdas. This requirement is not enforced by
+			static_assert in RESTinio's code to avoid problems in
+			cases when `std::function` is used for these callbacks.
 		*/
 		template <
 				typename Server_Close_Ok_CB,
@@ -316,9 +330,11 @@ class http_server_t
 						close_sync();
 						call_nothrow_cb( ok_cb );
 					}
-					catch( const std::exception & )
+					catch( ... )
 					{
-						err_cb( std::current_exception() );
+						call_nothrow_cb( [&err_cb] {
+								err_cb( std::current_exception() );
+							} );
 					}
 				} );
 		}

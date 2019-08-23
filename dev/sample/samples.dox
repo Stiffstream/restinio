@@ -30,7 +30,14 @@
  * \example sample/websocket_detailed/main.cpp
  *
  * \example sample/websocket_wss/main.cpp
+ *
+ * \example sample/connection_state/main.cpp
+ *
+ * \example sample/ip_blocker/main.cpp
+ *
+ * \example sample/tls_inspector/main.cpp
  */
+
 // vim:ft=cpp.doxygen
 
 

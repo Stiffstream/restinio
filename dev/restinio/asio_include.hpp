@@ -19,12 +19,14 @@ namespace restinio
 
 	//! @name Adoptation functions to cover differences between snad-alone and beast asio.
 	///@{
-	inline bool error_is_operation_aborted( const asio_ns::error_code & ec )
+	inline bool
+	error_is_operation_aborted( const asio_ns::error_code & ec ) noexcept
 	{
 		return ec == asio_ns::error::operation_aborted;
 	}
 
-	inline bool error_is_eof( const asio_ns::error_code & ec )
+	inline bool
+	error_is_eof( const asio_ns::error_code & ec ) noexcept
 	{
 		return ec == asio_ns::error::eof;
 	}
@@ -118,8 +120,22 @@ enum class asio_convertible_error_t : int
 
 	//! After write notificator error: a notificator was set for a write_group_t
 	//! but no external invokation happened, so write_group_t destructor
-	// calls it with error.
-	write_group_destroyed_passively
+	//! calls it with error.
+	write_group_destroyed_passively,
+
+	//! A call to async_write failed.
+	//! The corresponding write operation didn't done.
+	/*!
+	 * @since v.0.6.0
+	 */
+	async_write_call_failed,
+
+	//! A call to async_read_some_at failed.
+	//! The corresponding sendfile operation didn't done.
+	/*!
+	 * @since v.0.6.0
+	 */
+	async_read_some_at_call_failed
 };
 
 namespace impl
@@ -150,6 +166,14 @@ class restinio_err_category_t : public error_category_base_t
 				case asio_convertible_error_t::write_group_destroyed_passively:
 					result.assign(
 						"write group destroyed without external notificato invokation" );
+					break;
+				case asio_convertible_error_t::async_write_call_failed:
+					result.assign(
+						"a call to async_write() failed" );
+					break;
+				case asio_convertible_error_t::async_read_some_at_call_failed:
+					result.assign(
+						"a call to async_read_some_at_call_failed() failed" );
 					break;
 			}
 

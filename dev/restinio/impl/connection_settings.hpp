@@ -15,6 +15,8 @@
 
 #include <restinio/connection_state_listener.hpp>
 
+#include <restinio/utils/suppress_exceptions.hpp>
+
 namespace restinio
 {
 
@@ -28,7 +30,8 @@ namespace connection_settings_details
  * @brief A class for holding actual state listener.
  *
  * This class holds shared pointer to actual state listener object and
- * provides actual call_state_listener() implementation.
+ * provides actual call_state_listener() and
+ * call_state_listener_suppressing_exceptions() implementations.
  *
  * @since v.0.5.1
  */
@@ -45,9 +48,19 @@ struct state_listener_holder_t
 
 	template< typename Lambda >
 	void
-	call_state_listener( Lambda && lambda ) const noexcept
+	call_state_listener( Lambda && lambda ) const
 	{
 		m_connection_state_listener->state_changed( lambda() );
+	}
+
+	template< typename Lambda >
+	void
+	call_state_listener_suppressing_exceptions(
+		Lambda && lambda ) const noexcept
+	{
+		restinio::utils::suppress_exceptions_quietly( [&] {
+				m_connection_state_listener->state_changed( lambda() );
+			} );
 	}
 };
 
@@ -68,6 +81,14 @@ struct state_listener_holder_t< connection_state::noop_listener_t >
 	template< typename Lambda >
 	void
 	call_state_listener( Lambda && /*lambda*/ ) const noexcept
+	{
+		/* nothing to do */
+	}
+
+	template< typename Lambda >
+	void
+	call_state_listener_suppressing_exceptions(
+		Lambda && /*lambda*/ ) const noexcept
 	{
 		/* nothing to do */
 	}
@@ -161,10 +182,9 @@ struct connection_settings_t final
 		return m_timer_manager->create_timer_guard();
 	}
 
-	private:
-
-		//! Timer factory for timout guards.
-		timer_manager_handle_t m_timer_manager;
+private:
+	//! Timer factory for timout guards.
+	timer_manager_handle_t m_timer_manager;
 };
 
 template < typename Traits >

@@ -14,6 +14,8 @@
 
 #include <restinio/impl/include_fmtlib.hpp>
 
+#include <restinio/utils/suppress_exceptions.hpp>
+
 #include <restinio/exception.hpp>
 #include <restinio/request_handler.hpp>
 #include <restinio/buffers.hpp>
@@ -79,13 +81,24 @@ class response_context_t
 
 		//! Extract write group from data queue.
 		write_group_t
-		dequeue_group()
+		dequeue_group() noexcept
 		{
 			assert( !m_write_groups.empty() );
 
+			// Move constructor for write_group_t shouldn't throw.
+			RESTINIO_STATIC_ASSERT_NOEXCEPT(
+					write_group_t{ std::declval<write_group_t>() } );
+
 			write_group_t result{ std::move( m_write_groups.front() ) };
 
-			m_write_groups.erase( begin( m_write_groups ) );
+			// We expect that m_write_groups.erase() isn't noexpect
+			// and because of that this call should be done via
+			// suppress_exceptions_quietly.
+			RESTINIO_STATIC_ASSERT_NOT_NOEXCEPT(
+					m_write_groups.erase(m_write_groups.begin()) );
+			restinio::utils::suppress_exceptions_quietly( [this] {
+					m_write_groups.erase( begin( m_write_groups ) );
+				} );
 
 			return result;
 		}
@@ -216,6 +229,22 @@ class response_context_table_t
 					"unable to pop context because "
 					"response_context_table is empty" };
 
+			pop_response_context_nonchecked();
+		}
+
+		//! Remove the first context from queue with the check for
+		//! emptiness of the queue.
+		/*!
+		 * @note
+		 * This method is noexcept and indended to be used in noexcept
+		 * context. But the emptiness of the queue should be checked
+		 * before the call of this method.
+		 *
+		 * @since v.0.6.0
+		 */
+		void
+		pop_response_context_nonchecked() noexcept
+		{
 			--m_elements_exists;
 			++m_first_element_index;
 			if( m_contexts.size() == m_first_element_index )
@@ -373,11 +402,24 @@ class response_coordinator_t
 		//! Remove all contexts.
 		/*!
 			Invoke write groups after-write callbacks with error status.
+
+			@note
+			Since v.0.6.0 this method is noexcept
 		*/
 		void
-		reset()
+		reset() noexcept
 		{
-			for(; !m_context_table.empty(); m_context_table.pop_response_context() )
+			RESTINIO_STATIC_ASSERT_NOEXCEPT(m_context_table.empty());
+			RESTINIO_STATIC_ASSERT_NOEXCEPT(
+					m_context_table.pop_response_context_nonchecked());
+			RESTINIO_STATIC_ASSERT_NOEXCEPT(m_context_table.front());
+			RESTINIO_STATIC_ASSERT_NOEXCEPT(m_context_table.front().dequeue_group());
+                                        
+			RESTINIO_STATIC_ASSERT_NOEXCEPT(make_asio_compaible_error(
+					asio_convertible_error_t::write_was_not_executed));
+
+			for(; !m_context_table.empty();
+				m_context_table.pop_response_context_nonchecked() )
 			{
 				const auto ec =
 					make_asio_compaible_error(
@@ -388,12 +430,9 @@ class response_coordinator_t
 				{
 					auto wg = current_ctx.dequeue_group();
 
-					try
-					{
-						wg.invoke_after_write_notificator_if_exists( ec );
-					}
-					catch( ... )
-					{}
+					restinio::utils::suppress_exceptions_quietly( [&] {
+							wg.invoke_after_write_notificator_if_exists( ec );
+						} );
 				}
 			}
 		}

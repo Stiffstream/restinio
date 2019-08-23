@@ -12,7 +12,7 @@ MxxRu::arch_externals :asio do |e|
 end
 
 MxxRu::arch_externals :asio_mxxru do |e|
-  e.url 'https://bitbucket.org/sobjectizerteam/asio_mxxru-1.1/get/1.1.2.tar.bz2'
+  e.url 'https://github.com/Stiffstream/asio_mxxru/archive/1.1.2.tar.gz'
 
   e.map_dir 'dev/asio_mxxru' => 'dev'
 end
@@ -25,7 +25,7 @@ MxxRu::arch_externals :nodejs_http_parser do |e|
 end
 
 MxxRu::arch_externals :nodejs_http_parser_mxxru do |e|
-  e.url 'https://bitbucket.org/sobjectizerteam/nodejs_http_parser_mxxru-0.2/get/v.0.2.0.tar.bz2'
+  e.url 'https://github.com/Stiffstream/nodejs_http_parser_mxxru/archive/v.0.2.1.tar.gz'
 
   e.map_dir 'dev/nodejs/http_parser_mxxru' => 'dev/nodejs'
 end
@@ -42,7 +42,7 @@ MxxRu::arch_externals :fmt do |e|
 end
 
 MxxRu::arch_externals :fmtlib_mxxru do |e|
-  e.url 'https://bitbucket.org/sobjectizerteam/fmtlib_mxxru/get/fmt-5.0.0.tar.bz2'
+  e.url 'https://github.com/Stiffstream/fmtlib_mxxru/archive/fmt-5.0.0-1.tar.gz'
 
   e.map_dir 'dev/fmt_mxxru' => 'dev'
 end
@@ -54,13 +54,13 @@ MxxRu::arch_externals :rapidjson do |e|
 end
 
 MxxRu::arch_externals :rapidjson_mxxru do |e|
-  e.url 'https://bitbucket.org/sobjectizerteam/rapidjson_mxxru-1.0/get/v.1.0.0.tar.bz2'
+  e.url 'https://github.com/Stiffstream/rapidjson_mxxru/archive/v.1.0.1.tar.gz'
 
   e.map_dir 'dev/rapidjson_mxxru' => 'dev'
 end
 
 MxxRu::arch_externals :json_dto do |e|
-  e.url 'https://bitbucket.org/sobjectizerteam/json_dto-0.2/downloads/json_dto-0.2.8-full.zip'
+  e.url 'https://github.com/Stiffstream/json_dto/archive/v.0.2.8.1.tar.gz'
 
   e.map_dir 'dev/json_dto' => 'dev'
 end
@@ -76,3 +76,4 @@ MxxRu::arch_externals :catch do |e|
 
   e.map_dir 'single_include/catch2' => 'dev'
 end
+

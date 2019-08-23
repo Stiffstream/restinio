@@ -11,24 +11,18 @@ class connection_listener_t
 	std::mutex m_lock;
 
 	static const char *
-	cause_to_str( restinio::connection_state::cause_t cause ) noexcept
+	cause_to_str( const restinio::connection_state::notice_t & notice ) noexcept
 	{
-		const char * result = "unknown";
-		switch( cause )
-		{
-			case restinio::connection_state::cause_t::accepted:
-				result = "accepted";
-			break;
-
-			case restinio::connection_state::cause_t::closed:
-				result = "closed";
-			break;
-
-			case restinio::connection_state::cause_t::upgraded_to_websocket:
-				result = "upgraded";
-			break;
-		}
-		return result;
+		using namespace restinio::connection_state;
+		const auto cause = notice.cause();
+		if( restinio::holds_alternative< accepted_t >( cause ) )
+			return "accepted";
+		else if( restinio::holds_alternative< closed_t >( cause ) )
+			return "closed";
+		else if( restinio::holds_alternative< upgraded_to_websocket_t >( cause ) )
+			return "upgraded_to_websocket";
+		else
+			return "unknown";
 	}
 
 public:
@@ -41,7 +35,7 @@ public:
 		fmt::print( "connection-notice: {} (from {}) => {}\n",
 				notice.connection_id(),
 				notice.remote_endpoint(),
-				cause_to_str( notice.cause() ) );
+				cause_to_str( notice ) );
 	}
 };
 

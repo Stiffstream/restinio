@@ -17,6 +17,8 @@
 #include <restinio/variant.hpp>
 #include <restinio/impl/sendfile_operation.hpp>
 
+#include <restinio/compiler_features.hpp>
+
 namespace restinio
 {
 
@@ -195,10 +197,14 @@ class write_group_output_ctx_t
 				}
 
 				//! Reset write operation context.
+				/*!
+				 * @note
+				 * Since v.0.6.0 this method is noexcept.
+				 */
 				void
-				reset()
+				reset() noexcept
 				{
-					m_sendfile_operation->reset();
+					RESTINIO_ENSURE_NOEXCEPT_CALL( m_sendfile_operation->reset() );
 				}
 
 				//! Get the size of sendfile operation.

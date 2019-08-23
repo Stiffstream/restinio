@@ -9,6 +9,7 @@
 #pragma once
 
 #include <restinio/asio_include.hpp>
+#include <restinio/compiler_features.hpp>
 
 #include <so_5/all.hpp>
 
@@ -80,11 +81,15 @@ class so_timer_manager_t final
 					}
 				}
 
-				// Cancel timeout guard if any.
+				//! Cancel timeout guard if any.
+				/*!
+				 * @note
+				 * Since v.0.6.0 this method is noexcept.
+				 */
 				void
-				cancel()
+				cancel() noexcept
 				{
-					m_current_op_timer.release();
+					RESTINIO_ENSURE_NOEXCEPT_CALL( m_current_op_timer.release() );
 				}
 
 			private:
@@ -105,8 +110,8 @@ class so_timer_manager_t final
 
 		//! Start/stop timer manager.
 		//! \{
-		void start() const {}
-		void stop() const {}
+		void start() const noexcept {}
+		void stop() const noexcept {}
 		//! \}
 
 		struct factory_t

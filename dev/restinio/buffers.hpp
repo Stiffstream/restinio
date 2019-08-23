@@ -18,6 +18,10 @@
 #include <restinio/exception.hpp>
 #include <restinio/sendfile.hpp>
 
+#include <restinio/compiler_features.hpp>
+#include <restinio/utils/suppress_exceptions.hpp>
+
+
 namespace restinio
 {
 
@@ -674,7 +678,7 @@ class write_group_t
 		//! Construct write group with a given bunch of writable items.
 		explicit write_group_t(
 			//! A buffer objects included in this group.
-			writable_items_container_t items )
+			writable_items_container_t items ) noexcept
 			:	m_items{ std::move( items ) }
 			,	m_status_line_size{ 0 }
 		{}
@@ -691,7 +695,7 @@ class write_group_t
 		 * @brief Moves object leaving a moved one in clean state.
 		*/
 		///@{
-		write_group_t( write_group_t && wg )
+		write_group_t( write_group_t && wg ) noexcept
 			:	m_items{ std::move( wg.m_items ) }
 			,	m_status_line_size{ wg.m_status_line_size }
 			,	m_after_write_notificator{ std::move( wg.m_after_write_notificator ) }
@@ -700,7 +704,7 @@ class write_group_t
 			wg.m_status_line_size = 0;
 		}
 
-		write_group_t & operator = ( write_group_t && wg )
+		write_group_t & operator = ( write_group_t && wg ) noexcept
 		{
 			write_group_t tmp{ std::move( wg ) };
 			swap( *this, tmp );
@@ -713,18 +717,15 @@ class write_group_t
 		/*!
 			If notificator was not called it would be invoked with error.
 		*/
-		~write_group_t()
+		~write_group_t() noexcept
 		{
 			if( m_after_write_notificator )
 			{
-				try
-				{
-					invoke_after_write_notificator_if_exists(
-						make_asio_compaible_error(
-							asio_convertible_error_t::write_group_destroyed_passively ) );
-				}
-				catch( ... )
-				{}
+				restinio::utils::suppress_exceptions_quietly( [&] {
+						invoke_after_write_notificator_if_exists(
+							make_asio_compaible_error(
+								asio_convertible_error_t::write_group_destroyed_passively ) );
+					} );
 			}
 		}
 
@@ -829,10 +830,19 @@ class write_group_t
 
 		//! Reset group.
 		void
-		reset()
+		reset() noexcept
 		{
-			m_items.clear();
+
+			RESTINIO_ENSURE_NOEXCEPT_CALL( m_items.clear() );
 			m_status_line_size = 0;
+
+			// This assign is expected to be noexcept.
+			// And it is on some compilers.
+			// But for some compilers std::function::operator= is not noexcept
+			// (for example for Visual C++ from VisualStudio 2017).
+			// So we have to hope that this assign won't throw.
+			// Otherwise there is no way to recover from an exception
+			// from std::function::operator= in that place.
 			m_after_write_notificator = write_status_cb_t{};
 		}
 

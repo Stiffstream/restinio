@@ -19,4 +19,7 @@ namespace restinio
 
 	using nonstd::holds_alternative;
 	using nonstd::get;
+	using nonstd::get_if;
+	using nonstd::visit;
+
 } /* namespace restinio */
