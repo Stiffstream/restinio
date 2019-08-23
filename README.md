@@ -114,6 +114,6 @@ The full documentation for RESTinio can be found [here](https://stiffstream.com/
 # More
 
 * Issues and bugs:
-[Issue Tracker on BitBucket](https://bitbucket.org/sobjectizerteam/restinio/issues).
+[Issue Tracker on GitHub](https://github.com/stiffstream/restinio/issues).
 * Discussion group: [restinio](https://groups.google.com/forum/#!forum/restinio).
 
