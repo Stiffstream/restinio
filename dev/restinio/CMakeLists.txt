@@ -97,6 +97,7 @@ SET(RESTINIO_HEADERS_ALL
 	uri_helpers.hpp
 	value_or.hpp
 	variant.hpp
+	tls_fwd.hpp
 	impl/acceptor.hpp
 	impl/connection_base.hpp
 	impl/connection.hpp
