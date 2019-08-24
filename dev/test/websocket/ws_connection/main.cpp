@@ -12,7 +12,6 @@
 #include <restinio/websocket/websocket.hpp>
 #include <restinio/utils/base64.hpp>
 #include <restinio/utils/sha1.hpp>
-#include <restinio/websocket/impl/utf8.hpp>
 
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>

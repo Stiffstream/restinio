@@ -75,7 +75,7 @@ auto make_router()
 
 	router->http_post(
 		R"-(/)-",
-		[ & ]( restinio::request_handle_t req, auto ){
+		[ & ]( const restinio::request_handle_t& req, auto ){
 
 			return req->create_response()
 				.append_header( "Server", "RESTinio" )

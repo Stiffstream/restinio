@@ -58,7 +58,7 @@ TEST_CASE( "Throw exception" , "[exception]" )
 			restinio::asio_ns::write( socket, restinio::asio_ns::buffer( request ) )
 			);
 
-		std::array< char, 64 > data;
+		std::array< char, 64 > data{};
 		restinio::asio_ns::error_code error;
 
 		size_t length = // sock.read_some(restinio::asio_ns::buffer(data), error);

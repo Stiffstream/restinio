@@ -13,7 +13,7 @@
 class blocker_t
 {
 	std::mutex m_lock;
-	int m_ordinal{};
+	unsigned m_ordinal{};
 
 public :
 

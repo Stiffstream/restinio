@@ -124,7 +124,7 @@ void setup_resp_headers( Resp & resp )
 }
 
 auto make_resp_for_small_count(
-	restinio::request_handle_t req,
+	const restinio::request_handle_t& req,
 	const restinio::query_string_params_t & qp,
 	std::size_t count )
 {
@@ -145,7 +145,7 @@ auto make_resp_for_small_count(
 }
 
 auto make_resp_for_large_count(
-	restinio::request_handle_t req,
+	const restinio::request_handle_t& req,
 	const restinio::query_string_params_t & qp,
 	std::size_t count )
 {
@@ -177,7 +177,7 @@ auto make_router()
 
 	router->http_get(
 		R"-(/rand/nums)-",
-		[ & ]( restinio::request_handle_t req, auto ){
+		[ & ]( const restinio::request_handle_t& req, auto ){
 
 			const auto qp = restinio::parse_query( req->header().query() );
 			const std::size_t count = restinio::value_or( qp, "count", 100u );
@@ -185,12 +185,12 @@ auto make_router()
 			if( count < count_threshold )
 			{
 				// Not to much data to be served in response.
-				return make_resp_for_small_count( std::move( req ), qp, count );
+				return make_resp_for_small_count( req , qp, count );
 			}
 			else
 			{
 				// The data is big enough to use chunked encoding.
-				return make_resp_for_large_count( std::move( req ), qp, count );
+				return make_resp_for_large_count( req , qp, count );
 			}
 		} );
 

@@ -3,7 +3,7 @@
 #include <restinio/all.hpp>
 
 // Create request handler.
-auto create_request_handler( std::string tag )
+auto create_request_handler( const std::string& tag )
 {
 	return [tag]( auto req ) {
 			if( restinio::http_method_get() == req->header().method() &&

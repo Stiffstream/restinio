@@ -4,7 +4,6 @@
 #include <restinio/tls.hpp>
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 
 class user_connections_t
 {
@@ -55,12 +54,12 @@ init_resp( RESP resp )
 	resp.append_header_date_field();
 
 	return resp;
-};
+}
 
 namespace rr = restinio::router;
 using router_t = rr::express_router_t<>;
 
-auto server_handler( user_connections_shptr_t user_connections )
+auto server_handler( const user_connections_shptr_t& user_connections )
 {
 	auto router = std::make_unique< router_t >();
 
@@ -168,7 +167,7 @@ std::string extract_user_name_from_client_certificate(
 class my_tls_inspector_t
 {
 public:
-	my_tls_inspector_t(
+	explicit my_tls_inspector_t(
 		user_connections_shptr_t user_connections )
 		:	m_user_connections{ std::move(user_connections) }
 	{}

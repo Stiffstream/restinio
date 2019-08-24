@@ -140,7 +140,7 @@ TEST_CASE( "body_handler void return" , "[zlib][body_handler][void-return]" )
 
 	router->http_post(
 		"/",
-		[ & ]( restinio::request_handle_t req, auto ){
+		[ & ]( const restinio::request_handle_t& req, auto ){
 			auto resp = req->create_response();
 
 			resp.append_header( restinio::http_field::server, "RESTinio" )

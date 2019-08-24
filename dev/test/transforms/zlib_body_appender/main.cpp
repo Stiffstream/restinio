@@ -246,7 +246,7 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 
 	router->http_get(
 		R"-(/deflate/:level(-?\d+))-",
-		[ & ]( restinio::request_handle_t req, auto params ){
+		[ & ]( const restinio::request_handle_t& req, auto params ){
 				auto resp = req->create_response< restinio::user_controlled_output_t >();
 
 				resp
@@ -277,7 +277,7 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 
 	router->http_get(
 		R"-(/gzip/:level(-?\d+))-",
-		[ & ]( restinio::request_handle_t req, auto params ){
+		[ & ]( const restinio::request_handle_t& req, auto params ){
 				auto resp = req->create_response< restinio::user_controlled_output_t >();
 
 				resp
@@ -307,7 +307,7 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 
 	router->http_get(
 		R"-(/identity)-",
-		[ & ]( restinio::request_handle_t req, auto ){
+		[ & ]( const restinio::request_handle_t& req, auto ){
 				auto resp = req->create_response< restinio::user_controlled_output_t >();
 
 				resp
@@ -533,7 +533,7 @@ TEST_CASE( "chunked_output" , "[zlib][body_appender][chunked_output]" )
 
 	router->http_get(
 		R"-(/deflate/:level(-?\d+))-",
-		[ & ]( restinio::request_handle_t req, auto params ){
+		[ & ]( const restinio::request_handle_t& req, auto params ){
 				auto resp = req->create_response< restinio::chunked_output_t >();
 
 				resp
@@ -566,7 +566,7 @@ TEST_CASE( "chunked_output" , "[zlib][body_appender][chunked_output]" )
 
 	router->http_get(
 		R"-(/gzip/:level(-?\d+))-",
-		[ & ]( restinio::request_handle_t req, auto params ){
+		[ & ]( const restinio::request_handle_t& req, auto params ){
 				auto resp = req->create_response< restinio::chunked_output_t >();
 
 				resp
@@ -599,7 +599,7 @@ TEST_CASE( "chunked_output" , "[zlib][body_appender][chunked_output]" )
 
 	router->http_get(
 		R"-(/identity)-",
-		[ & ]( restinio::request_handle_t req, auto ){
+		[ & ]( const restinio::request_handle_t& req, auto ){
 				auto resp = req->create_response< restinio::chunked_output_t >();
 
 				resp

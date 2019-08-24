@@ -68,7 +68,7 @@ TEST_CASE(
 				0x21
 			}) };
 
-		REQUIRE( check_utf8_is_correct( str ) == true );
+		REQUIRE(check_utf8_is_correct(str));
 	}
 	{
 		std::string str{ to_char_each({
@@ -94,28 +94,28 @@ TEST_CASE(
 				0x64
 			}) };
 
-		REQUIRE( check_utf8_is_correct( str ) == false );
+		REQUIRE(!check_utf8_is_correct(str));
 	}
 	{
 		std::string str{ to_char_each({
 				0xf8, 0x88, 0x80, 0x80, 0x80
 			}) };
 
-		REQUIRE( check_utf8_is_correct( str ) == false );
+		REQUIRE(!check_utf8_is_correct(str));
 	}
 	{
 		std::string str{ to_char_each({
 				0xed, 0x9f, 0xbf
 			}) };
 
-		REQUIRE( check_utf8_is_correct( str ) == true );
+		REQUIRE(check_utf8_is_correct(str));
 	}
 	{
 		std::string str{ to_char_each({
 				0xf0, 0x90, 0x80, 0x80
 			}) };
 
-		REQUIRE( check_utf8_is_correct( str ) == true );
+		REQUIRE(check_utf8_is_correct(str));
 	}
 }
 

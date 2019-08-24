@@ -59,7 +59,7 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 		do_with_socket( [ & ]( auto & socket, auto & /*io_context*/ ){
 			std::this_thread::sleep_for( std::chrono::milliseconds( 6 ) );
 
-			std::array< char, 64 > data;
+			std::array< char, 64 > data{};
 
 			restinio::asio_ns::error_code error;
 
@@ -83,7 +83,7 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 
 			std::this_thread::sleep_for( std::chrono::milliseconds( 6 ) );
 
-			std::array< char, 64 > data;
+			std::array< char, 64 > data{};
 			restinio::asio_ns::error_code error;
 
 			size_t length = // sock.read_some(asio::buffer(data), error);
@@ -112,7 +112,7 @@ TEST_CASE( "Timeout on reading requests" , "[timeout][read]" )
 
 			std::this_thread::sleep_for( std::chrono::milliseconds( 6 ) );
 
-			std::array< char, 64 > data;
+			std::array< char, 64 > data{};
 			restinio::asio_ns::error_code error;
 
 			size_t length = // sock.read_some(asio::buffer(data), error);
@@ -171,7 +171,7 @@ TEST_CASE( "Timeout on handling request" , "[timeout][handle_request]" )
 			restinio::asio_ns::write( socket, restinio::asio_ns::buffer( request ) )
 			);
 
-		std::array< char, 1024 > data;
+		std::array< char, 1024 > data{};
 
 		socket.async_read_some(
 			restinio::asio_ns::buffer( data ),

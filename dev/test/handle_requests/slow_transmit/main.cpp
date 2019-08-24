@@ -73,7 +73,7 @@ TEST_CASE( "Slow transmit" , "[slow_trunsmit]" )
 			std::this_thread::sleep_for( std::chrono::milliseconds( 2 ) );
 		}
 
-		std::array< char, 1024 > data;
+		std::array< char, 1024 > data{};
 
 		socket.async_read_some(
 			restinio::asio_ns::buffer( data.data(), data.size() ),

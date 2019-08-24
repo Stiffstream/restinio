@@ -1,10 +1,8 @@
 #include <iostream>
-#include <sstream>
 
 #include <restinio/all.hpp>
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 
 
 namespace rr = restinio::router;
@@ -93,7 +91,7 @@ auto server_handler()
 			// Query params.
 			const auto qp = restinio::parse_query( req->header().query() );
 
-			if( 0 == qp.size() )
+			if( qp.empty() )
 			{
 				sout << "No query parameters.";
 			}

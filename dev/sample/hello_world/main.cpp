@@ -2,9 +2,6 @@
 
 #include <restinio/all.hpp>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-
 template < typename RESP >
 RESP
 init_resp( RESP resp )

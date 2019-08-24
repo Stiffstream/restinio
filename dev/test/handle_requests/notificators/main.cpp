@@ -82,7 +82,7 @@ TEST_CASE( "notificators simple 2" , "[user_controlled_output]" )
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.request_handler(
-					[&]( restinio::request_handle_t req ){
+					[&]( const restinio::request_handle_t& req ){
 						using output_type_t = restinio::user_controlled_output_t;
 						auto resp = req->create_response< output_type_t >();
 
@@ -136,7 +136,7 @@ TEST_CASE( "notificators simple 3" , "[chunked_output]" )
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.request_handler(
-					[&]( restinio::request_handle_t req ){
+					[&]( const restinio::request_handle_t& req ){
 						using output_type_t = restinio::chunked_output_t;
 						auto resp = req->create_response< output_type_t >();
 
@@ -200,7 +200,7 @@ TEST_CASE( "notificators user_controlled_output flush-flush" , "[user_controlled
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.request_handler(
-					[&]( restinio::request_handle_t req ){
+					[&]( const restinio::request_handle_t& req ){
 						using output_type_t = restinio::user_controlled_output_t;
 						auto resp = req->create_response< output_type_t >();
 
@@ -262,7 +262,7 @@ TEST_CASE( "notificators chunked_output flush-flush" , "[chunked_output][flush]"
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.request_handler(
-					[&]( restinio::request_handle_t req ){
+					[&]( const restinio::request_handle_t& req ){
 						using output_type_t = restinio::chunked_output_t;
 						auto resp = req->create_response< output_type_t >();
 
@@ -328,7 +328,7 @@ TEST_CASE( "notificators error" , "[error]" )
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.request_handler(
-					[&]( restinio::request_handle_t req ){
+					[&]( const restinio::request_handle_t& req ){
 						auto resp = req->create_response();
 
 						resp
@@ -554,7 +554,7 @@ TEST_CASE( "notificators throw 1" , "[error][throw]" )
 				.address( "127.0.0.1" )
 				.max_pipelined_requests( 2 )
 				.request_handler(
-					[&]( restinio::request_handle_t req ){
+					[&]( const restinio::request_handle_t& req ){
 						auto resp = req->create_response();
 
 						resp

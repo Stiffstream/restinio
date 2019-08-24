@@ -35,7 +35,7 @@ class a_req_handler_t final : public so_5::agent_t
 	public:
 		a_req_handler_t(
 			context_t ctx,
-			restinio::request_handle_t req )
+			const restinio::request_handle_t& req )
 			:	so_base_type_t{ std::move( ctx ) }
 			,	m_resp{ req->create_response< restinio::chunked_output_t >() }
 			,	m_part_it{ begin( g_response_parts ) }
@@ -43,7 +43,7 @@ class a_req_handler_t final : public so_5::agent_t
 			so_subscribe_self().event( &a_req_handler_t::evt_stream_next_chunk );
 		};
 
-		virtual void so_evt_start() override
+		void so_evt_start() override
 		{
 			// Set header and start response sending circle.
 
@@ -112,13 +112,13 @@ int main()
 				.port( 8080 )
 				.address( "localhost" )
 				.max_pipelined_requests( 4 )
-				.request_handler( [&]( restinio::request_handle_t req ){
+				.request_handler( [&]( const restinio::request_handle_t& req ){
 					sobj.environment()
 						.register_agent_as_coop(
 							so_5::autoname,
 							std::make_unique< a_req_handler_t >(
 								sobj.environment(),
-								std::move( req ) ) );
+								req ) );
 
 					return restinio::request_accepted();
 				} ) );
