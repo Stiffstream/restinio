@@ -65,7 +65,7 @@ IF (RESTINIO_MASTER_PROJECT)
 		# Require necessary packages.
 
 		# HTTP parser
-		# http_parser is linked as raw static lib file.
+		find_package(unofficial-http-parser CONFIG REQUIRED)
 
 		# fmtlib
 		find_package(fmt REQUIRED)
