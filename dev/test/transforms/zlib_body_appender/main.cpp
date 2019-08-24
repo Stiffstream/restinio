@@ -18,7 +18,7 @@
 
 TEST_CASE( "restinio_controlled_output" , "[zlib][body_appender][restinio_controlled_output]" )
 {
-	std::srand( std::time( nullptr ) );
+	std::srand( static_cast<unsigned int>(std::time( nullptr )) );
 
 	const auto response_body = create_random_text( 128 * 1024, 16 );
 
@@ -234,7 +234,7 @@ TEST_CASE( "restinio_controlled_output" , "[zlib][body_appender][restinio_contro
 
 TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_output]" )
 {
-	std::srand( std::time( nullptr ) );
+	std::srand( static_cast<unsigned int>(std::time( nullptr )) );
 
 	const auto response_body = create_random_text( 128 * 1024, 16 );
 
@@ -521,7 +521,7 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 
 TEST_CASE( "chunked_output" , "[zlib][body_appender][chunked_output]" )
 {
-	std::srand( std::time( nullptr ) );
+	std::srand( static_cast<unsigned int>(std::time( nullptr )) );
 
 	const auto response_body = create_random_text( 128 * 1024, 16 );
 

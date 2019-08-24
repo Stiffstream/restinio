@@ -18,7 +18,7 @@
 
 TEST_CASE( "body_handler" , "[zlib][body_handler]" )
 {
-	std::srand( std::time( nullptr ) );
+	std::srand( static_cast<unsigned int>(std::time( nullptr )) );
 
 	const auto response_body = create_random_text( 128 * 1024, 16 );
 
@@ -128,7 +128,7 @@ TEST_CASE( "body_handler" , "[zlib][body_handler]" )
 
 TEST_CASE( "body_handler void return" , "[zlib][body_handler][void-return]" )
 {
-	std::srand( std::time( nullptr ) );
+	std::srand( static_cast<unsigned int>(std::time( nullptr )) );
 
 	const auto response_body = create_random_text( 1024, 16 );
 

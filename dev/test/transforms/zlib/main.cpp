@@ -181,7 +181,7 @@ TEST_CASE( "deflate" , "[zlib][compress][decompress][deflate]" )
 {
 	namespace rtz = restinio::transforms::zlib;
 
-	std::srand( std::time( nullptr ) );
+    std::srand( static_cast<unsigned int>(std::time( nullptr )) );
 
 	{
 		rtz::zlib_t zc{ rtz::make_deflate_compress_params() };
@@ -304,7 +304,7 @@ TEST_CASE( "gzip" , "[zlib][compress][decompress][gzip]" )
 {
 	namespace rtz = restinio::transforms::zlib;
 
-	std::srand( std::time( nullptr ) );
+    std::srand( static_cast<unsigned int>(std::time( nullptr )) );
 
 	{
 		rtz::zlib_t zc{ rtz::make_gzip_compress_params() };
@@ -427,7 +427,7 @@ TEST_CASE( "identity" , "[zlib][identity]" )
 {
 	namespace rtz = restinio::transforms::zlib;
 
-	std::srand( std::time( nullptr ) );
+    std::srand( static_cast<unsigned int>(std::time( nullptr )) );
 
 	{
 		rtz::zlib_t zc{ rtz::make_identity_params() };
@@ -484,7 +484,7 @@ TEST_CASE( "complete" , "[zlib][compress][decompress][commplete]" )
 {
 	namespace rtz = restinio::transforms::zlib;
 
-	std::srand( std::time( nullptr ) );
+    std::srand( static_cast<unsigned int>(std::time( nullptr )) );
 
 	{
 		rtz::zlib_t zc{ rtz::make_gzip_compress_params() };
@@ -542,7 +542,7 @@ TEST_CASE( "take output" , "[zlib][compress][decompress][output]" )
 {
 	namespace rtz = restinio::transforms::zlib;
 
-	std::srand( std::time( nullptr ) );
+	std::srand( static_cast<unsigned int>(std::time( nullptr )) );
 
 	{
 		rtz::zlib_t zc{ rtz::make_gzip_compress_params() };
@@ -628,7 +628,7 @@ TEST_CASE( "write check input size" , "[zlib][write][large input]" )
 {
 	namespace rtz = restinio::transforms::zlib;
 
-	std::srand( std::time( nullptr ) );
+	std::srand( static_cast<unsigned int>(std::time( nullptr )) );
 
 	if( sizeof( restinio::string_view_t::size_type ) == 8 )
 	{

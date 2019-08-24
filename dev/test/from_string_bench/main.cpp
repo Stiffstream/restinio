@@ -139,7 +139,7 @@ cast_dataset_t< std::uint64_t > uints64_data;
 void
 init_datasets( size_t n )
 {
-	std::srand( std::time( nullptr ) );
+	std::srand( static_cast<unsigned int>(std::time( nullptr )) );
 
 	ints8_data = create_ints< std::int8_t >( n );
 	uints8_data = create_ints< std::uint8_t >( n );
