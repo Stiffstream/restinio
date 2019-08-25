@@ -13,7 +13,7 @@ common_sources: &all_sources
   - llvm-toolchain-xenial-7.0
   - llvm-toolchain-xenial-8.0
 
-common_sources: &all_packages
+common_packages: &all_packages
   - g++-7
   - clang-6.0
   - clang-7
@@ -23,8 +23,10 @@ common_sources: &all_packages
 
 matrix:
   include:
+
     # GCC on linux
     - os: linux
+      compiler: gcc
       addons:
         apt:
           sources: *all_sources
@@ -32,33 +34,33 @@ matrix:
       env:
         - MATRIX_EVAL="CXX_COMPILER=g++-7 C_COMPILER=gcc-7"
 
-      # Clang on Linux
-     - os: linux
-       compiler: clang
-       addons:
-         apt:
+    # Clang on Linux
+    - os: linux
+      compiler: clang
+      addons:
+        apt:
           sources: *all_sources
           packages: *all_packages
-       env:
-         - MATRIX_EVAL="CXX_COMPILER=clang++-6.0 C_COMPILER=clang-6.0"
+      env:
+        - MATRIX_EVAL="CXX_COMPILER=clang++-6.0 C_COMPILER=clang-6.0"
 
-     - os: linux
-       compiler: clang
-       addons:
-         apt:
+    - os: linux
+      compiler: clang
+      addons:
+        apt:
           sources: *all_sources
           packages: *all_packages
-       env:
-         - MATRIX_EVAL="CXX_COMPILER=clang++-7 C_COMPILER=clang-7"
+      env:
+        - MATRIX_EVAL="CXX_COMPILER=clang++-7 C_COMPILER=clang-6.0"
 
-     - os: linux
-       compiler: clang
-       addons:
-         apt:
+    - os: linux
+      compiler: clang
+      addons:
+        apt:
           sources: *all_sources
           packages: *all_packages
-       env:
-         - MATRIX_EVAL="CXX_COMPILER=clang++-8 C_COMPILER=clang-8"
+      env:
+        - MATRIX_EVAL="CXX_COMPILER=clang++-8 C_COMPILER=clang-6.0"
 
 before_install:
     - eval "${MATRIX_EVAL}"
