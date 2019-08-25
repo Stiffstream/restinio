@@ -7,7 +7,7 @@
 #include <restinio/all.hpp>
 
 #include <fmt/format.h>
-#include <clara/clara.hpp>
+#include <clara.hpp>
 
 //
 // app_args_t
