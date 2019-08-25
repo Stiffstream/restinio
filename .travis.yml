@@ -17,6 +17,8 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - g++-7
+            - libpcre3-dev
+            - libpcre2-dev
       env:
         - MATRIX_EVAL="CXX_COMPILER=g++-7 C_COMPILER=gcc-7"
 
