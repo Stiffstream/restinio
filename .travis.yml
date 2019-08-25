@@ -28,9 +28,11 @@ script:
   - gem install Mxx_ru
   - mxxruexternals
   - mkdir cmake_build_$CXX_COMPILER
+  - pwd
   - cd cmake_build_$CXX_COMPILER
+  - pwd
   - cmake -DCMAKE_INSTALL_PREFIX=target -DCMAKE_C_COMPILER=$C_COMPILER -DCMAKE_CXX_COMPILER=$CXX_COMPILER -DCMAKE_BUILD_TYPE=Release ../dev/
-  - cmake --build . -j4
+  - cmake --build . -j 4
   - ctest --output-on-failure
 
 notifications:
