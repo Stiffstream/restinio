@@ -1,0 +1,99 @@
+dist: bionic
+sudo: false
+language: cpp
+branches:
+  only:
+    - add-travis
+git:
+  depth: 1
+
+common_sources: &all_sources
+  - ubuntu-toolchain-r-test
+  - llvm-toolchain-bionic-6.0
+  - llvm-toolchain-bionic-7.0
+  - llvm-toolchain-bionic-8.0
+
+common_packages: &all_packages
+  - g++-7
+  - g++-8
+  - clang-6.0
+  - clang-7
+  - clang-8
+  - libpcre3-dev
+  - libpcre2-dev
+
+matrix:
+  include:
+
+    # Clang on osx
+    - os: osx
+      osx_image: xcode10.1
+      compiler: clang
+      env:
+        - MATRIX_EVAL="CXX_COMPILER=clang++ C_COMPILER=clang"
+
+    # GCC on linux
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources: *all_sources
+          packages: *all_packages
+      env:
+        - MATRIX_EVAL="CXX_COMPILER=g++-7 C_COMPILER=gcc-7"
+
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources: *all_sources
+          packages: *all_packages
+      env:
+        - MATRIX_EVAL="CXX_COMPILER=g++-8 C_COMPILER=gcc-8"
+
+    # Clang on Linux
+    - os: linux
+      compiler: clang
+      addons:
+        apt:
+          sources: *all_sources
+          packages: *all_packages
+      env:
+        - MATRIX_EVAL="CXX_COMPILER=clang++-6.0 C_COMPILER=clang-6.0"
+
+    - os: linux
+      compiler: clang
+      addons:
+        apt:
+          sources: *all_sources
+          packages: *all_packages
+      env:
+        - MATRIX_EVAL="CXX_COMPILER=clang++-7 C_COMPILER=clang-7"
+
+    - os: linux
+      compiler: clang
+      addons:
+        apt:
+          sources: *all_sources
+          packages: *all_packages
+      env:
+        - MATRIX_EVAL="CXX_COMPILER=clang++-8 C_COMPILER=clang-8"
+
+before_install:
+    - eval "${MATRIX_EVAL}"
+
+script:
+  - gem install Mxx_ru
+  - mxxruexternals
+  - mkdir cmake_build_$CXX_COMPILER
+  - pwd
+  - cd cmake_build_$CXX_COMPILER
+  - pwd
+  - cmake -DCMAKE_INSTALL_PREFIX=target -DCMAKE_C_COMPILER=$C_COMPILER -DCMAKE_CXX_COMPILER=$CXX_COMPILER -DCMAKE_BUILD_TYPE=Release ../dev/
+  - cmake --build . -j 4
+  - ctest --output-on-failure
+
+notifications:
+  email:
+    recipients:
+      - utromvecherom@gmail.com
