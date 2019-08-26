@@ -124,14 +124,14 @@ enum class asio_convertible_error_t : int
 	write_group_destroyed_passively,
 
 	//! A call to async_write failed.
-	//! The corresponding write operation didn't done.
+	//! The corresponding write operation wasn't done.
 	/*!
 	 * @since v.0.6.0
 	 */
 	async_write_call_failed,
 
 	//! A call to async_read_some_at failed.
-	//! The corresponding sendfile operation didn't done.
+	//! The corresponding sendfile operation wasn't done.
 	/*!
 	 * @since v.0.6.0
 	 */
