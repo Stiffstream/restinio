@@ -6,6 +6,8 @@ MxxRu::Cpp::composite_target( MxxRu::BUILD_ROOT ) {
 
 	toolset.force_cpp14
 	global_include_path "."
+	global_include_path "clara" # It is necessary after merging
+      # PR#47: https://github.com/Stiffstream/restinio/pull/47
 
 	if not $sanitizer_build
 		if 'gcc' == toolset.name || 'clang' == toolset.name
