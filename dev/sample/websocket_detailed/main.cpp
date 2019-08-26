@@ -4,7 +4,6 @@
 #include <restinio/websocket/websocket.hpp>
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 
 using namespace std::chrono_literals;
 

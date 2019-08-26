@@ -6,7 +6,7 @@
 
 #include <restinio/all.hpp>
 
-#include <clara/clara.hpp>
+#include <clara.hpp>
 #include <fmt/format.h>
 
 #ifndef RESTINIO_EXPRESS_ROUTER_BENCH_APP_TITLE

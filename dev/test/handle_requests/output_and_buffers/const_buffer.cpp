@@ -297,7 +297,7 @@ TEST_CASE(
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.request_handler(
-					[ = ]( restinio::request_handle_t req ){
+					[ = ]( const restinio::request_handle_t& req ){
 						using output_type_t = restinio::user_controlled_output_t;
 
 						return
@@ -355,7 +355,7 @@ TEST_CASE(
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.request_handler(
-					[ = ]( restinio::request_handle_t req ){
+					[ = ]( const restinio::request_handle_t& req ){
 						using output_type_t = restinio::user_controlled_output_t;
 
 						auto resp = req->create_response< output_type_t >();
@@ -414,7 +414,7 @@ TEST_CASE(
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.request_handler(
-					[ = ]( restinio::request_handle_t req ){
+					[ = ]( const restinio::request_handle_t& req ){
 						using output_type_t = restinio::user_controlled_output_t;
 
 						auto resp = req->create_response< output_type_t >();
@@ -483,7 +483,7 @@ TEST_CASE(
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.request_handler(
-					[ = ]( restinio::request_handle_t req ){
+					[ = ]( const restinio::request_handle_t& req ){
 						using output_type_t = restinio::user_controlled_output_t;
 
 						auto resp = req->create_response< output_type_t >();
@@ -604,7 +604,7 @@ TEST_CASE(
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
 				.request_handler(
-					[ = ]( restinio::request_handle_t req ){
+					[ = ]( const restinio::request_handle_t& req ){
 						using output_type_t = restinio::chunked_output_t;
 
 						auto resp = req->create_response< output_type_t >();

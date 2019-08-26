@@ -64,7 +64,7 @@ TEST_CASE( "remote_endpoint extraction" , "[remote_endpoint]" )
 
 	other_thread.stop_and_join();
 
-	REQUIRE( "" != endpoint_value );
+	REQUIRE( !endpoint_value.empty() );
 }
 
 
@@ -100,13 +100,18 @@ TEST_CASE( "remote_endpoint for WS" , "[remote_endpoint][ws]" )
 									rws::upgrade< traits_t >(
 										*req,
 										rws::activation_t::immediate,
-										[]( rws::ws_handle_t,
-											rws::message_handle_t ){} );
+										[]( const rws::ws_handle_t&,
+											const rws::message_handle_t& ){} );
 
 
 								endpoint_value_ws = fmt::format( "{}", ws->remote_endpoint() );
-								// TODO: write close-message.
+								
+								req->create_response()
+									.set_body("Closed!")
+									.done();
+
 								ws->kill();
+
 								return restinio::request_accepted();
 							}
 							catch( const std::exception & ex )
@@ -139,6 +144,6 @@ TEST_CASE( "remote_endpoint for WS" , "[remote_endpoint][ws]" )
 
 	other_thread.stop_and_join();
 
-	REQUIRE( "" != endpoint_value );
+	REQUIRE( !endpoint_value.empty() );
 	REQUIRE( endpoint_value == endpoint_value_ws );
 }

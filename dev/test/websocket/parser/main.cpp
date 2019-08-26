@@ -39,45 +39,45 @@ TEST_CASE( "Validate parser implementation details" , "[websocket][parser][impl]
 TEST_CASE( "Validate websocket message details constructing" , "[websocket][parser][message]" )
 {
 	message_details_t m0;
-	REQUIRE( m0.m_final_flag == true );
-	REQUIRE( m0.m_rsv1_flag == false );
-	REQUIRE( m0.m_rsv2_flag == false );
-	REQUIRE( m0.m_rsv3_flag == false );
+	REQUIRE(m0.m_final_flag);
+	REQUIRE(!m0.m_rsv1_flag);
+	REQUIRE(!m0.m_rsv2_flag);
+	REQUIRE(!m0.m_rsv3_flag);
 	REQUIRE( m0.m_opcode == opcode_t::continuation_frame );
-	REQUIRE( m0.m_mask_flag == false );
+	REQUIRE(!m0.m_mask_flag);
 	REQUIRE( m0.m_payload_len == 0 );
 	REQUIRE( m0.m_ext_payload_len == 0 );
 	REQUIRE( m0.m_masking_key == 0 );
 
 	message_details_t m1{not_final_frame, opcode_t::text_frame, 125};
-	REQUIRE( m1.m_final_flag == false );
-	REQUIRE( m1.m_rsv1_flag == false );
-	REQUIRE( m1.m_rsv2_flag == false );
-	REQUIRE( m1.m_rsv3_flag == false );
+	REQUIRE(!m1.m_final_flag);
+	REQUIRE(!m1.m_rsv1_flag);
+	REQUIRE(!m1.m_rsv2_flag);
+	REQUIRE(!m1.m_rsv3_flag);
 	REQUIRE( m1.m_opcode == opcode_t::text_frame );
-	REQUIRE( m1.m_mask_flag == false );
+	REQUIRE(!m1.m_mask_flag);
 	REQUIRE( m1.m_payload_len == 125 );
 	REQUIRE( m1.m_ext_payload_len == 0 );
 	REQUIRE( m1.m_masking_key == 0 );
 
 	message_details_t m2{final_frame, opcode_t::binary_frame, 126};
-	REQUIRE( m2.m_final_flag == true );
-	REQUIRE( m2.m_rsv1_flag == false );
-	REQUIRE( m2.m_rsv2_flag == false );
-	REQUIRE( m2.m_rsv3_flag == false );
+	REQUIRE(m2.m_final_flag);
+	REQUIRE(!m2.m_rsv1_flag);
+	REQUIRE(!m2.m_rsv2_flag);
+	REQUIRE(!m2.m_rsv3_flag);
 	REQUIRE( m2.m_opcode == opcode_t::binary_frame );
-	REQUIRE( m2.m_mask_flag == false );
+	REQUIRE(!m2.m_mask_flag);
 	REQUIRE( m2.m_payload_len == 126 );
 	REQUIRE( m2.m_ext_payload_len == 126 );
 	REQUIRE( m2.m_masking_key == 0 );
 
 	message_details_t m3{final_frame, opcode_t::binary_frame, 65536};
-	REQUIRE( m3.m_final_flag == true );
-	REQUIRE( m3.m_rsv1_flag == false );
-	REQUIRE( m3.m_rsv2_flag == false );
-	REQUIRE( m3.m_rsv3_flag == false );
+	REQUIRE(m3.m_final_flag);
+	REQUIRE(!m3.m_rsv1_flag);
+	REQUIRE(!m3.m_rsv2_flag);
+	REQUIRE(!m3.m_rsv3_flag);
 	REQUIRE( m3.m_opcode == opcode_t::binary_frame );
-	REQUIRE( m3.m_mask_flag == false );
+	REQUIRE(!m3.m_mask_flag);
 	REQUIRE( m3.m_payload_len == 127 );
 	REQUIRE( m3.m_ext_payload_len == 65536 );
 	REQUIRE( m3.m_masking_key == 0 );
@@ -104,12 +104,12 @@ TEST_CASE( "Reset parser" , "[websocket][parser][reset]" )
 	auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
 
 	REQUIRE( nparsed == 2 );
-	REQUIRE( parser.header_parsed() == true );
+	REQUIRE(parser.header_parsed());
 	auto ws_message_details = parser.current_message();
 
 	REQUIRE( ws_message_details.payload_len() == 5 );
 	parser.reset();
-	REQUIRE( parser.header_parsed() == false );
+	REQUIRE(!parser.header_parsed());
 	REQUIRE( parser.current_message().payload_len() == 0 );
 }
 
@@ -121,14 +121,14 @@ TEST_CASE( "Parse header (2 bytes only)" , "[websocket][parser][read]" )
 		auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
 
 		REQUIRE( nparsed == 2 );
-		REQUIRE( parser.header_parsed() == true );
+		REQUIRE(parser.header_parsed());
 
 		auto ws_message_details = parser.current_message();
 
-		REQUIRE( ws_message_details.m_final_flag == true );
-		REQUIRE( ws_message_details.m_rsv1_flag == false );
-		REQUIRE( ws_message_details.m_rsv2_flag == false );
-		REQUIRE( ws_message_details.m_rsv3_flag == false );
+		REQUIRE(ws_message_details.m_final_flag);
+		REQUIRE(!ws_message_details.m_rsv1_flag);
+		REQUIRE(!ws_message_details.m_rsv2_flag);
+		REQUIRE(!ws_message_details.m_rsv3_flag);
 		REQUIRE( ws_message_details.m_opcode == opcode_t::text_frame );
 		REQUIRE( ws_message_details.payload_len() == 5 );
 	}
@@ -213,7 +213,7 @@ TEST_CASE( "Parse header (2 bytes + 4 bytes masking key )" ,
 		ws_parser_t parser;
 		(void)parser.parser_execute( bin_data.data(), bin_data.size() );
 
-		REQUIRE( parser.current_message().m_mask_flag == true );
+		REQUIRE(parser.current_message().m_mask_flag);
 		REQUIRE( parser.current_message().m_masking_key == 0x37FA213D );
 	}
 }
@@ -227,14 +227,14 @@ TEST_CASE( "Parse simple message" , "[websocket][parser][read]" )
 	auto nparsed = parser.parser_execute( bin_data.data(), bin_data.size() );
 
 	REQUIRE( nparsed == 2 );
-	REQUIRE( parser.header_parsed() == true );
+	REQUIRE(parser.header_parsed());
 
 	auto ws_message_details = parser.current_message();
 
-	REQUIRE( ws_message_details.m_final_flag == true );
-	REQUIRE( ws_message_details.m_rsv1_flag == false );
-	REQUIRE( ws_message_details.m_rsv2_flag == false );
-	REQUIRE( ws_message_details.m_rsv3_flag == false );
+	REQUIRE( ws_message_details.m_final_flag );
+	REQUIRE(!ws_message_details.m_rsv1_flag);
+	REQUIRE(!ws_message_details.m_rsv2_flag);
+	REQUIRE(!ws_message_details.m_rsv3_flag);
 	REQUIRE( ws_message_details.m_opcode == opcode_t::text_frame );
 
 	REQUIRE( ws_message_details.payload_len() == 5 );
@@ -266,10 +266,10 @@ TEST_CASE( "Parse simple message (chunked)" , "[websocket][parser][read]" )
 
 	auto ws_message_details = parser.current_message();
 
-	REQUIRE( ws_message_details.m_final_flag == true );
-	REQUIRE( ws_message_details.m_rsv1_flag == false );
-	REQUIRE( ws_message_details.m_rsv2_flag == false );
-	REQUIRE( ws_message_details.m_rsv3_flag == false );
+	REQUIRE(ws_message_details.m_final_flag);
+	REQUIRE(!ws_message_details.m_rsv1_flag);
+	REQUIRE(!ws_message_details.m_rsv2_flag);
+	REQUIRE(!ws_message_details.m_rsv3_flag);
 	REQUIRE( ws_message_details.m_opcode == opcode_t::text_frame );
 
 	REQUIRE( ws_message_details.payload_len() == 5 );

@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include <clara/clara.hpp>
+#include <clara.hpp>
 #include <fmt/format.h>
 
 //

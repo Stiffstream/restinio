@@ -20,7 +20,7 @@ TEST_CASE( "Escape percent encoding" , "[escape][percent_encoding]" )
 			"abcdefghijklmnopqrstuvwxyz"
 			"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 			"-~._" };
-		const std::string expected_result{ input_data };
+		const std::string& expected_result{ input_data };
 
 		std::string result;
 
@@ -56,7 +56,7 @@ TEST_CASE( "Unescape percent encoding" , "[unescape][percent_encoding]" )
 			"abcdefghijklmnopqrstuvwxyz"
 			"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 			"-~._" };
-		const std::string expected_result{ input_data };
+		const std::string& expected_result{ input_data };
 
 		std::string result;
 

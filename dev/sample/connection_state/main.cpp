@@ -40,7 +40,7 @@ public:
 };
 
 // This is the request handler.
-restinio::request_handling_status_t handler( restinio::request_handle_t req )
+restinio::request_handling_status_t handler( const restinio::request_handle_t& req )
 {
 	if( restinio::http_method_get() == req->header().method() &&
 		req->header().request_target() == "/" )

@@ -6,7 +6,7 @@
 
 #include <restinio/all.hpp>
 
-#include <clara/clara.hpp>
+#include <clara.hpp>
 #include <fmt/format.h>
 
 #include "route_parser.hpp"

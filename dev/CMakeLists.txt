@@ -64,13 +64,18 @@ IF (RESTINIO_MASTER_PROJECT)
 	IF (RESTINIO_FIND_DEPS)
 		# Require necessary packages.
 
+		# Catch2
+		find_package(Catch2 CONFIG REQUIRED)
+
 		# HTTP parser
-		# http_parser is linked as raw static lib file.
+		find_package(unofficial-http-parser CONFIG REQUIRED)
 
 		# fmtlib
 		find_package(fmt REQUIRED)
 	ELSE ()
 		# Add necessary dependecies.
+
+		include_directories("${CMAKE_SOURCE_DIR}/clara")
 
 		# HTTP parser
 		add_subdirectory(nodejs/http_parser)

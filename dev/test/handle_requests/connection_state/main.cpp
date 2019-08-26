@@ -303,8 +303,13 @@ TEST_CASE( "connection state for WS" , "[connection_state][ws]" )
 
 
 								endpoint_value_ws = fmt::format( "{}", ws->remote_endpoint() );
-								// TODO: write close-message.
+
+								req->create_response()
+									.set_body("Closed!")
+									.done();
+								
 								ws->kill();
+								
 								return restinio::request_accepted();
 							}
 							catch( const std::exception & ex )

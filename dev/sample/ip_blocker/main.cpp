@@ -75,7 +75,7 @@ public:
 // Actual request handler.
 restinio::request_handling_status_t handler(
 	restinio::asio_ns::io_context & ioctx,
-	restinio::request_handle_t req)
+	const restinio::request_handle_t& req)
 {
 	if( restinio::http_method_get() == req->header().method() &&
 		req->header().request_target() == "/" )

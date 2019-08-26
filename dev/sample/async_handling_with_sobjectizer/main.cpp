@@ -17,7 +17,7 @@ struct timeout_elapsed
 	std::chrono::milliseconds m_pause;
 };
 
-void processing_thread_func(so_5::mchain_t req_ch)
+void processing_thread_func(const so_5::mchain_t& req_ch)
 {
 	// The stuff necessary for random pause generation.
 	std::random_device rd;
@@ -38,7 +38,7 @@ void processing_thread_func(so_5::mchain_t req_ch)
 
 		// Read and handle handle_request messages from req_ch.
 		case_(req_ch,
-			[&](handle_request cmd) {
+			[&](const handle_request& cmd) {
 				// Generate a random pause for processing of that request.
 				const std::chrono::milliseconds pause{pause_generator(generator)};
 
@@ -54,7 +54,7 @@ void processing_thread_func(so_5::mchain_t req_ch)
 
 		// Read and handle timeout_elapsed messages from delayed_ch.
 		case_(delayed_ch,
-			[](timeout_elapsed cmd) {
+			[](const timeout_elapsed& cmd) {
 				// Now we can create an actual response to the request.
 				cmd.m_req->create_response()
 						.set_body("Hello, World! (pause:"

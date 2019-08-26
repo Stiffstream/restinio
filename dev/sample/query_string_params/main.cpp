@@ -3,7 +3,7 @@
 #include <restinio/all.hpp>
 
 // Create request handler.
-restinio::request_handling_status_t handler( restinio::request_handle_t req )
+restinio::request_handling_status_t handler( const restinio::request_handle_t& req )
 {
 	if( restinio::http_method_get() == req->header().method() )
 	{
@@ -13,7 +13,7 @@ restinio::request_handling_status_t handler( restinio::request_handle_t req )
 		// Query params.
 		const auto qp = restinio::parse_query( req->header().query() );
 
-		if( 0 == qp.size() )
+		if( qp.empty() )
 		{
 			sout << "No query parameters.";
 		}

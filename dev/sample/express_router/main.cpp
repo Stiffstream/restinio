@@ -2,9 +2,6 @@
 
 #include <restinio/all.hpp>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-
 #include <json_dto/pub.hpp>
 
 struct book_t
@@ -39,7 +36,7 @@ using router_t = rr::express_router_t<>;
 class books_handler_t
 {
 public :
-	books_handler_t( book_collection_t & books )
+	explicit books_handler_t( book_collection_t & books )
 		:	m_books( books )
 	{}
 
@@ -47,7 +44,7 @@ public :
 	books_handler_t( books_handler_t && ) = delete;
 
 	auto on_books_list(
-		restinio::request_handle_t req, rr::route_params_t ) const
+		const restinio::request_handle_t& req, rr::route_params_t ) const
 	{
 		auto resp = init_resp( req->create_response() );
 
@@ -66,7 +63,7 @@ public :
 	}
 
 	auto on_book_get(
-		restinio::request_handle_t req, rr::route_params_t params )
+		const restinio::request_handle_t& req, rr::route_params_t params )
 	{
 		const auto booknum = restinio::cast_to< std::uint32_t >( params[ "booknum" ] );
 
@@ -89,7 +86,7 @@ public :
 	}
 
 	auto on_author_get(
-		restinio::request_handle_t req, rr::route_params_t params )
+		const restinio::request_handle_t& req, rr::route_params_t params )
 	{
 		auto resp = init_resp( req->create_response() );
 		try
@@ -117,7 +114,7 @@ public :
 	}
 
 	auto on_new_book(
-		restinio::request_handle_t req, rr::route_params_t )
+		const restinio::request_handle_t& req, rr::route_params_t )
 	{
 		auto resp = init_resp( req->create_response() );
 
@@ -135,7 +132,7 @@ public :
 	}
 
 	auto on_book_update(
-		restinio::request_handle_t req, rr::route_params_t params )
+		const restinio::request_handle_t& req, rr::route_params_t params )
 	{
 		const auto booknum = restinio::cast_to< std::uint32_t >( params[ "booknum" ] );
 
@@ -164,7 +161,7 @@ public :
 	}
 
 	auto on_book_delete(
-		restinio::request_handle_t req, rr::route_params_t params )
+		const restinio::request_handle_t& req, rr::route_params_t params )
 	{
 		const auto booknum = restinio::cast_to< std::uint32_t >( params[ "booknum" ] );
 

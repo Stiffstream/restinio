@@ -387,7 +387,7 @@ run_bench( const std::string & tag, LAMBDA lambda )
 int
 main()
 {
-	std::srand( std::time( nullptr ) );
+	std::srand( static_cast<unsigned int>(std::time( nullptr )) );
 
 	const auto str_set_1 = create_test_strings();
 	const auto str_set_2 = create_test_strings();
