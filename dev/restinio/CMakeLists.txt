@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.5)
 
 SET(RESTINIO restinio)
 
@@ -10,11 +10,9 @@ add_library(${RESTINIO} INTERFACE)
 add_library(restinio::restinio ALIAS ${RESTINIO})
 
 IF (${CMAKE_VERSION} VERSION_LESS "3.8.0")
-	set_target_properties(${RESTINIO} PROPERTIES
-		CXX_STANDARD 14
-		CXX_STANDARD_REQUIRED YES
-		CXX_EXTENSIONS NO
-	)
+	set(CMAKE_CXX_STANDARD 14)
+	set(CMAKE_CXX_STANDARD_REQUIRED ON)
+	set(CMAKE_CXX_EXTENSIONS OFF)
 ELSE ()
 	target_compile_features(${RESTINIO} INTERFACE cxx_std_14)
 ENDIF ()
