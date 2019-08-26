@@ -3,7 +3,7 @@ sudo: false
 language: cpp
 branches:
   only:
-    - add-travis
+    - master
 git:
   depth: 1
 
