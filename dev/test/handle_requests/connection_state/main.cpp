@@ -142,7 +142,7 @@ struct state_listener_that_throws_on_ws_upgrade_t
 			const restinio::connection_state::upgraded_to_websocket_t & ) const
 		{
 			++m_self.m_upgraded_to_websocket;
-			throw std::runtime_error( "Something wrong on close!" );
+			throw std::runtime_error( "Something wrong on upgrade!" );
 		}
 	};
 
@@ -513,7 +513,6 @@ TEST_CASE( "listener throws on WS-upgrade" , "[throws_on_ws_upgrade]" )
 										[]( rws::ws_handle_t,
 											rws::message_handle_t ){} );
 
-								// TODO: write close-message.
 								ws->kill();
 								return restinio::request_accepted();
 							}
