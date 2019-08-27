@@ -106,10 +106,6 @@ TEST_CASE( "remote_endpoint for WS" , "[remote_endpoint][ws]" )
 
 								endpoint_value_ws = fmt::format( "{}", ws->remote_endpoint() );
 								
-								req->create_response()
-									.set_body("Closed!")
-									.done();
-
 								ws->kill();
 
 								return restinio::request_accepted();
