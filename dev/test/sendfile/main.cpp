@@ -44,7 +44,7 @@ TEST_CASE( "simple sendfile" , "[sendfile]" )
 								.append_header( "Server", "RESTinio utest server" )
 								.append_header_date_field()
 								.append_header( "Content-Type", "text/plain; charset=utf-8" )
-								.set_body( restinio::sendfile( "test/sendfile/f1.txt" ) )
+								.set_body( restinio::sendfile( "test/sendfile/f1.dat" ) )
 								.done();
 							return restinio::request_accepted();
 						}
@@ -101,10 +101,10 @@ TEST_CASE( "sendfile the same file several times" , "[sendfile][same-several-tim
 								.append_header( "Server", "RESTinio utest server" )
 								.append_header_date_field()
 								.append_header( "Content-Type", "text/plain; charset=utf-8" )
-								.set_body( restinio::sendfile( "test/sendfile/f1.txt" ) )
-								.set_body( restinio::sendfile( "test/sendfile/f1.txt" ) )
-								.set_body( restinio::sendfile( "test/sendfile/f1.txt" ) )
-								.set_body( restinio::sendfile( "test/sendfile/f1.txt" ) )
+								.set_body( restinio::sendfile( "test/sendfile/f1.dat" ) )
+								.set_body( restinio::sendfile( "test/sendfile/f1.dat" ) )
+								.set_body( restinio::sendfile( "test/sendfile/f1.dat" ) )
+								.set_body( restinio::sendfile( "test/sendfile/f1.dat" ) )
 								.done();
 							return restinio::request_accepted();
 						}
@@ -157,10 +157,10 @@ TEST_CASE( "sendfile 2 files" , "[sendfile][n-files]" )
 					.append_header( "Content-Type", "text/plain; charset=utf-8" )
 					.append_body(
 						restinio::sendfile(
-							dir + restinio::cast_to< std::string >( params[ "f1" ] ) + ".txt" ) )
+							dir + restinio::cast_to< std::string >( params[ "f1" ] ) + ".dat" ) )
 					.append_body(
 						restinio::sendfile(
-							dir + restinio::cast_to< std::string >( params[ "f2" ] ) + ".txt" ) )
+							dir + restinio::cast_to< std::string >( params[ "f2" ] ) + ".dat" ) )
 					.done();
 		} );
 	router->http_get(
@@ -173,12 +173,12 @@ TEST_CASE( "sendfile 2 files" , "[sendfile][n-files]" )
 					.append_header( "Content-Type", "text/plain; charset=utf-8" )
 					.append_body(
 						restinio::sendfile(
-							dir + restinio::cast_to< std::string >( params[ "f1" ] ) + ".txt" ) )
+							dir + restinio::cast_to< std::string >( params[ "f1" ] ) + ".dat" ) )
 					.append_body(
 						restinio::cast_to< std::string >( params[ "regularBuffer" ] ) )
 					.append_body(
 						restinio::sendfile(
-							dir + restinio::cast_to< std::string >( params[ "f2" ] ) + ".txt" ) )
+							dir + restinio::cast_to< std::string >( params[ "f2" ] ) + ".dat" ) )
 					.done();
 		} );
 
@@ -285,7 +285,7 @@ TEST_CASE( "sendfile offsets_and_size" , "[sendfile][offset][size]" )
 	router->http_get(
 		R"(/:fname/:offset(\d+))",
 		[ & ]( auto req, auto params ){
-			auto fname = dir + restinio::cast_to< std::string >( params[ "fname" ] ) + ".txt";
+			auto fname = dir + restinio::cast_to< std::string >( params[ "fname" ] ) + ".dat";
 			return
 				req->create_response()
 					.append_header( "Server", "RESTinio Benchmark" )
@@ -300,7 +300,7 @@ TEST_CASE( "sendfile offsets_and_size" , "[sendfile][offset][size]" )
 	router->http_get(
 		R"(/:fname/:offset(\d+)/:size(\d+))",
 		[ & ]( auto req, auto params ){
-			auto fname = dir + restinio::cast_to< std::string >( params[ "fname" ] ) + ".txt";
+			auto fname = dir + restinio::cast_to< std::string >( params[ "fname" ] ) + ".dat";
 			const auto offset = restinio::cast_to< restinio::file_offset_t >( params[ "offset" ] );
 			const auto size = restinio::cast_to< restinio::file_size_t >( params[ "size" ] );
 			return
@@ -398,7 +398,7 @@ TEST_CASE( "sendfile chunks" , "[sendfile][chunk]" )
 	router->http_get(
 		R"(/:fname/:chunk(\d+))",
 		[ & ]( auto req, auto params ){
-			auto fname = dir + restinio::cast_to< std::string >( params[ "fname" ] ) + ".txt";
+			auto fname = dir + restinio::cast_to< std::string >( params[ "fname" ] ) + ".dat";
 			const auto chunk_size = restinio::cast_to< restinio::file_size_t >( params[ "chunk" ] );
 			return
 				req->create_response()
@@ -524,7 +524,7 @@ TEST_CASE( "sendfile errors" , "[sendfile][error]" )
 	router->http_get(
 		R"(/:fname/:offset(\d+))",
 		[ & ]( auto req, auto params ){
-			auto fname = dir + restinio::cast_to< std::string >( params[ "fname" ] ) + ".txt";
+			auto fname = dir + restinio::cast_to< std::string >( params[ "fname" ] ) + ".dat";
 			return
 				req->create_response()
 					.append_header( "Server", "RESTinio Benchmark" )
@@ -539,7 +539,7 @@ TEST_CASE( "sendfile errors" , "[sendfile][error]" )
 	router->http_get(
 		R"(/:fname/:offset(\d+)/:size(\d+))",
 		[ & ]( auto req, auto params ){
-			auto fname = dir + restinio::cast_to< std::string >( params[ "fname" ] ) + ".txt";
+			auto fname = dir + restinio::cast_to< std::string >( params[ "fname" ] ) + ".dat";
 			const auto offset = restinio::cast_to< restinio::file_offset_t >( params[ "offset" ] );
 			const auto size = restinio::cast_to< restinio::file_size_t >( params[ "size" ] );
 			return
@@ -612,7 +612,7 @@ TEST_CASE( "sendfile with invalid descriptor with " , "[sendfile][error][is_vali
 	}
 
 	{
-		const std::string fname = "test/sendfile/f1.txt";
+		const std::string fname = "test/sendfile/f1.dat";
 		auto accept_moved = []( restinio::sendfile_t sf ){ REQUIRE( sf.is_valid() ); };
 		auto sf = restinio::sendfile( fname );
 
