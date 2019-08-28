@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <restinio/version.hpp>
+
 #include <restinio/asio_include.hpp>
 #include <restinio/settings.hpp>
 #include <restinio/http_headers.hpp>
