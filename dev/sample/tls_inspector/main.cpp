@@ -173,7 +173,7 @@ public:
 	{}
 
 	void state_changed(
-		const restinio::connection_state::notice_t & notice) noexcept
+		const restinio::connection_state::notice_t & notice)
 	{
 		restinio::visit(
 				notice_visitor_t{ *m_user_connections, notice },
