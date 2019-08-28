@@ -24,7 +24,11 @@
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
-#include <fmt/time.h>
+#if FMT_VERSION < 60000
+	#include <fmt/time.h>
+#else
+	#include <fmt/chrono.h>
+#endif
 
 #if defined(__GNUG__) || defined(__clang__)
 

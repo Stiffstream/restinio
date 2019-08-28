@@ -16,6 +16,31 @@ namespace restinio
 namespace impl
 {
 
+namespace asio_details
+{
+
+#if ASIO_VERSION < 101300
+
+template<typename Socket >
+decltype(auto)
+executor_or_context_from_socket( Socket & socket )
+{
+	return socket.get_executor().context();
+}
+
+#else
+
+template<typename Socket >
+decltype(auto)
+executor_or_context_from_socket( Socket & socket )
+{
+	return socket.get_executor();
+}
+
+#endif
+
+} /* namespace asio_details */
+
 //
 // sendfile_operation_runner_t
 //
@@ -251,7 +276,7 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 			try
 			{
 				asio_ns::windows::overlapped_ptr overlapped{
-					m_socket.get_executor().context(),
+					asio_details::executor_or_context_from_socket( m_socket ),
 					asio_ns::bind_executor(
 						m_executor,
 						make_completion_handler() )
@@ -307,9 +332,10 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 
 	private:
 		std::unique_ptr< char[] > m_buffer{ new char [ m_chunk_size ] };
-		asio_ns::windows::random_access_handle
-			m_file_handle{ m_socket.get_executor().context(), m_file_descriptor };
-
+		asio_ns::windows::random_access_handle m_file_handle{
+				asio_details::executor_or_context_from_socket(m_socket),
+				m_file_descriptor
+		};
 };
 
 } /* namespace impl */

@@ -43,7 +43,7 @@ public:
 	// This method will be called by RESTinio when state of connection
 	// is changed.
 	void state_changed(
-		const restinio::connection_state::notice_t & notice ) noexcept
+		const restinio::connection_state::notice_t & notice )
 	{
 		using namespace restinio::connection_state;
 

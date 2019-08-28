@@ -112,8 +112,9 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 
 		// Timeout is about 200 msec.
 		REQUIRE( 100 <= timeout.count() );
-		REQUIRE( 250 >= timeout.count() );
-
+		// NOTE: there is no upper limit because if that unit-test
+		// is run under virtual machine there can be very slow execution
+		// speed and async_read_some can take more that 250ms.
 	} );
 
 	other_thread.stop_and_join();
