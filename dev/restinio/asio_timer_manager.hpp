@@ -102,7 +102,7 @@ class asio_timer_manager_t final
 			const std::chrono::steady_clock::duration
 				m_check_period{ std::chrono::seconds{ 1 } };
 
-			factory_t() noexcept {}
+			factory_t() noexcept = default;
 			factory_t( std::chrono::steady_clock::duration check_period ) noexcept
 				:	m_check_period{ check_period }
 			{}

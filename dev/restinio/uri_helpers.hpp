@@ -16,6 +16,7 @@
 #include <restinio/exception.hpp>
 #include <restinio/utils/percent_encoding.hpp>
 #include <restinio/optional.hpp>
+#include <utility>
 
 namespace restinio
 {
@@ -59,7 +60,7 @@ class query_string_params_t final
 			std::unique_ptr< char[] > data_buffer,
 			optional_t< string_view_t > tag )
 			:	m_data_buffer{ std::move( data_buffer ) }
-			,	m_tag{ tag }
+			,	m_tag{std::move( tag )}
 		{}
 
 		query_string_params_t( query_string_params_t && ) = default;

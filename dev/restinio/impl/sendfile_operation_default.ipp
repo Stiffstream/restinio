@@ -35,7 +35,7 @@ class sendfile_operation_runner_t final
 		using base_type_t::base_type_t;
 
 
-		virtual void
+		void
 		start() override
 		{
 			const auto n =

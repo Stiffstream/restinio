@@ -34,7 +34,7 @@ make_date_field_value( std::time_t t )
 {
 	const auto tpoint = make_gmtime( t );
 
-	std::array< char, 64 > buf;
+	std::array< char, 64 > buf{};
 	// TODO: is there a faster way to get time string?
 	strftime(
 		buf.data(),
@@ -62,11 +62,11 @@ class base_response_builder_t
 		base_response_builder_t( const base_response_builder_t & ) = delete;
 		base_response_builder_t & operator = ( const base_response_builder_t & ) = delete;
 
-		base_response_builder_t( base_response_builder_t && ) = default;
+		base_response_builder_t( base_response_builder_t && ) noexcept = default;
 		base_response_builder_t & operator =( base_response_builder_t && ) = default;
 
 		virtual ~base_response_builder_t()
-		{}
+		= default;
 
 		base_response_builder_t(
 			http_status_line_t status_line,
@@ -242,7 +242,7 @@ class base_response_builder_t
 template < typename Response_Output_Strategy >
 class response_builder_t
 {
-	response_builder_t() = delete;
+public: response_builder_t() = delete;
 };
 
 //! Tag type for RESTinio controlled output response builder.
@@ -378,7 +378,7 @@ class response_builder_t< restinio_controlled_output_t > final
 		void
 		if_neccessary_reserve_first_element_for_header()
 		{
-			if( 0 == m_response_parts.size() )
+			if( m_response_parts.empty() )
 			{
 				m_response_parts.reserve( 2 );
 				m_response_parts.emplace_back();
@@ -510,7 +510,7 @@ class response_builder_t< user_controlled_output_t > final
 	private:
 		void
 		send_ready_data(
-			impl::connection_handle_t conn,
+			const impl::connection_handle_t& conn,
 			response_parts_attr_t response_parts_attr,
 			write_status_cb_t wscb )
 		{
@@ -587,7 +587,7 @@ class response_builder_t< user_controlled_output_t > final
 		void
 		if_neccessary_reserve_first_element_for_header()
 		{
-			if( !m_header_was_sent && 0 == m_response_parts.size() )
+			if( !m_header_was_sent && m_response_parts.empty() )
 			{
 				m_response_parts.reserve( 2 );
 				m_response_parts.emplace_back();
@@ -715,7 +715,7 @@ class response_builder_t< chunked_output_t > final
 	private:
 		void
 		send_ready_data(
-			impl::connection_handle_t conn,
+			const impl::connection_handle_t& conn,
 			response_parts_attr_t response_parts_attr,
 			write_status_cb_t wscb )
 		{

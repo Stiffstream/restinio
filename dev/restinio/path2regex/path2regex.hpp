@@ -409,7 +409,7 @@ class plain_string_token_t final : public token_t< Route_Param_Appender >
 			,	m_last_char{ path.back() }
 		{}
 
-		virtual token_type_t
+		token_type_t
 		append_self_to(
 			std::string & route,
 			param_appender_sequence_t< Route_Param_Appender > &,
@@ -420,7 +420,7 @@ class plain_string_token_t final : public token_t< Route_Param_Appender >
 			return token_type_t::plain_string;
 		}
 
-		virtual bool
+		bool
 		is_end_delimited( const std::string & delimiters ) const noexcept override
 		{
 			return std::string::npos != delimiters.find( m_last_char );

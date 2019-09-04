@@ -368,12 +368,12 @@ class ws_protocol_validator_t
 				set_validation_state(
 					validation_state_t::invalid_opcode );
 			}
-			else if( is_control_frame(frame.m_opcode) && frame.m_final_flag == false )
+			else if(is_control_frame(frame.m_opcode) && !frame.m_final_flag)
 			{
 				set_validation_state(
 					validation_state_t::non_final_control_frame );
 			}
-			else if( frame.m_mask_flag == false )
+			else if(!frame.m_mask_flag)
 			{
 				set_validation_state(
 					validation_state_t::empty_mask_from_client_side );

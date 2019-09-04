@@ -73,7 +73,7 @@ class sendfile_operation_runner_t final
 			takeaway_file_descriptor(sf).release();
 		}
 
-		virtual void
+		void
 		start() override
 		{
 			init_next_read_some_from_file();
@@ -257,7 +257,7 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 			takeaway_file_descriptor(sf).release();
 		}
 
-		virtual void
+		void
 		start() override
 		{
 			init_next_write();
@@ -300,7 +300,7 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 						static_cast< DWORD >( desired_size ),
 						0,
 						overlapped.get(),
-						0,
+						nullptr,
 						0 );
 
 				DWORD last_error = ::GetLastError();

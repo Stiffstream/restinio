@@ -12,6 +12,7 @@
 #pragma once
 
 #include <restinio/common_types.hpp>
+#include <utility>
 
 namespace restinio
 {
@@ -68,7 +69,7 @@ public :
 	//! Initializing constructor.
 	incoming_info_t(
 		endpoint_t remote_endpoint )
-		:	m_remote_endpoint{ remote_endpoint }
+		:	m_remote_endpoint{std::move( remote_endpoint )}
 	{}
 
 	//! Remote endpoint of the new connection.

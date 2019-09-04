@@ -914,7 +914,7 @@ gzip_decompress( string_view_t input )
 template < typename Response_Output_Strategy >
 class body_appender_t
 {
-	body_appender_t() = delete;
+public: body_appender_t() = delete;
 };
 
 namespace impl
@@ -985,7 +985,7 @@ class body_appender_base_t
 		body_appender_base_t & operator = ( const body_appender_base_t & ) = delete;
 		body_appender_base_t & operator = ( body_appender_base_t && ) = delete;
 
-		body_appender_base_t( body_appender_base_t && ba )
+		body_appender_base_t( body_appender_base_t && ba ) noexcept
 			:	m_ztransformator{ std::move( ba.m_ztransformator ) }
 			,	m_resp{ ba.m_resp }
 		{}

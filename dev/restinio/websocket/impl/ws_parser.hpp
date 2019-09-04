@@ -269,7 +269,7 @@ class ws_parser_t
 			while( parsed_bytes < size &&
 				m_current_state != state_t::header_parsed )
 			{
-				byte_t byte = static_cast< byte_t >( data[parsed_bytes] );
+				auto byte = static_cast< byte_t >( data[parsed_bytes] );
 
 				process_byte( byte );
 

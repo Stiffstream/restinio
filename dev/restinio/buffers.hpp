@@ -53,7 +53,7 @@ class writable_base_t
 		writable_base_t & operator = ( writable_base_t && ) = delete;
 
 		virtual ~writable_base_t()
-		{}
+		= default;
 
 		//! Move this buffer enitity to a given location.
 		//! \note storage must have a sufficient space and proper alignment.
@@ -78,7 +78,7 @@ class buf_iface_t : public writable_base_t
 class empty_buf_t final : public buf_iface_t
 {
 	public:
-		empty_buf_t() noexcept {}
+		empty_buf_t() noexcept = default;
 
 		empty_buf_t( const empty_buf_t & ) = delete;
 		empty_buf_t & operator = ( const empty_buf_t & ) = delete;
@@ -92,12 +92,12 @@ class empty_buf_t final : public buf_iface_t
 			\see writable_base_t
 		*/
 		///@{
-		virtual asio_ns::const_buffer buffer() const override
+		asio_ns::const_buffer buffer() const override
 		{
 			return asio_ns::const_buffer{ nullptr, 0 };
 		}
 
-		virtual void relocate_to( void * storage ) override
+		void relocate_to( void * storage ) override
 		{
 			new( storage ) empty_buf_t{};
 		}
@@ -109,7 +109,7 @@ class empty_buf_t final : public buf_iface_t
 			\see buf_iface_t
 		*/
 		///@{
-		virtual std::size_t size() const override { return  0; }
+		std::size_t size() const override { return  0; }
 		///@}
 };
 
@@ -136,12 +136,12 @@ class const_buf_t final : public buf_iface_t
 			\see writable_base_t
 		*/
 		///@{
-		virtual asio_ns::const_buffer buffer() const override
+		asio_ns::const_buffer buffer() const override
 		{
 			return asio_ns::const_buffer{ m_data, m_size };
 		}
 
-		virtual void relocate_to( void * storage ) override
+		void relocate_to( void * storage ) override
 		{
 			new( storage ) const_buf_t{ std::move( *this ) };
 		}
@@ -153,7 +153,7 @@ class const_buf_t final : public buf_iface_t
 			\see buf_iface_t
 		*/
 		///@{
-		virtual std::size_t size() const override { return m_size; }
+		std::size_t size() const override { return m_size; }
 		///@}
 
 	private:
@@ -200,7 +200,7 @@ class datasizeable_buf_t final : public buf_iface_t
 			:	m_custom_buffer{ std::move( buf ) }
 		{}
 
-		datasizeable_buf_t( datasizeable_buf_t && ) = default; // allow only explicit move.
+		datasizeable_buf_t( datasizeable_buf_t && ) noexcept = default; // allow only explicit move.
 
 		/*!
 			@name An implementation of writable_base_t interface.
@@ -208,14 +208,14 @@ class datasizeable_buf_t final : public buf_iface_t
 			\see writable_base_t
 		*/
 		///@{
-		virtual asio_ns::const_buffer buffer() const override
+		asio_ns::const_buffer buffer() const override
 		{
 			return asio_ns::const_buffer{
 				m_custom_buffer.data(),
 				m_custom_buffer.size() };
 		}
 
-		virtual void relocate_to( void * storage ) override
+		void relocate_to( void * storage ) override
 		{
 			new( storage ) datasizeable_buf_t{ std::move( *this ) };
 		}
@@ -227,7 +227,7 @@ class datasizeable_buf_t final : public buf_iface_t
 			\see buf_iface_t
 		*/
 		///@{
-		virtual std::size_t size() const override { return m_custom_buffer.size(); }
+		std::size_t size() const override { return m_custom_buffer.size(); }
 		///@}
 
 	private:
@@ -262,7 +262,7 @@ class shared_datasizeable_buf_t final : public buf_iface_t
 		shared_datasizeable_buf_t( const shared_datasizeable_buf_t & ) = delete;
 		shared_datasizeable_buf_t & operator = ( const shared_datasizeable_buf_t & ) = delete;
 
-		shared_datasizeable_buf_t( shared_datasizeable_buf_t && ) = default; // allow only explicit move.
+		shared_datasizeable_buf_t( shared_datasizeable_buf_t && ) noexcept = default; // allow only explicit move.
 		shared_datasizeable_buf_t & operator = ( shared_datasizeable_buf_t && ) = delete;
 
 		/*!
@@ -271,12 +271,12 @@ class shared_datasizeable_buf_t final : public buf_iface_t
 			\see writable_base_t
 		*/
 		///@{
-		virtual asio_ns::const_buffer buffer() const override
+		asio_ns::const_buffer buffer() const override
 		{
 			return asio_ns::const_buffer{ m_buf_ptr->data(), m_buf_ptr->size() };
 		}
 
-		virtual void relocate_to( void * storage ) override
+		void relocate_to( void * storage ) override
 		{
 			new( storage ) shared_datasizeable_buf_t{ std::move( *this ) };
 		}
@@ -288,7 +288,7 @@ class shared_datasizeable_buf_t final : public buf_iface_t
 			\see buf_iface_t
 		*/
 		///@{
-		virtual std::size_t size() const override { return m_buf_ptr->size(); }
+		std::size_t size() const override { return m_buf_ptr->size(); }
 		///@}
 
 	private:
@@ -322,12 +322,12 @@ struct sendfile_write_operation_t : public writable_base_t
 			\see writable_base_t
 		*/
 		///@{
-		virtual void relocate_to( void * storage ) override
+		void relocate_to( void * storage ) override
 		{
 			new( storage ) sendfile_write_operation_t{ std::move( *this ) };
 		}
 
-		virtual std::size_t size() const override
+		std::size_t size() const override
 		{
 			return m_sendfile_options ? m_sendfile_options->size() : 0;
 		}
@@ -534,7 +534,7 @@ class writable_item_t
 		}
 
 		writable_item_t &
-		operator = ( writable_item_t && b )
+		operator = ( writable_item_t && b ) noexcept
 		{
 			if( this != &b )
 			{
@@ -632,7 +632,7 @@ class writable_item_t
 				impl::buffer_storage_align >;
 
 		//! A storage for a buffer object of various types.
-		storage_t m_storage;
+		storage_t m_storage{};
 };
 
 //

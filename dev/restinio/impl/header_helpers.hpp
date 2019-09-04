@@ -128,7 +128,7 @@ create_header_string(
 	if( content_length_field_presence_t::add_content_length ==
 		content_length_field_presence )
 	{
-		std::array< char, 64 > buf;
+		std::array< char, 64 > buf{};
 		const auto n =
 			std::snprintf(
 				buf.data(),

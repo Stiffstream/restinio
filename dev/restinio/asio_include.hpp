@@ -148,13 +148,13 @@ namespace impl
 class restinio_err_category_t : public error_category_base_t
 {
 	public:
-		virtual const char*
+		const char*
 		name() const RESTINIO_ERROR_CATEGORY_NAME_NOEXCEPT override
 		{
 			return "restinio";
 		}
 
-		virtual std::string
+		std::string
 		message( int value ) const override
 		{
 			std::string result{};

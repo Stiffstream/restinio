@@ -83,12 +83,12 @@ class regex_t final
 		regex_t( const regex_t & ) = delete;
 		regex_t & operator = ( const regex_t & ) = delete;
 
-		regex_t( regex_t && rw )
+		regex_t( regex_t && rw ) noexcept
 		{
 			(*this) = std::move( rw );
 		}
 
-		regex_t & operator = ( regex_t && rw )
+		regex_t & operator = ( regex_t && rw ) noexcept
 		{
 			if( this != &rw )
 			{

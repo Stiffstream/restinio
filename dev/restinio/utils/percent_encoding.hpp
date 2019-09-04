@@ -82,10 +82,10 @@ is_hexdigit( char c )
 		( 'A' <= c && c <= 'F' );
 }
 
-inline char
-extract_escaped_char( char c1,  char c2 )
+inline unsigned char
+extract_escaped_char( unsigned char c1,  unsigned char c2 )
 {
-	char result;
+	unsigned char result;
 
 	if( '0' <= c1 && c1 <= '9' )
 		result = c1 - '0';
