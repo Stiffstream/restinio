@@ -13,6 +13,7 @@
 
 #include <restinio/compiler_features.hpp>
 #include <restinio/common_types.hpp>
+#include <utility>
 #include <restinio/variant.hpp>
 #include <restinio/tls_fwd.hpp>
 
@@ -45,7 +46,7 @@ class accepted_t final
 	tls_socket_t * m_tls_socket;
 
 public:
-	accepted_t(
+	explicit accepted_t(
 		tls_socket_t * tls_socket )
 		:	m_tls_socket{ tls_socket }
 	{}
@@ -234,8 +235,8 @@ public :
 		endpoint_t remote_endpoint,
 		cause_t cause )
 		:	m_conn_id{ conn_id }
-		,	m_remote_endpoint{ remote_endpoint }
-		,	m_cause{ cause }
+		,	m_remote_endpoint{std::move( remote_endpoint )}
+		,	m_cause{std::move( cause )}
 	{}
 
 	//! Get the connection id.
