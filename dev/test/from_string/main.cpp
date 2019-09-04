@@ -15,7 +15,7 @@ using namespace restinio::utils;
 TEST_CASE( "int8" , "[int8]" )
 {
 	using type_t = std::int8_t;
-	type_t v;
+	type_t v = 0;
 	std::string str;
 
 	str = "-128";
@@ -136,7 +136,7 @@ TEST_CASE( "int8" , "[int8]" )
 TEST_CASE( "uint8" , "[uint8]" )
 {
 	using type_t = std::uint8_t;
-	type_t v;
+	type_t v = 0;
 	std::string str;
 
 	str = "+0";
@@ -253,7 +253,7 @@ TEST_CASE( "uint8" , "[uint8]" )
 TEST_CASE( "int16" , "[int16]" )
 {
 	using type_t = std::int16_t;
-	type_t v;
+	type_t v = 0;
 	std::string str;
 
 	auto i = std::numeric_limits< type_t >::min();
@@ -294,7 +294,7 @@ TEST_CASE( "int16" , "[int16]" )
 TEST_CASE( "uint16" , "[uint16]" )
 {
 	using type_t = std::uint16_t;
-	type_t v;
+	type_t v = 0;
 	std::string str;
 
 	auto i = std::numeric_limits< type_t >::min();
@@ -335,7 +335,7 @@ TEST_CASE( "uint16" , "[uint16]" )
 TEST_CASE( "int32" , "[int32]" )
 {
 	using type_t = std::int32_t;
-	type_t v;
+	type_t v = 0;
 	std::string str;
 
 	auto i = std::numeric_limits< type_t >::min();
@@ -361,7 +361,7 @@ TEST_CASE( "int32" , "[int32]" )
 TEST_CASE( "uint32" , "[uint32]" )
 {
 	using type_t = std::uint32_t;
-	type_t v;
+	type_t v = 0;
 	std::string str;
 
 	auto i = std::numeric_limits< type_t >::min();
@@ -384,7 +384,7 @@ TEST_CASE( "uint32" , "[uint32]" )
 TEST_CASE( "int64" , "[int64]" )
 {
 	using type_t = std::int64_t;
-	type_t v;
+	type_t v = 0;
 	std::string str;
 
 	auto i = std::numeric_limits< type_t >::min();
@@ -411,7 +411,7 @@ TEST_CASE( "int64" , "[int64]" )
 TEST_CASE( "uint64" , "[uint64]" )
 {
 	using type_t = std::uint64_t;
-	type_t v;
+	type_t v = 0;
 	std::string str;
 
 	auto i = std::numeric_limits< type_t >::min();

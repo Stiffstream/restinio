@@ -256,7 +256,7 @@ TEST_CASE( "ordinary connection" , "[ordinary_connection]" )
 
 	other_thread.stop_and_join();
 
-	REQUIRE( "" != endpoint_value );
+	REQUIRE( !endpoint_value.empty() );
 	REQUIRE( 1 == state_listener->m_accepted.load() );
 	REQUIRE( 1 == state_listener->m_closed.load() );
 	REQUIRE( 0 == state_listener->m_upgraded_to_websocket.load() );
@@ -298,8 +298,8 @@ TEST_CASE( "connection state for WS" , "[connection_state][ws]" )
 									rws::upgrade< test_traits >(
 										*req,
 										rws::activation_t::immediate,
-										[]( rws::ws_handle_t,
-											rws::message_handle_t ){} );
+										[]( const rws::ws_handle_t&,
+											const rws::message_handle_t& ){} );
 
 
 								endpoint_value_ws = fmt::format( "{}", ws->remote_endpoint() );
@@ -342,7 +342,7 @@ TEST_CASE( "connection state for WS" , "[connection_state][ws]" )
 
 	other_thread.stop_and_join();
 
-	REQUIRE( "" != endpoint_value );
+	REQUIRE( !endpoint_value.empty() );
 	REQUIRE( endpoint_value == endpoint_value_ws );
 
 	REQUIRE( 1 == state_listener->m_accepted.load() );
@@ -467,7 +467,7 @@ TEST_CASE( "listener throws on close" , "[throws_on_close]" )
 
 	other_thread.stop_and_join();
 
-	REQUIRE( "" != endpoint_value );
+	REQUIRE( !endpoint_value.empty() );
 	REQUIRE( 1 == state_listener->m_accepted.load() );
 	REQUIRE( 1 == state_listener->m_closed.load() );
 	REQUIRE( 0 == state_listener->m_upgraded_to_websocket.load() );
@@ -510,8 +510,8 @@ TEST_CASE( "listener throws on WS-upgrade" , "[throws_on_ws_upgrade]" )
 									rws::upgrade< test_traits >(
 										*req,
 										rws::activation_t::immediate,
-										[]( rws::ws_handle_t,
-											rws::message_handle_t ){} );
+										[]( const rws::ws_handle_t&,
+											const rws::message_handle_t& ){} );
 
 								ws->kill();
 								return restinio::request_accepted();
@@ -546,7 +546,7 @@ TEST_CASE( "listener throws on WS-upgrade" , "[throws_on_ws_upgrade]" )
 
 	other_thread.stop_and_join();
 
-	REQUIRE( "" != endpoint_value );
+	REQUIRE( !endpoint_value.empty() );
 	REQUIRE( ws_upgrade_failed );
 
 	REQUIRE( 1 == state_listener->m_accepted.load() );

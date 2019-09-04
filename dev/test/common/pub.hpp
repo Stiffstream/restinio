@@ -87,7 +87,7 @@ class other_work_thread_for_server_t
 
 	std::thread m_thread;
 public:
-	other_work_thread_for_server_t(
+	explicit other_work_thread_for_server_t(
 		Http_Server & server )
 		: m_server(server)
 	{}

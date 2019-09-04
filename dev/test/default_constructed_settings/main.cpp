@@ -13,7 +13,7 @@
 using namespace restinio;
 
 #define RESTINIO_REQHANDLER_UTEST_INTERNALS \
-auto operator () ( request_handle_t ) const \
+auto operator () ( const request_handle_t& ) const \
 {	return restinio::request_rejected(); }
 
 TEST_CASE( "Request handler" , "[settings][request_handler]" )
@@ -27,7 +27,7 @@ TEST_CASE( "Request handler" , "[settings][request_handler]" )
 			req_handler_t()
 				:	m_is_default_constructed{ true }
 			{}
-			req_handler_t( int )
+			explicit req_handler_t( int )
 				:	m_is_default_constructed{ false }
 			{}
 
@@ -53,7 +53,7 @@ TEST_CASE( "Request handler" , "[settings][request_handler]" )
 	{
 		struct req_handler_t
 		{
-			req_handler_t( int )
+			explicit req_handler_t( int )
 			{}
 
 			RESTINIO_REQHANDLER_UTEST_INTERNALS
@@ -94,7 +94,7 @@ TEST_CASE( "Request handler" , "[settings][request_handler]" )
 			Catch::Matchers::Contains( "request handler" ) );
 
 		s.request_handler(
-			[]( request_handle_t ){
+			[]( const request_handle_t& ){
 				return restinio::request_rejected();
 			} );
 
@@ -119,7 +119,7 @@ struct logger1_t
 	logger1_t()
 		:	m_is_default_constructed{ true }
 	{}
-	logger1_t( int )
+	explicit logger1_t( int )
 		:	m_is_default_constructed{ false }
 	{}
 
@@ -128,7 +128,7 @@ struct logger1_t
 
 struct logger2_t
 {
-	logger2_t( int )
+	explicit logger2_t( int )
 	{}
 
 	RESTINIO_LOGGER_UTEST_INTERNALS
@@ -193,7 +193,7 @@ struct timer_manager1_t
 {
 	const bool m_is_default_constructed;
 
-	timer_manager1_t( bool is_default_constructed )
+	explicit timer_manager1_t( bool is_default_constructed )
 		:	m_is_default_constructed{ is_default_constructed }
 	{}
 

@@ -13,7 +13,7 @@
 
 
 inline std::string
-to_char_each( std::vector< int > source )
+to_char_each( const std::vector< int >& source )
 {
 	std::string result;
 	result.reserve( source.size() );
