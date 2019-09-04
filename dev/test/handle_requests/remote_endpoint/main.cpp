@@ -87,6 +87,7 @@ TEST_CASE( "remote_endpoint for WS" , "[remote_endpoint][ws]" )
 			settings
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
+                .read_next_http_message_timelimit( std::chrono::milliseconds( 3 ) )
 				.request_handler(
 					[&endpoint_value, &endpoint_value_ws]( auto req ){
 						endpoint_value = fmt::format( "{}", req->remote_endpoint() );

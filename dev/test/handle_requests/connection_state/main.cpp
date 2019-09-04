@@ -284,6 +284,7 @@ TEST_CASE( "connection state for WS" , "[connection_state][ws]" )
 			settings
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
+                .read_next_http_message_timelimit( std::chrono::milliseconds( 3 ) )
 				.connection_state_listener( state_listener )
 				.request_handler(
 					[&endpoint_value, &endpoint_value_ws]( auto req ){

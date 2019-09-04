@@ -31,6 +31,7 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 			settings
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
+                .read_next_http_message_timelimit( std::chrono::milliseconds( 3 ) )
 				.request_handler(
 					[]( auto req ){
 						if( restinio::http_connection_header_t::upgrade == req->header().connection() )
@@ -42,10 +43,13 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 									rws::upgrade< traits_t >(
 										*req,
 										rws::activation_t::immediate,
-										[]( rws::ws_handle_t,
-											rws::message_handle_t ){} );
+										[]( const rws::ws_handle_t&,
+											const rws::message_handle_t& ){} );
 
-								// TODO: write close-message.
+                                req->create_response()
+                                        .set_body("Closed!")
+                                        .done();
+
 								ws->kill();
 								return restinio::request_accepted();
 							}
