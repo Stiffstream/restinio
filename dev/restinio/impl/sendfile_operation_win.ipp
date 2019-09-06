@@ -300,7 +300,7 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 						static_cast< DWORD >( desired_size ),
 						0,
 						overlapped.get(),
-						0,
+						nullptr,
 						0 );
 
 				DWORD last_error = ::GetLastError();

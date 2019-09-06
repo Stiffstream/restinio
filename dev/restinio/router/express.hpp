@@ -72,7 +72,7 @@ class route_params_t final
 		{
 			m_request_target = std::move( request_target );
 			m_key_names_buffer = std::move( key_names_buffer );
-			m_match = std::move( match );
+			m_match = match;
 			m_named_parameters = std::move( named_parameters );
 			m_indexed_parameters = std::move( indexed_parameters );
 		}
@@ -208,7 +208,7 @@ struct route_params_accessor_t
 		rp.match(
 			std::move( request_target ),
 			std::move( key_names_buffer ),
-			std::move( match_ ),
+			match_,
 			std::move( named_parameters ),
 			std::move( indexed_parameters ) );
 	}

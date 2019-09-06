@@ -35,7 +35,7 @@ class sendfile_operation_base_t
 
 using sendfile_operation_shared_ptr_t = std::shared_ptr< sendfile_operation_base_t >;
 
-//! Callback type for invokation when sendfile operation completes.
+//! Callback type for invocation when sendfile operation completes.
 using after_sendfile_cb_t =
 	std::function< void ( const asio_ns::error_code & , file_size_t ) >;
 

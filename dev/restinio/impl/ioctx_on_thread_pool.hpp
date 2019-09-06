@@ -27,7 +27,7 @@ class own_io_context_for_thread_pool_t
 	asio_ns::io_context m_ioctx;
 
 public:
-	own_io_context_for_thread_pool_t() {}
+	own_io_context_for_thread_pool_t() = default;
 
 	//! Get access to io_context object.
 	auto & io_context() noexcept { return m_ioctx; }
