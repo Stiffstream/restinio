@@ -62,11 +62,10 @@ class base_response_builder_t
 		base_response_builder_t( const base_response_builder_t & ) = delete;
 		base_response_builder_t & operator = ( const base_response_builder_t & ) = delete;
 
-		base_response_builder_t( base_response_builder_t && ) = default;
-		base_response_builder_t & operator =( base_response_builder_t && ) = default;
+		base_response_builder_t( base_response_builder_t && ) noexcept = default;
+		base_response_builder_t & operator =( base_response_builder_t && ) noexcept = default;
 
-		virtual ~base_response_builder_t()
-		{}
+		virtual ~base_response_builder_t() = default;
 
 		base_response_builder_t(
 			http_status_line_t status_line,

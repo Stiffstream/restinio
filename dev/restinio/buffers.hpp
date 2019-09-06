@@ -200,7 +200,7 @@ class datasizeable_buf_t final : public buf_iface_t
 			:	m_custom_buffer{ std::move( buf ) }
 		{}
 
-		datasizeable_buf_t( datasizeable_buf_t && ) = default; // allow only explicit move.
+		datasizeable_buf_t( datasizeable_buf_t && ) noexcept = default; // allow only explicit move.
 
 		/*!
 			@name An implementation of writable_base_t interface.
@@ -262,7 +262,7 @@ class shared_datasizeable_buf_t final : public buf_iface_t
 		shared_datasizeable_buf_t( const shared_datasizeable_buf_t & ) = delete;
 		shared_datasizeable_buf_t & operator = ( const shared_datasizeable_buf_t & ) = delete;
 
-		shared_datasizeable_buf_t( shared_datasizeable_buf_t && ) = default; // allow only explicit move.
+		shared_datasizeable_buf_t( shared_datasizeable_buf_t && ) noexcept = default; // allow only explicit move.
 		shared_datasizeable_buf_t & operator = ( shared_datasizeable_buf_t && ) = delete;
 
 		/*!

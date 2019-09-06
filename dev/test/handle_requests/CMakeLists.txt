@@ -11,3 +11,5 @@ add_subdirectory(remote_endpoint)
 add_subdirectory(connection_state)
 add_subdirectory(ip_blocker)
 
+add_subdirectory(upgrade)
+
