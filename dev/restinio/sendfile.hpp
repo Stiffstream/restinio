@@ -237,7 +237,7 @@ class sendfile_t
 			//! Send chunk size.
 			sendfile_chunk_size_guarded_value_t chunk ) noexcept
 			:	m_file_descriptor{ std::move( fdh ) }
-			,	m_meta{ std::move( meta ) }
+			,	m_meta{ meta }
 			,	m_offset{ 0 }
 			,	m_size{ m_meta.file_total_size() }
 			,	m_chunk_size{ chunk.value() }
@@ -271,7 +271,7 @@ class sendfile_t
 		///@{
 		sendfile_t( sendfile_t && sf ) noexcept
 			:	m_file_descriptor{ std::move( sf.m_file_descriptor ) }
-			,	m_meta{ std::move( sf.m_meta ) }
+			,	m_meta{ sf.m_meta }
 			,	m_offset{ sf.m_offset }
 			,	m_size{ sf.m_size }
 			,	m_chunk_size{ sf.m_chunk_size }
@@ -473,7 +473,7 @@ sendfile(
 	//! The max size of a data to be send on a single iteration.
 	file_size_t chunk_size = sendfile_default_chunk_size ) noexcept
 {
-	return sendfile_t{ std::move( fd ), std::move( meta ), chunk_size };
+	return sendfile_t{ std::move( fd ), meta, chunk_size };
 }
 
 inline sendfile_t
@@ -487,7 +487,7 @@ sendfile(
 
 	auto meta = get_file_meta< file_meta_t >( fd.fd() );
 
-	return sendfile( std::move( fd ), std::move( meta ), chunk_size );
+	return sendfile( std::move( fd ), meta, chunk_size );
 }
 
 inline sendfile_t

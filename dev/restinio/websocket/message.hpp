@@ -55,7 +55,7 @@ opcode_to_string( opcode_t opcode )
 		#undef RESTINIO_WEBSOCKET_OPCODES_GEN
 
 		default:; // Ignore.
-	};
+	}
 
 	return result;
 }
@@ -73,7 +73,7 @@ is_valid_opcode( opcode_t opcode )
 		#undef RESTINIO_WEBSOCKET_OPCODES_GEN
 
 		default: result = false; // Ignore.
-	};
+	}
 
 	return result;
 }
