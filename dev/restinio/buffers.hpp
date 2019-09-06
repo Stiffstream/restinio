@@ -36,7 +36,7 @@ namespace impl
 /*!
 	Having a condition to put heterogeneous writable-items sequence in vector
 	and to transfer it from builders to connection context,
-	internal writable-items are the pieces incapsulating various
+	internal writable-items are the pieces encapsulating various
 	implementation that fit into a fixed memory space.
 	That's makes it possible to fit any of them in a binary
 	buffer that resides in writable_item_t.
