@@ -227,6 +227,8 @@ run(
 		restinio::external_io_context( ioctx ),
 		std::forward<settings_t>(settings) };
 
+	std::exception_ptr exception_caught;
+
 	asio_ns::signal_set break_signals{ server.io_context(), SIGINT };
 	break_signals.async_wait(
 		[&]( const asio_ns::error_code & ec, int ){
@@ -237,19 +239,29 @@ run(
 						// Stop running io_service.
 						ioctx.stop();
 					},
-					[]( std::exception_ptr ex ){
-						std::rethrow_exception( ex );
+					[&exception_caught]( std::exception_ptr ex ){
+						// We can't throw an exception here!
+						// Store it to rethrow later.
+						exception_caught = ex;
 					} );
 			}
 		} );
 
 	server.open_async(
 		[]{ /* Ok. */},
-		[]( std::exception_ptr ex ){
-			std::rethrow_exception( ex );
+		[&ioctx, &exception_caught]( std::exception_ptr ex ){
+			// Stop running io_service.
+			// We can't throw an exception here!
+			// Store it to rethrow later.
+			ioctx.stop();
+			exception_caught = ex;
 		} );
 
 	ioctx.run();
+
+	// If an error was detected it should be propagated.
+	if( exception_caught )
+		std::rethrow_exception( exception_caught );
 }
 
 //! Helper function for running http server until ctrl+c is hit.
@@ -299,6 +311,8 @@ run(
 		restinio::external_io_context( pool.io_context() ),
 		std::forward<settings_t>(settings) };
 
+	std::exception_ptr exception_caught;
+
 	asio_ns::signal_set break_signals{ server.io_context(), SIGINT };
 	break_signals.async_wait(
 		[&]( const asio_ns::error_code & ec, int ){
@@ -309,20 +323,30 @@ run(
 						// Stop running io_service.
 						pool.stop();
 					},
-					[]( std::exception_ptr ex ){
-						std::rethrow_exception( ex );
+					[&exception_caught]( std::exception_ptr ex ){
+						// We can't throw an exception here!
+						// Store it to rethrow later.
+						exception_caught = ex;
 					} );
 			}
 		} );
 
 	server.open_async(
 		[]{ /* Ok. */},
-		[]( std::exception_ptr ex ){
-			std::rethrow_exception( ex );
+		[&pool, &exception_caught]( std::exception_ptr ex ){
+			// Stop running io_service.
+			// We can't throw an exception here!
+			// Store it to rethrow later.
+			pool.stop();
+			exception_caught = ex;
 		} );
 
 	pool.start();
 	pool.wait();
+
+	// If an error was detected it should be propagated.
+	if( exception_caught )
+		std::rethrow_exception( exception_caught );
 }
 
 } /* namespace impl */
@@ -497,6 +521,8 @@ run_with_break_signal_handling(
 	ioctx_on_thread_pool_t<Io_Context_Holder> & pool,
 	http_server_t<Traits> & server )
 {
+	std::exception_ptr exception_caught;
+
 	asio_ns::signal_set break_signals{ server.io_context(), SIGINT };
 	break_signals.async_wait(
 		[&]( const asio_ns::error_code & ec, int ){
@@ -507,20 +533,30 @@ run_with_break_signal_handling(
 						// Stop running io_service.
 						pool.stop();
 					},
-					[]( std::exception_ptr ex ){
-						std::rethrow_exception( ex );
+					[&exception_caught]( std::exception_ptr ex ){
+						// We can't throw an exception here!
+						// Store it to rethrow later.
+						exception_caught = ex;
 					} );
 			}
 		} );
 
 	server.open_async(
 		[]{ /* Ok. */},
-		[]( std::exception_ptr ex ){
-			std::rethrow_exception( ex );
+		[&pool, &exception_caught]( std::exception_ptr ex ){
+			// Stop running io_service.
+			// We can't throw an exception here!
+			// Store it to rethrow later.
+			pool.stop();
+			exception_caught = ex;
 		} );
 
 	pool.start();
 	pool.wait();
+
+	// If an error was detected it should be propagated.
+	if( exception_caught )
+		std::rethrow_exception( exception_caught );
 }
 
 /*!
@@ -542,14 +578,24 @@ run_without_break_signal_handling(
 	ioctx_on_thread_pool_t<Io_Context_Holder> & pool,
 	http_server_t<Traits> & server )
 {
+	std::exception_ptr exception_caught;
+
 	server.open_async(
 		[]{ /* Ok. */},
-		[]( std::exception_ptr ex ){
-			std::rethrow_exception( ex );
+		[&pool, &exception_caught]( std::exception_ptr ex ){
+			// Stop running io_service.
+			// We can't throw an exception here!
+			// Store it to rethrow later.
+			pool.stop();
+			exception_caught = ex;
 		} );
 
 	pool.start();
 	pool.wait();
+
+	// If an error was detected it should be propagated.
+	if( exception_caught )
+		std::rethrow_exception( exception_caught );
 }
 
 } /* namespace impl */
@@ -721,14 +767,23 @@ public :
 		,	m_pool{ pool_size, server.io_context() }
 	{}
 
+	//FIXME: maybe this method should be extended in v.0.7.0 with
+	//error-handler specified by user (this error-handler will be called
+	//in err_cb in open_async())?
 	//! Start the server.
 	void
 	start()
 	{
 		m_server.open_async(
 			[]{ /* Ok. */},
-			[]( std::exception_ptr ex ){
-				std::rethrow_exception( ex );
+			[this]( std::exception_ptr /*ex*/ ){
+				// There is no sense to run pool.
+				m_pool.stop();
+
+				//FIXME: the exception should be stored to be handled
+				//later in wait() method.
+				//NOTE: this fix is planned for v.0.7.0.
+				//std::rethrow_exception( ex );
 			} );
 
 		m_pool.start();
@@ -748,11 +803,22 @@ public :
 				// Stop running io_service.
 				m_pool.stop();
 			},
-			[]( std::exception_ptr ex ){
-				std::rethrow_exception( ex );
+			[]( std::exception_ptr /*ex*/ ){
+				//FIXME: the exception should be stored to be handled
+				//later in wait() method.
+				//NOTE: this fix is planned for v.0.7.0.
+				//std::rethrow_exception( ex );
 			} );
 	}
 
+	//FIXME this method should be replaced by two new method in v.0.7.0:
+	//
+	// enum class action_on_exception_t { drop, rethrow };
+	// wait(action_on_exception_t action);
+	//
+	// template<typename Exception_Handler>
+	// wait(Exception_Handler && on_exception);
+	//
 	//! Wait for full stop of the server.
 	void
 	wait() { m_pool.wait(); }
