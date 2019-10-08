@@ -17,6 +17,8 @@
 
 #include <restinio/impl/include_fmtlib.hpp>
 
+#include <restinio/impl/to_lower_lut.hpp>
+
 #include <restinio/exception.hpp>
 #include <restinio/string_view.hpp>
 #include <restinio/optional.hpp>
@@ -27,8 +29,6 @@ namespace restinio
 
 namespace impl
 {
-
-#include "impl/to_lower_lut.ipp"
 
 constexpr auto
 uchar_at( const char * const from, const std::size_t at ) noexcept
