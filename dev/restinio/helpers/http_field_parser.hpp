@@ -16,11 +16,30 @@
 #include <restinio/string_view.hpp>
 #include <restinio/compiler_features.hpp>
 
+#include <iostream>
+
 namespace restinio
 {
 
 namespace http_field_parser
 {
+
+//FIXME: document this!
+template< typename T >
+struct default_container_adaptor;
+
+template< typename T, typename... Args >
+struct default_container_adaptor< std::vector< T, Args... > >
+{
+	using container_type = std::vector< T, Args... >;
+	using value_type = typename container_type::value_type;
+
+	static void
+	store( container_type & to, value_type && what )
+	{
+		to.push_back( std::move(what) );
+	}
+};
 
 namespace impl
 {
@@ -105,6 +124,17 @@ public:
 		if( m_index )
 			--m_index;
 	}
+
+//FIXME: this is debug method!
+string_view_t
+current_content() const noexcept
+{
+	if( m_index < m_data.size() )
+		return m_data.substr( m_index );
+	else
+		return {"--EOF--"};
+}
+
 };
 
 //
@@ -181,6 +211,7 @@ public :
 class token_non_template_base_t
 {
 protected :
+	//FIXME: is it really should be a class member?
 	std::string m_value;
 
 	void
@@ -189,6 +220,7 @@ protected :
 		m_value.clear();
 	}
 
+	RESTINIO_NODISCARD
 	bool
 	try_parse_value( source_t & from )
 	{
@@ -250,6 +282,7 @@ public:
 	{}
 
 	template< typename Final_Value >
+	RESTINIO_NODISCARD
 	bool
 	try_parse(
 		source_t & from, Final_Value & to )
@@ -266,7 +299,130 @@ public:
 
 } /* namespace rfc */
 
+template< bool valid_index, std::size_t I >
+struct try_parse_item_impl
+{
+	template< typename Final_Value, typename... Parsers >
+	RESTINIO_NODISCARD
+	static bool apply(
+		source_t & source,
+		Final_Value & receiver,
+		std::tuple<Parsers...> & parsers )
+	{
+std::cout << "*** content: " << source.current_content() << std::endl;
+		if( std::get<I>(parsers).try_parse(source, receiver) )
+			return try_parse_item_impl< (I+1 < sizeof...(Parsers)), I+1 >::apply(
+					source, receiver, parsers );
+		else
+			return false;
+	}
+};
+
+template< std::size_t I >
+struct try_parse_item_impl< false, I >
+{
+	template< typename Final_Value, typename... Parsers >
+	RESTINIO_NODISCARD
+	static bool apply( source_t &, Final_Value &, std::tuple<Parsers...> & )
+	{
+		return true;
+	}
+};
+
+template< typename Final_Value, typename... Parsers >
+RESTINIO_NODISCARD
+bool
+try_parse_item(
+	source_t & source,
+	Final_Value & receiver,
+	std::tuple< Parsers... > & parsers )
+{
+	return try_parse_item_impl< (0 < sizeof...(Parsers)), 0 >::apply(
+			source, receiver, parsers );
+}
+
+template<
+	typename Container_Adaptor,
+	typename Setter,
+	typename Subitems_Tuple >
+class repeat_t
+{
+	using container_type = typename Container_Adaptor::container_type;
+	using value_type = typename Container_Adaptor::value_type;
+
+	std::size_t m_min_occurences;
+	std::size_t m_max_occurences;
+
+	Setter m_setter;
+
+	Subitems_Tuple m_subitems;
+
+public :
+	template< typename Setter_Arg >
+	repeat_t(
+		std::size_t min_occurences,
+		std::size_t max_occurences,
+		Setter_Arg && setter,
+		Subitems_Tuple && subitems )
+		:	m_min_occurences{ min_occurences }
+		,	m_max_occurences{ max_occurences }
+		,	m_setter{ std::forward<Setter_Arg>(setter) }
+		,	m_subitems{ std::move(subitems) }
+	{}
+
+	template< typename Final_Value >
+	RESTINIO_NODISCARD
+	bool
+	try_parse(
+		source_t & from, Final_Value & to )
+	{
+		container_type aggregate;
+
+		std::size_t count{};
+		for( ; count < m_max_occurences; ++count )
+		{
+			value_type item;
+			if( !try_parse_item( from, item, m_subitems ) )
+				return false;
+
+			Container_Adaptor::store( aggregate, std::move(item) );
+		}
+
+		if( count < m_min_occurences )
+			return false;
+
+		m_setter( to, std::move(aggregate) );
+		return true;
+	}
+};
+
 } /* namespace impl */
+
+//FIXME: document this!
+template<
+	typename Container,
+	template<class> class Container_Adaptor = default_container_adaptor,
+	typename Setter,
+	typename... Parsers >
+RESTINIO_NODISCARD
+auto
+repeat(
+	std::size_t min_occurences,
+	std::size_t max_occurences,
+	Setter && setter,
+	Parsers &&... parsers )
+{
+	return impl::repeat_t<
+				Container_Adaptor<Container>,
+				std::decay_t<Setter>,
+				std::tuple<Parsers...>
+			>{
+				min_occurences,
+				max_occurences,
+				std::forward<Setter>(setter),
+				std::make_tuple( std::forward<Parsers>(parsers)... )
+			};
+}
 
 namespace rfc
 {
