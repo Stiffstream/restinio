@@ -157,40 +157,6 @@ public :
 	}
 };
 
-class comma_separator_t
-{
-public :
-	template< typename Final_Value >
-	RESTINIO_NODISCARD
-	bool
-	try_parse(
-		source_t & from, Final_Value & /*to*/ ) const noexcept
-	{
-		const auto ch = from.getch();
-		if( !ch.m_eof && ',' == ch.m_ch )
-			return true;
-
-		return false;
-	}
-};
-
-class semicolon_separator_t
-{
-public :
-	template< typename Final_Value >
-	RESTINIO_NODISCARD
-	bool
-	try_parse(
-		source_t & from, Final_Value & /*to*/ ) const noexcept
-	{
-		const auto ch = from.getch();
-		if( !ch.m_eof && ';' == ch.m_ch )
-			return true;
-
-		return false;
-	}
-};
-
 class delimiter_t
 {
 	char m_delimiter;
@@ -316,21 +282,21 @@ RESTINIO_NODISCARD
 auto
 comma() noexcept
 {
-	return restinio::http_field_parser::impl::rfc::comma_separator_t{};
+	return restinio::http_field_parser::impl::rfc::delimiter_t{ ',' };
 }
 
 RESTINIO_NODISCARD
 auto
 semicolon() noexcept
 {
-	return restinio::http_field_parser::impl::rfc::semicolon_separator_t{};
+	return restinio::http_field_parser::impl::rfc::delimiter_t{ ';' };
 }
 
 RESTINIO_NODISCARD
 auto
 delimiter( char v ) noexcept
 {
-	return restinio::http_field_parser::impl::rfc::delimiter_t{v};
+	return restinio::http_field_parser::impl::rfc::delimiter_t{ v };
 }
 
 template< typename Setter >
