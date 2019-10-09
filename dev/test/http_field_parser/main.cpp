@@ -81,41 +81,119 @@ struct content_type_parsed_value_t
 
 TEST_CASE( "Simple" , "[simple]" )
 {
-	{
-		const char src[] = R"(multipart/form-data)";
+	const char src[] = R"(multipart/form-data)";
 
-		const auto result = hfp::try_parse_field_value< media_type_t >( src,
-				hfp::rfc::token( media_type_t::type ),
-				hfp::rfc::delimiter( '/' ),
-				hfp::rfc::token( media_type_t::subtype ) );
+	const auto result = hfp::try_parse_field_value< media_type_t >( src,
+			hfp::rfc::token( media_type_t::type ),
+			hfp::rfc::delimiter( '/' ),
+			hfp::rfc::token( media_type_t::subtype ) );
 
-		REQUIRE( result.first );
-		REQUIRE( "multipart" == result.second.m_type );
-		REQUIRE( "form-data" == result.second.m_subtype );
-	}
+	REQUIRE( result.first );
+	REQUIRE( "multipart" == result.second.m_type );
+	REQUIRE( "form-data" == result.second.m_subtype );
+}
 
-	{
-		const char src[] = R"(multipart/form-data; boundary=---12345)";
+TEST_CASE( "Simple content_type value", "[simple][content-type]" )
+{
+	const char src[] = R"(multipart/form-data; boundary=---12345)";
 
-		const auto result = hfp::try_parse_field_value< content_type_parsed_value_t >(
-				src,
-				hfp::rfc::token( content_type_parsed_value_t::type ),
-				hfp::rfc::delimiter( '/' ),
-				hfp::rfc::token( content_type_parsed_value_t::subtype ),
-				hfp::repeat< std::vector< parameter_t > >(
-						0u,
-						100u,
-						content_type_parsed_value_t::parameters,
-						hfp::rfc::semicolon(),
-						hfp::rfc::ows(),
-						hfp::rfc::token( parameter_t::name ),
-						hfp::rfc::delimiter( '=' ),
-						hfp::rfc::token( parameter_t::value ) )
-				);
+	const auto result = hfp::try_parse_field_value< content_type_parsed_value_t >(
+			src,
+			hfp::rfc::token( content_type_parsed_value_t::type ),
+			hfp::rfc::delimiter( '/' ),
+			hfp::rfc::token( content_type_parsed_value_t::subtype ),
+			hfp::any_occurences_of< std::vector< parameter_t > >(
+					content_type_parsed_value_t::parameters,
+					hfp::rfc::semicolon(),
+					hfp::rfc::ows(),
+					hfp::rfc::token( parameter_t::name ),
+					hfp::rfc::delimiter( '=' ),
+					hfp::rfc::token( parameter_t::value ) )
+			);
 
-		REQUIRE( result.first );
-		REQUIRE( "multipart" == result.second.m_media_type.m_type );
-		REQUIRE( "form-data" == result.second.m_media_type.m_subtype );
-	}
+	REQUIRE( result.first );
+	REQUIRE( "multipart" == result.second.m_media_type.m_type );
+	REQUIRE( "form-data" == result.second.m_media_type.m_subtype );
+
+	REQUIRE( 1u == result.second.m_parameters.size() );
+	REQUIRE( "boundary" == result.second.m_parameters[0].m_name );
+	REQUIRE( "---12345" == result.second.m_parameters[0].m_value );
+}
+
+TEST_CASE( "Simple content_type value (two-params)", "[simple][content-type][two-params]" )
+{
+	const char src[] = R"(multipart/form-data; boundary=---12345; another=value)";
+
+	const auto result = hfp::try_parse_field_value< content_type_parsed_value_t >(
+			src,
+			hfp::rfc::token( content_type_parsed_value_t::type ),
+			hfp::rfc::delimiter( '/' ),
+			hfp::rfc::token( content_type_parsed_value_t::subtype ),
+			hfp::any_occurences_of< std::vector< parameter_t > >(
+					content_type_parsed_value_t::parameters,
+					hfp::rfc::semicolon(),
+					hfp::rfc::ows(),
+					hfp::rfc::token( parameter_t::name ),
+					hfp::rfc::delimiter( '=' ),
+					hfp::rfc::token( parameter_t::value ) )
+			);
+
+	REQUIRE( result.first );
+	REQUIRE( "multipart" == result.second.m_media_type.m_type );
+	REQUIRE( "form-data" == result.second.m_media_type.m_subtype );
+
+	REQUIRE( 2u == result.second.m_parameters.size() );
+	REQUIRE( "boundary" == result.second.m_parameters[0].m_name );
+	REQUIRE( "---12345" == result.second.m_parameters[0].m_value );
+	REQUIRE( "another" == result.second.m_parameters[1].m_name );
+	REQUIRE( "value" == result.second.m_parameters[1].m_value );
+}
+
+TEST_CASE( "Simple content_type value (trailing spaces)", "[simple][content-type][trailing-spaces]" )
+{
+	const char src[] = R"(multipart/form-data; boundary=---12345  )";
+
+	const auto result = hfp::try_parse_field_value< content_type_parsed_value_t >(
+			src,
+			hfp::rfc::token( content_type_parsed_value_t::type ),
+			hfp::rfc::delimiter( '/' ),
+			hfp::rfc::token( content_type_parsed_value_t::subtype ),
+			hfp::any_occurences_of< std::vector< parameter_t > >(
+					content_type_parsed_value_t::parameters,
+					hfp::rfc::semicolon(),
+					hfp::rfc::ows(),
+					hfp::rfc::token( parameter_t::name ),
+					hfp::rfc::delimiter( '=' ),
+					hfp::rfc::token( parameter_t::value ) )
+			);
+
+	REQUIRE( result.first );
+	REQUIRE( "multipart" == result.second.m_media_type.m_type );
+	REQUIRE( "form-data" == result.second.m_media_type.m_subtype );
+
+	REQUIRE( 1u == result.second.m_parameters.size() );
+	REQUIRE( "boundary" == result.second.m_parameters[0].m_name );
+	REQUIRE( "---12345" == result.second.m_parameters[0].m_value );
+}
+
+TEST_CASE( "Simple content_type value (trailing garbage)", "[simple][content-type][trailing-garbage]" )
+{
+	const char src[] = R"(multipart/form-data; boundary=---12345; bla-bla-bla)";
+
+	const auto result = hfp::try_parse_field_value< content_type_parsed_value_t >(
+			src,
+			hfp::rfc::token( content_type_parsed_value_t::type ),
+			hfp::rfc::delimiter( '/' ),
+			hfp::rfc::token( content_type_parsed_value_t::subtype ),
+			hfp::any_occurences_of< std::vector< parameter_t > >(
+					content_type_parsed_value_t::parameters,
+					hfp::rfc::semicolon(),
+					hfp::rfc::ows(),
+					hfp::rfc::token( parameter_t::name ),
+					hfp::rfc::delimiter( '=' ),
+					hfp::rfc::token( parameter_t::value ) )
+			);
+
+	REQUIRE( !result.first );
 }
 

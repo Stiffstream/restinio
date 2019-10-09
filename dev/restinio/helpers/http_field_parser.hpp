@@ -17,6 +17,7 @@
 #include <restinio/compiler_features.hpp>
 
 #include <iostream>
+#include <limits>
 
 namespace restinio
 {
@@ -40,6 +41,8 @@ struct default_container_adaptor< std::vector< T, Args... > >
 		to.push_back( std::move(what) );
 	}
 };
+
+constexpr std::size_t N = std::numeric_limits<std::size_t>::max();
 
 namespace impl
 {
@@ -104,6 +107,8 @@ class source_t
 	string_view_t::size_type m_index{};
 
 public:
+	using position_t = string_view_t::size_type;
+
 	explicit source_t( string_view_t data ) noexcept : m_data{ data } {}
 
 	RESTINIO_NODISCARD
@@ -123,6 +128,27 @@ public:
 	{
 		if( m_index )
 			--m_index;
+	}
+
+	RESTINIO_NODISCARD
+	position_t
+	current_position() const noexcept
+	{
+		return m_index;
+	}
+
+	void
+	backto( position_t pos ) noexcept
+	{
+		if( pos <= m_data.size() )
+			m_index = pos;
+	}
+
+	RESTINIO_NODISCARD
+	bool
+	eof() const noexcept
+	{
+		return m_index >= m_data.size();
 	}
 
 //FIXME: this is debug method!
@@ -162,6 +188,20 @@ try_parse_impl(
 		return try_parse_impl( from, final_value, std::forward<Tail>(tail)... );
 	}
 	return false;
+}
+
+RESTINIO_NODISCARD
+bool
+ensure_no_remaining_content(
+	source_t & from )
+{
+	while( !from.eof() )
+	{
+		if( !is_space( from.getch().m_ch ) )
+			return false;
+	}
+
+	return true;
 }
 
 namespace rfc
@@ -309,7 +349,6 @@ struct try_parse_item_impl
 		Final_Value & receiver,
 		std::tuple<Parsers...> & parsers )
 	{
-std::cout << "*** content: " << source.current_content() << std::endl;
 		if( std::get<I>(parsers).try_parse(source, receiver) )
 			return try_parse_item_impl< (I+1 < sizeof...(Parsers)), I+1 >::apply(
 					source, receiver, parsers );
@@ -379,20 +418,32 @@ public :
 		container_type aggregate;
 
 		std::size_t count{};
-		for( ; count < m_max_occurences; ++count )
+		bool failure_detected{ false };
+		for( ; !failure_detected && count < m_max_occurences; ++count )
 		{
 			value_type item;
-			if( !try_parse_item( from, item, m_subitems ) )
-				return false;
+			const auto pos = from.current_position();
 
-			Container_Adaptor::store( aggregate, std::move(item) );
+			if( try_parse_item( from, item, m_subitems ) )
+			{
+				// Another item successfully parsed and should be stored.
+				Container_Adaptor::store( aggregate, std::move(item) );
+			}
+			else
+			{
+				from.backto( pos );
+				failure_detected = true;
+			}
 		}
 
-		if( count < m_min_occurences )
+		if( count >= m_min_occurences )
+		{
+			m_setter( to, std::move(aggregate) );
+			return true;
+		}
+		else
 			return false;
 
-		m_setter( to, std::move(aggregate) );
-		return true;
 	}
 };
 
@@ -422,6 +473,38 @@ repeat(
 				std::forward<Setter>(setter),
 				std::make_tuple( std::forward<Parsers>(parsers)... )
 			};
+}
+
+template<
+	typename Container,
+	template<class> class Container_Adaptor = default_container_adaptor,
+	typename Setter,
+	typename... Parsers >
+RESTINIO_NODISCARD
+auto
+any_occurences_of(
+	Setter && setter,
+	Parsers &&... parsers )
+{
+	return repeat< Container, Container_Adaptor >( 0u, N,
+			std::forward<Setter>(setter),
+			std::forward<Parsers>(parsers)... );
+}
+
+template<
+	typename Container,
+	template<class> class Container_Adaptor = default_container_adaptor,
+	typename Setter,
+	typename... Parsers >
+RESTINIO_NODISCARD
+auto
+one_or_more_occurences_of(
+	Setter && setter,
+	Parsers &&... parsers )
+{
+	return repeat< Container, Container_Adaptor >( 1u, N,
+			std::forward<Setter>(setter),
+			std::forward<Parsers>(parsers)... );
 }
 
 namespace rfc
@@ -488,7 +571,8 @@ try_parse_field_value(
 	if( impl::try_parse_impl(
 			source,
 			tmp_final_value,
-			std::forward<Fragments>(fragments)... ) )
+			std::forward<Fragments>(fragments)... ) &&
+		impl::ensure_no_remaining_content( source ) )
 	{
 		result.second = std::move(tmp_final_value);
 		result.first = true;
