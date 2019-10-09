@@ -212,10 +212,43 @@ public :
 	}
 };
 
-class token_basic_t
+class token_non_template_base_t
 {
 protected :
 	std::string m_value;
+
+	void
+	reset()
+	{
+		m_value.clear();
+	}
+
+	bool
+	try_parse_value( source_t & from )
+	{
+		reset();
+
+		do
+		{
+			const auto ch = from.getch();
+			if( ch.m_eof )
+				break;
+
+			if( !is_token_char(ch.m_ch) )
+			{
+				from.putback();
+				break;
+			}
+
+			m_value += ch.m_ch;
+		}
+		while( true );
+
+		if( m_value.empty() )
+			return false;
+
+		return true;
+	}
 
 	RESTINIO_NODISCARD
 	static constexpr bool
@@ -241,7 +274,7 @@ protected :
 };
 
 template< typename Setter >
-class token_t : public token_basic_t
+class token_t : public token_non_template_base_t
 {
 	Setter m_setter;
 
@@ -255,28 +288,13 @@ public:
 	try_parse(
 		source_t & from, Final_Value & to )
 	{
-		do
+		if( try_parse_value( from ) )
 		{
-			const auto ch = from.getch();
-			if( ch.m_eof )
-				break;
-
-			if( !is_token_char(ch.m_ch) )
-			{
-				from.putback();
-				break;
-			}
-
-			m_value += ch.m_ch;
+			m_setter( to, std::move(m_value) );
+			return true;
 		}
-		while( true );
-
-		if( m_value.empty() )
+		else
 			return false;
-
-		m_setter( to, std::move(m_value) );
-
-		return true;
 	}
 };
 
