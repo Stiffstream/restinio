@@ -29,12 +29,8 @@ namespace impl
 {
 
 template< typename T >
-struct index_sequence_for_tuple;
-
-template< typename... Vs >
-struct index_sequence_for_tuple< std::tuple<Vs...> > {
-	using type = std::index_sequence_for<Vs...>;
-};
+using index_sequence_for_tuple = 
+		std::make_index_sequence< std::tuple_size<T>::value >;
 
 template< typename Predicate >
 RESTINIO_NODISCARD
@@ -109,7 +105,7 @@ all_of( Tuple && tuple, Predicate && predicate )
 	return impl::perform_all_of(
 			std::forward<Predicate>(predicate),
 			std::forward<Tuple>(tuple),
-			typename impl::index_sequence_for_tuple<std::decay_t<Tuple>>::type{} );
+			typename impl::index_sequence_for_tuple<std::decay_t<Tuple>>{} );
 }
 
 //
@@ -123,7 +119,7 @@ any_of( Tuple && tuple, Predicate && predicate )
 	return impl::perform_any_of(
 			std::forward<Predicate>(predicate),
 			std::forward<Tuple>(tuple),
-			typename impl::index_sequence_for_tuple<std::decay_t<Tuple>>::type{} );
+			typename impl::index_sequence_for_tuple<std::decay_t<Tuple>>{} );
 }
 
 } /* namespace tuple_algorithms */
