@@ -341,21 +341,6 @@ public:
 
 } /* namespace rfc */
 
-template< typename Final_Value, typename... Parsers >
-RESTINIO_NODISCARD
-bool
-try_parse_item(
-	source_t & source,
-	Final_Value & receiver,
-	std::tuple< Parsers... > & parsers )
-{
-	return restinio::utils::tuple_algorithms::all_of(
-			parsers,
-			[&source, &receiver]( auto && one_parser ) {
-				return one_parser.try_parse( source, receiver );
-			} );
-}
-
 template<
 	typename Container_Adaptor,
 	typename Setter,
@@ -371,6 +356,20 @@ class repeat_t
 	Setter m_setter;
 
 	Subitems_Tuple m_subitems;
+
+	template< typename Final_Value >
+	RESTINIO_NODISCARD
+	bool
+	try_parse_item(
+		source_t & source,
+		Final_Value & receiver )
+	{
+		return restinio::utils::tuple_algorithms::all_of(
+				m_subitems,
+				[&source, &receiver]( auto && one_parser ) {
+					return one_parser.try_parse( source, receiver );
+				} );
+	}
 
 public :
 	template< typename Setter_Arg >
@@ -400,7 +399,7 @@ public :
 			value_type item;
 			const auto pos = from.current_position();
 
-			if( try_parse_item( from, item, m_subitems ) )
+			if( try_parse_item( from, item ) )
 			{
 				// Another item successfully parsed and should be stored.
 				Container_Adaptor::store( aggregate, std::move(item) );
@@ -423,6 +422,88 @@ public :
 	}
 };
 
+//FIXME: document this!
+template<
+	typename Subitems_Tuple >
+class alternatives_t
+{
+	Subitems_Tuple m_subitems;
+
+	template< typename Final_Value >
+	RESTINIO_NODISCARD
+	bool
+	try_parse_item(
+		source_t & source,
+		Final_Value & receiver )
+	{
+		return restinio::utils::tuple_algorithms::any_of(
+				m_subitems,
+				[&source, &receiver]( auto && one_parser ) {
+					return one_parser.try_parse( source, receiver );
+				} );
+	}
+
+public :
+	alternatives_t(
+		Subitems_Tuple && subitems )
+		:	m_subitems{ std::move(subitems) }
+	{}
+
+	template< typename Final_Value >
+	RESTINIO_NODISCARD
+	bool
+	try_parse(
+		source_t & from, Final_Value & to )
+	{
+		const auto pos = from.current_position();
+		if( try_parse_item( from, to ) )
+		{
+			return true;
+		}
+		else
+		{
+			// Nothing is parsed. Initial position should be restored.
+			from.backto( pos );
+			return false;
+		}
+	}
+};
+
+//FIXME: document this!
+template< typename Setter >
+class symbol_t
+{
+	char m_expected;
+	Setter m_setter;
+
+public:
+	template< typename Arg >
+	symbol_t(
+		char expected,
+		Arg && setter )
+		:	m_expected{ std::move(expected) }
+		,	m_setter{ std::forward<Arg>(setter) }
+	{}
+
+	template< typename Final_Value >
+	RESTINIO_NODISCARD
+	bool
+	try_parse(
+		source_t & from, Final_Value & to )
+	{
+		const auto ch = from.getch();
+		if( !ch.m_eof && ch.m_ch == m_expected )
+		{
+			m_setter( to );
+			return true;
+		}
+		else
+		{
+			from.putback();
+			return false;
+		}
+	}
+};
 } /* namespace impl */
 
 //FIXME: document this!
@@ -451,6 +532,7 @@ repeat(
 			};
 }
 
+//FIXME: document this!
 template<
 	typename Container,
 	template<class> class Container_Adaptor = default_container_adaptor,
@@ -467,6 +549,7 @@ any_occurences_of(
 			std::forward<Parsers>(parsers)... );
 }
 
+//FIXME: document this!
 template<
 	typename Container,
 	template<class> class Container_Adaptor = default_container_adaptor,
@@ -481,6 +564,31 @@ one_or_more_occurences_of(
 	return repeat< Container, Container_Adaptor >( 1u, N,
 			std::forward<Setter>(setter),
 			std::forward<Parsers>(parsers)... );
+}
+
+//FIXME: document this!
+template<
+	typename... Parsers >
+RESTINIO_NODISCARD
+auto
+alternatives(
+	Parsers &&... parsers )
+{
+	return impl::alternatives_t< std::tuple<Parsers...> >{
+				std::make_tuple( std::forward<Parsers>(parsers)... )
+			};
+}
+
+//FIXME: document this!
+template< typename Setter >
+RESTINIO_NODISCARD
+auto
+symbol( char expected, Setter && setter )
+{
+	return impl::symbol_t< std::decay_t<Setter> >{
+			expected,
+			std::forward<Setter>(setter)
+	};
 }
 
 namespace rfc

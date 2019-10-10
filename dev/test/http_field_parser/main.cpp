@@ -93,6 +93,65 @@ TEST_CASE( "Simple" , "[simple]" )
 	REQUIRE( "form-data" == result.second.m_subtype );
 }
 
+TEST_CASE( "Simple alternative" , "[simple][alternative]" )
+{
+	const auto do_parse = [](restinio::string_view_t what) {
+		return hfp::try_parse_field_value< media_type_t >( what,
+				hfp::alternatives(
+						hfp::rfc::token( media_type_t::type ),
+						hfp::symbol(
+								'*',
+								[]( auto & to ) { to.m_type = "*"; } )
+				),
+				hfp::rfc::delimiter( '/' ),
+				hfp::alternatives(
+						hfp::rfc::token( media_type_t::subtype ),
+						hfp::symbol(
+								'*',
+								[]( auto & to ) { to.m_subtype = "*"; } )
+				)
+		);
+	};
+
+	{
+		const char src[] = R"(multipart/form-data)";
+
+		const auto result = do_parse( src );
+
+		REQUIRE( result.first );
+		REQUIRE( "multipart" == result.second.m_type );
+		REQUIRE( "form-data" == result.second.m_subtype );
+	}
+
+	{
+		const char src[] = R"(*/form-data)";
+
+		const auto result = do_parse( src );
+
+		REQUIRE( result.first );
+		REQUIRE( "*" == result.second.m_type );
+		REQUIRE( "form-data" == result.second.m_subtype );
+	}
+
+	{
+		const char src[] = R"(multipart/*)";
+
+		const auto result = do_parse( src );
+
+		REQUIRE( result.first );
+		REQUIRE( "multipart" == result.second.m_type );
+		REQUIRE( "*" == result.second.m_subtype );
+	}
+
+	{
+		const char src[] = R"(;/*)";
+
+		const auto result = do_parse( src );
+
+		REQUIRE( !result.first );
+	}
+}
+
 TEST_CASE( "Simple content_type value", "[simple][content-type]" )
 {
 	const char src[] = R"(multipart/form-data; boundary=---12345)";
