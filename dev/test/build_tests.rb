@@ -7,6 +7,9 @@ require 'restinio/boost_helper.rb'
 
 MxxRu::Cpp::composite_target {
 
+	required_prj( "test/tuple_algorithms/prj.ut.rb" )
+	required_prj( "test/http_field_parser/prj.ut.rb" )
+
 	required_prj( "test/header/prj.ut.rb" )
 	required_prj( "test/default_constructed_settings/prj.ut.rb" )
 	required_prj( "test/ref_qualifiers_settings/prj.ut.rb" )

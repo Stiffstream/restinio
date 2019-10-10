@@ -13,6 +13,8 @@
 
 #include <restinio/impl/to_lower_lut.hpp>
 
+#include <restinio/utils/tuple_algorithms.hpp>
+
 #include <restinio/string_view.hpp>
 #include <restinio/compiler_features.hpp>
 
@@ -339,35 +341,6 @@ public:
 
 } /* namespace rfc */
 
-template< bool valid_index, std::size_t I >
-struct try_parse_item_impl
-{
-	template< typename Final_Value, typename... Parsers >
-	RESTINIO_NODISCARD
-	static bool apply(
-		source_t & source,
-		Final_Value & receiver,
-		std::tuple<Parsers...> & parsers )
-	{
-		if( std::get<I>(parsers).try_parse(source, receiver) )
-			return try_parse_item_impl< (I+1 < sizeof...(Parsers)), I+1 >::apply(
-					source, receiver, parsers );
-		else
-			return false;
-	}
-};
-
-template< std::size_t I >
-struct try_parse_item_impl< false, I >
-{
-	template< typename Final_Value, typename... Parsers >
-	RESTINIO_NODISCARD
-	static bool apply( source_t &, Final_Value &, std::tuple<Parsers...> & )
-	{
-		return true;
-	}
-};
-
 template< typename Final_Value, typename... Parsers >
 RESTINIO_NODISCARD
 bool
@@ -376,8 +349,11 @@ try_parse_item(
 	Final_Value & receiver,
 	std::tuple< Parsers... > & parsers )
 {
-	return try_parse_item_impl< (0 < sizeof...(Parsers)), 0 >::apply(
-			source, receiver, parsers );
+	return restinio::utils::tuple_algorithms::all_of(
+			parsers,
+			[&source, &receiver]( auto && one_parser ) {
+				return one_parser.try_parse( source, receiver );
+			} );
 }
 
 template<

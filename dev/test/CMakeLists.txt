@@ -1,6 +1,8 @@
 project(tests)
 
 add_subdirectory(catch_main)
+add_subdirectory(tuple_algorithms)
+add_subdirectory(http_field_parser)
 add_subdirectory(default_constructed_settings)
 add_subdirectory(ref_qualifiers_settings)
 add_subdirectory(header)
