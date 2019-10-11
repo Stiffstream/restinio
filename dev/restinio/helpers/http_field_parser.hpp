@@ -253,21 +253,10 @@ public :
 class token_non_template_base_t
 {
 protected :
-	//FIXME: is it really should be a class member?
-	std::string m_value;
-
-	void
-	reset()
-	{
-		m_value.clear();
-	}
-
 	RESTINIO_NODISCARD
 	bool
-	try_parse_value( source_t & from )
+	try_parse_value( source_t & from, std::string & accumulator )
 	{
-		reset();
-
 		do
 		{
 			const auto ch = from.getch();
@@ -280,11 +269,11 @@ protected :
 				break;
 			}
 
-			m_value += ch.m_ch;
+			accumulator += ch.m_ch;
 		}
 		while( true );
 
-		if( m_value.empty() )
+		if( accumulator.empty() )
 			return false;
 
 		return true;
@@ -329,9 +318,10 @@ public:
 	try_parse(
 		source_t & from, Final_Value & to )
 	{
-		if( try_parse_value( from ) )
+		std::string value;
+		if( try_parse_value( from, value ) )
 		{
-			m_setter( to, std::move(m_value) );
+			m_setter( to, std::move(value) );
 			return true;
 		}
 		else
