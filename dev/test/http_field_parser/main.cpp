@@ -6,83 +6,73 @@
 
 #include <restinio/helpers/http_field_parser.hpp>
 
-namespace hfp = restinio::http_field_parser;
+//#include <map>
 
-struct simple_setter_t
-{
-	template< typename T >
-	void operator()( T & to, T && from ) const noexcept(noexcept(to=from))
-	{
-		to = std::forward<T>(from);
-	}
-};
+namespace hfp = restinio::http_field_parser;
 
 struct media_type_t
 {
 	std::string m_type;
 	std::string m_subtype;
-
-	static void
-	type( media_type_t & to, std::string && what )
-	{
-		to.m_type = std::move(what);
-	}
-
-	static void
-	subtype( media_type_t & to, std::string && what )
-	{
-		to.m_subtype = std::move(what);
-	}
 };
 
-struct parameter_t
-{
-	std::string m_name;
-	std::string m_value;
-
-	static void
-	name( parameter_t & to, std::string && what )
-	{
-		to.m_name = std::move(what);
-	}
-
-	static void
-	value( parameter_t & to, std::string && what )
-	{
-		to.m_value = std::move(what);
-	}
-};
-
-struct content_type_parsed_value_t
+struct content_type_t
 {
 	media_type_t m_media_type;
-	std::vector< parameter_t > m_parameters;
-
-	static void
-	type( content_type_parsed_value_t & to, std::string && what )
-	{
-		media_type_t::type( to.m_media_type, std::move(what) );
-	}
-
-	static void
-	subtype( content_type_parsed_value_t & to, std::string && what )
-	{
-		media_type_t::subtype( to.m_media_type, std::move(what) );
-	}
-
-	static void
-	parameters( 
-		content_type_parsed_value_t & to,
-		std::vector< parameter_t > && params )
-	{
-		to.m_parameters = std::move(params);
-	}
+//	std::map< std::string, std::string > m_parameters;
 };
+
+TEST_CASE( "token >> skip", "[token][skip]" )
+{
+	struct empty_type_t {};
+
+	const auto result = hfp::try_parse_field_value< empty_type_t >(
+			"multipart",
+			hfp::rfc::token() >> hfp::skip() );
+
+	REQUIRE( result.first );
+}
+
+TEST_CASE( "token+symbol+token >> skip", "[token+symbol+token][skip]" )
+{
+	struct empty_type_t {};
+
+	{
+		const auto result = hfp::try_parse_field_value< empty_type_t >(
+				"multipart/form-data",
+				hfp::rfc::token() >> hfp::skip(),
+				hfp::symbol('/') >> hfp::skip(),
+				hfp::rfc::token() >> hfp::skip() );
+
+		REQUIRE( result.first );
+	}
+
+	{
+		const auto result = hfp::try_parse_field_value< empty_type_t >(
+				"multipart+form-data",
+				hfp::rfc::token() >> hfp::skip(),
+				hfp::symbol('/') >> hfp::skip(),
+				hfp::rfc::token() >> hfp::skip() );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = hfp::try_parse_field_value< empty_type_t >(
+				"multipart/",
+				hfp::rfc::token() >> hfp::skip(),
+				hfp::symbol('/') >> hfp::skip(),
+				hfp::rfc::token() >> hfp::skip() );
+
+		REQUIRE( !result.first );
+	}
+}
 
 TEST_CASE( "Simple" , "[simple]" )
 {
 	const char src[] = R"(multipart/form-data)";
 
+#if 0
 	const auto result = hfp::try_parse_field_value< media_type_t >( src,
 			hfp::rfc::token( media_type_t::type ),
 			hfp::rfc::delimiter( '/' ),
@@ -91,8 +81,10 @@ TEST_CASE( "Simple" , "[simple]" )
 	REQUIRE( result.first );
 	REQUIRE( "multipart" == result.second.m_type );
 	REQUIRE( "form-data" == result.second.m_subtype );
+#endif
 }
 
+#if 0
 TEST_CASE( "Simple alternative" , "[simple][alternative]" )
 {
 	const auto do_parse = [](restinio::string_view_t what) {
@@ -255,4 +247,6 @@ TEST_CASE( "Simple content_type value (trailing garbage)", "[simple][content-typ
 
 	REQUIRE( !result.first );
 }
+
+#endif
 

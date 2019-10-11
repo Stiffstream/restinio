@@ -27,23 +27,6 @@ namespace restinio
 namespace http_field_parser
 {
 
-//FIXME: document this!
-template< typename T >
-struct default_container_adaptor;
-
-template< typename T, typename... Args >
-struct default_container_adaptor< std::vector< T, Args... > >
-{
-	using container_type = std::vector< T, Args... >;
-	using value_type = typename container_type::value_type;
-
-	static void
-	store( container_type & to, value_type && what )
-	{
-		to.push_back( std::move(what) );
-	}
-};
-
 constexpr std::size_t N = std::numeric_limits<std::size_t>::max();
 
 namespace impl
@@ -165,32 +148,103 @@ current_content() const noexcept
 
 };
 
-//
-// try_parse_impl
-//
-template< typename Final_Value >
-RESTINIO_NODISCARD
-bool
-try_parse_impl( source_t & /*from*/, Final_Value & /*final_value*/ )
+template< typename P >
+class value_producer_t
 {
-	return true;
+	P m_producer;
+
+public :
+	value_producer_t( P && producer ) : m_producer{ std::move(producer) } {}
+
+	RESTINIO_NODISCARD
+	auto
+	try_parse( source_t & source )
+	{
+		return m_producer.try_parse( source );
+	}
+};
+
+template< typename C >
+class value_consumer_t
+{
+	C m_consumer;
+
+public :
+	value_consumer_t( C && consumer ) : m_consumer{ std::move(consumer) } {}
+
+	template< typename Target_Type, typename Value >
+	void
+	consume( Target_Type & target, Value && value )
+	{
+		m_consumer.consume( target, std::forward<Value>(value) );
+	}
+};
+
+template< typename P, typename C >
+class clause_t
+{
+	P m_producer;
+	C m_consumer;
+
+public :
+	clause_t( P && producer, C && consumer )
+		:	m_producer{ std::move(producer) }
+		,	m_consumer{ std::move(consumer) }
+	{}
+
+	template< typename Target_Type >
+	bool
+	try_process( source_t & from, Target_Type & target )
+	{
+		auto parse_result = m_producer.try_parse( from );
+		if( parse_result.first )
+		{
+			m_consumer.consume( target, std::move(parse_result.second) );
+			return true;
+		}
+		else
+			return false;
+	}
+};
+
+template< typename P, typename C >
+RESTINIO_NODISCARD
+clause_t< value_producer_t<P>, value_consumer_t<C> >
+operator>>( value_producer_t<P> producer, value_consumer_t<C> consumer )
+{
+	return { std::move(producer), std::move(consumer) };
 }
 
-template< typename Final_Value, typename H, typename ...Tail >
-RESTINIO_NODISCARD
-bool
-try_parse_impl(
-	source_t & from,
-	Final_Value & final_value,
-	H && what,
-	Tail && ...tail )
+template< typename Target_Type, typename Clauses_Tuple >
+class top_level_clause_t
 {
-	if( what.try_parse( from, final_value ) )
+	Clauses_Tuple m_clauses;
+
+public :
+	top_level_clause_t( Clauses_Tuple && clauses )
+		:	m_clauses{ std::move(clauses) }
+	{}
+
+	RESTINIO_NODISCARD
+	auto
+	try_process( source_t & from )
 	{
-		return try_parse_impl( from, final_value, std::forward<Tail>(tail)... );
+		std::pair< bool, Target_Type > result;
+
+		if( restinio::utils::tuple_algorithms::all_of(
+				m_clauses,
+				[&from, &result]( auto && one_clause ) {
+					return one_clause.try_process( from, result.second );
+				} ) )
+		{
+			result.first = true;
+		}
+		else
+			result.first = false;
+
+		return result;
 	}
-	return false;
-}
+};
 
 RESTINIO_NODISCARD
 bool
@@ -209,52 +263,10 @@ ensure_no_remaining_content(
 namespace rfc
 {
 
-class ows_t
+class token_t
 {
-public :
-	template< typename Final_Value >
 	RESTINIO_NODISCARD
-	bool
-	try_parse(
-		source_t & from, Final_Value & /*to*/ ) const noexcept
-	{
-		for( auto ch = from.getch();
-			!ch.m_eof && is_space(ch.m_ch);
-			ch = from.getch() )
-		{}
-
-		from.putback();
-
-		return true;
-	}
-};
-
-class delimiter_t
-{
-	char m_delimiter;
-
-public :
-	delimiter_t( char delimiter ) : m_delimiter{delimiter} {}
-
-	template< typename Final_Value >
-	RESTINIO_NODISCARD
-	bool
-	try_parse(
-		source_t & from, Final_Value & /*to*/ ) const noexcept
-	{
-		const auto ch = from.getch();
-		if( !ch.m_eof && m_delimiter == ch.m_ch )
-			return true;
-
-		return false;
-	}
-};
-
-class token_non_template_base_t
-{
-protected :
-	RESTINIO_NODISCARD
-	bool
+	static bool
 	try_parse_value( source_t & from, std::string & accumulator )
 	{
 		do
@@ -300,393 +312,120 @@ protected :
 				ch == '|' ||
 				ch == '~';
 	}
-};
 
-template< typename Setter >
-class token_t : public token_non_template_base_t
-{
-	Setter m_setter;
-
-public:
-	template< typename Arg >
-	token_t( Arg && setter ) : m_setter{ std::forward<Arg>(setter) }
-	{}
-
-	template< typename Final_Value >
+public :
 	RESTINIO_NODISCARD
-	bool
-	try_parse(
-		source_t & from, Final_Value & to )
+	auto
+	try_parse( source_t & from ) const
 	{
-		std::string value;
-		if( try_parse_value( from, value ) )
-		{
-			m_setter( to, std::move(value) );
-			return true;
-		}
-		else
-			return false;
+		std::pair< bool, std::string > result;
+		result.first = try_parse_value( from, result.second );
+		return result;
 	}
 };
 
 } /* namespace rfc */
 
-template<
-	typename Container_Adaptor,
-	typename Setter,
-	typename Subitems_Tuple >
-class repeat_t
-{
-	using container_type = typename Container_Adaptor::container_type;
-	using value_type = typename Container_Adaptor::value_type;
-
-	std::size_t m_min_occurences;
-	std::size_t m_max_occurences;
-
-	Setter m_setter;
-
-	Subitems_Tuple m_subitems;
-
-	template< typename Final_Value >
-	RESTINIO_NODISCARD
-	bool
-	try_parse_item(
-		source_t & source,
-		Final_Value & receiver )
-	{
-		return restinio::utils::tuple_algorithms::all_of(
-				m_subitems,
-				[&source, &receiver]( auto && one_parser ) {
-					return one_parser.try_parse( source, receiver );
-				} );
-	}
-
-public :
-	template< typename Setter_Arg >
-	repeat_t(
-		std::size_t min_occurences,
-		std::size_t max_occurences,
-		Setter_Arg && setter,
-		Subitems_Tuple && subitems )
-		:	m_min_occurences{ min_occurences }
-		,	m_max_occurences{ max_occurences }
-		,	m_setter{ std::forward<Setter_Arg>(setter) }
-		,	m_subitems{ std::move(subitems) }
-	{}
-
-	template< typename Final_Value >
-	RESTINIO_NODISCARD
-	bool
-	try_parse(
-		source_t & from, Final_Value & to )
-	{
-		container_type aggregate;
-
-		std::size_t count{};
-		bool failure_detected{ false };
-		for( ; !failure_detected && count < m_max_occurences; ++count )
-		{
-			value_type item;
-			const auto pos = from.current_position();
-
-			if( try_parse_item( from, item ) )
-			{
-				// Another item successfully parsed and should be stored.
-				Container_Adaptor::store( aggregate, std::move(item) );
-			}
-			else
-			{
-				from.backto( pos );
-				failure_detected = true;
-			}
-		}
-
-		if( count >= m_min_occurences )
-		{
-			m_setter( to, std::move(aggregate) );
-			return true;
-		}
-		else
-			return false;
-
-	}
-};
-
-//FIXME: document this!
-template<
-	typename Subitems_Tuple >
-class alternatives_t
-{
-	Subitems_Tuple m_subitems;
-
-	template< typename Final_Value >
-	RESTINIO_NODISCARD
-	bool
-	try_parse_item(
-		source_t & source,
-		Final_Value & receiver )
-	{
-		return restinio::utils::tuple_algorithms::any_of(
-				m_subitems,
-				[&source, &receiver]( auto && one_parser ) {
-					return one_parser.try_parse( source, receiver );
-				} );
-	}
-
-public :
-	alternatives_t(
-		Subitems_Tuple && subitems )
-		:	m_subitems{ std::move(subitems) }
-	{}
-
-	template< typename Final_Value >
-	RESTINIO_NODISCARD
-	bool
-	try_parse(
-		source_t & from, Final_Value & to )
-	{
-		const auto pos = from.current_position();
-		if( try_parse_item( from, to ) )
-		{
-			return true;
-		}
-		else
-		{
-			// Nothing is parsed. Initial position should be restored.
-			from.backto( pos );
-			return false;
-		}
-	}
-};
-
-//FIXME: document this!
-template< typename Setter >
+//
+// symbol_t
+//
 class symbol_t
 {
 	char m_expected;
-	Setter m_setter;
 
 public:
-	template< typename Arg >
-	symbol_t(
-		char expected,
-		Arg && setter )
-		:	m_expected{ std::move(expected) }
-		,	m_setter{ std::forward<Arg>(setter) }
-	{}
+	symbol_t( char expected ) : m_expected{ expected } {}
 
-	template< typename Final_Value >
 	RESTINIO_NODISCARD
-	bool
-	try_parse(
-		source_t & from, Final_Value & to )
+	auto
+	try_parse( source_t & from ) const noexcept
 	{
+		std::pair< bool, char > result;
+
 		const auto ch = from.getch();
 		if( !ch.m_eof && ch.m_ch == m_expected )
 		{
-			m_setter( to );
-			return true;
+			result.second = ch.m_ch;
+			result.first = true;
 		}
 		else
 		{
 			from.putback();
-			return false;
+			result.first = false;
 		}
+
+		return result;
 	}
 };
+
+//
+// any_value_skipper_t
+//
+struct any_value_skipper_t
+{
+	template< typename Target_Type, typename Value >
+	void
+	consume( Target_Type &, Value && ) const noexcept {}
+};
+
 } /* namespace impl */
 
-//FIXME: document this!
-template<
-	typename Container,
-	template<class> class Container_Adaptor = default_container_adaptor,
-	typename Setter,
-	typename... Parsers >
+//
+// symbol
+//
 RESTINIO_NODISCARD
-auto
-repeat(
-	std::size_t min_occurences,
-	std::size_t max_occurences,
-	Setter && setter,
-	Parsers &&... parsers )
-{
-	return impl::repeat_t<
-				Container_Adaptor<Container>,
-				std::decay_t<Setter>,
-				std::tuple<Parsers...>
-			>{
-				min_occurences,
-				max_occurences,
-				std::forward<Setter>(setter),
-				std::make_tuple( std::forward<Parsers>(parsers)... )
-			};
-}
+impl::value_producer_t< impl::symbol_t >
+symbol( char expected ) noexcept { return { impl::symbol_t{expected} }; }
 
-//FIXME: document this!
-template<
-	typename Container,
-	template<class> class Container_Adaptor = default_container_adaptor,
-	typename Setter,
-	typename... Parsers >
+//
+// skip
+//
 RESTINIO_NODISCARD
-auto
-any_occurences_of(
-	Setter && setter,
-	Parsers &&... parsers )
-{
-	return repeat< Container, Container_Adaptor >( 0u, N,
-			std::forward<Setter>(setter),
-			std::forward<Parsers>(parsers)... );
-}
-
-//FIXME: document this!
-template<
-	typename Container,
-	template<class> class Container_Adaptor = default_container_adaptor,
-	typename Setter,
-	typename... Parsers >
-RESTINIO_NODISCARD
-auto
-one_or_more_occurences_of(
-	Setter && setter,
-	Parsers &&... parsers )
-{
-	return repeat< Container, Container_Adaptor >( 1u, N,
-			std::forward<Setter>(setter),
-			std::forward<Parsers>(parsers)... );
-}
-
-//FIXME: document this!
-template<
-	typename... Parsers >
-RESTINIO_NODISCARD
-auto
-alternatives(
-	Parsers &&... parsers )
-{
-	return impl::alternatives_t< std::tuple<Parsers...> >{
-				std::make_tuple( std::forward<Parsers>(parsers)... )
-			};
-}
-
-//FIXME: document this!
-template< typename Setter >
-RESTINIO_NODISCARD
-auto
-symbol( char expected, Setter && setter )
-{
-	return impl::symbol_t< std::decay_t<Setter> >{
-			expected,
-			std::forward<Setter>(setter)
-	};
-}
+impl::value_consumer_t< impl::any_value_skipper_t >
+skip() noexcept { return { impl::any_value_skipper_t{} }; }
 
 namespace rfc
 {
 
+//
+// token
+//
 RESTINIO_NODISCARD
-auto
-ows() noexcept
+impl::value_producer_t< impl::rfc::token_t >
+token()
 {
-	return restinio::http_field_parser::impl::rfc::ows_t{};
-}
-
-RESTINIO_NODISCARD
-auto
-comma() noexcept
-{
-	return restinio::http_field_parser::impl::rfc::delimiter_t{ ',' };
-}
-
-RESTINIO_NODISCARD
-auto
-semicolon() noexcept
-{
-	return restinio::http_field_parser::impl::rfc::delimiter_t{ ';' };
-}
-
-RESTINIO_NODISCARD
-auto
-delimiter( char v ) noexcept
-{
-	return restinio::http_field_parser::impl::rfc::delimiter_t{ v };
-}
-
-template< typename Setter >
-RESTINIO_NODISCARD
-auto
-token( Setter && setter ) noexcept
-{
-	return restinio::http_field_parser::impl::rfc::token_t<Setter>{
-			std::forward<Setter>(setter)
-	};
+	return { impl::rfc::token_t{} };
 }
 
 } /* namespace rfc */
 
+
 //
 // try_parse_field_value
 //
-template< typename Final_Value, typename ...Fragments >
+template< typename Final_Value, typename ...Clauses >
 RESTINIO_NODISCARD
 auto
 try_parse_field_value(
 	string_view_t from,
-	Fragments && ...fragments )
+	Clauses && ...clauses )
 {
-	using result_pair_t = std::pair< bool, Final_Value >;
+	using clauses_tuple_t = std::tuple< Clauses... >;
 
 	impl::source_t source{ from };
 
-	result_pair_t result;
+	auto result = impl::top_level_clause_t< Final_Value, clauses_tuple_t >{
+			std::make_tuple( std::forward<Clauses>(clauses)... )
+		}.try_process( source );
 
-	Final_Value tmp_final_value;
-
-	if( impl::try_parse_impl(
-			source,
-			tmp_final_value,
-			std::forward<Fragments>(fragments)... ) &&
-		impl::ensure_no_remaining_content( source ) )
+	if( !result.first ||
+			!impl::ensure_no_remaining_content( source ) )
 	{
-		result.second = std::move(tmp_final_value);
-		result.first = true;
-	}
-	else
 		result.first = false;
+	}
 
 	return result;
 }
-
-#if 0
-//
-// try_parse_whole_field
-//
-template< typename ...Fragments >
-RESTINIO_NODISCARD
-auto
-try_parse_whole_field(
-	string_view_t from,
-	string_view_t field_name,
-	Fragments && ...fragments )
-{
-	impl::source_t source{ from };
-
-	using result_tuple_t = impl::meta::result_type_detector_t<Fragments...>;
-	result_tuple_t result;
-
-	std::get<0>(result) = false;
-
-	// Use index 1 because index 0 is used by boolean flag.
-	impl::try_parse_impl<1>(
-			result,
-			source,
-			impl::field_name_t{ field_name },
-			std::forward<Fragments>(fragments)... );
-
-	return result;
-}
-
-#endif
 
 } /* namespace http_field_parser */
 
