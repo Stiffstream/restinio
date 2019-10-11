@@ -297,6 +297,43 @@ public :
 	}
 };
 
+//
+// produce_t
+//
+template<
+	typename Target_Type,
+	typename Subitems_Tuple >
+class produce_t
+{
+	Subitems_Tuple m_subitems;
+
+public :
+	produce_t(
+		Subitems_Tuple && subitems )
+		:	m_subitems{ std::move(subitems) }
+	{}
+
+	RESTINIO_NODISCARD
+	auto
+	try_parse( source_t & from )
+	{
+		std::pair< bool, Target_Type > result;
+
+		const auto pos = from.current_position();
+
+		result.first = restinio::utils::tuple_algorithms::all_of(
+				m_subitems,
+				[&from, &result]( auto && one_clause ) {
+					return one_clause.try_process( from, result.second );
+				} );
+
+		if( !result.first )
+			from.backto( pos );
+
+		return result;
+	}
+};
+
 namespace rfc
 {
 
@@ -418,9 +455,8 @@ class field_setter_t
 public :
 	field_setter_t( pointer_t ptr ) noexcept : m_ptr{ptr} {}
 
-//FIXME: define noexcept here!
 	void
-	consume( C & to, F && value ) const
+	consume( C & to, F && value ) const noexcept(noexcept(std::declval<F>() = std::declval<F>()))
 	{
 		to.*m_ptr = std::move(value);
 	}
@@ -440,6 +476,27 @@ operator>>( value_producer_t<P> producer, F C::*member_ptr )
 }
 
 } /* namespace impl */
+
+//
+// produce
+//
+template< typename Target_Type, typename... Clauses >
+RESTINIO_NODISCARD
+auto
+produce( Clauses &&... clauses )
+{
+	using producer_type_t = impl::produce_t<
+			Target_Type,
+			std::tuple<Clauses...> >;
+
+	using result_type_t = impl::value_producer_t< producer_type_t >;
+
+	return result_type_t{
+			producer_type_t{
+					std::make_tuple(std::forward<Clauses>(clauses)...)
+			}
+	};
+}
 
 //
 // alternatives

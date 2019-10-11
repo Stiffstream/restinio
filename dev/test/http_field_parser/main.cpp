@@ -122,6 +122,52 @@ TEST_CASE( "alternatives with symbol", "[alternatives][symbol][into]" )
 	}
 }
 
+TEST_CASE( "produce media_type", "[produce][media_type]" )
+{
+	struct media_type_holder_t {
+		media_type_t m_media;
+	};
+
+	const auto try_parse = [](restinio::string_view_t what) {
+		return hfp::try_parse_field_value< media_type_holder_t >(
+				what,
+				hfp::produce< media_type_t >(
+					hfp::rfc::token() >> &media_type_t::m_type,
+					hfp::symbol('/') >> hfp::skip(),
+					hfp::rfc::token() >> &media_type_t::m_subtype
+				) >> &media_type_holder_t::m_media
+			);
+	};
+
+	{
+		const auto result = try_parse( "multipart/form-data" );
+		REQUIRE( result.first );
+		REQUIRE( "multipart" == result.second.m_media.m_type );
+		REQUIRE( "form-data" == result.second.m_media.m_subtype );
+	}
+
+	{
+		const auto result = try_parse( "*/form-data" );
+		REQUIRE( result.first );
+		REQUIRE( "*" == result.second.m_media.m_type );
+		REQUIRE( "form-data" == result.second.m_media.m_subtype );
+	}
+
+	{
+		const auto result = try_parse( "multipart/*" );
+		REQUIRE( result.first );
+		REQUIRE( "multipart" == result.second.m_media.m_type );
+		REQUIRE( "*" == result.second.m_media.m_subtype );
+	}
+
+	{
+		const auto result = try_parse( "*/*" );
+		REQUIRE( result.first );
+		REQUIRE( "*" == result.second.m_media.m_type );
+		REQUIRE( "*" == result.second.m_media.m_subtype );
+	}
+}
+
 #if 0
 TEST_CASE( "Simple alternative" , "[simple][alternative]" )
 {
