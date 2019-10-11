@@ -19,7 +19,7 @@ struct media_type_t
 struct content_type_t
 {
 	media_type_t m_media_type;
-//	std::map< std::string, std::string > m_parameters;
+	std::map< std::string, std::string > m_parameters;
 };
 
 TEST_CASE( "token >> skip", "[token][skip]" )
@@ -192,5 +192,112 @@ TEST_CASE( "simple repeat (vector target)", "[repeat][vector][simple]" )
 	REQUIRE( "value" == result.second.m_pairs[0].second );
 	REQUIRE( "name2" == result.second.m_pairs[1].first );
 	REQUIRE( "value2" == result.second.m_pairs[1].second );
+}
+
+TEST_CASE( "simple repeat (map target)", "[repeat][map][simple]" )
+{
+	struct pairs_holder_t
+	{
+		std::map< std::string, std::string > m_pairs;
+	};
+
+	const auto result = hfp::try_parse_field_value< pairs_holder_t >(
+			";name1=value;name2=value2",
+			hfp::repeat< std::map<std::string, std::string> >(
+				0, hfp::N,
+				hfp::symbol(';') >> hfp::skip(),
+				hfp::rfc::token() >> &std::pair<std::string, std::string>::first,
+				hfp::symbol('=') >> hfp::skip(),
+				hfp::rfc::token() >> &std::pair<std::string, std::string>::second
+			) >> &pairs_holder_t::m_pairs
+		);
+
+	REQUIRE( result.first );
+	REQUIRE( 2 == result.second.m_pairs.size() );
+
+	const std::map< std::string, std::string > expected{
+			{ "name1", "value" }, { "name2", "value2" }
+	};
+
+	REQUIRE( expected == result.second.m_pairs );
+}
+
+TEST_CASE( "simple content_type", "[content_type][simple]" )
+{
+	const auto try_parse = [](restinio::string_view_t what) {
+		return hfp::try_parse_field_value< content_type_t >(
+			what,
+
+			hfp::produce< media_type_t >(
+				hfp::rfc::token() >> &media_type_t::m_type,
+				hfp::symbol('/') >> hfp::skip(),
+				hfp::rfc::token() >> &media_type_t::m_subtype
+			) >> &content_type_t::m_media_type,
+
+			hfp::repeat< std::map<std::string, std::string> >(
+				0, hfp::N,
+				hfp::symbol(';') >> hfp::skip(),
+				hfp::rfc::ows() >> hfp::skip(),
+				hfp::rfc::token() >> &std::pair<std::string, std::string>::first,
+				hfp::symbol('=') >> hfp::skip(),
+				hfp::rfc::token() >> &std::pair<std::string, std::string>::second
+			) >> &content_type_t::m_parameters
+		);
+	};
+
+	{
+		const auto result = try_parse( "text/plain" );
+
+		REQUIRE( result.first );
+		REQUIRE( "text" == result.second.m_media_type.m_type );
+		REQUIRE( "plain" == result.second.m_media_type.m_subtype );
+		REQUIRE( result.second.m_parameters.empty() );
+	}
+
+	{
+		const auto result = try_parse( "text/plain; charset=utf-8" );
+
+		REQUIRE( result.first );
+		REQUIRE( "text" == result.second.m_media_type.m_type );
+		REQUIRE( "plain" == result.second.m_media_type.m_subtype );
+		REQUIRE( !result.second.m_parameters.empty() );
+
+		const std::map< std::string, std::string > expected{
+				{ "charset", "utf-8" }
+		};
+
+		REQUIRE( expected == result.second.m_parameters );
+	}
+
+	{
+		const auto result = try_parse( "text/plain;charset=utf-8" );
+
+		REQUIRE( result.first );
+		REQUIRE( "text" == result.second.m_media_type.m_type );
+		REQUIRE( "plain" == result.second.m_media_type.m_subtype );
+		REQUIRE( !result.second.m_parameters.empty() );
+
+		const std::map< std::string, std::string > expected{
+				{ "charset", "utf-8" }
+		};
+
+		REQUIRE( expected == result.second.m_parameters );
+	}
+
+	{
+		const auto result = try_parse(
+				"multipart/form-data; charset=utf-8; boundary=---123456" );
+
+		REQUIRE( result.first );
+		REQUIRE( "multipart" == result.second.m_media_type.m_type );
+		REQUIRE( "form-data" == result.second.m_media_type.m_subtype );
+		REQUIRE( !result.second.m_parameters.empty() );
+
+		const std::map< std::string, std::string > expected{
+				{ "charset", "utf-8" }, { "boundary", "---123456" }
+		};
+
+		REQUIRE( expected == result.second.m_parameters );
+	}
 }
 

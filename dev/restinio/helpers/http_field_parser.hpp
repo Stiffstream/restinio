@@ -18,6 +18,8 @@
 #include <restinio/string_view.hpp>
 #include <restinio/compiler_features.hpp>
 
+#include <restinio/optional.hpp>
+
 #include <iostream>
 #include <limits>
 #include <map>
@@ -49,7 +51,10 @@ template< typename K, typename V, typename... Args >
 struct default_container_adaptor< std::map< K, V, Args... > >
 {
 	using container_type = std::map< K, V, Args... >;
-	using value_type = typename container_type::value_type;
+	// NOTE: we can't use container_type::value_type here
+	// because value_type for std::map is std::pair<const K, V>,
+	// not just std::pair<K, V>,
+	using value_type = std::pair<K, V>;
 
 	static void
 	store( container_type & to, value_type && what )
@@ -428,6 +433,36 @@ public :
 namespace rfc
 {
 
+class ows_t
+{
+public :
+	RESTINIO_NODISCARD
+	auto
+	try_parse(
+		source_t & from ) const noexcept
+	{
+		std::pair< bool, optional_t<char> > result;
+
+		std::size_t extracted_spaces{};
+		for( auto ch = from.getch();
+			!ch.m_eof && is_space(ch.m_ch);
+			ch = from.getch() )
+		{
+			++extracted_spaces;
+		}
+
+		from.putback();
+
+		result.first = true;
+		if( extracted_spaces > 0u )
+		{
+			result.second = ' ';
+		}
+
+		return result;
+	}
+};
+
 class token_t
 {
 	RESTINIO_NODISCARD
@@ -668,17 +703,20 @@ namespace rfc
 {
 
 //
+// ows
+//
+RESTINIO_NODISCARD
+impl::value_producer_t< impl::rfc::ows_t >
+ows() noexcept { return { impl::rfc::ows_t{} }; }
+
+//
 // token
 //
 RESTINIO_NODISCARD
 impl::value_producer_t< impl::rfc::token_t >
-token()
-{
-	return { impl::rfc::token_t{} };
-}
+token() noexcept { return { impl::rfc::token_t{} }; }
 
 } /* namespace rfc */
-
 
 //
 // try_parse_field_value
