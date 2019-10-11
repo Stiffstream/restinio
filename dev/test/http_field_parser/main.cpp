@@ -81,6 +81,47 @@ TEST_CASE( "token+symbol+token >> into", "[token+symbol+token][into]" )
 	REQUIRE( "form-data" == result.second.m_subtype );
 }
 
+TEST_CASE( "alternatives with symbol", "[alternatives][symbol][into]" )
+{
+	const auto try_parse = [](restinio::string_view_t what) {
+		return hfp::try_parse_field_value< media_type_t >(
+			what,
+			hfp::rfc::token() >> &media_type_t::m_type,
+			hfp::alternatives<char>(
+				hfp::symbol('/'),
+				hfp::symbol('='),
+				hfp::symbol('[')
+			) >> hfp::skip(),
+			hfp::rfc::token() >> &media_type_t::m_subtype );
+	};
+
+	{
+		const auto result = try_parse( "multipart/form-data" );
+		REQUIRE( result.first );
+		REQUIRE( "multipart" == result.second.m_type );
+		REQUIRE( "form-data" == result.second.m_subtype );
+	}
+
+	{
+		const auto result = try_parse( "multipart=form-data" );
+		REQUIRE( result.first );
+		REQUIRE( "multipart" == result.second.m_type );
+		REQUIRE( "form-data" == result.second.m_subtype );
+	}
+
+	{
+		const auto result = try_parse( "multipart[form-data" );
+		REQUIRE( result.first );
+		REQUIRE( "multipart" == result.second.m_type );
+		REQUIRE( "form-data" == result.second.m_subtype );
+	}
+
+	{
+		const auto result = try_parse( "multipart(form-data" );
+		REQUIRE( !result.first );
+	}
+}
+
 #if 0
 TEST_CASE( "Simple alternative" , "[simple][alternative]" )
 {

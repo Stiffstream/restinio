@@ -260,6 +260,43 @@ ensure_no_remaining_content(
 	return true;
 }
 
+//
+// alternatives_t
+//
+template<
+	typename Target_Type,
+	typename Subitems_Tuple >
+class alternatives_t
+{
+	Subitems_Tuple m_subitems;
+
+public :
+	alternatives_t(
+		Subitems_Tuple && subitems )
+		:	m_subitems{ std::move(subitems) }
+	{}
+
+	RESTINIO_NODISCARD
+	auto
+	try_parse( source_t & from )
+	{
+		std::pair< bool, Target_Type > result;
+		result.first = false;
+
+		(void)restinio::utils::tuple_algorithms::any_of(
+				m_subitems,
+				[&from, &result]( auto && one_producer ) {
+					const auto pos = from.current_position();
+					result = one_producer.try_parse( from );
+					if( !result.first )
+						from.backto( pos );
+					return result.first;
+				} );
+
+		return result;
+	}
+};
+
 namespace rfc
 {
 
@@ -405,6 +442,27 @@ operator>>( value_producer_t<P> producer, F C::*member_ptr )
 } /* namespace impl */
 
 //
+// alternatives
+//
+template< typename Target_Type, typename... Producers >
+RESTINIO_NODISCARD
+auto
+alternatives( Producers &&... producers )
+{
+	using producer_type_t = impl::alternatives_t<
+			Target_Type,
+			std::tuple<Producers...> >;
+
+	using result_type_t = impl::value_producer_t< producer_type_t >;
+
+	return result_type_t{
+			producer_type_t{
+					std::make_tuple(std::forward<Producers>(producers)...)
+			}
+	};
+}
+
+//
 // symbol
 //
 RESTINIO_NODISCARD
@@ -412,7 +470,7 @@ impl::value_producer_t< impl::symbol_t >
 symbol( char expected ) noexcept { return { impl::symbol_t{expected} }; }
 
 //
-// to
+// into
 //
 template< typename F, typename C >
 RESTINIO_NODISCARD
