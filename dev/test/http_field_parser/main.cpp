@@ -68,20 +68,17 @@ TEST_CASE( "token+symbol+token >> skip", "[token+symbol+token][skip]" )
 	}
 }
 
-TEST_CASE( "Simple" , "[simple]" )
+TEST_CASE( "token+symbol+token >> into", "[token+symbol+token][into]" )
 {
-	const char src[] = R"(multipart/form-data)";
-
-#if 0
-	const auto result = hfp::try_parse_field_value< media_type_t >( src,
-			hfp::rfc::token( media_type_t::type ),
-			hfp::rfc::delimiter( '/' ),
-			hfp::rfc::token( media_type_t::subtype ) );
+	const auto result = hfp::try_parse_field_value< media_type_t >(
+			"multipart/form-data",
+			hfp::rfc::token() >> &media_type_t::m_type,
+			hfp::symbol('/') >> hfp::skip(),
+			hfp::rfc::token() >> &media_type_t::m_subtype );
 
 	REQUIRE( result.first );
 	REQUIRE( "multipart" == result.second.m_type );
 	REQUIRE( "form-data" == result.second.m_subtype );
-#endif
 }
 
 #if 0

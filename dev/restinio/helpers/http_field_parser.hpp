@@ -368,6 +368,40 @@ struct any_value_skipper_t
 	consume( Target_Type &, Value && ) const noexcept {}
 };
 
+//
+// field_setter_t
+//
+template< typename F, typename C >
+class field_setter_t
+{
+	using pointer_t = F C::*;
+
+	pointer_t m_ptr;
+
+public :
+	field_setter_t( pointer_t ptr ) noexcept : m_ptr{ptr} {}
+
+//FIXME: define noexcept here!
+	void
+	consume( C & to, F && value ) const
+	{
+		to.*m_ptr = std::move(value);
+	}
+};
+
+template< typename P, typename F, typename C >
+RESTINIO_NODISCARD
+clause_t< value_producer_t<P>, value_consumer_t< field_setter_t<F,C> > >
+operator>>( value_producer_t<P> producer, F C::*member_ptr )
+{
+	return {
+			std::move(producer),
+			value_consumer_t< field_setter_t<F,C> >{
+					field_setter_t<F,C>{ member_ptr }
+			}
+	};
+}
+
 } /* namespace impl */
 
 //
@@ -376,6 +410,17 @@ struct any_value_skipper_t
 RESTINIO_NODISCARD
 impl::value_producer_t< impl::symbol_t >
 symbol( char expected ) noexcept { return { impl::symbol_t{expected} }; }
+
+//
+// to
+//
+template< typename F, typename C >
+RESTINIO_NODISCARD
+impl::value_consumer_t< impl::field_setter_t<F, C> >
+into( F C::*ptr ) noexcept
+{
+	return { impl::field_setter_t<F, C>{ptr} };
+}
 
 //
 // skip
