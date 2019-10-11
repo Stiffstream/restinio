@@ -20,12 +20,43 @@
 
 #include <iostream>
 #include <limits>
+#include <map>
 
 namespace restinio
 {
 
 namespace http_field_parser
 {
+
+//FIXME: document this!
+template< typename T >
+struct default_container_adaptor;
+
+template< typename T, typename... Args >
+struct default_container_adaptor< std::vector< T, Args... > >
+{
+	using container_type = std::vector< T, Args... >;
+	using value_type = typename container_type::value_type;
+
+	static void
+	store( container_type & to, value_type && what )
+	{
+		to.push_back( std::move(what) );
+	}
+};
+
+template< typename K, typename V, typename... Args >
+struct default_container_adaptor< std::map< K, V, Args... > >
+{
+	using container_type = std::map< K, V, Args... >;
+	using value_type = typename container_type::value_type;
+
+	static void
+	store( container_type & to, value_type && what )
+	{
+		to.emplace( std::move(what) );
+	}
+};
 
 constexpr std::size_t N = std::numeric_limits<std::size_t>::max();
 
@@ -334,6 +365,66 @@ public :
 	}
 };
 
+//
+// repeat_t
+//
+template<
+	typename Container_Adaptor,
+	typename Subitems_Tuple >
+class repeat_t
+{
+	using container_type = typename Container_Adaptor::container_type;
+	using value_type = typename Container_Adaptor::value_type;
+
+	std::size_t m_min_occurences;
+	std::size_t m_max_occurences;
+
+	Subitems_Tuple m_subitems;
+
+public :
+	repeat_t(
+		std::size_t min_occurences,
+		std::size_t max_occurences,
+		Subitems_Tuple && subitems )
+		:	m_min_occurences{ min_occurences }
+		,	m_max_occurences{ max_occurences }
+		,	m_subitems{ std::move(subitems) }
+	{}
+
+	RESTINIO_NODISCARD
+	auto
+	try_parse( source_t & from )
+	{
+		std::pair< bool, container_type > result;
+
+		std::size_t count{};
+		bool failure_detected{ false };
+		for(; !failure_detected && count != m_max_occurences; ++count )
+		{
+			value_type item;
+
+			const auto pos = from.current_position();
+			failure_detected = !restinio::utils::tuple_algorithms::all_of(
+					m_subitems,
+					[&from, &item]( auto && one_clause ) {
+						return one_clause.try_process( from, item );
+					} );
+
+			if( !failure_detected )
+			{
+				// Another item successfully parsed and should be stored.
+				Container_Adaptor::store( result.second, std::move(item) );
+			}
+			else
+				from.backto( pos );
+		}
+
+		result.first = count >= m_min_occurences;
+
+		return result;
+	}
+};
+
 namespace rfc
 {
 
@@ -515,6 +606,35 @@ alternatives( Producers &&... producers )
 	return result_type_t{
 			producer_type_t{
 					std::make_tuple(std::forward<Producers>(producers)...)
+			}
+	};
+}
+
+//
+// repeat
+//
+template<
+	typename Container,
+	template<class C> class Container_Adaptor = default_container_adaptor,
+	typename... Clauses >
+RESTINIO_NODISCARD
+auto
+repeat(
+	std::size_t min_occurences,
+	std::size_t max_occurences,
+	Clauses &&... clauses )
+{
+	using producer_type_t = impl::repeat_t<
+			default_container_adaptor<Container>,
+			std::tuple<Clauses...> >;
+
+	using result_type_t = impl::value_producer_t< producer_type_t >;
+
+	return result_type_t{
+			producer_type_t{
+					min_occurences,
+					max_occurences,
+					std::make_tuple(std::forward<Clauses>(clauses)...)
 			}
 	};
 }
