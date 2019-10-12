@@ -91,12 +91,18 @@ operator!=( const character_t & a, const character_t & b ) noexcept
 	return (a.m_eof != b.m_eof || a.m_ch != b.m_ch);
 }
 
+constexpr char SP = ' ';
+constexpr char	HTAB = '\x09';
+
 //
 // is_space
 //
 RESTINIO_NODISCARD
 inline constexpr bool
-is_space( const char ch ) noexcept { return ch == ' ' || ch == '\x09'; }
+is_space( const char ch ) noexcept
+{
+	return ch == SP || ch == HTAB;
+}
 
 //
 // is_vchar
@@ -107,6 +113,37 @@ is_vchar( const char ch ) noexcept
 {
 	return (ch >= '\x41' && ch <= '\x5A') ||
 			(ch >= '\x61' && ch <= '\x7A');
+}
+
+//
+// is_obs_text
+//
+RESTINIO_NODISCARD
+inline constexpr bool
+is_obs_text( const char ch ) noexcept
+{
+	constexpr unsigned short left = 0x80u;
+	constexpr unsigned short right = 0xFFu;
+
+	const unsigned short t = static_cast<unsigned short>(
+			static_cast<unsigned char>(ch));
+
+	return (t >= left && t <= right);
+}
+
+//
+// is_qdtext
+//
+RESTINIO_NODISCARD
+inline constexpr bool
+is_qdtext( const char ch ) noexcept
+{
+	return ch == SP ||
+			ch == HTAB ||
+			ch == '!' ||
+			(ch >= '\x23' && ch <= '\x5B') ||
+			(ch >= '\x5D' && ch <= '\x7E') ||
+			is_obs_text( ch );
 }
 
 //
@@ -463,6 +500,9 @@ public :
 	}
 };
 
+//
+// token_t
+//
 class token_t
 {
 	RESTINIO_NODISCARD
@@ -520,6 +560,69 @@ public :
 	{
 		std::pair< bool, std::string > result;
 		result.first = try_parse_value( from, result.second );
+		return result;
+	}
+};
+
+//
+// quoted_string_t
+//
+class quoted_string_t
+{
+	RESTINIO_NODISCARD
+	static bool
+	try_parse_value( source_t & from, std::string & accumulator )
+	{
+		bool second_quote_extracted{ false };
+		do
+		{
+			const auto ch = from.getch();
+			if( ch.m_eof )
+				break;
+
+			if( '"' == ch.m_ch )
+				second_quote_extracted = true;
+			else if( '\\' == ch.m_ch )
+			{
+				const auto next = from.getch();
+				if( next.m_eof )
+					break;
+				else if( SP == next.m_ch || HTAB == next.m_ch ||
+						is_vchar( next.m_ch ) ||
+						is_obs_text( next.m_ch ) )
+				{
+					accumulator += next.m_ch;
+				}
+				else
+					break;
+			}
+			else if( is_qdtext( ch.m_ch ) )
+				accumulator += ch.m_ch;
+			else
+				break;
+		}
+		while( !second_quote_extracted );
+
+		return second_quote_extracted;
+	}
+
+public :
+	RESTINIO_NODISCARD
+	auto
+	try_parse( source_t & from ) const
+	{
+		std::pair< bool, std::string > result;
+		result.first = false;
+
+		const auto ch = from.getch();
+		if( !ch.m_eof )
+		{
+			if( '"' == ch.m_ch )
+				result.first = try_parse_value( from, result.second );
+			else
+				from.putback();
+		}
+
 		return result;
 	}
 };
@@ -715,6 +818,13 @@ ows() noexcept { return { impl::rfc::ows_t{} }; }
 RESTINIO_NODISCARD
 impl::value_producer_t< impl::rfc::token_t >
 token() noexcept { return { impl::rfc::token_t{} }; }
+
+//
+// quoted_string
+//
+RESTINIO_NODISCARD
+impl::value_producer_t< impl::rfc::quoted_string_t >
+quoted_string() noexcept { return { impl::rfc::quoted_string_t{} }; }
 
 } /* namespace rfc */
 
