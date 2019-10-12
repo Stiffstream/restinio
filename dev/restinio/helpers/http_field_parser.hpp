@@ -229,6 +229,11 @@ class value_producer_t
 public :
 	value_producer_t( P && producer ) : m_producer{ std::move(producer) } {}
 
+	P giveaway() noexcept(noexcept(P{std::move(std::declval<P>())}))
+	{
+		return std::move(m_producer);
+	}
+
 	RESTINIO_NODISCARD
 	auto
 	try_parse( source_t & source )
@@ -244,19 +249,24 @@ struct transformer_tag
 	using result_type = Result_Type;
 };
 
-template< typename Transformer >
+template< typename T >
 class value_transformer_t
 {
-	Transformer m_transformer;
+	T m_transformer;
 
 public :
-	using incoming_type = typename Transformer::incoming_type;
-	using result_type = typename Transformer::result_type;
+	using incoming_type = typename T::incoming_type;
+	using result_type = typename T::result_type;
 
 	value_transformer_t(
-		Transformer && transformer )
+		T && transformer )
 		:	m_transformer{ std::move(transformer) }
 	{}
+
+	T giveaway() noexcept(noexcept(T{std::move(std::declval<T>())}))
+	{
+		return std::move(m_transformer);
+	}
 
 	RESTINIO_NODISCARD
 	auto
@@ -306,14 +316,12 @@ operator>>(
 	value_producer_t<P> producer,
 	value_transformer_t<T> transformer )
 {
-	using transformator_type = transformed_value_producer_t<
-			value_producer_t<P>,
-			value_transformer_t<T> >;
+	using transformator_type = transformed_value_producer_t< P, T >;
 	using result_type = value_producer_t< transformator_type >;
 
 	return result_type{
 			transformator_type{
-					std::move(producer), std::move(transformer)
+					producer.giveaway(), transformer.giveaway()
 			}
 	};
 };
@@ -325,6 +333,11 @@ class value_consumer_t
 
 public :
 	value_consumer_t( C && consumer ) : m_consumer{ std::move(consumer) } {}
+
+	C giveaway() noexcept(noexcept(C{std::move(std::declval<C>())}))
+	{
+		return std::move(m_consumer);
+	}
 
 	template< typename Target_Type, typename Value >
 	void
@@ -363,10 +376,10 @@ public :
 
 template< typename P, typename C >
 RESTINIO_NODISCARD
-clause_t< value_producer_t<P>, value_consumer_t<C> >
+clause_t< P, C >
 operator>>( value_producer_t<P> producer, value_consumer_t<C> consumer )
 {
-	return { std::move(producer), std::move(consumer) };
+	return { producer.giveaway(), consumer.giveaway() };
 }
 
 template< typename Target_Type, typename Clauses_Tuple >
