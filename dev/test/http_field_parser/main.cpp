@@ -229,21 +229,26 @@ TEST_CASE( "simple content_type", "[content_type][simple]" )
 			what,
 
 			hfp::produce< media_type_t >(
-				hfp::rfc::token() >> &media_type_t::m_type,
+				hfp::rfc::token() >> hfp::to_lower() >> &media_type_t::m_type,
 				hfp::symbol('/') >> hfp::skip(),
-				hfp::rfc::token() >> &media_type_t::m_subtype
+				hfp::rfc::token() >> hfp::to_lower() >> &media_type_t::m_subtype
 			) >> &content_type_t::m_media_type,
 
 			hfp::repeat< std::map<std::string, std::string> >(
 				0, hfp::N,
 				hfp::symbol(';') >> hfp::skip(),
 				hfp::rfc::ows() >> hfp::skip(),
-				hfp::rfc::token() >> &std::pair<std::string, std::string>::first,
+
+				hfp::rfc::token() >> hfp::to_lower() >>
+						&std::pair<std::string, std::string>::first,
+
 				hfp::symbol('=') >> hfp::skip(),
+
 				hfp::alternatives< std::string >(
-					hfp::rfc::token(),
+					hfp::rfc::token() >> hfp::to_lower(),
 					hfp::rfc::quoted_string()
 				) >> &std::pair<std::string, std::string>::second
+
 			) >> &content_type_t::m_parameters
 		);
 	};
@@ -306,6 +311,38 @@ TEST_CASE( "simple content_type", "[content_type][simple]" )
 	{
 		const auto result = try_parse(
 				R"(multipart/form-data; charset=utf-8; boundary="Text with space!")" );
+
+		REQUIRE( result.first );
+		REQUIRE( "multipart" == result.second.m_media_type.m_type );
+		REQUIRE( "form-data" == result.second.m_media_type.m_subtype );
+		REQUIRE( !result.second.m_parameters.empty() );
+
+		const std::map< std::string, std::string > expected{
+				{ "charset", "utf-8" }, { "boundary", "Text with space!" }
+		};
+
+		REQUIRE( expected == result.second.m_parameters );
+	}
+
+	{
+		const auto result = try_parse(
+				R"(multipart/form-data; charset=utf-8; boundary="Text with space!")" );
+
+		REQUIRE( result.first );
+		REQUIRE( "multipart" == result.second.m_media_type.m_type );
+		REQUIRE( "form-data" == result.second.m_media_type.m_subtype );
+		REQUIRE( !result.second.m_parameters.empty() );
+
+		const std::map< std::string, std::string > expected{
+				{ "charset", "utf-8" }, { "boundary", "Text with space!" }
+		};
+
+		REQUIRE( expected == result.second.m_parameters );
+	}
+
+	{
+		const auto result = try_parse(
+				R"(MultiPart/Form-Data; CharSet=utf-8; BOUNDARY="Text with space!")" );
 
 		REQUIRE( result.first );
 		REQUIRE( "multipart" == result.second.m_media_type.m_type );

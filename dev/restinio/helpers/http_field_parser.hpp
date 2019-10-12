@@ -237,6 +237,87 @@ public :
 	}
 };
 
+template< typename Incoming_Type, typename Result_Type >
+struct transformer_tag
+{
+	using incoming_type = Incoming_Type;
+	using result_type = Result_Type;
+};
+
+template< typename Transformer >
+class value_transformer_t
+{
+	Transformer m_transformer;
+
+public :
+	using incoming_type = typename Transformer::incoming_type;
+	using result_type = typename Transformer::result_type;
+
+	value_transformer_t(
+		Transformer && transformer )
+		:	m_transformer{ std::move(transformer) }
+	{}
+
+	RESTINIO_NODISCARD
+	auto
+	transform( incoming_type && input )
+	{
+		return m_transformer.transform( std::move(input) );
+	}
+};
+
+template< typename Producer, typename Transformer >
+class transformed_value_producer_t
+{
+	Producer m_producer;
+	Transformer m_transformer;
+
+public :
+	using result_type = typename Transformer::result_type;
+
+	transformed_value_producer_t(
+		Producer && producer,
+		Transformer && transformer )
+		:	m_producer{ std::move(producer) }
+		,	m_transformer{ std::move(transformer) }
+	{}
+
+	RESTINIO_NODISCARD
+	auto
+	try_parse( source_t & source )
+	{
+		std::pair< bool, result_type > result;
+		
+		auto producer_result = m_producer.try_parse( source );
+		result.first = producer_result.first;
+		if( producer_result.first )
+		{
+			result.second = m_transformer.transform(
+					std::move(producer_result.second) );
+		}
+
+		return result;
+	}
+};
+
+template< typename P, typename T >
+auto
+operator>>(
+	value_producer_t<P> producer,
+	value_transformer_t<T> transformer )
+{
+	using transformator_type = transformed_value_producer_t<
+			value_producer_t<P>,
+			value_transformer_t<T> >;
+	using result_type = value_producer_t< transformator_type >;
+
+	return result_type{
+			transformator_type{
+					std::move(producer), std::move(transformer)
+			}
+	};
+};
+
 template< typename C >
 class value_consumer_t
 {
@@ -704,6 +785,27 @@ operator>>( value_producer_t<P> producer, F C::*member_ptr )
 	};
 }
 
+//
+// to_lower_t
+//
+struct to_lower_t : public transformer_tag< std::string, std::string >
+{
+	RESTINIO_NODISCARD
+	result_type
+	transform( incoming_type && input ) const noexcept
+	{
+		result_type result{ std::move(input) };
+		std::transform( result.begin(), result.end(), result.begin(),
+			[]( unsigned char ch ) -> char {
+				return static_cast<char>(
+						restinio::impl::to_lower_lut<unsigned char>()[ch]
+				);
+			} );
+
+		return result;
+	}
+};
+
 } /* namespace impl */
 
 //
@@ -801,6 +903,13 @@ into( F C::*ptr ) noexcept
 RESTINIO_NODISCARD
 impl::value_consumer_t< impl::any_value_skipper_t >
 skip() noexcept { return { impl::any_value_skipper_t{} }; }
+
+//
+// to_lower
+//
+RESTINIO_NODISCARD
+impl::value_transformer_t< impl::to_lower_t >
+to_lower() noexcept { return { impl::to_lower_t{} }; }
 
 namespace rfc
 {
