@@ -31,6 +31,9 @@ namespace http_field_parser
 {
 
 //FIXME: document this!
+struct nothing_t {};
+
+//FIXME: document this!
 template< typename T >
 struct default_container_adaptor;
 
@@ -61,6 +64,16 @@ struct default_container_adaptor< std::map< K, V, Args... > >
 	{
 		to.emplace( std::move(what) );
 	}
+};
+
+template<>
+struct default_container_adaptor< nothing_t >
+{
+	using container_type = nothing_t;
+	using value_type = nothing_t;
+
+	static void
+	store( container_type &, value_type && ) noexcept {}
 };
 
 constexpr std::size_t N = std::numeric_limits<std::size_t>::max();
@@ -822,6 +835,25 @@ struct as_result_consumer_t
 };
 
 //
+// custom_consumer_t
+//
+template< typename C >
+class custom_consumer_t
+{
+	C m_consumer;
+
+public :
+	custom_consumer_t( C && consumer ) : m_consumer{std::move(consumer)} {}
+
+	template< typename Target_Type, typename Value >
+	void
+	consume( Target_Type & dest, Value && src ) const
+	{
+		m_consumer( dest, std::forward<Value>(src) );
+	}
+};
+
+//
 // field_setter_t
 //
 template< typename F, typename C >
@@ -955,7 +987,7 @@ repeat(
 	Clauses &&... clauses )
 {
 	using producer_type_t = impl::repeat_t<
-			default_container_adaptor<Container>,
+			Container_Adaptor<Container>,
 			std::tuple<Clauses...> >;
 
 	using result_type_t = impl::value_producer_t< producer_type_t >;
@@ -1000,6 +1032,21 @@ skip() noexcept { return { impl::any_value_skipper_t{} }; }
 RESTINIO_NODISCARD
 impl::value_consumer_t< impl::as_result_consumer_t >
 as_result() noexcept { return { impl::as_result_consumer_t{} }; }
+
+//
+// custom_consumer
+//
+template< typename F >
+RESTINIO_NODISCARD
+auto
+custom_consumer( F consumer )
+{
+	using actual_consumer_t = impl::custom_consumer_t< F >;
+
+	return impl::value_consumer_t< actual_consumer_t >{
+			actual_consumer_t{ std::move(consumer) }
+	};
+}
 
 //
 // to_lower

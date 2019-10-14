@@ -5,6 +5,7 @@
 #include <catch2/catch.hpp>
 
 #include <restinio/helpers/http_field_parser.hpp>
+#include <restinio/helpers/http_field_parsers/cache-control.hpp>
 
 //#include <map>
 
@@ -439,6 +440,22 @@ TEST_CASE( "sequence with optional", "[optional][simple]" )
 		REQUIRE( "four" == result.second.m_params[3].first );
 		REQUIRE( result.second.m_params[3].second );
 		REQUIRE( "four = 4" == *(result.second.m_params[3].second) );
+	}
+}
+
+TEST_CASE( "Cache-Control Field", "[cache-control]" )
+{
+	using namespace restinio::http_field_parsers;
+
+	{
+		const auto result = cache_control_value_t::try_parse(
+				"max-age=5, no-transform, only-if-cached, min-fresh=20" );
+
+		REQUIRE( result.first );
+
+		for( const auto & v : result.second.m_directives )
+			std::cout << "--- '" << v.first << "' => '"
+					<< (v.second ? *v.second : std::string{}) << "'" << std::endl;
 	}
 }
 
