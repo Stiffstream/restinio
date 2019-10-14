@@ -22,6 +22,15 @@ struct content_type_t
 	std::map< std::string, std::string > m_parameters;
 };
 
+struct value_with_opt_params_t
+{
+	using param_t = std::pair< std::string, restinio::optional_t<std::string> >;
+	using param_storage_t = std::vector< param_t >;
+
+	std::string m_value;
+	param_storage_t m_params;
+};
+
 TEST_CASE( "token >> skip", "[token][skip]" )
 {
 	struct empty_type_t {};
@@ -354,6 +363,82 @@ TEST_CASE( "simple content_type", "[content_type][simple]" )
 		};
 
 		REQUIRE( expected == result.second.m_parameters );
+	}
+}
+
+TEST_CASE( "sequence with optional", "[optional][simple]" )
+{
+	const auto try_parse = [](restinio::string_view_t what) {
+		return hfp::try_parse_field_value< value_with_opt_params_t >(
+			what,
+
+			hfp::rfc::token() >> hfp::to_lower() >>
+					&value_with_opt_params_t::m_value,
+
+			hfp::repeat< value_with_opt_params_t::param_storage_t >(
+				0, hfp::N,
+				hfp::symbol(';') >> hfp::skip(),
+				hfp::rfc::ows() >> hfp::skip(),
+
+				hfp::rfc::token() >> hfp::to_lower() >>
+						&value_with_opt_params_t::param_t::first,
+
+				hfp::optional< std::string >(
+					hfp::symbol('=') >> hfp::skip(),
+
+					hfp::alternatives< std::string >(
+						hfp::rfc::token() >> hfp::to_lower(),
+						hfp::rfc::quoted_string()
+					) >> hfp::as_result()
+
+				) >> &value_with_opt_params_t::param_t::second
+
+			) >> &value_with_opt_params_t::m_params
+		);
+	};
+
+	{
+		const auto result = try_parse("just-value");
+
+		REQUIRE( result.first );
+		REQUIRE( "just-value" == result.second.m_value );
+		REQUIRE( result.second.m_params.empty() );
+	}
+
+	{
+		const auto result = try_parse("just-value;one");
+
+		REQUIRE( result.first );
+		REQUIRE( "just-value" == result.second.m_value );
+
+		REQUIRE( 1 == result.second.m_params.size() );
+
+		REQUIRE( "one" == result.second.m_params[0].first );
+		REQUIRE( !result.second.m_params[0].second );
+	}
+
+	{
+		const auto result = try_parse("just-value;one; two=two;three;   "
+				"four=\"four = 4\"");
+
+		REQUIRE( result.first );
+		REQUIRE( "just-value" == result.second.m_value );
+
+		REQUIRE( 4 == result.second.m_params.size() );
+
+		REQUIRE( "one" == result.second.m_params[0].first );
+		REQUIRE( !result.second.m_params[0].second );
+
+		REQUIRE( "two" == result.second.m_params[1].first );
+		REQUIRE( result.second.m_params[1].second );
+		REQUIRE( "two" == *(result.second.m_params[1].second) );
+
+		REQUIRE( "three" == result.second.m_params[2].first );
+		REQUIRE( !result.second.m_params[2].second );
+
+		REQUIRE( "four" == result.second.m_params[3].first );
+		REQUIRE( result.second.m_params[3].second );
+		REQUIRE( "four = 4" == *(result.second.m_params[3].second) );
 	}
 }
 

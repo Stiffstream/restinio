@@ -502,6 +502,48 @@ public :
 };
 
 //
+// optional_producer_t
+//
+template<
+	typename Target_Type,
+	typename Subitems_Tuple >
+class optional_producer_t
+{
+	Subitems_Tuple m_subitems;
+
+public :
+	optional_producer_t(
+		Subitems_Tuple && subitems )
+		:	m_subitems{ std::move(subitems) }
+	{}
+
+	RESTINIO_NODISCARD
+	auto
+	try_parse( source_t & from )
+	{
+		Target_Type tmp_value;
+
+		const auto pos = from.current_position();
+
+		const bool parsed = restinio::utils::tuple_algorithms::all_of(
+				m_subitems,
+				[&from, &tmp_value]( auto && one_clause ) {
+					return one_clause.try_process( from, tmp_value );
+				} );
+
+		if( !parsed )
+			from.backto( pos );
+
+		std::pair< bool, restinio::optional_t<Target_Type> > result;
+		result.first = true;
+		if( parsed )
+			result.second = std::move(tmp_value);
+
+		return result;
+	}
+};
+
+//
 // repeat_t
 //
 template<
@@ -766,6 +808,20 @@ struct any_value_skipper_t
 };
 
 //
+// as_result_consumer_t
+//
+struct as_result_consumer_t
+{
+	template< typename Target_Type, typename Value >
+	void
+	consume( Target_Type & dest, Value && src ) const
+		noexcept(noexcept(dest=std::forward<Value>(src)))
+	{
+		dest = std::forward<Value>(src);
+	}
+};
+
+//
 // field_setter_t
 //
 template< typename F, typename C >
@@ -864,6 +920,27 @@ alternatives( Producers &&... producers )
 }
 
 //
+// optional
+//
+template< typename Target_Type, typename... Clauses >
+RESTINIO_NODISCARD
+auto
+optional( Clauses &&... clauses )
+{
+	using producer_type_t = impl::optional_producer_t<
+			Target_Type,
+			std::tuple<Clauses...> >;
+
+	using result_type_t = impl::value_producer_t< producer_type_t >;
+
+	return result_type_t{
+			producer_type_t{
+					std::make_tuple(std::forward<Clauses>(clauses)...)
+			}
+	};
+}
+
+//
 // repeat
 //
 template<
@@ -916,6 +993,13 @@ into( F C::*ptr ) noexcept
 RESTINIO_NODISCARD
 impl::value_consumer_t< impl::any_value_skipper_t >
 skip() noexcept { return { impl::any_value_skipper_t{} }; }
+
+//
+// as_result
+//
+RESTINIO_NODISCARD
+impl::value_consumer_t< impl::as_result_consumer_t >
+as_result() noexcept { return { impl::as_result_consumer_t{} }; }
 
 //
 // to_lower
