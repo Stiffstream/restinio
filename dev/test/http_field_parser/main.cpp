@@ -443,6 +443,159 @@ TEST_CASE( "sequence with optional", "[optional][simple]" )
 	}
 }
 
+TEST_CASE( "qvalue", "[qvalue]" )
+{
+	using namespace restinio::http_field_parser;
+
+	const auto try_parse = []( restinio::string_view_t what ) {
+		return try_parse_field_value< rfc::qvalue_t >( what,
+			rfc::qvalue() >> as_result() );
+	};
+
+	{
+		const auto result = try_parse( "" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( "Q" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( "q" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( "A" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( "A=" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( "Q=" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( "q=" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( "Q=0" );
+
+		REQUIRE( result.first );
+		REQUIRE( rfc::qvalue_t{0u} == result.second );
+	}
+
+	{
+		const auto result = try_parse( "q=0" );
+
+		REQUIRE( result.first );
+		REQUIRE( rfc::qvalue_t{0u} == result.second );
+	}
+
+	{
+		const auto result = try_parse( "Q=1" );
+
+		REQUIRE( result.first );
+		REQUIRE( rfc::qvalue_t{1000u} == result.second );
+	}
+
+	{
+		const auto result = try_parse( "q=1" );
+
+		REQUIRE( result.first );
+		REQUIRE( rfc::qvalue_t{1000u} == result.second );
+	}
+
+	{
+		const auto result = try_parse( "Q=0 " );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( "q=0 " );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( "Q=1 " );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( "q=1 " );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( "q=0." );
+
+		REQUIRE( result.first );
+		REQUIRE( rfc::qvalue_t{0u} == result.second );
+	}
+
+	{
+		const auto result = try_parse( "q=1." );
+
+		REQUIRE( result.first );
+		REQUIRE( rfc::qvalue_t{1000u} == result.second );
+	}
+
+	{
+		const auto result = try_parse( "q=0.000" );
+
+		REQUIRE( result.first );
+		REQUIRE( rfc::qvalue_t{0u} == result.second );
+	}
+
+	{
+		const auto result = try_parse( "q=1.000" );
+
+		REQUIRE( result.first );
+		REQUIRE( rfc::qvalue_t{1000u} == result.second );
+	}
+
+	{
+		const auto result = try_parse( "q=0.001" );
+
+		REQUIRE( result.first );
+		REQUIRE( rfc::qvalue_t{1u} == result.second );
+	}
+
+	{
+		const auto result = try_parse( "q=1.001" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( "q=0.321" );
+
+		REQUIRE( result.first );
+		REQUIRE( rfc::qvalue_t{321u} == result.second );
+		REQUIRE( "0.321" == result.second.as_string() );
+	}
+}
+
 TEST_CASE( "Cache-Control Field", "[cache-control]" )
 {
 	using namespace restinio::http_field_parsers;

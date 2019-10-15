@@ -93,7 +93,6 @@ public :
 	static constexpr underlying_uint_t maximum = 1000u;
 
 private :
-
 	// Note: with the terminal 0-symbol.
 	using underlying_char_array_t = std::array<char, 6>;
 
@@ -112,11 +111,11 @@ private :
 			result[0] = '0';
 			result[1] = '.';
 
-			result[2] = '0' + (m_value / 100u);
+			result[2] = '0' + static_cast<char>(m_value / 100u);
 			const auto d2 = m_value % 100u;
-			result[3] = '0' + (d2 / 10u);
+			result[3] = '0' + static_cast<char>(d2 / 10u);
 			const auto d3 = d2 % 10u;
-			result[4] = '0' + d3;
+			result[4] = '0' + static_cast<char>(d3);
 			result[5] = 0;
 		}
 
@@ -144,6 +143,34 @@ public :
 		return (to << &what.make_char_array().front());
 	}
 };
+
+RESTINIO_NODISCARD
+bool
+operator==( const qvalue_t & a, const qvalue_t & b ) noexcept
+{
+	return a.as_uint() == b.as_uint();
+}
+
+RESTINIO_NODISCARD
+bool
+operator!=( const qvalue_t & a, const qvalue_t & b ) noexcept
+{
+	return a.as_uint() != b.as_uint();
+}
+
+RESTINIO_NODISCARD
+bool
+operator<( const qvalue_t & a, const qvalue_t & b ) noexcept
+{
+	return a.as_uint() < b.as_uint();
+}
+
+RESTINIO_NODISCARD
+bool
+operator<=( const qvalue_t & a, const qvalue_t & b ) noexcept
+{
+	return a.as_uint() <= b.as_uint();
+}
 
 } /* namespace rfc */
 
@@ -881,9 +908,11 @@ class qvalue_producer_t
 {
 public :
 	RESTINIO_NODISCARD
-	std::pair< bool, qvalue_t >
+	std::pair< bool, restinio::http_field_parser::rfc::qvalue_t >
 	try_parse( source_t & from ) const noexcept
 	{
+		using restinio::http_field_parser::rfc::qvalue_t;
+
 		std::pair< bool, qvalue_t > result{ false, qvalue_t{} };
 
 		// q=(("0" ["." 0*3DIGIT]) / ("1" ["." 0*3("0")]))
@@ -894,7 +923,7 @@ public :
 
 		// q=(("0" ["." 0*3DIGIT]) / ("1" ["." 0*3("0")]))
 		//  ^
-		ch = from.getch()
+		ch = from.getch();
 		if( ch.m_eof || ch.m_ch != '=' )
 			return result;
 
@@ -904,7 +933,7 @@ public :
 		if( ch.m_eof )
 			return result;
 
-		if( '0' == ch.m_eof )
+		if( '0' == ch.m_ch )
 		{
 			// q=(("0" ["." 0*3DIGIT]) / ("1" ["." 0*3("0")]))
 			//           ^
@@ -936,7 +965,7 @@ public :
 				result = std::make_pair( true, qvalue_t{current} );
 			}
 		}
-		else if( '1' == ch.m_eof )
+		else if( '1' == ch.m_ch )
 		{
 			// q=(("0" ["." 0*3DIGIT]) / ("1" ["." 0*3("0")]))
 			//                                  ^
@@ -1287,6 +1316,13 @@ token() noexcept { return { impl::rfc::token_t{} }; }
 RESTINIO_NODISCARD
 impl::value_producer_t< impl::rfc::quoted_string_t >
 quoted_string() noexcept { return { impl::rfc::quoted_string_t{} }; }
+
+//
+// qvalue
+//
+RESTINIO_NODISCARD
+impl::value_producer_t< impl::rfc::qvalue_producer_t >
+qvalue() noexcept { return { impl::rfc::qvalue_producer_t{} }; }
 
 } /* namespace rfc */
 
