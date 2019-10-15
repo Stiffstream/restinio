@@ -446,6 +446,7 @@ TEST_CASE( "sequence with optional", "[optional][simple]" )
 TEST_CASE( "Cache-Control Field", "[cache-control]" )
 {
 	using namespace restinio::http_field_parsers;
+	using namespace std::string_literals;
 
 	{
 		const auto result = cache_control_value_t::try_parse(
@@ -453,9 +454,30 @@ TEST_CASE( "Cache-Control Field", "[cache-control]" )
 
 		REQUIRE( result.first );
 
-		for( const auto & v : result.second.m_directives )
-			std::cout << "--- '" << v.first << "' => '"
-					<< (v.second ? *v.second : std::string{}) << "'" << std::endl;
+		cache_control_value_t::directive_container_t expected_directives{
+			{ "max-age"s, "5"s },
+			{ "no-transform"s, restinio::nullopt },
+			{ "only-if-cached"s, restinio::nullopt },
+			{ "min-fresh"s, "20"s }
+		};
+
+		REQUIRE( expected_directives == result.second.m_directives );
+	}
+
+	{
+		const auto result = cache_control_value_t::try_parse(
+				", ,  ,   , max-age=5, ,,, no-transform, only-if-cached, min-fresh=20,,,,    " );
+
+		REQUIRE( result.first );
+
+		cache_control_value_t::directive_container_t expected_directives{
+			{ "max-age"s, "5"s },
+			{ "no-transform"s, restinio::nullopt },
+			{ "only-if-cached"s, restinio::nullopt },
+			{ "min-fresh"s, "20"s }
+		};
+
+		REQUIRE( expected_directives == result.second.m_directives );
 	}
 }
 
