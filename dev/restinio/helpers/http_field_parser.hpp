@@ -653,14 +653,17 @@ public :
 		std::pair< bool, optional_t<char> > result;
 
 		std::size_t extracted_spaces{};
-		for( auto ch = from.getch();
+		character_t ch;
+		for( ch = from.getch();
 			!ch.m_eof && is_space(ch.m_ch);
 			ch = from.getch() )
 		{
 			++extracted_spaces;
 		}
 
-		from.putback();
+		if( !ch.m_eof )
+			// The first non-space char should be returned back.
+			from.putback();
 
 		result.first = true;
 		if( extracted_spaces > 0u )
@@ -812,24 +815,19 @@ public:
 	symbol_t( char expected ) : m_expected{ expected } {}
 
 	RESTINIO_NODISCARD
-	auto
+	std::pair< bool, char >
 	try_parse( source_t & from ) const noexcept
 	{
-		std::pair< bool, char > result;
-
 		const auto ch = from.getch();
-		if( !ch.m_eof && ch.m_ch == m_expected )
+		if( !ch.m_eof )
 		{
-			result.second = ch.m_ch;
-			result.first = true;
-		}
-		else
-		{
-			from.putback();
-			result.first = false;
+			if( ch.m_ch == m_expected )
+				return std::make_pair( true, ch.m_ch );
+			else
+				from.putback();
 		}
 
-		return result;
+		return std::make_pair( false, '\x00' );
 	}
 };
 

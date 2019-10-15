@@ -450,6 +450,40 @@ TEST_CASE( "Cache-Control Field", "[cache-control]" )
 
 	{
 		const auto result = cache_control_value_t::try_parse(
+				"" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = cache_control_value_t::try_parse(
+				"," );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = cache_control_value_t::try_parse(
+				",, , ,   ,  " );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = cache_control_value_t::try_parse(
+				"max-age=5" );
+
+		REQUIRE( result.first );
+
+		cache_control_value_t::directive_container_t expected_directives{
+			{ "max-age"s, "5"s },
+		};
+
+		REQUIRE( expected_directives == result.second.m_directives );
+	}
+
+	{
+		const auto result = cache_control_value_t::try_parse(
 				"max-age=5, no-transform, only-if-cached, min-fresh=20" );
 
 		REQUIRE( result.first );
