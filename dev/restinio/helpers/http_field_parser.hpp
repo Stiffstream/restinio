@@ -616,6 +616,29 @@ public :
 	}
 };
 
+//
+// one_or_more_of_t
+//
+template<
+	typename Container_Adaptor,
+	typename Producer >
+class one_or_more_of_t
+{
+	using container_type = typename Container_Adaptor::container_type;
+	using value_type = typename Container_Adaptor::value_type;
+
+	value_producer_t<Producer> m_producer;
+
+public :
+	one_or_more_of_t( Producer && producer )
+		:	m_producer{ std::move(producer) }
+	{}
+
+	RESTINIO_NODISCARD
+	std::pair< bool, container_type >
+	try_parse( source_t & from );
+};
+
 namespace rfc
 {
 
@@ -1002,6 +1025,29 @@ repeat(
 }
 
 //
+// one_or_more_of_t
+//
+template<
+	typename Container,
+	template<class C> class Container_Adaptor = default_container_adaptor,
+	typename Producer >
+RESTINIO_NODISCARD
+auto
+one_or_more_of(
+	impl::value_producer_t<Producer> producer )
+{
+	using producer_type_t = impl::one_or_more_of_t<
+			Container_Adaptor<Container>,
+			Producer >;
+
+	using result_type_t = impl::value_producer_t< producer_type_t >;
+
+	return result_type_t{
+			producer_type_t{ producer.giveaway() }
+	};
+}
+
+//
 // symbol
 //
 RESTINIO_NODISCARD
@@ -1080,6 +1126,67 @@ impl::value_producer_t< impl::rfc::quoted_string_t >
 quoted_string() noexcept { return { impl::rfc::quoted_string_t{} }; }
 
 } /* namespace rfc */
+
+namespace impl
+{
+
+template< typename Container_Adaptor, typename Producer >
+RESTINIO_NODISCARD
+std::pair<
+	bool,
+	typename one_or_more_of_t<Container_Adaptor, Producer>::container_type >
+one_or_more_of_t<Container_Adaptor, Producer>::try_parse( source_t & from )
+{
+	namespace hfp = restinio::http_field_parser;
+
+	std::pair< bool, container_type > result;
+	result.first = false;
+
+	auto opt_intro_clause = repeat< nothing_t >( 0, N,
+		symbol(',') >> skip(),
+		hfp::rfc::ows() >> skip() ) >> skip();
+	if( opt_intro_clause.try_process( from, result.second ) )
+	{
+		auto the_first_item_clause = m_producer >> custom_consumer(
+				[]( auto & dest, value_type && item ) {
+					Container_Adaptor::store( dest, std::move(item) );
+				} );
+		if( the_first_item_clause.try_process( from, result.second ) )
+		{
+			auto remaining_item_clause =
+				produce< restinio::optional_t<value_type> >(
+					hfp::rfc::ows() >> skip(),
+					symbol(',') >> skip(),
+					optional< value_type >(
+						hfp::rfc::ows() >> skip(),
+						m_producer >> as_result()
+					) >> as_result()
+				) >> custom_consumer(
+					[]( auto & dest, restinio::optional_t<value_type> && item )
+					{
+						if( item )
+							Container_Adaptor::store( dest, std::move(*item) );
+					} );
+
+			bool process_result{ true };
+			do
+			{
+				const auto pos = from.current_position();
+				process_result = remaining_item_clause.try_process(
+						from, result.second );
+				if( !process_result )
+					from.backto( pos );
+			}
+			while( process_result );
+
+			result.first = true;
+		}
+	}
+
+	return result;
+}
+
+} /* namespace impl */
 
 //
 // try_parse_field_value
