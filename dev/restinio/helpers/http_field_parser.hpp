@@ -23,6 +23,7 @@
 #include <iostream>
 #include <limits>
 #include <map>
+#include <cstring>
 
 namespace restinio
 {
@@ -77,6 +78,74 @@ struct default_container_adaptor< nothing_t >
 };
 
 constexpr std::size_t N = std::numeric_limits<std::size_t>::max();
+
+namespace rfc
+{
+
+//
+// qvalue_t
+//
+class qvalue_t
+{
+public :
+	using underlying_uint_t = std::uint_least16_t;
+
+	static constexpr underlying_uint_t maximum = 1000u;
+
+private :
+
+	// Note: with the terminal 0-symbol.
+	using underlying_char_array_t = std::array<char, 6>;
+
+	underlying_uint_t m_value{};
+
+	underlying_char_array_t
+	make_char_array() const noexcept
+	{
+		underlying_char_array_t result;
+		if( maximum == m_value )
+		{
+			std::strcpy( &result[0], "1.000" );
+		}
+		else
+		{
+			result[0] = '0';
+			result[1] = '.';
+
+			result[2] = '0' + (m_value / 100u);
+			const auto d2 = m_value % 100u;
+			result[3] = '0' + (d2 / 10u);
+			const auto d3 = d2 % 10u;
+			result[4] = '0' + d3;
+			result[5] = 0;
+		}
+
+		return result;
+	}
+
+public :
+	qvalue_t() = default;
+
+//FIXME: should here be a range-check for a val?
+	qvalue_t( underlying_uint_t val ) noexcept
+		:	m_value{val}
+	{}
+
+	auto as_uint() const noexcept { return m_value; }
+
+	auto as_string() const
+	{
+		return std::string{ &make_char_array().front() };
+	}
+
+	friend std::ostream &
+	operator<<( std::ostream & to, const qvalue_t & what )
+	{
+		return (to << &what.make_char_array().front());
+	}
+};
+
+} /* namespace rfc */
 
 namespace impl
 {
@@ -642,6 +711,9 @@ public :
 namespace rfc
 {
 
+//
+// ows_t
+//
 class ows_t
 {
 public :
@@ -796,6 +868,98 @@ public :
 				result.first = try_parse_value( from, result.second );
 			else
 				from.putback();
+		}
+
+		return result;
+	}
+};
+
+//
+// qvalue_producer_t
+//
+class qvalue_producer_t
+{
+public :
+	RESTINIO_NODISCARD
+	std::pair< bool, qvalue_t >
+	try_parse( source_t & from ) const noexcept
+	{
+		std::pair< bool, qvalue_t > result{ false, qvalue_t{} };
+
+		// q=(("0" ["." 0*3DIGIT]) / ("1" ["." 0*3("0")]))
+		// ^
+		auto ch = from.getch();
+		if( ch.m_eof || (ch.m_ch != 'Q' && ch.m_ch != 'q') )
+			return result;
+
+		// q=(("0" ["." 0*3DIGIT]) / ("1" ["." 0*3("0")]))
+		//  ^
+		ch = from.getch()
+		if( ch.m_eof || ch.m_ch != '=' )
+			return result;
+
+		// q=(("0" ["." 0*3DIGIT]) / ("1" ["." 0*3("0")]))
+		//      ^
+		ch = from.getch();
+		if( ch.m_eof )
+			return result;
+
+		if( '0' == ch.m_eof )
+		{
+			// q=(("0" ["." 0*3DIGIT]) / ("1" ["." 0*3("0")]))
+			//           ^
+			ch = from.getch();
+			if( ch.m_eof )
+				result = std::make_pair( true, qvalue_t{0u} );
+			else if( ch.m_ch != '.' )
+				return result;
+			else
+			{
+				// q=(("0" ["." 0*3DIGIT]) / ("1" ["." 0*3("0")]))
+				//              ^
+				qvalue_t::underlying_uint_t multiplier = 100u;
+				qvalue_t::underlying_uint_t current = 0u;
+				for( int i = 0; i != 3; ++i, multiplier /= 10u )
+				{
+					ch = from.getch();
+					if( ch.m_eof )
+						break;
+					else if( !is_digit( ch.m_ch ) )
+						return result;
+					else
+					{
+						current += static_cast<qvalue_t::underlying_uint_t>(
+								ch.m_ch - '0') * multiplier;
+					}
+				}
+
+				result = std::make_pair( true, qvalue_t{current} );
+			}
+		}
+		else if( '1' == ch.m_eof )
+		{
+			// q=(("0" ["." 0*3DIGIT]) / ("1" ["." 0*3("0")]))
+			//                                  ^
+			ch = from.getch();
+			if( ch.m_eof )
+				result = std::make_pair( true, qvalue_t{ qvalue_t::maximum } );
+			else if( ch.m_ch != '.' )
+				return result;
+			else
+			{
+				// q=(("0" ["." 0*3DIGIT]) / ("1" ["." 0*3("0")]))
+				//                                     ^
+				for( int i = 0; i != 3; ++i )
+				{
+					ch = from.getch();
+					if( ch.m_eof )
+						break;
+					else if( '0' != ch.m_ch )
+						return result;
+				}
+
+				result = std::make_pair( true, qvalue_t{ qvalue_t::maximum } );
+			}
 		}
 
 		return result;
