@@ -890,7 +890,8 @@ public :
 	field_setter_t( pointer_t ptr ) noexcept : m_ptr{ptr} {}
 
 	void
-	consume( C & to, F && value ) const noexcept(noexcept(std::declval<F>() = std::declval<F>()))
+	consume( C & to, F && value ) const
+		noexcept(noexcept(to.*m_ptr = std::move(value)))
 	{
 		to.*m_ptr = std::move(value);
 	}
