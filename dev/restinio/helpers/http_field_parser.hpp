@@ -18,6 +18,7 @@
 #include <restinio/string_view.hpp>
 #include <restinio/compiler_features.hpp>
 
+#include <restinio/exception.hpp>
 #include <restinio/optional.hpp>
 
 #include <iostream>
@@ -82,15 +83,55 @@ constexpr std::size_t N = std::numeric_limits<std::size_t>::max();
 namespace rfc
 {
 
+namespace qvalue_details
+{
+
+using underlying_uint_t = std::uint_least16_t;
+
+constexpr underlying_uint_t maximum = 1000u;
+constexpr underlying_uint_t zero = 0u;
+
+class trusted
+{
+	const underlying_uint_t m_value;
+
+public :
+	explicit constexpr
+	trusted( underlying_uint_t value ) noexcept : m_value{ value } {}
+
+	constexpr auto get() const noexcept { return m_value; }
+};
+
+class untrusted
+{
+	underlying_uint_t m_value;
+
+public :
+	explicit
+	untrusted( underlying_uint_t value ) : m_value{ value }
+	{
+		if( m_value > maximum )
+			throw exception_t( "invalid value for "
+					"http_field_parser::rfc::qvalue_t" );
+	}
+
+	auto get() const noexcept { return m_value; }
+};
+
+} /* namespace qvalue_details */
+
 //
 // qvalue_t
 //
 class qvalue_t
 {
 public :
-	using underlying_uint_t = std::uint_least16_t;
+	using underlying_uint_t = qvalue_details::underlying_uint_t;
+	using trusted = qvalue_details::trusted;
+	using untrusted = qvalue_details::untrusted;
 
-	static constexpr underlying_uint_t maximum = 1000u;
+	static constexpr trusted maximum{ qvalue_details::maximum };
+	static constexpr trusted zero{ qvalue_details::zero };
 
 private :
 	// Note: with the terminal 0-symbol.
@@ -102,7 +143,7 @@ private :
 	make_char_array() const noexcept
 	{
 		underlying_char_array_t result;
-		if( maximum == m_value )
+		if( maximum.get() == m_value )
 		{
 			std::strcpy( &result[0], "1.000" );
 		}
@@ -123,11 +164,15 @@ private :
 	}
 
 public :
+
 	qvalue_t() = default;
 
-//FIXME: should here be a range-check for a val?
-	qvalue_t( underlying_uint_t val ) noexcept
-		:	m_value{val}
+	qvalue_t( untrusted val ) noexcept
+		:	m_value{ val.get() }
+	{}
+
+	qvalue_t( trusted val ) noexcept
+		:	m_value{ val.get() }
 	{}
 
 	auto as_uint() const noexcept { return m_value; }
@@ -939,7 +984,7 @@ public :
 			//           ^
 			ch = from.getch();
 			if( ch.m_eof )
-				result = std::make_pair( true, qvalue_t{0u} );
+				result = std::make_pair( true, qvalue_t{ qvalue_t::trusted{0u} } );
 			else if( ch.m_ch != '.' )
 				return result;
 			else
@@ -962,7 +1007,9 @@ public :
 					}
 				}
 
-				result = std::make_pair( true, qvalue_t{current} );
+				result = std::make_pair(
+						true,
+						qvalue_t{ qvalue_t::trusted{current} } );
 			}
 		}
 		else if( '1' == ch.m_ch )
@@ -971,7 +1018,9 @@ public :
 			//                                  ^
 			ch = from.getch();
 			if( ch.m_eof )
-				result = std::make_pair( true, qvalue_t{ qvalue_t::maximum } );
+				result = std::make_pair(
+						true,
+						qvalue_t{ qvalue_t::maximum } );
 			else if( ch.m_ch != '.' )
 				return result;
 			else
@@ -987,7 +1036,9 @@ public :
 						return result;
 				}
 
-				result = std::make_pair( true, qvalue_t{ qvalue_t::maximum } );
+				result = std::make_pair(
+						true,
+						qvalue_t{ qvalue_t::maximum } );
 			}
 		}
 

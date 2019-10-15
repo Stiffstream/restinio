@@ -446,6 +446,8 @@ TEST_CASE( "sequence with optional", "[optional][simple]" )
 TEST_CASE( "qvalue", "[qvalue]" )
 {
 	using namespace restinio::http_field_parser;
+	using restinio::http_field_parser::rfc::qvalue_t;
+	using untrusted = qvalue_t::untrusted;
 
 	const auto try_parse = []( restinio::string_view_t what ) {
 		return try_parse_field_value< rfc::qvalue_t >( what,
@@ -498,28 +500,28 @@ TEST_CASE( "qvalue", "[qvalue]" )
 		const auto result = try_parse( "Q=0" );
 
 		REQUIRE( result.first );
-		REQUIRE( rfc::qvalue_t{0u} == result.second );
+		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
 	}
 
 	{
 		const auto result = try_parse( "q=0" );
 
 		REQUIRE( result.first );
-		REQUIRE( rfc::qvalue_t{0u} == result.second );
+		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
 	}
 
 	{
 		const auto result = try_parse( "Q=1" );
 
 		REQUIRE( result.first );
-		REQUIRE( rfc::qvalue_t{1000u} == result.second );
+		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
 	}
 
 	{
 		const auto result = try_parse( "q=1" );
 
 		REQUIRE( result.first );
-		REQUIRE( rfc::qvalue_t{1000u} == result.second );
+		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
 	}
 
 	{
@@ -550,35 +552,35 @@ TEST_CASE( "qvalue", "[qvalue]" )
 		const auto result = try_parse( "q=0." );
 
 		REQUIRE( result.first );
-		REQUIRE( rfc::qvalue_t{0u} == result.second );
+		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
 	}
 
 	{
 		const auto result = try_parse( "q=1." );
 
 		REQUIRE( result.first );
-		REQUIRE( rfc::qvalue_t{1000u} == result.second );
+		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
 	}
 
 	{
 		const auto result = try_parse( "q=0.000" );
 
 		REQUIRE( result.first );
-		REQUIRE( rfc::qvalue_t{0u} == result.second );
+		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
 	}
 
 	{
 		const auto result = try_parse( "q=1.000" );
 
 		REQUIRE( result.first );
-		REQUIRE( rfc::qvalue_t{1000u} == result.second );
+		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
 	}
 
 	{
 		const auto result = try_parse( "q=0.001" );
 
 		REQUIRE( result.first );
-		REQUIRE( rfc::qvalue_t{1u} == result.second );
+		REQUIRE( qvalue_t{untrusted{1u}} == result.second );
 	}
 
 	{
@@ -591,7 +593,7 @@ TEST_CASE( "qvalue", "[qvalue]" )
 		const auto result = try_parse( "q=0.321" );
 
 		REQUIRE( result.first );
-		REQUIRE( rfc::qvalue_t{321u} == result.second );
+		REQUIRE( qvalue_t{untrusted{321u}} == result.second );
 		REQUIRE( "0.321" == result.second.as_string() );
 	}
 }
