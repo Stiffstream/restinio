@@ -984,7 +984,13 @@ public :
 			//           ^
 			ch = from.getch();
 			if( ch.m_eof )
-				result = std::make_pair( true, qvalue_t{ qvalue_t::trusted{0u} } );
+				result = std::make_pair( true, qvalue_t{ qvalue_t::zero } );
+			else if( is_space( ch.m_ch ) )
+			{
+				// Space can be a part of next item.
+				from.putback();
+				result = std::make_pair( true, qvalue_t{ qvalue_t::zero } );
+			}
 			else if( ch.m_ch != '.' )
 				return result;
 			else
@@ -998,6 +1004,11 @@ public :
 					ch = from.getch();
 					if( ch.m_eof )
 						break;
+					else if( is_space( ch.m_ch ) )
+					{
+						from.putback();
+						break;
+					}
 					else if( !is_digit( ch.m_ch ) )
 						return result;
 					else
@@ -1021,6 +1032,14 @@ public :
 				result = std::make_pair(
 						true,
 						qvalue_t{ qvalue_t::maximum } );
+			else if( is_space( ch.m_ch ) )
+			{
+				// Space can be a part of next item.
+				from.putback();
+				result = std::make_pair(
+						true,
+						qvalue_t{ qvalue_t::maximum } );
+			}
 			else if( ch.m_ch != '.' )
 				return result;
 			else
@@ -1032,6 +1051,11 @@ public :
 					ch = from.getch();
 					if( ch.m_eof )
 						break;
+					else if( is_space( ch.m_ch ) )
+					{
+						from.putback();
+						break;
+					}
 					else if( '0' != ch.m_ch )
 						return result;
 				}
@@ -1374,6 +1398,21 @@ quoted_string() noexcept { return { impl::rfc::quoted_string_t{} }; }
 RESTINIO_NODISCARD
 impl::value_producer_t< impl::rfc::qvalue_producer_t >
 qvalue() noexcept { return { impl::rfc::qvalue_producer_t{} }; }
+
+//
+// weight
+//
+RESTINIO_NODISCARD
+auto
+weight() noexcept
+{
+	return produce< qvalue_t >(
+			ows() >> skip(),
+			symbol(';') >> skip(),
+			ows() >> skip(),
+			qvalue() >> as_result()
+		);
+}
 
 } /* namespace rfc */
 
