@@ -17,6 +17,18 @@ struct media_type_t
 	std::string m_subtype;
 };
 
+bool
+operator==( const media_type_t & a, const media_type_t & b ) noexcept
+{
+	return a.m_type == b.m_type && a.m_subtype == b.m_subtype;
+}
+
+std::ostream &
+operator<<( std::ostream & to, const media_type_t & v )
+{
+	return (to << v.m_type << '/' << v.m_subtype);
+}
+
 struct content_type_t
 {
 	media_type_t m_media_type;
@@ -440,6 +452,88 @@ TEST_CASE( "sequence with optional", "[optional][simple]" )
 		REQUIRE( "four" == result.second.m_params[3].first );
 		REQUIRE( result.second.m_params[3].second );
 		REQUIRE( "four = 4" == *(result.second.m_params[3].second) );
+	}
+}
+
+TEST_CASE( "any_number_of", "[any_number_of]" )
+{
+	using namespace restinio::http_field_parser;
+
+	const auto try_parse = []( restinio::string_view_t what ) {
+		const auto media_type = produce< media_type_t >(
+				rfc::token() >> to_lower() >> &media_type_t::m_type,
+				symbol('/') >> skip(),
+				rfc::token() >> to_lower() >> &media_type_t::m_subtype );
+
+		return try_parse_field_value< std::vector< media_type_t > >(
+				what,
+				any_number_of< std::vector< media_type_t > >( media_type ) >> as_result() );
+	};
+
+	{
+		const auto result = try_parse( "" );
+
+		REQUIRE( result.first );
+		REQUIRE( result.second.empty() );
+	}
+
+	{
+		const auto result = try_parse( "," );
+
+		REQUIRE( result.first );
+		REQUIRE( result.second.empty() );
+	}
+
+	{
+		const auto result = try_parse( ",,,," );
+
+		REQUIRE( result.first );
+		REQUIRE( result.second.empty() );
+	}
+
+	{
+		const auto result = try_parse( ",  ,     ,    ,  " );
+
+		REQUIRE( result.first );
+		REQUIRE( result.second.empty() );
+	}
+
+	{
+		const auto result = try_parse( "text/plain" );
+
+		REQUIRE( result.first );
+
+		std::vector< media_type_t > expected{
+			{ "text", "plain" }
+		};
+
+		REQUIRE( expected == result.second );
+	}
+
+	{
+		const auto result = try_parse( ", ,text/plain" );
+
+		REQUIRE( result.first );
+
+		std::vector< media_type_t > expected{
+			{ "text", "plain" }
+		};
+
+		REQUIRE( expected == result.second );
+	}
+
+	{
+		const auto result = try_parse( ", , text/plain , */*,, ,  ,   text/*," );
+
+		REQUIRE( result.first );
+
+		std::vector< media_type_t > expected{
+			{ "text", "plain" },
+			{ "*", "*" },
+			{ "text", "*" }
+		};
+
+		REQUIRE( expected == result.second );
 	}
 }
 

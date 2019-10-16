@@ -396,10 +396,9 @@ public :
 	}
 };
 
-template< typename Incoming_Type, typename Result_Type >
+template< typename Result_Type >
 struct transformer_tag
 {
-	using incoming_type = Incoming_Type;
 	using result_type = Result_Type;
 };
 
@@ -409,7 +408,6 @@ class value_transformer_t
 	T m_transformer;
 
 public :
-	using incoming_type = typename T::incoming_type;
 	using result_type = typename T::result_type;
 
 	value_transformer_t(
@@ -422,11 +420,12 @@ public :
 		return std::move(m_transformer);
 	}
 
+	template< typename Input_Type >
 	RESTINIO_NODISCARD
 	auto
-	transform( incoming_type && input )
+	transform( Input_Type && input )
 	{
-		return m_transformer.transform( std::move(input) );
+		return m_transformer.transform( std::forward<Input_Type>(input) );
 	}
 };
 
@@ -772,6 +771,29 @@ class one_or_more_of_t
 
 public :
 	one_or_more_of_t( Producer && producer )
+		:	m_producer{ std::move(producer) }
+	{}
+
+	RESTINIO_NODISCARD
+	std::pair< bool, container_type >
+	try_parse( source_t & from );
+};
+
+//
+// any_number_of_t
+//
+template<
+	typename Container_Adaptor,
+	typename Producer >
+class any_number_of_t
+{
+	using container_type = typename Container_Adaptor::container_type;
+	using value_type = typename Container_Adaptor::value_type;
+
+	value_producer_t<Producer> m_producer;
+
+public :
+	any_number_of_t( Producer && producer )
 		:	m_producer{ std::move(producer) }
 	{}
 
@@ -1179,11 +1201,13 @@ operator>>( value_producer_t<P> producer, F C::*member_ptr )
 //
 // to_lower_t
 //
-struct to_lower_t : public transformer_tag< std::string, std::string >
+struct to_lower_t : public transformer_tag< std::string >
 {
+	using input_type = std::string;
+
 	RESTINIO_NODISCARD
 	result_type
-	transform( incoming_type && input ) const noexcept
+	transform( input_type && input ) const noexcept
 	{
 		result_type result{ std::move(input) };
 		std::transform( result.begin(), result.end(), result.begin(),
@@ -1194,6 +1218,28 @@ struct to_lower_t : public transformer_tag< std::string, std::string >
 			} );
 
 		return result;
+	}
+};
+
+//
+// just_transformer_t
+//
+template< typename V >
+class just_transformer_t : public transformer_tag<V>
+{
+	V m_value;
+
+public :
+	using result_type = typename transformer_tag<V>::result_type;
+
+	just_transformer_t( V && v ) : m_value{ std::move(v) } {}
+
+	template< typename Input_Type >
+	RESTINIO_NODISCARD
+	result_type
+	transform( Input_Type && ) const
+	{
+		return m_value;
 	}
 };
 
@@ -1292,7 +1338,7 @@ repeat(
 }
 
 //
-// one_or_more_of_t
+// one_or_more_of
 //
 template<
 	typename Container,
@@ -1304,6 +1350,29 @@ one_or_more_of(
 	impl::value_producer_t<Producer> producer )
 {
 	using producer_type_t = impl::one_or_more_of_t<
+			Container_Adaptor<Container>,
+			Producer >;
+
+	using result_type_t = impl::value_producer_t< producer_type_t >;
+
+	return result_type_t{
+			producer_type_t{ producer.giveaway() }
+	};
+}
+
+//
+// any_number_of
+//
+template<
+	typename Container,
+	template<class C> class Container_Adaptor = default_container_adaptor,
+	typename Producer >
+RESTINIO_NODISCARD
+auto
+any_number_of(
+	impl::value_producer_t<Producer> producer )
+{
+	using producer_type_t = impl::any_number_of_t<
 			Container_Adaptor<Container>,
 			Producer >;
 
@@ -1368,6 +1437,22 @@ RESTINIO_NODISCARD
 impl::value_transformer_t< impl::to_lower_t >
 to_lower() noexcept { return { impl::to_lower_t{} }; }
 
+//
+// just
+//
+template< typename V >
+RESTINIO_NODISCARD
+auto
+just( V && v )
+{
+	using value_type = std::decay_t<V>;
+	using transformer_type = impl::just_transformer_t<value_type>;
+
+	return impl::value_transformer_t< transformer_type >{
+			transformer_type{ std::forward<V>(v) }
+	};
+}
+
 namespace rfc
 {
 
@@ -1419,6 +1504,9 @@ weight() noexcept
 namespace impl
 {
 
+//
+// one_or_more_of_t implementation
+//
 template< typename Container_Adaptor, typename Producer >
 RESTINIO_NODISCARD
 std::pair<
@@ -1470,6 +1558,77 @@ one_or_more_of_t<Container_Adaptor, Producer>::try_parse( source_t & from )
 
 			result.first = true;
 		}
+	}
+
+	return result;
+}
+
+//FIXME: it's just a workaround.
+template< typename T >
+struct value_to_optional : public transformer_tag< restinio::optional_t<T> >
+{
+	RESTINIO_NODISCARD
+	auto
+	transform( T && value ) const
+	{
+		return restinio::optional_t<T>{ std::move(value) };
+	}
+};
+
+//
+// any_number_of_t implementation
+//
+template< typename Container_Adaptor, typename Producer >
+RESTINIO_NODISCARD
+std::pair<
+	bool,
+	typename any_number_of_t<Container_Adaptor, Producer>::container_type >
+any_number_of_t<Container_Adaptor, Producer>::try_parse( source_t & from )
+{
+	namespace hfp = restinio::http_field_parser;
+
+	std::pair< bool, container_type > result;
+	// It seems that this method will always return 'success' even
+	// if nothing has been parsed. It is because all values are optional.
+	result.first = true;
+
+	using optional_value_t = restinio::optional_t< value_type >;
+	const auto append_opt_val = []( auto & dest, optional_value_t && item ) {
+		if( item )
+			Container_Adaptor::store( dest, std::move(*item) );
+	};
+
+	using val_to_optional_transformer_t = value_to_optional< value_type >;
+
+	auto opt_intro_clause =
+		alternatives< optional_value_t >(
+			symbol(',') >> just( optional_value_t{} ),
+			m_producer >> impl::value_transformer_t< val_to_optional_transformer_t >{
+					val_to_optional_transformer_t{} }
+		) >> custom_consumer( append_opt_val );
+
+	if( opt_intro_clause.try_process( from, result.second ) )
+	{
+		auto remaining_item_clause =
+			produce< optional_value_t >(
+				hfp::rfc::ows() >> skip(),
+				symbol(',') >> skip(),
+				optional< value_type >(
+					hfp::rfc::ows() >> skip(),
+					m_producer >> as_result()
+				) >> as_result()
+			) >> custom_consumer( append_opt_val );
+
+		bool process_result{ true };
+		do
+		{
+			const auto pos = from.current_position();
+			process_result = remaining_item_clause.try_process(
+					from, result.second );
+			if( !process_result )
+				from.backto( pos );
+		}
+		while( process_result );
 	}
 
 	return result;
