@@ -619,6 +619,77 @@ TEST_CASE( "sequence with optional", "[optional][simple]" )
 	}
 }
 
+TEST_CASE( "rollback on backtracking", "[rollback][alternative]" )
+{
+	using namespace restinio::http_field_parser;
+
+	struct accumulator_t {
+		std::string m_one;
+		std::string m_two;
+		std::string m_three;
+	};
+
+	const auto try_parse = []( restinio::string_view_t what ) {
+		return try_parse_field_value( what,
+			produce< accumulator_t >(
+				alternatives(
+					sequence(
+						symbol('1'), symbol('='),
+						rfc::token_producer() >> &accumulator_t::m_one,
+						symbol(';') ),
+					sequence(
+						symbol('1'), symbol('='),
+						rfc::token_producer() >> &accumulator_t::m_one,
+						symbol(','), symbol('2'), symbol('='),
+						rfc::token_producer() >> &accumulator_t::m_two,
+						symbol(';') ),
+					sequence(
+						symbol('1'), symbol('='),
+						rfc::token_producer() >> &accumulator_t::m_one,
+						symbol(','), symbol('2'), symbol('='),
+						rfc::token_producer() >> &accumulator_t::m_two,
+						symbol(','), symbol('3'), symbol('='),
+						rfc::token_producer() >> &accumulator_t::m_three,
+						symbol(';') ),
+					sequence(
+						symbol('1'), symbol('='),
+						rfc::token_producer() >> skip(),
+						symbol(','), symbol('2'), symbol('='),
+						rfc::token_producer() >> skip(),
+						symbol(','), symbol('3'), symbol('='),
+						rfc::token_producer() >> &accumulator_t::m_three,
+						symbol(','), symbol(',') )
+					)
+				)
+			);
+	};
+
+	{
+		const auto result = try_parse("1=a;");
+
+		REQUIRE( result.first );
+		REQUIRE( "a" == result.second.m_one );
+	}
+
+	{
+		const auto result = try_parse("1=a2,2=b2,3=c2;");
+
+		REQUIRE( result.first );
+		REQUIRE( "a2" == result.second.m_one );
+		REQUIRE( "b2" == result.second.m_two );
+		REQUIRE( "c2" == result.second.m_three );
+	}
+
+	{
+		const auto result = try_parse("1=aa,2=bb,3=cc,,");
+
+		REQUIRE( result.first );
+		REQUIRE( "" == result.second.m_one );
+		REQUIRE( "" == result.second.m_two );
+		REQUIRE( "cc" == result.second.m_three );
+	}
+}
+
 #if 0
 TEST_CASE( "any_number_of", "[any_number_of]" )
 {

@@ -707,10 +707,12 @@ public :
 				m_subitems,
 				[&from, &target]( auto && one_producer ) {
 					source_t::content_consumer_t consumer{ from };
+					Target_Type tmp_value{ target };
 
-					bool success = one_producer.try_process( from, target );
+					bool success = one_producer.try_process( from, tmp_value );
 					if( success )
 					{
+						target = std::move(tmp_value);
 						consumer.consume();
 					}
 
@@ -740,15 +742,17 @@ public :
 	try_process( source_t & from, Target_Type & target )
 	{
 		source_t::content_consumer_t consumer{ from };
+		Target_Type tmp_value{ target };
 
 		const bool success = restinio::utils::tuple_algorithms::all_of(
 				m_subitems,
-				[&from, &target]( auto && one_producer ) {
-					return one_producer.try_process( from, target );
+				[&from, &tmp_value]( auto && one_producer ) {
+					return one_producer.try_process( from, tmp_value );
 				} );
 
 		if( success )
 		{
+			target = std::move(tmp_value);
 			consumer.consume();
 		}
 
@@ -778,15 +782,17 @@ public :
 	try_process( source_t & from, Target_Type & target )
 	{
 		source_t::content_consumer_t consumer{ from };
+		Target_Type tmp_value{ target };
 
 		const bool success = restinio::utils::tuple_algorithms::all_of(
 				m_subitems,
-				[&from, &target]( auto && one_producer ) {
-					return one_producer.try_process( from, target );
+				[&from, &tmp_value]( auto && one_producer ) {
+					return one_producer.try_process( from, tmp_value );
 				} );
 
 		if( success )
 		{
+			target = std::move(tmp_value);
 			consumer.consume();
 		}
 
