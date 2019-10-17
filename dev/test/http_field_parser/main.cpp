@@ -5,7 +5,7 @@
 #include <catch2/catch.hpp>
 
 #include <restinio/helpers/http_field_parser.hpp>
-#include <restinio/helpers/http_field_parsers/cache-control.hpp>
+//#include <restinio/helpers/http_field_parsers/cache-control.hpp>
 
 //#include <map>
 
@@ -44,17 +44,145 @@ struct value_with_opt_params_t
 	param_storage_t m_params;
 };
 
-TEST_CASE( "token >> skip", "[token][skip]" )
+TEST_CASE( "token", "[token]" )
 {
-	struct empty_type_t {};
+	const auto try_parse = []( restinio::string_view_t what ) {
+		return hfp::try_parse_field_value( what, hfp::rfc::token_producer() );
+	};
 
-	const auto result = hfp::try_parse_field_value< empty_type_t >(
-			"multipart",
-			hfp::rfc::token() >> hfp::skip() );
+	{
+		const auto result = try_parse( "" );
 
-	REQUIRE( result.first );
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( "," );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( " multipart" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( "multipart" );
+
+		REQUIRE( result.first );
+		REQUIRE( "multipart" == result.second );
+	}
 }
 
+TEST_CASE( "alternatives", "[token][alternatives]" )
+{
+	using namespace restinio::http_field_parser;
+
+	const auto try_parse = []( restinio::string_view_t what ) {
+		return try_parse_field_value( what,
+				produce< std::string >(
+					alternatives(
+						symbol(','),
+						rfc::token_producer() >> to_lower() >> as_result() )
+				)
+			);
+	};
+
+	{
+		const auto result = try_parse( "," );
+
+		REQUIRE( result.first );
+		REQUIRE( result.second.empty() );
+	}
+
+	{
+		const auto result = try_parse( "multipart" );
+
+		REQUIRE( result.first );
+		REQUIRE( "multipart" == result.second );
+	}
+
+	{
+		const auto result = try_parse( "MultiPart" );
+
+		REQUIRE( result.first );
+		REQUIRE( "multipart" == result.second );
+	}
+}
+
+TEST_CASE( "maybe", "[token][maybe]" )
+{
+	using namespace restinio::http_field_parser;
+
+	using result_t = std::pair< std::string, std::string >;
+
+	const auto try_parse = []( restinio::string_view_t what ) {
+		return try_parse_field_value( what,
+				produce< result_t >(
+					rfc::token_producer() >> &result_t::first,
+					maybe(
+						symbol('/'),
+						rfc::token_producer() >> &result_t::second
+					)
+				)
+			);
+	};
+
+	{
+		const auto result = try_parse( "text" );
+
+		REQUIRE( result.first );
+		REQUIRE( "text" == result.second.first );
+		REQUIRE( result.second.second.empty() );
+	}
+
+	{
+		const auto result = try_parse( "text/*" );
+
+		REQUIRE( result.first );
+		REQUIRE( "text" == result.second.first );
+		REQUIRE( "*" == result.second.second );
+	}
+}
+
+TEST_CASE( "sequence", "[token][sequence]" )
+{
+	using namespace restinio::http_field_parser;
+
+	using result_t = std::pair< std::string, std::string >;
+
+	const auto try_parse = []( restinio::string_view_t what ) {
+		return try_parse_field_value( what,
+				produce< result_t >(
+					sequence(
+						rfc::token_producer() >> &result_t::first,
+						symbol('/'),
+						rfc::token_producer() >> &result_t::second
+					)
+				)
+			);
+	};
+
+	{
+		const auto result = try_parse( "text/plain" );
+
+		REQUIRE( result.first );
+		REQUIRE( "text" == result.second.first );
+		REQUIRE( "plain" == result.second.second );
+	}
+
+	{
+		const auto result = try_parse( "text/*" );
+
+		REQUIRE( result.first );
+		REQUIRE( "text" == result.second.first );
+		REQUIRE( "*" == result.second.second );
+	}
+}
+
+#if 0
 TEST_CASE( "token+symbol+token >> skip", "[token+symbol+token][skip]" )
 {
 	struct empty_type_t {};
@@ -897,3 +1025,4 @@ TEST_CASE( "Cache-Control Field", "[cache-control]" )
 	}
 }
 
+#endif

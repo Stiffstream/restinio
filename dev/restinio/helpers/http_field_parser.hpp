@@ -14,6 +14,7 @@
 #include <restinio/impl/to_lower_lut.hpp>
 
 #include <restinio/utils/tuple_algorithms.hpp>
+#include <restinio/utils/metaprogramming.hpp>
 
 #include <restinio/string_view.hpp>
 #include <restinio/compiler_features.hpp>
@@ -31,6 +32,8 @@ namespace restinio
 
 namespace http_field_parser
 {
+
+namespace meta = restinio::utils::metaprogramming;
 
 //FIXME: document this!
 struct nothing_t {};
@@ -363,6 +366,35 @@ public:
 		return m_index >= m_data.size();
 	}
 
+	class content_consumer_t
+	{
+		source_t & m_from;
+		const position_t m_started_at;
+		bool m_consumed{ false };
+
+	public :
+		content_consumer_t() = delete;
+		content_consumer_t( const content_consumer_t & ) = delete;
+		content_consumer_t( content_consumer_t && ) = delete;
+
+		content_consumer_t( source_t & from ) noexcept
+			:	m_from{ from }
+			,	m_started_at{ from.current_position() }
+		{}
+
+		~content_consumer_t() noexcept
+		{
+			if( !m_consumed )
+				m_from.backto( m_started_at );
+		}
+
+		void
+		consume() noexcept
+		{
+			m_consumed = true;
+		}
+	};
+
 //FIXME: this is debug method!
 string_view_t
 current_content() const noexcept
@@ -375,9 +407,38 @@ current_content() const noexcept
 
 };
 
+enum class entity_type_t
+{
+	producer,
+	transformer,
+	consumer,
+	clause
+};
+
+template< typename Result_Type >
+struct producer_tag
+{
+	using result_type = Result_Type;
+	static constexpr entity_type_t entity_type = entity_type_t::producer;
+};
+
+template< typename T, typename = meta::void_t<> >
+struct is_producer : public std::false_type {};
+
+template< typename T >
+struct is_producer< T, meta::void_t< decltype(T::entity_type) > >
+{
+	static constexpr bool value = entity_type_t::producer == T::entity_type;
+};
+
+template< typename T >
+constexpr bool is_producer_v = is_producer<T>::value;
+
 template< typename P >
 class value_producer_t
 {
+	static_assert( is_producer_v<P>, "P should be a producer type" );
+
 	P m_producer;
 
 public :
@@ -387,24 +448,32 @@ public :
 	{
 		return std::move(m_producer);
 	}
-
-	RESTINIO_NODISCARD
-	auto
-	try_parse( source_t & source )
-	{
-		return m_producer.try_parse( source );
-	}
 };
 
 template< typename Result_Type >
 struct transformer_tag
 {
 	using result_type = Result_Type;
+	static constexpr entity_type_t entity_type = entity_type_t::transformer;
 };
+
+template< typename T, typename = meta::void_t<> >
+struct is_transformer : public std::false_type {};
+
+template< typename T >
+struct is_transformer< T, meta::void_t< decltype(T::entity_type) > >
+{
+	static constexpr bool value = entity_type_t::transformer == T::entity_type;
+};
+
+template< typename T >
+constexpr bool is_transformer_v = is_transformer<T>::value;
 
 template< typename T >
 class value_transformer_t
 {
+	static_assert( is_transformer_v<T>, "T should be a transformer type" );
+
 	T m_transformer;
 
 public :
@@ -419,19 +488,17 @@ public :
 	{
 		return std::move(m_transformer);
 	}
-
-	template< typename Input_Type >
-	RESTINIO_NODISCARD
-	auto
-	transform( Input_Type && input )
-	{
-		return m_transformer.transform( std::forward<Input_Type>(input) );
-	}
 };
 
 template< typename Producer, typename Transformer >
 class transformed_value_producer_t
+	:	public producer_tag< typename Transformer::result_type >
 {
+	static_assert( is_producer_v<Producer>,
+			"Transformer should be a transformer type" );
+	static_assert( is_transformer_v<Transformer>,
+			"Transformer should be a transformer type" );
+
 	Producer m_producer;
 	Transformer m_transformer;
 
@@ -479,9 +546,31 @@ operator>>(
 	};
 };
 
-template< typename C >
-class value_consumer_t
+struct consumer_tag
 {
+	static constexpr entity_type_t entity_type = entity_type_t::consumer;
+};
+
+template< typename T, typename = meta::void_t<> >
+struct is_consumer : public std::false_type {};
+
+template< typename T >
+struct is_consumer< T, meta::void_t< decltype(T::entity_type) > >
+{
+	static constexpr bool value = entity_type_t::consumer == T::entity_type;
+};
+
+template< typename T >
+constexpr bool is_consumer_v = is_consumer<T>::value;
+
+//
+// value_consumer_t
+//
+template< typename C >
+class value_consumer_t 
+{
+	static_assert( is_consumer_v<C>, "C should be a consumer type" );
+
 	C m_consumer;
 
 public :
@@ -491,28 +580,42 @@ public :
 	{
 		return std::move(m_consumer);
 	}
-
-	template< typename Target_Type, typename Value >
-	void
-	consume( Target_Type & target, Value && value )
-	{
-		m_consumer.consume( target, std::forward<Value>(value) );
-	}
 };
 
-template< typename P, typename C >
-class clause_t
+struct clause_tag
 {
+	static constexpr entity_type_t entity_type = entity_type_t::clause;
+};
+
+template< typename T, typename = meta::void_t<> >
+struct is_clause : public std::false_type {};
+
+template< typename T >
+struct is_clause< T, meta::void_t< decltype(T::entity_type) > >
+{
+	static constexpr bool value = entity_type_t::clause == T::entity_type;
+};
+
+template< typename T >
+constexpr bool is_clause_v = is_clause<T>::value;
+
+template< typename P, typename C >
+class consume_value_clause_t : public clause_tag
+{
+	static_assert( is_producer_v<P>, "P should be a producer type" );
+	static_assert( is_consumer_v<C>, "C should be a consumer type" );
+
 	P m_producer;
 	C m_consumer;
 
 public :
-	clause_t( P && producer, C && consumer )
+	consume_value_clause_t( P && producer, C && consumer )
 		:	m_producer{ std::move(producer) }
 		,	m_consumer{ std::move(consumer) }
 	{}
 
 	template< typename Target_Type >
+	RESTINIO_NODISCARD
 	bool
 	try_process( source_t & from, Target_Type & target )
 	{
@@ -529,40 +632,27 @@ public :
 
 template< typename P, typename C >
 RESTINIO_NODISCARD
-clause_t< P, C >
+consume_value_clause_t< P, C >
 operator>>( value_producer_t<P> producer, value_consumer_t<C> consumer )
 {
 	return { producer.giveaway(), consumer.giveaway() };
 }
 
-template< typename Target_Type, typename Clauses_Tuple >
+template< typename Producer >
 class top_level_clause_t
 {
-	Clauses_Tuple m_clauses;
+	Producer m_producer;
 
 public :
-	top_level_clause_t( Clauses_Tuple && clauses )
-		:	m_clauses{ std::move(clauses) }
+	top_level_clause_t( Producer && producer )
+		:	m_producer{ std::move(producer) }
 	{}
 
 	RESTINIO_NODISCARD
 	auto
 	try_process( source_t & from )
 	{
-		std::pair< bool, Target_Type > result;
-
-		if( restinio::utils::tuple_algorithms::all_of(
-				m_clauses,
-				[&from, &result]( auto && one_clause ) {
-					return one_clause.try_process( from, result.second );
-				} ) )
-		{
-			result.first = true;
-		}
-		else
-			result.first = false;
-
-		return result;
+		return m_producer.try_parse( from );
 	}
 };
 
@@ -581,39 +671,113 @@ ensure_no_remaining_content(
 }
 
 //
-// alternatives_t
+// alternatives_clause_t
 //
 template<
-	typename Target_Type,
 	typename Subitems_Tuple >
-class alternatives_t
+class alternatives_clause_t : public clause_tag
 {
 	Subitems_Tuple m_subitems;
 
 public :
-	alternatives_t(
+	alternatives_clause_t(
 		Subitems_Tuple && subitems )
 		:	m_subitems{ std::move(subitems) }
 	{}
 
+	template< typename Target_Type >
 	RESTINIO_NODISCARD
 	auto
-	try_parse( source_t & from )
+	try_process( source_t & from, Target_Type & target )
 	{
-		std::pair< bool, Target_Type > result;
-		result.first = false;
-
-		(void)restinio::utils::tuple_algorithms::any_of(
+		return restinio::utils::tuple_algorithms::any_of(
 				m_subitems,
-				[&from, &result]( auto && one_producer ) {
-					const auto pos = from.current_position();
-					result = one_producer.try_parse( from );
-					if( !result.first )
-						from.backto( pos );
-					return result.first;
+				[&from, &target]( auto && one_producer ) {
+					source_t::content_consumer_t consumer{ from };
+
+					bool success = one_producer.try_process( from, target );
+					if( success )
+					{
+						consumer.consume();
+					}
+
+					return success;
+				} );
+	}
+};
+
+//
+// maybe_clause_t
+//
+template<
+	typename Subitems_Tuple >
+class maybe_clause_t : public clause_tag
+{
+	Subitems_Tuple m_subitems;
+
+public :
+	maybe_clause_t(
+		Subitems_Tuple && subitems )
+		:	m_subitems{ std::move(subitems) }
+	{}
+
+	template< typename Target_Type >
+	RESTINIO_NODISCARD
+	auto
+	try_process( source_t & from, Target_Type & target )
+	{
+		source_t::content_consumer_t consumer{ from };
+
+		const bool success = restinio::utils::tuple_algorithms::all_of(
+				m_subitems,
+				[&from, &target]( auto && one_producer ) {
+					return one_producer.try_process( from, target );
 				} );
 
-		return result;
+		if( success )
+		{
+			consumer.consume();
+		}
+
+		// maybe_producer always returns true even if nothing consumed.
+		return true;
+	}
+};
+
+//
+// sequence_clause_t
+//
+template<
+	typename Subitems_Tuple >
+class sequence_clause_t : public clause_tag
+{
+	Subitems_Tuple m_subitems;
+
+public :
+	sequence_clause_t(
+		Subitems_Tuple && subitems )
+		:	m_subitems{ std::move(subitems) }
+	{}
+
+	template< typename Target_Type >
+	RESTINIO_NODISCARD
+	auto
+	try_process( source_t & from, Target_Type & target )
+	{
+		source_t::content_consumer_t consumer{ from };
+
+		const bool success = restinio::utils::tuple_algorithms::all_of(
+				m_subitems,
+				[&from, &target]( auto && one_producer ) {
+					return one_producer.try_process( from, target );
+				} );
+
+		if( success )
+		{
+			consumer.consume();
+		}
+
+		return success;
 	}
 };
 
@@ -623,7 +787,7 @@ public :
 template<
 	typename Target_Type,
 	typename Subitems_Tuple >
-class produce_t
+class produce_t : public producer_tag< Target_Type >
 {
 	Subitems_Tuple m_subitems;
 
@@ -639,63 +803,17 @@ public :
 	{
 		std::pair< bool, Target_Type > result;
 
-		const auto pos = from.current_position();
-
 		result.first = restinio::utils::tuple_algorithms::all_of(
 				m_subitems,
 				[&from, &result]( auto && one_clause ) {
 					return one_clause.try_process( from, result.second );
 				} );
 
-		if( !result.first )
-			from.backto( pos );
-
 		return result;
 	}
 };
 
-//
-// optional_producer_t
-//
-template<
-	typename Target_Type,
-	typename Subitems_Tuple >
-class optional_producer_t
-{
-	Subitems_Tuple m_subitems;
-
-public :
-	optional_producer_t(
-		Subitems_Tuple && subitems )
-		:	m_subitems{ std::move(subitems) }
-	{}
-
-	RESTINIO_NODISCARD
-	auto
-	try_parse( source_t & from )
-	{
-		Target_Type tmp_value;
-
-		const auto pos = from.current_position();
-
-		const bool parsed = restinio::utils::tuple_algorithms::all_of(
-				m_subitems,
-				[&from, &tmp_value]( auto && one_clause ) {
-					return one_clause.try_process( from, tmp_value );
-				} );
-
-		if( !parsed )
-			from.backto( pos );
-
-		std::pair< bool, restinio::optional_t<Target_Type> > result;
-		result.first = true;
-		if( parsed )
-			result.second = std::move(tmp_value);
-
-		return result;
-	}
-};
-
+#if 0
 //
 // repeat_t
 //
@@ -802,13 +920,15 @@ public :
 	try_parse( source_t & from );
 };
 
+#endif
+
 namespace rfc
 {
 
 //
-// ows_t
+// ows_producer_t
 //
-class ows_t
+class ows_t : public producer_tag< restinio::optional_t<char> >
 {
 public :
 	RESTINIO_NODISCARD
@@ -844,7 +964,7 @@ public :
 //
 // token_t
 //
-class token_t
+class token_producer_t : public producer_tag< std::string >
 {
 	RESTINIO_NODISCARD
 	static bool
@@ -905,6 +1025,7 @@ public :
 	}
 };
 
+#if 0
 //
 // quoted_string_t
 //
@@ -1092,17 +1213,19 @@ public :
 	}
 };
 
+#endif
+
 } /* namespace rfc */
 
 //
-// symbol_t
+// symbol_producer_t
 //
-class symbol_t
+class symbol_producer_t : public producer_tag< char >
 {
 	char m_expected;
 
 public:
-	symbol_t( char expected ) : m_expected{ expected } {}
+	symbol_producer_t( char expected ) : m_expected{ expected } {}
 
 	RESTINIO_NODISCARD
 	std::pair< bool, char >
@@ -1124,7 +1247,7 @@ public:
 //
 // any_value_skipper_t
 //
-struct any_value_skipper_t
+struct any_value_skipper_t : public consumer_tag
 {
 	template< typename Target_Type, typename Value >
 	void
@@ -1134,7 +1257,7 @@ struct any_value_skipper_t
 //
 // as_result_consumer_t
 //
-struct as_result_consumer_t
+struct as_result_consumer_t : public consumer_tag
 {
 	template< typename Target_Type, typename Value >
 	void
@@ -1149,7 +1272,7 @@ struct as_result_consumer_t
 // custom_consumer_t
 //
 template< typename C >
-class custom_consumer_t
+class custom_consumer_t : public consumer_tag
 {
 	C m_consumer;
 
@@ -1168,7 +1291,7 @@ public :
 // field_setter_t
 //
 template< typename F, typename C >
-class field_setter_t
+class field_setter_t : public consumer_tag
 {
 	using pointer_t = F C::*;
 
@@ -1187,14 +1310,12 @@ public :
 
 template< typename P, typename F, typename C >
 RESTINIO_NODISCARD
-clause_t< value_producer_t<P>, value_consumer_t< field_setter_t<F,C> > >
+consume_value_clause_t< P, field_setter_t<F,C> >
 operator>>( value_producer_t<P> producer, F C::*member_ptr )
 {
 	return {
-			std::move(producer),
-			value_consumer_t< field_setter_t<F,C> >{
-					field_setter_t<F,C>{ member_ptr }
-			}
+			producer.giveaway(),
+			field_setter_t<F,C>{ member_ptr }
 	};
 }
 
@@ -1221,6 +1342,7 @@ struct to_lower_t : public transformer_tag< std::string >
 	}
 };
 
+#if 0
 //
 // just_transformer_t
 //
@@ -1242,6 +1364,7 @@ public :
 		return m_value;
 	}
 };
+#endif
 
 } /* namespace impl */
 
@@ -1253,6 +1376,9 @@ RESTINIO_NODISCARD
 auto
 produce( Clauses &&... clauses )
 {
+	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
+			"all arguments for produce() should be clauses" );
+
 	using producer_type_t = impl::produce_t<
 			Target_Type,
 			std::tuple<Clauses...> >;
@@ -1269,24 +1395,58 @@ produce( Clauses &&... clauses )
 //
 // alternatives
 //
-template< typename Target_Type, typename... Producers >
+template< typename... Clauses >
 RESTINIO_NODISCARD
 auto
-alternatives( Producers &&... producers )
+alternatives( Clauses &&... clauses )
 {
-	using producer_type_t = impl::alternatives_t<
-			Target_Type,
-			std::tuple<Producers...> >;
+	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
+			"all arguments for alternatives() should be clauses" );
 
-	using result_type_t = impl::value_producer_t< producer_type_t >;
+	using clause_type_t = impl::alternatives_clause_t< std::tuple<Clauses...> >;
 
-	return result_type_t{
-			producer_type_t{
-					std::make_tuple(std::forward<Producers>(producers)...)
-			}
+	return clause_type_t{
+			std::make_tuple(std::forward<Clauses>(clauses)...)
 	};
 }
 
+//
+// maybe
+//
+template< typename... Clauses >
+RESTINIO_NODISCARD
+auto
+maybe( Clauses &&... clauses )
+{
+	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
+			"all arguments for maybe() should be clauses" );
+
+	using clause_type_t = impl::maybe_clause_t< std::tuple<Clauses...> >;
+
+	return clause_type_t{
+			std::make_tuple(std::forward<Clauses>(clauses)...)
+	};
+}
+
+//
+// sequence
+//
+template< typename... Clauses >
+RESTINIO_NODISCARD
+auto
+sequence( Clauses &&... clauses )
+{
+	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
+			"all arguments for sequence() should be clauses" );
+
+	using clause_type_t = impl::sequence_clause_t< std::tuple<Clauses...> >;
+
+	return clause_type_t{
+			std::make_tuple(std::forward<Clauses>(clauses)...)
+	};
+}
+
+#if 0
 //
 // optional
 //
@@ -1382,24 +1542,7 @@ any_number_of(
 			producer_type_t{ producer.giveaway() }
 	};
 }
-
-//
-// symbol
-//
-RESTINIO_NODISCARD
-impl::value_producer_t< impl::symbol_t >
-symbol( char expected ) noexcept { return { impl::symbol_t{expected} }; }
-
-//
-// into
-//
-template< typename F, typename C >
-RESTINIO_NODISCARD
-impl::value_consumer_t< impl::field_setter_t<F, C> >
-into( F C::*ptr ) noexcept
-{
-	return { impl::field_setter_t<F, C>{ptr} };
-}
+#endif
 
 //
 // skip
@@ -1407,6 +1550,18 @@ into( F C::*ptr ) noexcept
 RESTINIO_NODISCARD
 impl::value_consumer_t< impl::any_value_skipper_t >
 skip() noexcept { return { impl::any_value_skipper_t{} }; }
+
+//
+// symbol
+//
+RESTINIO_NODISCARD
+auto
+symbol( char expected ) noexcept
+{
+	return impl::value_producer_t< impl::symbol_producer_t >{
+			impl::symbol_producer_t{expected}
+		} >> skip();
+}
 
 //
 // as_result
@@ -1437,6 +1592,7 @@ RESTINIO_NODISCARD
 impl::value_transformer_t< impl::to_lower_t >
 to_lower() noexcept { return { impl::to_lower_t{} }; }
 
+#if 0
 //
 // just
 //
@@ -1452,31 +1608,45 @@ just( V && v )
 			transformer_type{ std::forward<V>(v) }
 	};
 }
+#endif
 
 namespace rfc
 {
 
 //
-// ows
+// ows_producer
 //
 RESTINIO_NODISCARD
 impl::value_producer_t< impl::rfc::ows_t >
-ows() noexcept { return { impl::rfc::ows_t{} }; }
+ows_producer() noexcept { return { impl::rfc::ows_t{} }; }
 
 //
-// token
+// ows
 //
 RESTINIO_NODISCARD
-impl::value_producer_t< impl::rfc::token_t >
-token() noexcept { return { impl::rfc::token_t{} }; }
+auto
+ows() noexcept { return ows_producer() >> skip(); }
 
 //
-// quoted_string
+// token_producer
 //
 RESTINIO_NODISCARD
-impl::value_producer_t< impl::rfc::quoted_string_t >
-quoted_string() noexcept { return { impl::rfc::quoted_string_t{} }; }
+impl::value_producer_t< impl::rfc::token_producer_t >
+token_producer() noexcept { return { impl::rfc::token_producer_t{} }; }
 
+#if 0
+//
+// quoted_string_producer
+//
+RESTINIO_NODISCARD
+impl::value_producer_t< impl::rfc::quoted_string_producer_t >
+quoted_string_producer() noexcept
+{
+	return { impl::rfc::quoted_string_producer_t{} };
+}
+#endif
+
+#if 0
 //
 // qvalue
 //
@@ -1498,9 +1668,11 @@ weight() noexcept
 			qvalue() >> as_result()
 		);
 }
+#endif
 
 } /* namespace rfc */
 
+#if 0
 namespace impl
 {
 
@@ -1636,22 +1808,22 @@ any_number_of_t<Container_Adaptor, Producer>::try_parse( source_t & from )
 
 } /* namespace impl */
 
+#endif
+
 //
 // try_parse_field_value
 //
-template< typename Final_Value, typename ...Clauses >
+template< typename Producer >
 RESTINIO_NODISCARD
 auto
 try_parse_field_value(
 	string_view_t from,
-	Clauses && ...clauses )
+	impl::value_producer_t<Producer> producer )
 {
-	using clauses_tuple_t = std::tuple< Clauses... >;
-
 	impl::source_t source{ from };
 
-	auto result = impl::top_level_clause_t< Final_Value, clauses_tuple_t >{
-			std::make_tuple( std::forward<Clauses>(clauses)... )
+	auto result = impl::top_level_clause_t< Producer >{
+			producer.giveaway()
 		}.try_process( source );
 
 	if( !result.first ||
