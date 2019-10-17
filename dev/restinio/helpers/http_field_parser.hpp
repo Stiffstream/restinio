@@ -55,6 +55,19 @@ struct default_container_adaptor< std::vector< T, Args... > >
 	}
 };
 
+template< typename Char, typename... Args >
+struct default_container_adaptor< std::basic_string< Char, Args... > >
+{
+	using container_type = std::basic_string< Char, Args... >;
+	using value_type = Char;
+
+	static void
+	store( container_type & to, value_type && what )
+	{
+		to.push_back( what );
+	}
+};
+
 template< typename K, typename V, typename... Args >
 struct default_container_adaptor< std::map< K, V, Args... > >
 {
@@ -687,7 +700,7 @@ public :
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	auto
+	bool
 	try_process( source_t & from, Target_Type & target )
 	{
 		return restinio::utils::tuple_algorithms::any_of(
@@ -723,7 +736,7 @@ public :
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	auto
+	bool
 	try_process( source_t & from, Target_Type & target )
 	{
 		source_t::content_consumer_t consumer{ from };
@@ -761,7 +774,7 @@ public :
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	auto
+	bool
 	try_process( source_t & from, Target_Type & target )
 	{
 		source_t::content_consumer_t consumer{ from };
@@ -813,25 +826,21 @@ public :
 	}
 };
 
-#if 0
 //
-// repeat_t
+// repeat_clause_t
 //
 template<
-	typename Container_Adaptor,
+	template<class> class Container_Adaptor,
 	typename Subitems_Tuple >
-class repeat_t
+class repeat_clause_t : public clause_tag
 {
-	using container_type = typename Container_Adaptor::container_type;
-	using value_type = typename Container_Adaptor::value_type;
-
 	std::size_t m_min_occurences;
 	std::size_t m_max_occurences;
 
 	Subitems_Tuple m_subitems;
 
 public :
-	repeat_t(
+	repeat_clause_t(
 		std::size_t min_occurences,
 		std::size_t max_occurences,
 		Subitems_Tuple && subitems )
@@ -840,19 +849,24 @@ public :
 		,	m_subitems{ std::move(subitems) }
 	{}
 
+	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	auto
-	try_parse( source_t & from )
+	bool
+	try_process( source_t & from, Target_Type & dest )
 	{
-		std::pair< bool, container_type > result;
+		using adaptor_type = Container_Adaptor< Target_Type >;
+		using value_type = typename adaptor_type::value_type;
+
+		source_t::content_consumer_t whole_consumer{ from };
 
 		std::size_t count{};
 		bool failure_detected{ false };
-		for(; !failure_detected && count != m_max_occurences; ++count )
+		for(; !failure_detected && count != m_max_occurences; )
 		{
 			value_type item;
 
-			const auto pos = from.current_position();
+			source_t::content_consumer_t item_consumer{ from };
+
 			failure_detected = !restinio::utils::tuple_algorithms::all_of(
 					m_subitems,
 					[&from, &item]( auto && one_clause ) {
@@ -862,18 +876,21 @@ public :
 			if( !failure_detected )
 			{
 				// Another item successfully parsed and should be stored.
-				Container_Adaptor::store( result.second, std::move(item) );
+				adaptor_type::store( dest, std::move(item) );
+				item_consumer.consume();
+				++count;
 			}
-			else
-				from.backto( pos );
 		}
 
-		result.first = count >= m_min_occurences;
+		const bool success = count >= m_min_occurences;
+		if( success )
+			whole_consumer.consume();
 
-		return result;
+		return success;
 	}
 };
 
+#if 0
 //
 // one_or_more_of_t
 //
@@ -1025,11 +1042,10 @@ public :
 	}
 };
 
-#if 0
 //
-// quoted_string_t
+// quoted_string_producer_t
 //
-class quoted_string_t
+class quoted_string_producer_t : public producer_tag< std::string >
 {
 	RESTINIO_NODISCARD
 	static bool
@@ -1073,6 +1089,8 @@ public :
 	auto
 	try_parse( source_t & from ) const
 	{
+		source_t::content_consumer_t consumer{ from };
+
 		std::pair< bool, std::string > result;
 		result.first = false;
 
@@ -1081,14 +1099,16 @@ public :
 		{
 			if( '"' == ch.m_ch )
 				result.first = try_parse_value( from, result.second );
-			else
-				from.putback();
 		}
+
+		if( result.first )
+			consumer.consume();
 
 		return result;
 	}
 };
 
+#if 0
 //
 // qvalue_producer_t
 //
@@ -1446,33 +1466,10 @@ sequence( Clauses &&... clauses )
 	};
 }
 
-#if 0
-//
-// optional
-//
-template< typename Target_Type, typename... Clauses >
-RESTINIO_NODISCARD
-auto
-optional( Clauses &&... clauses )
-{
-	using producer_type_t = impl::optional_producer_t<
-			Target_Type,
-			std::tuple<Clauses...> >;
-
-	using result_type_t = impl::value_producer_t< producer_type_t >;
-
-	return result_type_t{
-			producer_type_t{
-					std::make_tuple(std::forward<Clauses>(clauses)...)
-			}
-	};
-}
-
 //
 // repeat
 //
 template<
-	typename Container,
 	template<class C> class Container_Adaptor = default_container_adaptor,
 	typename... Clauses >
 RESTINIO_NODISCARD
@@ -1482,21 +1479,21 @@ repeat(
 	std::size_t max_occurences,
 	Clauses &&... clauses )
 {
-	using producer_type_t = impl::repeat_t<
-			Container_Adaptor<Container>,
+	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
+			"all arguments for repeat() should be clauses" );
+
+	using producer_type_t = impl::repeat_clause_t<
+			Container_Adaptor,
 			std::tuple<Clauses...> >;
 
-	using result_type_t = impl::value_producer_t< producer_type_t >;
-
-	return result_type_t{
-			producer_type_t{
-					min_occurences,
-					max_occurences,
-					std::make_tuple(std::forward<Clauses>(clauses)...)
-			}
+	return producer_type_t{
+			min_occurences,
+			max_occurences,
+			std::make_tuple(std::forward<Clauses>(clauses)...)
 	};
 }
 
+#if 0
 //
 // one_or_more_of
 //
@@ -1552,15 +1549,25 @@ impl::value_consumer_t< impl::any_value_skipper_t >
 skip() noexcept { return { impl::any_value_skipper_t{} }; }
 
 //
+// symbol_producer
+//
+RESTINIO_NODISCARD
+auto
+symbol_producer( char expected ) noexcept
+{
+	return impl::value_producer_t< impl::symbol_producer_t >{
+			impl::symbol_producer_t{expected}
+		};
+}
+
+//
 // symbol
 //
 RESTINIO_NODISCARD
 auto
 symbol( char expected ) noexcept
 {
-	return impl::value_producer_t< impl::symbol_producer_t >{
-			impl::symbol_producer_t{expected}
-		} >> skip();
+	return symbol_producer(expected) >> skip();
 }
 
 //
@@ -1634,7 +1641,6 @@ RESTINIO_NODISCARD
 impl::value_producer_t< impl::rfc::token_producer_t >
 token_producer() noexcept { return { impl::rfc::token_producer_t{} }; }
 
-#if 0
 //
 // quoted_string_producer
 //
@@ -1644,7 +1650,6 @@ quoted_string_producer() noexcept
 {
 	return { impl::rfc::quoted_string_producer_t{} };
 }
-#endif
 
 #if 0
 //

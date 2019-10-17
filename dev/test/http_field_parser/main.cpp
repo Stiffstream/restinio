@@ -182,67 +182,22 @@ TEST_CASE( "sequence", "[token][sequence]" )
 	}
 }
 
-#if 0
-TEST_CASE( "token+symbol+token >> skip", "[token+symbol+token][skip]" )
+TEST_CASE( "alternatives with symbol", "[alternatives][symbol][field_setter]" )
 {
-	struct empty_type_t {};
+	using namespace restinio::http_field_parser;
 
-	{
-		const auto result = hfp::try_parse_field_value< empty_type_t >(
-				"multipart/form-data",
-				hfp::rfc::token() >> hfp::skip(),
-				hfp::symbol('/') >> hfp::skip(),
-				hfp::rfc::token() >> hfp::skip() );
-
-		REQUIRE( result.first );
-	}
-
-	{
-		const auto result = hfp::try_parse_field_value< empty_type_t >(
-				"multipart+form-data",
-				hfp::rfc::token() >> hfp::skip(),
-				hfp::symbol('/') >> hfp::skip(),
-				hfp::rfc::token() >> hfp::skip() );
-
-		REQUIRE( !result.first );
-	}
-
-	{
-		const auto result = hfp::try_parse_field_value< empty_type_t >(
-				"multipart/",
-				hfp::rfc::token() >> hfp::skip(),
-				hfp::symbol('/') >> hfp::skip(),
-				hfp::rfc::token() >> hfp::skip() );
-
-		REQUIRE( !result.first );
-	}
-}
-
-TEST_CASE( "token+symbol+token >> into", "[token+symbol+token][into]" )
-{
-	const auto result = hfp::try_parse_field_value< media_type_t >(
-			"multipart/form-data",
-			hfp::rfc::token() >> &media_type_t::m_type,
-			hfp::symbol('/') >> hfp::skip(),
-			hfp::rfc::token() >> &media_type_t::m_subtype );
-
-	REQUIRE( result.first );
-	REQUIRE( "multipart" == result.second.m_type );
-	REQUIRE( "form-data" == result.second.m_subtype );
-}
-
-TEST_CASE( "alternatives with symbol", "[alternatives][symbol][into]" )
-{
 	const auto try_parse = [](restinio::string_view_t what) {
-		return hfp::try_parse_field_value< media_type_t >(
+		return hfp::try_parse_field_value(
 			what,
-			hfp::rfc::token() >> &media_type_t::m_type,
-			hfp::alternatives<char>(
-				hfp::symbol('/'),
-				hfp::symbol('='),
-				hfp::symbol('[')
-			) >> hfp::skip(),
-			hfp::rfc::token() >> &media_type_t::m_subtype );
+			produce< media_type_t >(
+				rfc::token_producer() >> &media_type_t::m_type,
+				alternatives(
+					symbol('/'),
+					symbol('='),
+					symbol('[')
+				),
+				rfc::token_producer() >> &media_type_t::m_subtype )
+		);
 	};
 
 	{
@@ -274,18 +229,22 @@ TEST_CASE( "alternatives with symbol", "[alternatives][symbol][into]" )
 
 TEST_CASE( "produce media_type", "[produce][media_type]" )
 {
+	using namespace restinio::http_field_parser;
+
 	struct media_type_holder_t {
 		media_type_t m_media;
 	};
 
 	const auto try_parse = [](restinio::string_view_t what) {
-		return hfp::try_parse_field_value< media_type_holder_t >(
+		return try_parse_field_value(
 				what,
-				hfp::produce< media_type_t >(
-					hfp::rfc::token() >> &media_type_t::m_type,
-					hfp::symbol('/') >> hfp::skip(),
-					hfp::rfc::token() >> &media_type_t::m_subtype
-				) >> &media_type_holder_t::m_media
+				produce< media_type_holder_t >(
+					produce< media_type_t >(
+						rfc::token_producer() >> &media_type_t::m_type,
+						hfp::symbol('/'),
+						rfc::token_producer() >> &media_type_t::m_subtype
+					) >> &media_type_holder_t::m_media
+				)
 			);
 	};
 
@@ -318,22 +277,30 @@ TEST_CASE( "produce media_type", "[produce][media_type]" )
 	}
 }
 
-TEST_CASE( "simple repeat (vector target)", "[repeat][vector][simple]" )
+TEST_CASE( "simple repeat (vector target)", "[repeat][vector]" )
 {
+	using namespace restinio::http_field_parser;
+
 	struct pairs_holder_t
 	{
-		std::vector< std::pair<std::string, std::string> > m_pairs;
+		using value_t = std::pair<std::string, std::string>;
+		using container_t = std::vector< value_t >;
+
+		container_t m_pairs;
 	};
 
-	const auto result = hfp::try_parse_field_value< pairs_holder_t >(
+	const auto result = try_parse_field_value(
 			";name1=value;name2=value2",
-			hfp::repeat< std::vector< std::pair<std::string, std::string> > >(
-				0, hfp::N,
-				hfp::symbol(';') >> hfp::skip(),
-				hfp::rfc::token() >> &std::pair<std::string, std::string>::first,
-				hfp::symbol('=') >> hfp::skip(),
-				hfp::rfc::token() >> &std::pair<std::string, std::string>::second
-			) >> &pairs_holder_t::m_pairs
+			produce< pairs_holder_t >(
+				produce< pairs_holder_t::container_t >(
+					repeat( 0, N,
+						symbol(';'),
+						rfc::token_producer() >> &pairs_holder_t::value_t::first,
+						symbol('='),
+						rfc::token_producer() >> &pairs_holder_t::value_t::second
+					)
+				) >> &pairs_holder_t::m_pairs
+			)
 		);
 
 	REQUIRE( result.first );
@@ -344,22 +311,30 @@ TEST_CASE( "simple repeat (vector target)", "[repeat][vector][simple]" )
 	REQUIRE( "value2" == result.second.m_pairs[1].second );
 }
 
-TEST_CASE( "simple repeat (map target)", "[repeat][map][simple]" )
+TEST_CASE( "simple repeat (map target)", "[repeat][map]" )
 {
+	using namespace restinio::http_field_parser;
+
 	struct pairs_holder_t
 	{
+		using value_t = std::pair<std::string, std::string>;
+		using container_t = std::map< std::string, std::string >;
+
 		std::map< std::string, std::string > m_pairs;
 	};
 
-	const auto result = hfp::try_parse_field_value< pairs_holder_t >(
+	const auto result = try_parse_field_value(
 			";name1=value;name2=value2",
-			hfp::repeat< std::map<std::string, std::string> >(
-				0, hfp::N,
-				hfp::symbol(';') >> hfp::skip(),
-				hfp::rfc::token() >> &std::pair<std::string, std::string>::first,
-				hfp::symbol('=') >> hfp::skip(),
-				hfp::rfc::token() >> &std::pair<std::string, std::string>::second
-			) >> &pairs_holder_t::m_pairs
+			produce< pairs_holder_t >(
+				produce< pairs_holder_t::container_t >(
+					repeat( 0, N,
+						symbol(';'),
+						rfc::token_producer() >> &pairs_holder_t::value_t::first,
+						symbol('='),
+						rfc::token_producer() >> &pairs_holder_t::value_t::second
+					)
+				) >> &pairs_holder_t::m_pairs
+			)
 		);
 
 	REQUIRE( result.first );
@@ -372,34 +347,91 @@ TEST_CASE( "simple repeat (map target)", "[repeat][map][simple]" )
 	REQUIRE( expected == result.second.m_pairs );
 }
 
-TEST_CASE( "simple content_type", "[content_type][simple]" )
+TEST_CASE( "simple repeat (string)", "[repeat][string][symbol_producer]" )
 {
-	const auto try_parse = [](restinio::string_view_t what) {
-		return hfp::try_parse_field_value< content_type_t >(
+	using namespace restinio::http_field_parser;
+
+	const auto try_parse = []( restinio::string_view_t what ) {
+		return try_parse_field_value(
 			what,
+			produce< std::string >(
+					repeat( 3, 7,
+						symbol_producer('*') >> as_result()
+					)
+				)
+			);
+	};
 
-			hfp::produce< media_type_t >(
-				hfp::rfc::token() >> hfp::to_lower() >> &media_type_t::m_type,
-				hfp::symbol('/') >> hfp::skip(),
-				hfp::rfc::token() >> hfp::to_lower() >> &media_type_t::m_subtype
-			) >> &content_type_t::m_media_type,
+	{
+		const auto result = try_parse( "" );
+		REQUIRE( !result.first );
+	}
 
-			hfp::repeat< std::map<std::string, std::string> >(
-				0, hfp::N,
-				hfp::symbol(';') >> hfp::skip(),
-				hfp::rfc::ows() >> hfp::skip(),
+	{
+		const auto result = try_parse( "**" );
+		REQUIRE( !result.first );
+	}
 
-				hfp::rfc::token() >> hfp::to_lower() >>
-						&std::pair<std::string, std::string>::first,
+	{
+		const auto result = try_parse( "***" );
+		REQUIRE( result.first );
+		REQUIRE( "***" == result.second );
+	}
 
-				hfp::symbol('=') >> hfp::skip(),
+	{
+		const auto result = try_parse( "*****" );
+		REQUIRE( result.first );
+		REQUIRE( "*****" == result.second );
+	}
 
-				hfp::alternatives< std::string >(
-					hfp::rfc::token() >> hfp::to_lower(),
-					hfp::rfc::quoted_string()
-				) >> &std::pair<std::string, std::string>::second
+	{
+		const auto result = try_parse( "*******" );
+		REQUIRE( result.first );
+		REQUIRE( "*******" == result.second );
+	}
 
-			) >> &content_type_t::m_parameters
+	{
+		const auto result = try_parse( "********" );
+		REQUIRE( !result.first );
+	}
+}
+
+TEST_CASE( "simple content_type", "[content_type]" )
+{
+	using namespace restinio::http_field_parser;
+
+	const auto try_parse = [](restinio::string_view_t what) {
+		return try_parse_field_value(
+			what,
+			produce< content_type_t >(
+				produce< media_type_t >(
+					rfc::token_producer() >> to_lower() >> &media_type_t::m_type,
+					symbol('/'),
+					rfc::token_producer() >> to_lower() >> &media_type_t::m_subtype
+				) >> &content_type_t::m_media_type,
+
+				produce< std::map<std::string, std::string> >(
+					repeat( 0, N,
+						symbol(';'),
+						rfc::ows(),
+
+						rfc::token_producer() >> to_lower() >>
+								&std::pair<std::string, std::string>::first,
+
+						hfp::symbol('='),
+
+						produce< std::string >(
+							alternatives(
+								rfc::token_producer()
+										>> hfp::to_lower()
+										>> as_result(),
+								rfc::quoted_string_producer()
+										>> as_result()
+							)
+						) >> &std::pair<std::string, std::string>::second
+					)
+				) >> &content_type_t::m_parameters
+			)
 		);
 	};
 
@@ -509,32 +541,36 @@ TEST_CASE( "simple content_type", "[content_type][simple]" )
 
 TEST_CASE( "sequence with optional", "[optional][simple]" )
 {
+	using namespace restinio::http_field_parser;
+
 	const auto try_parse = [](restinio::string_view_t what) {
-		return hfp::try_parse_field_value< value_with_opt_params_t >(
+		return try_parse_field_value(
 			what,
+			produce< value_with_opt_params_t >(
+				rfc::token_producer() >> to_lower() >>
+						&value_with_opt_params_t::m_value,
 
-			hfp::rfc::token() >> hfp::to_lower() >>
-					&value_with_opt_params_t::m_value,
+				produce< value_with_opt_params_t::param_storage_t >(
+					repeat( 0, N,
+						symbol(';'),
+						rfc::ows(),
 
-			hfp::repeat< value_with_opt_params_t::param_storage_t >(
-				0, hfp::N,
-				hfp::symbol(';') >> hfp::skip(),
-				hfp::rfc::ows() >> hfp::skip(),
+						rfc::token_producer() >> to_lower() >>
+								&value_with_opt_params_t::param_t::first,
 
-				hfp::rfc::token() >> hfp::to_lower() >>
-						&value_with_opt_params_t::param_t::first,
+						produce< restinio::optional_t<std::string> >(
+							maybe(
+								symbol('='),
 
-				hfp::optional< std::string >(
-					hfp::symbol('=') >> hfp::skip(),
-
-					hfp::alternatives< std::string >(
-						hfp::rfc::token() >> hfp::to_lower(),
-						hfp::rfc::quoted_string()
-					) >> hfp::as_result()
-
-				) >> &value_with_opt_params_t::param_t::second
-
-			) >> &value_with_opt_params_t::m_params
+								alternatives(
+									rfc::token_producer() >> to_lower() >> as_result(),
+									rfc::quoted_string_producer() >> as_result()
+								)
+							)
+						) >> &value_with_opt_params_t::param_t::second
+					)
+				) >> &value_with_opt_params_t::m_params
+			)
 		);
 	};
 
@@ -583,6 +619,7 @@ TEST_CASE( "sequence with optional", "[optional][simple]" )
 	}
 }
 
+#if 0
 TEST_CASE( "any_number_of", "[any_number_of]" )
 {
 	using namespace restinio::http_field_parser;
