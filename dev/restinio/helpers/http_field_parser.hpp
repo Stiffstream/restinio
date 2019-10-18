@@ -1576,23 +1576,29 @@ quoted_string_producer() noexcept
 	return { impl::rfc::quoted_string_producer_t{} };
 }
 
+} /* namespace rfc */
+
 namespace impl
+{
+
+namespace rfc
 {
 
 //
 // qvalue_producer_t
 //
 class qvalue_producer_t
-	:	public restinio::http_field_parser::impl::producer_tag< qvalue_t >
+	:	public producer_tag< restinio::http_field_parser::rfc::qvalue_t >
 {
+	using qvalue_t = restinio::http_field_parser::rfc::qvalue_t;
+
 	// This type has to be used as type parameter for produce().
 	struct zero_initialized_unit_t
 	{
 		qvalue_t::underlying_uint_t m_value{0u};
 	};
 
-	class digit_consumer_t
-		: public restinio::http_field_parser::impl::consumer_tag
+	class digit_consumer_t : public consumer_tag
 	{
 		const qvalue_t::underlying_uint_t m_multiplier;
 	
@@ -1613,20 +1619,14 @@ class qvalue_producer_t
 	static auto
 	digit_consumer( qvalue_t::underlying_uint_t m )
 	{
-		return restinio::http_field_parser::impl::value_consumer_t<
-				digit_consumer_t
-			>{
-				digit_consumer_t{m}
-			};
+		return value_consumer_t< digit_consumer_t >{ digit_consumer_t{m} };
 	}
 
 public :
 	RESTINIO_NODISCARD
 	std::pair< bool, restinio::http_field_parser::rfc::qvalue_t >
-	try_parse( restinio::http_field_parser::impl::source_t & from ) const noexcept
+	try_parse( source_t & from ) const noexcept
 	{
-		using namespace restinio::http_field_parser::impl;
-
 		const auto parse_result = produce< zero_initialized_unit_t >(
 				alternatives( symbol('q'), symbol('Q') ),
 				symbol('='),
@@ -1664,7 +1664,12 @@ public :
 	}
 };
 
+} /* namespace rfc */
+
 } /* namespace impl */
+
+namespace rfc
+{
 
 //
 // qvalue
@@ -1674,18 +1679,17 @@ auto
 qvalue_producer() noexcept
 {
 	using restinio::http_field_parser::impl::value_producer_t;
+	using restinio::http_field_parser::impl::rfc::qvalue_producer_t;
 
-	return value_producer_t< impl::qvalue_producer_t >{
-		impl::qvalue_producer_t{}
-	};
+	return value_producer_t< qvalue_producer_t >{ qvalue_producer_t{} };
 }
 
 //
-// weight
+// weight_producer
 //
 RESTINIO_NODISCARD
 auto
-weight() noexcept
+weight_producer() noexcept
 {
 	return produce< qvalue_t >(
 			ows(),

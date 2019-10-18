@@ -981,7 +981,7 @@ TEST_CASE( "weight", "[qvalue][weight]" )
 	using untrusted = qvalue_t::untrusted;
 
 	const auto try_parse = []( restinio::string_view_t what ) {
-		return try_parse_field_value( what, rfc::weight() );
+		return try_parse_field_value( what, rfc::weight_producer() );
 	};
 
 	{
