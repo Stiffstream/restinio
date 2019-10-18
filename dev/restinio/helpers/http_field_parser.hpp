@@ -448,22 +448,6 @@ struct is_producer< T, meta::void_t< decltype(T::entity_type) > >
 template< typename T >
 constexpr bool is_producer_v = is_producer<T>::value;
 
-template< typename P >
-class value_producer_t
-{
-	static_assert( is_producer_v<P>, "P should be a producer type" );
-
-	P m_producer;
-
-public :
-	value_producer_t( P && producer ) : m_producer{ std::move(producer) } {}
-
-	P giveaway() noexcept(noexcept(P{std::move(std::declval<P>())}))
-	{
-		return std::move(m_producer);
-	}
-};
-
 template< typename Result_Type >
 struct transformer_tag
 {
@@ -545,19 +529,17 @@ public :
 };
 
 template< typename P, typename T >
-auto
+RESTINIO_NODISCARD
+std::enable_if_t<
+	is_producer_v<P>,
+	transformed_value_producer_t< P, T > >
 operator>>(
-	value_producer_t<P> producer,
+	P producer,
 	value_transformer_t<T> transformer )
 {
 	using transformator_type = transformed_value_producer_t< P, T >;
-	using result_type = value_producer_t< transformator_type >;
 
-	return result_type{
-			transformator_type{
-					producer.giveaway(), transformer.giveaway()
-			}
-	};
+	return transformator_type{ std::move(producer), transformer.giveaway() };
 };
 
 struct consumer_tag
@@ -646,10 +628,12 @@ public :
 
 template< typename P, typename C >
 RESTINIO_NODISCARD
-consume_value_clause_t< P, C >
-operator>>( value_producer_t<P> producer, value_consumer_t<C> consumer )
+std::enable_if_t<
+	is_producer_v<P>,
+	consume_value_clause_t< P, C > >
+operator>>( P producer, value_consumer_t<C> consumer )
 {
-	return { producer.giveaway(), consumer.giveaway() };
+	return { std::move(producer), consumer.giveaway() };
 }
 
 template< typename Producer >
@@ -1233,11 +1217,13 @@ public :
 
 template< typename P, typename F, typename C >
 RESTINIO_NODISCARD
-consume_value_clause_t< P, field_setter_t<F,C> >
-operator>>( value_producer_t<P> producer, F C::*member_ptr )
+std::enable_if_t<
+	is_producer_v<P>,
+	consume_value_clause_t< P, field_setter_t<F,C> > >
+operator>>( P producer, F C::*member_ptr )
 {
 	return {
-			producer.giveaway(),
+			std::move(producer),
 			field_setter_t<F,C>{ member_ptr }
 	};
 }
@@ -1306,12 +1292,8 @@ produce( Clauses &&... clauses )
 			Target_Type,
 			std::tuple<Clauses...> >;
 
-	using result_type_t = impl::value_producer_t< producer_type_t >;
-
-	return result_type_t{
-			producer_type_t{
-					std::make_tuple(std::forward<Clauses>(clauses)...)
-			}
+	return producer_type_t{
+			std::make_tuple(std::forward<Clauses>(clauses)...)
 	};
 }
 
@@ -1458,9 +1440,7 @@ RESTINIO_NODISCARD
 auto
 symbol_producer( char expected ) noexcept
 {
-	return impl::value_producer_t< impl::symbol_producer_t >{
-			impl::symbol_producer_t{expected}
-		};
+	return impl::symbol_producer_t{expected};
 }
 
 //
@@ -1480,9 +1460,7 @@ RESTINIO_NODISCARD
 auto
 digit_producer() noexcept
 {
-	return impl::value_producer_t< impl::digit_producer_t >{
-			impl::digit_producer_t{}
-		};
+	return impl::digit_producer_t{};
 }
 
 //
@@ -1549,8 +1527,8 @@ namespace rfc
 // ows_producer
 //
 RESTINIO_NODISCARD
-impl::value_producer_t< impl::rfc::ows_t >
-ows_producer() noexcept { return { impl::rfc::ows_t{} }; }
+auto
+ows_producer() noexcept { return impl::rfc::ows_t{}; }
 
 //
 // ows
@@ -1563,17 +1541,17 @@ ows() noexcept { return ows_producer() >> skip(); }
 // token_producer
 //
 RESTINIO_NODISCARD
-impl::value_producer_t< impl::rfc::token_producer_t >
-token_producer() noexcept { return { impl::rfc::token_producer_t{} }; }
+auto
+token_producer() noexcept { return impl::rfc::token_producer_t{}; }
 
 //
 // quoted_string_producer
 //
 RESTINIO_NODISCARD
-impl::value_producer_t< impl::rfc::quoted_string_producer_t >
+auto
 quoted_string_producer() noexcept
 {
-	return { impl::rfc::quoted_string_producer_t{} };
+	return impl::rfc::quoted_string_producer_t{};
 }
 
 } /* namespace rfc */
@@ -1654,7 +1632,7 @@ public :
 						)
 					)
 				)
-			).giveaway().try_parse( from );
+			).try_parse( from );
 
 		if( parse_result.first )
 			return std::make_pair( true,
@@ -1678,10 +1656,9 @@ RESTINIO_NODISCARD
 auto
 qvalue_producer() noexcept
 {
-	using restinio::http_field_parser::impl::value_producer_t;
 	using restinio::http_field_parser::impl::rfc::qvalue_producer_t;
 
-	return value_producer_t< qvalue_producer_t >{ qvalue_producer_t{} };
+	return qvalue_producer_t{};
 }
 
 //
@@ -1847,13 +1824,15 @@ RESTINIO_NODISCARD
 auto
 try_parse_field_value(
 	string_view_t from,
-	impl::value_producer_t<Producer> producer )
+	Producer producer )
 {
+	static_assert( impl::is_producer_v<Producer>,
+			"Producer should be a value producer type" );
+
 	impl::source_t source{ from };
 
-	auto result = impl::top_level_clause_t< Producer >{
-			producer.giveaway()
-		}.try_process( source );
+	auto result = impl::top_level_clause_t< Producer >{ std::move(producer) }
+			.try_process( source );
 
 	if( !result.first ||
 			!impl::ensure_no_remaining_content( source ) )
