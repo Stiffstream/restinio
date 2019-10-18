@@ -1114,133 +1114,6 @@ public :
 	}
 };
 
-#if 0
-//
-// qvalue_producer_t
-//
-class qvalue_producer_t
-{
-public :
-	RESTINIO_NODISCARD
-	std::pair< bool, restinio::http_field_parser::rfc::qvalue_t >
-	try_parse( source_t & from ) const noexcept
-	{
-		using restinio::http_field_parser::rfc::qvalue_t;
-
-		std::pair< bool, qvalue_t > result{ false, qvalue_t{} };
-
-		// q=(("0" ["." 0*3DIGIT]) / ("1" ["." 0*3("0")]))
-		// ^
-		auto ch = from.getch();
-		if( ch.m_eof || (ch.m_ch != 'Q' && ch.m_ch != 'q') )
-			return result;
-
-		// q=(("0" ["." 0*3DIGIT]) / ("1" ["." 0*3("0")]))
-		//  ^
-		ch = from.getch();
-		if( ch.m_eof || ch.m_ch != '=' )
-			return result;
-
-		// q=(("0" ["." 0*3DIGIT]) / ("1" ["." 0*3("0")]))
-		//      ^
-		ch = from.getch();
-		if( ch.m_eof )
-			return result;
-
-		if( '0' == ch.m_ch )
-		{
-			// q=(("0" ["." 0*3DIGIT]) / ("1" ["." 0*3("0")]))
-			//           ^
-			ch = from.getch();
-			if( ch.m_eof )
-				result = std::make_pair( true, qvalue_t{ qvalue_t::zero } );
-			else if( is_space( ch.m_ch ) )
-			{
-				// Space can be a part of next item.
-				from.putback();
-				result = std::make_pair( true, qvalue_t{ qvalue_t::zero } );
-			}
-			else if( ch.m_ch != '.' )
-				return result;
-			else
-			{
-				// q=(("0" ["." 0*3DIGIT]) / ("1" ["." 0*3("0")]))
-				//              ^
-				qvalue_t::underlying_uint_t multiplier = 100u;
-				qvalue_t::underlying_uint_t current = 0u;
-				for( int i = 0; i != 3; ++i, multiplier /= 10u )
-				{
-					ch = from.getch();
-					if( ch.m_eof )
-						break;
-					else if( is_space( ch.m_ch ) )
-					{
-						from.putback();
-						break;
-					}
-					else if( !is_digit( ch.m_ch ) )
-						return result;
-					else
-					{
-						current += static_cast<qvalue_t::underlying_uint_t>(
-								ch.m_ch - '0') * multiplier;
-					}
-				}
-
-				result = std::make_pair(
-						true,
-						qvalue_t{ qvalue_t::trusted{current} } );
-			}
-		}
-		else if( '1' == ch.m_ch )
-		{
-			// q=(("0" ["." 0*3DIGIT]) / ("1" ["." 0*3("0")]))
-			//                                  ^
-			ch = from.getch();
-			if( ch.m_eof )
-				result = std::make_pair(
-						true,
-						qvalue_t{ qvalue_t::maximum } );
-			else if( is_space( ch.m_ch ) )
-			{
-				// Space can be a part of next item.
-				from.putback();
-				result = std::make_pair(
-						true,
-						qvalue_t{ qvalue_t::maximum } );
-			}
-			else if( ch.m_ch != '.' )
-				return result;
-			else
-			{
-				// q=(("0" ["." 0*3DIGIT]) / ("1" ["." 0*3("0")]))
-				//                                     ^
-				for( int i = 0; i != 3; ++i )
-				{
-					ch = from.getch();
-					if( ch.m_eof )
-						break;
-					else if( is_space( ch.m_ch ) )
-					{
-						from.putback();
-						break;
-					}
-					else if( '0' != ch.m_ch )
-						return result;
-				}
-
-				result = std::make_pair(
-						true,
-						qvalue_t{ qvalue_t::maximum } );
-			}
-		}
-
-		return result;
-	}
-};
-
-#endif
-
 } /* namespace rfc */
 
 //
@@ -1261,6 +1134,29 @@ public:
 		if( !ch.m_eof )
 		{
 			if( ch.m_ch == m_expected )
+				return std::make_pair( true, ch.m_ch );
+			else
+				from.putback();
+		}
+
+		return std::make_pair( false, '\x00' );
+	}
+};
+
+//
+// digit_producer_t
+//
+class digit_producer_t : public producer_tag< char >
+{
+public:
+	RESTINIO_NODISCARD
+	std::pair< bool, char >
+	try_parse( source_t & from ) const noexcept
+	{
+		const auto ch = from.getch();
+		if( !ch.m_eof )
+		{
+			if( is_digit(ch.m_ch) )
 				return std::make_pair( true, ch.m_ch );
 			else
 				from.putback();
@@ -1577,6 +1473,28 @@ symbol( char expected ) noexcept
 }
 
 //
+// digit_producer
+//
+RESTINIO_NODISCARD
+auto
+digit_producer() noexcept
+{
+	return impl::value_producer_t< impl::digit_producer_t >{
+			impl::digit_producer_t{}
+		};
+}
+
+//
+// digit
+//
+RESTINIO_NODISCARD
+auto
+digit() noexcept
+{
+	return digit_producer() >> skip();
+}
+
+//
 // as_result
 //
 RESTINIO_NODISCARD
@@ -1657,13 +1575,109 @@ quoted_string_producer() noexcept
 	return { impl::rfc::quoted_string_producer_t{} };
 }
 
-#if 0
+namespace impl
+{
+
+//
+// qvalue_producer_t
+//
+class qvalue_producer_t
+	:	public restinio::http_field_parser::impl::producer_tag< qvalue_t >
+{
+	// This type has to be used as type parameter for produce().
+	struct zero_initialized_unit_t
+	{
+		qvalue_t::underlying_uint_t m_value{0u};
+	};
+
+	class digit_consumer_t
+		: public restinio::http_field_parser::impl::consumer_tag
+	{
+		const qvalue_t::underlying_uint_t m_multiplier;
+	
+	public :
+		digit_consumer_t( qvalue_t::underlying_uint_t m )
+			:	m_multiplier{ m }
+		{}
+	
+		void
+		consume( zero_initialized_unit_t & dest, char && digit )
+		{
+			dest.m_value += m_multiplier *
+					static_cast< qvalue_t::underlying_uint_t >(digit - '0');
+		}
+	};
+
+	RESTINIO_NODISCARD
+	static auto
+	digit_consumer( qvalue_t::underlying_uint_t m )
+	{
+		return restinio::http_field_parser::impl::value_consumer_t<
+				digit_consumer_t
+			>{
+				digit_consumer_t{m}
+			};
+	}
+
+public :
+	RESTINIO_NODISCARD
+	std::pair< bool, restinio::http_field_parser::rfc::qvalue_t >
+	try_parse( restinio::http_field_parser::impl::source_t & from ) const noexcept
+	{
+		using namespace restinio::http_field_parser::impl;
+
+		const auto parse_result = produce< zero_initialized_unit_t >(
+				alternatives( symbol('q'), symbol('Q') ),
+				symbol('='),
+				alternatives(
+					sequence(
+						symbol('0'),
+						maybe(
+							symbol('.'),
+							maybe( digit_producer() >> digit_consumer(100),
+								maybe( digit_producer() >> digit_consumer(10),
+									maybe( digit_producer() >> digit_consumer(1) )
+								)
+							)
+						)
+					),
+					sequence(
+						symbol_producer('1') >> digit_consumer(1000),
+						maybe(
+							symbol('.'),
+							maybe( symbol('0'),
+								maybe( symbol('0'),
+									maybe( symbol('0') )
+								)
+							)
+						)
+					)
+				)
+			).giveaway().try_parse( from );
+
+		if( parse_result.first )
+			return std::make_pair( true,
+					qvalue_t{ qvalue_t::trusted{ parse_result.second.m_value } } );
+		else
+			return std::make_pair( false, qvalue_t{} );
+	}
+};
+
+} /* namespace impl */
+
 //
 // qvalue
 //
 RESTINIO_NODISCARD
-impl::value_producer_t< impl::rfc::qvalue_producer_t >
-qvalue() noexcept { return { impl::rfc::qvalue_producer_t{} }; }
+auto
+qvalue_producer() noexcept
+{
+	using restinio::http_field_parser::impl::value_producer_t;
+
+	return value_producer_t< impl::qvalue_producer_t >{
+		impl::qvalue_producer_t{}
+	};
+}
 
 //
 // weight
@@ -1673,13 +1687,12 @@ auto
 weight() noexcept
 {
 	return produce< qvalue_t >(
-			ows() >> skip(),
-			symbol(';') >> skip(),
-			ows() >> skip(),
-			qvalue() >> as_result()
+			ows(),
+			symbol(';'),
+			ows(),
+			qvalue_producer() >> as_result()
 		);
 }
-#endif
 
 } /* namespace rfc */
 

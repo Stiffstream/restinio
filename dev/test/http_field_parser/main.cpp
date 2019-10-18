@@ -772,6 +772,7 @@ TEST_CASE( "any_number_of", "[any_number_of]" )
 		REQUIRE( expected == result.second );
 	}
 }
+#endif
 
 TEST_CASE( "qvalue", "[qvalue]" )
 {
@@ -780,8 +781,7 @@ TEST_CASE( "qvalue", "[qvalue]" )
 	using untrusted = qvalue_t::untrusted;
 
 	const auto try_parse = []( restinio::string_view_t what ) {
-		return try_parse_field_value< rfc::qvalue_t >( what,
-			rfc::qvalue() >> as_result() );
+		return try_parse_field_value( what, rfc::qvalue_producer() );
 	};
 
 	{
@@ -981,8 +981,7 @@ TEST_CASE( "weight", "[qvalue][weight]" )
 	using untrusted = qvalue_t::untrusted;
 
 	const auto try_parse = []( restinio::string_view_t what ) {
-		return try_parse_field_value< rfc::qvalue_t >( what,
-			rfc::weight() >> as_result() );
+		return try_parse_field_value( what, rfc::weight() );
 	};
 
 	{
@@ -1060,6 +1059,8 @@ TEST_CASE( "weight", "[qvalue][weight]" )
 		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
 	}
 }
+
+#if 0
 
 TEST_CASE( "Cache-Control Field", "[cache-control]" )
 {
