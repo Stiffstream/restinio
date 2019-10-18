@@ -849,54 +849,6 @@ public :
 	}
 };
 
-#if 0
-//
-// one_or_more_of_t
-//
-template<
-	typename Container_Adaptor,
-	typename Producer >
-class one_or_more_of_t
-{
-	using container_type = typename Container_Adaptor::container_type;
-	using value_type = typename Container_Adaptor::value_type;
-
-	value_producer_t<Producer> m_producer;
-
-public :
-	one_or_more_of_t( Producer && producer )
-		:	m_producer{ std::move(producer) }
-	{}
-
-	RESTINIO_NODISCARD
-	std::pair< bool, container_type >
-	try_parse( source_t & from );
-};
-
-//
-// any_number_of_t
-//
-template<
-	typename Container_Adaptor,
-	typename Producer >
-class any_number_of_t
-{
-	using container_type = typename Container_Adaptor::container_type;
-	using value_type = typename Container_Adaptor::value_type;
-
-	value_producer_t<Producer> m_producer;
-
-public :
-	any_number_of_t( Producer && producer )
-		:	m_producer{ std::move(producer) }
-	{}
-
-	RESTINIO_NODISCARD
-	std::pair< bool, container_type >
-	try_parse( source_t & from );
-};
-
-#endif
 
 namespace rfc
 {
@@ -1348,29 +1300,6 @@ repeat(
 
 #if 0
 //
-// one_or_more_of
-//
-template<
-	typename Container,
-	template<class C> class Container_Adaptor = default_container_adaptor,
-	typename Producer >
-RESTINIO_NODISCARD
-auto
-one_or_more_of(
-	impl::value_producer_t<Producer> producer )
-{
-	using producer_type_t = impl::one_or_more_of_t<
-			Container_Adaptor<Container>,
-			Producer >;
-
-	using result_type_t = impl::value_producer_t< producer_type_t >;
-
-	return result_type_t{
-			producer_type_t{ producer.giveaway() }
-	};
-}
-
-//
 // any_number_of
 //
 template<
@@ -1635,7 +1564,56 @@ weight_producer() noexcept
 		);
 }
 
+//
+// one_or_more_of
+//
+template<
+	template<class> class Container_Adaptor = default_container_adaptor,
+	typename Element_Producer >
+RESTINIO_NODISCARD
+auto
+one_or_more_of( Element_Producer element )
+{
+	static_assert( impl::is_producer_v<Element_Producer>,
+			"Element_Producer should be a value producer type" );
+
+	return sequence(
+			produce< nothing_t >( repeat( 0, N, symbol(','), ows() ) ) >> skip(),
+			repeat< Container_Adaptor >( 1, 1, element >> as_result() ),
+			repeat< Container_Adaptor >( 0, N,
+				ows(), symbol(','),
+				maybe( ows(), element >> as_result() )
+			)
+		);
+}
+
 } /* namespace rfc */
+
+#if 0
+//
+// any_number_of_t
+//
+template<
+	typename Container_Adaptor,
+	typename Producer >
+class any_number_of_t
+{
+	using container_type = typename Container_Adaptor::container_type;
+	using value_type = typename Container_Adaptor::value_type;
+
+	value_producer_t<Producer> m_producer;
+
+public :
+	any_number_of_t( Producer && producer )
+		:	m_producer{ std::move(producer) }
+	{}
+
+	RESTINIO_NODISCARD
+	std::pair< bool, container_type >
+	try_parse( source_t & from );
+};
+
+#endif
 
 #if 0
 namespace impl

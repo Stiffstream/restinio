@@ -690,90 +690,6 @@ TEST_CASE( "rollback on backtracking", "[rollback][alternative]" )
 	}
 }
 
-#if 0
-TEST_CASE( "any_number_of", "[any_number_of]" )
-{
-	using namespace restinio::http_field_parser;
-
-	const auto try_parse = []( restinio::string_view_t what ) {
-		const auto media_type = produce< media_type_t >(
-				rfc::token() >> to_lower() >> &media_type_t::m_type,
-				symbol('/') >> skip(),
-				rfc::token() >> to_lower() >> &media_type_t::m_subtype );
-
-		return try_parse_field_value< std::vector< media_type_t > >(
-				what,
-				any_number_of< std::vector< media_type_t > >( media_type ) >> as_result() );
-	};
-
-	{
-		const auto result = try_parse( "" );
-
-		REQUIRE( result.first );
-		REQUIRE( result.second.empty() );
-	}
-
-	{
-		const auto result = try_parse( "," );
-
-		REQUIRE( result.first );
-		REQUIRE( result.second.empty() );
-	}
-
-	{
-		const auto result = try_parse( ",,,," );
-
-		REQUIRE( result.first );
-		REQUIRE( result.second.empty() );
-	}
-
-	{
-		const auto result = try_parse( ",  ,     ,    ,  " );
-
-		REQUIRE( result.first );
-		REQUIRE( result.second.empty() );
-	}
-
-	{
-		const auto result = try_parse( "text/plain" );
-
-		REQUIRE( result.first );
-
-		std::vector< media_type_t > expected{
-			{ "text", "plain" }
-		};
-
-		REQUIRE( expected == result.second );
-	}
-
-	{
-		const auto result = try_parse( ", ,text/plain" );
-
-		REQUIRE( result.first );
-
-		std::vector< media_type_t > expected{
-			{ "text", "plain" }
-		};
-
-		REQUIRE( expected == result.second );
-	}
-
-	{
-		const auto result = try_parse( ", , text/plain , */*,, ,  ,   text/*," );
-
-		REQUIRE( result.first );
-
-		std::vector< media_type_t > expected{
-			{ "text", "plain" },
-			{ "*", "*" },
-			{ "text", "*" }
-		};
-
-		REQUIRE( expected == result.second );
-	}
-}
-#endif
-
 TEST_CASE( "qvalue", "[qvalue]" )
 {
 	using namespace restinio::http_field_parser;
@@ -1059,6 +975,172 @@ TEST_CASE( "weight", "[qvalue][weight]" )
 		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
 	}
 }
+
+TEST_CASE( "one_or_more_of", "[one_or_more_of]" )
+{
+	using namespace restinio::http_field_parser;
+
+	const auto try_parse = []( restinio::string_view_t what ) {
+		const auto media_type = produce< media_type_t >(
+				rfc::token_producer() >> to_lower() >> &media_type_t::m_type,
+				symbol('/'),
+				rfc::token_producer() >> to_lower() >> &media_type_t::m_subtype );
+
+		return try_parse_field_value(
+				what,
+				produce< std::vector< media_type_t > >(
+					rfc::one_or_more_of( media_type )
+				)
+			);
+	};
+
+	{
+		const auto result = try_parse( "" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( "," );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( ",,,," );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( ",  ,     ,    ,  " );
+
+		REQUIRE( !result.first );
+		REQUIRE( result.second.empty() );
+	}
+
+	{
+		const auto result = try_parse( "text/plain" );
+
+		REQUIRE( result.first );
+
+		std::vector< media_type_t > expected{
+			{ "text", "plain" }
+		};
+
+		REQUIRE( expected == result.second );
+	}
+
+	{
+		const auto result = try_parse( ", ,text/plain" );
+
+		REQUIRE( result.first );
+
+		std::vector< media_type_t > expected{
+			{ "text", "plain" }
+		};
+
+		REQUIRE( expected == result.second );
+	}
+
+	{
+		const auto result = try_parse( ", , text/plain , */*,, ,  ,   text/*," );
+
+		REQUIRE( result.first );
+
+		std::vector< media_type_t > expected{
+			{ "text", "plain" },
+			{ "*", "*" },
+			{ "text", "*" }
+		};
+
+		REQUIRE( expected == result.second );
+	}
+}
+
+#if 0
+TEST_CASE( "any_number_of", "[any_number_of]" )
+{
+	using namespace restinio::http_field_parser;
+
+	const auto try_parse = []( restinio::string_view_t what ) {
+		const auto media_type = produce< media_type_t >(
+				rfc::token() >> to_lower() >> &media_type_t::m_type,
+				symbol('/') >> skip(),
+				rfc::token() >> to_lower() >> &media_type_t::m_subtype );
+
+		return try_parse_field_value< std::vector< media_type_t > >(
+				what,
+				any_number_of< std::vector< media_type_t > >( media_type ) >> as_result() );
+	};
+
+	{
+		const auto result = try_parse( "" );
+
+		REQUIRE( result.first );
+		REQUIRE( result.second.empty() );
+	}
+
+	{
+		const auto result = try_parse( "," );
+
+		REQUIRE( result.first );
+		REQUIRE( result.second.empty() );
+	}
+
+	{
+		const auto result = try_parse( ",,,," );
+
+		REQUIRE( result.first );
+		REQUIRE( result.second.empty() );
+	}
+
+	{
+		const auto result = try_parse( ",  ,     ,    ,  " );
+
+		REQUIRE( result.first );
+		REQUIRE( result.second.empty() );
+	}
+
+	{
+		const auto result = try_parse( "text/plain" );
+
+		REQUIRE( result.first );
+
+		std::vector< media_type_t > expected{
+			{ "text", "plain" }
+		};
+
+		REQUIRE( expected == result.second );
+	}
+
+	{
+		const auto result = try_parse( ", ,text/plain" );
+
+		REQUIRE( result.first );
+
+		std::vector< media_type_t > expected{
+			{ "text", "plain" }
+		};
+
+		REQUIRE( expected == result.second );
+	}
+
+	{
+		const auto result = try_parse( ", , text/plain , */*,, ,  ,   text/*," );
+
+		REQUIRE( result.first );
+
+		std::vector< media_type_t > expected{
+			{ "text", "plain" },
+			{ "*", "*" },
+			{ "text", "*" }
+		};
+
+		REQUIRE( expected == result.second );
+	}
+}
+#endif
 
 #if 0
 
