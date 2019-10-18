@@ -789,7 +789,6 @@ public :
 // repeat_clause_t
 //
 template<
-	template<class> class Container_Adaptor,
 	typename Subitems_Tuple >
 class repeat_clause_t : public clause_tag
 {
@@ -813,29 +812,23 @@ public :
 	bool
 	try_process( source_t & from, Target_Type & dest )
 	{
-		using adaptor_type = Container_Adaptor< Target_Type >;
-		using value_type = typename adaptor_type::value_type;
-
 		source_t::content_consumer_t whole_consumer{ from };
 
 		std::size_t count{};
 		bool failure_detected{ false };
 		for(; !failure_detected && count != m_max_occurences; )
 		{
-			value_type item;
-
 			source_t::content_consumer_t item_consumer{ from };
 
 			failure_detected = !restinio::utils::tuple_algorithms::all_of(
 					m_subitems,
-					[&from, &item]( auto && one_clause ) {
-						return one_clause.try_process( from, item );
+					[&from, &dest]( auto && one_clause ) {
+						return one_clause.try_process( from, dest );
 					} );
 
 			if( !failure_detected )
 			{
 				// Another item successfully parsed and should be stored.
-				adaptor_type::store( dest, std::move(item) );
 				item_consumer.consume();
 				++count;
 			}
@@ -848,7 +841,6 @@ public :
 		return success;
 	}
 };
-
 
 namespace rfc
 {
@@ -1275,7 +1267,6 @@ sequence( Clauses &&... clauses )
 // repeat
 //
 template<
-	template<class C> class Container_Adaptor = default_container_adaptor,
 	typename... Clauses >
 RESTINIO_NODISCARD
 auto
@@ -1287,9 +1278,7 @@ repeat(
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for repeat() should be clauses" );
 
-	using producer_type_t = impl::repeat_clause_t<
-			Container_Adaptor,
-			std::tuple<Clauses...> >;
+	using producer_type_t = impl::repeat_clause_t< std::tuple<Clauses...> >;
 
 	return producer_type_t{
 			min_occurences,
@@ -1564,27 +1553,83 @@ weight_producer() noexcept
 		);
 }
 
+
+} /* namespace rfc */
+
+namespace impl
+{
+
+namespace rfc
+{
+
+template<
+	typename Container,
+	template<class> class Container_Adaptor,
+	typename Element_Producer >
+class one_or_more_of_producer_t : public producer_tag< Container >
+{
+	Element_Producer m_element;
+
+public :
+	one_or_more_of_producer_t(
+		Element_Producer && element )
+		:	m_element{ std::move(element) }
+	{}
+
+	RESTINIO_NODISCARD
+	std::pair< bool, Container >
+	try_parse( source_t & from )
+	{
+		std::pair< bool, Container > result;
+		result.first = false;
+
+		const auto appender = custom_consumer(
+			[]( Container & dest,
+				typename Container_Adaptor<Container>::value_type && what )
+			{
+				Container_Adaptor<Container>::store( dest, std::move(what) );
+			} );
+
+		using restinio::http_field_parser::rfc::ows;
+
+		result.first = sequence(
+				repeat( 0, N, symbol(','), ows() ),
+				m_element >> appender,  
+				repeat( 0, N,
+					ows(), symbol(','),
+					maybe( ows(), m_element >> appender )
+				)
+			).try_process( from, result.second );
+
+		return result;
+	}
+};
+
+} /* namespace rfc */
+
+} /* namespace impl */
+
+namespace rfc
+{
+
 //
-// one_or_more_of
+// one_or_more_of_producer
 //
 template<
+	typename Container,
 	template<class> class Container_Adaptor = default_container_adaptor,
 	typename Element_Producer >
 RESTINIO_NODISCARD
 auto
-one_or_more_of( Element_Producer element )
+one_or_more_of_producer( Element_Producer element )
 {
 	static_assert( impl::is_producer_v<Element_Producer>,
 			"Element_Producer should be a value producer type" );
 
-	return sequence(
-			produce< nothing_t >( repeat( 0, N, symbol(','), ows() ) ) >> skip(),
-			repeat< Container_Adaptor >( 1, 1, element >> as_result() ),
-			repeat< Container_Adaptor >( 0, N,
-				ows(), symbol(','),
-				maybe( ows(), element >> as_result() )
-			)
-		);
+	return impl::rfc::one_or_more_of_producer_t<
+			Container,
+			Container_Adaptor,
+			Element_Producer >{ std::move(element) };
 }
 
 } /* namespace rfc */
