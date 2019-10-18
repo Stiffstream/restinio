@@ -1287,31 +1287,6 @@ repeat(
 	};
 }
 
-#if 0
-//
-// any_number_of
-//
-template<
-	typename Container,
-	template<class C> class Container_Adaptor = default_container_adaptor,
-	typename Producer >
-RESTINIO_NODISCARD
-auto
-any_number_of(
-	impl::value_producer_t<Producer> producer )
-{
-	using producer_type_t = impl::any_number_of_t<
-			Container_Adaptor<Container>,
-			Producer >;
-
-	using result_type_t = impl::value_producer_t< producer_type_t >;
-
-	return result_type_t{
-			producer_type_t{ producer.giveaway() }
-	};
-}
-#endif
-
 //
 // skip
 //
@@ -1595,12 +1570,18 @@ namespace impl
 namespace rfc
 {
 
+//
+// one_or_more_of_producer_t
+//
 template<
 	typename Container,
 	template<class> class Container_Adaptor,
 	typename Element_Producer >
 class one_or_more_of_producer_t : public producer_tag< Container >
 {
+	static_assert( impl::is_producer_v<Element_Producer>,
+			"Element_Producer should be a value producer type" );
+
 	Element_Producer m_element;
 
 public :
@@ -1623,6 +1604,49 @@ public :
 		result.first = sequence(
 				repeat( 0, N, symbol(','), ows() ),
 				m_element >> appender,  
+				repeat( 0, N,
+					ows(), symbol(','),
+					maybe( ows(), m_element >> appender )
+				)
+			).try_process( from, result.second );
+
+		return result;
+	}
+};
+
+//
+// any_number_of_producer_t
+//
+template<
+	typename Container,
+	template<class> class Container_Adaptor,
+	typename Element_Producer >
+class any_number_of_producer_t : public producer_tag< Container >
+{
+	static_assert( impl::is_producer_v<Element_Producer>,
+			"Element_Producer should be a value producer type" );
+
+	Element_Producer m_element;
+
+public :
+	any_number_of_producer_t(
+		Element_Producer && element )
+		:	m_element{ std::move(element) }
+	{}
+
+	RESTINIO_NODISCARD
+	std::pair< bool, Container >
+	try_parse( source_t & from )
+	{
+		std::pair< bool, Container > result;
+		result.first = false;
+
+		const auto appender = to_container<Container_Adaptor>();
+
+		using restinio::http_field_parser::rfc::ows;
+
+		result.first = maybe(
+				alternatives( symbol(','), m_element >> appender ),
 				repeat( 0, N,
 					ows(), symbol(','),
 					maybe( ows(), m_element >> appender )
@@ -1660,171 +1684,27 @@ one_or_more_of_producer( Element_Producer element )
 			Element_Producer >{ std::move(element) };
 }
 
-} /* namespace rfc */
-
-#if 0
 //
-// any_number_of_t
+// any_number_of_producer
 //
 template<
-	typename Container_Adaptor,
-	typename Producer >
-class any_number_of_t
-{
-	using container_type = typename Container_Adaptor::container_type;
-	using value_type = typename Container_Adaptor::value_type;
-
-	value_producer_t<Producer> m_producer;
-
-public :
-	any_number_of_t( Producer && producer )
-		:	m_producer{ std::move(producer) }
-	{}
-
-	RESTINIO_NODISCARD
-	std::pair< bool, container_type >
-	try_parse( source_t & from );
-};
-
-#endif
-
-#if 0
-namespace impl
-{
-
-//
-// one_or_more_of_t implementation
-//
-template< typename Container_Adaptor, typename Producer >
+	typename Container,
+	template<class> class Container_Adaptor = default_container_adaptor,
+	typename Element_Producer >
 RESTINIO_NODISCARD
-std::pair<
-	bool,
-	typename one_or_more_of_t<Container_Adaptor, Producer>::container_type >
-one_or_more_of_t<Container_Adaptor, Producer>::try_parse( source_t & from )
+auto
+any_number_of_producer( Element_Producer element )
 {
-	namespace hfp = restinio::http_field_parser;
+	static_assert( impl::is_producer_v<Element_Producer>,
+			"Element_Producer should be a value producer type" );
 
-	std::pair< bool, container_type > result;
-	result.first = false;
-
-	auto opt_intro_clause = repeat< nothing_t >( 0, N,
-		symbol(',') >> skip(),
-		hfp::rfc::ows() >> skip() ) >> skip();
-	if( opt_intro_clause.try_process( from, result.second ) )
-	{
-		auto the_first_item_clause = m_producer >> custom_consumer(
-				[]( auto & dest, value_type && item ) {
-					Container_Adaptor::store( dest, std::move(item) );
-				} );
-		if( the_first_item_clause.try_process( from, result.second ) )
-		{
-			auto remaining_item_clause =
-				produce< restinio::optional_t<value_type> >(
-					hfp::rfc::ows() >> skip(),
-					symbol(',') >> skip(),
-					optional< value_type >(
-						hfp::rfc::ows() >> skip(),
-						m_producer >> as_result()
-					) >> as_result()
-				) >> custom_consumer(
-					[]( auto & dest, restinio::optional_t<value_type> && item )
-					{
-						if( item )
-							Container_Adaptor::store( dest, std::move(*item) );
-					} );
-
-			bool process_result{ true };
-			do
-			{
-				const auto pos = from.current_position();
-				process_result = remaining_item_clause.try_process(
-						from, result.second );
-				if( !process_result )
-					from.backto( pos );
-			}
-			while( process_result );
-
-			result.first = true;
-		}
-	}
-
-	return result;
+	return impl::rfc::any_number_of_producer_t<
+			Container,
+			Container_Adaptor,
+			Element_Producer >{ std::move(element) };
 }
 
-//FIXME: it's just a workaround.
-template< typename T >
-struct value_to_optional : public transformer_tag< restinio::optional_t<T> >
-{
-	RESTINIO_NODISCARD
-	auto
-	transform( T && value ) const
-	{
-		return restinio::optional_t<T>{ std::move(value) };
-	}
-};
-
-//
-// any_number_of_t implementation
-//
-template< typename Container_Adaptor, typename Producer >
-RESTINIO_NODISCARD
-std::pair<
-	bool,
-	typename any_number_of_t<Container_Adaptor, Producer>::container_type >
-any_number_of_t<Container_Adaptor, Producer>::try_parse( source_t & from )
-{
-	namespace hfp = restinio::http_field_parser;
-
-	std::pair< bool, container_type > result;
-	// It seems that this method will always return 'success' even
-	// if nothing has been parsed. It is because all values are optional.
-	result.first = true;
-
-	using optional_value_t = restinio::optional_t< value_type >;
-	const auto append_opt_val = []( auto & dest, optional_value_t && item ) {
-		if( item )
-			Container_Adaptor::store( dest, std::move(*item) );
-	};
-
-	using val_to_optional_transformer_t = value_to_optional< value_type >;
-
-	auto opt_intro_clause =
-		alternatives< optional_value_t >(
-			symbol(',') >> just( optional_value_t{} ),
-			m_producer >> impl::value_transformer_t< val_to_optional_transformer_t >{
-					val_to_optional_transformer_t{} }
-		) >> custom_consumer( append_opt_val );
-
-	if( opt_intro_clause.try_process( from, result.second ) )
-	{
-		auto remaining_item_clause =
-			produce< optional_value_t >(
-				hfp::rfc::ows() >> skip(),
-				symbol(',') >> skip(),
-				optional< value_type >(
-					hfp::rfc::ows() >> skip(),
-					m_producer >> as_result()
-				) >> as_result()
-			) >> custom_consumer( append_opt_val );
-
-		bool process_result{ true };
-		do
-		{
-			const auto pos = from.current_position();
-			process_result = remaining_item_clause.try_process(
-					from, result.second );
-			if( !process_result )
-				from.backto( pos );
-		}
-		while( process_result );
-	}
-
-	return result;
-}
-
-} /* namespace impl */
-
-#endif
+} /* namespace rfc */
 
 //
 // try_parse_field_value

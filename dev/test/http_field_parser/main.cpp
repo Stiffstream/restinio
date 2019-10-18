@@ -1066,20 +1066,20 @@ TEST_CASE( "one_or_more_of", "[one_or_more_of]" )
 	}
 }
 
-#if 0
 TEST_CASE( "any_number_of", "[any_number_of]" )
 {
 	using namespace restinio::http_field_parser;
 
 	const auto try_parse = []( restinio::string_view_t what ) {
 		const auto media_type = produce< media_type_t >(
-				rfc::token() >> to_lower() >> &media_type_t::m_type,
-				symbol('/') >> skip(),
-				rfc::token() >> to_lower() >> &media_type_t::m_subtype );
+				rfc::token_producer() >> to_lower() >> &media_type_t::m_type,
+				symbol('/'),
+				rfc::token_producer() >> to_lower() >> &media_type_t::m_subtype );
 
-		return try_parse_field_value< std::vector< media_type_t > >(
+		return try_parse_field_value(
 				what,
-				any_number_of< std::vector< media_type_t > >( media_type ) >> as_result() );
+				rfc::any_number_of_producer< std::vector< media_type_t > >( media_type ) 
+			);
 	};
 
 	{
@@ -1148,7 +1148,6 @@ TEST_CASE( "any_number_of", "[any_number_of]" )
 		REQUIRE( expected == result.second );
 	}
 }
-#endif
 
 #if 0
 
