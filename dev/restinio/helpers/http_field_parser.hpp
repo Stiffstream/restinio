@@ -25,6 +25,7 @@
 #include <iostream>
 #include <limits>
 #include <map>
+#include <array>
 #include <cstring>
 
 namespace restinio
