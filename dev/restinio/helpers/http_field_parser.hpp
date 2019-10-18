@@ -429,6 +429,8 @@ enum class entity_type_t
 	clause
 };
 
+//FIXME: a requirement for producer type should be described.
+
 template< typename Result_Type >
 struct producer_tag
 {
@@ -448,6 +450,8 @@ struct is_producer< T, meta::void_t< decltype(T::entity_type) > >
 template< typename T >
 constexpr bool is_producer_v = is_producer<T>::value;
 
+//FIXME: a requirement for transformer type should be described.
+
 template< typename Result_Type >
 struct transformer_tag
 {
@@ -466,27 +470,6 @@ struct is_transformer< T, meta::void_t< decltype(T::entity_type) > >
 
 template< typename T >
 constexpr bool is_transformer_v = is_transformer<T>::value;
-
-template< typename T >
-class value_transformer_t
-{
-	static_assert( is_transformer_v<T>, "T should be a transformer type" );
-
-	T m_transformer;
-
-public :
-	using result_type = typename T::result_type;
-
-	value_transformer_t(
-		T && transformer )
-		:	m_transformer{ std::move(transformer) }
-	{}
-
-	T giveaway() noexcept(noexcept(T{std::move(std::declval<T>())}))
-	{
-		return std::move(m_transformer);
-	}
-};
 
 template< typename Producer, typename Transformer >
 class transformed_value_producer_t
@@ -531,16 +514,18 @@ public :
 template< typename P, typename T >
 RESTINIO_NODISCARD
 std::enable_if_t<
-	is_producer_v<P>,
+	is_producer_v<P> & is_transformer_v<T>,
 	transformed_value_producer_t< P, T > >
 operator>>(
 	P producer,
-	value_transformer_t<T> transformer )
+	T transformer )
 {
 	using transformator_type = transformed_value_producer_t< P, T >;
 
-	return transformator_type{ std::move(producer), transformer.giveaway() };
+	return transformator_type{ std::move(producer), std::move(transformer) };
 };
+
+//FIXME: a requirement for consumer type should be described.
 
 struct consumer_tag
 {
@@ -559,24 +544,7 @@ struct is_consumer< T, meta::void_t< decltype(T::entity_type) > >
 template< typename T >
 constexpr bool is_consumer_v = is_consumer<T>::value;
 
-//
-// value_consumer_t
-//
-template< typename C >
-class value_consumer_t 
-{
-	static_assert( is_consumer_v<C>, "C should be a consumer type" );
-
-	C m_consumer;
-
-public :
-	value_consumer_t( C && consumer ) : m_consumer{ std::move(consumer) } {}
-
-	C giveaway() noexcept(noexcept(C{std::move(std::declval<C>())}))
-	{
-		return std::move(m_consumer);
-	}
-};
+//FIXME: a requirement for clause type should be described.
 
 struct clause_tag
 {
@@ -629,11 +597,11 @@ public :
 template< typename P, typename C >
 RESTINIO_NODISCARD
 std::enable_if_t<
-	is_producer_v<P>,
+	is_producer_v<P> && is_consumer_v<C>,
 	consume_value_clause_t< P, C > >
-operator>>( P producer, value_consumer_t<C> consumer )
+operator>>( P producer, C consumer )
 {
-	return { std::move(producer), consumer.giveaway() };
+	return { std::move(producer), std::move(consumer) };
 }
 
 template< typename Producer >
@@ -1430,8 +1398,8 @@ any_number_of(
 // skip
 //
 RESTINIO_NODISCARD
-impl::value_consumer_t< impl::any_value_skipper_t >
-skip() noexcept { return { impl::any_value_skipper_t{} }; }
+auto
+skip() noexcept { return impl::any_value_skipper_t{}; }
 
 //
 // symbol_producer
@@ -1477,8 +1445,8 @@ digit() noexcept
 // as_result
 //
 RESTINIO_NODISCARD
-impl::value_consumer_t< impl::as_result_consumer_t >
-as_result() noexcept { return { impl::as_result_consumer_t{} }; }
+auto
+as_result() noexcept { return impl::as_result_consumer_t{}; }
 
 //
 // custom_consumer
@@ -1490,17 +1458,15 @@ custom_consumer( F consumer )
 {
 	using actual_consumer_t = impl::custom_consumer_t< F >;
 
-	return impl::value_consumer_t< actual_consumer_t >{
-			actual_consumer_t{ std::move(consumer) }
-	};
+	return actual_consumer_t{ std::move(consumer) };
 }
 
 //
 // to_lower
 //
 RESTINIO_NODISCARD
-impl::value_transformer_t< impl::to_lower_t >
-to_lower() noexcept { return { impl::to_lower_t{} }; }
+auto
+to_lower() noexcept { return impl::to_lower_t{}; }
 
 #if 0
 //
@@ -1593,13 +1559,6 @@ class qvalue_producer_t
 		}
 	};
 
-	RESTINIO_NODISCARD
-	static auto
-	digit_consumer( qvalue_t::underlying_uint_t m )
-	{
-		return value_consumer_t< digit_consumer_t >{ digit_consumer_t{m} };
-	}
-
 public :
 	RESTINIO_NODISCARD
 	std::pair< bool, restinio::http_field_parser::rfc::qvalue_t >
@@ -1613,15 +1572,15 @@ public :
 						symbol('0'),
 						maybe(
 							symbol('.'),
-							maybe( digit_producer() >> digit_consumer(100),
-								maybe( digit_producer() >> digit_consumer(10),
-									maybe( digit_producer() >> digit_consumer(1) )
+							maybe( digit_producer() >> digit_consumer_t{100},
+								maybe( digit_producer() >> digit_consumer_t{10},
+									maybe( digit_producer() >> digit_consumer_t{1} )
 								)
 							)
 						)
 					),
 					sequence(
-						symbol_producer('1') >> digit_consumer(1000),
+						symbol_producer('1') >> digit_consumer_t{1000},
 						maybe(
 							symbol('.'),
 							maybe( symbol('0'),
