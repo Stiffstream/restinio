@@ -403,7 +403,7 @@ public:
 		}
 
 		void
-		consume() noexcept
+		acquire_content() noexcept
 		{
 			m_consumed = true;
 		}
@@ -666,7 +666,7 @@ public :
 					if( success )
 					{
 						target = std::move(tmp_value);
-						consumer.consume();
+						consumer.acquire_content();
 					}
 
 					return success;
@@ -706,7 +706,7 @@ public :
 		if( success )
 		{
 			target = std::move(tmp_value);
-			consumer.consume();
+			consumer.acquire_content();
 		}
 
 		// maybe_producer always returns true even if nothing consumed.
@@ -746,7 +746,7 @@ public :
 		if( success )
 		{
 			target = std::move(tmp_value);
-			consumer.consume();
+			consumer.acquire_content();
 		}
 
 		return success;
@@ -829,14 +829,14 @@ public :
 			if( !failure_detected )
 			{
 				// Another item successfully parsed and should be stored.
-				item_consumer.consume();
+				item_consumer.acquire_content();
 				++count;
 			}
 		}
 
 		const bool success = count >= m_min_occurences;
 		if( success )
-			whole_consumer.consume();
+			whole_consumer.acquire_content();
 
 		return success;
 	}
@@ -1005,7 +1005,7 @@ public :
 		}
 
 		if( result.first )
-			consumer.consume();
+			consumer.acquire_content();
 
 		return result;
 	}
@@ -1107,17 +1107,17 @@ public :
 };
 
 //
-// field_setter_t
+// field_setter_consumer_t
 //
 template< typename F, typename C >
-class field_setter_t : public consumer_tag
+class field_setter_consumer_t : public consumer_tag
 {
 	using pointer_t = F C::*;
 
 	pointer_t m_ptr;
 
 public :
-	field_setter_t( pointer_t ptr ) noexcept : m_ptr{ptr} {}
+	field_setter_consumer_t( pointer_t ptr ) noexcept : m_ptr{ptr} {}
 
 	void
 	consume( C & to, F && value ) const
@@ -1131,19 +1131,19 @@ template< typename P, typename F, typename C >
 RESTINIO_NODISCARD
 std::enable_if_t<
 	is_producer_v<P>,
-	consume_value_clause_t< P, field_setter_t<F,C> > >
+	consume_value_clause_t< P, field_setter_consumer_t<F,C> > >
 operator>>( P producer, F C::*member_ptr )
 {
 	return {
 			std::move(producer),
-			field_setter_t<F,C>{ member_ptr }
+			field_setter_consumer_t<F,C>{ member_ptr }
 	};
 }
 
 //
-// to_lower_t
+// to_lower_transformer_t
 //
-struct to_lower_t : public transformer_tag< std::string >
+struct to_lower_transformer_t : public transformer_tag< std::string >
 {
 	using input_type = std::string;
 
@@ -1392,7 +1392,7 @@ to_container()
 //
 RESTINIO_NODISCARD
 auto
-to_lower() noexcept { return impl::to_lower_t{}; }
+to_lower() noexcept { return impl::to_lower_transformer_t{}; }
 
 #if 0
 //
