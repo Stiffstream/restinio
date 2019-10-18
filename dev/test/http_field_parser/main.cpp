@@ -277,7 +277,6 @@ TEST_CASE( "produce media_type", "[produce][media_type]" )
 	}
 }
 
-#if 0
 TEST_CASE( "simple repeat (vector target)", "[repeat][vector]" )
 {
 	using namespace restinio::http_field_parser;
@@ -295,10 +294,12 @@ TEST_CASE( "simple repeat (vector target)", "[repeat][vector]" )
 			produce< pairs_holder_t >(
 				produce< pairs_holder_t::container_t >(
 					repeat( 0, N,
-						symbol(';'),
-						rfc::token_producer() >> &pairs_holder_t::value_t::first,
-						symbol('='),
-						rfc::token_producer() >> &pairs_holder_t::value_t::second
+						produce< pairs_holder_t::value_t >(
+							symbol(';'),
+							rfc::token_producer() >> &pairs_holder_t::value_t::first,
+							symbol('='),
+							rfc::token_producer() >> &pairs_holder_t::value_t::second
+						) >> to_container()
 					)
 				) >> &pairs_holder_t::m_pairs
 			)
@@ -311,9 +312,7 @@ TEST_CASE( "simple repeat (vector target)", "[repeat][vector]" )
 	REQUIRE( "name2" == result.second.m_pairs[1].first );
 	REQUIRE( "value2" == result.second.m_pairs[1].second );
 }
-#endif
 
-#if 0
 TEST_CASE( "simple repeat (map target)", "[repeat][map]" )
 {
 	using namespace restinio::http_field_parser;
@@ -331,10 +330,12 @@ TEST_CASE( "simple repeat (map target)", "[repeat][map]" )
 			produce< pairs_holder_t >(
 				produce< pairs_holder_t::container_t >(
 					repeat( 0, N,
-						symbol(';'),
-						rfc::token_producer() >> &pairs_holder_t::value_t::first,
-						symbol('='),
-						rfc::token_producer() >> &pairs_holder_t::value_t::second
+						produce< pairs_holder_t::value_t >(
+							symbol(';'),
+							rfc::token_producer() >> &pairs_holder_t::value_t::first,
+							symbol('='),
+							rfc::token_producer() >> &pairs_holder_t::value_t::second
+						) >> to_container()
 					)
 				) >> &pairs_holder_t::m_pairs
 			)
@@ -349,9 +350,7 @@ TEST_CASE( "simple repeat (map target)", "[repeat][map]" )
 
 	REQUIRE( expected == result.second.m_pairs );
 }
-#endif
 
-#if 0
 TEST_CASE( "simple repeat (string)", "[repeat][string][symbol_producer]" )
 {
 	using namespace restinio::http_field_parser;
@@ -361,7 +360,7 @@ TEST_CASE( "simple repeat (string)", "[repeat][string][symbol_producer]" )
 			what,
 			produce< std::string >(
 					repeat( 3, 7,
-						symbol_producer('*') >> as_result()
+						symbol_producer('*') >> to_container()
 					)
 				)
 			);
@@ -400,9 +399,7 @@ TEST_CASE( "simple repeat (string)", "[repeat][string][symbol_producer]" )
 		REQUIRE( !result.first );
 	}
 }
-#endif
 
-#if 0
 TEST_CASE( "simple content_type", "[content_type]" )
 {
 	using namespace restinio::http_field_parser;
@@ -419,23 +416,25 @@ TEST_CASE( "simple content_type", "[content_type]" )
 
 				produce< std::map<std::string, std::string> >(
 					repeat( 0, N,
-						symbol(';'),
-						rfc::ows(),
+						produce< std::pair<std::string, std::string> >(
+							symbol(';'),
+							rfc::ows(),
 
-						rfc::token_producer() >> to_lower() >>
-								&std::pair<std::string, std::string>::first,
+							rfc::token_producer() >> to_lower() >>
+									&std::pair<std::string, std::string>::first,
 
-						hfp::symbol('='),
+							hfp::symbol('='),
 
-						produce< std::string >(
-							alternatives(
-								rfc::token_producer()
-										>> hfp::to_lower()
-										>> as_result(),
-								rfc::quoted_string_producer()
-										>> as_result()
-							)
-						) >> &std::pair<std::string, std::string>::second
+							produce< std::string >(
+								alternatives(
+									rfc::token_producer()
+											>> hfp::to_lower()
+											>> as_result(),
+									rfc::quoted_string_producer()
+											>> as_result()
+								)
+							) >> &std::pair<std::string, std::string>::second
+						) >> to_container()
 					)
 				) >> &content_type_t::m_parameters
 			)
@@ -545,9 +544,7 @@ TEST_CASE( "simple content_type", "[content_type]" )
 		REQUIRE( expected == result.second.m_parameters );
 	}
 }
-#endif
 
-#if 0
 TEST_CASE( "sequence with optional", "[optional][simple]" )
 {
 	using namespace restinio::http_field_parser;
@@ -561,22 +558,24 @@ TEST_CASE( "sequence with optional", "[optional][simple]" )
 
 				produce< value_with_opt_params_t::param_storage_t >(
 					repeat( 0, N,
-						symbol(';'),
-						rfc::ows(),
+						produce< value_with_opt_params_t::param_t >(
+							symbol(';'),
+							rfc::ows(),
 
-						rfc::token_producer() >> to_lower() >>
-								&value_with_opt_params_t::param_t::first,
+							rfc::token_producer() >> to_lower() >>
+									&value_with_opt_params_t::param_t::first,
 
-						produce< restinio::optional_t<std::string> >(
-							maybe(
-								symbol('='),
+							produce< restinio::optional_t<std::string> >(
+								maybe(
+									symbol('='),
 
-								alternatives(
-									rfc::token_producer() >> to_lower() >> as_result(),
-									rfc::quoted_string_producer() >> as_result()
+									alternatives(
+										rfc::token_producer() >> to_lower() >> as_result(),
+										rfc::quoted_string_producer() >> as_result()
+									)
 								)
-							)
-						) >> &value_with_opt_params_t::param_t::second
+							) >> &value_with_opt_params_t::param_t::second
+						) >> to_container()
 					)
 				) >> &value_with_opt_params_t::m_params
 			)
@@ -627,7 +626,6 @@ TEST_CASE( "sequence with optional", "[optional][simple]" )
 		REQUIRE( "four = 4" == *(result.second.m_params[3].second) );
 	}
 }
-#endif
 
 TEST_CASE( "rollback on backtracking", "[rollback][alternative]" )
 {

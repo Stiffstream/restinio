@@ -1379,6 +1379,39 @@ custom_consumer( F consumer )
 	return actual_consumer_t{ std::move(consumer) };
 }
 
+namespace impl
+{
+
+//
+// to_container_consumer_t
+//
+template<
+	template<class> class Container_Adaptor >
+struct to_container_consumer_t : public consumer_tag
+{
+	template< typename Container, typename Item >
+	void
+	consume( Container & to, Item && item )
+	{
+		Container_Adaptor<Container>::store( to, std::move(item) );
+	}
+};
+
+} /* namespace impl */
+
+//
+// to_container
+//
+//FIXME: document this!
+template<
+	template<class> class Container_Adaptor = default_container_adaptor >
+RESTINIO_NODISCARD
+auto
+to_container()
+{
+	return impl::to_container_consumer_t<Container_Adaptor>();
+}
+
 //
 // to_lower
 //
@@ -1583,12 +1616,7 @@ public :
 		std::pair< bool, Container > result;
 		result.first = false;
 
-		const auto appender = custom_consumer(
-			[]( Container & dest,
-				typename Container_Adaptor<Container>::value_type && what )
-			{
-				Container_Adaptor<Container>::store( dest, std::move(what) );
-			} );
+		const auto appender = to_container<Container_Adaptor>();
 
 		using restinio::http_field_parser::rfc::ows;
 
