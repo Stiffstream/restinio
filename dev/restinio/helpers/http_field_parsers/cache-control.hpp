@@ -37,20 +37,22 @@ struct cache_control_value_t
 	make_parser()
 	{
 		using namespace restinio::http_field_parser;
+		using namespace restinio::http_field_parser::rfc;
 
 		return produce< cache_control_value_t >(
-			one_or_more_of< directive_container_t >(
+			one_or_more_of_producer< directive_container_t >(
 				produce< directive_t >(
-					rfc::token() >> to_lower() >> &directive_t::first,
-					optional< std::string >(
-						symbol('=') >> skip(),
-						alternatives< std::string >(
-							rfc::token() >> to_lower(),
-							rfc::quoted_string() ) >> as_result()
-					) >> &directive_t::second
+					token_producer() >> to_lower() >> &directive_t::first,
+					maybe(
+						symbol('='),
+						alternatives(
+							token_producer() >> &directive_t::second,
+							quoted_string_producer() >> &directive_t::second
+						)
+					)
 				)
 			) >> &cache_control_value_t::m_directives
-		) >> as_result();
+		);
 	}
 
 	static std::pair< bool, cache_control_value_t >
@@ -58,9 +60,7 @@ struct cache_control_value_t
 	{
 		using namespace restinio::http_field_parser;
 
-		return try_parse_field_value< cache_control_value_t >(
-				what,
-				make_parser() );
+		return try_parse_field_value( what, make_parser() );
 	}
 };
 

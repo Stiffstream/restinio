@@ -5,9 +5,7 @@
 #include <catch2/catch.hpp>
 
 #include <restinio/helpers/http_field_parser.hpp>
-//#include <restinio/helpers/http_field_parsers/cache-control.hpp>
-
-//#include <map>
+#include <restinio/helpers/http_field_parsers/cache-control.hpp>
 
 namespace hfp = restinio::http_field_parser;
 
@@ -1149,8 +1147,6 @@ TEST_CASE( "any_number_of", "[any_number_of]" )
 	}
 }
 
-#if 0
-
 TEST_CASE( "Cache-Control Field", "[cache-control]" )
 {
 	using namespace restinio::http_field_parsers;
@@ -1223,4 +1219,3 @@ TEST_CASE( "Cache-Control Field", "[cache-control]" )
 	}
 }
 
-#endif
