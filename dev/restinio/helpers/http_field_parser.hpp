@@ -1491,8 +1491,6 @@ public :
 	try_parse( source_t & from ) const noexcept
 	{
 		const auto parse_result = produce< zero_initialized_unit_t >(
-				alternatives( symbol('q'), symbol('Q') ),
-				symbol('='),
 				alternatives(
 					sequence(
 						symbol('0'),
@@ -1557,6 +1555,8 @@ weight_producer() noexcept
 			ows(),
 			symbol(';'),
 			ows(),
+			alternatives( symbol('q'), symbol('Q') ),
+			symbol('='),
 			qvalue_producer() >> as_result()
 		);
 }

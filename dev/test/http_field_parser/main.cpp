@@ -713,182 +713,118 @@ TEST_CASE( "qvalue", "[qvalue]" )
 	}
 
 	{
-		const auto result = try_parse( "Q" );
-
-		REQUIRE( !result.first );
-	}
-
-	{
-		const auto result = try_parse( "q" );
-
-		REQUIRE( !result.first );
-	}
-
-	{
-		const auto result = try_parse( "A" );
-
-		REQUIRE( !result.first );
-	}
-
-	{
-		const auto result = try_parse( "A=" );
-
-		REQUIRE( !result.first );
-	}
-
-	{
-		const auto result = try_parse( "Q=" );
-
-		REQUIRE( !result.first );
-	}
-
-	{
-		const auto result = try_parse( "q=" );
-
-		REQUIRE( !result.first );
-	}
-
-	{
-		const auto result = try_parse( "Q=0" );
+		const auto result = try_parse( "0" );
 
 		REQUIRE( result.first );
 		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
 	}
 
 	{
-		const auto result = try_parse( "q=0" );
-
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
-	}
-
-	{
-		const auto result = try_parse( "Q=1" );
+		const auto result = try_parse( "1" );
 
 		REQUIRE( result.first );
 		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
 	}
 
 	{
-		const auto result = try_parse( "q=1" );
-
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
-	}
-
-	{
-		const auto result = try_parse( "Q=0 " );
+		const auto result = try_parse( "0 " );
 
 		REQUIRE( result.first );
 		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
 	}
 
 	{
-		const auto result = try_parse( "q=0 " );
-
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
-	}
-
-	{
-		const auto result = try_parse( "Q=1 " );
+		const auto result = try_parse( "1 " );
 
 		REQUIRE( result.first );
 		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
 	}
 
 	{
-		const auto result = try_parse( "q=1 " );
-
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
-	}
-
-	{
-		const auto result = try_parse( "q=0." );
+		const auto result = try_parse( "0." );
 
 		REQUIRE( result.first );
 		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
 	}
 
 	{
-		const auto result = try_parse( "q=1." );
+		const auto result = try_parse( "1." );
 
 		REQUIRE( result.first );
 		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
 	}
 
 	{
-		const auto result = try_parse( "q=0.000" );
+		const auto result = try_parse( "0.000" );
 
 		REQUIRE( result.first );
 		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
 	}
 
 	{
-		const auto result = try_parse( "q=0.1 " );
+		const auto result = try_parse( "0.1 " );
 
 		REQUIRE( result.first );
 		REQUIRE( qvalue_t{untrusted{100u}} == result.second );
 	}
 
 	{
-		const auto result = try_parse( "q=0.01 " );
+		const auto result = try_parse( "0.01 " );
 
 		REQUIRE( result.first );
 		REQUIRE( qvalue_t{untrusted{10u}} == result.second );
 	}
 
 	{
-		const auto result = try_parse( "q=0.001 " );
+		const auto result = try_parse( "0.001 " );
 
 		REQUIRE( result.first );
 		REQUIRE( qvalue_t{untrusted{1u}} == result.second );
 	}
 
 	{
-		const auto result = try_parse( "q=1.000" );
+		const auto result = try_parse( "1.000" );
 
 		REQUIRE( result.first );
 		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
 	}
 
 	{
-		const auto result = try_parse( "q=1.0  " );
+		const auto result = try_parse( "1.0  " );
 
 		REQUIRE( result.first );
 		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
 	}
 
 	{
-		const auto result = try_parse( "q=1.00  " );
+		const auto result = try_parse( "1.00  " );
 
 		REQUIRE( result.first );
 		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
 	}
 
 	{
-		const auto result = try_parse( "q=1.000  " );
+		const auto result = try_parse( "1.000  " );
 
 		REQUIRE( result.first );
 		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
 	}
 
 	{
-		const auto result = try_parse( "q=0.001" );
+		const auto result = try_parse( "0.001" );
 
 		REQUIRE( result.first );
 		REQUIRE( qvalue_t{untrusted{1u}} == result.second );
 	}
 
 	{
-		const auto result = try_parse( "q=1.001" );
+		const auto result = try_parse( "1.001" );
 
 		REQUIRE( !result.first );
 	}
 
 	{
-		const auto result = try_parse( "q=0.321" );
+		const auto result = try_parse( "0.321" );
 
 		REQUIRE( result.first );
 		REQUIRE( qvalue_t{untrusted{321u}} == result.second );
@@ -914,6 +850,30 @@ TEST_CASE( "weight", "[qvalue][weight]" )
 
 	{
 		const auto result = try_parse( "q=0" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( ";Q" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( ";q" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( ";Q=" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( ";q=" );
 
 		REQUIRE( !result.first );
 	}
