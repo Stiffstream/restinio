@@ -9,6 +9,7 @@
 #include <restinio/helpers/http_field_parsers/media-type.hpp>
 #include <restinio/helpers/http_field_parsers/content-type.hpp>
 #include <restinio/helpers/http_field_parsers/content-encoding.hpp>
+#include <restinio/helpers/http_field_parsers/accept.hpp>
 
 struct media_type_t
 {
@@ -1383,6 +1384,149 @@ TEST_CASE( "Content-Encoding", "[content-encoding]" )
 		};
 
 		REQUIRE( expected == result.second.m_values );
+	}
+}
+
+TEST_CASE( "Accept", "[media-type][accept]" )
+{
+	using namespace restinio::http_field_parsers;
+	using namespace std::string_literals;
+
+	{
+		const auto result = accept_value_t::try_parse(
+				"" );
+
+		REQUIRE( result.first );
+
+		REQUIRE( result.second.m_items.empty() );
+	}
+
+	{
+		const auto result = accept_value_t::try_parse(
+				"text/" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = accept_value_t::try_parse(
+				"/plain" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = accept_value_t::try_parse(
+				"text/plain" );
+
+		REQUIRE( result.first );
+
+		REQUIRE( 1 == result.second.m_items.size() );
+
+		const auto & item = result.second.m_items[0];
+
+		REQUIRE( "text" == item.m_media_type.m_type );
+		REQUIRE( "plain" == item.m_media_type.m_subtype );
+		REQUIRE( item.m_media_type.m_parameters.empty() );
+	}
+
+	{
+		const auto result = accept_value_t::try_parse(
+				"text/*; CharSet=utf-8 ;    Alternative-Coding=\"Bla Bla Bla\"" );
+
+		REQUIRE( result.first );
+
+		REQUIRE( 1 == result.second.m_items.size() );
+
+		const auto & item = result.second.m_items[0];
+
+		REQUIRE( "text" == item.m_media_type.m_type );
+		REQUIRE( "*" == item.m_media_type.m_subtype );
+
+		media_type_value_t::parameter_container_t expected{
+			{ "charset"s, "utf-8"s },
+			{ "alternative-coding"s, "Bla Bla Bla"s }
+		};
+		REQUIRE( expected == item.m_media_type.m_parameters );
+	}
+
+	{
+		const auto result = accept_value_t::try_parse(
+				"text/*;CharSet=utf-8, application/json;charset=cp1251" );
+
+		REQUIRE( result.first );
+
+		REQUIRE( 2 == result.second.m_items.size() );
+
+		{
+			const auto & item = result.second.m_items[0];
+
+			REQUIRE( "text" == item.m_media_type.m_type );
+			REQUIRE( "*" == item.m_media_type.m_subtype );
+
+			media_type_value_t::parameter_container_t expected{
+				{ "charset"s, "utf-8"s },
+			};
+			REQUIRE( expected == item.m_media_type.m_parameters );
+		}
+
+		{
+			const auto & item = result.second.m_items[1];
+
+			REQUIRE( "application" == item.m_media_type.m_type );
+			REQUIRE( "json" == item.m_media_type.m_subtype );
+
+			media_type_value_t::parameter_container_t expected{
+				{ "charset"s, "cp1251"s },
+			};
+			REQUIRE( expected == item.m_media_type.m_parameters );
+		}
+	}
+
+	{
+		const auto result = accept_value_t::try_parse(
+				"text/plain;q=0.5;signed;signature-method=sha512, "
+				"text/*;CharSet=utf-8, "
+				"application/json;charset=cp1251" );
+
+		REQUIRE( result.first );
+
+		REQUIRE( 3 == result.second.m_items.size() );
+
+		{
+			const auto & item = result.second.m_items[0];
+			REQUIRE( "text" == item.m_media_type.m_type );
+			REQUIRE( "plain" == item.m_media_type.m_subtype );
+			REQUIRE( item.m_media_type.m_parameters.empty() );
+
+			REQUIRE( item.m_weight );
+			REQUIRE( qvalue_t{ qvalue_t::untrusted{500} } ==
+					*item.m_weight );
+		}
+
+		{
+			const auto & item = result.second.m_items[1];
+
+			REQUIRE( "text" == item.m_media_type.m_type );
+			REQUIRE( "*" == item.m_media_type.m_subtype );
+
+			media_type_value_t::parameter_container_t expected{
+				{ "charset"s, "utf-8"s },
+			};
+			REQUIRE( expected == item.m_media_type.m_parameters );
+		}
+
+		{
+			const auto & item = result.second.m_items[2];
+
+			REQUIRE( "application" == item.m_media_type.m_type );
+			REQUIRE( "json" == item.m_media_type.m_subtype );
+
+			media_type_value_t::parameter_container_t expected{
+				{ "charset"s, "cp1251"s },
+			};
+			REQUIRE( expected == item.m_media_type.m_parameters );
+		}
 	}
 }
 
