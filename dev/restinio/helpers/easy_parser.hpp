@@ -578,6 +578,39 @@ public :
 };
 
 //
+// not_clause_t
+//
+template<
+	typename Subitems_Tuple >
+class not_clause_t : public clause_tag
+{
+	Subitems_Tuple m_subitems;
+
+public :
+	not_clause_t(
+		Subitems_Tuple && subitems )
+		:	m_subitems{ std::move(subitems) }
+	{}
+
+	template< typename Target_Type >
+	RESTINIO_NODISCARD
+	bool
+	try_process( source_t & from, Target_Type & )
+	{
+		// NOTE: will always return the current position back.
+		source_t::content_consumer_t consumer{ from };
+
+		Target_Type dummy_value;
+
+		return !restinio::utils::tuple_algorithms::all_of(
+				m_subitems,
+				[&from, &dummy_value]( auto && one_producer ) {
+					return one_producer.try_process( from, dummy_value );
+				} );
+	}
+};
+
+//
 // sequence_clause_t
 //
 template<
@@ -931,6 +964,24 @@ maybe( Clauses &&... clauses )
 			"all arguments for maybe() should be clauses" );
 
 	using clause_type_t = impl::maybe_clause_t< std::tuple<Clauses...> >;
+
+	return clause_type_t{
+			std::make_tuple(std::forward<Clauses>(clauses)...)
+	};
+}
+
+//
+// not_clause
+//
+template< typename... Clauses >
+RESTINIO_NODISCARD
+auto
+not_clause( Clauses &&... clauses )
+{
+	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
+			"all arguments for sequence() should be clauses" );
+
+	using clause_type_t = impl::not_clause_t< std::tuple<Clauses...> >;
 
 	return clause_type_t{
 			std::make_tuple(std::forward<Clauses>(clauses)...)

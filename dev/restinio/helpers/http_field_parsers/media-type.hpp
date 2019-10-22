@@ -33,7 +33,7 @@ struct media_type_value_t
 	parameter_container_t m_parameters;
 
 	static auto
-	make_parser()
+	make_default_parser()
 	{
 		return produce< media_type_value_t >(
 			token_producer() >> to_lower() >> &media_type_value_t::m_type,
@@ -57,10 +57,36 @@ struct media_type_value_t
 		);
 	}
 
+	static auto
+	make_weight_aware_parser()
+	{
+		return produce< media_type_value_t >(
+			token_producer() >> to_lower() >> &media_type_value_t::m_type,
+			symbol('/'),
+			token_producer() >> to_lower() >> &media_type_value_t::m_subtype,
+			produce< parameter_container_t >(
+				repeat( 0, N,
+					produce< parameter_t >(
+						not_clause( weight_producer() >> skip() ),
+						ows(),
+						symbol(';'),
+						ows(),
+						token_producer() >> to_lower() >> &parameter_t::first,
+						symbol('='),
+						alternatives(
+							token_producer() >> &parameter_t::second,
+							quoted_string_producer() >> &parameter_t::second
+						)
+					) >> to_container()
+				)
+			) >> &media_type_value_t::m_parameters
+		);
+	}
+
 	static std::pair< bool, media_type_value_t >
 	try_parse( string_view_t what )
 	{
-		return restinio::easy_parser::try_parse( what, make_parser() );
+		return restinio::easy_parser::try_parse( what, make_default_parser() );
 	}
 };
 

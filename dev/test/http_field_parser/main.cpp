@@ -184,6 +184,74 @@ TEST_CASE( "sequence", "[token][sequence]" )
 	}
 }
 
+TEST_CASE( "not", "[token][not]" )
+{
+	using namespace restinio::http_field_parsers;
+
+	struct result_t
+	{
+		std::string first;
+		std::string second;
+		std::string third;
+	};
+
+	const auto try_parse = []( restinio::string_view_t what ) {
+		return restinio::easy_parser::try_parse( what,
+				produce< result_t >(
+					token_producer() >> &result_t::first,
+					symbol('/'),
+					token_producer() >> &result_t::second,
+					not_clause(
+						symbol(';'),
+						symbol('q')
+					),
+					maybe(
+						symbol(';'),
+						token_producer() >> &result_t::third
+					)
+				)
+			);
+	};
+
+	{
+		const auto result = try_parse( "text/plain" );
+
+		REQUIRE( result.first );
+		REQUIRE( "text" == result.second.first );
+		REQUIRE( "plain" == result.second.second );
+	}
+
+	{
+		const auto result = try_parse( "text/plain;default" );
+
+		REQUIRE( result.first );
+		REQUIRE( "text" == result.second.first );
+		REQUIRE( "plain" == result.second.second );
+		REQUIRE( "default" == result.second.third );
+	}
+
+	{
+		const auto result = try_parse( "text/plain;q" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( "text/plain;qq" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = try_parse( "text/plain;Q" );
+
+		REQUIRE( result.first );
+		REQUIRE( "text" == result.second.first );
+		REQUIRE( "plain" == result.second.second );
+		REQUIRE( "Q" == result.second.third );
+	}
+}
+
 TEST_CASE( "alternatives with symbol", "[alternatives][symbol][field_setter]" )
 {
 	using namespace restinio::http_field_parsers;

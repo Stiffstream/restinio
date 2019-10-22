@@ -30,7 +30,8 @@ struct content_type_value_t
 	make_parser()
 	{
 		return produce< content_type_value_t >(
-			media_type_value_t::make_parser() >> &content_type_value_t::m_media_type
+			media_type_value_t::make_default_parser()
+					>> &content_type_value_t::m_media_type
 		);
 	}
 
