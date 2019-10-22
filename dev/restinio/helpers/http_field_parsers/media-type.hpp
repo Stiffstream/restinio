@@ -24,9 +24,9 @@ namespace http_field_parsers
 //
 struct media_type_value_t
 {
-	using parameter_t = std::pair< std::string, std::string >;
+	using parameter_t = parameter_with_mandatory_value_t;
 
-	using parameter_container_t = std::vector< parameter_t >;
+	using parameter_container_t = parameter_with_mandatory_value_container_t;
 
 	std::string m_type;
 	std::string m_subtype;
@@ -39,21 +39,7 @@ struct media_type_value_t
 			token_producer() >> to_lower() >> &media_type_value_t::m_type,
 			symbol('/'),
 			token_producer() >> to_lower() >> &media_type_value_t::m_subtype,
-			produce< parameter_container_t >(
-				repeat( 0, N,
-					produce< parameter_t >(
-						ows(),
-						symbol(';'),
-						ows(),
-						token_producer() >> to_lower() >> &parameter_t::first,
-						symbol('='),
-						alternatives(
-							token_producer() >> &parameter_t::second,
-							quoted_string_producer() >> &parameter_t::second
-						)
-					) >> to_container()
-				)
-			) >> &media_type_value_t::m_parameters
+			params_with_value_producer() >> &media_type_value_t::m_parameters
 		);
 	}
 

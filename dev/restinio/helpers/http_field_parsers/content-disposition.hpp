@@ -24,9 +24,9 @@ namespace http_field_parsers
 //
 struct content_disposition_value_t
 {
-	using parameter_t = std::pair< std::string, std::string >;
+	using parameter_t = parameter_with_mandatory_value_t;
 
-	using parameter_container_t = std::vector< parameter_t >;
+	using parameter_container_t = parameter_with_mandatory_value_container_t;
 
 	std::string m_value;
 	parameter_container_t m_parameters;
@@ -35,22 +35,10 @@ struct content_disposition_value_t
 	make_parser()
 	{
 		return produce< content_disposition_value_t >(
-			token_producer() >> to_lower() >> &content_disposition_value_t::m_value,
-			produce< parameter_container_t >(
-				repeat( 0, N,
-					produce< parameter_t >(
-						ows(),
-						symbol(';'),
-						ows(),
-						token_producer() >> to_lower() >> &parameter_t::first,
-						symbol('='),
-						alternatives(
-							token_producer() >> &parameter_t::second,
-							quoted_string_producer() >> &parameter_t::second
-						)
-					) >> to_container()
-				)
-			) >> &content_disposition_value_t::m_parameters
+			token_producer() >> to_lower()
+					>> &content_disposition_value_t::m_value,
+			params_with_value_producer()
+					>> &content_disposition_value_t::m_parameters
 		);
 	}
 
@@ -64,5 +52,4 @@ struct content_disposition_value_t
 } /* namespace http_field_parsers */
 
 } /* namespace restinio */
-
 

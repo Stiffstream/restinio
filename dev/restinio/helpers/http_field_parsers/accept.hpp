@@ -26,11 +26,9 @@ struct accept_value_t
 {
 	struct item_t
 	{
-		using accept_ext_t = std::pair<
-				std::string,
-				restinio::optional_t< std::string > >;
+		using accept_ext_t = parameter_with_optional_value_t;
 
-		using accept_ext_container_t = std::vector< accept_ext_t >;
+		using accept_ext_container_t = parameter_with_optional_value_container_t;
 
 		media_type_value_t m_media_type;
 		restinio::optional_t< qvalue_t > m_weight;
@@ -52,26 +50,7 @@ struct accept_value_t
 					media_type >> &item_t::m_media_type,
 					maybe(
 						weight_producer() >> &item_t::m_weight,
-						produce< item_t::accept_ext_container_t >(
-							repeat( 0, N,
-								produce< item_t::accept_ext_t >(
-									ows(),
-									symbol(';'),
-									ows(),
-									token_producer() >> to_lower()
-											>> &item_t::accept_ext_t::first,
-									maybe(
-										symbol('='),
-										alternatives(
-											token_producer()
-													>> &item_t::accept_ext_t::second,
-											quoted_string_producer()
-													>> &item_t::accept_ext_t::second
-										)
-									)
-								) >> to_container()
-							)
-						) >> &item_t::m_accept_params
+						params_with_opt_value_producer() >> &item_t::m_accept_params
 					)
 				)
 			) >> &accept_value_t::m_items

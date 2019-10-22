@@ -592,6 +592,159 @@ maybe_empty_comma_separated_list_producer( Element_Producer element )
 			Element_Producer >{ std::move(element) };
 }
 
+//
+// parameter_with_mandatory_value_t
+//
+using parameter_with_mandatory_value_t = std::pair< std::string, std::string >;
+
+//
+// parameter_with_mandatory_value_container_t
+//
+using parameter_with_mandatory_value_container_t =
+		std::vector< parameter_with_mandatory_value_t >;
+
+namespace impl
+{
+
+namespace params_with_value_producer_details
+{
+
+RESTINIO_NODISCARD
+auto
+make_parser()
+{
+	return produce< parameter_with_mandatory_value_container_t >(
+			repeat( 0, N,
+				produce< parameter_with_mandatory_value_t >(
+					ows(),
+					symbol(';'),
+					ows(),
+					token_producer() >> to_lower()
+							>> &parameter_with_mandatory_value_t::first,
+					symbol('='),
+					alternatives(
+						token_producer()
+								>> &parameter_with_mandatory_value_t::second,
+						quoted_string_producer()
+								>> &parameter_with_mandatory_value_t::second
+					)
+				) >> to_container()
+			)
+		);
+}
+
+} /* namespace params_with_value_producer_details */
+
+//
+// params_with_value_producer_t
+//
+class params_with_value_producer_t
+	:	public producer_tag< parameter_with_mandatory_value_container_t >
+{
+	using actual_producer_t = std::decay_t<
+			decltype(params_with_value_producer_details::make_parser()) >;
+
+	actual_producer_t m_producer{
+			params_with_value_producer_details::make_parser() };
+
+public :
+	params_with_value_producer_t() = default;
+
+	RESTINIO_NODISCARD
+	auto
+	try_parse( source_t & from )
+	{
+		return m_producer.try_parse( from );
+	}
+};
+
+} /* namespace impl */
+
+//
+// params_with_value_producer
+//
+RESTINIO_NODISCARD
+impl::params_with_value_producer_t
+params_with_value_producer() { return {}; }
+
+//
+// parameter_with_optional_value_t
+//
+using parameter_with_optional_value_t =
+		std::pair< std::string, restinio::optional_t<std::string> >;
+
+//
+// parameter_with_optional_value_container_t
+//
+using parameter_with_optional_value_container_t =
+		std::vector< parameter_with_optional_value_t >;
+
+namespace impl
+{
+
+namespace params_with_opt_value_producer_details
+{
+
+RESTINIO_NODISCARD
+auto
+make_parser()
+{
+	return produce< parameter_with_optional_value_container_t >(
+			repeat( 0, N,
+				produce< parameter_with_optional_value_t >(
+					ows(),
+					symbol(';'),
+					ows(),
+					token_producer() >> to_lower()
+							>> &parameter_with_optional_value_t::first,
+					maybe(
+						symbol('='),
+						alternatives(
+							token_producer()
+									>> &parameter_with_optional_value_t::second,
+							quoted_string_producer()
+									>> &parameter_with_optional_value_t::second
+						)
+					)
+				) >> to_container()
+			)
+		);
+}
+
+} /* namespace params_with_opt_value_producer_details */
+
+//
+// params_with_opt_value_producer_t
+//
+class params_with_opt_value_producer_t
+	:	public producer_tag< parameter_with_optional_value_container_t >
+{
+	using actual_producer_t = std::decay_t<
+			decltype(params_with_opt_value_producer_details::make_parser()) >;
+
+	actual_producer_t m_producer{
+			params_with_opt_value_producer_details::make_parser() };
+
+public :
+	params_with_opt_value_producer_t() = default;
+
+	RESTINIO_NODISCARD
+	auto
+	try_parse( source_t & from )
+	{
+		return m_producer.try_parse( from );
+	}
+};
+
+} /* namespace impl */
+
+//
+// params_with_opt_value_producer
+//
+RESTINIO_NODISCARD
+impl::params_with_opt_value_producer_t
+params_with_opt_value_producer() { return {}; }
+
 } /* namespace http_field_parser */
 
 } /* namespace restinio */
