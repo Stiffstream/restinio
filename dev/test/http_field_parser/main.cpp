@@ -1635,6 +1635,12 @@ TEST_CASE( "Accept", "[media-type][accept]" )
 			REQUIRE( item.m_weight );
 			REQUIRE( qvalue_t{ qvalue_t::untrusted{500} } ==
 					*item.m_weight );
+
+			accept_value_t::item_t::accept_ext_container_t expected{
+				{ "signed"s, restinio::nullopt },
+				{ "signature-method"s, "sha512"s }
+			};
+			REQUIRE( expected == item.m_accept_params );
 		}
 
 		{

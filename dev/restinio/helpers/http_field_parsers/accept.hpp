@@ -30,9 +30,7 @@ struct accept_value_t
 				std::string,
 				restinio::optional_t< std::string > >;
 
-		using accept_ext_container_t = std::map<
-				std::string,
-				restinio::optional_t< std::string > >;
+		using accept_ext_container_t = std::vector< accept_ext_t >;
 
 		media_type_value_t m_media_type;
 		restinio::optional_t< qvalue_t > m_weight;
