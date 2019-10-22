@@ -10,6 +10,7 @@
 #include <restinio/helpers/http_field_parsers/content-type.hpp>
 #include <restinio/helpers/http_field_parsers/content-encoding.hpp>
 #include <restinio/helpers/http_field_parsers/accept.hpp>
+#include <restinio/helpers/http_field_parsers/content-disposition.hpp>
 
 struct media_type_t
 {
@@ -1659,6 +1660,68 @@ TEST_CASE( "Accept", "[media-type][accept]" )
 			};
 			REQUIRE( expected == item.m_media_type.m_parameters );
 		}
+	}
+}
+
+TEST_CASE( "Content-Disposition", "[content-disposition]" )
+{
+	using namespace restinio::http_field_parsers;
+	using namespace std::string_literals;
+
+	{
+		const auto result = content_disposition_value_t::try_parse(
+				"form-data" );
+
+		REQUIRE( result.first );
+
+		REQUIRE( "form-data" == result.second.m_value );
+		REQUIRE( result.second.m_parameters.empty() );
+	}
+
+	{
+		const auto result = content_disposition_value_t::try_parse(
+				"form-data; name=some-name" );
+
+		REQUIRE( result.first );
+
+		REQUIRE( "form-data" == result.second.m_value );
+
+		content_disposition_value_t::parameter_container_t expected{
+			{ "name"s, "some-name"s },
+		};
+		REQUIRE( expected == result.second.m_parameters );
+	}
+
+	{
+		const auto result = content_disposition_value_t::try_parse(
+				"form-data; name=some-name  ;  filename=\"file\"" );
+
+		REQUIRE( result.first );
+
+		REQUIRE( "form-data" == result.second.m_value );
+
+		content_disposition_value_t::parameter_container_t expected{
+			{ "name"s, "some-name"s },
+			{ "filename"s, "file"s },
+		};
+		REQUIRE( expected == result.second.m_parameters );
+	}
+
+	{
+		const auto result = content_disposition_value_t::try_parse(
+				"form-data; name=some-name  ;  filename=\"file\""
+				";filename*=\"another name\"");
+
+		REQUIRE( result.first );
+
+		REQUIRE( "form-data" == result.second.m_value );
+
+		content_disposition_value_t::parameter_container_t expected{
+			{ "name"s, "some-name"s },
+			{ "filename"s, "file"s },
+			{ "filename*"s, "another name"s },
+		};
+		REQUIRE( expected == result.second.m_parameters );
 	}
 }
 
