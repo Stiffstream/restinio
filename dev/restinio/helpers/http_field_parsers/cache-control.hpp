@@ -37,7 +37,7 @@ struct cache_control_value_t
 	make_parser()
 	{
 		return produce< cache_control_value_t >(
-			one_or_more_of_producer< directive_container_t >(
+			non_empty_comma_separated_list_producer< directive_container_t >(
 				produce< directive_t >(
 					token_producer() >> to_lower() >> &directive_t::first,
 					maybe(

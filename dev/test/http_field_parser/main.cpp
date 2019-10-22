@@ -942,7 +942,8 @@ TEST_CASE( "weight", "[qvalue][weight]" )
 	}
 }
 
-TEST_CASE( "one_or_more_of", "[one_or_more_of]" )
+TEST_CASE( "non_empty_comma_separated_list_producer",
+		"[non_empty_comma_separated_list_producer]" )
 {
 	using namespace restinio::http_field_parsers;
 
@@ -954,9 +955,8 @@ TEST_CASE( "one_or_more_of", "[one_or_more_of]" )
 
 		return restinio::easy_parser::try_parse(
 				what,
-				one_or_more_of_producer< std::vector< media_type_t > >(
-					media_type
-				)
+				non_empty_comma_separated_list_producer<
+						std::vector< media_type_t > >( media_type )
 			);
 	};
 
@@ -1024,7 +1024,8 @@ TEST_CASE( "one_or_more_of", "[one_or_more_of]" )
 	}
 }
 
-TEST_CASE( "any_number_of", "[any_number_of]" )
+TEST_CASE( "maybe_empty_comma_separated_list_producer",
+		"[maybe_empty_comma_separated_list_producer]" )
 {
 	using namespace restinio::http_field_parsers;
 
@@ -1036,7 +1037,8 @@ TEST_CASE( "any_number_of", "[any_number_of]" )
 
 		return restinio::easy_parser::try_parse(
 				what,
-				any_number_of_producer< std::vector< media_type_t > >( media_type ) 
+				maybe_empty_comma_separated_list_producer<
+						std::vector< media_type_t > >( media_type ) 
 			);
 	};
 

@@ -466,13 +466,14 @@ namespace impl
 {
 
 //
-// one_or_more_of_producer_t
+// non_empty_comma_separated_list_producer_t
 //
 template<
 	typename Container,
 	template<class> class Container_Adaptor,
 	typename Element_Producer >
-class one_or_more_of_producer_t : public producer_tag< Container >
+class non_empty_comma_separated_list_producer_t
+	: public producer_tag< Container >
 {
 	static_assert( impl::is_producer_v<Element_Producer>,
 			"Element_Producer should be a value producer type" );
@@ -480,7 +481,7 @@ class one_or_more_of_producer_t : public producer_tag< Container >
 	Element_Producer m_element;
 
 public :
-	one_or_more_of_producer_t(
+	non_empty_comma_separated_list_producer_t(
 		Element_Producer && element )
 		:	m_element{ std::move(element) }
 	{}
@@ -508,13 +509,14 @@ public :
 };
 
 //
-// any_number_of_producer_t
+// maybe_empty_comma_separated_list_producer_t
 //
 template<
 	typename Container,
 	template<class> class Container_Adaptor,
 	typename Element_Producer >
-class any_number_of_producer_t : public producer_tag< Container >
+class maybe_empty_comma_separated_list_producer_t
+	:	public producer_tag< Container >
 {
 	static_assert( impl::is_producer_v<Element_Producer>,
 			"Element_Producer should be a value producer type" );
@@ -522,7 +524,7 @@ class any_number_of_producer_t : public producer_tag< Container >
 	Element_Producer m_element;
 
 public :
-	any_number_of_producer_t(
+	maybe_empty_comma_separated_list_producer_t(
 		Element_Producer && element )
 		:	m_element{ std::move(element) }
 	{}
@@ -551,7 +553,7 @@ public :
 } /* namespace impl */
 
 //
-// one_or_more_of_producer
+// non_empty_comma_separated_list_producer
 //
 template<
 	typename Container,
@@ -559,19 +561,19 @@ template<
 	typename Element_Producer >
 RESTINIO_NODISCARD
 auto
-one_or_more_of_producer( Element_Producer element )
+non_empty_comma_separated_list_producer( Element_Producer element )
 {
 	static_assert( impl::is_producer_v<Element_Producer>,
 			"Element_Producer should be a value producer type" );
 
-	return impl::one_or_more_of_producer_t<
+	return impl::non_empty_comma_separated_list_producer_t<
 			Container,
 			Container_Adaptor,
 			Element_Producer >{ std::move(element) };
 }
 
 //
-// any_number_of_producer
+// maybe_empty_comma_separated_list_producer
 //
 template<
 	typename Container,
@@ -579,12 +581,12 @@ template<
 	typename Element_Producer >
 RESTINIO_NODISCARD
 auto
-any_number_of_producer( Element_Producer element )
+maybe_empty_comma_separated_list_producer( Element_Producer element )
 {
 	static_assert( impl::is_producer_v<Element_Producer>,
 			"Element_Producer should be a value producer type" );
 
-	return impl::any_number_of_producer_t<
+	return impl::maybe_empty_comma_separated_list_producer_t<
 			Container,
 			Container_Adaptor,
 			Element_Producer >{ std::move(element) };
