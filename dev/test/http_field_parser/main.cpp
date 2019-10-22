@@ -8,6 +8,7 @@
 #include <restinio/helpers/http_field_parsers/cache-control.hpp>
 #include <restinio/helpers/http_field_parsers/media-type.hpp>
 #include <restinio/helpers/http_field_parsers/content-type.hpp>
+#include <restinio/helpers/http_field_parsers/content-coding.hpp>
 
 struct media_type_t
 {
@@ -1321,6 +1322,41 @@ TEST_CASE( "Cache-Control Field", "[cache-control]" )
 		};
 
 		REQUIRE( expected_directives == result.second.m_directives );
+	}
+}
+
+TEST_CASE( "Content-Coding", "[content-coding]" )
+{
+	using namespace restinio::http_field_parsers;
+
+	{
+		const auto result = content_coding_value_t::try_parse(
+				"" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = content_coding_value_t::try_parse(
+				"compress/" );
+
+		REQUIRE( !result.first );
+	}
+
+	{
+		const auto result = content_coding_value_t::try_parse(
+				"compress" );
+
+		REQUIRE( result.first );
+		REQUIRE( "compress" == result.second.m_value );
+	}
+
+	{
+		const auto result = content_coding_value_t::try_parse(
+				"X-Compress" );
+
+		REQUIRE( result.first );
+		REQUIRE( "x-compress" == result.second.m_value );
 	}
 }
 
