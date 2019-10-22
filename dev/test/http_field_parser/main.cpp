@@ -8,7 +8,7 @@
 #include <restinio/helpers/http_field_parsers/cache-control.hpp>
 #include <restinio/helpers/http_field_parsers/media-type.hpp>
 #include <restinio/helpers/http_field_parsers/content-type.hpp>
-#include <restinio/helpers/http_field_parsers/content-coding.hpp>
+#include <restinio/helpers/http_field_parsers/content-encoding.hpp>
 
 struct media_type_t
 {
@@ -1325,38 +1325,64 @@ TEST_CASE( "Cache-Control Field", "[cache-control]" )
 	}
 }
 
-TEST_CASE( "Content-Coding", "[content-coding]" )
+TEST_CASE( "Content-Encoding", "[content-encoding]" )
 {
 	using namespace restinio::http_field_parsers;
+	using namespace std::string_literals;
 
 	{
-		const auto result = content_coding_value_t::try_parse(
+		const auto result = content_encoding_value_t::try_parse(
 				"" );
 
 		REQUIRE( !result.first );
 	}
 
 	{
-		const auto result = content_coding_value_t::try_parse(
+		const auto result = content_encoding_value_t::try_parse(
 				"compress/" );
 
 		REQUIRE( !result.first );
 	}
 
 	{
-		const auto result = content_coding_value_t::try_parse(
+		const auto result = content_encoding_value_t::try_parse(
 				"compress" );
 
 		REQUIRE( result.first );
-		REQUIRE( "compress" == result.second.m_value );
+
+		const content_encoding_value_t::value_container_t expected{
+			"compress"s
+		};
+
+		REQUIRE( expected == result.second.m_values );
 	}
 
 	{
-		const auto result = content_coding_value_t::try_parse(
+		const auto result = content_encoding_value_t::try_parse(
 				"X-Compress" );
 
 		REQUIRE( result.first );
-		REQUIRE( "x-compress" == result.second.m_value );
+
+		const content_encoding_value_t::value_container_t expected{
+			"x-compress"s
+		};
+
+		REQUIRE( expected == result.second.m_values );
+	}
+
+	{
+		const auto result = content_encoding_value_t::try_parse(
+				"gzip, X-Compress  ,     deflate" );
+
+		REQUIRE( result.first );
+
+		const content_encoding_value_t::value_container_t expected{
+			"gzip"s,
+			"x-compress"s,
+			"deflate"s
+		};
+
+		REQUIRE( expected == result.second.m_values );
 	}
 }
 
