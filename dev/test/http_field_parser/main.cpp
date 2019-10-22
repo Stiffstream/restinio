@@ -4,12 +4,10 @@
 
 #include <catch2/catch.hpp>
 
-#include <restinio/helpers/http_field_parser.hpp>
+#include <restinio/helpers/easy_parser.hpp>
 #include <restinio/helpers/http_field_parsers/cache-control.hpp>
 #include <restinio/helpers/http_field_parsers/media-type.hpp>
 #include <restinio/helpers/http_field_parsers/content-type.hpp>
-
-namespace hfp = restinio::http_field_parser;
 
 struct media_type_t
 {
@@ -46,8 +44,10 @@ struct value_with_opt_params_t
 
 TEST_CASE( "token", "[token]" )
 {
+	using namespace restinio::http_field_parsers;
+
 	const auto try_parse = []( restinio::string_view_t what ) {
-		return hfp::try_parse_field_value( what, hfp::rfc::token_producer() );
+		return restinio::easy_parser::try_parse( what, token_producer() );
 	};
 
 	{
@@ -78,14 +78,14 @@ TEST_CASE( "token", "[token]" )
 
 TEST_CASE( "alternatives", "[token][alternatives]" )
 {
-	using namespace restinio::http_field_parser;
+	using namespace restinio::http_field_parsers;
 
 	const auto try_parse = []( restinio::string_view_t what ) {
-		return try_parse_field_value( what,
+		return restinio::easy_parser::try_parse( what,
 				produce< std::string >(
 					alternatives(
 						symbol(','),
-						rfc::token_producer() >> to_lower() >> as_result() )
+						token_producer() >> to_lower() >> as_result() )
 				)
 			);
 	};
@@ -114,17 +114,17 @@ TEST_CASE( "alternatives", "[token][alternatives]" )
 
 TEST_CASE( "maybe", "[token][maybe]" )
 {
-	using namespace restinio::http_field_parser;
+	using namespace restinio::http_field_parsers;
 
 	using result_t = std::pair< std::string, std::string >;
 
 	const auto try_parse = []( restinio::string_view_t what ) {
-		return try_parse_field_value( what,
+		return restinio::easy_parser::try_parse( what,
 				produce< result_t >(
-					rfc::token_producer() >> &result_t::first,
+					token_producer() >> &result_t::first,
 					maybe(
 						symbol('/'),
-						rfc::token_producer() >> &result_t::second
+						token_producer() >> &result_t::second
 					)
 				)
 			);
@@ -149,17 +149,17 @@ TEST_CASE( "maybe", "[token][maybe]" )
 
 TEST_CASE( "sequence", "[token][sequence]" )
 {
-	using namespace restinio::http_field_parser;
+	using namespace restinio::http_field_parsers;
 
 	using result_t = std::pair< std::string, std::string >;
 
 	const auto try_parse = []( restinio::string_view_t what ) {
-		return try_parse_field_value( what,
+		return restinio::easy_parser::try_parse( what,
 				produce< result_t >(
 					sequence(
-						rfc::token_producer() >> &result_t::first,
+						token_producer() >> &result_t::first,
 						symbol('/'),
-						rfc::token_producer() >> &result_t::second
+						token_producer() >> &result_t::second
 					)
 				)
 			);
@@ -184,19 +184,19 @@ TEST_CASE( "sequence", "[token][sequence]" )
 
 TEST_CASE( "alternatives with symbol", "[alternatives][symbol][field_setter]" )
 {
-	using namespace restinio::http_field_parser;
+	using namespace restinio::http_field_parsers;
 
 	const auto try_parse = [](restinio::string_view_t what) {
-		return hfp::try_parse_field_value(
+		return restinio::easy_parser::try_parse(
 			what,
 			produce< media_type_t >(
-				rfc::token_producer() >> &media_type_t::m_type,
+				token_producer() >> &media_type_t::m_type,
 				alternatives(
 					symbol('/'),
 					symbol('='),
 					symbol('[')
 				),
-				rfc::token_producer() >> &media_type_t::m_subtype )
+				token_producer() >> &media_type_t::m_subtype )
 		);
 	};
 
@@ -229,20 +229,20 @@ TEST_CASE( "alternatives with symbol", "[alternatives][symbol][field_setter]" )
 
 TEST_CASE( "produce media_type", "[produce][media_type]" )
 {
-	using namespace restinio::http_field_parser;
+	using namespace restinio::http_field_parsers;
 
 	struct media_type_holder_t {
 		media_type_t m_media;
 	};
 
 	const auto try_parse = [](restinio::string_view_t what) {
-		return try_parse_field_value(
+		return restinio::easy_parser::try_parse(
 				what,
 				produce< media_type_holder_t >(
 					produce< media_type_t >(
-						rfc::token_producer() >> &media_type_t::m_type,
-						hfp::symbol('/'),
-						rfc::token_producer() >> &media_type_t::m_subtype
+						token_producer() >> &media_type_t::m_type,
+						symbol('/'),
+						token_producer() >> &media_type_t::m_subtype
 					) >> &media_type_holder_t::m_media
 				)
 			);
@@ -279,7 +279,7 @@ TEST_CASE( "produce media_type", "[produce][media_type]" )
 
 TEST_CASE( "simple repeat (vector target)", "[repeat][vector]" )
 {
-	using namespace restinio::http_field_parser;
+	using namespace restinio::http_field_parsers;
 
 	struct pairs_holder_t
 	{
@@ -289,16 +289,16 @@ TEST_CASE( "simple repeat (vector target)", "[repeat][vector]" )
 		container_t m_pairs;
 	};
 
-	const auto result = try_parse_field_value(
+	const auto result = restinio::easy_parser::try_parse(
 			";name1=value;name2=value2",
 			produce< pairs_holder_t >(
 				produce< pairs_holder_t::container_t >(
 					repeat( 0, N,
 						produce< pairs_holder_t::value_t >(
 							symbol(';'),
-							rfc::token_producer() >> &pairs_holder_t::value_t::first,
+							token_producer() >> &pairs_holder_t::value_t::first,
 							symbol('='),
-							rfc::token_producer() >> &pairs_holder_t::value_t::second
+							token_producer() >> &pairs_holder_t::value_t::second
 						) >> to_container()
 					)
 				) >> &pairs_holder_t::m_pairs
@@ -315,7 +315,7 @@ TEST_CASE( "simple repeat (vector target)", "[repeat][vector]" )
 
 TEST_CASE( "simple repeat (map target)", "[repeat][map]" )
 {
-	using namespace restinio::http_field_parser;
+	using namespace restinio::http_field_parsers;
 
 	struct pairs_holder_t
 	{
@@ -325,16 +325,16 @@ TEST_CASE( "simple repeat (map target)", "[repeat][map]" )
 		std::map< std::string, std::string > m_pairs;
 	};
 
-	const auto result = try_parse_field_value(
+	const auto result = restinio::easy_parser::try_parse(
 			";name1=value;name2=value2",
 			produce< pairs_holder_t >(
 				produce< pairs_holder_t::container_t >(
 					repeat( 0, N,
 						produce< pairs_holder_t::value_t >(
 							symbol(';'),
-							rfc::token_producer() >> &pairs_holder_t::value_t::first,
+							token_producer() >> &pairs_holder_t::value_t::first,
 							symbol('='),
-							rfc::token_producer() >> &pairs_holder_t::value_t::second
+							token_producer() >> &pairs_holder_t::value_t::second
 						) >> to_container()
 					)
 				) >> &pairs_holder_t::m_pairs
@@ -353,10 +353,10 @@ TEST_CASE( "simple repeat (map target)", "[repeat][map]" )
 
 TEST_CASE( "simple repeat (string)", "[repeat][string][symbol_producer]" )
 {
-	using namespace restinio::http_field_parser;
+	using namespace restinio::http_field_parsers;
 
 	const auto try_parse = []( restinio::string_view_t what ) {
-		return try_parse_field_value(
+		return restinio::easy_parser::try_parse(
 			what,
 			produce< std::string >(
 					repeat( 3, 7,
@@ -402,35 +402,35 @@ TEST_CASE( "simple repeat (string)", "[repeat][string][symbol_producer]" )
 
 TEST_CASE( "simple content_type", "[content_type]" )
 {
-	using namespace restinio::http_field_parser;
+	using namespace restinio::http_field_parsers;
 
 	const auto try_parse = [](restinio::string_view_t what) {
-		return try_parse_field_value(
+		return restinio::easy_parser::try_parse(
 			what,
 			produce< content_type_t >(
 				produce< media_type_t >(
-					rfc::token_producer() >> to_lower() >> &media_type_t::m_type,
+					token_producer() >> to_lower() >> &media_type_t::m_type,
 					symbol('/'),
-					rfc::token_producer() >> to_lower() >> &media_type_t::m_subtype
+					token_producer() >> to_lower() >> &media_type_t::m_subtype
 				) >> &content_type_t::m_media_type,
 
 				produce< std::map<std::string, std::string> >(
 					repeat( 0, N,
 						produce< std::pair<std::string, std::string> >(
 							symbol(';'),
-							rfc::ows(),
+							ows(),
 
-							rfc::token_producer() >> to_lower() >>
+							token_producer() >> to_lower() >>
 									&std::pair<std::string, std::string>::first,
 
-							hfp::symbol('='),
+							symbol('='),
 
 							produce< std::string >(
 								alternatives(
-									rfc::token_producer()
-											>> hfp::to_lower()
+									token_producer()
+											>> to_lower()
 											>> as_result(),
-									rfc::quoted_string_producer()
+									quoted_string_producer()
 											>> as_result()
 								)
 							) >> &std::pair<std::string, std::string>::second
@@ -547,22 +547,22 @@ TEST_CASE( "simple content_type", "[content_type]" )
 
 TEST_CASE( "sequence with optional", "[optional][simple]" )
 {
-	using namespace restinio::http_field_parser;
+	using namespace restinio::http_field_parsers;
 
 	const auto try_parse = [](restinio::string_view_t what) {
-		return try_parse_field_value(
+		return restinio::easy_parser::try_parse(
 			what,
 			produce< value_with_opt_params_t >(
-				rfc::token_producer() >> to_lower() >>
+				token_producer() >> to_lower() >>
 						&value_with_opt_params_t::m_value,
 
 				produce< value_with_opt_params_t::param_storage_t >(
 					repeat( 0, N,
 						produce< value_with_opt_params_t::param_t >(
 							symbol(';'),
-							rfc::ows(),
+							ows(),
 
-							rfc::token_producer() >> to_lower() >>
+							token_producer() >> to_lower() >>
 									&value_with_opt_params_t::param_t::first,
 
 							produce< restinio::optional_t<std::string> >(
@@ -570,8 +570,8 @@ TEST_CASE( "sequence with optional", "[optional][simple]" )
 									symbol('='),
 
 									alternatives(
-										rfc::token_producer() >> to_lower() >> as_result(),
-										rfc::quoted_string_producer() >> as_result()
+										token_producer() >> to_lower() >> as_result(),
+										quoted_string_producer() >> as_result()
 									)
 								)
 							) >> &value_with_opt_params_t::param_t::second
@@ -629,7 +629,7 @@ TEST_CASE( "sequence with optional", "[optional][simple]" )
 
 TEST_CASE( "rollback on backtracking", "[rollback][alternative]" )
 {
-	using namespace restinio::http_field_parser;
+	using namespace restinio::http_field_parsers;
 
 	struct accumulator_t {
 		std::string m_one;
@@ -638,34 +638,34 @@ TEST_CASE( "rollback on backtracking", "[rollback][alternative]" )
 	};
 
 	const auto try_parse = []( restinio::string_view_t what ) {
-		return try_parse_field_value( what,
+		return restinio::easy_parser::try_parse( what,
 			produce< accumulator_t >(
 				alternatives(
 					sequence(
 						symbol('1'), symbol('='),
-						rfc::token_producer() >> &accumulator_t::m_one,
+						token_producer() >> &accumulator_t::m_one,
 						symbol(';') ),
 					sequence(
 						symbol('1'), symbol('='),
-						rfc::token_producer() >> &accumulator_t::m_one,
+						token_producer() >> &accumulator_t::m_one,
 						symbol(','), symbol('2'), symbol('='),
-						rfc::token_producer() >> &accumulator_t::m_two,
+						token_producer() >> &accumulator_t::m_two,
 						symbol(';') ),
 					sequence(
 						symbol('1'), symbol('='),
-						rfc::token_producer() >> &accumulator_t::m_one,
+						token_producer() >> &accumulator_t::m_one,
 						symbol(','), symbol('2'), symbol('='),
-						rfc::token_producer() >> &accumulator_t::m_two,
+						token_producer() >> &accumulator_t::m_two,
 						symbol(','), symbol('3'), symbol('='),
-						rfc::token_producer() >> &accumulator_t::m_three,
+						token_producer() >> &accumulator_t::m_three,
 						symbol(';') ),
 					sequence(
 						symbol('1'), symbol('='),
-						rfc::token_producer() >> skip(),
+						token_producer() >> skip(),
 						symbol(','), symbol('2'), symbol('='),
-						rfc::token_producer() >> skip(),
+						token_producer() >> skip(),
 						symbol(','), symbol('3'), symbol('='),
-						rfc::token_producer() >> &accumulator_t::m_three,
+						token_producer() >> &accumulator_t::m_three,
 						symbol(','), symbol(',') )
 					)
 				)
@@ -700,12 +700,11 @@ TEST_CASE( "rollback on backtracking", "[rollback][alternative]" )
 
 TEST_CASE( "qvalue", "[qvalue]" )
 {
-	using namespace restinio::http_field_parser;
-	using restinio::http_field_parser::rfc::qvalue_t;
+	using namespace restinio::http_field_parsers;
 	using untrusted = qvalue_t::untrusted;
 
 	const auto try_parse = []( restinio::string_view_t what ) {
-		return try_parse_field_value( what, rfc::qvalue_producer() );
+		return restinio::easy_parser::try_parse( what, qvalue_producer() );
 	};
 
 	{
@@ -836,12 +835,11 @@ TEST_CASE( "qvalue", "[qvalue]" )
 
 TEST_CASE( "weight", "[qvalue][weight]" )
 {
-	using namespace restinio::http_field_parser;
-	using restinio::http_field_parser::rfc::qvalue_t;
+	using namespace restinio::http_field_parsers;
 	using untrusted = qvalue_t::untrusted;
 
 	const auto try_parse = []( restinio::string_view_t what ) {
-		return try_parse_field_value( what, rfc::weight_producer() );
+		return restinio::easy_parser::try_parse( what, weight_producer() );
 	};
 
 	{
@@ -946,17 +944,17 @@ TEST_CASE( "weight", "[qvalue][weight]" )
 
 TEST_CASE( "one_or_more_of", "[one_or_more_of]" )
 {
-	using namespace restinio::http_field_parser;
+	using namespace restinio::http_field_parsers;
 
 	const auto try_parse = []( restinio::string_view_t what ) {
 		const auto media_type = produce< media_type_t >(
-				rfc::token_producer() >> to_lower() >> &media_type_t::m_type,
+				token_producer() >> to_lower() >> &media_type_t::m_type,
 				symbol('/'),
-				rfc::token_producer() >> to_lower() >> &media_type_t::m_subtype );
+				token_producer() >> to_lower() >> &media_type_t::m_subtype );
 
-		return try_parse_field_value(
+		return restinio::easy_parser::try_parse(
 				what,
-				rfc::one_or_more_of_producer< std::vector< media_type_t > >(
+				one_or_more_of_producer< std::vector< media_type_t > >(
 					media_type
 				)
 			);
@@ -1028,17 +1026,17 @@ TEST_CASE( "one_or_more_of", "[one_or_more_of]" )
 
 TEST_CASE( "any_number_of", "[any_number_of]" )
 {
-	using namespace restinio::http_field_parser;
+	using namespace restinio::http_field_parsers;
 
 	const auto try_parse = []( restinio::string_view_t what ) {
 		const auto media_type = produce< media_type_t >(
-				rfc::token_producer() >> to_lower() >> &media_type_t::m_type,
+				token_producer() >> to_lower() >> &media_type_t::m_type,
 				symbol('/'),
-				rfc::token_producer() >> to_lower() >> &media_type_t::m_subtype );
+				token_producer() >> to_lower() >> &media_type_t::m_subtype );
 
-		return try_parse_field_value(
+		return restinio::easy_parser::try_parse(
 				what,
-				rfc::any_number_of_producer< std::vector< media_type_t > >( media_type ) 
+				any_number_of_producer< std::vector< media_type_t > >( media_type ) 
 			);
 	};
 

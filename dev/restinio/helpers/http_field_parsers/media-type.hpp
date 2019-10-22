@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include <restinio/helpers/http_field_parser.hpp>
+#include <restinio/helpers/http_field_parsers/basics.hpp>
 
 namespace restinio
 {
@@ -35,9 +35,6 @@ struct media_type_value_t
 	static auto
 	make_parser()
 	{
-		using namespace restinio::http_field_parser;
-		using namespace restinio::http_field_parser::rfc;
-
 		return produce< media_type_value_t >(
 			token_producer() >> to_lower() >> &media_type_value_t::m_type,
 			symbol('/'),
@@ -63,13 +60,11 @@ struct media_type_value_t
 	static std::pair< bool, media_type_value_t >
 	try_parse( string_view_t what )
 	{
-		using namespace restinio::http_field_parser;
-
-		return try_parse_field_value( what, make_parser() );
+		return restinio::easy_parser::try_parse( what, make_parser() );
 	}
 };
 
-} /* namespace http_fields */
+} /* namespace http_field_parsers */
 
 } /* namespace restinio */
 

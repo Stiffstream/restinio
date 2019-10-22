@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include <restinio/helpers/http_field_parser.hpp>
+#include <restinio/helpers/http_field_parsers/basics.hpp>
 
 namespace restinio
 {
@@ -36,9 +36,6 @@ struct cache_control_value_t
 	static auto
 	make_parser()
 	{
-		using namespace restinio::http_field_parser;
-		using namespace restinio::http_field_parser::rfc;
-
 		return produce< cache_control_value_t >(
 			one_or_more_of_producer< directive_container_t >(
 				produce< directive_t >(
@@ -58,13 +55,11 @@ struct cache_control_value_t
 	static std::pair< bool, cache_control_value_t >
 	try_parse( string_view_t what )
 	{
-		using namespace restinio::http_field_parser;
-
-		return try_parse_field_value( what, make_parser() );
+		return restinio::easy_parser::try_parse( what, make_parser() );
 	}
 };
 
-} /* namespace http_fields */
+} /* namespace http_field_parsers */
 
 } /* namespace restinio */
 
