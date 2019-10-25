@@ -25,6 +25,7 @@ namespace multipart_body
 // split_multipart_body
 //
 //FIXME: document this!
+RESTINIO_NODISCARD
 inline std::vector< string_view_t >
 split_multipart_body(
 	string_view_t body,
