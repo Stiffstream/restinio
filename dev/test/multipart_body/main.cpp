@@ -142,3 +142,123 @@ TEST_CASE( "Basics", "[basics]" )
 	}
 }
 
+TEST_CASE( "try_parse_part", "[try_parse_part]" )
+{
+	using namespace restinio::multipart_body;
+
+	{
+		const auto r = try_parse_part( "" );
+
+		REQUIRE( !r.first );
+	}
+
+	{
+		const auto r = try_parse_part( " " );
+
+		REQUIRE( !r.first );
+	}
+
+	{
+		const auto r = try_parse_part( " body" );
+
+		REQUIRE( !r.first );
+	}
+
+	{
+		const auto r = try_parse_part( "content-type: text/plain" );
+
+		REQUIRE( !r.first );
+	}
+
+	{
+		const auto r = try_parse_part(
+				"content-type: text/plain\r\n"
+				"body." );
+
+		REQUIRE( !r.first );
+	}
+
+	{
+		const auto r = try_parse_part(
+				"content-type: text/plain;\r\n"
+				"  boundary=12345567\r\n"
+				"\r\n"
+				"body." );
+
+		REQUIRE( !r.first );
+	}
+
+	{
+		const auto r = try_parse_part(
+				"content-type: text/plain;\r\n"
+				" content-disposition: form-data;\r\n"
+				"\r\n"
+				"body." );
+
+		REQUIRE( !r.first );
+	}
+
+	{
+		const auto r = try_parse_part( "\r\n" );
+
+		REQUIRE( r.first );
+		REQUIRE( 0u == r.second.m_fields.fields_count() );
+		REQUIRE( "" == r.second.m_body );
+	}
+
+	{
+		const auto r = try_parse_part(
+				"content-type: text/plain\r\n"
+				"\r\n"
+				"body." );
+
+		REQUIRE( r.first );
+		REQUIRE( 1u == r.second.m_fields.fields_count() );
+		REQUIRE( r.second.m_fields.has_field( "content-type" ) );
+		REQUIRE( "text/plain" == r.second.m_fields.value_of( "content-type" ) );
+		REQUIRE( "body." == r.second.m_body );
+	}
+
+	{
+		const auto r = try_parse_part(
+				"content-type: text/plain\r\n"
+				"content-disposition: form-data; name=value\r\n"
+				"\r\n"
+				"body." );
+
+		REQUIRE( r.first );
+		REQUIRE( 2u == r.second.m_fields.fields_count() );
+
+		REQUIRE( r.second.m_fields.has_field( "content-type" ) );
+		REQUIRE( "text/plain" == r.second.m_fields.value_of( "content-type" ) );
+
+		REQUIRE( r.second.m_fields.has_field( "content-disposition" ) );
+		REQUIRE( "form-data; name=value" ==
+				r.second.m_fields.value_of( "content-disposition" ) );
+
+		REQUIRE( "body." == r.second.m_body );
+	}
+
+	{
+		const auto r = try_parse_part(
+				"content-type: text/plain\r\n"
+				"content-disposition: form-data; name=value\r\n"
+				"\r\n"
+				"\r\n"
+				"\r\n"
+				"body." );
+
+		REQUIRE( r.first );
+		REQUIRE( 2u == r.second.m_fields.fields_count() );
+
+		REQUIRE( r.second.m_fields.has_field( "content-type" ) );
+		REQUIRE( "text/plain" == r.second.m_fields.value_of( "content-type" ) );
+
+		REQUIRE( r.second.m_fields.has_field( "content-disposition" ) );
+		REQUIRE( "form-data; name=value" ==
+				r.second.m_fields.value_of( "content-disposition" ) );
+
+		REQUIRE( "\r\n\r\nbody." == r.second.m_body );
+	}
+}
+

@@ -12,6 +12,10 @@
 #pragma once
 
 #include <restinio/helpers/string_algo.hpp>
+#include <restinio/helpers/easy_parser.hpp>
+#include <restinio/helpers/http_field_parsers/basics.hpp>
+
+#include <restinio/http_headers.hpp>
 
 #include <iostream>
 
@@ -88,6 +92,124 @@ split_multipart_body(
 	//
 	// Empty result should be returned.
 	return result;
+}
+
+//
+// parsed_part_t
+//
+struct parsed_part_t
+{
+	http_header_fields_t m_fields;
+	string_view_t m_body;
+};
+
+namespace impl
+{
+
+namespace parser_details
+{
+
+using namespace restinio::http_field_parsers;
+
+namespace easy_parser = restinio::easy_parser;
+
+constexpr char CR = '\r';
+constexpr char LF = '\n';
+
+//
+// body_producer_t
+//
+struct body_producer_t
+	:	public easy_parser::impl::producer_tag< string_view_t >
+{
+	RESTINIO_NODISCARD
+	std::pair< bool, string_view_t >
+	try_parse( easy_parser::impl::source_t & from ) const noexcept
+	{
+		// Return the whole content from the current position.
+		return std::make_pair( true, from.fragment( from.current_position() ) );
+	}
+};
+
+//
+// field_value_producer_t
+//
+struct field_value_producer_t
+	:	public easy_parser::impl::producer_tag< std::string >
+{
+	RESTINIO_NODISCARD
+	std::pair< bool, std::string >
+	try_parse( easy_parser::impl::source_t & from ) const
+	{
+		std::string accumulator;
+		auto ch = from.getch();
+		while( !ch.m_eof && ch.m_ch != CR && ch.m_ch != LF )
+		{
+			accumulator += ch.m_ch;
+			ch = from.getch();
+		}
+
+		if( ch.m_eof )
+			return std::make_pair( false, std::string{} );
+
+		// CR or LF symbol should be returned back.
+		from.putback();
+
+		return std::make_pair( true, std::move(accumulator) );
+	}
+};
+
+} /* namespace parser_details */
+
+//
+// make_parser
+//
+RESTINIO_NODISCARD
+auto
+make_parser()
+{
+	using namespace parser_details;
+
+	return produce< parsed_part_t >(
+			produce< http_header_fields_t >(
+				repeat( 0, N,
+					produce< http_header_field_t >(
+						token_producer() >> to_lower() >> custom_consumer(
+								[](auto & f, std::string && v) {
+									f.name(std::move(v));
+								} ),
+						symbol(':'),
+						ows(),
+						field_value_producer_t{} >> custom_consumer(
+								[](auto & f, std::string && v) {
+									f.value(std::move(v));
+								} ),
+						symbol(CR), symbol(LF)
+					) >> custom_consumer(
+							[](auto & to, http_header_field_t && v) {
+								to.set_field( std::move(v) );
+							} )
+				)
+			) >> &parsed_part_t::m_fields,
+			symbol(CR), symbol(LF),
+			body_producer_t{} >> &parsed_part_t::m_body );
+}
+
+} /* namespace impl */
+
+RESTINIO_NODISCARD
+std::pair< bool, parsed_part_t >
+try_parse_part( string_view_t part )
+{
+	namespace easy_parser = restinio::easy_parser;
+
+	easy_parser::impl::source_t source{ part };
+
+	auto actual_producer = impl::make_parser();
+
+	return easy_parser::impl::top_level_clause_t< decltype(actual_producer) >{
+				std::move(actual_producer)
+			}.try_process( source );
 }
 
 } /* namespace multipart_body */

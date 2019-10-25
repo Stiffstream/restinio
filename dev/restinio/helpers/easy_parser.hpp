@@ -243,6 +243,15 @@ public:
 		return m_index >= m_data.size();
 	}
 
+	RESTINIO_NODISCARD
+	string_view_t
+	fragment(
+		string_view_t::size_type from,
+		string_view_t::size_type length = string_view_t::npos ) const noexcept
+	{
+		return m_data.substr( from, length );
+	}
+
 	class content_consumer_t
 	{
 		source_t & m_from;
@@ -271,17 +280,6 @@ public:
 			m_consumed = true;
 		}
 	};
-
-//FIXME: this is debug method!
-string_view_t
-current_content() const noexcept
-{
-	if( m_index < m_data.size() )
-		return m_data.substr( m_index );
-	else
-		return {"--EOF--"};
-}
-
 };
 
 enum class entity_type_t
