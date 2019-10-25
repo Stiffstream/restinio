@@ -9,13 +9,12 @@
 #include <restinio/all.hpp>
 
 #include <restinio/helpers/http_field_parsers/content-type.hpp>
+#include <restinio/helpers/http_field_parsers/content-disposition.hpp>
 #include <restinio/helpers/multipart_body.hpp>
 #include <restinio/helpers/string_algo.hpp>
 
 #include <clara.hpp>
 #include <fmt/format.h>
-
-using namespace restinio::string_algo;
 
 //
 // app_args_t
@@ -84,6 +83,28 @@ std::string to_string(
 	return { what.data(), what.size() };
 }
 
+template< typename Container >
+restinio::optional_t< std::string >
+try_find_parameter(
+	const Container & where,
+	restinio::string_view_t parameter_name )
+{
+	using std::begin;
+	using std::end;
+
+	const auto it_value = std::find_if(
+			begin(where),
+			end(where),
+			[parameter_name]( const auto & p ) noexcept {
+				return p.first == parameter_name;
+			} );
+
+	if( it_value != end(where) )
+		return it_value->second;
+	else
+		return restinio::nullopt;
+}
+
 std::string get_boundary(
 	const restinio::request_handle_t & req )
 {
@@ -104,41 +125,21 @@ std::string get_boundary(
 		throw std::runtime_error( "expects `multipart/form-data` content-type, "
 				"got: `" + media_type.m_type + "/" + media_type.m_subtype + "`" );
 
-	const auto it_boundary = std::find_if(
-			media_type.m_parameters.begin(),
-			media_type.m_parameters.end(),
-			[]( const auto & p ) noexcept { return p.first == "boundary"; } );
+	const auto opt_boundary = try_find_parameter(
+			media_type.m_parameters,
+			"boundary" );
 
-	if( it_boundary == media_type.m_parameters.end() )
+	if( !opt_boundary )
 		throw std::runtime_error(
 				"'boundary' is not found in content-type field: " +
 				to_string( content_type ) );
 
-	const auto & boundary = it_boundary->second;
-
 	std::string result;
-	result.reserve( 2u + boundary.size() );
+	result.reserve( 2u + opt_boundary->size() );
 	result.append( "--" );
-	result.append( boundary );
+	result.append( *opt_boundary );
 
 	return result;
-}
-
-struct line_from_buffer_t
-{
-	restinio::string_view_t m_line;
-	restinio::string_view_t m_remaining_buffer;
-};
-
-line_from_buffer_t get_line_from_buffer(
-	const restinio::string_view_t & buffer )
-{
-	const restinio::string_view_t eol{ "\r\n" };
-	const auto pos = buffer.find( eol );
-	if( restinio::string_view_t::npos == pos )
-		throw std::runtime_error( "no lines with the correct EOL in the buffer" );
-
-	return { buffer.substr( 0u, pos ), buffer.substr( pos + eol.size() ) };
 }
 
 void store_file_to_disk(
@@ -146,11 +147,6 @@ void store_file_to_disk(
 	const std::string & file_name,
 	restinio::string_view_t raw_content )
 {
-	const restinio::string_view_t content_terminator{ "\r\n" };
-	if( ends_with( raw_content, content_terminator ) )
-		raw_content = raw_content.substr( 0u,
-				raw_content.size() - content_terminator.size() );
-
 	std::ofstream dest_file;
 	dest_file.exceptions( std::ofstream::failbit );
 	dest_file.open( args.m_dest_folder + "/" + file_name,
@@ -162,40 +158,55 @@ bool try_handle_body_fragment(
 	const app_args_t & args,
 	restinio::string_view_t fragment )
 {
-	std::cout << "--- Processing fragment:\n`" << fragment << "`\n---" << std::endl;
-
-#if 0
-	// Process fields at the beginning of the fragment.
-	restinio::optional_t< std::string > file_name;
-	auto line = get_line_from_buffer( fragment );
-	for(; !line.m_line.empty();
-			line = get_line_from_buffer( line.m_remaining_buffer ) )
+	const auto parse_result = restinio::multipart_body::try_parse_part( fragment );
+	if( parse_result.first )
 	{
-		const auto r = restinio::http_field_parser::try_parse_whole_field(
-				line.m_line,
-				"content-disposition",
-				';',
-				restinio::http_field_parser::expect( "form-data" ),
-				restinio::http_field_parser::name_value( "name" ),
-				restinio::http_field_parser::name_value( "filename" ) );
-
-		if( std::get<0>(r) )
+		const auto disposition_field =
+				parse_result.second.m_fields.opt_value_of(
+						restinio::http_field::content_disposition );
+		if( disposition_field )
 		{
-			if( "file" == std::get<1>(r) )
-				file_name = std::get<2>(r);
+			const auto parsed_disposition =
+					restinio::http_field_parsers::content_disposition_value_t::
+							try_parse( *disposition_field );
+
+			if( !parsed_disposition.first )
+				throw std::runtime_error(
+						"unable to parse Content-Disposition field: `" +
+						to_string( parse_result.second.m_body ) );
+
+			if( "form-data" != parsed_disposition.second.m_value )
+				throw std::runtime_error(
+						"unexpected value of Content-Disposition field: `" +
+						parsed_disposition.second.m_value );
+
+			const auto opt_name = try_find_parameter(
+					parsed_disposition.second.m_parameters,
+					"name" );
+			if( opt_name && *opt_name == "file" )
+			{
+				auto opt_filename = try_find_parameter(
+						parsed_disposition.second.m_parameters,
+						"filename*" );
+				if( !opt_filename )
+					opt_filename = try_find_parameter(
+							parsed_disposition.second.m_parameters,
+							"filename" );
+
+				if( !opt_filename )
+					throw std::runtime_error(
+							"file name is not specified in Content-Disposition field: `" +
+							to_string( *disposition_field ) );
+
+				store_file_to_disk(
+						args,
+						to_string( *opt_filename ),
+						parse_result.second.m_body );
+
+				return true;
+			}
 		}
 	}
-
-	if( file_name )
-	{
-		store_file_to_disk(
-				args,
-				to_string( *file_name ),
-				line.m_remaining_buffer );
-
-		return true;
-	}
-#endif
 
 	return false;
 }
