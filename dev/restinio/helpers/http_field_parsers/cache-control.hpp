@@ -24,12 +24,9 @@ namespace http_field_parsers
 //
 struct cache_control_value_t
 {
-	using directive_t = std::pair<
-			std::string,
-			restinio::optional_t<std::string> >;
+	using directive_t = parameter_with_optional_value_t;
 
-	using directive_container_t = std::map<
-			std::string, restinio::optional_t<std::string> >;
+	using directive_container_t = parameter_with_optional_value_container_t;
 
 	directive_container_t m_directives;
 
