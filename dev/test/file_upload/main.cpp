@@ -44,7 +44,7 @@ make_dummy_endpoint()
 	};
 }
 
-TEST_CASE( "Simple", "[simple]" )
+TEST_CASE( "No Content-Type field", "[content-type]" )
 {
 	using namespace restinio::file_upload;
 
@@ -55,7 +55,63 @@ TEST_CASE( "Simple", "[simple]" )
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint() );
 
-	REQUIRE( enumeration_result_t::unexpected_error ==
+	REQUIRE( enumeration_result_t::content_type_field_not_found ==
 			enumerate_parts_with_files( *req, [](){} ) );
+}
+
+TEST_CASE( "Empty Content-Type field", "[content-type]" )
+{
+	using namespace restinio::file_upload;
+
+	restinio::http_request_header_t dummy_header{
+			restinio::http_method_post(),
+			"/"
+	};
+	dummy_header.set_field(
+			restinio::http_field::content_type,
+			""s );
+
+	auto req = std::make_shared< restinio::request_t >(
+			restinio::request_id_t{1},
+			std::move(dummy_header),
+			"Body"s,
+			dummy_connection_t::make(1u),
+			make_dummy_endpoint() );
+
+	REQUIRE( enumeration_result_t::content_type_field_parse_error ==
+			enumerate_parts_with_files( *req, [](){} ) );
+}
+
+TEST_CASE( "Inappropriate Content-Type media-type", "[content-type]" )
+{
+	using namespace restinio::file_upload;
+
+	std::vector< std::string > types{
+		"text/plain",
+		"multipart/*",
+		"*/form-data",
+		"*/*"
+	};
+
+	for( const auto & t : types )
+	{
+		restinio::http_request_header_t dummy_header{
+				restinio::http_method_post(),
+				"/"
+		};
+		dummy_header.set_field(
+				restinio::http_field::content_type,
+				t );
+
+		auto req = std::make_shared< restinio::request_t >(
+				restinio::request_id_t{1},
+				std::move(dummy_header),
+				"Body"s,
+				dummy_connection_t::make(1u),
+				make_dummy_endpoint() );
+
+		REQUIRE( enumeration_result_t::content_type_field_inappropriate_value ==
+				enumerate_parts_with_files( *req, [](){} ) );
+	}
 }
 
