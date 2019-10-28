@@ -10,14 +10,15 @@
 
 #pragma once
 
-#include "third_party/optional-lite/expected.hpp"
+#include "third_party/expected-lite/expected.hpp"
 
 namespace restinio
 {
 	template< typename T, typename E >
-	using expected_t = nonstd::expected;
+	using expected_t = nonstd::expected<T, E>;
 
-	using nonstd::make_expected;
+//FIXME: is this symbol actually present in expected-lite?
+//	using nonstd::make_expected;
 	using nonstd::make_unexpected;
 
 } /* namespace restinio */
