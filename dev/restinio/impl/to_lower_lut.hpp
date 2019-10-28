@@ -6,6 +6,7 @@ namespace restinio
 namespace impl
 {
 
+//FIXME: can it be declared as constexpr?
 template< typename C >
 const C * to_lower_lut()
 {

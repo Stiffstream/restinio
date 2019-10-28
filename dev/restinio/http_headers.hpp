@@ -10,7 +10,7 @@
 
 #include <restinio/impl/include_fmtlib.hpp>
 
-#include <restinio/impl/to_lower_lut.hpp>
+#include <restinio/impl/string_caseless_compare.hpp>
 
 #include <restinio/exception.hpp>
 #include <restinio/string_view.hpp>
@@ -27,67 +27,6 @@
 namespace restinio
 {
 
-namespace impl
-{
-
-constexpr auto
-uchar_at( const char * const from, const std::size_t at ) noexcept
-{
-	return static_cast< unsigned char >( from[ at ] );
-}
-
-} /* namespace impl */
-
-//
-// caseless_cmp()
-//
-
-//! Comparator for fields names.
-inline bool
-caseless_cmp(
-	const char * a,
-	const char * b,
-	std::size_t size ) noexcept
-{
-	const unsigned char * const table = impl::to_lower_lut< unsigned char >();
-
-	for( std::size_t i = 0; i < size; ++i )
-		if( table[ impl::uchar_at( a, i ) ] != table[ impl::uchar_at( b, i ) ] )
-			return false;
-
-	return true;
-}
-
-//
-// caseless_cmp()
-//
-
-//! Comparator for fields names.
-inline bool
-caseless_cmp(
-	const char * a,
-	std::size_t a_size,
-	const char * b,
-	std::size_t b_size ) noexcept
-{
-	if( a_size == b_size )
-	{
-		return caseless_cmp( a, b, a_size );
-	}
-
-	return false;
-}
-
-//
-// caseless_cmp()
-//
-
-//! Comparator for fields names.
-inline bool
-caseless_cmp( string_view_t a, string_view_t b ) noexcept
-{
-	return caseless_cmp( a.data(), a.size(), b.data(), b.size() );
-}
 
 // Adopted header fields
 // (https://www.iana.org/assignments/message-headers/message-headers.xml#perm-headers).
@@ -315,7 +254,7 @@ string_to_field( string_view_t field ) noexcept
 	const std::size_t field_name_size = field.size();
 
 #define RESTINIO_HTTP_CHECK_FOR_FIELD( field_id, candidate_field_name ) \
-	if( caseless_cmp(field_name, #candidate_field_name , field_name_size ) ) \
+	if( impl::is_equal_caseless(field_name, #candidate_field_name , field_name_size ) ) \
 		return http_field_t:: field_id;
 
 	// TODO: make most popular fields to be checked first.
@@ -1311,7 +1250,7 @@ class http_header_fields_t
 				m_fields.begin(),
 				m_fields.end(),
 				[&]( const auto & f ){
-					return caseless_cmp( f.name(), field_name );
+					return impl::is_equal_caseless( f.name(), field_name );
 				} );
 		}
 
@@ -1322,7 +1261,7 @@ class http_header_fields_t
 				m_fields.cbegin(),
 				m_fields.cend(),
 				[&]( const auto & f ){
-					return caseless_cmp( f.name(), field_name );
+					return impl::is_equal_caseless( f.name(), field_name );
 				} );
 		}
 

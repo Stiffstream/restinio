@@ -10,17 +10,19 @@
 
 #pragma once
 
-#include <string>
-#include <cstring>
-
 #include <restinio/impl/include_fmtlib.hpp>
 
-#include <zlib.h>
+#include <restinio/impl/string_caseless_compare.hpp>
 
 #include <restinio/exception.hpp>
 #include <restinio/string_view.hpp>
 #include <restinio/message_builders.hpp>
 #include <restinio/request_handler.hpp>
+
+#include <zlib.h>
+
+#include <string>
+#include <cstring>
 
 namespace restinio
 {
@@ -1314,18 +1316,20 @@ template < typename Handler >
 decltype(auto)
 handle_body( const request_t & req, Handler handler )
 {
+	using restinio::impl::is_equal_caseless;
+
 	const auto content_encoding =
 		req.header().get_field_or( restinio::http_field::content_encoding, "identity" );
 
-	if( caseless_cmp( content_encoding, "deflate" ) )
+	if( is_equal_caseless( content_encoding, "deflate" ) )
 	{
 		return handler( deflate_decompress( req.body() ) );
 	}
-	else if( caseless_cmp( content_encoding, "gzip" ) )
+	else if( is_equal_caseless( content_encoding, "gzip" ) )
 	{
 		return handler( gzip_decompress( req.body() ) );
 	}
-	else if( !caseless_cmp( content_encoding, "identity" ) )
+	else if( !is_equal_caseless( content_encoding, "identity" ) )
 	{
 		throw exception_t{
 			fmt::format( "content-encoding '{}' not supported", content_encoding ) };
