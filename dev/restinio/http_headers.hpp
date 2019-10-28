@@ -8,13 +8,6 @@
 
 #pragma once
 
-#include <iosfwd>
-#include <string>
-#include <vector>
-#include <algorithm>
-
-#include <http_parser.h>
-
 #include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/impl/to_lower_lut.hpp>
@@ -23,6 +16,13 @@
 #include <restinio/string_view.hpp>
 #include <restinio/optional.hpp>
 #include <restinio/common_types.hpp>
+
+#include <http_parser.h>
+
+#include <iosfwd>
+#include <string>
+#include <vector>
+#include <algorithm>
 
 namespace restinio
 {

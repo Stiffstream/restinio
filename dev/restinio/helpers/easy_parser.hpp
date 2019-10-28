@@ -27,6 +27,7 @@
 #include <limits>
 #include <map>
 #include <array>
+#include <vector>
 #include <cstring>
 
 namespace restinio
