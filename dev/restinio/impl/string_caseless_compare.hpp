@@ -12,6 +12,7 @@
 #pragma once
 
 #include <restinio/impl/to_lower_lut.hpp>
+#include <restinio/string_view.hpp>
 
 namespace restinio
 {

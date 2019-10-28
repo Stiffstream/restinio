@@ -11,7 +11,13 @@
 
 #pragma once
 
+#include <restinio/impl/string_caseless_compare.hpp>
+
 #include <restinio/helpers/easy_parser.hpp>
+
+#include <restinio/expected.hpp>
+
+#include <algorithm>
 
 namespace restinio
 {
@@ -602,6 +608,32 @@ using parameter_with_mandatory_value_t = std::pair< std::string, std::string >;
 //
 using parameter_with_mandatory_value_container_t =
 		std::vector< parameter_with_mandatory_value_t >;
+
+//
+// not_found_t
+//
+//FIXME: document this!
+struct not_found_t {};
+
+//
+// find_first
+//
+//FIXME: document this!
+RESTINIO_NODISCARD
+inline expected_t< string_view_t, not_found_t >
+find_first(
+	const parameter_with_mandatory_value_container_t & where,
+	string_view_t what )
+{
+	const auto it = std::find_if( where.begin(), where.end(),
+			[&what]( const auto & pair ) {
+				return restinio::impl::is_equal_caseless( pair.first, what );
+			} );
+	if( it != where.end() )
+		return string_view_t{ it->second };
+	else
+		return make_unexpected( not_found_t{} );
+}
 
 namespace impl
 {

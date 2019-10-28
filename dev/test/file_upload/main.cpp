@@ -115,3 +115,26 @@ TEST_CASE( "Inappropriate Content-Type media-type", "[content-type]" )
 	}
 }
 
+TEST_CASE( "Empty body", "[empty-body]" )
+{
+	using namespace restinio::file_upload;
+
+	restinio::http_request_header_t dummy_header{
+			restinio::http_method_post(),
+			"/"
+	};
+	dummy_header.set_field(
+			restinio::http_field::content_type,
+			"multipart/form-data; boundary=1234567890" );
+
+	auto req = std::make_shared< restinio::request_t >(
+			restinio::request_id_t{1},
+			std::move(dummy_header),
+			"Body"s,
+			dummy_connection_t::make(1u),
+			make_dummy_endpoint() );
+
+	REQUIRE( enumeration_result_t::unexpected_error ==
+			enumerate_parts_with_files( *req, [](){} ) );
+}
+

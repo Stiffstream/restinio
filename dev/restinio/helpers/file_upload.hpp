@@ -66,9 +66,22 @@ detect_boundary_for_multipart_body(
 				enumeration_result_t::content_type_field_inappropriate_value );
 
 	// `boundary` param should be present in parsed Content-Type value.
-	//FIXME: implement this!
-	return make_unexpected(
-			enumeration_result_t::content_type_field_inappropriate_value );
+	const auto boundary = hfp::find_first(
+			parse_result.second.m_media_type.m_parameters,
+			"boundary" );
+	if( !boundary )
+		return make_unexpected(
+				enumeration_result_t::content_type_field_inappropriate_value );
+	
+	//FIXME: boundary value should be checked!
+
+	// Actual value of boundary mark can be created.
+	std::string actual_boundary_mark;
+	actual_boundary_mark.reserve( 2 + boundary->size() );
+	actual_boundary_mark.append( "--" );
+	actual_boundary_mark.append( boundary->data(), boundary->size() );
+
+	return std::move(actual_boundary_mark);
 }
 
 } /* namespace impl */
@@ -85,6 +98,7 @@ enumerate_parts_with_files(
 		//FIXME: implement this!
 		return enumeration_result_t::unexpected_error;
 	}
+
 	return boundary.error();
 }
 
