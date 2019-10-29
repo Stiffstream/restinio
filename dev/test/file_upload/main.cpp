@@ -134,7 +134,7 @@ TEST_CASE( "Empty body", "[empty-body]" )
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint() );
 
-	REQUIRE( enumeration_result_t::unexpected_error ==
+	REQUIRE( enumeration_result_t::no_parts_found ==
 			enumerate_parts_with_files( *req, [](){} ) );
 }
 

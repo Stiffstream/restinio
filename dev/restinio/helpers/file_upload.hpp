@@ -12,6 +12,7 @@
 #pragma once
 
 #include <restinio/helpers/http_field_parsers/content-type.hpp>
+#include <restinio/helpers/multipart_body.hpp>
 
 #include <restinio/http_headers.hpp>
 #include <restinio/request_handler.hpp>
@@ -31,6 +32,8 @@ enum class enumeration_result_t
 	content_type_field_not_found,
 	content_type_field_parse_error,
 	content_type_field_inappropriate_value,
+	no_parts_found,
+	no_files_found,
 	unexpected_error
 };
 
@@ -84,19 +87,52 @@ detect_boundary_for_multipart_body(
 	return std::move(actual_boundary_mark);
 }
 
+template< typename Handler >
+RESTINIO_NODISCARD
+enumeration_result_t
+enumerate_parts_of_request_body(
+	const std::vector< string_view_t > & parts,
+	Handler && handler )
+{
+	std::size_t files_found{ 0u };
+
+	for( auto current_part : parts )
+	{
+		auto analyzing_result = try_analyze_part( current_part );
+		if( analyzing_result )
+		{
+			++files_found;
+
+			//FIXME: handler should be called!
+		}
+	}
+
+	return 0 == files_found ?
+			enumeration_result_t::no_files_found :
+			enumeration_result_t::success;
+}
+
 } /* namespace impl */
 
 template< typename Handler >
 enumeration_result_t
 enumerate_parts_with_files(
 	const request_t & req,
-	Handler && /*handler*/ )
+	Handler && handler )
 {
 	const auto boundary = impl::detect_boundary_for_multipart_body( req );
 	if( boundary )
 	{
-		//FIXME: implement this!
-		return enumeration_result_t::unexpected_error;
+		const auto parts = restinio::multipart_body::split_multipart_body(
+				req.body(),
+				*boundary );
+
+		if( parts.empty() )
+			return enumeration_result_t::no_parts_found;
+
+		return impl::enumerate_parts_of_request_body(
+				parts,
+				std::forward<Handler>(handler) );
 	}
 
 	return boundary.error();
