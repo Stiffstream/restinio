@@ -107,11 +107,14 @@ void save_file(
 					// There is no need to handle other parts.
 					return handling_result_t::stop_enumeration;
 				}
-				else
-					return handling_result_t::continue_enumeration;
+
+				// We expect only one part with name 'file'.
+				// So if that part is not found yet there is some error
+				// and there is no need to continue.
+				return handling_result_t::terminate_enumeration;
 			} );
 
-	if( enumeration_result_t::success != enumeration_result )
+	if( !enumeration_result || 1u != *enumeration_result )
 		throw std::runtime_error( "file content not found!" );
 }
 

@@ -28,12 +28,11 @@ namespace file_upload
 {
 
 //
-// enumeration_result_t
+// enumeration_error_t
 //
 //FIXME: document this!
-enum class enumeration_result_t
+enum class enumeration_error_t
 {
-	success,
 	content_type_field_not_found,
 	content_type_field_parse_error,
 	content_type_field_inappropriate_value,
@@ -41,6 +40,7 @@ enum class enumeration_result_t
 	content_disposition_field_inappropriate_value,
 	no_parts_found,
 	no_files_found,
+	terminated_by_handler,
 	unexpected_error
 };
 
@@ -51,7 +51,8 @@ enum class enumeration_result_t
 enum class handling_result_t
 {
 	continue_enumeration,
-	stop_enumeration
+	stop_enumeration,
+	terminate_enumeration
 };
 
 //
@@ -105,7 +106,7 @@ namespace impl
 {
 
 RESTINIO_NODISCARD
-inline expected_t< std::string, enumeration_result_t >
+inline expected_t< std::string, enumeration_error_t >
 detect_boundary_for_multipart_body(
 	const request_t & req )
 {
@@ -116,7 +117,7 @@ detect_boundary_for_multipart_body(
 			restinio::http_field::content_type );
 	if( !content_type )
 		return make_unexpected(
-				enumeration_result_t::content_type_field_not_found );
+				enumeration_error_t::content_type_field_not_found );
 
 	// Content-Type field should successfuly parsed and should
 	// contain value multipart/form-data.
@@ -124,13 +125,13 @@ detect_boundary_for_multipart_body(
 			*content_type );
 	if( !parse_result.first )
 		return make_unexpected(
-				enumeration_result_t::content_type_field_parse_error );
+				enumeration_error_t::content_type_field_parse_error );
 
 	const auto & media_type = parse_result.second.m_media_type;
 	if( "multipart" != media_type.m_type
 			&& "form-data" != media_type.m_subtype )
 		return make_unexpected(
-				enumeration_result_t::content_type_field_inappropriate_value );
+				enumeration_error_t::content_type_field_inappropriate_value );
 
 	// `boundary` param should be present in parsed Content-Type value.
 	const auto boundary = hfp::find_first(
@@ -138,7 +139,7 @@ detect_boundary_for_multipart_body(
 			"boundary" );
 	if( !boundary )
 		return make_unexpected(
-				enumeration_result_t::content_type_field_inappropriate_value );
+				enumeration_error_t::content_type_field_inappropriate_value );
 	
 	//FIXME: boundary value should be checked!
 
@@ -155,7 +156,7 @@ detect_boundary_for_multipart_body(
 //FIXME: or maybe there should be another version of try_analyze_part
 //that accepts multipart_body::parsed_part_t?
 RESTINIO_NODISCARD
-inline expected_t< part_description_t, enumeration_result_t >
+inline expected_t< part_description_t, enumeration_error_t >
 try_analyze_part( string_view_t part )
 {
 	namespace hfp = restinio::http_field_parsers;
@@ -163,14 +164,14 @@ try_analyze_part( string_view_t part )
 	// The current part should be parsed to headers and 
 	auto part_parse_result = restinio::multipart_body::try_parse_part( part );
 	if( !part_parse_result.first )
-		return make_unexpected( enumeration_result_t::unexpected_error );
+		return make_unexpected( enumeration_error_t::unexpected_error );
 
 	// Content-Disposition field should be present.
 	const auto disposition_field =
 			part_parse_result.second.m_fields.opt_value_of(
 					restinio::http_field::content_disposition );
 	if( !disposition_field )
-		return make_unexpected( enumeration_result_t::no_files_found );
+		return make_unexpected( enumeration_error_t::no_files_found );
 
 	// Content-Disposition should have value `form-data` with
 	// `name` and `filename*`/`filename` parameters.
@@ -178,15 +179,15 @@ try_analyze_part( string_view_t part )
 			try_parse( *disposition_field );
 	if( !parsed_disposition.first )
 		return make_unexpected(
-				enumeration_result_t::content_disposition_field_parse_error );
+				enumeration_error_t::content_disposition_field_parse_error );
 	if( "form-data" != parsed_disposition.second.m_value )
-		return make_unexpected( enumeration_result_t::no_files_found );
+		return make_unexpected( enumeration_error_t::no_files_found );
 
 	const auto name = hfp::find_first(
 			parsed_disposition.second.m_parameters, "name" );
 	if( !name )
 		return make_unexpected(
-				enumeration_result_t::content_disposition_field_inappropriate_value );
+				enumeration_error_t::content_disposition_field_inappropriate_value );
 	const auto expected_to_optional = []( auto expected ) {
 		return expected ? optional_t< string_view_t >{ *expected } :
 				optional_t< string_view_t >{};
@@ -199,7 +200,7 @@ try_analyze_part( string_view_t part )
 
 	// If there is no `filename*` nor `filename` then there is no file.
 	if( !filename_star && !filename )
-		return make_unexpected( enumeration_result_t::no_files_found );
+		return make_unexpected( enumeration_error_t::no_files_found );
 
 	return part_description_t{
 			std::move( part_parse_result.second.m_fields ),
@@ -210,15 +211,15 @@ try_analyze_part( string_view_t part )
 	};
 }
 
-//FIXME: maybe that function should return expected<std::size_t, enumeration_result_t>? Where the normal value will tell how many parts with files were found.
 template< typename Handler >
 RESTINIO_NODISCARD
-enumeration_result_t
+expected_t< std::size_t, enumeration_error_t >
 enumerate_parts_of_request_body(
 	const std::vector< string_view_t > & parts,
 	Handler && handler )
 {
 	std::size_t files_found{ 0u };
+	optional_t< enumeration_error_t > error;
 
 	for( auto current_part : parts )
 	{
@@ -228,20 +229,29 @@ enumerate_parts_of_request_body(
 			++files_found;
 
 			const handling_result_t handler_ret_code = handler( *analyzing_result );
-			if( handling_result_t::stop_enumeration == handler_ret_code )
+			if( handling_result_t::continue_enumeration != handler_ret_code )
+			{
+				if( handling_result_t::terminate_enumeration == handler_ret_code )
+					error = enumeration_error_t::terminated_by_handler;
+
 				break;
+			}
 		}
 	}
 
-	return 0 == files_found ?
-			enumeration_result_t::no_files_found :
-			enumeration_result_t::success;
+	if( error )
+		return make_unexpected( *error );
+
+	if( 0u == files_found )
+		return make_unexpected( enumeration_error_t::no_files_found );
+
+	return files_found;
 }
 
 } /* namespace impl */
 
 template< typename Handler >
-enumeration_result_t
+expected_t< std::size_t, enumeration_error_t >
 enumerate_parts_with_files(
 	const request_t & req,
 	Handler && handler )
@@ -258,14 +268,15 @@ enumerate_parts_with_files(
 				*boundary );
 
 		if( parts.empty() )
-			return enumeration_result_t::no_parts_found;
+			return make_unexpected(
+					enumeration_error_t::no_parts_found );
 
 		return impl::enumerate_parts_of_request_body(
 				parts,
 				std::forward<Handler>(handler) );
 	}
 
-	return boundary.error();
+	return make_unexpected( boundary.error() );
 }
 
 } /* namespace file_upload */
