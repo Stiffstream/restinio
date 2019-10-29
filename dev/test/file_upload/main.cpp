@@ -181,3 +181,79 @@ TEST_CASE( "Just one part", "[body]" )
 	REQUIRE( enumeration_result_t::success == result );
 }
 
+TEST_CASE( "Several parts in the body", "[body]" )
+{
+	using namespace restinio::file_upload;
+
+	restinio::http_request_header_t dummy_header{
+			restinio::http_method_post(),
+			"/"
+	};
+	dummy_header.set_field(
+			restinio::http_field::content_type,
+			"multipart/form-data; boundary=1234567890" );
+
+	auto req = std::make_shared< restinio::request_t >(
+			restinio::request_id_t{1},
+			std::move(dummy_header),
+			"--1234567890\r\n"
+			"Content-Disposition: form-data; name=\"file1\"; filename=\"t1.txt\"\r\n"
+			"\r\n"
+			"Hello, World!\r\n"
+			"--1234567890\r\n"
+			"Content-Disposition: form-data; name=\"text\"\r\n"
+			"\r\n"
+			"Hello, World!\r\n"
+			"--1234567890\r\n"
+			"Content-Disposition: form-data; name=\"file2\"; filename*=\"t2.txt\"\r\n"
+			"\r\n"
+			"Bye, World!\r\n"
+			"\r\n"
+			"--1234567890\r\n"
+			"Content-Disposition: form-data; name=\"another-text\"\r\n"
+			"\r\n"
+			"Hello, World!\r\n"
+			"--1234567890\r\n"
+			"Content-Disposition: form-data; name=\"file3\"; "
+					"filename=\"t31.txt\"; "
+					"filename*=\"t32.txt\"\r\n"
+			"\r\n"
+			"Bye, Bye!\r\n"
+			"--1234567890--\r\n"s,
+			dummy_connection_t::make(1u),
+			make_dummy_endpoint() );
+
+	int ordinal{0};
+	const auto result = enumerate_parts_with_files(
+			*req,
+			[&ordinal]( const part_description_t & part ) {
+				REQUIRE( ordinal < 3 );
+				if( 0 == ordinal )
+				{
+					REQUIRE( "Hello, World!" == part.body() );
+					REQUIRE( "file1" == part.name_parameter() );
+					REQUIRE( "t1.txt" == part.filename_parameter() );
+					REQUIRE( !part.filename_star_parameter() );
+				}
+				else if( 1 == ordinal )
+				{
+					REQUIRE( "Bye, World!\r\n" == part.body() );
+					REQUIRE( "file2" == part.name_parameter() );
+					REQUIRE( "t2.txt" == part.filename_star_parameter() );
+					REQUIRE( !part.filename_parameter() );
+				}
+				else if( 2 == ordinal )
+				{
+					REQUIRE( "Bye, Bye!" == part.body() );
+					REQUIRE( "file3" == part.name_parameter() );
+					REQUIRE( "t31.txt" == part.filename_parameter() );
+					REQUIRE( "t32.txt" == part.filename_star_parameter() );
+				}
+
+				++ordinal;
+			} );
+
+	REQUIRE( enumeration_result_t::success == result );
+	REQUIRE( 3 == ordinal );
+}
+
