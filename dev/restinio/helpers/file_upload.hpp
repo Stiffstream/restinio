@@ -12,6 +12,7 @@
 #pragma once
 
 #include <restinio/helpers/http_field_parsers/content-type.hpp>
+#include <restinio/helpers/http_field_parsers/content-disposition.hpp>
 #include <restinio/helpers/multipart_body.hpp>
 
 #include <restinio/http_headers.hpp>
@@ -26,15 +27,68 @@ namespace restinio
 namespace file_upload
 {
 
+//
+// enumeration_result_t
+//
+//FIXME: document this!
 enum class enumeration_result_t
 {
 	success,
 	content_type_field_not_found,
 	content_type_field_parse_error,
 	content_type_field_inappropriate_value,
+	content_disposition_field_parse_error,
+	content_disposition_field_inappropriate_value,
 	no_parts_found,
 	no_files_found,
 	unexpected_error
+};
+
+//
+// part_description_t
+//
+//FIXME: part_description_t
+class part_description_t
+{
+	http_header_fields_t m_fields;
+	string_view_t m_body;
+	string_view_t m_name;
+	optional_t< string_view_t > m_filename_star;
+	optional_t< string_view_t > m_filename;
+
+public:
+	part_description_t(
+		http_header_fields_t fields,
+		string_view_t body,
+		string_view_t name,
+		optional_t< string_view_t > filename_star,
+		optional_t< string_view_t > filename )
+		:	m_fields{ std::move(fields) }
+		,	m_body{ body }
+		,	m_name{ name }
+		,	m_filename_star{ filename_star }
+		,	m_filename{ filename }
+	{}
+
+	RESTINIO_NODISCARD
+	const http_header_fields_t &
+	fields() const noexcept { return m_fields; }
+
+	RESTINIO_NODISCARD
+	string_view_t
+	body() const noexcept { return m_body; }
+
+	RESTINIO_NODISCARD
+	string_view_t
+	name_parameter() const noexcept { return m_name; }
+
+	RESTINIO_NODISCARD
+	optional_t<string_view_t>
+	filename_star_parameter() const noexcept { return m_filename_star; }
+
+	RESTINIO_NODISCARD
+	optional_t<string_view_t>
+	filename_parameter() const noexcept { return m_filename; }
 };
 
 namespace impl
@@ -87,6 +141,62 @@ detect_boundary_for_multipart_body(
 	return std::move(actual_boundary_mark);
 }
 
+RESTINIO_NODISCARD
+inline expected_t< part_description_t, enumeration_result_t >
+try_analyze_part( string_view_t part )
+{
+	namespace hfp = restinio::http_field_parsers;
+
+	// The current part should be parsed to headers and 
+	auto part_parse_result = restinio::multipart_body::try_parse_part( part );
+	if( !part_parse_result.first )
+		return make_unexpected( enumeration_result_t::unexpected_error );
+
+	// Content-Disposition field should be present.
+	const auto disposition_field =
+			part_parse_result.second.m_fields.opt_value_of(
+					restinio::http_field::content_disposition );
+	if( !disposition_field )
+		return make_unexpected( enumeration_result_t::no_files_found );
+
+	// Content-Disposition should have value `form-data` with
+	// `name` and `filename*`/`filename` parameters.
+	const auto parsed_disposition = hfp::content_disposition_value_t::
+			try_parse( *disposition_field );
+	if( !parsed_disposition.first )
+		return make_unexpected(
+				enumeration_result_t::content_disposition_field_parse_error );
+	if( "form-data" != parsed_disposition.second.m_value )
+		return make_unexpected( enumeration_result_t::no_files_found );
+
+	const auto name = hfp::find_first(
+			parsed_disposition.second.m_parameters, "name" );
+	if( !name )
+		return make_unexpected(
+				enumeration_result_t::content_disposition_field_inappropriate_value );
+	const auto expected_to_optional = []( auto expected ) {
+		return expected ? optional_t< string_view_t >{ *expected } :
+				optional_t< string_view_t >{};
+	};
+
+	const auto filename_star = expected_to_optional( hfp::find_first(
+			parsed_disposition.second.m_parameters, "filename*" ) );
+	const auto filename = expected_to_optional( hfp::find_first(
+			parsed_disposition.second.m_parameters, "filename" ) );
+
+	// If there is no `filename*` nor `filename` then there is no file.
+	if( !filename_star && !filename )
+		return make_unexpected( enumeration_result_t::no_files_found );
+
+	return part_description_t{
+			std::move( part_parse_result.second.m_fields ),
+			part_parse_result.second.m_body,
+			*name,
+			filename_star,
+			filename
+	};
+}
+
 template< typename Handler >
 RESTINIO_NODISCARD
 enumeration_result_t
@@ -98,12 +208,12 @@ enumerate_parts_of_request_body(
 
 	for( auto current_part : parts )
 	{
-		auto analyzing_result = try_analyze_part( current_part );
+		const auto analyzing_result = try_analyze_part( current_part );
 		if( analyzing_result )
 		{
 			++files_found;
 
-			//FIXME: handler should be called!
+			handler( *analyzing_result );
 		}
 	}
 

@@ -56,7 +56,9 @@ TEST_CASE( "No Content-Type field", "[content-type]" )
 			make_dummy_endpoint() );
 
 	REQUIRE( enumeration_result_t::content_type_field_not_found ==
-			enumerate_parts_with_files( *req, [](){} ) );
+			enumerate_parts_with_files(
+					*req,
+					[]( const part_description_t & ){} ) );
 }
 
 TEST_CASE( "Empty Content-Type field", "[content-type]" )
@@ -79,7 +81,9 @@ TEST_CASE( "Empty Content-Type field", "[content-type]" )
 			make_dummy_endpoint() );
 
 	REQUIRE( enumeration_result_t::content_type_field_parse_error ==
-			enumerate_parts_with_files( *req, [](){} ) );
+			enumerate_parts_with_files(
+					*req,
+					[]( const part_description_t & ){} ) );
 }
 
 TEST_CASE( "Inappropriate Content-Type media-type", "[content-type]" )
@@ -111,7 +115,9 @@ TEST_CASE( "Inappropriate Content-Type media-type", "[content-type]" )
 				make_dummy_endpoint() );
 
 		REQUIRE( enumeration_result_t::content_type_field_inappropriate_value ==
-				enumerate_parts_with_files( *req, [](){} ) );
+				enumerate_parts_with_files(
+						*req,
+						[]( const part_description_t & ){} ) );
 	}
 }
 
@@ -135,6 +141,43 @@ TEST_CASE( "Empty body", "[empty-body]" )
 			make_dummy_endpoint() );
 
 	REQUIRE( enumeration_result_t::no_parts_found ==
-			enumerate_parts_with_files( *req, [](){} ) );
+			enumerate_parts_with_files(
+					*req,
+					[]( const part_description_t & ){} ) );
+}
+
+TEST_CASE( "Just one part", "[body]" )
+{
+	using namespace restinio::file_upload;
+
+	restinio::http_request_header_t dummy_header{
+			restinio::http_method_post(),
+			"/"
+	};
+	dummy_header.set_field(
+			restinio::http_field::content_type,
+			"multipart/form-data; boundary=1234567890" );
+
+	auto req = std::make_shared< restinio::request_t >(
+			restinio::request_id_t{1},
+			std::move(dummy_header),
+			"--1234567890\r\n"
+			"Content-Disposition: form-data; name=\"file\"; filename=\"t.txt\"\r\n"
+			"\r\n"
+			"Hello, World!\r\n"
+			"--1234567890--\r\n"s,
+			dummy_connection_t::make(1u),
+			make_dummy_endpoint() );
+
+	const auto result = enumerate_parts_with_files(
+			*req,
+			[]( const part_description_t & part ) {
+				REQUIRE( "Hello, World!" == part.body() );
+				REQUIRE( "file" == part.name_parameter() );
+				REQUIRE( "t.txt" == part.filename_parameter() );
+				REQUIRE( !part.filename_star_parameter() );
+			} );
+
+	REQUIRE( enumeration_result_t::success == result );
 }
 
