@@ -98,6 +98,7 @@ split_multipart_body(
 //
 // parsed_part_t
 //
+//FIXME: public members of that struct shouldn't have m_ prefix!
 struct parsed_part_t
 {
 	http_header_fields_t m_fields;

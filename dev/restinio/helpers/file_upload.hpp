@@ -45,6 +45,16 @@ enum class enumeration_result_t
 };
 
 //
+// handling_result_t
+//
+//FIXME: document this!
+enum class handling_result_t
+{
+	continue_enumeration,
+	stop_enumeration
+};
+
+//
 // part_description_t
 //
 //FIXME: part_description_t
@@ -141,6 +151,9 @@ detect_boundary_for_multipart_body(
 	return std::move(actual_boundary_mark);
 }
 
+//FIXME: maybe this function should be a part of public API?
+//FIXME: or maybe there should be another version of try_analyze_part
+//that accepts multipart_body::parsed_part_t?
 RESTINIO_NODISCARD
 inline expected_t< part_description_t, enumeration_result_t >
 try_analyze_part( string_view_t part )
@@ -197,6 +210,7 @@ try_analyze_part( string_view_t part )
 	};
 }
 
+//FIXME: maybe that function should return expected<std::size_t, enumeration_result_t>? Where the normal value will tell how many parts with files were found.
 template< typename Handler >
 RESTINIO_NODISCARD
 enumeration_result_t
@@ -213,7 +227,9 @@ enumerate_parts_of_request_body(
 		{
 			++files_found;
 
-			handler( *analyzing_result );
+			const handling_result_t handler_ret_code = handler( *analyzing_result );
+			if( handling_result_t::stop_enumeration == handler_ret_code )
+				break;
 		}
 	}
 
@@ -230,6 +246,10 @@ enumerate_parts_with_files(
 	const request_t & req,
 	Handler && handler )
 {
+	//FIXME: there should be some static_assert that checks the possibility
+	//to call the handler. It means the right argument type and the result
+	//type should be checked.
+
 	const auto boundary = impl::detect_boundary_for_multipart_body( req );
 	if( boundary )
 	{

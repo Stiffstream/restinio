@@ -103,7 +103,12 @@ void save_file(
 							*(part.filename_star_parameter()) :
 							*(part.filename_parameter());
 					store_file_to_disk( args, file_name, part.body() );
+
+					// There is no need to handle other parts.
+					return handling_result_t::stop_enumeration;
 				}
+				else
+					return handling_result_t::continue_enumeration;
 			} );
 
 	if( enumeration_result_t::success != enumeration_result )

@@ -58,7 +58,9 @@ TEST_CASE( "No Content-Type field", "[content-type]" )
 	REQUIRE( enumeration_result_t::content_type_field_not_found ==
 			enumerate_parts_with_files(
 					*req,
-					[]( const part_description_t & ){} ) );
+					[]( const part_description_t & ) {
+						return handling_result_t::continue_enumeration;
+					} ) );
 }
 
 TEST_CASE( "Empty Content-Type field", "[content-type]" )
@@ -83,7 +85,9 @@ TEST_CASE( "Empty Content-Type field", "[content-type]" )
 	REQUIRE( enumeration_result_t::content_type_field_parse_error ==
 			enumerate_parts_with_files(
 					*req,
-					[]( const part_description_t & ){} ) );
+					[]( const part_description_t & ) {
+						return handling_result_t::continue_enumeration;
+					} ) );
 }
 
 TEST_CASE( "Inappropriate Content-Type media-type", "[content-type]" )
@@ -117,7 +121,9 @@ TEST_CASE( "Inappropriate Content-Type media-type", "[content-type]" )
 		REQUIRE( enumeration_result_t::content_type_field_inappropriate_value ==
 				enumerate_parts_with_files(
 						*req,
-						[]( const part_description_t & ){} ) );
+						[]( const part_description_t & ) {
+							return handling_result_t::continue_enumeration;
+						} ) );
 	}
 }
 
@@ -143,7 +149,9 @@ TEST_CASE( "Empty body", "[empty-body]" )
 	REQUIRE( enumeration_result_t::no_parts_found ==
 			enumerate_parts_with_files(
 					*req,
-					[]( const part_description_t & ){} ) );
+					[]( const part_description_t & ) {
+						return handling_result_t::continue_enumeration;
+					} ) );
 }
 
 TEST_CASE( "Just one part", "[body]" )
@@ -176,6 +184,8 @@ TEST_CASE( "Just one part", "[body]" )
 				REQUIRE( "file" == part.name_parameter() );
 				REQUIRE( "t.txt" == part.filename_parameter() );
 				REQUIRE( !part.filename_star_parameter() );
+
+				return handling_result_t::continue_enumeration;
 			} );
 
 	REQUIRE( enumeration_result_t::success == result );
@@ -251,6 +261,8 @@ TEST_CASE( "Several parts in the body", "[body]" )
 				}
 
 				++ordinal;
+
+				return handling_result_t::continue_enumeration;
 			} );
 
 	REQUIRE( enumeration_result_t::success == result );
