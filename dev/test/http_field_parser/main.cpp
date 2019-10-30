@@ -6,6 +6,7 @@
 
 #include <restinio/helpers/easy_parser.hpp>
 
+#include <restinio/helpers/http_field_parsers/basics.hpp>
 #if 0
 #include <restinio/helpers/http_field_parsers/cache-control.hpp>
 #include <restinio/helpers/http_field_parsers/media-type.hpp>
@@ -59,26 +60,26 @@ TEST_CASE( "token", "[token]" )
 	{
 		const auto result = try_parse( "" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( "," );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( " multipart" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( "multipart" );
 
-		REQUIRE( result.first );
-		REQUIRE( "multipart" == result.second );
+		REQUIRE( result );
+		REQUIRE( "multipart" == *result );
 	}
 }
 
@@ -99,22 +100,22 @@ TEST_CASE( "alternatives", "[token][alternatives]" )
 	{
 		const auto result = try_parse( "," );
 
-		REQUIRE( result.first );
-		REQUIRE( result.second.empty() );
+		REQUIRE( result );
+		REQUIRE( result->empty() );
 	}
 
 	{
 		const auto result = try_parse( "multipart" );
 
-		REQUIRE( result.first );
-		REQUIRE( "multipart" == result.second );
+		REQUIRE( result );
+		REQUIRE( "multipart" == *result );
 	}
 
 	{
 		const auto result = try_parse( "MultiPart" );
 
-		REQUIRE( result.first );
-		REQUIRE( "multipart" == result.second );
+		REQUIRE( result );
+		REQUIRE( "multipart" == *result );
 	}
 }
 
@@ -139,17 +140,17 @@ TEST_CASE( "maybe", "[token][maybe]" )
 	{
 		const auto result = try_parse( "text" );
 
-		REQUIRE( result.first );
-		REQUIRE( "text" == result.second.first );
-		REQUIRE( result.second.second.empty() );
+		REQUIRE( result );
+		REQUIRE( "text" == result->first );
+		REQUIRE( result->second.empty() );
 	}
 
 	{
 		const auto result = try_parse( "text/*" );
 
-		REQUIRE( result.first );
-		REQUIRE( "text" == result.second.first );
-		REQUIRE( "*" == result.second.second );
+		REQUIRE( result );
+		REQUIRE( "text" == result->first );
+		REQUIRE( "*" == result->second );
 	}
 }
 
@@ -174,17 +175,17 @@ TEST_CASE( "sequence", "[token][sequence]" )
 	{
 		const auto result = try_parse( "text/plain" );
 
-		REQUIRE( result.first );
-		REQUIRE( "text" == result.second.first );
-		REQUIRE( "plain" == result.second.second );
+		REQUIRE( result );
+		REQUIRE( "text" == result->first );
+		REQUIRE( "plain" == result->second );
 	}
 
 	{
 		const auto result = try_parse( "text/*" );
 
-		REQUIRE( result.first );
-		REQUIRE( "text" == result.second.first );
-		REQUIRE( "*" == result.second.second );
+		REQUIRE( result );
+		REQUIRE( "text" == result->first );
+		REQUIRE( "*" == result->second );
 	}
 }
 
@@ -220,39 +221,39 @@ TEST_CASE( "not", "[token][not]" )
 	{
 		const auto result = try_parse( "text/plain" );
 
-		REQUIRE( result.first );
-		REQUIRE( "text" == result.second.first );
-		REQUIRE( "plain" == result.second.second );
+		REQUIRE( result );
+		REQUIRE( "text" == result->first );
+		REQUIRE( "plain" == result->second );
 	}
 
 	{
 		const auto result = try_parse( "text/plain;default" );
 
-		REQUIRE( result.first );
-		REQUIRE( "text" == result.second.first );
-		REQUIRE( "plain" == result.second.second );
-		REQUIRE( "default" == result.second.third );
+		REQUIRE( result );
+		REQUIRE( "text" == result->first );
+		REQUIRE( "plain" == result->second );
+		REQUIRE( "default" == result->third );
 	}
 
 	{
 		const auto result = try_parse( "text/plain;q" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( "text/plain;qq" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( "text/plain;Q" );
 
-		REQUIRE( result.first );
-		REQUIRE( "text" == result.second.first );
-		REQUIRE( "plain" == result.second.second );
-		REQUIRE( "Q" == result.second.third );
+		REQUIRE( result );
+		REQUIRE( "text" == result->first );
+		REQUIRE( "plain" == result->second );
+		REQUIRE( "Q" == result->third );
 	}
 }
 
@@ -286,37 +287,37 @@ TEST_CASE( "and", "[token][and]" )
 	{
 		const auto result = try_parse( "text/plain" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( "text/plain;default" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( "text/plain;q" );
 
-		REQUIRE( result.first );
-		REQUIRE( "text" == result.second.first );
-		REQUIRE( "plain" == result.second.second );
-		REQUIRE( "q" == result.second.third );
+		REQUIRE( result );
+		REQUIRE( "text" == result->first );
+		REQUIRE( "plain" == result->second );
+		REQUIRE( "q" == result->third );
 	}
 
 	{
 		const auto result = try_parse( "text/plain;qq" );
 
-		REQUIRE( result.first );
-		REQUIRE( "text" == result.second.first );
-		REQUIRE( "plain" == result.second.second );
-		REQUIRE( "qq" == result.second.third );
+		REQUIRE( result );
+		REQUIRE( "text" == result->first );
+		REQUIRE( "plain" == result->second );
+		REQUIRE( "qq" == result->third );
 	}
 
 	{
 		const auto result = try_parse( "text/plain;Q" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 }
 
@@ -340,28 +341,28 @@ TEST_CASE( "alternatives with symbol", "[alternatives][symbol][field_setter]" )
 
 	{
 		const auto result = try_parse( "multipart/form-data" );
-		REQUIRE( result.first );
-		REQUIRE( "multipart" == result.second.m_type );
-		REQUIRE( "form-data" == result.second.m_subtype );
+		REQUIRE( result );
+		REQUIRE( "multipart" == result->m_type );
+		REQUIRE( "form-data" == result->m_subtype );
 	}
 
 	{
 		const auto result = try_parse( "multipart=form-data" );
-		REQUIRE( result.first );
-		REQUIRE( "multipart" == result.second.m_type );
-		REQUIRE( "form-data" == result.second.m_subtype );
+		REQUIRE( result );
+		REQUIRE( "multipart" == result->m_type );
+		REQUIRE( "form-data" == result->m_subtype );
 	}
 
 	{
 		const auto result = try_parse( "multipart[form-data" );
-		REQUIRE( result.first );
-		REQUIRE( "multipart" == result.second.m_type );
-		REQUIRE( "form-data" == result.second.m_subtype );
+		REQUIRE( result );
+		REQUIRE( "multipart" == result->m_type );
+		REQUIRE( "form-data" == result->m_subtype );
 	}
 
 	{
 		const auto result = try_parse( "multipart(form-data" );
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 }
 
@@ -388,30 +389,30 @@ TEST_CASE( "produce media_type", "[produce][media_type]" )
 
 	{
 		const auto result = try_parse( "multipart/form-data" );
-		REQUIRE( result.first );
-		REQUIRE( "multipart" == result.second.m_media.m_type );
-		REQUIRE( "form-data" == result.second.m_media.m_subtype );
+		REQUIRE( result );
+		REQUIRE( "multipart" == result->m_media.m_type );
+		REQUIRE( "form-data" == result->m_media.m_subtype );
 	}
 
 	{
 		const auto result = try_parse( "*/form-data" );
-		REQUIRE( result.first );
-		REQUIRE( "*" == result.second.m_media.m_type );
-		REQUIRE( "form-data" == result.second.m_media.m_subtype );
+		REQUIRE( result );
+		REQUIRE( "*" == result->m_media.m_type );
+		REQUIRE( "form-data" == result->m_media.m_subtype );
 	}
 
 	{
 		const auto result = try_parse( "multipart/*" );
-		REQUIRE( result.first );
-		REQUIRE( "multipart" == result.second.m_media.m_type );
-		REQUIRE( "*" == result.second.m_media.m_subtype );
+		REQUIRE( result );
+		REQUIRE( "multipart" == result->m_media.m_type );
+		REQUIRE( "*" == result->m_media.m_subtype );
 	}
 
 	{
 		const auto result = try_parse( "*/*" );
-		REQUIRE( result.first );
-		REQUIRE( "*" == result.second.m_media.m_type );
-		REQUIRE( "*" == result.second.m_media.m_subtype );
+		REQUIRE( result );
+		REQUIRE( "*" == result->m_media.m_type );
+		REQUIRE( "*" == result->m_media.m_subtype );
 	}
 }
 
@@ -443,12 +444,12 @@ TEST_CASE( "simple repeat (vector target)", "[repeat][vector]" )
 			)
 		);
 
-	REQUIRE( result.first );
-	REQUIRE( 2 == result.second.m_pairs.size() );
-	REQUIRE( "name1" == result.second.m_pairs[0].first );
-	REQUIRE( "value" == result.second.m_pairs[0].second );
-	REQUIRE( "name2" == result.second.m_pairs[1].first );
-	REQUIRE( "value2" == result.second.m_pairs[1].second );
+	REQUIRE( result );
+	REQUIRE( 2 == result->m_pairs.size() );
+	REQUIRE( "name1" == result->m_pairs[0].first );
+	REQUIRE( "value" == result->m_pairs[0].second );
+	REQUIRE( "name2" == result->m_pairs[1].first );
+	REQUIRE( "value2" == result->m_pairs[1].second );
 }
 
 TEST_CASE( "simple repeat (map target)", "[repeat][map]" )
@@ -479,14 +480,14 @@ TEST_CASE( "simple repeat (map target)", "[repeat][map]" )
 			)
 		);
 
-	REQUIRE( result.first );
-	REQUIRE( 2 == result.second.m_pairs.size() );
+	REQUIRE( result );
+	REQUIRE( 2 == result->m_pairs.size() );
 
 	const std::map< std::string, std::string > expected{
 			{ "name1", "value" }, { "name2", "value2" }
 	};
 
-	REQUIRE( expected == result.second.m_pairs );
+	REQUIRE( expected == result->m_pairs );
 }
 
 TEST_CASE( "simple repeat (string)", "[repeat][string][symbol_producer]" )
@@ -506,35 +507,35 @@ TEST_CASE( "simple repeat (string)", "[repeat][string][symbol_producer]" )
 
 	{
 		const auto result = try_parse( "" );
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( "**" );
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( "***" );
-		REQUIRE( result.first );
-		REQUIRE( "***" == result.second );
+		REQUIRE( result );
+		REQUIRE( "***" == *result );
 	}
 
 	{
 		const auto result = try_parse( "*****" );
-		REQUIRE( result.first );
-		REQUIRE( "*****" == result.second );
+		REQUIRE( result );
+		REQUIRE( "*****" == *result );
 	}
 
 	{
 		const auto result = try_parse( "*******" );
-		REQUIRE( result.first );
-		REQUIRE( "*******" == result.second );
+		REQUIRE( result );
+		REQUIRE( "*******" == *result );
 	}
 
 	{
 		const auto result = try_parse( "********" );
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 }
 
@@ -582,104 +583,104 @@ TEST_CASE( "simple content_type", "[content_type]" )
 	{
 		const auto result = try_parse( "text/plain" );
 
-		REQUIRE( result.first );
-		REQUIRE( "text" == result.second.m_media_type.m_type );
-		REQUIRE( "plain" == result.second.m_media_type.m_subtype );
-		REQUIRE( result.second.m_parameters.empty() );
+		REQUIRE( result );
+		REQUIRE( "text" == result->m_media_type.m_type );
+		REQUIRE( "plain" == result->m_media_type.m_subtype );
+		REQUIRE( result->m_parameters.empty() );
 	}
 
 	{
 		const auto result = try_parse( "text/plain; charset=utf-8" );
 
-		REQUIRE( result.first );
-		REQUIRE( "text" == result.second.m_media_type.m_type );
-		REQUIRE( "plain" == result.second.m_media_type.m_subtype );
-		REQUIRE( !result.second.m_parameters.empty() );
+		REQUIRE( result );
+		REQUIRE( "text" == result->m_media_type.m_type );
+		REQUIRE( "plain" == result->m_media_type.m_subtype );
+		REQUIRE( !result->m_parameters.empty() );
 
 		const std::map< std::string, std::string > expected{
 				{ "charset", "utf-8" }
 		};
 
-		REQUIRE( expected == result.second.m_parameters );
+		REQUIRE( expected == result->m_parameters );
 	}
 
 	{
 		const auto result = try_parse( "text/plain;charset=utf-8" );
 
-		REQUIRE( result.first );
-		REQUIRE( "text" == result.second.m_media_type.m_type );
-		REQUIRE( "plain" == result.second.m_media_type.m_subtype );
-		REQUIRE( !result.second.m_parameters.empty() );
+		REQUIRE( result );
+		REQUIRE( "text" == result->m_media_type.m_type );
+		REQUIRE( "plain" == result->m_media_type.m_subtype );
+		REQUIRE( !result->m_parameters.empty() );
 
 		const std::map< std::string, std::string > expected{
 				{ "charset", "utf-8" }
 		};
 
-		REQUIRE( expected == result.second.m_parameters );
+		REQUIRE( expected == result->m_parameters );
 	}
 
 	{
 		const auto result = try_parse(
 				"multipart/form-data; charset=utf-8; boundary=---123456" );
 
-		REQUIRE( result.first );
-		REQUIRE( "multipart" == result.second.m_media_type.m_type );
-		REQUIRE( "form-data" == result.second.m_media_type.m_subtype );
-		REQUIRE( !result.second.m_parameters.empty() );
+		REQUIRE( result );
+		REQUIRE( "multipart" == result->m_media_type.m_type );
+		REQUIRE( "form-data" == result->m_media_type.m_subtype );
+		REQUIRE( !result->m_parameters.empty() );
 
 		const std::map< std::string, std::string > expected{
 				{ "charset", "utf-8" }, { "boundary", "---123456" }
 		};
 
-		REQUIRE( expected == result.second.m_parameters );
+		REQUIRE( expected == result->m_parameters );
 	}
 
 	{
 		const auto result = try_parse(
 				R"(multipart/form-data; charset=utf-8; boundary="Text with space!")" );
 
-		REQUIRE( result.first );
-		REQUIRE( "multipart" == result.second.m_media_type.m_type );
-		REQUIRE( "form-data" == result.second.m_media_type.m_subtype );
-		REQUIRE( !result.second.m_parameters.empty() );
+		REQUIRE( result );
+		REQUIRE( "multipart" == result->m_media_type.m_type );
+		REQUIRE( "form-data" == result->m_media_type.m_subtype );
+		REQUIRE( !result->m_parameters.empty() );
 
 		const std::map< std::string, std::string > expected{
 				{ "charset", "utf-8" }, { "boundary", "Text with space!" }
 		};
 
-		REQUIRE( expected == result.second.m_parameters );
+		REQUIRE( expected == result->m_parameters );
 	}
 
 	{
 		const auto result = try_parse(
 				R"(multipart/form-data; charset=utf-8; boundary="Text with space!")" );
 
-		REQUIRE( result.first );
-		REQUIRE( "multipart" == result.second.m_media_type.m_type );
-		REQUIRE( "form-data" == result.second.m_media_type.m_subtype );
-		REQUIRE( !result.second.m_parameters.empty() );
+		REQUIRE( result );
+		REQUIRE( "multipart" == result->m_media_type.m_type );
+		REQUIRE( "form-data" == result->m_media_type.m_subtype );
+		REQUIRE( !result->m_parameters.empty() );
 
 		const std::map< std::string, std::string > expected{
 				{ "charset", "utf-8" }, { "boundary", "Text with space!" }
 		};
 
-		REQUIRE( expected == result.second.m_parameters );
+		REQUIRE( expected == result->m_parameters );
 	}
 
 	{
 		const auto result = try_parse(
 				R"(MultiPart/Form-Data; CharSet=utf-8; BOUNDARY="Text with space!")" );
 
-		REQUIRE( result.first );
-		REQUIRE( "multipart" == result.second.m_media_type.m_type );
-		REQUIRE( "form-data" == result.second.m_media_type.m_subtype );
-		REQUIRE( !result.second.m_parameters.empty() );
+		REQUIRE( result );
+		REQUIRE( "multipart" == result->m_media_type.m_type );
+		REQUIRE( "form-data" == result->m_media_type.m_subtype );
+		REQUIRE( !result->m_parameters.empty() );
 
 		const std::map< std::string, std::string > expected{
 				{ "charset", "utf-8" }, { "boundary", "Text with space!" }
 		};
 
-		REQUIRE( expected == result.second.m_parameters );
+		REQUIRE( expected == result->m_parameters );
 	}
 }
 
@@ -723,45 +724,45 @@ TEST_CASE( "sequence with optional", "[optional][simple]" )
 	{
 		const auto result = try_parse("just-value");
 
-		REQUIRE( result.first );
-		REQUIRE( "just-value" == result.second.m_value );
-		REQUIRE( result.second.m_params.empty() );
+		REQUIRE( result );
+		REQUIRE( "just-value" == result->m_value );
+		REQUIRE( result->m_params.empty() );
 	}
 
 	{
 		const auto result = try_parse("just-value;one");
 
-		REQUIRE( result.first );
-		REQUIRE( "just-value" == result.second.m_value );
+		REQUIRE( result );
+		REQUIRE( "just-value" == result->m_value );
 
-		REQUIRE( 1 == result.second.m_params.size() );
+		REQUIRE( 1 == result->m_params.size() );
 
-		REQUIRE( "one" == result.second.m_params[0].first );
-		REQUIRE( !result.second.m_params[0].second );
+		REQUIRE( "one" == result->m_params[0].first );
+		REQUIRE( !result->m_params[0].second );
 	}
 
 	{
 		const auto result = try_parse("just-value;one; two=two;three;   "
 				"four=\"four = 4\"");
 
-		REQUIRE( result.first );
-		REQUIRE( "just-value" == result.second.m_value );
+		REQUIRE( result );
+		REQUIRE( "just-value" == result->m_value );
 
-		REQUIRE( 4 == result.second.m_params.size() );
+		REQUIRE( 4 == result->m_params.size() );
 
-		REQUIRE( "one" == result.second.m_params[0].first );
-		REQUIRE( !result.second.m_params[0].second );
+		REQUIRE( "one" == result->m_params[0].first );
+		REQUIRE( !result->m_params[0].second );
 
-		REQUIRE( "two" == result.second.m_params[1].first );
-		REQUIRE( result.second.m_params[1].second );
-		REQUIRE( "two" == *(result.second.m_params[1].second) );
+		REQUIRE( "two" == result->m_params[1].first );
+		REQUIRE( result->m_params[1].second );
+		REQUIRE( "two" == *(result->m_params[1].second) );
 
-		REQUIRE( "three" == result.second.m_params[2].first );
-		REQUIRE( !result.second.m_params[2].second );
+		REQUIRE( "three" == result->m_params[2].first );
+		REQUIRE( !result->m_params[2].second );
 
-		REQUIRE( "four" == result.second.m_params[3].first );
-		REQUIRE( result.second.m_params[3].second );
-		REQUIRE( "four = 4" == *(result.second.m_params[3].second) );
+		REQUIRE( "four" == result->m_params[3].first );
+		REQUIRE( result->m_params[3].second );
+		REQUIRE( "four = 4" == *(result->m_params[3].second) );
 	}
 }
 
@@ -813,26 +814,26 @@ TEST_CASE( "rollback on backtracking", "[rollback][alternative]" )
 	{
 		const auto result = try_parse("1=a;");
 
-		REQUIRE( result.first );
-		REQUIRE( "a" == result.second.m_one );
+		REQUIRE( result );
+		REQUIRE( "a" == result->m_one );
 	}
 
 	{
 		const auto result = try_parse("1=a2,2=b2,3=c2;");
 
-		REQUIRE( result.first );
-		REQUIRE( "a2" == result.second.m_one );
-		REQUIRE( "b2" == result.second.m_two );
-		REQUIRE( "c2" == result.second.m_three );
+		REQUIRE( result );
+		REQUIRE( "a2" == result->m_one );
+		REQUIRE( "b2" == result->m_two );
+		REQUIRE( "c2" == result->m_three );
 	}
 
 	{
 		const auto result = try_parse("1=aa,2=bb,3=cc,,");
 
-		REQUIRE( result.first );
-		REQUIRE( "" == result.second.m_one );
-		REQUIRE( "" == result.second.m_two );
-		REQUIRE( "cc" == result.second.m_three );
+		REQUIRE( result );
+		REQUIRE( "" == result->m_one );
+		REQUIRE( "" == result->m_two );
+		REQUIRE( "cc" == result->m_three );
 	}
 }
 
@@ -848,126 +849,126 @@ TEST_CASE( "qvalue", "[qvalue]" )
 	{
 		const auto result = try_parse( "" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( "0" );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{0u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( "1" );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{1000u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( "0 " );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{0u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( "1 " );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{1000u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( "0." );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{0u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( "1." );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{1000u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( "0.000" );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{0u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( "0.1 " );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{100u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{100u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( "0.01 " );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{10u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{10u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( "0.001 " );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{1u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{1u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( "1.000" );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{1000u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( "1.0  " );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{1000u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( "1.00  " );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{1000u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( "1.000  " );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{1000u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( "0.001" );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{1u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{1u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( "1.001" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( "0.321" );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{321u}} == result.second );
-		REQUIRE( "0.321" == result.second.as_string() );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{321u}} == *result );
+		REQUIRE( "0.321" == result->as_string() );
 	}
 }
 
@@ -983,100 +984,100 @@ TEST_CASE( "weight", "[qvalue][weight]" )
 	{
 		const auto result = try_parse( "Q=0" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( "q=0" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( ";Q" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( ";q" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( ";Q=" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( ";q=" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( ";Q=0" );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{0u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( ";q=0" );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{0u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( "    ;Q=0" );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{0u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( ";   q=0" );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{0u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( "       ;   q=0" );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{0u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{0u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( ";Q=1" );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{1000u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( ";q=1" );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{1000u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( ";q=1.0  " );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{1000u}} == *result );
 	}
 
 	{
 		const auto result = try_parse( " ;   q=1.00  " );
 
-		REQUIRE( result.first );
-		REQUIRE( qvalue_t{untrusted{1000u}} == result.second );
+		REQUIRE( result );
+		REQUIRE( qvalue_t{untrusted{1000u}} == *result );
 	}
 }
 
@@ -1101,56 +1102,55 @@ TEST_CASE( "non_empty_comma_separated_list_producer",
 	{
 		const auto result = try_parse( "" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( "," );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( ",,,," );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( ",  ,     ,    ,  " );
 
-		REQUIRE( !result.first );
-		REQUIRE( result.second.empty() );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = try_parse( "text/plain" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
 		std::vector< media_type_t > expected{
 			{ "text", "plain" }
 		};
 
-		REQUIRE( expected == result.second );
+		REQUIRE( expected == *result );
 	}
 
 	{
 		const auto result = try_parse( ", ,text/plain" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
 		std::vector< media_type_t > expected{
 			{ "text", "plain" }
 		};
 
-		REQUIRE( expected == result.second );
+		REQUIRE( expected == *result );
 	}
 
 	{
 		const auto result = try_parse( ", , text/plain , */*,, ,  ,   text/*," );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
 		std::vector< media_type_t > expected{
 			{ "text", "plain" },
@@ -1158,7 +1158,7 @@ TEST_CASE( "non_empty_comma_separated_list_producer",
 			{ "text", "*" }
 		};
 
-		REQUIRE( expected == result.second );
+		REQUIRE( expected == *result );
 	}
 }
 
@@ -1183,59 +1183,59 @@ TEST_CASE( "maybe_empty_comma_separated_list_producer",
 	{
 		const auto result = try_parse( "" );
 
-		REQUIRE( result.first );
-		REQUIRE( result.second.empty() );
+		REQUIRE( result );
+		REQUIRE( result->empty() );
 	}
 
 	{
 		const auto result = try_parse( "," );
 
-		REQUIRE( result.first );
-		REQUIRE( result.second.empty() );
+		REQUIRE( result );
+		REQUIRE( result->empty() );
 	}
 
 	{
 		const auto result = try_parse( ",,,," );
 
-		REQUIRE( result.first );
-		REQUIRE( result.second.empty() );
+		REQUIRE( result );
+		REQUIRE( result->empty() );
 	}
 
 	{
 		const auto result = try_parse( ",  ,     ,    ,  " );
 
-		REQUIRE( result.first );
-		REQUIRE( result.second.empty() );
+		REQUIRE( result );
+		REQUIRE( result->empty() );
 	}
 
 	{
 		const auto result = try_parse( "text/plain" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
 		std::vector< media_type_t > expected{
 			{ "text", "plain" }
 		};
 
-		REQUIRE( expected == result.second );
+		REQUIRE( expected == *result );
 	}
 
 	{
 		const auto result = try_parse( ", ,text/plain" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
 		std::vector< media_type_t > expected{
 			{ "text", "plain" }
 		};
 
-		REQUIRE( expected == result.second );
+		REQUIRE( expected == *result );
 	}
 
 	{
 		const auto result = try_parse( ", , text/plain , */*,, ,  ,   text/*," );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
 		std::vector< media_type_t > expected{
 			{ "text", "plain" },
@@ -1243,10 +1243,11 @@ TEST_CASE( "maybe_empty_comma_separated_list_producer",
 			{ "text", "*" }
 		};
 
-		REQUIRE( expected == result.second );
+		REQUIRE( expected == *result );
 	}
 }
 
+#if 0
 TEST_CASE( "Media-Type", "[media-type]" )
 {
 	using namespace restinio::http_field_parsers;
@@ -1256,76 +1257,76 @@ TEST_CASE( "Media-Type", "[media-type]" )
 		const auto result = media_type_value_t::try_parse(
 				"" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = media_type_value_t::try_parse(
 				"text/" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = media_type_value_t::try_parse(
 				"/plain" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = media_type_value_t::try_parse(
 				"text/plain" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
-		REQUIRE( "text" == result.second.m_type );
-		REQUIRE( "plain" == result.second.m_subtype );
-		REQUIRE( result.second.m_parameters.empty() );
+		REQUIRE( "text" == result->m_type );
+		REQUIRE( "plain" == result->m_subtype );
+		REQUIRE( result->m_parameters.empty() );
 	}
 
 	{
 		const auto result = media_type_value_t::try_parse(
 				"TexT/pLAIn" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
-		REQUIRE( "text" == result.second.m_type );
-		REQUIRE( "plain" == result.second.m_subtype );
-		REQUIRE( result.second.m_parameters.empty() );
+		REQUIRE( "text" == result->m_type );
+		REQUIRE( "plain" == result->m_subtype );
+		REQUIRE( result->m_parameters.empty() );
 	}
 
 	{
 		const auto result = media_type_value_t::try_parse(
 				"text/*; CharSet=utf-8 ;    Alternative-Coding=\"Bla Bla Bla\"" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
-		REQUIRE( "text" == result.second.m_type );
-		REQUIRE( "*" == result.second.m_subtype );
+		REQUIRE( "text" == result->m_type );
+		REQUIRE( "*" == result->m_subtype );
 
 		media_type_value_t::parameter_container_t expected{
 			{ "charset"s, "utf-8"s },
 			{ "alternative-coding"s, "Bla Bla Bla"s }
 		};
-		REQUIRE( expected == result.second.m_parameters );
+		REQUIRE( expected == result->m_parameters );
 	}
 
 	{
 		const auto result = media_type_value_t::try_parse(
 				"*/*;CharSet=utf-8;Alternative-Coding=\"Bla Bla Bla\";foO=BaZ" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
-		REQUIRE( "*" == result.second.m_type );
-		REQUIRE( "*" == result.second.m_subtype );
+		REQUIRE( "*" == result->m_type );
+		REQUIRE( "*" == result->m_subtype );
 
 		media_type_value_t::parameter_container_t expected{
 			{ "charset"s, "utf-8"s },
 			{ "alternative-coding"s, "Bla Bla Bla"s },
 			{ "foo"s, "BaZ"s }
 		};
-		REQUIRE( expected == result.second.m_parameters );
+		REQUIRE( expected == result->m_parameters );
 	}
 }
 
@@ -1338,55 +1339,55 @@ TEST_CASE( "Content-Type", "[media-type][content-type]" )
 		const auto result = content_type_value_t::try_parse(
 				"text/plain" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
-		REQUIRE( "text" == result.second.m_media_type.m_type );
-		REQUIRE( "plain" == result.second.m_media_type.m_subtype );
-		REQUIRE( result.second.m_media_type.m_parameters.empty() );
+		REQUIRE( "text" == result->m_media_type.m_type );
+		REQUIRE( "plain" == result->m_media_type.m_subtype );
+		REQUIRE( result->m_media_type.m_parameters.empty() );
 	}
 
 	{
 		const auto result = content_type_value_t::try_parse(
 				"TexT/pLAIn" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
-		REQUIRE( "text" == result.second.m_media_type.m_type );
-		REQUIRE( "plain" == result.second.m_media_type.m_subtype );
-		REQUIRE( result.second.m_media_type.m_parameters.empty() );
+		REQUIRE( "text" == result->m_media_type.m_type );
+		REQUIRE( "plain" == result->m_media_type.m_subtype );
+		REQUIRE( result->m_media_type.m_parameters.empty() );
 	}
 
 	{
 		const auto result = content_type_value_t::try_parse(
 				"text/*; CharSet=utf-8 ;    Alternative-Coding=\"Bla Bla Bla\"" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
-		REQUIRE( "text" == result.second.m_media_type.m_type );
-		REQUIRE( "*" == result.second.m_media_type.m_subtype );
+		REQUIRE( "text" == result->m_media_type.m_type );
+		REQUIRE( "*" == result->m_media_type.m_subtype );
 
 		media_type_value_t::parameter_container_t expected{
 			{ "charset"s, "utf-8"s },
 			{ "alternative-coding"s, "Bla Bla Bla"s }
 		};
-		REQUIRE( expected == result.second.m_media_type.m_parameters );
+		REQUIRE( expected == result->m_media_type.m_parameters );
 	}
 
 	{
 		const auto result = content_type_value_t::try_parse(
 				"*/*;CharSet=utf-8;Alternative-Coding=\"Bla Bla Bla\";foO=BaZ" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
-		REQUIRE( "*" == result.second.m_media_type.m_type );
-		REQUIRE( "*" == result.second.m_media_type.m_subtype );
+		REQUIRE( "*" == result->m_media_type.m_type );
+		REQUIRE( "*" == result->m_media_type.m_subtype );
 
 		media_type_value_t::parameter_container_t expected{
 			{ "charset"s, "utf-8"s },
 			{ "alternative-coding"s, "Bla Bla Bla"s },
 			{ "foo"s, "BaZ"s }
 		};
-		REQUIRE( expected == result.second.m_media_type.m_parameters );
+		REQUIRE( expected == result->m_media_type.m_parameters );
 	}
 }
 
@@ -1399,41 +1400,41 @@ TEST_CASE( "Cache-Control Field", "[cache-control]" )
 		const auto result = cache_control_value_t::try_parse(
 				"" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = cache_control_value_t::try_parse(
 				"," );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = cache_control_value_t::try_parse(
 				",, , ,   ,  " );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = cache_control_value_t::try_parse(
 				"max-age=5" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
 		cache_control_value_t::directive_container_t expected_directives{
 			{ "max-age"s, "5"s },
 		};
 
-		REQUIRE( expected_directives == result.second.m_directives );
+		REQUIRE( expected_directives == result->m_directives );
 	}
 
 	{
 		const auto result = cache_control_value_t::try_parse(
 				"max-age=5, no-transform, only-if-cached, min-fresh=20" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
 		cache_control_value_t::directive_container_t expected_directives{
 			{ "max-age"s, "5"s },
@@ -1442,14 +1443,14 @@ TEST_CASE( "Cache-Control Field", "[cache-control]" )
 			{ "min-fresh"s, "20"s }
 		};
 
-		REQUIRE( expected_directives == result.second.m_directives );
+		REQUIRE( expected_directives == result->m_directives );
 	}
 
 	{
 		const auto result = cache_control_value_t::try_parse(
 				", ,  ,   , max-age=5, ,,, no-transform, only-if-cached, min-fresh=20,,,,    " );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
 		cache_control_value_t::directive_container_t expected_directives{
 			{ "max-age"s, "5"s },
@@ -1458,7 +1459,7 @@ TEST_CASE( "Cache-Control Field", "[cache-control]" )
 			{ "min-fresh"s, "20"s }
 		};
 
-		REQUIRE( expected_directives == result.second.m_directives );
+		REQUIRE( expected_directives == result->m_directives );
 	}
 }
 
@@ -1471,47 +1472,47 @@ TEST_CASE( "Content-Encoding", "[content-encoding]" )
 		const auto result = content_encoding_value_t::try_parse(
 				"" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = content_encoding_value_t::try_parse(
 				"compress/" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = content_encoding_value_t::try_parse(
 				"compress" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
 		const content_encoding_value_t::value_container_t expected{
 			"compress"s
 		};
 
-		REQUIRE( expected == result.second.m_values );
+		REQUIRE( expected == result->m_values );
 	}
 
 	{
 		const auto result = content_encoding_value_t::try_parse(
 				"X-Compress" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
 		const content_encoding_value_t::value_container_t expected{
 			"x-compress"s
 		};
 
-		REQUIRE( expected == result.second.m_values );
+		REQUIRE( expected == result->m_values );
 	}
 
 	{
 		const auto result = content_encoding_value_t::try_parse(
 				"gzip, X-Compress  ,     deflate" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
 		const content_encoding_value_t::value_container_t expected{
 			"gzip"s,
@@ -1519,7 +1520,7 @@ TEST_CASE( "Content-Encoding", "[content-encoding]" )
 			"deflate"s
 		};
 
-		REQUIRE( expected == result.second.m_values );
+		REQUIRE( expected == result->m_values );
 	}
 }
 
@@ -1532,34 +1533,34 @@ TEST_CASE( "Accept", "[media-type][accept]" )
 		const auto result = accept_value_t::try_parse(
 				"" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
-		REQUIRE( result.second.m_items.empty() );
+		REQUIRE( result->m_items.empty() );
 	}
 
 	{
 		const auto result = accept_value_t::try_parse(
 				"text/" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = accept_value_t::try_parse(
 				"/plain" );
 
-		REQUIRE( !result.first );
+		REQUIRE( !result );
 	}
 
 	{
 		const auto result = accept_value_t::try_parse(
 				"text/plain" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
-		REQUIRE( 1 == result.second.m_items.size() );
+		REQUIRE( 1 == result->m_items.size() );
 
-		const auto & item = result.second.m_items[0];
+		const auto & item = result->m_items[0];
 
 		REQUIRE( "text" == item.m_media_type.m_type );
 		REQUIRE( "plain" == item.m_media_type.m_subtype );
@@ -1570,11 +1571,11 @@ TEST_CASE( "Accept", "[media-type][accept]" )
 		const auto result = accept_value_t::try_parse(
 				"text/*; CharSet=utf-8 ;    Alternative-Coding=\"Bla Bla Bla\"" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
-		REQUIRE( 1 == result.second.m_items.size() );
+		REQUIRE( 1 == result->m_items.size() );
 
-		const auto & item = result.second.m_items[0];
+		const auto & item = result->m_items[0];
 
 		REQUIRE( "text" == item.m_media_type.m_type );
 		REQUIRE( "*" == item.m_media_type.m_subtype );
@@ -1590,12 +1591,12 @@ TEST_CASE( "Accept", "[media-type][accept]" )
 		const auto result = accept_value_t::try_parse(
 				"text/*;CharSet=utf-8, application/json;charset=cp1251" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
-		REQUIRE( 2 == result.second.m_items.size() );
+		REQUIRE( 2 == result->m_items.size() );
 
 		{
-			const auto & item = result.second.m_items[0];
+			const auto & item = result->m_items[0];
 
 			REQUIRE( "text" == item.m_media_type.m_type );
 			REQUIRE( "*" == item.m_media_type.m_subtype );
@@ -1607,7 +1608,7 @@ TEST_CASE( "Accept", "[media-type][accept]" )
 		}
 
 		{
-			const auto & item = result.second.m_items[1];
+			const auto & item = result->m_items[1];
 
 			REQUIRE( "application" == item.m_media_type.m_type );
 			REQUIRE( "json" == item.m_media_type.m_subtype );
@@ -1625,12 +1626,12 @@ TEST_CASE( "Accept", "[media-type][accept]" )
 				"text/*;CharSet=utf-8, "
 				"application/json;charset=cp1251" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
-		REQUIRE( 3 == result.second.m_items.size() );
+		REQUIRE( 3 == result->m_items.size() );
 
 		{
-			const auto & item = result.second.m_items[0];
+			const auto & item = result->m_items[0];
 			REQUIRE( "text" == item.m_media_type.m_type );
 			REQUIRE( "plain" == item.m_media_type.m_subtype );
 			REQUIRE( item.m_media_type.m_parameters.empty() );
@@ -1647,7 +1648,7 @@ TEST_CASE( "Accept", "[media-type][accept]" )
 		}
 
 		{
-			const auto & item = result.second.m_items[1];
+			const auto & item = result->m_items[1];
 
 			REQUIRE( "text" == item.m_media_type.m_type );
 			REQUIRE( "*" == item.m_media_type.m_subtype );
@@ -1659,7 +1660,7 @@ TEST_CASE( "Accept", "[media-type][accept]" )
 		}
 
 		{
-			const auto & item = result.second.m_items[2];
+			const auto & item = result->m_items[2];
 
 			REQUIRE( "application" == item.m_media_type.m_type );
 			REQUIRE( "json" == item.m_media_type.m_subtype );
@@ -1681,39 +1682,39 @@ TEST_CASE( "Content-Disposition", "[content-disposition]" )
 		const auto result = content_disposition_value_t::try_parse(
 				"form-data" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
-		REQUIRE( "form-data" == result.second.m_value );
-		REQUIRE( result.second.m_parameters.empty() );
+		REQUIRE( "form-data" == result->m_value );
+		REQUIRE( result->m_parameters.empty() );
 	}
 
 	{
 		const auto result = content_disposition_value_t::try_parse(
 				"form-data; name=some-name" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
-		REQUIRE( "form-data" == result.second.m_value );
+		REQUIRE( "form-data" == result->m_value );
 
 		content_disposition_value_t::parameter_container_t expected{
 			{ "name"s, "some-name"s },
 		};
-		REQUIRE( expected == result.second.m_parameters );
+		REQUIRE( expected == result->m_parameters );
 	}
 
 	{
 		const auto result = content_disposition_value_t::try_parse(
 				"form-data; name=some-name  ;  filename=\"file\"" );
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
-		REQUIRE( "form-data" == result.second.m_value );
+		REQUIRE( "form-data" == result->m_value );
 
 		content_disposition_value_t::parameter_container_t expected{
 			{ "name"s, "some-name"s },
 			{ "filename"s, "file"s },
 		};
-		REQUIRE( expected == result.second.m_parameters );
+		REQUIRE( expected == result->m_parameters );
 	}
 
 	{
@@ -1721,16 +1722,16 @@ TEST_CASE( "Content-Disposition", "[content-disposition]" )
 				"form-data; name=some-name  ;  filename=\"file\""
 				";filename*=\"another name\"");
 
-		REQUIRE( result.first );
+		REQUIRE( result );
 
-		REQUIRE( "form-data" == result.second.m_value );
+		REQUIRE( "form-data" == result->m_value );
 
 		content_disposition_value_t::parameter_container_t expected{
 			{ "name"s, "some-name"s },
 			{ "filename"s, "file"s },
 			{ "filename*"s, "another name"s },
 		};
-		REQUIRE( expected == result.second.m_parameters );
+		REQUIRE( expected == result->m_parameters );
 	}
 }
-
+#endif

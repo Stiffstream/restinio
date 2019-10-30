@@ -534,6 +534,7 @@ ensure_no_remaining_content(
 					from.current_position(),
 					error_reason_t::unexpected_character
 			};
+		}
 	}
 
 	return nullopt;
@@ -667,7 +668,7 @@ public :
 					consumer.started_at(),
 					//FIXME: maybe a more appropriate error_reason can
 					//be used here?
-					pattern_not_found
+					error_reason_t::pattern_not_found
 			};
 		else
 			return nullopt;
@@ -708,7 +709,7 @@ public :
 		if( !success )
 			return parse_error_t{
 					consumer.started_at(),
-					pattern_not_found
+					error_reason_t::pattern_not_found
 			};
 		else
 			return nullopt;

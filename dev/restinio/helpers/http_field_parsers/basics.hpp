@@ -175,7 +175,7 @@ class ows_t : public producer_tag< restinio::optional_t<char> >
 {
 public :
 	RESTINIO_NODISCARD
-	expected< result_type, parse_error_t >
+	expected_t< result_type, parse_error_t >
 	try_parse(
 		source_t & from ) const noexcept
 	{
@@ -266,7 +266,7 @@ public :
 	try_parse( source_t & from ) const
 	{
 		std::string value;
-		const auto try_result = try_parse_value( from, result.second );
+		const auto try_result = try_parse_value( from, value );
 		if( !try_result )
 			return value;
 		else
@@ -525,6 +525,8 @@ class non_empty_comma_separated_list_producer_t
 	Element_Producer m_element;
 
 public :
+	using typename producer_tag< Container >::result_type;
+
 	non_empty_comma_separated_list_producer_t(
 		Element_Producer && element )
 		:	m_element{ std::move(element) }
@@ -570,6 +572,8 @@ class maybe_empty_comma_separated_list_producer_t
 	Element_Producer m_element;
 
 public :
+	using typename producer_tag< Container >::result_type;
+
 	maybe_empty_comma_separated_list_producer_t(
 		Element_Producer && element )
 		:	m_element{ std::move(element) }
