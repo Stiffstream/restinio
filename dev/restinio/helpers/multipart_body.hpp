@@ -125,11 +125,11 @@ struct body_producer_t
 	:	public easy_parser::impl::producer_tag< string_view_t >
 {
 	RESTINIO_NODISCARD
-	std::pair< bool, string_view_t >
+	expected_t< string_view_t, easy_parser::parse_error_t >
 	try_parse( easy_parser::impl::source_t & from ) const noexcept
 	{
 		// Return the whole content from the current position.
-		return std::make_pair( true, from.fragment( from.current_position() ) );
+		return from.fragment( from.current_position() );
 	}
 };
 
@@ -140,7 +140,7 @@ struct field_value_producer_t
 	:	public easy_parser::impl::producer_tag< std::string >
 {
 	RESTINIO_NODISCARD
-	std::pair< bool, std::string >
+	expected_t< std::string, easy_parser::parse_error_t >
 	try_parse( easy_parser::impl::source_t & from ) const
 	{
 		std::string accumulator;
@@ -152,12 +152,15 @@ struct field_value_producer_t
 		}
 
 		if( ch.m_eof )
-			return std::make_pair( false, std::string{} );
+			return make_unexpected( easy_parser::parse_error_t{
+					from.current_position(),
+					easy_parser::error_reason_t::unexpected_eof
+			} );
 
 		// CR or LF symbol should be returned back.
 		from.putback();
 
-		return std::make_pair( true, std::move(accumulator) );
+		return std::move(accumulator);
 	}
 };
 
@@ -200,7 +203,7 @@ make_parser()
 } /* namespace impl */
 
 RESTINIO_NODISCARD
-std::pair< bool, parsed_part_t >
+expected_t< parsed_part_t, restinio::easy_parser::parse_error_t >
 try_parse_part( string_view_t part )
 {
 	namespace easy_parser = restinio::easy_parser;

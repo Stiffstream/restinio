@@ -123,11 +123,11 @@ detect_boundary_for_multipart_body(
 	// contain value multipart/form-data.
 	const auto parse_result = hfp::content_type_value_t::try_parse(
 			*content_type );
-	if( !parse_result.first )
+	if( !parse_result )
 		return make_unexpected(
 				enumeration_error_t::content_type_field_parse_error );
 
-	const auto & media_type = parse_result.second.m_media_type;
+	const auto & media_type = parse_result->m_media_type;
 	if( "multipart" != media_type.m_type
 			&& "form-data" != media_type.m_subtype )
 		return make_unexpected(
@@ -135,7 +135,7 @@ detect_boundary_for_multipart_body(
 
 	// `boundary` param should be present in parsed Content-Type value.
 	const auto boundary = hfp::find_first(
-			parse_result.second.m_media_type.m_parameters,
+			parse_result->m_media_type.m_parameters,
 			"boundary" );
 	if( !boundary )
 		return make_unexpected(
@@ -163,12 +163,12 @@ try_analyze_part( string_view_t part )
 
 	// The current part should be parsed to headers and 
 	auto part_parse_result = restinio::multipart_body::try_parse_part( part );
-	if( !part_parse_result.first )
+	if( !part_parse_result )
 		return make_unexpected( enumeration_error_t::unexpected_error );
 
 	// Content-Disposition field should be present.
 	const auto disposition_field =
-			part_parse_result.second.m_fields.opt_value_of(
+			part_parse_result->m_fields.opt_value_of(
 					restinio::http_field::content_disposition );
 	if( !disposition_field )
 		return make_unexpected( enumeration_error_t::no_files_found );
@@ -177,14 +177,14 @@ try_analyze_part( string_view_t part )
 	// `name` and `filename*`/`filename` parameters.
 	const auto parsed_disposition = hfp::content_disposition_value_t::
 			try_parse( *disposition_field );
-	if( !parsed_disposition.first )
+	if( !parsed_disposition )
 		return make_unexpected(
 				enumeration_error_t::content_disposition_field_parse_error );
-	if( "form-data" != parsed_disposition.second.m_value )
+	if( "form-data" != parsed_disposition->m_value )
 		return make_unexpected( enumeration_error_t::no_files_found );
 
 	const auto name = hfp::find_first(
-			parsed_disposition.second.m_parameters, "name" );
+			parsed_disposition->m_parameters, "name" );
 	if( !name )
 		return make_unexpected(
 				enumeration_error_t::content_disposition_field_inappropriate_value );
@@ -194,17 +194,17 @@ try_analyze_part( string_view_t part )
 	};
 
 	const auto filename_star = expected_to_optional( hfp::find_first(
-			parsed_disposition.second.m_parameters, "filename*" ) );
+			parsed_disposition->m_parameters, "filename*" ) );
 	const auto filename = expected_to_optional( hfp::find_first(
-			parsed_disposition.second.m_parameters, "filename" ) );
+			parsed_disposition->m_parameters, "filename" ) );
 
 	// If there is no `filename*` nor `filename` then there is no file.
 	if( !filename_star && !filename )
 		return make_unexpected( enumeration_error_t::no_files_found );
 
 	return part_description_t{
-			std::move( part_parse_result.second.m_fields ),
-			part_parse_result.second.m_body,
+			std::move( part_parse_result->m_fields ),
+			part_parse_result->m_body,
 			*name,
 			filename_star,
 			filename

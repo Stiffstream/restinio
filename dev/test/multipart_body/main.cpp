@@ -149,25 +149,25 @@ TEST_CASE( "try_parse_part", "[try_parse_part]" )
 	{
 		const auto r = try_parse_part( "" );
 
-		REQUIRE( !r.first );
+		REQUIRE( !r );
 	}
 
 	{
 		const auto r = try_parse_part( " " );
 
-		REQUIRE( !r.first );
+		REQUIRE( !r );
 	}
 
 	{
 		const auto r = try_parse_part( " body" );
 
-		REQUIRE( !r.first );
+		REQUIRE( !r );
 	}
 
 	{
 		const auto r = try_parse_part( "content-type: text/plain" );
 
-		REQUIRE( !r.first );
+		REQUIRE( !r );
 	}
 
 	{
@@ -175,7 +175,7 @@ TEST_CASE( "try_parse_part", "[try_parse_part]" )
 				"content-type: text/plain\r\n"
 				"body." );
 
-		REQUIRE( !r.first );
+		REQUIRE( !r );
 	}
 
 	{
@@ -185,7 +185,7 @@ TEST_CASE( "try_parse_part", "[try_parse_part]" )
 				"\r\n"
 				"body." );
 
-		REQUIRE( !r.first );
+		REQUIRE( !r );
 	}
 
 	{
@@ -195,15 +195,15 @@ TEST_CASE( "try_parse_part", "[try_parse_part]" )
 				"\r\n"
 				"body." );
 
-		REQUIRE( !r.first );
+		REQUIRE( !r );
 	}
 
 	{
 		const auto r = try_parse_part( "\r\n" );
 
-		REQUIRE( r.first );
-		REQUIRE( 0u == r.second.m_fields.fields_count() );
-		REQUIRE( "" == r.second.m_body );
+		REQUIRE( r );
+		REQUIRE( 0u == r->m_fields.fields_count() );
+		REQUIRE( "" == r->m_body );
 	}
 
 	{
@@ -212,31 +212,11 @@ TEST_CASE( "try_parse_part", "[try_parse_part]" )
 				"\r\n"
 				"body." );
 
-		REQUIRE( r.first );
-		REQUIRE( 1u == r.second.m_fields.fields_count() );
-		REQUIRE( r.second.m_fields.has_field( "content-type" ) );
-		REQUIRE( "text/plain" == r.second.m_fields.value_of( "content-type" ) );
-		REQUIRE( "body." == r.second.m_body );
-	}
-
-	{
-		const auto r = try_parse_part(
-				"content-type: text/plain\r\n"
-				"content-disposition: form-data; name=value\r\n"
-				"\r\n"
-				"body." );
-
-		REQUIRE( r.first );
-		REQUIRE( 2u == r.second.m_fields.fields_count() );
-
-		REQUIRE( r.second.m_fields.has_field( "content-type" ) );
-		REQUIRE( "text/plain" == r.second.m_fields.value_of( "content-type" ) );
-
-		REQUIRE( r.second.m_fields.has_field( "content-disposition" ) );
-		REQUIRE( "form-data; name=value" ==
-				r.second.m_fields.value_of( "content-disposition" ) );
-
-		REQUIRE( "body." == r.second.m_body );
+		REQUIRE( r );
+		REQUIRE( 1u == r->m_fields.fields_count() );
+		REQUIRE( r->m_fields.has_field( "content-type" ) );
+		REQUIRE( "text/plain" == r->m_fields.value_of( "content-type" ) );
+		REQUIRE( "body." == r->m_body );
 	}
 
 	{
@@ -244,21 +224,41 @@ TEST_CASE( "try_parse_part", "[try_parse_part]" )
 				"content-type: text/plain\r\n"
 				"content-disposition: form-data; name=value\r\n"
 				"\r\n"
+				"body." );
+
+		REQUIRE( r );
+		REQUIRE( 2u == r->m_fields.fields_count() );
+
+		REQUIRE( r->m_fields.has_field( "content-type" ) );
+		REQUIRE( "text/plain" == r->m_fields.value_of( "content-type" ) );
+
+		REQUIRE( r->m_fields.has_field( "content-disposition" ) );
+		REQUIRE( "form-data; name=value" ==
+				r->m_fields.value_of( "content-disposition" ) );
+
+		REQUIRE( "body." == r->m_body );
+	}
+
+	{
+		const auto r = try_parse_part(
+				"content-type: text/plain\r\n"
+				"content-disposition: form-data; name=value\r\n"
+				"\r\n"
 				"\r\n"
 				"\r\n"
 				"body." );
 
-		REQUIRE( r.first );
-		REQUIRE( 2u == r.second.m_fields.fields_count() );
+		REQUIRE( r );
+		REQUIRE( 2u == r->m_fields.fields_count() );
 
-		REQUIRE( r.second.m_fields.has_field( "content-type" ) );
-		REQUIRE( "text/plain" == r.second.m_fields.value_of( "content-type" ) );
+		REQUIRE( r->m_fields.has_field( "content-type" ) );
+		REQUIRE( "text/plain" == r->m_fields.value_of( "content-type" ) );
 
-		REQUIRE( r.second.m_fields.has_field( "content-disposition" ) );
+		REQUIRE( r->m_fields.has_field( "content-disposition" ) );
 		REQUIRE( "form-data; name=value" ==
-				r.second.m_fields.value_of( "content-disposition" ) );
+				r->m_fields.value_of( "content-disposition" ) );
 
-		REQUIRE( "\r\n\r\nbody." == r.second.m_body );
+		REQUIRE( "\r\n\r\nbody." == r->m_body );
 	}
 }
 
