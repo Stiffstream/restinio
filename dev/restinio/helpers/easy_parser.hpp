@@ -22,6 +22,7 @@
 
 #include <restinio/exception.hpp>
 #include <restinio/optional.hpp>
+#include <restinio/expected.hpp>
 
 #include <iostream>
 #include <limits>
@@ -37,6 +38,40 @@ namespace easy_parser
 {
 
 namespace meta = restinio::utils::metaprogramming;
+
+//
+// error_reason_t
+//
+enum class error_reason_t
+{
+	unexpected_character,
+	unexpected_eof,
+	no_appropriate_alternative,
+	pattern_not_found
+};
+
+//
+// parse_error_t
+//
+class parse_error_t
+{
+	std::size_t m_position;
+	error_reason_t m_reason;
+
+public:
+	parse_error_t(
+		std::size_t position,
+		error_reason_t reason ) noexcept
+		:	m_position{ position }
+		,	m_reason{ reason }
+	{}
+
+	std::size_t
+	position() const noexcept { return m_position; }
+
+	error_reason_t
+	reason() const noexcept { return m_reason; }
+};
 
 //FIXME: document this!
 struct nothing_t {};
@@ -275,6 +310,12 @@ public:
 				m_from.backto( m_started_at );
 		}
 
+		position_t
+		started_at() const noexcept
+		{
+			return m_started_at;
+		}
+
 		void
 		acquire_content() noexcept
 		{
@@ -356,20 +397,16 @@ public :
 	{}
 
 	RESTINIO_NODISCARD
-	auto
+	expected_t< result_type, parse_error_t >
 	try_parse( source_t & source )
 	{
-		std::pair< bool, result_type > result;
-		
 		auto producer_result = m_producer.try_parse( source );
-		result.first = producer_result.first;
-		if( producer_result.first )
+		if( producer_result )
 		{
-			result.second = m_transformer.transform(
-					std::move(producer_result.second) );
+			return m_transformer.transform( std::move(*producer_result) );
 		}
-
-		return result;
+		else
+			return make_unexpected( producer_result.error() );
 	}
 };
 
@@ -442,17 +479,17 @@ public :
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	bool
+	optional_t< parse_error_t >
 	try_process( source_t & from, Target_Type & target )
 	{
 		auto parse_result = m_producer.try_parse( from );
-		if( parse_result.first )
+		if( parse_result )
 		{
-			m_consumer.consume( target, std::move(parse_result.second) );
-			return true;
+			m_consumer.consume( target, std::move(*parse_result) );
+			return nullopt;
 		}
 		else
-			return false;
+			return parse_result.error();
 	}
 };
 
@@ -485,17 +522,21 @@ public :
 };
 
 RESTINIO_NODISCARD
-inline bool
+inline optional_t< parse_error_t >
 ensure_no_remaining_content(
 	source_t & from )
 {
 	while( !from.eof() )
 	{
 		if( !is_space( from.getch().m_ch ) )
-			return false;
+		{
+			return parse_error_t{
+					from.current_position(),
+					error_reason_t::unexpected_character
+			};
 	}
 
-	return true;
+	return nullopt;
 }
 
 //
@@ -515,24 +556,36 @@ public :
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	bool
+	optional_t< parse_error_t >
 	try_process( source_t & from, Target_Type & target )
 	{
-		return restinio::utils::tuple_algorithms::any_of(
+		const auto starting_pos = from.current_position();
+
+		const bool success = restinio::utils::tuple_algorithms::any_of(
 				m_subitems,
 				[&from, &target]( auto && one_producer ) {
 					source_t::content_consumer_t consumer{ from };
 					Target_Type tmp_value{ target };
 
-					bool success = one_producer.try_process( from, tmp_value );
-					if( success )
+					auto result = one_producer.try_process( from, tmp_value );
+					if( !result )
 					{
 						target = std::move(tmp_value);
 						consumer.acquire_content();
+
+						return true;
 					}
 
-					return success;
+					return false;
 				} );
+
+		if( !success )
+			return parse_error_t{
+					starting_pos,
+					error_reason_t::no_appropriate_alternative
+			};
+		else
+			return nullopt;
 	}
 };
 
@@ -553,7 +606,7 @@ public :
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	bool
+	optional_t< parse_error_t >
 	try_process( source_t & from, Target_Type & target )
 	{
 		source_t::content_consumer_t consumer{ from };
@@ -562,7 +615,7 @@ public :
 		const bool success = restinio::utils::tuple_algorithms::all_of(
 				m_subitems,
 				[&from, &tmp_value]( auto && one_producer ) {
-					return one_producer.try_process( from, tmp_value );
+					return !one_producer.try_process( from, tmp_value );
 				} );
 
 		if( success )
@@ -571,8 +624,8 @@ public :
 			consumer.acquire_content();
 		}
 
-		// maybe_producer always returns true even if nothing consumed.
-		return true;
+		// maybe_producer always returns success even if nothing consumed.
+		return nullopt;
 	}
 };
 
@@ -593,7 +646,7 @@ public :
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	bool
+	optional_t< parse_error_t >
 	try_process( source_t & from, Target_Type & )
 	{
 		// NOTE: will always return the current position back.
@@ -601,11 +654,23 @@ public :
 
 		Target_Type dummy_value;
 
-		return !restinio::utils::tuple_algorithms::all_of(
+		const auto success = !restinio::utils::tuple_algorithms::all_of(
 				m_subitems,
 				[&from, &dummy_value]( auto && one_producer ) {
-					return one_producer.try_process( from, dummy_value );
+					return !one_producer.try_process( from, dummy_value );
 				} );
+
+		// This is contra-intuitive but: we return pattern_not_found in
+		// the case when pattern is actually found in the input.
+		if( !success )
+			return parse_error_t{
+					consumer.started_at(),
+					//FIXME: maybe a more appropriate error_reason can
+					//be used here?
+					pattern_not_found
+			};
+		else
+			return nullopt;
 	}
 };
 
@@ -626,7 +691,7 @@ public :
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	bool
+	optional_t< parse_error_t >
 	try_process( source_t & from, Target_Type & )
 	{
 		// NOTE: will always return the current position back.
@@ -634,11 +699,19 @@ public :
 
 		Target_Type dummy_value;
 
-		return restinio::utils::tuple_algorithms::all_of(
+		const bool success = restinio::utils::tuple_algorithms::all_of(
 				m_subitems,
 				[&from, &dummy_value]( auto && one_producer ) {
-					return one_producer.try_process( from, dummy_value );
+					return !one_producer.try_process( from, dummy_value );
 				} );
+
+		if( !success )
+			return parse_error_t{
+					consumer.started_at(),
+					pattern_not_found
+			};
+		else
+			return nullopt;
 	}
 };
 
@@ -659,16 +732,20 @@ public :
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	bool
+	optional_t< parse_error_t >
 	try_process( source_t & from, Target_Type & target )
 	{
 		source_t::content_consumer_t consumer{ from };
 		Target_Type tmp_value{ target };
 
+		// We should store actual parse error from subitems to return it.
+		optional_t< parse_error_t > result;
+
 		const bool success = restinio::utils::tuple_algorithms::all_of(
 				m_subitems,
-				[&from, &tmp_value]( auto && one_producer ) {
-					return one_producer.try_process( from, tmp_value );
+				[&from, &tmp_value, &result]( auto && one_producer ) {
+					result = one_producer.try_process( from, tmp_value );
+					return !result;
 				} );
 
 		if( success )
@@ -677,7 +754,7 @@ public :
 			consumer.acquire_content();
 		}
 
-		return success;
+		return result;
 	}
 };
 
@@ -698,18 +775,23 @@ public :
 	{}
 
 	RESTINIO_NODISCARD
-	auto
+	expected_t< Target_Type, parse_error_t >
 	try_parse( source_t & from )
 	{
-		std::pair< bool, Target_Type > result;
+		Target_Type tmp_value;
+		optional_t< parse_error_t > error;
 
-		result.first = restinio::utils::tuple_algorithms::all_of(
+		const bool success = restinio::utils::tuple_algorithms::all_of(
 				m_subitems,
-				[&from, &result]( auto && one_clause ) {
-					return one_clause.try_process( from, result.second );
+				[&from, &tmp_value, &error]( auto && one_clause ) {
+					error = one_clause.try_process( from, tmp_value );
+					return !error;
 				} );
 
-		return result;
+		if( success )
+			return std::move(tmp_value);
+		else
+			return make_unexpected( *error );
 	}
 };
 
@@ -737,7 +819,7 @@ public :
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	bool
+	optional_t< parse_error_t >
 	try_process( source_t & from, Target_Type & dest )
 	{
 		source_t::content_consumer_t whole_consumer{ from };
@@ -751,7 +833,7 @@ public :
 			failure_detected = !restinio::utils::tuple_algorithms::all_of(
 					m_subitems,
 					[&from, &dest]( auto && one_clause ) {
-						return one_clause.try_process( from, dest );
+						return !one_clause.try_process( from, dest );
 					} );
 
 			if( !failure_detected )
@@ -762,11 +844,16 @@ public :
 			}
 		}
 
-		const bool success = count >= m_min_occurences;
-		if( success )
+		if( count >= m_min_occurences )
+		{
 			whole_consumer.acquire_content();
+			return nullopt;
+		}
 
-		return success;
+		return parse_error_t{
+				from.current_position(),
+				error_reason_t::pattern_not_found
+		};
 	}
 };
 
@@ -781,19 +868,28 @@ public:
 	symbol_producer_t( char expected ) : m_expected{ expected } {}
 
 	RESTINIO_NODISCARD
-	std::pair< bool, char >
+	expected_t< char, parse_error_t >
 	try_parse( source_t & from ) const noexcept
 	{
 		const auto ch = from.getch();
 		if( !ch.m_eof )
 		{
 			if( ch.m_ch == m_expected )
-				return std::make_pair( true, ch.m_ch );
+				return ch.m_ch;
 			else
+			{
 				from.putback();
+				return make_unexpected( parse_error_t{
+						from.current_position(),
+						error_reason_t::unexpected_character
+				} );
+			}
 		}
-
-		return std::make_pair( false, '\x00' );
+		else
+			return make_unexpected( parse_error_t{
+					from.current_position(),
+					error_reason_t::unexpected_eof
+			} );
 	}
 };
 
@@ -804,19 +900,28 @@ class digit_producer_t : public producer_tag< char >
 {
 public:
 	RESTINIO_NODISCARD
-	std::pair< bool, char >
+	expected_t< char, parse_error_t >
 	try_parse( source_t & from ) const noexcept
 	{
 		const auto ch = from.getch();
 		if( !ch.m_eof )
 		{
 			if( is_digit(ch.m_ch) )
-				return std::make_pair( true, ch.m_ch );
+				return ch.m_ch;
 			else
+			{
 				from.putback();
+				return make_unexpected( parse_error_t{
+						from.current_position(),
+						error_reason_t::unexpected_character
+				} );
+			}
 		}
-
-		return std::make_pair( false, '\x00' );
+		else
+			return make_unexpected( parse_error_t{
+					from.current_position(),
+					error_reason_t::unexpected_eof
+			} );
 	}
 };
 
@@ -919,30 +1024,6 @@ struct to_lower_transformer_t : public transformer_tag< std::string >
 		return result;
 	}
 };
-
-#if 0
-//
-// just_transformer_t
-//
-template< typename V >
-class just_transformer_t : public transformer_tag<V>
-{
-	V m_value;
-
-public :
-	using result_type = typename transformer_tag<V>::result_type;
-
-	just_transformer_t( V && v ) : m_value{ std::move(v) } {}
-
-	template< typename Input_Type >
-	RESTINIO_NODISCARD
-	result_type
-	transform( Input_Type && ) const
-	{
-		return m_value;
-	}
-};
-#endif
 
 } /* namespace impl */
 
@@ -1187,30 +1268,12 @@ RESTINIO_NODISCARD
 auto
 to_lower() noexcept { return impl::to_lower_transformer_t{}; }
 
-#if 0
-//
-// just
-//
-template< typename V >
-RESTINIO_NODISCARD
-auto
-just( V && v )
-{
-	using value_type = std::decay_t<V>;
-	using transformer_type = impl::just_transformer_t<value_type>;
-
-	return impl::value_transformer_t< transformer_type >{
-			transformer_type{ std::forward<V>(v) }
-	};
-}
-#endif
-
 //
 // try_parse
 //
 template< typename Producer >
 RESTINIO_NODISCARD
-auto
+expected_t< typename Producer::result_type, parse_error_t >
 try_parse(
 	string_view_t from,
 	Producer producer )
@@ -1223,10 +1286,13 @@ try_parse(
 	auto result = impl::top_level_clause_t< Producer >{ std::move(producer) }
 			.try_process( source );
 
-	if( !result.first ||
-			!impl::ensure_no_remaining_content( source ) )
+	if( result )
 	{
-		result.first = false;
+		// We should ensure that all content has been consumed.
+		const auto all_content_check =
+				impl::ensure_no_remaining_content( source );
+		if( all_content_check )
+			return make_unexpected( *all_content_check );
 	}
 
 	return result;

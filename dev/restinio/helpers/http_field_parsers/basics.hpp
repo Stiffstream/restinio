@@ -175,12 +175,10 @@ class ows_t : public producer_tag< restinio::optional_t<char> >
 {
 public :
 	RESTINIO_NODISCARD
-	auto
+	expected< result_type, parse_error_t >
 	try_parse(
 		source_t & from ) const noexcept
 	{
-		std::pair< bool, optional_t<char> > result;
-
 		std::size_t extracted_spaces{};
 		character_t ch;
 		for( ch = from.getch();
@@ -194,13 +192,10 @@ public :
 			// The first non-space char should be returned back.
 			from.putback();
 
-		result.first = true;
 		if( extracted_spaces > 0u )
-		{
-			result.second = ' ';
-		}
+			return result_type{ ' ' };
 
-		return result;
+		return result_type{ nullopt };
 	}
 };
 
@@ -210,18 +205,24 @@ public :
 class token_producer_t : public producer_tag< std::string >
 {
 	RESTINIO_NODISCARD
-	static bool
+	static optional_t< parse_error_t >
 	try_parse_value( source_t & from, std::string & accumulator )
 	{
+		error_reason_t reason = error_reason_t::pattern_not_found;
+
 		do
 		{
 			const auto ch = from.getch();
 			if( ch.m_eof )
+			{
+				reason = error_reason_t::unexpected_eof;
 				break;
+			}
 
 			if( !is_token_char(ch.m_ch) )
 			{
 				from.putback();
+				reason = error_reason_t::unexpected_character;
 				break;
 			}
 
@@ -230,9 +231,11 @@ class token_producer_t : public producer_tag< std::string >
 		while( true );
 
 		if( accumulator.empty() )
-			return false;
+		{
+			return parse_error_t{ from.current_position(), reason };
+		}
 
-		return true;
+		return nullopt;
 	}
 
 	RESTINIO_NODISCARD
@@ -259,12 +262,15 @@ class token_producer_t : public producer_tag< std::string >
 
 public :
 	RESTINIO_NODISCARD
-	auto
+	expected_t< result_type, parse_error_t >
 	try_parse( source_t & from ) const
 	{
-		std::pair< bool, std::string > result;
-		result.first = try_parse_value( from, result.second );
-		return result;
+		std::string value;
+		const auto try_result = try_parse_value( from, result.second );
+		if( !try_result )
+			return value;
+		else
+			return make_unexpected( *try_result );
 	}
 };
 
@@ -274,15 +280,20 @@ public :
 class quoted_string_producer_t : public producer_tag< std::string >
 {
 	RESTINIO_NODISCARD
-	static bool
+	static optional_t< parse_error_t >
 	try_parse_value( source_t & from, std::string & accumulator )
 	{
+		error_reason_t reason = error_reason_t::pattern_not_found;
+
 		bool second_quote_extracted{ false };
 		do
 		{
 			const auto ch = from.getch();
 			if( ch.m_eof )
+			{
+				reason = error_reason_t::unexpected_eof;
 				break;
+			}
 
 			if( '"' == ch.m_ch )
 				second_quote_extracted = true;
@@ -290,7 +301,10 @@ class quoted_string_producer_t : public producer_tag< std::string >
 			{
 				const auto next = from.getch();
 				if( next.m_eof )
+				{
+					reason = error_reason_t::unexpected_eof;
 					break;
+				}
 				else if( SP == next.m_ch || HTAB == next.m_ch ||
 						is_vchar( next.m_ch ) ||
 						is_obs_text( next.m_ch ) )
@@ -298,39 +312,64 @@ class quoted_string_producer_t : public producer_tag< std::string >
 					accumulator += next.m_ch;
 				}
 				else
+				{
+					reason = error_reason_t::unexpected_character;
+					from.putback();
 					break;
+				}
 			}
 			else if( is_qdtext( ch.m_ch ) )
 				accumulator += ch.m_ch;
 			else
+			{
+				reason = error_reason_t::unexpected_character;
+				from.putback();
 				break;
+			}
 		}
 		while( !second_quote_extracted );
 
-		return second_quote_extracted;
+		if( !second_quote_extracted )
+			return parse_error_t{ from.current_position(), reason };
+		else
+			return nullopt;
 	}
 
 public :
 	RESTINIO_NODISCARD
-	auto
+	expected_t< result_type, parse_error_t >
 	try_parse( source_t & from ) const
 	{
 		source_t::content_consumer_t consumer{ from };
-
-		std::pair< bool, std::string > result;
-		result.first = false;
 
 		const auto ch = from.getch();
 		if( !ch.m_eof )
 		{
 			if( '"' == ch.m_ch )
-				result.first = try_parse_value( from, result.second );
+			{
+				std::string value;
+				const auto try_result = try_parse_value( from, value );
+				if( !try_result )
+				{
+					consumer.acquire_content();
+					return std::move(value);
+				}
+				else
+					return make_unexpected( *try_result );
+			}
+			else
+			{
+				return make_unexpected( parse_error_t{
+						consumer.started_at(),
+						error_reason_t::unexpected_character
+				} );
+			}
 		}
-
-		if( result.first )
-			consumer.acquire_content();
-
-		return result;
+		else
+			return make_unexpected( parse_error_t{
+					consumer.started_at(),
+					error_reason_t::unexpected_eof
+			} );
 	}
 };
 
@@ -401,7 +440,7 @@ class qvalue_producer_t
 
 public :
 	RESTINIO_NODISCARD
-	std::pair< bool, qvalue_t >
+	expected_t< result_type, parse_error_t >
 	try_parse( source_t & from ) const noexcept
 	{
 		const auto parse_result = produce< zero_initialized_unit_t >(
@@ -431,11 +470,10 @@ public :
 				)
 			).try_parse( from );
 
-		if( parse_result.first )
-			return std::make_pair( true,
-					qvalue_t{ qvalue_t::trusted{ parse_result.second.m_value } } );
+		if( parse_result )
+			return qvalue_t{ qvalue_t::trusted{ parse_result->m_value } };
 		else
-			return std::make_pair( false, qvalue_t{} );
+			return make_unexpected( parse_result.error() );
 	}
 };
 
@@ -493,24 +531,26 @@ public :
 	{}
 
 	RESTINIO_NODISCARD
-	std::pair< bool, Container >
+	expected_t< result_type, parse_error_t >
 	try_parse( source_t & from )
 	{
-		std::pair< bool, Container > result;
-		result.first = false;
+		Container tmp_value;
 
 		const auto appender = to_container<Container_Adaptor>();
 
-		result.first = sequence(
+		const auto process_result = sequence(
 				repeat( 0, N, symbol(','), ows() ),
 				m_element >> appender,  
 				repeat( 0, N,
 					ows(), symbol(','),
 					maybe( ows(), m_element >> appender )
 				)
-			).try_process( from, result.second );
+			).try_process( from, tmp_value );
 
-		return result;
+		if( !process_result )
+			return std::move(tmp_value);
+		else
+			return make_unexpected( *process_result );
 	}
 };
 
@@ -536,23 +576,25 @@ public :
 	{}
 
 	RESTINIO_NODISCARD
-	std::pair< bool, Container >
+	expected_t< result_type, parse_error_t >
 	try_parse( source_t & from )
 	{
-		std::pair< bool, Container > result;
-		result.first = false;
+		Container tmp_value;
 
 		const auto appender = to_container<Container_Adaptor>();
 
-		result.first = maybe(
+		const auto process_result = maybe(
 				alternatives( symbol(','), m_element >> appender ),
 				repeat( 0, N,
 					ows(), symbol(','),
 					maybe( ows(), m_element >> appender )
 				)
-			).try_process( from, result.second );
+			).try_process( from, tmp_value );
 
-		return result;
+		if( !process_result )
+			return std::move(tmp_value);
+		else
+			return make_unexpected( *process_result );
 	}
 };
 
