@@ -202,8 +202,8 @@ TEST_CASE( "try_parse_part", "[try_parse_part]" )
 		const auto r = try_parse_part( "\r\n" );
 
 		REQUIRE( r );
-		REQUIRE( 0u == r->m_fields.fields_count() );
-		REQUIRE( "" == r->m_body );
+		REQUIRE( 0u == r->fields.fields_count() );
+		REQUIRE( "" == r->body );
 	}
 
 	{
@@ -213,30 +213,10 @@ TEST_CASE( "try_parse_part", "[try_parse_part]" )
 				"body." );
 
 		REQUIRE( r );
-		REQUIRE( 1u == r->m_fields.fields_count() );
-		REQUIRE( r->m_fields.has_field( "content-type" ) );
-		REQUIRE( "text/plain" == r->m_fields.value_of( "content-type" ) );
-		REQUIRE( "body." == r->m_body );
-	}
-
-	{
-		const auto r = try_parse_part(
-				"content-type: text/plain\r\n"
-				"content-disposition: form-data; name=value\r\n"
-				"\r\n"
-				"body." );
-
-		REQUIRE( r );
-		REQUIRE( 2u == r->m_fields.fields_count() );
-
-		REQUIRE( r->m_fields.has_field( "content-type" ) );
-		REQUIRE( "text/plain" == r->m_fields.value_of( "content-type" ) );
-
-		REQUIRE( r->m_fields.has_field( "content-disposition" ) );
-		REQUIRE( "form-data; name=value" ==
-				r->m_fields.value_of( "content-disposition" ) );
-
-		REQUIRE( "body." == r->m_body );
+		REQUIRE( 1u == r->fields.fields_count() );
+		REQUIRE( r->fields.has_field( "content-type" ) );
+		REQUIRE( "text/plain" == r->fields.value_of( "content-type" ) );
+		REQUIRE( "body." == r->body );
 	}
 
 	{
@@ -244,21 +224,41 @@ TEST_CASE( "try_parse_part", "[try_parse_part]" )
 				"content-type: text/plain\r\n"
 				"content-disposition: form-data; name=value\r\n"
 				"\r\n"
+				"body." );
+
+		REQUIRE( r );
+		REQUIRE( 2u == r->fields.fields_count() );
+
+		REQUIRE( r->fields.has_field( "content-type" ) );
+		REQUIRE( "text/plain" == r->fields.value_of( "content-type" ) );
+
+		REQUIRE( r->fields.has_field( "content-disposition" ) );
+		REQUIRE( "form-data; name=value" ==
+				r->fields.value_of( "content-disposition" ) );
+
+		REQUIRE( "body." == r->body );
+	}
+
+	{
+		const auto r = try_parse_part(
+				"content-type: text/plain\r\n"
+				"content-disposition: form-data; name=value\r\n"
+				"\r\n"
 				"\r\n"
 				"\r\n"
 				"body." );
 
 		REQUIRE( r );
-		REQUIRE( 2u == r->m_fields.fields_count() );
+		REQUIRE( 2u == r->fields.fields_count() );
 
-		REQUIRE( r->m_fields.has_field( "content-type" ) );
-		REQUIRE( "text/plain" == r->m_fields.value_of( "content-type" ) );
+		REQUIRE( r->fields.has_field( "content-type" ) );
+		REQUIRE( "text/plain" == r->fields.value_of( "content-type" ) );
 
-		REQUIRE( r->m_fields.has_field( "content-disposition" ) );
+		REQUIRE( r->fields.has_field( "content-disposition" ) );
 		REQUIRE( "form-data; name=value" ==
-				r->m_fields.value_of( "content-disposition" ) );
+				r->fields.value_of( "content-disposition" ) );
 
-		REQUIRE( "\r\n\r\nbody." == r->m_body );
+		REQUIRE( "\r\n\r\nbody." == r->body );
 	}
 }
 

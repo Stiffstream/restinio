@@ -168,7 +168,7 @@ try_analyze_part( string_view_t part )
 
 	// Content-Disposition field should be present.
 	const auto disposition_field =
-			part_parse_result->m_fields.opt_value_of(
+			part_parse_result->fields.opt_value_of(
 					restinio::http_field::content_disposition );
 	if( !disposition_field )
 		return make_unexpected( enumeration_error_t::no_files_found );
@@ -203,8 +203,8 @@ try_analyze_part( string_view_t part )
 		return make_unexpected( enumeration_error_t::no_files_found );
 
 	return part_description_t{
-			std::move( part_parse_result->m_fields ),
-			part_parse_result->m_body,
+			std::move( part_parse_result->fields ),
+			part_parse_result->body,
 			*name,
 			filename_star,
 			filename

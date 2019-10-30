@@ -98,11 +98,10 @@ split_multipart_body(
 //
 // parsed_part_t
 //
-//FIXME: public members of that struct shouldn't have m_ prefix!
 struct parsed_part_t
 {
-	http_header_fields_t m_fields;
-	string_view_t m_body;
+	http_header_fields_t fields;
+	string_view_t body;
 };
 
 namespace impl
@@ -195,9 +194,9 @@ make_parser()
 								to.set_field( std::move(v) );
 							} )
 				)
-			) >> &parsed_part_t::m_fields,
+			) >> &parsed_part_t::fields,
 			symbol(CR), symbol(LF),
-			body_producer_t{} >> &parsed_part_t::m_body );
+			body_producer_t{} >> &parsed_part_t::body );
 }
 
 } /* namespace impl */
