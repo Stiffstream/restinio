@@ -1299,6 +1299,96 @@ try_parse(
 	return result;
 }
 
+//
+// make_error_description
+//
+//FIXME: document this!
+RESTINIO_NODISCARD
+inline std::string
+make_error_description(
+	const parse_error_t & error,
+	string_view_t from )
+{
+	const auto append_quote = [&]( std::string & dest ) {
+		constexpr std::size_t max_quote_size = 16u;
+		if( error.position() > 0u )
+		{
+			// How many chars we can get from right of error position?
+			const auto prefix_size = error.position() > max_quote_size ?
+					max_quote_size : error.position();
+
+			dest.append( 1u, '"' );
+			dest.append(
+					&from[ error.position() ] - prefix_size,
+					prefix_size );
+			dest.append( "\" >>> " );
+		}
+
+		const char problematic_symbol = error.position() < from.size() ?
+				from[ error.position() ] : '?';
+		dest.append( 1u, '\'' );
+		if( problematic_symbol >= '\x00' && problematic_symbol < ' ' )
+		{
+			constexpr char hex_digits[] = "0123456789abcdef";
+
+			dest.append( "\\x" );
+			dest.append( 1u, hex_digits[
+					static_cast<unsigned char>(problematic_symbol) >> 4 ] );
+			dest.append( 1u, hex_digits[
+					static_cast<unsigned char>(problematic_symbol) & 0xfu ] );
+		}
+		else
+			dest.append( 1u, problematic_symbol );
+
+		dest.append( 1u, '\'' );
+
+		if( error.position() + 1u < from.size() )
+		{
+			// How many chars we can get from the right of error position?
+			const auto suffix_size =
+					error.position() + 1u + max_quote_size < from.size() ?
+					max_quote_size : from.size() - error.position() - 1u;
+
+			dest.append( " <<< \"" );
+			dest.append( &from[ error.position() + 1u ], suffix_size );
+			dest.append( 1u, '"' );
+		}
+	};
+
+	std::string result;
+
+	switch( error.reason() )
+	{
+		case error_reason_t::unexpected_character:
+			result += "unexpected character at ";
+			result += std::to_string( error.position() );
+			result += ": ";
+			append_quote( result );
+		break;
+
+		case error_reason_t::unexpected_eof:
+			result += "unexpected EOF at ";
+			result += std::to_string( error.position() );
+		break;
+
+		case error_reason_t::no_appropriate_alternative:
+			result += "appropriate alternative can't found at ";
+			result += std::to_string( error.position() );
+			result += ": ";
+			append_quote( result );
+		break;
+
+		case error_reason_t::pattern_not_found:
+			result += "expected pattern is not found at ";
+			result += std::to_string( error.position() );
+			result += ": ";
+			append_quote( result );
+		break;
+	}
+
+	return result;
+}
+
 } /* namespace easy_parser */
 
 } /* namespace restinio */

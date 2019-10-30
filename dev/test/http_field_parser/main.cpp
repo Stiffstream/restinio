@@ -68,7 +68,8 @@ TEST_CASE( "token", "[token]" )
 	}
 
 	{
-		const auto result = try_parse( " multipart" );
+		const char * what = " multipart";
+		const auto result = try_parse( what );
 
 		REQUIRE( !result );
 	}
@@ -240,7 +241,8 @@ TEST_CASE( "not", "[token][not]" )
 	}
 
 	{
-		const auto result = try_parse( "text/plain;qq" );
+		const char * what = "text/plain;qq";
+		const auto result = try_parse( what );
 
 		REQUIRE( !result );
 	}
@@ -359,7 +361,8 @@ TEST_CASE( "alternatives with symbol", "[alternatives][symbol][field_setter]" )
 	}
 
 	{
-		const auto result = try_parse( "multipart(form-data" );
+		const char * what = "multipart(form-data";
+		const auto result = try_parse( what );
 		REQUIRE( !result );
 	}
 }
@@ -740,8 +743,8 @@ TEST_CASE( "sequence with optional", "[optional][simple]" )
 	}
 
 	{
-		const auto result = try_parse("just-value;one; two=two;three;   "
-				"four=\"four = 4\"");
+		const char * what = "just-value;one; two=two;three;   four=\"four = 4\"";
+		const auto result = try_parse( what );
 
 		REQUIRE( result );
 		REQUIRE( "just-value" == result->m_value );
