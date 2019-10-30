@@ -24,14 +24,14 @@ namespace http_field_parsers
 //
 struct content_type_value_t
 {
-	media_type_value_t m_media_type;
+	media_type_value_t media_type;
 
 	static auto
 	make_parser()
 	{
 		return produce< content_type_value_t >(
 			media_type_value_t::make_default_parser()
-					>> &content_type_value_t::m_media_type
+					>> &content_type_value_t::media_type
 		);
 	}
 

@@ -28,7 +28,7 @@ struct cache_control_value_t
 
 	using directive_container_t = parameter_with_optional_value_container_t;
 
-	directive_container_t m_directives;
+	directive_container_t directives;
 
 	static auto
 	make_parser()
@@ -45,7 +45,7 @@ struct cache_control_value_t
 						)
 					)
 				)
-			) >> &cache_control_value_t::m_directives
+			) >> &cache_control_value_t::directives
 		);
 	}
 

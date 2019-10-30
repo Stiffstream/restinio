@@ -26,7 +26,7 @@ struct content_encoding_value_t
 {
 	using value_container_t = std::vector< std::string >;
 
-	value_container_t m_values;
+	value_container_t values;
 
 	static auto
 	make_parser()
@@ -34,7 +34,7 @@ struct content_encoding_value_t
 		return produce< content_encoding_value_t >(
 			non_empty_comma_separated_list_producer< value_container_t >(
 				token_producer() >> to_lower()
-			) >> &content_encoding_value_t::m_values
+			) >> &content_encoding_value_t::values
 		);
 	}
 

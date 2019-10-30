@@ -28,17 +28,17 @@ struct content_disposition_value_t
 
 	using parameter_container_t = parameter_with_mandatory_value_container_t;
 
-	std::string m_value;
-	parameter_container_t m_parameters;
+	std::string value;
+	parameter_container_t parameters;
 
 	static auto
 	make_parser()
 	{
 		return produce< content_disposition_value_t >(
 			token_producer() >> to_lower()
-					>> &content_disposition_value_t::m_value,
+					>> &content_disposition_value_t::value,
 			params_with_value_producer()
-					>> &content_disposition_value_t::m_parameters
+					>> &content_disposition_value_t::parameters
 		);
 	}
 

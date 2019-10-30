@@ -127,15 +127,15 @@ detect_boundary_for_multipart_body(
 		return make_unexpected(
 				enumeration_error_t::content_type_field_parse_error );
 
-	const auto & media_type = parse_result->m_media_type;
-	if( "multipart" != media_type.m_type
-			&& "form-data" != media_type.m_subtype )
+	const auto & media_type = parse_result->media_type;
+	if( "multipart" != media_type.type
+			&& "form-data" != media_type.subtype )
 		return make_unexpected(
 				enumeration_error_t::content_type_field_inappropriate_value );
 
 	// `boundary` param should be present in parsed Content-Type value.
 	const auto boundary = hfp::find_first(
-			parse_result->m_media_type.m_parameters,
+			parse_result->media_type.parameters,
 			"boundary" );
 	if( !boundary )
 		return make_unexpected(
@@ -180,11 +180,11 @@ try_analyze_part( string_view_t part )
 	if( !parsed_disposition )
 		return make_unexpected(
 				enumeration_error_t::content_disposition_field_parse_error );
-	if( "form-data" != parsed_disposition->m_value )
+	if( "form-data" != parsed_disposition->value )
 		return make_unexpected( enumeration_error_t::no_files_found );
 
 	const auto name = hfp::find_first(
-			parsed_disposition->m_parameters, "name" );
+			parsed_disposition->parameters, "name" );
 	if( !name )
 		return make_unexpected(
 				enumeration_error_t::content_disposition_field_inappropriate_value );
@@ -194,9 +194,9 @@ try_analyze_part( string_view_t part )
 	};
 
 	const auto filename_star = expected_to_optional( hfp::find_first(
-			parsed_disposition->m_parameters, "filename*" ) );
+			parsed_disposition->parameters, "filename*" ) );
 	const auto filename = expected_to_optional( hfp::find_first(
-			parsed_disposition->m_parameters, "filename" ) );
+			parsed_disposition->parameters, "filename" ) );
 
 	// If there is no `filename*` nor `filename` then there is no file.
 	if( !filename_star && !filename )

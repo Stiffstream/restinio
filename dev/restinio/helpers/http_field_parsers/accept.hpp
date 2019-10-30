@@ -30,14 +30,14 @@ struct accept_value_t
 
 		using accept_ext_container_t = parameter_with_optional_value_container_t;
 
-		media_type_value_t m_media_type;
-		restinio::optional_t< qvalue_t > m_weight;
-		accept_ext_container_t m_accept_params;
+		media_type_value_t media_type;
+		restinio::optional_t< qvalue_t > weight;
+		accept_ext_container_t accept_params;
 	};
 
 	using item_container_t = std::vector< item_t >;
 
-	item_container_t m_items;
+	item_container_t items;
 
 	static auto
 	make_parser()
@@ -47,13 +47,13 @@ struct accept_value_t
 		return produce< accept_value_t >(
 			maybe_empty_comma_separated_list_producer< item_container_t >(
 				produce< item_t >(
-					media_type >> &item_t::m_media_type,
+					media_type >> &item_t::media_type,
 					maybe(
-						weight_producer() >> &item_t::m_weight,
-						params_with_opt_value_producer() >> &item_t::m_accept_params
+						weight_producer() >> &item_t::weight,
+						params_with_opt_value_producer() >> &item_t::accept_params
 					)
 				)
-			) >> &accept_value_t::m_items
+			) >> &accept_value_t::items
 		);
 	}
 

@@ -28,18 +28,18 @@ struct media_type_value_t
 
 	using parameter_container_t = parameter_with_mandatory_value_container_t;
 
-	std::string m_type;
-	std::string m_subtype;
-	parameter_container_t m_parameters;
+	std::string type;
+	std::string subtype;
+	parameter_container_t parameters;
 
 	static auto
 	make_default_parser()
 	{
 		return produce< media_type_value_t >(
-			token_producer() >> to_lower() >> &media_type_value_t::m_type,
+			token_producer() >> to_lower() >> &media_type_value_t::type,
 			symbol('/'),
-			token_producer() >> to_lower() >> &media_type_value_t::m_subtype,
-			params_with_value_producer() >> &media_type_value_t::m_parameters
+			token_producer() >> to_lower() >> &media_type_value_t::subtype,
+			params_with_value_producer() >> &media_type_value_t::parameters
 		);
 	}
 
@@ -47,9 +47,9 @@ struct media_type_value_t
 	make_weight_aware_parser()
 	{
 		return produce< media_type_value_t >(
-			token_producer() >> to_lower() >> &media_type_value_t::m_type,
+			token_producer() >> to_lower() >> &media_type_value_t::type,
 			symbol('/'),
-			token_producer() >> to_lower() >> &media_type_value_t::m_subtype,
+			token_producer() >> to_lower() >> &media_type_value_t::subtype,
 			produce< parameter_container_t >(
 				repeat( 0, N,
 					produce< parameter_t >(
@@ -65,7 +65,7 @@ struct media_type_value_t
 						)
 					) >> to_container()
 				)
-			) >> &media_type_value_t::m_parameters
+			) >> &media_type_value_t::parameters
 		);
 	}
 

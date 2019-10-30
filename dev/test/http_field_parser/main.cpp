@@ -1280,9 +1280,9 @@ TEST_CASE( "Media-Type", "[media-type]" )
 
 		REQUIRE( result );
 
-		REQUIRE( "text" == result->m_type );
-		REQUIRE( "plain" == result->m_subtype );
-		REQUIRE( result->m_parameters.empty() );
+		REQUIRE( "text" == result->type );
+		REQUIRE( "plain" == result->subtype );
+		REQUIRE( result->parameters.empty() );
 	}
 
 	{
@@ -1291,9 +1291,9 @@ TEST_CASE( "Media-Type", "[media-type]" )
 
 		REQUIRE( result );
 
-		REQUIRE( "text" == result->m_type );
-		REQUIRE( "plain" == result->m_subtype );
-		REQUIRE( result->m_parameters.empty() );
+		REQUIRE( "text" == result->type );
+		REQUIRE( "plain" == result->subtype );
+		REQUIRE( result->parameters.empty() );
 	}
 
 	{
@@ -1302,14 +1302,14 @@ TEST_CASE( "Media-Type", "[media-type]" )
 
 		REQUIRE( result );
 
-		REQUIRE( "text" == result->m_type );
-		REQUIRE( "*" == result->m_subtype );
+		REQUIRE( "text" == result->type );
+		REQUIRE( "*" == result->subtype );
 
 		media_type_value_t::parameter_container_t expected{
 			{ "charset"s, "utf-8"s },
 			{ "alternative-coding"s, "Bla Bla Bla"s }
 		};
-		REQUIRE( expected == result->m_parameters );
+		REQUIRE( expected == result->parameters );
 	}
 
 	{
@@ -1318,15 +1318,15 @@ TEST_CASE( "Media-Type", "[media-type]" )
 
 		REQUIRE( result );
 
-		REQUIRE( "*" == result->m_type );
-		REQUIRE( "*" == result->m_subtype );
+		REQUIRE( "*" == result->type );
+		REQUIRE( "*" == result->subtype );
 
 		media_type_value_t::parameter_container_t expected{
 			{ "charset"s, "utf-8"s },
 			{ "alternative-coding"s, "Bla Bla Bla"s },
 			{ "foo"s, "BaZ"s }
 		};
-		REQUIRE( expected == result->m_parameters );
+		REQUIRE( expected == result->parameters );
 	}
 }
 
@@ -1341,9 +1341,9 @@ TEST_CASE( "Content-Type", "[media-type][content-type]" )
 
 		REQUIRE( result );
 
-		REQUIRE( "text" == result->m_media_type.m_type );
-		REQUIRE( "plain" == result->m_media_type.m_subtype );
-		REQUIRE( result->m_media_type.m_parameters.empty() );
+		REQUIRE( "text" == result->media_type.type );
+		REQUIRE( "plain" == result->media_type.subtype );
+		REQUIRE( result->media_type.parameters.empty() );
 	}
 
 	{
@@ -1352,9 +1352,9 @@ TEST_CASE( "Content-Type", "[media-type][content-type]" )
 
 		REQUIRE( result );
 
-		REQUIRE( "text" == result->m_media_type.m_type );
-		REQUIRE( "plain" == result->m_media_type.m_subtype );
-		REQUIRE( result->m_media_type.m_parameters.empty() );
+		REQUIRE( "text" == result->media_type.type );
+		REQUIRE( "plain" == result->media_type.subtype );
+		REQUIRE( result->media_type.parameters.empty() );
 	}
 
 	{
@@ -1363,14 +1363,14 @@ TEST_CASE( "Content-Type", "[media-type][content-type]" )
 
 		REQUIRE( result );
 
-		REQUIRE( "text" == result->m_media_type.m_type );
-		REQUIRE( "*" == result->m_media_type.m_subtype );
+		REQUIRE( "text" == result->media_type.type );
+		REQUIRE( "*" == result->media_type.subtype );
 
 		media_type_value_t::parameter_container_t expected{
 			{ "charset"s, "utf-8"s },
 			{ "alternative-coding"s, "Bla Bla Bla"s }
 		};
-		REQUIRE( expected == result->m_media_type.m_parameters );
+		REQUIRE( expected == result->media_type.parameters );
 	}
 
 	{
@@ -1379,15 +1379,15 @@ TEST_CASE( "Content-Type", "[media-type][content-type]" )
 
 		REQUIRE( result );
 
-		REQUIRE( "*" == result->m_media_type.m_type );
-		REQUIRE( "*" == result->m_media_type.m_subtype );
+		REQUIRE( "*" == result->media_type.type );
+		REQUIRE( "*" == result->media_type.subtype );
 
 		media_type_value_t::parameter_container_t expected{
 			{ "charset"s, "utf-8"s },
 			{ "alternative-coding"s, "Bla Bla Bla"s },
 			{ "foo"s, "BaZ"s }
 		};
-		REQUIRE( expected == result->m_media_type.m_parameters );
+		REQUIRE( expected == result->media_type.parameters );
 	}
 }
 
@@ -1427,7 +1427,7 @@ TEST_CASE( "Cache-Control Field", "[cache-control]" )
 			{ "max-age"s, "5"s },
 		};
 
-		REQUIRE( expected_directives == result->m_directives );
+		REQUIRE( expected_directives == result->directives );
 	}
 
 	{
@@ -1443,7 +1443,7 @@ TEST_CASE( "Cache-Control Field", "[cache-control]" )
 			{ "min-fresh"s, "20"s }
 		};
 
-		REQUIRE( expected_directives == result->m_directives );
+		REQUIRE( expected_directives == result->directives );
 	}
 
 	{
@@ -1459,7 +1459,7 @@ TEST_CASE( "Cache-Control Field", "[cache-control]" )
 			{ "min-fresh"s, "20"s }
 		};
 
-		REQUIRE( expected_directives == result->m_directives );
+		REQUIRE( expected_directives == result->directives );
 	}
 }
 
@@ -1492,7 +1492,7 @@ TEST_CASE( "Content-Encoding", "[content-encoding]" )
 			"compress"s
 		};
 
-		REQUIRE( expected == result->m_values );
+		REQUIRE( expected == result->values );
 	}
 
 	{
@@ -1505,7 +1505,7 @@ TEST_CASE( "Content-Encoding", "[content-encoding]" )
 			"x-compress"s
 		};
 
-		REQUIRE( expected == result->m_values );
+		REQUIRE( expected == result->values );
 	}
 
 	{
@@ -1520,7 +1520,7 @@ TEST_CASE( "Content-Encoding", "[content-encoding]" )
 			"deflate"s
 		};
 
-		REQUIRE( expected == result->m_values );
+		REQUIRE( expected == result->values );
 	}
 }
 
@@ -1535,7 +1535,7 @@ TEST_CASE( "Accept", "[media-type][accept]" )
 
 		REQUIRE( result );
 
-		REQUIRE( result->m_items.empty() );
+		REQUIRE( result->items.empty() );
 	}
 
 	{
@@ -1558,13 +1558,13 @@ TEST_CASE( "Accept", "[media-type][accept]" )
 
 		REQUIRE( result );
 
-		REQUIRE( 1 == result->m_items.size() );
+		REQUIRE( 1 == result->items.size() );
 
-		const auto & item = result->m_items[0];
+		const auto & item = result->items[0];
 
-		REQUIRE( "text" == item.m_media_type.m_type );
-		REQUIRE( "plain" == item.m_media_type.m_subtype );
-		REQUIRE( item.m_media_type.m_parameters.empty() );
+		REQUIRE( "text" == item.media_type.type );
+		REQUIRE( "plain" == item.media_type.subtype );
+		REQUIRE( item.media_type.parameters.empty() );
 	}
 
 	{
@@ -1573,18 +1573,18 @@ TEST_CASE( "Accept", "[media-type][accept]" )
 
 		REQUIRE( result );
 
-		REQUIRE( 1 == result->m_items.size() );
+		REQUIRE( 1 == result->items.size() );
 
-		const auto & item = result->m_items[0];
+		const auto & item = result->items[0];
 
-		REQUIRE( "text" == item.m_media_type.m_type );
-		REQUIRE( "*" == item.m_media_type.m_subtype );
+		REQUIRE( "text" == item.media_type.type );
+		REQUIRE( "*" == item.media_type.subtype );
 
 		media_type_value_t::parameter_container_t expected{
 			{ "charset"s, "utf-8"s },
 			{ "alternative-coding"s, "Bla Bla Bla"s }
 		};
-		REQUIRE( expected == item.m_media_type.m_parameters );
+		REQUIRE( expected == item.media_type.parameters );
 	}
 
 	{
@@ -1593,30 +1593,30 @@ TEST_CASE( "Accept", "[media-type][accept]" )
 
 		REQUIRE( result );
 
-		REQUIRE( 2 == result->m_items.size() );
+		REQUIRE( 2 == result->items.size() );
 
 		{
-			const auto & item = result->m_items[0];
+			const auto & item = result->items[0];
 
-			REQUIRE( "text" == item.m_media_type.m_type );
-			REQUIRE( "*" == item.m_media_type.m_subtype );
+			REQUIRE( "text" == item.media_type.type );
+			REQUIRE( "*" == item.media_type.subtype );
 
 			media_type_value_t::parameter_container_t expected{
 				{ "charset"s, "utf-8"s },
 			};
-			REQUIRE( expected == item.m_media_type.m_parameters );
+			REQUIRE( expected == item.media_type.parameters );
 		}
 
 		{
-			const auto & item = result->m_items[1];
+			const auto & item = result->items[1];
 
-			REQUIRE( "application" == item.m_media_type.m_type );
-			REQUIRE( "json" == item.m_media_type.m_subtype );
+			REQUIRE( "application" == item.media_type.type );
+			REQUIRE( "json" == item.media_type.subtype );
 
 			media_type_value_t::parameter_container_t expected{
 				{ "charset"s, "cp1251"s },
 			};
-			REQUIRE( expected == item.m_media_type.m_parameters );
+			REQUIRE( expected == item.media_type.parameters );
 		}
 	}
 
@@ -1628,47 +1628,46 @@ TEST_CASE( "Accept", "[media-type][accept]" )
 
 		REQUIRE( result );
 
-		REQUIRE( 3 == result->m_items.size() );
+		REQUIRE( 3 == result->items.size() );
 
 		{
-			const auto & item = result->m_items[0];
-			REQUIRE( "text" == item.m_media_type.m_type );
-			REQUIRE( "plain" == item.m_media_type.m_subtype );
-			REQUIRE( item.m_media_type.m_parameters.empty() );
+			const auto & item = result->items[0];
+			REQUIRE( "text" == item.media_type.type );
+			REQUIRE( "plain" == item.media_type.subtype );
+			REQUIRE( item.media_type.parameters.empty() );
 
-			REQUIRE( item.m_weight );
-			REQUIRE( qvalue_t{ qvalue_t::untrusted{500} } ==
-					*item.m_weight );
+			REQUIRE( item.weight );
+			REQUIRE( qvalue_t{ qvalue_t::untrusted{500} } == *item.weight );
 
 			accept_value_t::item_t::accept_ext_container_t expected{
 				{ "signed"s, restinio::nullopt },
 				{ "signature-method"s, "sha512"s }
 			};
-			REQUIRE( expected == item.m_accept_params );
+			REQUIRE( expected == item.accept_params );
 		}
 
 		{
-			const auto & item = result->m_items[1];
+			const auto & item = result->items[1];
 
-			REQUIRE( "text" == item.m_media_type.m_type );
-			REQUIRE( "*" == item.m_media_type.m_subtype );
+			REQUIRE( "text" == item.media_type.type );
+			REQUIRE( "*" == item.media_type.subtype );
 
 			media_type_value_t::parameter_container_t expected{
 				{ "charset"s, "utf-8"s },
 			};
-			REQUIRE( expected == item.m_media_type.m_parameters );
+			REQUIRE( expected == item.media_type.parameters );
 		}
 
 		{
-			const auto & item = result->m_items[2];
+			const auto & item = result->items[2];
 
-			REQUIRE( "application" == item.m_media_type.m_type );
-			REQUIRE( "json" == item.m_media_type.m_subtype );
+			REQUIRE( "application" == item.media_type.type );
+			REQUIRE( "json" == item.media_type.subtype );
 
 			media_type_value_t::parameter_container_t expected{
 				{ "charset"s, "cp1251"s },
 			};
-			REQUIRE( expected == item.m_media_type.m_parameters );
+			REQUIRE( expected == item.media_type.parameters );
 		}
 	}
 }
@@ -1684,8 +1683,8 @@ TEST_CASE( "Content-Disposition", "[content-disposition]" )
 
 		REQUIRE( result );
 
-		REQUIRE( "form-data" == result->m_value );
-		REQUIRE( result->m_parameters.empty() );
+		REQUIRE( "form-data" == result->value );
+		REQUIRE( result->parameters.empty() );
 	}
 
 	{
@@ -1694,12 +1693,12 @@ TEST_CASE( "Content-Disposition", "[content-disposition]" )
 
 		REQUIRE( result );
 
-		REQUIRE( "form-data" == result->m_value );
+		REQUIRE( "form-data" == result->value );
 
 		content_disposition_value_t::parameter_container_t expected{
 			{ "name"s, "some-name"s },
 		};
-		REQUIRE( expected == result->m_parameters );
+		REQUIRE( expected == result->parameters );
 	}
 
 	{
@@ -1708,13 +1707,13 @@ TEST_CASE( "Content-Disposition", "[content-disposition]" )
 
 		REQUIRE( result );
 
-		REQUIRE( "form-data" == result->m_value );
+		REQUIRE( "form-data" == result->value );
 
 		content_disposition_value_t::parameter_container_t expected{
 			{ "name"s, "some-name"s },
 			{ "filename"s, "file"s },
 		};
-		REQUIRE( expected == result->m_parameters );
+		REQUIRE( expected == result->parameters );
 	}
 
 	{
@@ -1724,13 +1723,14 @@ TEST_CASE( "Content-Disposition", "[content-disposition]" )
 
 		REQUIRE( result );
 
-		REQUIRE( "form-data" == result->m_value );
+		REQUIRE( "form-data" == result->value );
 
 		content_disposition_value_t::parameter_container_t expected{
 			{ "name"s, "some-name"s },
 			{ "filename"s, "file"s },
 			{ "filename*"s, "another name"s },
 		};
-		REQUIRE( expected == result->m_parameters );
+		REQUIRE( expected == result->parameters );
 	}
 }
+
