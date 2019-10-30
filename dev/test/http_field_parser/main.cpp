@@ -7,14 +7,12 @@
 #include <restinio/helpers/easy_parser.hpp>
 
 #include <restinio/helpers/http_field_parsers/basics.hpp>
-#if 0
-#include <restinio/helpers/http_field_parsers/cache-control.hpp>
 #include <restinio/helpers/http_field_parsers/media-type.hpp>
 #include <restinio/helpers/http_field_parsers/content-type.hpp>
+#include <restinio/helpers/http_field_parsers/cache-control.hpp>
 #include <restinio/helpers/http_field_parsers/content-encoding.hpp>
 #include <restinio/helpers/http_field_parsers/accept.hpp>
 #include <restinio/helpers/http_field_parsers/content-disposition.hpp>
-#endif
 
 struct media_type_t
 {
@@ -1247,7 +1245,6 @@ TEST_CASE( "maybe_empty_comma_separated_list_producer",
 	}
 }
 
-#if 0
 TEST_CASE( "Media-Type", "[media-type]" )
 {
 	using namespace restinio::http_field_parsers;
@@ -1734,4 +1731,3 @@ TEST_CASE( "Content-Disposition", "[content-disposition]" )
 		REQUIRE( expected == result->m_parameters );
 	}
 }
-#endif

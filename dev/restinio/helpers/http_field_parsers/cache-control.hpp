@@ -49,7 +49,7 @@ struct cache_control_value_t
 		);
 	}
 
-	static std::pair< bool, cache_control_value_t >
+	static auto
 	try_parse( string_view_t what )
 	{
 		return restinio::easy_parser::try_parse( what, make_parser() );
