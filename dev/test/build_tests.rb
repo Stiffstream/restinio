@@ -89,4 +89,9 @@ MxxRu::Cpp::composite_target {
 	required_prj( "test/websocket/validators/prj.ut.rb" )
 	required_prj( "test/websocket/ws_connection/prj.ut.rb" )
 	required_prj( "test/websocket/notificators/prj.ut.rb" )
+
+	# ================================================================
+	# File upload support.
+	required_prj( "test/file_upload/prj.ut.rb" )
 }
+

@@ -25,6 +25,7 @@ add_subdirectory(transforms/zlib_body_handler)
 add_subdirectory(encoders)
 add_subdirectory(from_string)
 add_subdirectory(websocket)
+add_subdirectory(file_upload)
 
 if ( OPENSSL_FOUND )
 	add_subdirectory(socket_options_tls)
