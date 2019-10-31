@@ -36,6 +36,7 @@ enum class enumeration_error_t
 	content_type_field_not_found,
 	content_type_field_parse_error,
 	content_type_field_inappropriate_value,
+	illegal_boundary_value,
 	content_disposition_field_parse_error,
 	content_disposition_field_inappropriate_value,
 	no_parts_found,
@@ -105,6 +106,62 @@ public:
 namespace impl
 {
 
+// From https://tools.ietf.org/html/rfc1521:
+//
+// boundary := 0*69<bchars> bcharsnospace
+//
+// bchars := bcharsnospace / " "
+//
+// bcharsnospace :=  DIGIT / ALPHA / "'" / "(" / ")" / "+" /"_"
+//                 / "," / "-" / "." / "/" / ":" / "=" / "?"
+//
+RESTINIO_NODISCARD
+constexpr bool
+is_bcharnospace( char ch )
+{
+	return (ch >= '0' && ch <= '9') // DIGIT
+		|| ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) // ALPHA
+		|| ch == '\''
+		|| ch == '('
+		|| ch == ')'
+		|| ch == '+'
+		|| ch == '_'
+		|| ch == ','
+		|| ch == '-'
+		|| ch == '.'
+		|| ch == '/'
+		|| ch == ':'
+		|| ch == '='
+		|| ch == '?';
+}
+
+RESTINIO_NODISCARD
+constexpr bool
+is_bchar( char ch )
+{
+	return is_bcharnospace(ch) || ch == ' ';
+}
+
+RESTINIO_NODISCARD
+inline optional_t< enumeration_error_t >
+check_bondary_value( string_view_t value )
+{
+	if( value.size() >= 1u && value.size() <= 70u )
+	{
+		const std::size_t last_index = value.size() - 1u;
+		for( std::size_t i = 0u; i != last_index; ++i )
+			if( !is_bchar( value[i] ) )
+				return enumeration_error_t::illegal_boundary_value;
+
+		if( !is_bcharnospace( value[ last_index ] ) )
+			return enumeration_error_t::illegal_boundary_value;
+	}
+	else
+		return enumeration_error_t::illegal_boundary_value;
+
+	return nullopt;
+}
+
 RESTINIO_NODISCARD
 inline expected_t< std::string, enumeration_error_t >
 detect_boundary_for_multipart_body(
@@ -141,7 +198,10 @@ detect_boundary_for_multipart_body(
 		return make_unexpected(
 				enumeration_error_t::content_type_field_inappropriate_value );
 	
-	//FIXME: boundary value should be checked!
+	// `boundary` should have valid value.
+	const auto boundary_check_result = check_bondary_value( *boundary );
+	if( boundary_check_result )
+		return make_unexpected( *boundary_check_result );
 
 	// Actual value of boundary mark can be created.
 	std::string actual_boundary_mark;
