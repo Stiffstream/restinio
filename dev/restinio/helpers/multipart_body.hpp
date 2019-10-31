@@ -11,8 +11,6 @@
 
 #pragma once
 
-#include <restinio/impl/string_caseless_compare.hpp>
-
 #include <restinio/helpers/string_algo.hpp>
 #include <restinio/helpers/easy_parser.hpp>
 #include <restinio/helpers/http_field_parsers/basics.hpp>
@@ -21,6 +19,10 @@
 #include <restinio/http_headers.hpp>
 #include <restinio/request_handler.hpp>
 #include <restinio/expected.hpp>
+
+#include <restinio/impl/string_caseless_compare.hpp>
+
+#include <restinio/utils/metaprogramming.hpp>
 
 #include <iostream>
 
@@ -410,6 +412,27 @@ enumerate_parts_of_request_body(
 	return parts_processed;
 }
 
+//
+// valid_handler_type
+//
+template< typename, typename = restinio::utils::metaprogramming::void_t<> >
+struct valid_handler_type : public std::false_type {};
+
+template< typename T >
+struct valid_handler_type<
+	T,
+	restinio::utils::metaprogramming::void_t<
+		std::enable_if_t<
+			std::is_same<
+					handling_result_t,
+					decltype(std::declval<T>()(std::declval<parsed_part_t>()))
+			>::value,
+			bool
+		>
+	>
+	: public std::true_type
+{};
+
 } /* namespace impl */
 
 //
@@ -428,6 +451,10 @@ enumerate_parts(
 	//FIXME: there should be some static_assert that checks the possibility
 	//to call the handler. It means the right argument type and the result
 	//type should be checked.
+	static_assert(
+			impl::valid_handler_type< std::decay_t<Handler> >::value,
+			"Handler should be callable with parsed_part_t as an argument "
+			"and should return handling_result_t" );
 
 	const auto boundary = impl::detect_boundary_for_multipart_body(
 			req,

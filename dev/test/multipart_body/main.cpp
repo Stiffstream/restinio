@@ -362,7 +362,7 @@ TEST_CASE( "No Content-Type field", "[content-type]" )
 	REQUIRE( enumeration_error_t::content_type_field_not_found ==
 			enumerate_parts(
 					*req,
-					[]( const parsed_part_t & ) {
+					[]( parsed_part_t * ) {
 						return handling_result_t::continue_enumeration;
 					} ).error() );
 }
@@ -541,7 +541,7 @@ TEST_CASE( "Several parts in the body", "[body]" )
 	int ordinal{0};
 	const auto result = enumerate_parts(
 			*req,
-			[&ordinal]( const parsed_part_t & part ) {
+			[&ordinal]( parsed_part_t part ) {
 				REQUIRE( ordinal < 5 );
 				if( 0 == ordinal )
 				{
