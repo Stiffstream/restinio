@@ -96,13 +96,14 @@ void save_file(
 	const auto enumeration_result = enumerate_parts_with_files(
 			*req,
 			[&args]( const part_description_t & part ) {
-				if( "file" == part.name_parameter() )
+				if( "file" == part.name )
 				{
-					restinio::string_view_t file_name =
-							part.filename_star_parameter() ?
-							*(part.filename_star_parameter()) :
-							*(part.filename_parameter());
-					store_file_to_disk( args, file_name, part.body() );
+					// If `filename*` and `filename` are present at the same
+					// time then `filename*` is preferable.
+					restinio::string_view_t file_name = part.filename_star ?
+							*(part.filename_star) : *(part.filename);
+
+					store_file_to_disk( args, file_name, part.body );
 
 					// There is no need to handle other parts.
 					return handling_result_t::stop_enumeration;

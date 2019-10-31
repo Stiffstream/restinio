@@ -100,47 +100,13 @@ using handling_result_t = restinio::multipart_body::handling_result_t;
 // part_description_t
 //
 //FIXME: part_description_t
-class part_description_t
+struct part_description_t
 {
-	http_header_fields_t m_fields;
-	string_view_t m_body;
-	std::string m_name;
-	optional_t< std::string > m_filename_star;
-	optional_t< std::string > m_filename;
-
-public:
-	part_description_t(
-		http_header_fields_t fields,
-		string_view_t body,
-		std::string name,
-		optional_t< std::string > filename_star,
-		optional_t< std::string > filename )
-		:	m_fields{ std::move(fields) }
-		,	m_body{ body }
-		,	m_name{ std::move(name) }
-		,	m_filename_star{ std::move(filename_star) }
-		,	m_filename{ std::move(filename) }
-	{}
-
-	RESTINIO_NODISCARD
-	const http_header_fields_t &
-	fields() const noexcept { return m_fields; }
-
-	RESTINIO_NODISCARD
-	string_view_t
-	body() const noexcept { return m_body; }
-
-	RESTINIO_NODISCARD
-	const std::string &
-	name_parameter() const noexcept { return m_name; }
-
-	RESTINIO_NODISCARD
-	const optional_t<std::string> &
-	filename_star_parameter() const noexcept { return m_filename_star; }
-
-	RESTINIO_NODISCARD
-	const optional_t<std::string> &
-	filename_parameter() const noexcept { return m_filename; }
+	http_header_fields_t fields;
+	string_view_t body;
+	std::string name;
+	optional_t< std::string > filename_star;
+	optional_t< std::string > filename;
 };
 
 //

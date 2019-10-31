@@ -180,10 +180,10 @@ TEST_CASE( "Just one part", "[body]" )
 	const auto result = enumerate_parts_with_files(
 			*req,
 			[]( const part_description_t & part ) {
-				REQUIRE( "Hello, World!" == part.body() );
-				REQUIRE( "file" == part.name_parameter() );
-				REQUIRE( "t.txt" == part.filename_parameter() );
-				REQUIRE( !part.filename_star_parameter() );
+				REQUIRE( "Hello, World!" == part.body );
+				REQUIRE( "file" == part.name );
+				REQUIRE( "t.txt" == part.filename );
+				REQUIRE( !part.filename_star );
 
 				return handling_result_t::continue_enumeration;
 			} );
@@ -241,24 +241,24 @@ TEST_CASE( "Several parts in the body", "[body]" )
 				REQUIRE( ordinal < 3 );
 				if( 0 == ordinal )
 				{
-					REQUIRE( "Hello, World!" == part.body() );
-					REQUIRE( "file1" == part.name_parameter() );
-					REQUIRE( "t1.txt" == part.filename_parameter() );
-					REQUIRE( !part.filename_star_parameter() );
+					REQUIRE( "Hello, World!" == part.body );
+					REQUIRE( "file1" == part.name );
+					REQUIRE( "t1.txt" == part.filename );
+					REQUIRE( !part.filename_star );
 				}
 				else if( 1 == ordinal )
 				{
-					REQUIRE( "Bye, World!\r\n" == part.body() );
-					REQUIRE( "file2" == part.name_parameter() );
-					REQUIRE( "t2.txt" == part.filename_star_parameter() );
-					REQUIRE( !part.filename_parameter() );
+					REQUIRE( "Bye, World!\r\n" == part.body );
+					REQUIRE( "file2" == part.name );
+					REQUIRE( "t2.txt" == part.filename_star );
+					REQUIRE( !part.filename );
 				}
 				else if( 2 == ordinal )
 				{
-					REQUIRE( "Bye, Bye!" == part.body() );
-					REQUIRE( "file3" == part.name_parameter() );
-					REQUIRE( "t31.txt" == part.filename_parameter() );
-					REQUIRE( "t32.txt" == part.filename_star_parameter() );
+					REQUIRE( "Bye, Bye!" == part.body );
+					REQUIRE( "file3" == part.name );
+					REQUIRE( "t31.txt" == part.filename );
+					REQUIRE( "t32.txt" == part.filename_star );
 				}
 
 				++ordinal;
