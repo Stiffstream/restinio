@@ -56,6 +56,9 @@ enum class handling_result_t
 	terminate_enumeration
 };
 
+//FIXME: should it be a class with private members and public getters
+//or it can be a struct with public members?
+//NOTE: parsed_part_t in multipart_body namespace is a simple struct.
 //
 // part_description_t
 //
@@ -221,7 +224,7 @@ try_analyze_part( string_view_t part )
 {
 	namespace hfp = restinio::http_field_parsers;
 
-	// The current part should be parsed to headers and 
+	// The current part should be parsed to headers and the body.
 	auto part_parse_result = restinio::multipart_body::try_parse_part( part );
 	if( !part_parse_result )
 		return make_unexpected( enumeration_error_t::unexpected_error );

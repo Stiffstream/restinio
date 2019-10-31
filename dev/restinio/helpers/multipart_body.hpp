@@ -11,11 +11,16 @@
 
 #pragma once
 
+#include <restinio/impl/string_caseless_compare.hpp>
+
 #include <restinio/helpers/string_algo.hpp>
 #include <restinio/helpers/easy_parser.hpp>
 #include <restinio/helpers/http_field_parsers/basics.hpp>
+#include <restinio/helpers/http_field_parsers/content-type.hpp>
 
 #include <restinio/http_headers.hpp>
+#include <restinio/request_handler.hpp>
+#include <restinio/expected.hpp>
 
 #include <iostream>
 
@@ -214,6 +219,232 @@ try_parse_part( string_view_t part )
 	return easy_parser::impl::top_level_clause_t< decltype(actual_producer) >{
 				std::move(actual_producer)
 			}.try_process( source );
+}
+
+//
+// handling_result_t
+//
+//FIXME: document this!
+enum class handling_result_t
+{
+	continue_enumeration,
+	stop_enumeration,
+	terminate_enumeration
+};
+
+//
+// enumeration_error_t
+//
+//FIXME: document this!
+enum class enumeration_error_t
+{
+	content_type_field_not_found,
+	content_type_field_parse_error,
+	content_type_field_inappropriate_value,
+	illegal_boundary_value,
+	no_parts_found,
+	terminated_by_handler,
+	unexpected_error
+};
+
+namespace impl
+{
+
+namespace boundary_value_checkers
+{
+
+// From https://tools.ietf.org/html/rfc1521:
+//
+// boundary := 0*69<bchars> bcharsnospace
+//
+// bchars := bcharsnospace / " "
+//
+// bcharsnospace :=  DIGIT / ALPHA / "'" / "(" / ")" / "+" /"_"
+//                 / "," / "-" / "." / "/" / ":" / "=" / "?"
+//
+RESTINIO_NODISCARD
+constexpr bool
+is_bcharnospace( char ch )
+{
+	return (ch >= '0' && ch <= '9') // DIGIT
+		|| ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) // ALPHA
+		|| ch == '\''
+		|| ch == '('
+		|| ch == ')'
+		|| ch == '+'
+		|| ch == '_'
+		|| ch == ','
+		|| ch == '-'
+		|| ch == '.'
+		|| ch == '/'
+		|| ch == ':'
+		|| ch == '='
+		|| ch == '?';
+}
+
+RESTINIO_NODISCARD
+constexpr bool
+is_bchar( char ch )
+{
+	return is_bcharnospace(ch) || ch == ' ';
+}
+
+} /* namespace boundary_value_checkers */
+
+RESTINIO_NODISCARD
+inline optional_t< enumeration_error_t >
+check_bondary_value( string_view_t value )
+{
+	using namespace boundary_value_checkers;
+
+	if( value.size() >= 1u && value.size() <= 70u )
+	{
+		const std::size_t last_index = value.size() - 1u;
+		for( std::size_t i = 0u; i != last_index; ++i )
+			if( !is_bchar( value[i] ) )
+				return enumeration_error_t::illegal_boundary_value;
+
+		if( !is_bcharnospace( value[ last_index ] ) )
+			return enumeration_error_t::illegal_boundary_value;
+	}
+	else
+		return enumeration_error_t::illegal_boundary_value;
+
+	return nullopt;
+}
+
+RESTINIO_NODISCARD
+inline expected_t< std::string, enumeration_error_t >
+detect_boundary_for_multipart_body(
+	const request_t & req,
+	string_view_t expected_media_type,
+	optional_t< string_view_t > expected_media_subtype )
+{
+	namespace hfp = restinio::http_field_parsers;
+	using restinio::impl::is_equal_caseless;
+
+	// Content-Type header file should be present.
+	const auto content_type = req.header().opt_value_of(
+			restinio::http_field::content_type );
+	if( !content_type )
+		return make_unexpected(
+				enumeration_error_t::content_type_field_not_found );
+
+	// Content-Type field should successfuly parsed and should
+	// contain value that correspond to expected media-type.
+	const auto parse_result = hfp::content_type_value_t::try_parse(
+			*content_type );
+	if( !parse_result )
+		return make_unexpected(
+				enumeration_error_t::content_type_field_parse_error );
+
+	const auto & media_type = parse_result->media_type;
+	if( !is_equal_caseless( expected_media_type, media_type.type ) )
+	{
+		return make_unexpected(
+				enumeration_error_t::content_type_field_inappropriate_value );
+	}
+	if( expected_media_subtype &&
+			!is_equal_caseless( *expected_media_subtype, media_type.subtype ) )
+	{
+		return make_unexpected(
+				enumeration_error_t::content_type_field_inappropriate_value );
+	}
+
+	// `boundary` param should be present in parsed Content-Type value.
+	const auto boundary = hfp::find_first(
+			parse_result->media_type.parameters,
+			"boundary" );
+	if( !boundary )
+		return make_unexpected(
+				enumeration_error_t::content_type_field_inappropriate_value );
+	
+	// `boundary` should have valid value.
+	const auto boundary_check_result = check_bondary_value( *boundary );
+	if( boundary_check_result )
+		return make_unexpected( *boundary_check_result );
+
+	// Actual value of boundary mark can be created.
+	std::string actual_boundary_mark;
+	actual_boundary_mark.reserve( 2 + boundary->size() );
+	actual_boundary_mark.append( "--" );
+	actual_boundary_mark.append( boundary->data(), boundary->size() );
+
+	return std::move(actual_boundary_mark);
+}
+
+template< typename Handler >
+RESTINIO_NODISCARD
+expected_t< std::size_t, enumeration_error_t >
+enumerate_parts_of_request_body(
+	const std::vector< string_view_t > & parts,
+	Handler && handler )
+{
+	std::size_t parts_processed{ 0u };
+	optional_t< enumeration_error_t > error;
+
+	for( auto current_part : parts )
+	{
+		// The current part should be parsed to headers and the body.
+		auto part_parse_result = try_parse_part( current_part );
+		if( !part_parse_result )
+			return make_unexpected( enumeration_error_t::unexpected_error );
+
+		const handling_result_t handler_ret_code = handler( *part_parse_result );
+		if( handling_result_t::continue_enumeration != handler_ret_code )
+		{
+			if( handling_result_t::terminate_enumeration == handler_ret_code )
+				error = enumeration_error_t::terminated_by_handler;
+
+			break;
+		}
+		else
+			++parts_processed;
+	}
+
+	if( error )
+		return make_unexpected( *error );
+
+	return parts_processed;
+}
+
+} /* namespace impl */
+
+//
+// enumerate_parts
+//
+//FIXME: document this!
+template< typename Handler >
+RESTINIO_NODISCARD
+expected_t< std::size_t, enumeration_error_t >
+enumerate_parts(
+	const request_t & req,
+	Handler && handler,
+	string_view_t expected_media_type = string_view_t{ "multipart" },
+	optional_t< string_view_t > expected_media_subtype = nullopt )
+{
+	//FIXME: there should be some static_assert that checks the possibility
+	//to call the handler. It means the right argument type and the result
+	//type should be checked.
+
+	const auto boundary = impl::detect_boundary_for_multipart_body(
+			req,
+			expected_media_type,
+			expected_media_subtype );
+	if( boundary )
+	{
+		const auto parts = split_multipart_body( req.body(), *boundary );
+
+		if( parts.empty() )
+			return make_unexpected(
+					enumeration_error_t::no_parts_found );
+
+		return impl::enumerate_parts_of_request_body(
+				parts,
+				std::forward<Handler>(handler) );
+	}
+
+	return make_unexpected( boundary.error() );
 }
 
 } /* namespace multipart_body */
