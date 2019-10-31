@@ -37,7 +37,6 @@ namespace multipart_body
 //
 //FIXME: document this!
 RESTINIO_NODISCARD
-//FIXME: it is better to give an alias for std::vector<string_view_t>.
 inline std::vector< string_view_t >
 split_multipart_body(
 	string_view_t body,

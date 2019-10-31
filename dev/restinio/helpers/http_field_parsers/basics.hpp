@@ -169,6 +169,47 @@ namespace impl
 using namespace restinio::easy_parser::impl;
 
 //
+// is_vchar
+//
+RESTINIO_NODISCARD
+inline constexpr bool
+is_vchar( const char ch ) noexcept
+{
+	return (ch >= '\x41' && ch <= '\x5A') ||
+			(ch >= '\x61' && ch <= '\x7A');
+}
+
+//
+// is_obs_text
+//
+RESTINIO_NODISCARD
+inline constexpr bool
+is_obs_text( const char ch ) noexcept
+{
+	constexpr unsigned short left = 0x80u;
+	constexpr unsigned short right = 0xFFu;
+
+	const unsigned short t = static_cast<unsigned short>(
+			static_cast<unsigned char>(ch));
+
+	return (t >= left && t <= right);
+}
+
+//
+// is_qdtext
+//
+RESTINIO_NODISCARD
+inline constexpr bool
+is_qdtext( const char ch ) noexcept
+{
+	return ch == SP ||
+			ch == HTAB ||
+			ch == '!' ||
+			(ch >= '\x23' && ch <= '\x5B') ||
+			(ch >= '\x5D' && ch <= '\x7E') ||
+			is_obs_text( ch );
+}
+//
 // ows_producer_t
 //
 class ows_t : public producer_tag< restinio::optional_t<char> >

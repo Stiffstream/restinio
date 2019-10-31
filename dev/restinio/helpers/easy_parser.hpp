@@ -42,23 +42,40 @@ namespace meta = restinio::utils::metaprogramming;
 //
 // error_reason_t
 //
+/*!
+ * @brief Reason of parsing error.
+ *
+ * @since v.0.6.1
+ */
 enum class error_reason_t
 {
+	//! Unexpected character is found in the input.
 	unexpected_character,
+	//! Unexpected end of input is encontered when some character expected. 
 	unexpected_eof,
+	//! None of alternatives was found in the input.
 	no_appropriate_alternative,
+	//! Required pattern is not found in the input.
 	pattern_not_found
 };
 
 //
 // parse_error_t
 //
+/*!
+ * @brief Information about parsing error.
+ *
+ * @since v.0.6.1
+ */
 class parse_error_t
 {
+	//! Position in the input stream.
 	std::size_t m_position;
+	//! The reason of the error.
 	error_reason_t m_reason;
 
 public:
+	//! Initializing constructor.
 	parse_error_t(
 		std::size_t position,
 		error_reason_t reason ) noexcept
@@ -66,17 +83,49 @@ public:
 		,	m_reason{ reason }
 	{}
 
+	//! Get the position in the input stream where error was detected.
+	RESTINIO_NODISCARD
 	std::size_t
 	position() const noexcept { return m_position; }
 
+	//! Get the reason of the error.
+	RESTINIO_NODISCARD
 	error_reason_t
 	reason() const noexcept { return m_reason; }
 };
 
-//FIXME: document this!
+//
+// nothing_t
+//
+/*!
+ * @brief A special type to be used in the case where there is no
+ * need to store produced value.
+ *
+ * @since v.0.6.1.
+ */
 struct nothing_t {};
 
-//FIXME: document this!
+//
+// default_container_adaptor
+//
+/*!
+ * @brief A template with specializations for different kind
+ * of containers and for type `nothing`.
+ *
+ * Every specialization will have the following content:
+ * @code
+ * struct default_container_adaptor<...>
+ * {
+ * 	using container_type = ... // some type of the container.
+ * 	using value_type = ... // type of object to be placed into a container.
+ *
+ * 	static void store( container_type & to, value_type && what )
+ * 	{ ... }
+ * };
+ * @endcode
+ *
+ * @since v.0.6.1.
+ */
 template< typename T >
 struct default_container_adaptor;
 
@@ -132,7 +181,11 @@ struct default_container_adaptor< nothing_t >
 	store( container_type &, value_type && ) noexcept {}
 };
 
-//FIXME: document this!
+/*!
+ * @brief A special marker that means infinite repetitions.
+ *
+ * @since v.0.6.1.
+ */
 constexpr std::size_t N = std::numeric_limits<std::size_t>::max();
 
 namespace impl
@@ -141,6 +194,15 @@ namespace impl
 //
 // character_t
 //
+/*!
+ * @brief One character extracted from the input stream.
+ *
+ * If the characted extracted successfuly then m_eof will be `false`.
+ * If the end of input reached then m_eof is `true` and the value
+ * of m_ch is undefined.
+ *
+ * @since v.0.6.1
+ */
 struct character_t
 {
 	bool m_eof;
@@ -161,12 +223,27 @@ operator!=( const character_t & a, const character_t & b ) noexcept
 	return (a.m_eof != b.m_eof || a.m_ch != b.m_ch);
 }
 
+/*!
+ * @brief A constant for SPACE value.
+ *
+ * @since v.0.6.1
+ */
 constexpr char SP = ' ';
+/*!
+ * @brief A constant for Horizontal Tab value.
+ *
+ * @since v.0.6.1
+ */
 constexpr char	HTAB = '\x09';
 
 //
 // is_space
 //
+/*!
+ * @brief If a character a space character?
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 inline constexpr bool
 is_space( const char ch ) noexcept
@@ -175,50 +252,13 @@ is_space( const char ch ) noexcept
 }
 
 //
-// is_vchar
-//
-RESTINIO_NODISCARD
-inline constexpr bool
-is_vchar( const char ch ) noexcept
-{
-	return (ch >= '\x41' && ch <= '\x5A') ||
-			(ch >= '\x61' && ch <= '\x7A');
-}
-
-//
-// is_obs_text
-//
-RESTINIO_NODISCARD
-inline constexpr bool
-is_obs_text( const char ch ) noexcept
-{
-	constexpr unsigned short left = 0x80u;
-	constexpr unsigned short right = 0xFFu;
-
-	const unsigned short t = static_cast<unsigned short>(
-			static_cast<unsigned char>(ch));
-
-	return (t >= left && t <= right);
-}
-
-//
-// is_qdtext
-//
-RESTINIO_NODISCARD
-inline constexpr bool
-is_qdtext( const char ch ) noexcept
-{
-	return ch == SP ||
-			ch == HTAB ||
-			ch == '!' ||
-			(ch >= '\x23' && ch <= '\x5B') ||
-			(ch >= '\x5D' && ch <= '\x7E') ||
-			is_obs_text( ch );
-}
-
-//
 // is_digit
 //
+/*!
+ * @brief Is a character a digit?
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 inline constexpr bool
 is_digit( const char ch ) noexcept
@@ -229,16 +269,38 @@ is_digit( const char ch ) noexcept
 //
 // source_t
 //
+/*!
+ * @brief The class that implements "input stream".
+ *
+ * It is expected that string_view passed to the constructor of
+ * source_t will outlive the instance of source_t.
+ *
+ * @since v.0.6.1
+ */
 class source_t
 {
+	//! The content to be used as "input stream".
 	const string_view_t m_data;
+	//! The current position in the input stream.
+	/*!
+	 * \note
+	 * m_index can have value of m_data.size(). In that case
+	 * EOF will be returned.
+	 */
 	string_view_t::size_type m_index{};
 
 public:
+	//! Type to be used as the index inside the input stream.
 	using position_t = string_view_t::size_type;
 
+	//! Initializing constructor.
 	explicit source_t( string_view_t data ) noexcept : m_data{ data } {}
 
+	//! Get the next character from the input stream.
+	/*!
+	 * EOF can be returned in the case if there is no more data in
+	 * the input stream.
+	 */
 	RESTINIO_NODISCARD
 	character_t
 	getch() noexcept
@@ -251,6 +313,7 @@ public:
 			return {true, 0};
 	}
 
+	//! Return one character back to the input stream.
 	void
 	putback() noexcept
 	{
@@ -258,6 +321,7 @@ public:
 			--m_index;
 	}
 
+	//! Get the current position in the stream.
 	RESTINIO_NODISCARD
 	position_t
 	current_position() const noexcept
@@ -265,6 +329,8 @@ public:
 		return m_index;
 	}
 
+	//! Return the current position in the input stream
+	//! at the specified position.
 	void
 	backto( position_t pos ) noexcept
 	{
@@ -272,6 +338,7 @@ public:
 			m_index = pos;
 	}
 
+	//! Is EOF has been reached?
 	RESTINIO_NODISCARD
 	bool
 	eof() const noexcept
@@ -279,10 +346,20 @@ public:
 		return m_index >= m_data.size();
 	}
 
+	//! Return a fragment from the input stream.
+	/*!
+	 * \attention
+	 * The value of \a from should be lesser than the size of the
+	 * input stream.
+	 */
 	RESTINIO_NODISCARD
 	string_view_t
 	fragment(
+		//! Starting position for the fragment required.
 		string_view_t::size_type from,
+		//! Length of the fragment required.
+		//! Value string_view_t::npos means the whole remaining content
+		//! of the input stream starting from position \a from.
 		string_view_t::size_type length = string_view_t::npos ) const noexcept
 	{
 		return m_data.substr( from, length );

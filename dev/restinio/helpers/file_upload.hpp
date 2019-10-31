@@ -93,9 +93,6 @@ translate_enumeration_error(
 //FIXME: document this!
 using handling_result_t = restinio::multipart_body::handling_result_t;
 
-//FIXME: should it be a class with private members and public getters
-//or it can be a struct with public members?
-//NOTE: parsed_part_t in multipart_body namespace is a simple struct.
 //
 // part_description_t
 //
