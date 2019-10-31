@@ -390,7 +390,9 @@ enumerate_parts_of_request_body(
 		if( !part_parse_result )
 			return make_unexpected( enumeration_error_t::unexpected_error );
 
-		const handling_result_t handler_ret_code = handler( *part_parse_result );
+		// NOTE: parsed_part is passed as rvalue reference!
+		const handling_result_t handler_ret_code = handler(
+				std::move(*part_parse_result) );
 		if( handling_result_t::continue_enumeration != handler_ret_code )
 		{
 			if( handling_result_t::terminate_enumeration == handler_ret_code )

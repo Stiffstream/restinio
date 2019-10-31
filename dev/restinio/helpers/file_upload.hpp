@@ -45,16 +45,53 @@ enum class enumeration_error_t
 	unexpected_error
 };
 
+namespace impl
+{
+
+RESTINIO_NODISCARD
+constexpr enumeration_error_t
+translate_enumeration_error(
+	restinio::multipart_body::enumeration_error_t original )
+{
+	using source = restinio::multipart_body::enumeration_error_t;
+	using dest = enumeration_error_t;
+
+	dest result = dest::unexpected_error;
+
+	switch( original )
+	{
+		case source::content_type_field_not_found:
+			result = dest::content_type_field_not_found; break;
+
+		case source::content_type_field_parse_error:
+			result = dest::content_type_field_parse_error; break;
+
+		case source::content_type_field_inappropriate_value:
+			result = dest::content_type_field_inappropriate_value; break;
+
+		case source::illegal_boundary_value:
+			result = dest::illegal_boundary_value; break;
+
+		case source::no_parts_found:
+			result = dest::no_parts_found; break;
+
+		case source::terminated_by_handler:
+			result = dest::terminated_by_handler; break;
+
+		case source::unexpected_error:
+			/* nothing to do */ break;
+	}
+
+	return result;
+}
+
+} /* namespace impl */
+
 //
 // handling_result_t
 //
 //FIXME: document this!
-enum class handling_result_t
-{
-	continue_enumeration,
-	stop_enumeration,
-	terminate_enumeration
-};
+using handling_result_t = restinio::multipart_body::handling_result_t;
 
 //FIXME: should it be a class with private members and public getters
 //or it can be a struct with public members?
@@ -106,133 +143,18 @@ public:
 	filename_parameter() const noexcept { return m_filename; }
 };
 
-namespace impl
-{
-
-// From https://tools.ietf.org/html/rfc1521:
 //
-// boundary := 0*69<bchars> bcharsnospace
+// analyze_part
 //
-// bchars := bcharsnospace / " "
-//
-// bcharsnospace :=  DIGIT / ALPHA / "'" / "(" / ")" / "+" /"_"
-//                 / "," / "-" / "." / "/" / ":" / "=" / "?"
-//
-RESTINIO_NODISCARD
-constexpr bool
-is_bcharnospace( char ch )
-{
-	return (ch >= '0' && ch <= '9') // DIGIT
-		|| ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) // ALPHA
-		|| ch == '\''
-		|| ch == '('
-		|| ch == ')'
-		|| ch == '+'
-		|| ch == '_'
-		|| ch == ','
-		|| ch == '-'
-		|| ch == '.'
-		|| ch == '/'
-		|| ch == ':'
-		|| ch == '='
-		|| ch == '?';
-}
-
-RESTINIO_NODISCARD
-constexpr bool
-is_bchar( char ch )
-{
-	return is_bcharnospace(ch) || ch == ' ';
-}
-
-RESTINIO_NODISCARD
-inline optional_t< enumeration_error_t >
-check_bondary_value( string_view_t value )
-{
-	if( value.size() >= 1u && value.size() <= 70u )
-	{
-		const std::size_t last_index = value.size() - 1u;
-		for( std::size_t i = 0u; i != last_index; ++i )
-			if( !is_bchar( value[i] ) )
-				return enumeration_error_t::illegal_boundary_value;
-
-		if( !is_bcharnospace( value[ last_index ] ) )
-			return enumeration_error_t::illegal_boundary_value;
-	}
-	else
-		return enumeration_error_t::illegal_boundary_value;
-
-	return nullopt;
-}
-
-RESTINIO_NODISCARD
-inline expected_t< std::string, enumeration_error_t >
-detect_boundary_for_multipart_body(
-	const request_t & req )
-{
-	namespace hfp = restinio::http_field_parsers;
-
-	// Content-Type header file should be present.
-	const auto content_type = req.header().opt_value_of(
-			restinio::http_field::content_type );
-	if( !content_type )
-		return make_unexpected(
-				enumeration_error_t::content_type_field_not_found );
-
-	// Content-Type field should successfuly parsed and should
-	// contain value multipart/form-data.
-	const auto parse_result = hfp::content_type_value_t::try_parse(
-			*content_type );
-	if( !parse_result )
-		return make_unexpected(
-				enumeration_error_t::content_type_field_parse_error );
-
-	const auto & media_type = parse_result->media_type;
-	if( "multipart" != media_type.type
-			&& "form-data" != media_type.subtype )
-		return make_unexpected(
-				enumeration_error_t::content_type_field_inappropriate_value );
-
-	// `boundary` param should be present in parsed Content-Type value.
-	const auto boundary = hfp::find_first(
-			parse_result->media_type.parameters,
-			"boundary" );
-	if( !boundary )
-		return make_unexpected(
-				enumeration_error_t::content_type_field_inappropriate_value );
-	
-	// `boundary` should have valid value.
-	const auto boundary_check_result = check_bondary_value( *boundary );
-	if( boundary_check_result )
-		return make_unexpected( *boundary_check_result );
-
-	// Actual value of boundary mark can be created.
-	std::string actual_boundary_mark;
-	actual_boundary_mark.reserve( 2 + boundary->size() );
-	actual_boundary_mark.append( "--" );
-	actual_boundary_mark.append( boundary->data(), boundary->size() );
-
-	return std::move(actual_boundary_mark);
-}
-
-//FIXME: maybe this function should be a part of public API?
-//FIXME: or maybe there should be another version of try_analyze_part
-//that accepts multipart_body::parsed_part_t?
 RESTINIO_NODISCARD
 inline expected_t< part_description_t, enumeration_error_t >
-try_analyze_part( string_view_t part )
+analyze_part( restinio::multipart_body::parsed_part_t parsed_part )
 {
 	namespace hfp = restinio::http_field_parsers;
 
-	// The current part should be parsed to headers and the body.
-	auto part_parse_result = restinio::multipart_body::try_parse_part( part );
-	if( !part_parse_result )
-		return make_unexpected( enumeration_error_t::unexpected_error );
-
 	// Content-Disposition field should be present.
-	const auto disposition_field =
-			part_parse_result->fields.opt_value_of(
-					restinio::http_field::content_disposition );
+	const auto disposition_field = parsed_part.fields.opt_value_of(
+			restinio::http_field::content_disposition );
 	if( !disposition_field )
 		return make_unexpected( enumeration_error_t::no_files_found );
 
@@ -270,52 +192,13 @@ try_analyze_part( string_view_t part )
 		return make_unexpected( enumeration_error_t::no_files_found );
 
 	return part_description_t{
-			std::move( part_parse_result->fields ),
-			part_parse_result->body,
+			std::move( parsed_part.fields ),
+			parsed_part.body,
 			std::string{ name->data(), name->size() },
 			std::move(filename_star),
 			std::move(filename)
 	};
 }
-
-template< typename Handler >
-RESTINIO_NODISCARD
-expected_t< std::size_t, enumeration_error_t >
-enumerate_parts_of_request_body(
-	const std::vector< string_view_t > & parts,
-	Handler && handler )
-{
-	std::size_t files_found{ 0u };
-	optional_t< enumeration_error_t > error;
-
-	for( auto current_part : parts )
-	{
-		const auto analyzing_result = try_analyze_part( current_part );
-		if( analyzing_result )
-		{
-			++files_found;
-
-			const handling_result_t handler_ret_code = handler( *analyzing_result );
-			if( handling_result_t::continue_enumeration != handler_ret_code )
-			{
-				if( handling_result_t::terminate_enumeration == handler_ret_code )
-					error = enumeration_error_t::terminated_by_handler;
-
-				break;
-			}
-		}
-	}
-
-	if( error )
-		return make_unexpected( *error );
-
-	if( 0u == files_found )
-		return make_unexpected( enumeration_error_t::no_files_found );
-
-	return files_found;
-}
-
-} /* namespace impl */
 
 template< typename Handler >
 expected_t< std::size_t, enumeration_error_t >
@@ -327,23 +210,41 @@ enumerate_parts_with_files(
 	//to call the handler. It means the right argument type and the result
 	//type should be checked.
 
-	const auto boundary = impl::detect_boundary_for_multipart_body( req );
-	if( boundary )
-	{
-		const auto parts = restinio::multipart_body::split_multipart_body(
-				req.body(),
-				*boundary );
+	std::size_t files_found{ 0u };
+	optional_t< enumeration_error_t > error;
 
-		if( parts.empty() )
-			return make_unexpected(
-					enumeration_error_t::no_parts_found );
+	const auto result = restinio::multipart_body::enumerate_parts( req,
+			[&handler, &files_found, &error]
+			( restinio::multipart_body::parsed_part_t part )
+			{
+				auto part_description = analyze_part( std::move(part) );
+				if( part_description )
+				{
+					++files_found;
 
-		return impl::enumerate_parts_of_request_body(
-				parts,
-				std::forward<Handler>(handler) );
-	}
+					return handler( std::move(*part_description) );
+				}
+				else if( enumeration_error_t::no_files_found ==
+						part_description.error() )
+				{
+					return handling_result_t::continue_enumeration;
+				}
+				else
+				{
+					error = part_description.error();
+					return handling_result_t::terminate_enumeration;
+				}
+			},
+			"multipart",
+			"form-data" );
 
-	return make_unexpected( boundary.error() );
+	if( error )
+		return make_unexpected( *error );
+	else if( !result )
+		return make_unexpected(
+				impl::translate_enumeration_error( result.error() ) );
+	else
+		return files_found;
 }
 
 } /* namespace file_upload */

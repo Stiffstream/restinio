@@ -44,54 +44,6 @@ make_dummy_endpoint()
 	};
 }
 
-TEST_CASE( "Valid boundary value", "[boundary]" )
-{
-	using namespace restinio::file_upload;
-
-	REQUIRE( !impl::check_bondary_value( "1" ) );
-
-	{
-		const auto r = impl::check_bondary_value( "" );
-		REQUIRE( r );
-		REQUIRE( enumeration_error_t::illegal_boundary_value == *r );
-	}
-
-	{
-		const auto r = impl::check_bondary_value(
-				"123456789_123456789_123456789_"
-				"123456789_123456789_123456789_"
-				"123456789_1" );
-		REQUIRE( r );
-		REQUIRE( enumeration_error_t::illegal_boundary_value == *r );
-	}
-
-	{
-		const auto r = impl::check_bondary_value(
-				"123456789_123456789_123456789_"
-				"123456789_123456789_123456789_"
-				"123456789_" );
-		REQUIRE( !r );
-	}
-
-	{
-		const auto r = impl::check_bondary_value(
-				" _" );
-		REQUIRE( !r );
-	}
-
-	{
-		const auto r = impl::check_bondary_value( "1 " );
-		REQUIRE( r );
-		REQUIRE( enumeration_error_t::illegal_boundary_value == *r );
-	}
-
-	{
-		const auto r = impl::check_bondary_value( "123[45]678" );
-		REQUIRE( r );
-		REQUIRE( enumeration_error_t::illegal_boundary_value == *r );
-	}
-}
-
 TEST_CASE( "No Content-Type field", "[content-type]" )
 {
 	using namespace restinio::file_upload;
