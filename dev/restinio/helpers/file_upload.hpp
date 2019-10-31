@@ -63,22 +63,22 @@ class part_description_t
 {
 	http_header_fields_t m_fields;
 	string_view_t m_body;
-	string_view_t m_name;
-	optional_t< string_view_t > m_filename_star;
-	optional_t< string_view_t > m_filename;
+	std::string m_name;
+	optional_t< std::string > m_filename_star;
+	optional_t< std::string > m_filename;
 
 public:
 	part_description_t(
 		http_header_fields_t fields,
 		string_view_t body,
-		string_view_t name,
-		optional_t< string_view_t > filename_star,
-		optional_t< string_view_t > filename )
+		std::string name,
+		optional_t< std::string > filename_star,
+		optional_t< std::string > filename )
 		:	m_fields{ std::move(fields) }
 		,	m_body{ body }
-		,	m_name{ name }
-		,	m_filename_star{ filename_star }
-		,	m_filename{ filename }
+		,	m_name{ std::move(name) }
+		,	m_filename_star{ std::move(filename_star) }
+		,	m_filename{ std::move(filename) }
 	{}
 
 	RESTINIO_NODISCARD
@@ -90,15 +90,15 @@ public:
 	body() const noexcept { return m_body; }
 
 	RESTINIO_NODISCARD
-	string_view_t
+	const std::string &
 	name_parameter() const noexcept { return m_name; }
 
 	RESTINIO_NODISCARD
-	optional_t<string_view_t>
+	const optional_t<std::string> &
 	filename_star_parameter() const noexcept { return m_filename_star; }
 
 	RESTINIO_NODISCARD
-	optional_t<string_view_t>
+	const optional_t<std::string> &
 	filename_parameter() const noexcept { return m_filename; }
 };
 
@@ -189,13 +189,17 @@ try_analyze_part( string_view_t part )
 		return make_unexpected(
 				enumeration_error_t::content_disposition_field_inappropriate_value );
 	const auto expected_to_optional = []( auto expected ) {
-		return expected ? optional_t< string_view_t >{ *expected } :
-				optional_t< string_view_t >{};
+		return expected ?
+				optional_t< std::string >{ std::string{
+						expected->data(),
+						expected->size()
+				} }
+				: optional_t< std::string >{};
 	};
 
-	const auto filename_star = expected_to_optional( hfp::find_first(
+	auto filename_star = expected_to_optional( hfp::find_first(
 			parsed_disposition->parameters, "filename*" ) );
-	const auto filename = expected_to_optional( hfp::find_first(
+	auto filename = expected_to_optional( hfp::find_first(
 			parsed_disposition->parameters, "filename" ) );
 
 	// If there is no `filename*` nor `filename` then there is no file.
@@ -205,9 +209,9 @@ try_analyze_part( string_view_t part )
 	return part_description_t{
 			std::move( part_parse_result->fields ),
 			part_parse_result->body,
-			*name,
-			filename_star,
-			filename
+			std::string{ name->data(), name->size() },
+			std::move(filename_star),
+			std::move(filename)
 	};
 }
 
