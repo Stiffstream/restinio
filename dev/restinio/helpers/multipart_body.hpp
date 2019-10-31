@@ -420,17 +420,17 @@ struct valid_handler_type : public std::false_type {};
 
 template< typename T >
 struct valid_handler_type<
-	T,
-	restinio::utils::metaprogramming::void_t<
-		std::enable_if_t<
-			std::is_same<
+		T,
+		restinio::utils::metaprogramming::void_t<
+			std::enable_if_t<
+				std::is_same<
 					handling_result_t,
 					decltype(std::declval<T>()(std::declval<parsed_part_t>()))
-			>::value,
-			bool
+				>::value,
+				bool
+			>
 		>
-	>
-	: public std::true_type
+	> : public std::true_type
 {};
 
 } /* namespace impl */
@@ -448,12 +448,10 @@ enumerate_parts(
 	string_view_t expected_media_type = string_view_t{ "multipart" },
 	optional_t< string_view_t > expected_media_subtype = nullopt )
 {
-	//FIXME: there should be some static_assert that checks the possibility
-	//to call the handler. It means the right argument type and the result
-	//type should be checked.
 	static_assert(
 			impl::valid_handler_type< std::decay_t<Handler> >::value,
-			"Handler should be callable with parsed_part_t as an argument "
+			"Handler should be callable object, "
+			"should accept parsed_part_t by value, const or rvalue reference, "
 			"and should return handling_result_t" );
 
 	const auto boundary = impl::detect_boundary_for_multipart_body(

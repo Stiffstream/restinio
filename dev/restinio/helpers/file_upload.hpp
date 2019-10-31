@@ -166,15 +166,43 @@ analyze_part( restinio::multipart_body::parsed_part_t parsed_part )
 	};
 }
 
+namespace impl
+{
+
+//
+// valid_handler_type
+//
+template< typename, typename = restinio::utils::metaprogramming::void_t<> >
+struct valid_handler_type : public std::false_type {};
+
+template< typename T >
+struct valid_handler_type<
+		T,
+		restinio::utils::metaprogramming::void_t<
+			std::enable_if_t<
+				std::is_same<
+					handling_result_t,
+					decltype(std::declval<T>()(std::declval<part_description_t>()))
+				>::value,
+				bool
+			>
+		>
+	> : public std::true_type
+{};
+
+} /* namespace impl */
+
 template< typename Handler >
 expected_t< std::size_t, enumeration_error_t >
 enumerate_parts_with_files(
 	const request_t & req,
 	Handler && handler )
 {
-	//FIXME: there should be some static_assert that checks the possibility
-	//to call the handler. It means the right argument type and the result
-	//type should be checked.
+	static_assert(
+			impl::valid_handler_type< std::decay_t<Handler> >::value,
+			"Handler should be callable object, "
+			"should accept part_description_t by value, const or rvalue reference, "
+			"and should return handling_result_t" );
 
 	std::size_t files_found{ 0u };
 	optional_t< enumeration_error_t > error;

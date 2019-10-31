@@ -362,7 +362,7 @@ TEST_CASE( "No Content-Type field", "[content-type]" )
 	REQUIRE( enumeration_error_t::content_type_field_not_found ==
 			enumerate_parts(
 					*req,
-					[]( parsed_part_t * ) {
+					[]( parsed_part_t && ) {
 						return handling_result_t::continue_enumeration;
 					} ).error() );
 }

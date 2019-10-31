@@ -237,7 +237,7 @@ TEST_CASE( "Several parts in the body", "[body]" )
 	int ordinal{0};
 	const auto result = enumerate_parts_with_files(
 			*req,
-			[&ordinal]( const part_description_t & part ) {
+			[&ordinal]( part_description_t part ) {
 				REQUIRE( ordinal < 3 );
 				if( 0 == ordinal )
 				{
