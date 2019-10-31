@@ -392,7 +392,7 @@ public :
 				const auto try_result = try_parse_value( from, value );
 				if( !try_result )
 				{
-					consumer.acquire_content();
+					consumer.commit();
 					return std::move(value);
 				}
 				else

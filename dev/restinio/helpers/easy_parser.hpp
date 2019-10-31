@@ -365,6 +365,29 @@ public:
 		return m_data.substr( from, length );
 	}
 
+	/*!
+	 * @brief A helper class to automatically return acquired
+	 * content back to the input stream.
+	 *
+	 * Usage example:
+	 * @code
+	 * expected_t<result_type, parse_error_t> try_parse(source_t & from) {
+	 * 	source_t::content_consumer_t consumer{from};
+	 * 	for(auto ch = from.getch(); some_condition(ch); ch = from.getch())
+	 * 	{
+	 * 		... // do something with ch.
+	 * 	}
+	 * 	if(no_errors_detected())
+	 * 		// All acquired content should be consumed.
+	 * 		consumer.commit();
+	 *
+	 * 	// Otherwise all acquired content will be returned back to the input stream.
+	 * 	...
+	 * }
+	 * @endcode
+	 *
+	 * @since v.0.6.1
+	 */
 	class content_consumer_t
 	{
 		source_t & m_from;
@@ -393,24 +416,65 @@ public:
 			return m_started_at;
 		}
 
+		//! Consume all acquired content.
+		/*!
+		 * @note
+		 * If that method is not called then all acquired content
+		 * will be returned back.
+		 */
 		void
-		acquire_content() noexcept
+		commit() noexcept
 		{
 			m_consumed = true;
 		}
 	};
 };
 
+//
+// entity_type_t
+//
+/*!
+ * @brief A marker for distinguish different kind of entities in parser.
+ *
+ * @since v.0.6.1
+ */
 enum class entity_type_t
 {
+	//! Entity is a producer of values.
 	producer,
+	//! Entity is a transformer of a value from one type to another.
 	transformer,
+	//! Entity is a consumer of values. It requires a value on the input
+	//! and doesn't produces anything.
 	consumer,
+	//! Entity is a clause. It doesn't produces anything.
 	clause
 };
 
-//FIXME: a requirement for producer type should be described.
-
+//
+// producer_tag
+//
+/*!
+ * @brief A special base class to be used with producers.
+ *
+ * Every producer class should have the following content:
+ *
+ * @code
+ * class some_producer_type
+ * {
+ * public:
+ * 	using result_type = ... // some producer-specific type.
+ * 	static constexpr entity_type_t entity_type = entity_type_t::producer;
+ *
+ * 	expected_t<result_type, parse_error_t>
+ * 	try_parse(source_t & from);
+ *
+ * 	...
+ * };
+ * @endcode
+ *
+ * @since v.0.6.1
+ */
 template< typename Result_Type >
 struct producer_tag
 {
@@ -427,11 +491,44 @@ struct is_producer< T, meta::void_t< decltype(T::entity_type) > >
 	static constexpr bool value = entity_type_t::producer == T::entity_type;
 };
 
+/*!
+ * @brief A meta-value to check whether T is a producer type.
+ *
+ * @note
+ * The current implementation checks only the presence of T::entity_type of
+ * type entity_type_t and the value of T::entity_type. Presence of
+ * T::result_type and T::try_parse is not checked.
+ *
+ * @since v.0.6.1
+ */
 template< typename T >
 constexpr bool is_producer_v = is_producer<T>::value;
 
-//FIXME: a requirement for transformer type should be described.
-
+//
+// transformer_tag
+//
+/*!
+ * @brief A special base class to be used with transformers.
+ *
+ * Every transformer class should have the following content:
+ *
+ * @code
+ * class some_transformer_type
+ * {
+ * public:
+ * 	using result_type = ... // some transformer-specific type.
+ * 	static constexpr entity_type_t entity_type = entity_type_t::transformer;
+ *
+ * 	result_type
+ * 	transform(Input_Type && from);
+ *
+ * 	...
+ * };
+ * @endcode
+ * where `Input_Type` is transformer's specific types.
+ *
+ * @since v.0.6.1
+ */
 template< typename Result_Type >
 struct transformer_tag
 {
@@ -448,9 +545,31 @@ struct is_transformer< T, meta::void_t< decltype(T::entity_type) > >
 	static constexpr bool value = entity_type_t::transformer == T::entity_type;
 };
 
+/*!
+ * @brief A meta-value to check whether T is a transformer type.
+ *
+ * @note
+ * The current implementation checks only the presence of T::entity_type of
+ * type entity_type_t and the value of T::entity_type. Presence of
+ * T::result_type and T::transform is not checked.
+ *
+ * @since v.0.6.1
+ */
 template< typename T >
 constexpr bool is_transformer_v = is_transformer<T>::value;
 
+//
+// transformed_value_producer_t
+//
+/*!
+ * @brief A template of producer that gets a value from another
+ * producer, transforms it and produces transformed value.
+ *
+ * \tparam Producer the type of producer of source value.
+ * \tparam Transformer the type of transformer from source to the target value.
+ *
+ * @since v.0.6.1
+ */
 template< typename Producer, typename Transformer >
 class transformed_value_producer_t
 	:	public producer_tag< typename Transformer::result_type >
@@ -487,6 +606,11 @@ public :
 	}
 };
 
+/*!
+ * @brief A special operator to connect a value producer with value transformer.
+ *
+ * @since v.0.6.1
+ */
 template< typename P, typename T >
 RESTINIO_NODISCARD
 std::enable_if_t<
@@ -501,8 +625,28 @@ operator>>(
 	return transformator_type{ std::move(producer), std::move(transformer) };
 };
 
-//FIXME: a requirement for consumer type should be described.
-
+//
+// consumer_tag
+//
+/*!
+ * @brief A special base class to be used with consumers.
+ *
+ * Every consumer class should have the following content:
+ *
+ * @code
+ * class some_consumer_type
+ * {
+ * public :
+ * 	static constexpr entity_type_t entity_type = entity_type_t::consumer;
+ *
+ * 	void consume( Target_Type & dest, Value && current_value );
+ * 	...
+ * };
+ * @endcode
+ * where `Target_Type` and `Value` are consumer's specific types.
+ *
+ * @since v.0.6.1
+ */
 struct consumer_tag
 {
 	static constexpr entity_type_t entity_type = entity_type_t::consumer;
@@ -517,11 +661,42 @@ struct is_consumer< T, meta::void_t< decltype(T::entity_type) > >
 	static constexpr bool value = entity_type_t::consumer == T::entity_type;
 };
 
+/*!
+ * @brief A meta-value to check whether T is a consumer type.
+ *
+ * @note
+ * The current implementation checks only the presence of T::entity_type of
+ * type entity_type_t and the value of T::entity_type. Presence of
+ * T::consume is not checked.
+ *
+ * @since v.0.6.1
+ */
 template< typename T >
 constexpr bool is_consumer_v = is_consumer<T>::value;
 
-//FIXME: a requirement for clause type should be described.
-
+//
+// clause_tag
+//
+/*!
+ * @brief A special base class to be used with clauses.
+ *
+ * Every clause class should have the following content:
+ *
+ * @code
+ * class some_consumer_type
+ * {
+ * public :
+ * 	static constexpr entity_type_t entity_type = entity_type_t::clause;
+ *
+ * 	optional_t<parse_error_t>
+ * 	try_process(source_t & from, Target_Type & dest);
+ * 	...
+ * };
+ * @endcode
+ * where `Target_Type` is clause's specific types.
+ *
+ * @since v.0.6.1
+ */
 struct clause_tag
 {
 	static constexpr entity_type_t entity_type = entity_type_t::clause;
@@ -536,9 +711,22 @@ struct is_clause< T, meta::void_t< decltype(T::entity_type) > >
 	static constexpr bool value = entity_type_t::clause == T::entity_type;
 };
 
+/*!
+ * @brief A meta-value to check whether T is a consumer type.
+ *
+ * @note
+ * The current implementation checks only the presence of T::entity_type of
+ * type entity_type_t and the value of T::entity_type. Presence of
+ * T::try_parse is not checked.
+ *
+ * @since v.0.6.1
+ */
 template< typename T >
 constexpr bool is_clause_v = is_clause<T>::value;
 
+//
+// consume_value_clause_t
+//
 template< typename P, typename C >
 class consume_value_clause_t : public clause_tag
 {
@@ -649,7 +837,7 @@ public :
 					if( !result )
 					{
 						target = std::move(tmp_value);
-						consumer.acquire_content();
+						consumer.commit();
 
 						return true;
 					}
@@ -699,7 +887,7 @@ public :
 		if( success )
 		{
 			target = std::move(tmp_value);
-			consumer.acquire_content();
+			consumer.commit();
 		}
 
 		// maybe_producer always returns success even if nothing consumed.
@@ -829,7 +1017,7 @@ public :
 		if( success )
 		{
 			target = std::move(tmp_value);
-			consumer.acquire_content();
+			consumer.commit();
 		}
 
 		return result;
@@ -917,14 +1105,14 @@ public :
 			if( !failure_detected )
 			{
 				// Another item successfully parsed and should be stored.
-				item_consumer.acquire_content();
+				item_consumer.commit();
 				++count;
 			}
 		}
 
 		if( count >= m_min_occurences )
 		{
-			whole_consumer.acquire_content();
+			whole_consumer.commit();
 			return nullopt;
 		}
 
