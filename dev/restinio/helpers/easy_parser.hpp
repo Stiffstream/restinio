@@ -101,7 +101,7 @@ public:
  * @brief A special type to be used in the case where there is no
  * need to store produced value.
  *
- * @since v.0.6.1.
+ * @since v.0.6.1
  */
 struct nothing_t {};
 
@@ -124,7 +124,7 @@ struct nothing_t {};
  * };
  * @endcode
  *
- * @since v.0.6.1.
+ * @since v.0.6.1
  */
 template< typename T >
 struct default_container_adaptor;
@@ -184,7 +184,7 @@ struct default_container_adaptor< nothing_t >
 /*!
  * @brief A special marker that means infinite repetitions.
  *
- * @since v.0.6.1.
+ * @since v.0.6.1
  */
 constexpr std::size_t N = std::numeric_limits<std::size_t>::max();
 
@@ -575,7 +575,7 @@ class transformed_value_producer_t
 	:	public producer_tag< typename Transformer::result_type >
 {
 	static_assert( is_producer_v<Producer>,
-			"Transformer should be a transformer type" );
+			"Producer should be a producer type" );
 	static_assert( is_transformer_v<Transformer>,
 			"Transformer should be a transformer type" );
 
@@ -727,6 +727,15 @@ constexpr bool is_clause_v = is_clause<T>::value;
 //
 // consume_value_clause_t
 //
+/*!
+ * @brief A template for a clause that binds a value producer with value
+ * consumer.
+ *
+ * \tparam P the type of value producer.
+ * \tparam C the type of value consumer.
+ *
+ * @since v.0.6.1
+ */
 template< typename P, typename C >
 class consume_value_clause_t : public clause_tag
 {
@@ -758,6 +767,11 @@ public :
 	}
 };
 
+/*!
+ * @brief A special operator to connect a value producer with a value consumer.
+ *
+ * @since v.0.6.1
+ */
 template< typename P, typename C >
 RESTINIO_NODISCARD
 std::enable_if_t<
@@ -768,9 +782,25 @@ operator>>( P producer, C consumer )
 	return { std::move(producer), std::move(consumer) };
 }
 
+//
+// top_level_clause_t
+//
+/*!
+ * @brief A special class to be used as the top level clause in parser.
+ *
+ * @note
+ * That class doesn't look like an ordinal clause and can't be connected
+ * with other clauses. Method try_process has the different format and
+ * returns the value of Producer::try_parse.
+ *
+ * @since v.0.6.1
+ */
 template< typename Producer >
 class top_level_clause_t
 {
+	static_assert( is_producer_v<Producer>,
+			"Producer should be a producer type" );
+
 	Producer m_producer;
 
 public :
@@ -786,6 +816,18 @@ public :
 	}
 };
 
+//
+// ensure_no_remaining_content
+//
+/*!
+ * @brief A special function to check that there is no more actual
+ * data in the input stream except whitespaces.
+ *
+ * @return parse_error_t if some non-whitespace character is found
+ * in the input stream.
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 inline optional_t< parse_error_t >
 ensure_no_remaining_content(
@@ -808,6 +850,34 @@ ensure_no_remaining_content(
 //
 // alternatives_clause_t
 //
+/*!
+ * @brief A template for implementation of clause that selects one of
+ * alternative clauses.
+ *
+ * This template implements rules like:
+   @verbatim
+   T := A | B | C
+   @endverbatim
+ *
+ * It works very simple way:
+ *
+ * - `try_process` for the first alternative is called. If it fails then...
+ * - `try_process` for the second alternative is called. If it fails then...
+ * - `try_process` for the third alternative is called...
+ * - and so on.
+ *
+ * If no one of alternatives is selected then the current position in
+ * the input stream is restored.
+ *
+ * @note
+ * The copy of Target_Type object passed to `try_process` method is
+ * created before checking each alternative.
+ *
+ * \tparam Subitems_Tuple the type of std::tuple with items for every
+ * alternative clauses.
+ *
+ * @since v.0.6.1
+ */
 template<
 	typename Subitems_Tuple >
 class alternatives_clause_t : public clause_tag
@@ -830,6 +900,8 @@ public :
 		const bool success = restinio::utils::tuple_algorithms::any_of(
 				m_subitems,
 				[&from, &target]( auto && one_producer ) {
+//FIXME: is this consumer really needed?
+//Every failed try_process should restore the current position itself.
 					source_t::content_consumer_t consumer{ from };
 					Target_Type tmp_value{ target };
 
