@@ -1427,9 +1427,9 @@ struct any_value_skipper_t : public consumer_tag
 	@endverbatim
  * such rule will be implemented by a such sequence of clauses:
  * @code
- * produce<std::string>(symbol('v'), symbol('='), token() >> as_result());
+ * produce<std::string>(symbol('v'), symbol('='), token_producer() >> as_result());
  * @endcode
- * The result of `token()` producer in a subclause should be returned
+ * The result of `token_producer()` producer in a subclause should be returned
  * as the result of top-level producer.
  *
  * @since v.0.6.1
@@ -1563,7 +1563,7 @@ struct to_lower_transformer_t : public transformer_tag< std::string >
  *
  * Usage example:
  * @code
- * produce<std::string>(symbol('v'), symbol('='), token() >> as_result());
+ * produce<std::string>(symbol('v'), symbol('='), token_producer() >> as_result());
  * @endcode
  *
  * @tparam Target_Type the type of value to be produced.
@@ -1600,8 +1600,8 @@ produce( Clauses &&... clauses )
  * @code
  * produce<std::string>(
  * 	alternatives(
- * 		sequence(symbol('v'), symbol('='), token() >> as_result()),
- * 		sequence(symbol('T'), symbol('/'), token() >> as_result())
+ * 		sequence(symbol('v'), symbol('='), token_producer() >> as_result()),
+ * 		sequence(symbol('T'), symbol('/'), token_producer() >> as_result())
  * 	)
  * );
  * @endcode
@@ -1638,10 +1638,10 @@ alternatives( Clauses &&... clauses )
  * Usage example:
  * @code
  * produce<std::pair<std::string, std::string>>(
- * 	token() >> &std::pair<std::string, std::string>::first,
+ * 	token_producer() >> &std::pair<std::string, std::string>::first,
  * 	maybe(
  * 		symbol('='),
- * 		token() >> &std::pair<std::string, std::string>::second
+ * 		token_producer() >> &std::pair<std::string, std::string>::second
  * 	)
  * );
  * @endcode
@@ -1676,9 +1676,9 @@ maybe( Clauses &&... clauses )
  * Usage example:
  * @code
  * produce<std::pair<std::string, std::string>>(
- * 	token() >> &std::pair<std::string, std::string>::first,
+ * 	token_producer() >> &std::pair<std::string, std::string>::first,
  * 	symbol(' '),
- * 	token() >> &std::pair<std::string, std::string>::second
+ * 	token_producer() >> &std::pair<std::string, std::string>::second
  * 	not_clause(symbol('.'))
  * );
  * @endcode
@@ -1717,10 +1717,10 @@ not_clause( Clauses &&... clauses )
  * Usage example:
  * @code
  * produce<std::pair<std::string, std::string>>(
- * 	token() >> &std::pair<std::string, std::string>::first,
+ * 	token_producer() >> &std::pair<std::string, std::string>::first,
  * 	symbol(' '),
- * 	token() >> &std::pair<std::string, std::string>::second
- * 	and_clause(symbol(','), maybe(symbol(' ')), token() >> skip())
+ * 	token_producer() >> &std::pair<std::string, std::string>::second
+ * 	and_clause(symbol(','), maybe(symbol(' ')), token_producer() >> skip())
  * );
  * @endcode
  * this expression corresponds the following rule:
@@ -1759,8 +1759,8 @@ and_clause( Clauses &&... clauses )
  * @code
  * produce<std::string>(
  * 	alternatives(
- * 		sequence(symbol('v'), symbol('='), token() >> as_result()),
- * 		sequence(symbol('T'), symbol('/'), token() >> as_result())
+ * 		sequence(symbol('v'), symbol('='), token_producer() >> as_result()),
+ * 		sequence(symbol('T'), symbol('/'), token_producer() >> as_result())
  * 	)
  * );
  * @endcode
@@ -1791,15 +1791,57 @@ sequence( Clauses &&... clauses )
 //
 // repeat
 //
+/*!
+ * @brief A factory function to create repetitor of subclauses.
+ *
+ * Usage example:
+ * @code
+ * using str_pair = std::pair<std::string, std::string>;
+ * produce<std::vector<str_pair>>(
+ * 	produce<str_pair>(
+ * 		token_producer() >> &str_pair::first,
+ * 		symbol('='),
+ * 		token_producer() >> &str_pair::second
+ * 	) >> to_container(),
+ * 	repeat(0, N,
+ * 		symbol(','),
+ * 		produce<str_pair>(
+ * 			token_producer() >> &str_pair::first,
+ * 			symbol('='),
+ * 			token_producer() >> &str_pair::second
+ * 		) >> to_container()
+ * 	)
+ * );
+ * @endcode
+ * this expression corresponds to the following rule:
+   @verbatim
+	T := token '=' token *(',' token '=' token)
+   @endverbatim
+ *
+ * @tparam Clauses the list of clauses to be used as the sequence
+ * to be repeated.
+ *
+ * @since v.0.6.1
+ */
 template<
 	typename... Clauses >
 RESTINIO_NODISCARD
 auto
 repeat(
+	//! Minimal occurences of the sequences in the repetition.
 	std::size_t min_occurences,
+	//! Maximal occurences of the sequences in the repetition.
+	/*!
+	 * @note
+	 * The repetition will be stopped when that numer of repetitions
+	 * will be reached.
+	 */
 	std::size_t max_occurences,
+	//! The sequence of clauses to be repeated.
 	Clauses &&... clauses )
 {
+	static_assert( 0 != sizeof...(clauses),
+			"list of clauses can't be empty" );
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for repeat() should be clauses" );
 
@@ -1815,6 +1857,19 @@ repeat(
 //
 // skip
 //
+/*!
+ * @brief A factory function to create a skip_consumer.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(
+ * 	token_producer() >> as_result(),
+ * 	not_clause(symbol('='), token_producer() >> skip())
+ * );
+ * @endcode
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 skip() noexcept { return impl::any_value_skipper_t{}; }
@@ -1822,6 +1877,14 @@ skip() noexcept { return impl::any_value_skipper_t{}; }
 //
 // symbol_producer
 //
+/*!
+ * @brief A factory function to create a symbol_producer.
+ *
+ * @return a producer that expects @a expected in the input stream
+ * and returns it if that character is found.
+ * 
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 symbol_producer( char expected ) noexcept
@@ -1832,6 +1895,17 @@ symbol_producer( char expected ) noexcept
 //
 // symbol
 //
+/*!
+ * @brief A factory function to create a clause that expects the
+ * speficied symbol, extracts it and then skips it.
+ *
+ * The call to `symbol('a')` function is an equivalent of:
+ * @code
+ * symbol_producer('a') >> skip()
+ * @endcode
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 symbol( char expected ) noexcept
@@ -1842,6 +1916,14 @@ symbol( char expected ) noexcept
 //
 // digit_producer
 //
+/*!
+ * @brief A factory function to create a digit_producer.
+ *
+ * @return a producer that expects a DIGIT in the input stream
+ * and returns it if a DIGIT is found.
+ * 
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 digit_producer() noexcept
@@ -1852,6 +1934,17 @@ digit_producer() noexcept
 //
 // digit
 //
+/*!
+ * @brief A factory function to create a clause that expects a DIGIT,
+ * extracts it and then skips it.
+ *
+ * The call to `digit()` function is an equivalent of:
+ * @code
+ * digit_producer() >> skip()
+ * @endcode
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 digit() noexcept
@@ -1862,6 +1955,21 @@ digit() noexcept
 //
 // as_result
 //
+/*!
+ * @brief A factory function to create a as_result_consumer.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(
+ * 	symbol('v'),
+ * 	symbol('='),
+ * 	token_producer() >> as_result(),
+ * 	symbol('.')
+ * );
+ * @endcode
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 as_result() noexcept { return impl::as_result_consumer_t{}; }
@@ -1869,6 +1977,44 @@ as_result() noexcept { return impl::as_result_consumer_t{}; }
 //
 // custom_consumer
 //
+/*!
+ * @brief A factory function to create a custom_consumer.
+ *
+ * Usage example:
+ * @code
+ * class composed_value {
+ * 	std::string name_;
+ * 	std::string value_;
+ * public:
+ * 	composed_value() = default;
+ *
+ * 	void set_name(std::string name) { name_ = std::move(name); }
+ * 	void set_value(std::string value) { value_ = std::move(value); }
+ * 	...
+ * };
+ * produce<composed_value>(
+ * 	token_producer() >> custom_consumer(
+ * 		[](composed_value & to, std::string && what) {
+ * 			to.set_name(std::move(what));
+ * 		} ),
+ * 	symbol('='),
+ * 	token_producer() >> custom_consumer(
+ * 		[](composed_value & to, std::string && what) {
+ * 			to.set_value(std::move(what));
+ * 		} ),
+ * 	symbol('.')
+ * );
+ * @endcode
+ *
+ * @note
+ * A custom consumer should be a function/lambda/function objects with
+ * the following prototype:
+ * @code
+ * void(Target_Type & destination, Value && value);
+ * @endcode
+ *
+ * @since v.0.6.1
+ */
 template< typename F >
 RESTINIO_NODISCARD
 auto
@@ -1885,6 +2031,17 @@ namespace impl
 //
 // to_container_consumer_t
 //
+/*!
+ * @brief A template for a consumer that stories values into a container.
+ *
+ * Instances of such consumer will be used inside repeat_clause_t.
+ *
+ * @tparam Container_Adaptor a class that knows how to store a value
+ * into the target container. See default_container_adaptor for the
+ * requirement for such type.
+ *
+ * @since v.0.6.1
+ */
 template<
 	template<class> class Container_Adaptor >
 struct to_container_consumer_t : public consumer_tag
@@ -1902,7 +2059,61 @@ struct to_container_consumer_t : public consumer_tag
 //
 // to_container
 //
-//FIXME: document this!
+/*!
+ * @brief A factory function to create a to_container_consumer.
+ *
+ * Usage example:
+ * @code
+ * using str_pair = std::pair<std::string, std::string>;
+ * produce<std::vector<str_pair>>(
+ * 	produce<str_pair>(
+ * 		token_producer() >> &str_pair::first,
+ * 		symbol('='),
+ * 		token_producer() >> &str_pair::second
+ * 	) >> to_container(),
+ * 	repeat(0, N,
+ * 		symbol(','),
+ * 		produce<str_pair>(
+ * 			token_producer() >> &str_pair::first,
+ * 			symbol('='),
+ * 			token_producer() >> &str_pair::second
+ * 		) >> to_container()
+ * 	)
+ * );
+ * @endcode
+ *
+ * Note that to_container() can be parametrized by own Container_Adaptor type.
+ * For example:
+ * @code
+ * template< typename K, typename V >
+ * class dense_hash_table {...};
+ *
+ * template< typename DHT >
+ * struct dense_hash_table_adaptor
+ * {
+ * 	using container_type = DHT;
+ * 	using value_type = std::pair<typename DHT::key_type, typename DHT::value_type>;
+ *
+ * 	static void	store(container_type & to, value_type && what) {
+ * 		to.insert(std::move(what.first), std::move(what.second));
+ * 	}
+ * };
+ * ...
+ * using my_container = dense_hash_table<std::string, std::string>;
+ * using my_item = typename dense_hash_table_adaptor<my_container>::value_type;
+ * produce<my_container>(
+ * 	repeat(0, N,
+ * 		produce<my_item>(
+ * 			token_producer() >> &my_item::first,
+ * 			symbol('='),
+ * 			token_producer() >> &my_item::second
+ * 		) >> to_container<dense_hash_table_adaptor>()
+ * 	)
+ * );
+ * @endcode
+ *
+ * @since v.0.6.1
+ */
 template<
 	template<class> class Container_Adaptor = default_container_adaptor >
 RESTINIO_NODISCARD
