@@ -565,8 +565,8 @@ constexpr bool is_transformer_v = is_transformer<T>::value;
  * @brief A template of producer that gets a value from another
  * producer, transforms it and produces transformed value.
  *
- * \tparam Producer the type of producer of source value.
- * \tparam Transformer the type of transformer from source to the target value.
+ * @tparam Producer the type of producer of source value.
+ * @tparam Transformer the type of transformer from source to the target value.
  *
  * @since v.0.6.1
  */
@@ -731,8 +731,8 @@ constexpr bool is_clause_v = is_clause<T>::value;
  * @brief A template for a clause that binds a value producer with value
  * consumer.
  *
- * \tparam P the type of value producer.
- * \tparam C the type of value consumer.
+ * @tparam P the type of value producer.
+ * @tparam C the type of value consumer.
  *
  * @since v.0.6.1
  */
@@ -873,7 +873,7 @@ ensure_no_remaining_content(
  * The copy of Target_Type object passed to `try_process` method is
  * created before checking each alternative.
  *
- * \tparam Subitems_Tuple the type of std::tuple with items for every
+ * @tparam Subitems_Tuple the type of std::tuple with items for every
  * alternative clauses.
  *
  * @since v.0.6.1
@@ -930,6 +930,30 @@ public :
 //
 // maybe_clause_t
 //
+/*!
+ * @brief A template for implementation of clause that checks and
+ * handles presence of optional entity in the input stream.
+ *
+ * This template implements rules like:
+   @verbatim
+   T := [ A B C ]
+   @endverbatim
+ *
+ * @note
+ * The copy of Target_Type object passed to `try_process` method is
+ * created before checking the presence of subitems. If all subitems
+ * are found then the value of that temporary object moved back to
+ * \a target parameter of `try_process` method.
+ *
+ * @note
+ * This clause always returns success even if nothing has been
+ * consumed from the input stream.
+ *
+ * @tparam Subitems_Tuple the type of std::tuple with items for every
+ * clause to be checked.
+ *
+ * @since v.0.6.1
+ */
 template<
 	typename Subitems_Tuple >
 class maybe_clause_t : public clause_tag
@@ -962,7 +986,7 @@ public :
 			consumer.commit();
 		}
 
-		// maybe_producer always returns success even if nothing consumed.
+		// maybe_clause always returns success even if nothing consumed.
 		return nullopt;
 	}
 };
@@ -970,6 +994,29 @@ public :
 //
 // not_clause_t
 //
+/*!
+ * @brief A template for implementation of clause that checks absence of
+ * some entity in the input stream.
+ *
+ * This template implements rules like:
+   @verbatim
+	T := !A B 
+   @endverbatim
+ * where not_clause_t is related to the part `!A` only.
+ *
+ * @note
+ * The empty temporary object of Target_Type passed to call of `try_process` of
+ * subitems.
+ *
+ * @note
+ * This clause always returns the current position in the input stream
+ * back at the position where this clause was called.
+ *
+ * @tparam Subitems_Tuple the type of std::tuple with items for every
+ * clause to be checked.
+ *
+ * @since v.0.6.1
+ */
 template<
 	typename Subitems_Tuple >
 class not_clause_t : public clause_tag
@@ -1015,6 +1062,29 @@ public :
 //
 // and_clause_t
 //
+/*!
+ * @brief A template for implementation of clause that checks the presence of
+ * some entity in the input stream.
+ *
+ * This template implements rules like:
+   @verbatim
+	T := A &B 
+   @endverbatim
+ * where and_clause_t is related to the part `&B` only.
+ *
+ * @note
+ * The empty temporary object of Target_Type passed to call of `try_process` of
+ * subitems.
+ *
+ * @note
+ * This clause always returns the current position in the input stream
+ * back at the position where this clause was called.
+ *
+ * @tparam Subitems_Tuple the type of std::tuple with items for every
+ * clause to be checked.
+ *
+ * @since v.0.6.1
+ */
 template<
 	typename Subitems_Tuple >
 class and_clause_t : public clause_tag
@@ -1056,6 +1126,26 @@ public :
 //
 // sequence_clause_t
 //
+/*!
+ * @brief A template for implementation of clause that checks and
+ * handles presence of sequence of entities in the input stream.
+ *
+ * This template implements rules like:
+   @verbatim
+   T := A B C
+   @endverbatim
+ *
+ * @note
+ * The copy of Target_Type object passed to `try_process` method is
+ * created before checking the presence of subitems. If all subitems
+ * are found then the value of that temporary object moved back to
+ * @a target parameter of `try_process` method.
+ *
+ * @tparam Subitems_Tuple the type of std::tuple with items for every
+ * clause to be checked.
+ *
+ * @since v.0.6.1
+ */
 template<
 	typename Subitems_Tuple >
 class sequence_clause_t : public clause_tag
@@ -1099,6 +1189,20 @@ public :
 //
 // produce_t
 //
+/*!
+ * @brief A template for producing a value of specific type of
+ * a sequence of entities from the input stream.
+ *
+ * Creates a new empty object of type Target_Type in `try_parse` and
+ * then call `try_process` methods for every subitems. A reference to
+ * that new object is passed to every `try_process` call.
+ *
+ * @tparam Target_Type the type of value to be produced.
+ * @tparam Subitems_Tuple the type of std::tuple with items for every
+ * clause to be checked.
+ *
+ * @since v.0.6.1
+ */
 template<
 	typename Target_Type,
 	typename Subitems_Tuple >
@@ -1136,6 +1240,19 @@ public :
 //
 // repeat_clause_t
 //
+/*!
+ * @brief A template for handling repetition of clauses.
+ *
+ * Calls `try_process` for all subitems until some of them returns
+ * error or max_occurences will be passed.
+ *
+ * Returns failure if min_occurences wasn't passed.
+ *
+ * @tparam Subitems_Tuple the type of std::tuple with items for every
+ * clause to be checked.
+ *
+ * @since v.0.6.1
+ */
 template<
 	typename Subitems_Tuple >
 class repeat_clause_t : public clause_tag
@@ -1198,6 +1315,14 @@ public :
 //
 // symbol_producer_t
 //
+/*!
+ * @brief A producer for the case when a particual character is expected
+ * in the input stream.
+ *
+ * In the case of success returns the expected character.
+ *
+ * @since v.0.6.1
+ */
 class symbol_producer_t : public producer_tag< char >
 {
 	char m_expected;
@@ -1234,6 +1359,14 @@ public:
 //
 // digit_producer_t
 //
+/*!
+ * @brief A producer for the case when a DIGIT is expected
+ * in the input stream.
+ *
+ * In the case of success returns the extracted character.
+ *
+ * @since v.0.6.1
+ */
 class digit_producer_t : public producer_tag< char >
 {
 public:
@@ -1266,6 +1399,14 @@ public:
 //
 // any_value_skipper_t
 //
+/*!
+ * @brief A special consumer that simply throws any value away.
+ *
+ * This consumer is intended to be used in the case when the presence
+ * of some value should be checked but the value itself isn't needed.
+ *
+ * @since v.0.6.1
+ */
 struct any_value_skipper_t : public consumer_tag
 {
 	template< typename Target_Type, typename Value >
@@ -1276,6 +1417,23 @@ struct any_value_skipper_t : public consumer_tag
 //
 // as_result_consumer_t
 //
+/*!
+ * @brief A consumer for the case when the current value should
+ * be returned as the result for the producer at one level up.
+ *
+ * For example that consumer can be necessary for rules like that:
+   @verbatim
+	T := 'v' '=' token
+	@endverbatim
+ * such rule will be implemented by a such sequence of clauses:
+ * @code
+ * produce<std::string>(symbol('v'), symbol('='), token() >> as_result());
+ * @endcode
+ * The result of `token()` producer in a subclause should be returned
+ * as the result of top-level producer.
+ *
+ * @since v.0.6.1
+ */
 struct as_result_consumer_t : public consumer_tag
 {
 	template< typename Target_Type, typename Value >
@@ -1290,6 +1448,15 @@ struct as_result_consumer_t : public consumer_tag
 //
 // custom_consumer_t
 //
+/*!
+ * @brief A template for consumers that are released by lambda/functional
+ * objects.
+ *
+ * @tparam C the type of lambda/functional object/function pointer to
+ * be used as the actual consumer.
+ *
+ * @since v.0.6.1
+ */
 template< typename C >
 class custom_consumer_t : public consumer_tag
 {
@@ -1301,6 +1468,7 @@ public :
 	template< typename Target_Type, typename Value >
 	void
 	consume( Target_Type & dest, Value && src ) const
+		noexcept(noexcept(m_consumer(dest, std::forward<Value>(src))))
 	{
 		m_consumer( dest, std::forward<Value>(src) );
 	}
@@ -1309,6 +1477,15 @@ public :
 //
 // field_setter_consumer_t
 //
+/*!
+ * @brief A template for consumers that store a value to the specified
+ * field of a target object.
+ *
+ * @tparam F type of the target field
+ * @tparam C type of the target object.
+ *
+ * @since v.0.6.1
+ */
 template< typename F, typename C >
 class field_setter_consumer_t : public consumer_tag
 {
@@ -1327,6 +1504,12 @@ public :
 	}
 };
 
+/*!
+ * @brief A special operator to connect a value producer with
+ * field_setter_consumer.
+ *
+ * @since v.0.6.1
+ */
 template< typename P, typename F, typename C >
 RESTINIO_NODISCARD
 std::enable_if_t<
@@ -1343,6 +1526,12 @@ operator>>( P producer, F C::*member_ptr )
 //
 // to_lower_transformer_t
 //
+/*!
+ * @brief An implementation of transformer that converts the content
+ * of the input std::string to lower case.
+ *
+ * @since v.0.6.1
+ */
 struct to_lower_transformer_t : public transformer_tag< std::string >
 {
 	using input_type = std::string;
@@ -1368,11 +1557,27 @@ struct to_lower_transformer_t : public transformer_tag< std::string >
 //
 // produce
 //
+/*!
+ * @brief A factory function to create a producer that creates an
+ * instance of the target type by using specified clauses.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(symbol('v'), symbol('='), token() >> as_result());
+ * @endcode
+ *
+ * @tparam Target_Type the type of value to be produced.
+ * @tparam Clauses the list of clauses to be used for a new value.
+ *
+ * @since v.0.6.1
+ */
 template< typename Target_Type, typename... Clauses >
 RESTINIO_NODISCARD
 auto
 produce( Clauses &&... clauses )
 {
+	static_assert( 0 != sizeof...(clauses),
+			"list of clauses can't be empty" );
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for produce() should be clauses" );
 
@@ -1388,11 +1593,32 @@ produce( Clauses &&... clauses )
 //
 // alternatives
 //
+/*!
+ * @brief A factory function to create an alternatives clause.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(
+ * 	alternatives(
+ * 		sequence(symbol('v'), symbol('='), token() >> as_result()),
+ * 		sequence(symbol('T'), symbol('/'), token() >> as_result())
+ * 	)
+ * );
+ * @endcode
+ * Please note the usage of sequence() inside the call to
+ * alternatives().
+ *
+ * @tparam Clauses the list of clauses to be used as alternatives.
+ *
+ * @since v.0.6.1
+ */
 template< typename... Clauses >
 RESTINIO_NODISCARD
 auto
 alternatives( Clauses &&... clauses )
 {
+	static_assert( 0 != sizeof...(clauses),
+			"list of clauses can't be empty" );
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for alternatives() should be clauses" );
 
@@ -1406,11 +1632,31 @@ alternatives( Clauses &&... clauses )
 //
 // maybe
 //
+/*!
+ * @brief A factory function to create an optional clause.
+ *
+ * Usage example:
+ * @code
+ * produce<std::pair<std::string, std::string>>(
+ * 	token() >> &std::pair<std::string, std::string>::first,
+ * 	maybe(
+ * 		symbol('='),
+ * 		token() >> &std::pair<std::string, std::string>::second
+ * 	)
+ * );
+ * @endcode
+ *
+ * @tparam Clauses the list of clauses to be used as optional sequence.
+ *
+ * @since v.0.6.1
+ */
 template< typename... Clauses >
 RESTINIO_NODISCARD
 auto
 maybe( Clauses &&... clauses )
 {
+	static_assert( 0 != sizeof...(clauses),
+			"list of clauses can't be empty" );
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for maybe() should be clauses" );
 
@@ -1424,13 +1670,36 @@ maybe( Clauses &&... clauses )
 //
 // not_clause
 //
+/*!
+ * @brief A factory function to create a not_clause.
+ *
+ * Usage example:
+ * @code
+ * produce<std::pair<std::string, std::string>>(
+ * 	token() >> &std::pair<std::string, std::string>::first,
+ * 	symbol(' '),
+ * 	token() >> &std::pair<std::string, std::string>::second
+ * 	not_clause(symbol('.'))
+ * );
+ * @endcode
+ * this expression corresponds the following rule:
+   @verbatim
+   T := token SP token !'.'
+	@endverbatim
+ *
+ * @tparam Clauses the list of clauses to be used as sequence to be checked.
+ *
+ * @since v.0.6.1
+ */
 template< typename... Clauses >
 RESTINIO_NODISCARD
 auto
 not_clause( Clauses &&... clauses )
 {
+	static_assert( 0 != sizeof...(clauses),
+			"list of clauses can't be empty" );
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
-			"all arguments for sequence() should be clauses" );
+			"all arguments for not_clause() should be clauses" );
 
 	using clause_type_t = impl::not_clause_t< std::tuple<Clauses...> >;
 
@@ -1442,11 +1711,34 @@ not_clause( Clauses &&... clauses )
 //
 // and_clause
 //
+/*!
+ * @brief A factory function to create an and_clause.
+ *
+ * Usage example:
+ * @code
+ * produce<std::pair<std::string, std::string>>(
+ * 	token() >> &std::pair<std::string, std::string>::first,
+ * 	symbol(' '),
+ * 	token() >> &std::pair<std::string, std::string>::second
+ * 	and_clause(symbol(','), maybe(symbol(' ')), token() >> skip())
+ * );
+ * @endcode
+ * this expression corresponds the following rule:
+   @verbatim
+   T := token SP token &(',' [' '] token)
+	@endverbatim
+ *
+ * @tparam Clauses the list of clauses to be used as sequence to be checked.
+ *
+ * @since v.0.6.1
+ */
 template< typename... Clauses >
 RESTINIO_NODISCARD
 auto
 and_clause( Clauses &&... clauses )
 {
+	static_assert( 0 != sizeof...(clauses),
+			"list of clauses can't be empty" );
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for sequence() should be clauses" );
 
@@ -1460,11 +1752,32 @@ and_clause( Clauses &&... clauses )
 //
 // sequence
 //
+/*!
+ * @brief A factory function to create a sequence of subclauses
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(
+ * 	alternatives(
+ * 		sequence(symbol('v'), symbol('='), token() >> as_result()),
+ * 		sequence(symbol('T'), symbol('/'), token() >> as_result())
+ * 	)
+ * );
+ * @endcode
+ * Please note the usage of sequence() inside the call to
+ * alternatives().
+ *
+ * @tparam Clauses the list of clauses to be used as the sequence.
+ *
+ * @since v.0.6.1
+ */
 template< typename... Clauses >
 RESTINIO_NODISCARD
 auto
 sequence( Clauses &&... clauses )
 {
+	static_assert( 0 != sizeof...(clauses),
+			"list of clauses can't be empty" );
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for sequence() should be clauses" );
 
