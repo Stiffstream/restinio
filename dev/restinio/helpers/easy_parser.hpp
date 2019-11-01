@@ -56,7 +56,10 @@ enum class error_reason_t
 	//! None of alternatives was found in the input.
 	no_appropriate_alternative,
 	//! Required pattern is not found in the input.
-	pattern_not_found
+	pattern_not_found,
+	//! There are some unconsumed non-whitespace characters in the input
+	//! after the completion of parsing.
+	unconsumed_input
 };
 
 //
@@ -837,9 +840,10 @@ ensure_no_remaining_content(
 	{
 		if( !is_space( from.getch().m_ch ) )
 		{
+			from.putback(); // Otherwise current_position() will be wrong.
 			return parse_error_t{
 					from.current_position(),
-					error_reason_t::unexpected_character
+					error_reason_t::unconsumed_input
 			};
 		}
 	}
@@ -2313,6 +2317,13 @@ make_error_description(
 
 		case error_reason_t::pattern_not_found:
 			result += "expected pattern is not found at ";
+			result += std::to_string( error.position() );
+			result += ": ";
+			append_quote( result );
+		break;
+
+		case error_reason_t::unconsumed_input:
+			result += "unconsumed input found at ";
 			result += std::to_string( error.position() );
 			result += ": ";
 			append_quote( result );

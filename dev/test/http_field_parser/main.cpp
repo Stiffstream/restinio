@@ -371,7 +371,7 @@ TEST_CASE( "simple try_parse", "[try_parse]" )
 {
 	using namespace restinio::http_field_parsers;
 
-	const char * content = "first,Second Third;Four";
+	const char * content = "first,Second,Third;Four";
 	const auto tokens = try_parse(
 		content,
 		produce<std::vector<std::string>>(
