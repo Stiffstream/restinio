@@ -70,7 +70,8 @@ IF (RESTINIO_MASTER_PROJECT)
 		ENDIF ()
 
 		# HTTP parser
-		find_package(unofficial-http-parser CONFIG REQUIRED)
+		find_path(http-parser_INCLUDE http_parser.h)
+		find_library(http-parser_LIBRARY http_parser)
 
 		# fmtlib
 		find_package(fmt REQUIRED)
