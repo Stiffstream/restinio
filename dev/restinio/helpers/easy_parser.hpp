@@ -2126,6 +2126,19 @@ to_container()
 //
 // to_lower
 //
+/*!
+ * @brief A factory function to create a to_lower_transformer.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(
+ * 	symbol('T'), symbol(':',
+ * 	token_producer() >> to_lower() >> as_result()
+ * );
+ * @endcode
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 to_lower() noexcept { return impl::to_lower_transformer_t{}; }
@@ -2133,6 +2146,35 @@ to_lower() noexcept { return impl::to_lower_transformer_t{}; }
 //
 // try_parse
 //
+/*!
+ * @brief Perform the parsing of the specified content by using
+ * specified value producer.
+ *
+ * @note
+ * The whole content of @a from should be consumed. There can be
+ * whitespace remaining in @from after the return from
+ * Producer::try_parser. But if there will be some non-whitespace
+ * symbol the failure will be reported.
+ *
+ * Usage example
+ * @code
+ * const auto tokens = try_parse(
+ * 	"first,Second;Third;Four",
+ * 	produce<std::vector<std::string>>(
+ * 		token_producer() >> to_lower() >> to_container(),
+ * 		repeat( 0, N,
+ * 			alternatives(symbol(','), symbol(';')),
+ * 			token_producer() >> to_lower() >> to_container()
+ * 		)
+ * 	)
+ * );
+ * if(tokens)
+ * 	for(const auto & v: *tokens)
+ * 		std::cout << v << std::endl;
+ * @endcode
+ *
+ * @since v.0.6.1
+ */
 template< typename Producer >
 RESTINIO_NODISCARD
 expected_t< typename Producer::result_type, parse_error_t >
@@ -2163,7 +2205,37 @@ try_parse(
 //
 // make_error_description
 //
-//FIXME: document this!
+/*!
+ * @brief Make textual description of error returned by try_parse function.
+ *
+ * @note
+ * The format of textual description is not specified and can be changed
+ * in some future versions without notice.
+ *
+ * Usage example:
+ * @code
+ * const char * content = "first,Second;Third;Four";
+ * const auto tokens = try_parse(
+ * 	content,
+ * 	produce<std::vector<std::string>>(
+ * 		token_producer() >> to_lower() >> to_container(),
+ * 		repeat( 0, N,
+ * 			alternatives(symbol(','), symbol(';')),
+ * 			token_producer() >> to_lower() >> to_container()
+ * 		)
+ * 	)
+ * );
+ * if(tokens)
+ * {
+ * 	for(const auto & v: *tokens)
+ * 		std::cout << v << std::endl;
+ * }
+ * else
+ * 	std::cerr << make_error_description(tokens.error(), content) << std::endl;
+ * @endcode
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 inline std::string
 make_error_description(

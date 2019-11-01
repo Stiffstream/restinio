@@ -367,6 +367,33 @@ TEST_CASE( "alternatives with symbol", "[alternatives][symbol][field_setter]" )
 	}
 }
 
+TEST_CASE( "simple try_parse", "[try_parse]" )
+{
+	using namespace restinio::http_field_parsers;
+
+	const char * content = "first,Second Third;Four";
+	const auto tokens = try_parse(
+		content,
+		produce<std::vector<std::string>>(
+			token_producer() >> to_lower() >> to_container(),
+			repeat( 0, N,
+				alternatives(symbol(','), symbol(';')),
+				token_producer() >> to_lower() >> to_container()
+			)
+		)
+	);
+
+	if(!tokens)
+		std::cout << make_error_description(tokens.error(), content) << std::endl;
+
+	REQUIRE( tokens );
+
+	const std::vector<std::string> expected{
+		"first", "second", "third", "four"
+	};
+	REQUIRE( expected == *tokens );
+}
+
 TEST_CASE( "produce media_type", "[produce][media_type]" )
 {
 	using namespace restinio::http_field_parsers;
