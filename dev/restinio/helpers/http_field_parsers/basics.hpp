@@ -32,11 +32,16 @@ namespace meta = restinio::utils::metaprogramming;
 namespace qvalue_details
 {
 
+//! A type to hold a qvalue.
 using underlying_uint_t = std::uint_least16_t;
 
+//! The maximal allowed value for a qvalue.
 constexpr underlying_uint_t maximum = 1000u;
+//! The minimal allowed value for a qvalue.
 constexpr underlying_uint_t zero = 0u;
 
+//! A helper wrapper to indicate that value is already checked and
+//! shouldn't be checked again.
 class trusted
 {
 	const underlying_uint_t m_value;
@@ -48,6 +53,8 @@ public :
 	constexpr auto get() const noexcept { return m_value; }
 };
 
+//! A helper wrapper to indicate that value hasn't been checked yet
+//! and should be checked in the constructor of qvalue.
 class untrusted
 {
 	underlying_uint_t m_value;
@@ -69,14 +76,70 @@ public :
 //
 // qvalue_t
 //
+/*!
+ * @brief A class for holding the parsed value of qvalue from RFC7231. 
+ *
+ * An important note: qvalue in RFC7231 is defined as a number with
+ * fractional point. This number can have no more that three digits
+ * after a point. And the non-factional part can only be 0 or 1. If
+ * non-frational part is 1 then fractional part can only be 0. It means
+ * that qvalue can be in the range [0.000, 1.000].
+ *
+ * To simplify work with qvalue RESTinio holds qvalue as a small integer
+ * in the range [0, 1000] where 0 corresponds to 0.000 and 1000 corresponds
+ * to 1.000. In means, for example, that value 0.05 will be represented and 50,
+ * and the value 0.001 will be represented as 1, and the value 0.901 will
+ * be represented as 901.
+ *
+ * The integer representation of qvalue can be obtained via as_uint()
+ * method.
+ *
+ * Method as_string() returns std::string with number with fractional
+ * part inside. It means:
+ * @code
+ * assert("1.000" == qvalue_t{qvalue_t::maximum}.as_string());
+ * assert("0.901" == qvalue_t{qvalue_t::untrusted{901}}.as_string());
+ * @endcode
+ * Such representation is also used in `operator<<` for std::ostream.
+ *
+ * Instances of qvalue_t can be compared, operations `==`, `!=`, `<` and `<=`
+ * are supported.
+ *
+ * There are two ways to construct a new qvalue object.
+ *
+ * The first and recommended way is intended for cases when the source
+ * value for a new qvalue object isn't known at the compile-time and
+ * produced somehow at the run-time. It's the usage of qvalue_t::untrusted
+ * wrapper:
+ * @code
+ * qvalue_t weight{qvalue_t::untrusted{config.default_weigh() * 10}};
+ * @endcode
+ * In that case the value of `untrusted` will be checked in
+ * qvalue_t::untrusted's constructor and an exception will be thrown if that
+ * value isn't in [0, 1000] range.
+ *
+ * The second way is intended to be used with compile-time constants:
+ * @code
+ * qvalue_t weight{qvalue_t::trusted{250}};
+ * @endcode
+ * In the case of `trusted` the value is not checked in qvalue_t's
+ * constructor. Therefore that way should be used with additional care.
+ *
+ * @since v.0.6.1
+ */
 class qvalue_t
 {
 public :
+	//! The type of underlying small integer.
 	using underlying_uint_t = qvalue_details::underlying_uint_t;
+	//! The type that doesn't check a value to be used for qvalue.
 	using trusted = qvalue_details::trusted;
+	//! The type that checks a value to be used for qvalue. 
 	using untrusted = qvalue_details::untrusted;
 
+	//! The maximum allowed value for qvalue.
 	static constexpr trusted maximum{ qvalue_details::maximum };
+	//! The minimal allowed value for qvalue.
 	static constexpr trusted zero{ qvalue_details::zero };
 
 private :
