@@ -232,14 +232,38 @@ namespace impl
 using namespace restinio::easy_parser::impl;
 
 //
+// is_alpha
+//
+/*!
+ * @brief Is a character an ALPHA?
+ *
+ * See: https://tools.ietf.org/html/rfc5234#appendix-B.1
+ *
+ * @since v.0.6.1
+ */
+RESTINIO_NODISCARD
+inline constexpr bool
+is_alpha( const char ch ) noexcept
+{
+	return (ch >= '\x41' && ch <= '\x5A') ||
+			(ch >= '\x61' && ch <= '\x7A');
+}
+
+//
 // is_vchar
 //
+/*!
+ * @brief Is a character a VCHAR?
+ *
+ * See: https://tools.ietf.org/html/rfc5234#appendix-B.1
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 inline constexpr bool
 is_vchar( const char ch ) noexcept
 {
-	return (ch >= '\x41' && ch <= '\x5A') ||
-			(ch >= '\x61' && ch <= '\x7A');
+	return (ch >= '\x21' && ch <= '\x7E');
 }
 
 //
@@ -346,7 +370,7 @@ class token_producer_t : public producer_tag< std::string >
 	static constexpr bool
 	is_token_char( const char ch ) noexcept
 	{
-		return is_vchar(ch) || is_digit(ch) ||
+		return is_alpha(ch) || is_digit(ch) ||
 				ch == '!' ||
 				ch == '#' ||
 				ch == '$' ||
