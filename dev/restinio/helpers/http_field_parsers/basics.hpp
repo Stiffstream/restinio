@@ -269,6 +269,13 @@ is_vchar( const char ch ) noexcept
 //
 // is_obs_text
 //
+/*!
+ * @brief Is a character an obs_text?
+ *
+ * See: https://tools.ietf.org/html/rfc7230 
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 inline constexpr bool
 is_obs_text( const char ch ) noexcept
@@ -285,6 +292,13 @@ is_obs_text( const char ch ) noexcept
 //
 // is_qdtext
 //
+/*!
+ * @brief Is a character an qdtext?
+ *
+ * See: https://tools.ietf.org/html/rfc7230 
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 inline constexpr bool
 is_qdtext( const char ch ) noexcept
@@ -296,10 +310,21 @@ is_qdtext( const char ch ) noexcept
 			(ch >= '\x5D' && ch <= '\x7E') ||
 			is_obs_text( ch );
 }
+
 //
 // ows_producer_t
 //
-class ows_t : public producer_tag< restinio::optional_t<char> >
+/*!
+ * @brief A producer for OWS.
+ *
+ * If an OWS found in the input stream it produces non-empty
+ * optional_t<char> with SP as the value.
+ *
+ * See: https://tools.ietf.org/html/rfc7230
+ *
+ * @since v.0.6.1
+ */
+class ows_producer_t : public producer_tag< restinio::optional_t<char> >
 {
 public :
 	RESTINIO_NODISCARD
@@ -330,6 +355,16 @@ public :
 //
 // token_t
 //
+/*!
+ * @brief A producer for token.
+ *
+ * If a token is found in the input stream it produces std::string
+ * with the value of that token.
+ *
+ * See: https://tools.ietf.org/html/rfc7230
+ *
+ * @since v.0.6.1
+ */
 class token_producer_t : public producer_tag< std::string >
 {
 	RESTINIO_NODISCARD
@@ -405,6 +440,16 @@ public :
 //
 // quoted_string_producer_t
 //
+/*!
+ * @brief A producer for quoted_string.
+ *
+ * If a quoted_string is found in the input stream it produces std::string
+ * with the value of that token.
+ *
+ * See: https://tools.ietf.org/html/rfc7230
+ *
+ * @since v.0.6.1
+ */
 class quoted_string_producer_t : public producer_tag< std::string >
 {
 	RESTINIO_NODISCARD
@@ -506,13 +551,55 @@ public :
 //
 // ows_producer
 //
+/*!
+ * @brief A factory function to create an ows_producer.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(
+ * 	ows_producer() >> skip(),
+ * 	symbol('v'),
+ * 	symbol('='),
+ * 	ows_producer() >> skip(),
+ * 	token_producer() >> as_result()
+ * );
+ * @endcode
+ *
+ * @note
+ * Factory function ows() can be used instead of expression `ows_producer() >> skip()`.
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
-ows_producer() noexcept { return impl::ows_t{}; }
+ows_producer() noexcept { return impl::ows_producer_t{}; }
 
 //
 // ows
 //
+/*!
+ * @brief A factory function to create an OWS clause.
+ *
+ * This clause handles an optional sequence of spaces in the input stream and 
+ * skips the value of that sequence.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(
+ * 	ows(),
+ * 	symbol('v'),
+ * 	symbol('='),
+ * 	ows(),
+ * 	token_producer() >> as_result()
+ * );
+ * @endcode
+ * This expression corresponds the following rule:
+   @verbatim
+   T := OWS 'v' '=' OWS token
+   @endverbatim
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 ows() noexcept { return ows_producer() >> skip(); }
@@ -520,6 +607,23 @@ ows() noexcept { return ows_producer() >> skip(); }
 //
 // token_producer
 //
+/*!
+ * @brief A factory function to create a token_producer.
+ *
+ * Usage example:
+ * @code
+ * using parameter = std::pair<std::string, std::string>;
+ * produce<parameter>(
+ * 	ows(),
+ * 	token_producer() >> &parameter::first,
+ * 	symbol('='),
+ * 	ows(),
+ * 	token_producer() >> &parameter::second
+ * );
+ * @endcode
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 token_producer() noexcept { return impl::token_producer_t{}; }
@@ -527,6 +631,26 @@ token_producer() noexcept { return impl::token_producer_t{}; }
 //
 // quoted_string_producer
 //
+/*!
+ * @brief A factory function to create a quoted_string_producer.
+ *
+ * Usage example:
+ * @code
+ * using parameter = std::pair<std::string, std::string>;
+ * produce<parameter>(
+ * 	ows(),
+ * 	token_producer() >> &parameter::first,
+ * 	symbol('='),
+ * 	ows(),
+ * 	alternatives(
+ * 		token_producer() >> &parameter::second,
+ * 		quoted_string_producer() >> &parameter::second
+ * 	)
+ * );
+ * @endcode
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 quoted_string_producer() noexcept
@@ -540,6 +664,20 @@ namespace impl
 //
 // qvalue_producer_t
 //
+/*!
+ * @brief An implementation of producer of qvalue.
+ *
+ * Handles the following rule:
+   @verbatim
+   qvalue = ( "0" [ "." 0*3DIGIT ] )
+          / ( "1" [ "." 0*3("0") ] )
+   @endverbatim
+ * and produces an instance of qvalue_t.
+ *
+ * See: https://tools.ietf.org/html/rfc7231
+ *
+ * @since v.0.6.1
+ */
 class qvalue_producer_t
 	:	public producer_tag< qvalue_t >
 {
@@ -549,12 +687,14 @@ class qvalue_producer_t
 		qvalue_t::underlying_uint_t m_value{0u};
 	};
 
+	//! A helper class to be used to accumulate actual integer
+	//! while when the next digit is extracted from the input stream.
 	class digit_consumer_t : public consumer_tag
 	{
 		const qvalue_t::underlying_uint_t m_multiplier;
 	
 	public :
-		digit_consumer_t( qvalue_t::underlying_uint_t m )
+		constexpr digit_consumer_t( qvalue_t::underlying_uint_t m )
 			:	m_multiplier{ m }
 		{}
 	
@@ -608,8 +748,22 @@ public :
 } /* namespace impl */
 
 //
-// qvalue
+// qvalue_producer
 //
+/*!
+ * @brief A factory function to create a qvalue_producer.
+ *
+ * Usage example:
+ * @code
+ * produce<qvalue_t>(
+ * 	alternatives(symbol('r'), symbol('R')),
+ * 	symbol('='),
+ * 	qvalue_producer() >> as_result()
+ * );
+ * @endcode
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 qvalue_producer() noexcept
@@ -620,6 +774,23 @@ qvalue_producer() noexcept
 //
 // weight_producer
 //
+/*!
+ * @brief A factory function to create a producer for weight parameter.
+ *
+ * Returns a producer that handles the following rules:
+   @verbatim
+   weight = OWS ';' OWS ('q' / 'Q') '=' qvalue
+
+   qvalue = ( "0" [ "." 0*3DIGIT ] )
+          / ( "1" [ "." 0*3("0") ] )
+   @endverbatim
+ *
+ * See: https://tools.ietf.org/html/rfc7231
+ *
+ * That producer produces a value of type qvalue_t.
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 weight_producer() noexcept
@@ -640,6 +811,27 @@ namespace impl
 //
 // non_empty_comma_separated_list_producer_t
 //
+/*!
+ * @brief A template for a producer that handles non-empty list of
+ * comma-separated values.
+ *
+ * That producer handles the following rule:
+@verbatim
+1#element => *( "," OWS ) element *( OWS "," [ OWS element ] )
+@endverbatim
+ *
+ * See: https://tools.ietf.org/html/rfc7230
+ * (section "7. ABNF List Extension: #rule")
+ *
+ * @tparam Container the type of container to be produced.
+ *
+ * @tparam Container_Adaptor the type of adaptor to be used with @a Container
+ * for filling the resulting container.
+ *
+ * @tparam Element_Producer the type of the producer of a single item.
+ * 
+ * @since v.0.6.1
+ */
 template<
 	typename Container,
 	template<class> class Container_Adaptor,
@@ -687,6 +879,27 @@ public :
 //
 // maybe_empty_comma_separated_list_producer_t
 //
+/*!
+ * @brief A template for a producer that handles possibly empty list of
+ * comma-separated values.
+ *
+ * That producer handles the following rule:
+@verbatim
+#element => [ ( "," / element ) *( OWS "," [ OWS element ] ) ]
+@endverbatim
+ *
+ * See: https://tools.ietf.org/html/rfc7230
+ * (section "7. ABNF List Extension: #rule")
+ *
+ * @tparam Container the type of container to be produced.
+ *
+ * @tparam Container_Adaptor the type of adaptor to be used with @a Container
+ * for filling the resulting container.
+ *
+ * @tparam Element_Producer the type of the producer of a single item.
+ * 
+ * @since v.0.6.1
+ */
 template<
 	typename Container,
 	template<class> class Container_Adaptor,
@@ -735,6 +948,27 @@ public :
 //
 // non_empty_comma_separated_list_producer
 //
+/*!
+ * @brief A factory for a producer that handles non-empty list of
+ * comma-separated values.
+ *
+ * That producer handles the following rule:
+@verbatim
+1#element => *( "," OWS ) element *( OWS "," [ OWS element ] )
+@endverbatim
+ *
+ * See: https://tools.ietf.org/html/rfc7230
+ * (section "7. ABNF List Extension: #rule")
+ *
+ * @tparam Container the type of container to be produced.
+ *
+ * @tparam Container_Adaptor the type of adaptor to be used with @a Container
+ * for filling the resulting container.
+ *
+ * @tparam Element_Producer the type of the producer of a single item.
+ * 
+ * @since v.0.6.1
+ */
 template<
 	typename Container,
 	template<class> class Container_Adaptor = default_container_adaptor,
@@ -755,6 +989,27 @@ non_empty_comma_separated_list_producer( Element_Producer element )
 //
 // maybe_empty_comma_separated_list_producer
 //
+/*!
+ * @brief A factory for a producer that handles possibly empty list of
+ * comma-separated values.
+ *
+ * That producer handles the following rule:
+@verbatim
+#element => [ ( "," / element ) *( OWS "," [ OWS element ] ) ]
+@endverbatim
+ *
+ * See: https://tools.ietf.org/html/rfc7230
+ * (section "7. ABNF List Extension: #rule")
+ *
+ * @tparam Container the type of container to be produced.
+ *
+ * @tparam Container_Adaptor the type of adaptor to be used with @a Container
+ * for filling the resulting container.
+ *
+ * @tparam Element_Producer the type of the producer of a single item.
+ * 
+ * @since v.0.6.1
+ */
 template<
 	typename Container,
 	template<class> class Container_Adaptor = default_container_adaptor,
@@ -775,24 +1030,56 @@ maybe_empty_comma_separated_list_producer( Element_Producer element )
 //
 // parameter_with_mandatory_value_t
 //
+/*!
+ * @brief A type that describes a parameter with mandatory value.
+ *
+ * @since v.0.6.1
+ */
 using parameter_with_mandatory_value_t = std::pair< std::string, std::string >;
 
 //
 // parameter_with_mandatory_value_container_t
 //
+/*!
+ * @brief A type of container for parameters with mandatory values.
+ *
+ * @since v.0.6.1
+ */
 using parameter_with_mandatory_value_container_t =
 		std::vector< parameter_with_mandatory_value_t >;
 
 //
 // not_found_t
 //
-//FIXME: document this!
+/*!
+ * @brief An empty type to be used as indicator of negative search result.
+ *
+ * @since v.0.6.1
+ */
 struct not_found_t {};
 
 //
 // find_first
 //
-//FIXME: document this!
+/*!
+ * @brief A helper function to find the first occurence of a parameter
+ * with the specified value.
+ *
+ * @note
+ * The caseless (case-insentive) search is used. It means that
+ * search with value "charset" will returns items "CharSet", "charset",
+ * "CHARSET" and so on.
+ *
+ * Usage example:
+ * @code
+ * const auto charset = find_first(content_type_params, "charset");
+ * if(charset) {
+ * 	... // Handle the value of charset parameter.
+ * }
+ * @endcode
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 inline expected_t< string_view_t, not_found_t >
 find_first(
@@ -815,6 +1102,15 @@ namespace impl
 namespace params_with_value_producer_details
 {
 
+//
+// make_parser
+//
+/*!
+ * @brief Helper function that creates an instance of producer
+ * of parameter_with_mandatory_value_container.
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 make_parser()
@@ -844,6 +1140,12 @@ make_parser()
 //
 // params_with_value_producer_t
 //
+/*!
+ * @brief A type of producer that produces instances of
+ * parameter_with_mandatory_value_container.
+ *
+ * @since v.0.6.1
+ */
 class params_with_value_producer_t
 	:	public producer_tag< parameter_with_mandatory_value_container_t >
 {
@@ -869,6 +1171,32 @@ public :
 //
 // params_with_value_producer
 //
+/*!
+ * @brief A factory of producer of parameter_with_mandatory_value_container.
+ *
+ * Creates a produces that handles the following rule:
+@verbatim
+T := *( OWS ';' OWS token '=' OWS (token / quoted_string))
+@endverbatim
+ *
+ * Usage example:
+ * @code
+ * struct my_field {
+ * 	std::string value;
+ * 	parameter_with_mandatory_value_container_t params;
+ * };
+ * produce<my_field>(
+ * 	token_producer() >> to_lower() >> &my_field,
+ * 	params_with_value_producer() >> &my_field
+ * );
+ * @endcode
+ *
+ * @note
+ * Parameters names are converted to lower case. Parameters' values
+ * are not changed and stored as they are.
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 impl::params_with_value_producer_t
 params_with_value_producer() { return {}; }
@@ -876,14 +1204,73 @@ params_with_value_producer() { return {}; }
 //
 // parameter_with_optional_value_t
 //
+/*!
+ * @brief A type that describes a parameter with optional value.
+ *
+ * @since v.0.6.1
+ */
 using parameter_with_optional_value_t =
 		std::pair< std::string, restinio::optional_t<std::string> >;
 
 //
 // parameter_with_optional_value_container_t
 //
+/*!
+ * @brief A type of container for parameters with optional values.
+ *
+ * @since v.0.6.1
+ */
 using parameter_with_optional_value_container_t =
 		std::vector< parameter_with_optional_value_t >;
+
+//
+// find_first
+//
+/*!
+ * @brief A helper function to find the first occurence of a parameter
+ * with the specified value.
+ *
+ * @note
+ * The caseless (case-insentive) search is used. It means that
+ * search with value "charset" will returns items "CharSet", "charset",
+ * "CHARSET" and so on.
+ *
+ * Usage example:
+ * @code
+ * const auto max_age = find_first(cache_control_params, "max-age");
+ * if(max_age) {
+ * 	if(*max_age) {
+ * 		... // Handle the value of max-age parameter.
+ * 	}
+ * 	else {
+ * 		... // Handle the case where max-age specified but without a value.
+ * 	}
+ * }
+ * @endcode
+ *
+ * @since v.0.6.1
+ */
+RESTINIO_NODISCARD
+inline expected_t< restinio::optional_t<string_view_t>, not_found_t >
+find_first(
+	const parameter_with_optional_value_container_t & where,
+	string_view_t what )
+{
+	const auto it = std::find_if( where.begin(), where.end(),
+			[&what]( const auto & pair ) {
+				return restinio::impl::is_equal_caseless( pair.first, what );
+			} );
+	if( it != where.end() )
+	{
+		const auto opt = it->second;
+		if( opt )
+			return string_view_t{ *opt };
+		else
+			return restinio::optional_t< string_view_t >{ nullopt };
+	}
+	else
+		return make_unexpected( not_found_t{} );
+}
 
 namespace impl
 {
@@ -891,6 +1278,15 @@ namespace impl
 namespace params_with_opt_value_producer_details
 {
 
+//
+// make_parser
+//
+/*!
+ * @brief Helper function that creates an instance of producer
+ * of parameter_with_optional_value_container.
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 make_parser()
@@ -922,6 +1318,12 @@ make_parser()
 //
 // params_with_opt_value_producer_t
 //
+/*!
+ * @brief A type of producer that produces instances of
+ * parameter_with_optional_value_container.
+ *
+ * @since v.0.6.1
+ */
 class params_with_opt_value_producer_t
 	:	public producer_tag< parameter_with_optional_value_container_t >
 {
@@ -947,6 +1349,32 @@ public :
 //
 // params_with_opt_value_producer
 //
+/*!
+ * @brief A factory of producer of parameter_with_optional_value_container.
+ *
+ * Creates a produces that handles the following rule:
+@verbatim
+T := *( OWS ';' OWS token ['=' OWS (token / quoted_string)] )
+@endverbatim
+ *
+ * Usage example:
+ * @code
+ * struct my_field {
+ * 	std::string value;
+ * 	parameter_with_optional_value_container_t params;
+ * };
+ * produce<my_field>(
+ * 	token_producer() >> to_lower() >> &my_field,
+ * 	params_with_opt_value_producer() >> &my_field
+ * );
+ * @endcode
+ *
+ * @note
+ * Parameters names are converted to lower case. Parameters' values
+ * are not changed and stored as they are.
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 impl::params_with_opt_value_producer_t
 params_with_opt_value_producer() { return {}; }
