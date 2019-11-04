@@ -22,6 +22,32 @@ namespace http_field_parsers
 //
 // accept_value_t
 //
+/*!
+ * @brief Tools for working with the value of Accept HTTP-field.
+ *
+ * This struct represents parsed value of HTTP-field Accept
+ * (see https://tools.ietf.org/html/rfc7231#section-5.3.2):
+@verbatim
+     Accept = #( media-range [ accept-params ] )
+
+     media-range    = ( "*" "/" "*"
+                      / ( type "/" "*" )
+                      / ( type "/" subtype )
+                      ) *( OWS ";" OWS parameter )
+     accept-params  = weight *( accept-ext )
+     accept-ext = OWS ";" OWS token [ "=" ( token / quoted-string ) ]
+
+     weight = OWS ";" OWS "q=" qvalue
+     qvalue = ( "0" [ "." 0*3DIGIT ] )
+            / ( "1" [ "." 0*3("0") ] )
+@endverbatim
+ *
+ * @note
+ * Parameter names are converted to lower case during the parsing.
+ * Parameter values are left as they are.
+ *
+ * @since v.0.6.1
+ */
 struct accept_value_t
 {
 	struct item_t
@@ -39,6 +65,12 @@ struct accept_value_t
 
 	item_container_t items;
 
+	/*!
+	 * @brief A factory function for a parser of Accept value.
+	 *
+	 * @since v.0.6.1
+	 */
+	RESTINIO_NODISCARD
 	static auto
 	make_parser()
 	{
@@ -57,7 +89,13 @@ struct accept_value_t
 		);
 	}
 
-	static auto
+	/*!
+	 * @brief An attempt to parse Accept HTTP-field.
+	 *
+	 * @since v.0.6.1
+	 */
+	RESTINIO_NODISCARD
+	static expected_t< accept_value_t, restinio::easy_parser::parse_error_t >
 	try_parse( string_view_t what )
 	{
 		return restinio::easy_parser::try_parse( what, make_parser() );
