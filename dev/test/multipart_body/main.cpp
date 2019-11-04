@@ -48,16 +48,16 @@ TEST_CASE( "Valid boundary value", "[boundary]" )
 {
 	using namespace restinio::multipart_body;
 
-	REQUIRE( !impl::check_bondary_value( "1" ) );
+	REQUIRE( !check_boundary_value( "1" ) );
 
 	{
-		const auto r = impl::check_bondary_value( "" );
+		const auto r = check_boundary_value( "" );
 		REQUIRE( r );
 		REQUIRE( enumeration_error_t::illegal_boundary_value == *r );
 	}
 
 	{
-		const auto r = impl::check_bondary_value(
+		const auto r = check_boundary_value(
 				"123456789_123456789_123456789_"
 				"123456789_123456789_123456789_"
 				"123456789_1" );
@@ -66,7 +66,7 @@ TEST_CASE( "Valid boundary value", "[boundary]" )
 	}
 
 	{
-		const auto r = impl::check_bondary_value(
+		const auto r = check_boundary_value(
 				"123456789_123456789_123456789_"
 				"123456789_123456789_123456789_"
 				"123456789_" );
@@ -74,19 +74,19 @@ TEST_CASE( "Valid boundary value", "[boundary]" )
 	}
 
 	{
-		const auto r = impl::check_bondary_value(
+		const auto r = check_boundary_value(
 				" _" );
 		REQUIRE( !r );
 	}
 
 	{
-		const auto r = impl::check_bondary_value( "1 " );
+		const auto r = check_boundary_value( "1 " );
 		REQUIRE( r );
 		REQUIRE( enumeration_error_t::illegal_boundary_value == *r );
 	}
 
 	{
-		const auto r = impl::check_bondary_value( "123[45]678" );
+		const auto r = check_boundary_value( "123[45]678" );
 		REQUIRE( r );
 		REQUIRE( enumeration_error_t::illegal_boundary_value == *r );
 	}

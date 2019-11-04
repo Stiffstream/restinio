@@ -35,7 +35,38 @@ namespace multipart_body
 //
 // split_multipart_body
 //
-//FIXME: document this!
+/*!
+ * @brief Helper function for spliting a multipart body to a serie of
+ * separate parts.
+ *
+ * @return A list of separate parts. This list will be empty if no parts
+ * are found or if there is some error in the body format (for example if
+ * some part is opened by @a boundary but is not closed properly).
+ *
+ * @note
+ * A user should extract the value of @a boundary should from Content-Type
+ * field and modify it proper way (two leading hypens should be added to the
+ * value of "boundary" parameter) by him/herself. Helper function
+ * detect_boundary_for_multipart_body() can be used for that purpose.
+ *
+ * Usage example:
+ * @code
+ * using namespace restinio::multipart_body;
+ *
+ * const auto boundary = detect_boundary_for_multipart_body(
+ * 		req, "multipart", "form-data" );
+ * if( boundary )
+ * {
+ * 	const auto parts = split_multipart_body( req.body(), *boundary );
+ * 	for( restinio::string_view_t one_part : parts )
+ * 	{
+ * 		... // Handling of a part.
+ * 	}
+ * }
+ * @endcode
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 inline std::vector< string_view_t >
 split_multipart_body(
@@ -104,9 +135,20 @@ split_multipart_body(
 //
 // parsed_part_t
 //
+/*!
+ * @brief A description of parsed content of one part of a multipart body.
+ *
+ * @since v.0.6.1
+ */
 struct parsed_part_t
 {
+	//! HTTP-fields local for that part.
+	/*!
+	 * @note
+	 * It can be empty if no HTTP-fields are found for that part.
+	 */
 	http_header_fields_t fields;
+	//! The body of that part.
 	string_view_t body;
 };
 
@@ -126,6 +168,18 @@ constexpr char LF = '\n';
 //
 // body_producer_t
 //
+/*!
+ * @brief A special producer that consumes the whole remaining
+ * content from the input stream.
+ *
+ * @attention
+ * This producer can be seen as a hack. It can't be used safely
+ * outside the context for that this producer was created. It's because
+ * body_producer_t doesn't shift the current position in the input
+ * stream.
+ *
+ * @since v.0.6.1
+ */
 struct body_producer_t
 	:	public easy_parser::impl::producer_tag< string_view_t >
 {
@@ -141,6 +195,15 @@ struct body_producer_t
 //
 // field_value_producer_t
 //
+/*!
+ * @brief A special producer that consumes the rest of the current
+ * line in the input stream until CR/LF will be found.
+ *
+ * @note
+ * CR and LF symbols are not consumed from the input stream.
+ *
+ * @since v.0.6.1
+ */
 struct field_value_producer_t
 	:	public easy_parser::impl::producer_tag< std::string >
 {
@@ -174,6 +237,18 @@ struct field_value_producer_t
 //
 // make_parser
 //
+/*!
+ * @brief A factory function for a parser of a part of multipart message.
+ *
+ * Handles the following rule:
+@verbatim
+part := *( token ':' OWS field-value CR LF ) CR LF body
+@endverbatim
+ *
+ * Produces parsed_part_t instance.
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 make_parser()
@@ -207,6 +282,34 @@ make_parser()
 
 } /* namespace impl */
 
+//
+// try_parse_part
+//
+/*!
+ * @brief Helper function for parsing content of one part of a multipart body.
+ *
+ * This function is intended to be used with split_multipart_body():
+ * @code
+ * using namespace restinio::multipart_body;
+ *
+ * const auto boundary = detect_boundary_for_multipart_body(
+ * 		req, "multipart", "form-data" );
+ * if( boundary )
+ * {
+ * 	const auto parts = split_multipart_body( req.body(), *boundary );
+ * 	for( restinio::string_view_t one_part : parts )
+ * 	{
+ * 		const auto parsed_part = try_parse_part( one_part );
+ * 		if( parsed_part )
+ * 		{
+ * 			... // Handle the content of the parsed part.
+ * 		}
+ * 	}
+ * }
+ * @endcode
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 expected_t< parsed_part_t, restinio::easy_parser::parse_error_t >
 try_parse_part( string_view_t part )
@@ -225,26 +328,58 @@ try_parse_part( string_view_t part )
 //
 // handling_result_t
 //
-//FIXME: document this!
+/*!
+ * @brief The result to be returned from user-provided handler of
+ * parts of multipart body.
+ *
+ * @since v.0.6.1
+ */
 enum class handling_result_t
 {
+	//! Enumeration of parts should be continued.
+	//! If there is another part the user-provided handler will
+	//! be called for it.
 	continue_enumeration,
+	//! Enumeration of parts should be stopped.
+	//! All remaining parts of multipart body will be skipped.
+	//! But the result of the enumeration will be successful.
 	stop_enumeration,
+	//! Enumeration of parts should be ignored.
+	//! All remaining parts of multipart body will be skipped and
+	//! the result of the enumeration will be a failure.
 	terminate_enumeration
 };
 
 //
 // enumeration_error_t
 //
-//FIXME: document this!
+/*!
+ * @brief The result of an attempt to enumerate parts of a multipart body.
+ *
+ * @since v.0.6.1
+ */
 enum class enumeration_error_t
 {
+	//! Content-Type field is not found.
+	//! If Content-Type is absent there is no way to detect 'boundary'
+	//! parameter.
 	content_type_field_not_found,
+	//! Unable to pasre Content-Type field value.
 	content_type_field_parse_error,
+	//! Content-Type field value parsed but doesn't contain an appropriate
+	//! value. For example there can be media-type different from 'multipart'
+	//! or 'boundary' parameter can be absent.
 	content_type_field_inappropriate_value,
+	//! Value of 'boundary' parameter is invalid (for example it contains
+	//! some illegal characters).
 	illegal_boundary_value,
+	//! No parts of a multipart body actually found.
 	no_parts_found,
+	//! Enumeration of parts was aborted by user-provided handler.
+	//! This code is returned when user-provided handler returns
+	//! handling_result_t::terminate_enumeration.
 	terminated_by_handler,
+	//! Some unexpected error encountered during the enumeration.
 	unexpected_error
 };
 
@@ -292,11 +427,37 @@ is_bchar( char ch )
 
 } /* namespace boundary_value_checkers */
 
+} /* namespace impl */
+
+//
+// check_boundary_value
+//
+//FIXME: document this!
+/*!
+ * @brief A helper function for checking the validity of 'boundary' value.
+ *
+ * The allowed format for 'boundary' value is defined here:
+ * https://tools.ietf.org/html/rfc2046#section-5.1.1
+@verbatim
+     boundary := 0*69<bchars> bcharsnospace
+
+     bchars := bcharsnospace / " "
+
+     bcharsnospace := DIGIT / ALPHA / "'" / "(" / ")" /
+                      "+" / "_" / "," / "-" / "." /
+                      "/" / ":" / "=" / "?"
+@endverbatim
+ *
+ * @return enumeration_error_t::illegal_boundary_value if @a value has
+ * illegal value or an empty optional if there is no errros detected.
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 inline optional_t< enumeration_error_t >
-check_bondary_value( string_view_t value )
+check_boundary_value( string_view_t value )
 {
-	using namespace boundary_value_checkers;
+	using namespace impl::boundary_value_checkers;
 
 	if( value.size() >= 1u && value.size() <= 70u )
 	{
@@ -314,6 +475,10 @@ check_bondary_value( string_view_t value )
 	return nullopt;
 }
 
+//
+// detect_boundary_for_multipart_body
+//
+//FIXME: document this!
 RESTINIO_NODISCARD
 inline expected_t< std::string, enumeration_error_t >
 detect_boundary_for_multipart_body(
@@ -361,7 +526,7 @@ detect_boundary_for_multipart_body(
 				enumeration_error_t::content_type_field_inappropriate_value );
 	
 	// `boundary` should have valid value.
-	const auto boundary_check_result = check_bondary_value( *boundary );
+	const auto boundary_check_result = check_boundary_value( *boundary );
 	if( boundary_check_result )
 		return make_unexpected( *boundary_check_result );
 
@@ -373,6 +538,9 @@ detect_boundary_for_multipart_body(
 
 	return std::move(actual_boundary_mark);
 }
+
+namespace impl
+{
 
 template< typename Handler >
 RESTINIO_NODISCARD
@@ -453,7 +621,7 @@ enumerate_parts(
 			"should accept parsed_part_t by value, const or rvalue reference, "
 			"and should return handling_result_t" );
 
-	const auto boundary = impl::detect_boundary_for_multipart_body(
+	const auto boundary = detect_boundary_for_multipart_body(
 			req,
 			expected_media_type,
 			expected_media_subtype );
