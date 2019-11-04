@@ -22,6 +22,17 @@ namespace http_field_parsers
 //
 // media_type_value_t
 //
+/*!
+ * @brief Tools for working with media-type in HTTP-fields.
+ *
+ * This struct represents parsed value of media-type.
+ * Media-type is present in different HTTP-fields and has the following
+ * format:
+@verbatim
+@endverbatim
+ *
+ * @since v.0.6.1
+ */
 struct media_type_value_t
 {
 	using parameter_t = parameter_with_mandatory_value_t;

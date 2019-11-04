@@ -133,7 +133,6 @@ using handling_result_t = restinio::multipart_body::handling_result_t;
 //
 // part_description_t
 //
-//FIXME: part_description_t
 /*!
  * @brief A description of one part with an uploaded file.
  *
