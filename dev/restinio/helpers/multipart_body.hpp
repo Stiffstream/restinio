@@ -432,7 +432,6 @@ is_bchar( char ch )
 //
 // check_boundary_value
 //
-//FIXME: document this!
 /*!
  * @brief A helper function for checking the validity of 'boundary' value.
  *
@@ -478,7 +477,20 @@ check_boundary_value( string_view_t value )
 //
 // detect_boundary_for_multipart_body
 //
-//FIXME: document this!
+/*!
+ * @brief Helper function for parsing Content-Type field and extracting
+ * the value of 'boundary' parameter.
+ *
+ * It finds Content-Type field, then parses it, then checks the value
+ * of media-type, then finds 'boundary' parameter, the checks the validity
+ * of 'boundary' value and then adds two leading hypens to the value of
+ * 'boundary' parameter.
+ *
+ * The returned value (if there is no error) can be used for spliting
+ * a multipart body to separate parts.
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 inline expected_t< std::string, enumeration_error_t >
 detect_boundary_for_multipart_body(
@@ -542,6 +554,15 @@ detect_boundary_for_multipart_body(
 namespace impl
 {
 
+/*!
+ * @brief A function that parses every part of a multipart body and
+ * calls a user-provided handler for every parsed part.
+ *
+ * @return the count of parts successfuly handled by @a handler or
+ * error code in the case if some error is detected.
+ *
+ * @since v.0.6.1
+ */
 template< typename Handler >
 RESTINIO_NODISCARD
 expected_t< std::size_t, enumeration_error_t >
@@ -562,15 +583,14 @@ enumerate_parts_of_request_body(
 		// NOTE: parsed_part is passed as rvalue reference!
 		const handling_result_t handler_ret_code = handler(
 				std::move(*part_parse_result) );
-		if( handling_result_t::continue_enumeration != handler_ret_code )
-		{
-			if( handling_result_t::terminate_enumeration == handler_ret_code )
-				error = enumeration_error_t::terminated_by_handler;
 
-			break;
-		}
-		else
+		if( handling_result_t::terminate_enumeration != handler_ret_code )
 			++parts_processed;
+		else
+			error = enumeration_error_t::terminated_by_handler;
+
+		if( handling_result_t::continue_enumeration != handler_ret_code )
+			break;
 	}
 
 	if( error )
@@ -605,14 +625,81 @@ struct valid_handler_type<
 //
 // enumerate_parts
 //
-//FIXME: document this!
+/*!
+ * @brief A helper function for enumeration of parts of a multipart body.
+ *
+ * This function:
+ *
+ * - finds Content-Type field for @a req;
+ * - parses Content-Type field, checks the media-type and extracts
+ *   the value of 'boundary' parameter. The extracted 'boundary'
+ *   parameter is checked for validity;
+ * - splits the body of @a req using value of 'boundary' parameter;
+ * - enumerates every part of body, parses every part and calls
+ *   @handler for every parsed part.
+ *
+ * Enumeration stops if @a handler returns handling_result_t::stop_enumeration
+ * or handling_result_t::terminate_enumeration. If @a handler returns
+ * handling_result_t::terminate_enumeration the enumerate_parts() returns
+ * enumeration_error_t::terminated_by_handler error code.
+ *
+ * A handler passed as @a handler argument should be a function or
+ * lambda/functor with one of the following formats:
+ * @code
+ * handling_result_t(parsed_part_t part);
+ * handling_result_t(parsed_part_t && part);
+ * handling_result_t(const parsed_part_t & part);
+ * @endcode
+ * Note that enumerate_part() passes parsed_part_t instance to
+ * @a handler as rvalue reference. And this reference will be invalidaded
+ * after the return from @a handler.
+ *
+ * Usage example:
+ * @code
+ * auto on_post(const restinio::request_handle_t & req) {
+ * 	using namespace restinio::multipart_body;
+ * 	const auto result = enumerate_parts( *req,
+ * 		[](parsed_part_t part) {
+ * 			... // Some actions with the current part.
+ * 			return handling_result_t::continue_enumeration;
+ * 		},
+ * 		"multipart", "form-data" );
+ * 	if(result) {
+ * 		... // Producing positive response.
+ * 	}
+ * 	else {
+ * 		... // Producing negative response.
+ * 	}
+ * 	return restinio::request_accepted();
+ * }
+ * @endcode
+ *
+ * @return the count of parts successfuly handled by @a handler or
+ * error code in the case if some error is detected.
+ *
+ * @since v.0.6.1
+ */
 template< typename Handler >
 RESTINIO_NODISCARD
 expected_t< std::size_t, enumeration_error_t >
 enumerate_parts(
+	//! The request to be handled.
 	const request_t & req,
+	//! The handler to be called for every parsed part.
 	Handler && handler,
+	//! The expected value of 'type' part of 'media-type' from Content-Type.
+	//! If 'type' part is not equal to @a expected_media_type then
+	//! enumeration won't be performed.
+	//!
+	//! @note
+	//! The special value '*' is not handled here.
 	string_view_t expected_media_type = string_view_t{ "multipart" },
+	//! The optional expected value of 'subtype' part of 'media-type'
+	//! from Content-Type. If @a expected_media_subtype is specified and
+	//! missmatch with 'subtype' part then enumeration won't be performed.
+	//!
+	//! @note
+	//! The special value '*' is not handled here.
 	optional_t< string_view_t > expected_media_subtype = nullopt )
 {
 	static_assert(
