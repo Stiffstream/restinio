@@ -36,7 +36,7 @@ namespace multipart_body
 // split_multipart_body
 //
 /*!
- * @brief Helper function for spliting a multipart body to a serie of
+ * @brief Helper function for spliting a multipart body into a serie of
  * separate parts.
  *
  * @return A list of separate parts. This list will be empty if no parts
@@ -364,7 +364,7 @@ enum class enumeration_error_t
 	//! If Content-Type is absent there is no way to detect 'boundary'
 	//! parameter.
 	content_type_field_not_found,
-	//! Unable to pasre Content-Type field value.
+	//! Unable to parse Content-Type field value.
 	content_type_field_parse_error,
 	//! Content-Type field value parsed but doesn't contain an appropriate
 	//! value. For example there can be media-type different from 'multipart'
@@ -436,7 +436,7 @@ is_bchar( char ch )
  * @brief A helper function for checking the validity of 'boundary' value.
  *
  * The allowed format for 'boundary' value is defined here:
- * https://tools.ietf.org/html/rfc2046#section-5.1.1
+ * https://tools.ietf.org/html/rfc2046
 @verbatim
      boundary := 0*69<bchars> bcharsnospace
 
