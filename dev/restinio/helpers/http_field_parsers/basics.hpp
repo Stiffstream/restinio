@@ -353,7 +353,7 @@ public :
 };
 
 //
-// token_t
+// token_producer_t
 //
 /*!
  * @brief A producer for token.
