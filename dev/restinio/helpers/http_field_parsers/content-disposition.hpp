@@ -88,6 +88,242 @@ public:
 		return result;
 	}
 };
+
+//
+// mime_charsetc_predicate_t
+//
+//FIXME: document this!
+/*!
+ * See: https://tools.ietf.org/html/rfc5987#section-3.2
+ *
+ * @since v.0.6.1
+ */
+struct mime_charsetc_predicate_t
+{
+	RESTINIO_NODISCARD
+	bool
+	operator()( const char actual ) const noexcept
+	{
+		return hfp_impl::is_alpha(actual)
+				|| hfp_impl::is_digit(actual)
+				|| '!' == actual
+				|| '#' == actual
+				|| '$' == actual
+				|| '%' == actual
+				|| '&' == actual
+				|| '+' == actual
+				|| '-' == actual
+				|| '^' == actual
+				|| '_' == actual
+				|| '`' == actual
+				|| '{' == actual
+				|| '}' == actual
+				|| '~' == actual
+				;
+	}
+};
+
+//
+// mime_charsetc_symbol_producer
+//
+//FIXME: document this!
+RESTINIO_NODISCARD
+auto
+mime_charsetc_symbol_producer()
+{
+	return ep_impl::symbol_producer_template_t< mime_charsetc_predicate_t >{};
+}
+
+//
+// language_predicate_t
+//
+//FIXME: document this!
+/*!
+ *
+ * @attention
+ * In the current version of RESTinio only the presence of characters
+ * defined in RFC5646 is checked. But those characters can form illegal
+ * sequencies.
+ *
+ * See: https://tools.ietf.org/html/rfc5646#section-2.1 
+ *
+ * @since v.0.6.1
+ */
+struct language_predicate_t
+{
+	RESTINIO_NODISCARD
+	bool
+	operator()( const char actual ) const noexcept
+	{
+		return hfp_impl::is_alpha(actual)
+				|| hfp_impl::is_digit(actual)
+				|| '-' == actual
+				;
+	}
+};
+
+//
+// language_symbol_producer
+//
+//FIXME: document this!
+RESTINIO_NODISCARD
+auto
+language_symbol_producer()
+{
+	return ep_impl::symbol_producer_template_t< language_predicate_t >{};
+}
+
+//
+// attr_char_predicate_t
+//
+//FIXME: document this!
+/*!
+ * See: https://tools.ietf.org/html/rfc5987#section-3.2
+ *
+ * @since v.0.6.1
+ */
+struct attr_char_predicate_t
+{
+	RESTINIO_NODISCARD
+	bool
+	operator()( const char actual ) const noexcept
+	{
+		return hfp_impl::is_alpha(actual)
+				|| hfp_impl::is_digit(actual)
+				|| '!' == actual
+				|| '#' == actual
+				|| '$' == actual
+				|| '&' == actual
+				|| '+' == actual
+				|| '-' == actual
+				|| '.' == actual
+				|| '^' == actual
+				|| '_' == actual
+				|| '`' == actual
+				|| '|' == actual
+				|| '~' == actual
+				;
+	}
+};
+
+//
+// attr_char_symbol_producer
+//
+//FIXME: document this!
+RESTINIO_NODISCARD
+auto
+attr_char_symbol_producer()
+{
+	return ep_impl::symbol_producer_template_t< attr_char_predicate_t >{};
+}
+
+//
+// hexdigit_predicate_t
+//
+//FIXME: document this!
+/*!
+ * @since v.0.6.1
+ */
+struct hexdigit_predicate_t
+{
+	RESTINIO_NODISCARD
+	bool
+	operator()( const char actual ) const noexcept
+	{
+		const char normalized_actual = static_cast<char>(
+						restinio::impl::to_lower_lut<unsigned char>()[
+							static_cast<std::size_t>(
+								static_cast<unsigned char>(actual))
+						]
+				);
+		return hfp_impl::is_digit(normalized_actual)
+				|| 'a' == normalized_actual
+				|| 'b' == normalized_actual
+				|| 'c' == normalized_actual
+				|| 'd' == normalized_actual
+				|| 'e' == normalized_actual
+				|| 'f' == normalized_actual
+				;
+	}
+};
+
+//
+// hexdigit_symbol_producer
+//
+//FIXME: document this!
+RESTINIO_NODISCARD
+auto
+hexdigit_symbol_producer()
+{
+	return ep_impl::symbol_producer_template_t< hexdigit_predicate_t >{};
+}
+
+//
+// pct_encoded_result_type_t
+//
+using pct_encoded_result_type_t = std::array< char, 3 >;
+
+//
+// pct_encoded_one_symbol_consumer_t
+//
+template< std::size_t I >
+struct pct_encoded_one_symbol_consumer_t : public ep_impl::consumer_tag
+{
+	void
+	consume( pct_encoded_result_type_t & to, char && symbol ) const noexcept
+	{
+		to[ I ] = symbol;
+	}
+};
+
+//
+// pct_encoded_symbols_producer
+//
+//FIXME: document this!
+RESTINIO_NODISCARD
+auto
+pct_encoded_symbols_producer()
+{
+	return produce< pct_encoded_result_type_t >(
+			symbol_producer( '%' ) >> pct_encoded_one_symbol_consumer_t<0>{},
+			hexdigit_symbol_producer() >> pct_encoded_one_symbol_consumer_t<1>{},
+			hexdigit_symbol_producer() >> pct_encoded_one_symbol_consumer_t<2>{}
+		);
+}
+
+//
+// pct_encoded_symbols_consumer_t
+//
+struct pct_encoded_symbols_consumer_t : public ep_impl::consumer_tag
+{
+	void
+	consume( std::string & to, pct_encoded_result_type_t && from ) const
+	{
+		to.append( &from[0], from.size() );
+	}
+};
+
+//
+// ext_parameter_value_producer
+//
+RESTINIO_NODISCARD
+auto
+ext_parameter_value_producer()
+{
+	return produce< std::string >(
+			repeat( 1, N, mime_charsetc_symbol_producer() >> to_container() ),
+			symbol_producer( '\'' ) >> to_container(),
+			repeat( 0, N, language_symbol_producer() >> to_container() ),
+			symbol_producer( '\'' ) >> to_container(),
+			repeat( 1, N,
+				alternatives(
+					attr_char_symbol_producer() >> to_container(),
+					pct_encoded_symbols_producer() >>
+							pct_encoded_symbols_consumer_t{} )
+			)
+		);
+}
+
 } /* namespace content_disposition_details */
 
 //
@@ -130,7 +366,7 @@ struct content_disposition_value_t
 								ext_token_producer_t{}
 										>> to_lower() >> &parameter_t::first,
 								symbol('='),
-								quoted_string_producer() >> &parameter_t::second
+								ext_parameter_value_producer() >> &parameter_t::second
 							)
 						)
 					) >> to_container()

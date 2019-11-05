@@ -1744,9 +1744,9 @@ TEST_CASE( "Content-Disposition", "[content-disposition]" )
 	}
 
 	{
-		const auto result = content_disposition_value_t::try_parse(
-				"form-data; name=some-name  ;  filename=\"file\""
-				";filename*=\"another name\"");
+		const char * what = "form-data; name=some-name  ;  filename=\"file\""
+				";filename*=utf-8''another-name";
+		const auto result = content_disposition_value_t::try_parse( what );
 
 		REQUIRE( result );
 
@@ -1755,7 +1755,39 @@ TEST_CASE( "Content-Disposition", "[content-disposition]" )
 		content_disposition_value_t::parameter_container_t expected{
 			{ "name"s, "some-name"s },
 			{ "filename"s, "file"s },
-			{ "filename*"s, "another name"s },
+			{ "filename*"s, "utf-8''another-name"s },
+		};
+		REQUIRE( expected == result->parameters );
+	}
+
+	{
+		const char * what = "form-data; name=some-name"
+				";filename*=utf-8'en-US'another-name";
+		const auto result = content_disposition_value_t::try_parse( what );
+
+		REQUIRE( result );
+
+		REQUIRE( "form-data" == result->value );
+
+		content_disposition_value_t::parameter_container_t expected{
+			{ "name"s, "some-name"s },
+			{ "filename*"s, "utf-8'en-US'another-name"s },
+		};
+		REQUIRE( expected == result->parameters );
+	}
+
+	{
+		const char * what = "form-data; name=some-name"
+				";filename*=utf-8'en-US'Yet%20another%20name";
+		const auto result = content_disposition_value_t::try_parse( what );
+
+		REQUIRE( result );
+
+		REQUIRE( "form-data" == result->value );
+
+		content_disposition_value_t::parameter_container_t expected{
+			{ "name"s, "some-name"s },
+			{ "filename*"s, "utf-8'en-US'Yet%20another%20name"s },
 		};
 		REQUIRE( expected == result->parameters );
 	}

@@ -1317,22 +1317,27 @@ public :
 };
 
 //
-// symbol_producer_t
+// symbol_producer_template_t
 //
 /*!
- * @brief A producer for the case when a particual character is expected
- * in the input stream.
+ * @brief A template for producer of charachers that satisfy some predicate.
  *
  * In the case of success returns the expected character.
  *
+ * @tparam Predicate the type of predicate to check extracted symbol.
+ *
  * @since v.0.6.1
  */
-class symbol_producer_t : public producer_tag< char >
+template< typename Predicate >
+class symbol_producer_template_t
+	:	public producer_tag< char >
+	,	protected Predicate
 {
-	char m_expected;
-
 public:
-	symbol_producer_t( char expected ) : m_expected{ expected } {}
+	template< typename... Args >
+	symbol_producer_template_t( Args &&... args )
+		:	 Predicate{ std::forward<Args>(args)... }
+	{}
 
 	RESTINIO_NODISCARD
 	expected_t< char, parse_error_t >
@@ -1341,7 +1346,8 @@ public:
 		const auto ch = from.getch();
 		if( !ch.m_eof )
 		{
-			if( ch.m_ch == m_expected )
+			// A call to predicate.
+			if( (*this)(ch.m_ch) )
 				return ch.m_ch;
 			else
 			{
@@ -1358,6 +1364,45 @@ public:
 					error_reason_t::unexpected_eof
 			} );
 	}
+};
+
+//
+// particular_symbol_predicate_t
+//
+//FIXME: document this!
+struct particular_symbol_predicate_t
+{
+	char m_expected;
+
+	RESTINIO_NODISCARD
+	bool
+	operator()( const char actual ) const noexcept
+	{
+		return m_expected == actual;
+	}
+};
+
+//
+// symbol_producer_t
+//
+/*!
+ * @brief A producer for the case when a particual character is expected
+ * in the input stream.
+ *
+ * In the case of success returns the expected character.
+ *
+ * @since v.0.6.1
+ */
+class symbol_producer_t
+	: public symbol_producer_template_t< particular_symbol_predicate_t >
+{
+	using base_type_t =
+		symbol_producer_template_t< particular_symbol_predicate_t >;
+
+public:
+	symbol_producer_t( char expected )
+		:	base_type_t{ particular_symbol_predicate_t{expected} }
+	{}
 };
 
 //
