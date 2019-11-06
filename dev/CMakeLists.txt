@@ -65,7 +65,9 @@ IF (RESTINIO_MASTER_PROJECT)
 		# Require necessary packages.
 
 		# Catch2
-		find_package(Catch2 CONFIG REQUIRED)
+		IF (RESTINIO_TEST)
+			find_package(Catch2 CONFIG REQUIRED)
+		ENDIF ()
 
 		# HTTP parser
 		find_package(unofficial-http-parser CONFIG REQUIRED)

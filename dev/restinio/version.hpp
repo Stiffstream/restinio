@@ -6,7 +6,7 @@
  * @file
  * @brief Definition of RESTINIO_VERSION macro
  *
- * @since v.0.6.0
+ * @since v.0.6.1
  */
 
 #pragma once
@@ -33,7 +33,7 @@
  *
  * If RESTinio's version is 0.6.23 then RESTINIO_VERSION_PATCH==23.
  */
-#define RESTINIO_VERSION_PATCH 0ull
+#define RESTINIO_VERSION_PATCH 1ull
 
 /*!
  * Helper macro for make single number representation of RESTinio's version.
