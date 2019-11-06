@@ -28,7 +28,17 @@ namespace hfp_impl = restinio::http_field_parsers::impl;
 //
 // regular_token_producer_t
 //
-//FIXME: document this!
+/*!
+ * @brief A producer for token that is a "regular parameter name" in sense of
+ * RCF6266 and RCF5987
+ *
+ * A regular parameter name can't have '*' symbol at the end.
+ *
+ * See: https://tools.ietf.org/html/rfc5987#section-3.2 and
+ * https://tools.ietf.org/html/rfc6266#section-4.1
+ *
+ * @since v.0.6.1
+ */
 class regular_token_producer_t
 	:	public hfp_impl::token_producer_t
 {
@@ -60,7 +70,17 @@ public:
 //
 // ext_token_producer_t
 //
-//FIXME: document this!
+/*!
+ * @brief A producer for token that is an "extended parameter name" in sense of
+ * RCF6266 and RCF5987
+ *
+ * An extended parameter name has '*' symbol at the end.
+ *
+ * See: https://tools.ietf.org/html/rfc5987#section-3.2 and
+ * https://tools.ietf.org/html/rfc6266#section-4.1
+ *
+ * @since v.0.6.1
+ */
 class ext_token_producer_t
 	:	public hfp_impl::token_producer_t
 {
@@ -92,8 +112,10 @@ public:
 //
 // mime_charsetc_predicate_t
 //
-//FIXME: document this!
 /*!
+ * @brief A preducate for symbol_producer_template that checks that
+ * a symbol is mime-charsetc symbol from RCF5987.
+ *
  * See: https://tools.ietf.org/html/rfc5987#section-3.2
  *
  * @since v.0.6.1
@@ -126,7 +148,13 @@ struct mime_charsetc_predicate_t
 //
 // mime_charsetc_symbol_producer
 //
-//FIXME: document this!
+/*!
+ * @brief A factory for producer that extracts mime-charsetc symbols.
+ *
+ * See: https://tools.ietf.org/html/rfc5987#section-3.2
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 mime_charsetc_symbol_producer()
@@ -137,8 +165,9 @@ mime_charsetc_symbol_producer()
 //
 // language_predicate_t
 //
-//FIXME: document this!
 /*!
+ * @brief A preducate for symbol_producer_template that checks that
+ * a symbol is language symbol from RCF5646.
  *
  * @attention
  * In the current version of RESTinio only the presence of characters
@@ -165,7 +194,11 @@ struct language_predicate_t
 //
 // language_symbol_producer
 //
-//FIXME: document this!
+/*!
+ * @brief A factory for producer that extracts language symbols.
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 language_symbol_producer()
@@ -176,8 +209,10 @@ language_symbol_producer()
 //
 // attr_char_predicate_t
 //
-//FIXME: document this!
 /*!
+ * @brief A preducate for symbol_producer_template that checks that
+ * a symbol is attr-char symbol from RCF5987.
+ *
  * See: https://tools.ietf.org/html/rfc5987#section-3.2
  *
  * @since v.0.6.1
@@ -209,7 +244,13 @@ struct attr_char_predicate_t
 //
 // attr_char_symbol_producer
 //
-//FIXME: document this!
+/*!
+ * @brief A factory for producer that extracts attr-char symbols.
+ *
+ * See: https://tools.ietf.org/html/rfc5987#section-3.2
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 attr_char_symbol_producer()
@@ -220,8 +261,10 @@ attr_char_symbol_producer()
 //
 // hexdigit_predicate_t
 //
-//FIXME: document this!
 /*!
+ * @brief A preducate for symbol_producer_template that checks that
+ * a symbol is hex-digit.
+ *
  * @since v.0.6.1
  */
 struct hexdigit_predicate_t
@@ -230,6 +273,8 @@ struct hexdigit_predicate_t
 	bool
 	operator()( const char actual ) const noexcept
 	{
+		//FIXME: is seems that helper function to_lower() is necessary
+		//to convert a single char to lower case.
 		const char normalized_actual = static_cast<char>(
 						restinio::impl::to_lower_lut<unsigned char>()[
 							static_cast<std::size_t>(
@@ -250,7 +295,11 @@ struct hexdigit_predicate_t
 //
 // hexdigit_symbol_producer
 //
-//FIXME: document this!
+/*!
+ * @brief A factory for producer that extracts hex-digits.
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 hexdigit_symbol_producer()
@@ -261,11 +310,25 @@ hexdigit_symbol_producer()
 //
 // pct_encoded_result_type_t
 //
+/*!
+ * @brief A type for representing extraction of percent-encoded char
+ * from the input stream.
+ *
+ * Exactly three symbols are extracted: `% HEXDIGIT HEXDIGIT`
+ *
+ * @since v.0.6.1
+ */
 using pct_encoded_result_type_t = std::array< char, 3 >;
 
 //
 // pct_encoded_one_symbol_consumer_t
 //
+/*!
+ * @brief A special consumer that inserts an extracted symbol into
+ * pct_encoded_result_type at the specified position.
+ *
+ * @since v.0.6.1
+ */
 template< std::size_t I >
 struct pct_encoded_one_symbol_consumer_t : public ep_impl::consumer_tag
 {
@@ -279,7 +342,14 @@ struct pct_encoded_one_symbol_consumer_t : public ep_impl::consumer_tag
 //
 // pct_encoded_symbols_producer
 //
-//FIXME: document this!
+/*!
+ * @brief A producer that extract a sequence of symbols represented
+ * a percent-encoded character.
+ *
+ * This producer returns instances of pct_encoded_result_type_t.
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 pct_encoded_symbols_producer()
@@ -294,6 +364,12 @@ pct_encoded_symbols_producer()
 //
 // pct_encoded_symbols_consumer_t
 //
+/*!
+ * @brief A special consumer that inserts an extracted sequence
+ * of symbols into the result string.
+ *
+ * @since v.0.6.1
+ */
 struct pct_encoded_symbols_consumer_t : public ep_impl::consumer_tag
 {
 	void
@@ -306,6 +382,36 @@ struct pct_encoded_symbols_consumer_t : public ep_impl::consumer_tag
 //
 // ext_parameter_value_producer
 //
+/*!
+ * @brief A producer for an "extended parameter value" in sense of
+ * RCF6266 and RCF5987
+ *
+ * This producer return std::string object.
+ *
+ * It handles the following rules:
+@verbatim
+ext-value     = mime-charset  "'" [ language ] "'" value-chars
+
+mime-charset  = 1*mime-charsetc
+mime-charsetc = ALPHA / DIGIT
+              / "!" / "#" / "$" / "%" / "&"
+              / "+" / "-" / "^" / "_" / "`"
+              / "{" / "}" / "~"
+
+language      = 0*language-char
+language-char = ALPHA / DIGIT / "-"
+
+value-chars   = *( pct-encoded / attr-char )
+
+pct-encoded   = "%" HEXDIG HEXDIG
+
+attr-char     = ALPHA / DIGIT
+              / "!" / "#" / "$" / "&" / "+" / "-" / "."
+              / "^" / "_" / "`" / "|" / "~"
+@endverbatim
+ *
+ * @since v.0.6.1
+ */
 RESTINIO_NODISCARD
 auto
 ext_parameter_value_producer()
@@ -315,7 +421,7 @@ ext_parameter_value_producer()
 			symbol_producer( '\'' ) >> to_container(),
 			repeat( 0, N, language_symbol_producer() >> to_container() ),
 			symbol_producer( '\'' ) >> to_container(),
-			repeat( 1, N,
+			repeat( 0, N,
 				alternatives(
 					attr_char_symbol_producer() >> to_container(),
 					pct_encoded_symbols_producer() >>
@@ -329,6 +435,22 @@ ext_parameter_value_producer()
 //
 // content_disposition_value_t
 //
+/*!
+ * @brief Tools for working with the value of Content-Disposition HTTP-field.
+ *
+ * This struct represents parsed value of HTTP-field Content-Disposition
+ * (see https://tools.ietf.org/html/rfc6266).
+ *
+ * @note
+ * - the main value of Content-Disposition field is converted to lower case;
+ * - parameter names are converted to lower case during the parsing;
+ * - parameter values are left as they are;
+ * - values of extended parameters are left as they are (it means that if
+ *   there is "filename*=utf-8''Some%20name" then the value of
+ *   "filename*" parameter will be "utf-8''Some%20name").
+ *
+ * @since v.0.6.1
+ */
 struct content_disposition_value_t
 {
 	using parameter_t = parameter_with_mandatory_value_t;
@@ -338,6 +460,12 @@ struct content_disposition_value_t
 	std::string value;
 	parameter_container_t parameters;
 
+	/*!
+	 * @brief A factory function for a parser of Content-Disposition value.
+	 *
+	 * @since v.0.6.1
+	 */
+	RESTINIO_NODISCARD
 	static auto
 	make_parser()
 	{
@@ -375,7 +503,13 @@ struct content_disposition_value_t
 		);
 	}
 
-	static auto
+	/*!
+	 * @brief An attempt to parse Content-Disposition HTTP-field.
+	 *
+	 * @since v.0.6.1
+	 */
+	RESTINIO_NODISCARD
+	static expected_t< content_disposition_value_t, restinio::easy_parser::parse_error_t >
 	try_parse( string_view_t what )
 	{
 		return restinio::easy_parser::try_parse( what, make_parser() );

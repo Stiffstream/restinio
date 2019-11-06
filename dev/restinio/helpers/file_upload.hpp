@@ -159,6 +159,12 @@ struct part_description_t
 	/*!
 	 * This field has the value only of 'filename*' parameter was
 	 * found in Content-Disposition field.
+	 *
+	 * @attention
+	 * If that field is presend then it is the original value extracted
+	 * from Content-Disposition without any transformation. It means
+	 * that this field will hold values defined in RFC5987 like:
+	 * `utf-8'en-US'A%20some%20filename.txt`
 	 */
 	optional_t< std::string > filename_star;
 	//! The value of Content-Disposition's 'filename' parameter.
