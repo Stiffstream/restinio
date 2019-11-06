@@ -1920,7 +1920,7 @@ repeat(
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 skip() noexcept { return impl::any_value_skipper_t{}; }
 
 //
@@ -1935,7 +1935,7 @@ skip() noexcept { return impl::any_value_skipper_t{}; }
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 symbol_producer( char expected ) noexcept
 {
 	return impl::symbol_producer_t{expected};
@@ -1956,7 +1956,7 @@ symbol_producer( char expected ) noexcept
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 symbol( char expected ) noexcept
 {
 	return symbol_producer(expected) >> skip();
@@ -1974,7 +1974,7 @@ symbol( char expected ) noexcept
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 digit_producer() noexcept
 {
 	return impl::digit_producer_t{};
@@ -1995,7 +1995,7 @@ digit_producer() noexcept
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 digit() noexcept
 {
 	return digit_producer() >> skip();
@@ -2020,7 +2020,7 @@ digit() noexcept
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 as_result() noexcept { return impl::as_result_consumer_t{}; }
 
 //
@@ -2189,7 +2189,7 @@ to_container()
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 to_lower() noexcept { return impl::to_lower_transformer_t{}; }
 
 //

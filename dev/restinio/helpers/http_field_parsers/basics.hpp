@@ -199,28 +199,28 @@ public :
 };
 
 RESTINIO_NODISCARD
-bool
+inline bool
 operator==( const qvalue_t & a, const qvalue_t & b ) noexcept
 {
 	return a.as_uint() == b.as_uint();
 }
 
 RESTINIO_NODISCARD
-bool
+inline bool
 operator!=( const qvalue_t & a, const qvalue_t & b ) noexcept
 {
 	return a.as_uint() != b.as_uint();
 }
 
 RESTINIO_NODISCARD
-bool
+inline bool
 operator<( const qvalue_t & a, const qvalue_t & b ) noexcept
 {
 	return a.as_uint() < b.as_uint();
 }
 
 RESTINIO_NODISCARD
-bool
+inline bool
 operator<=( const qvalue_t & a, const qvalue_t & b ) noexcept
 {
 	return a.as_uint() <= b.as_uint();
@@ -571,7 +571,7 @@ public :
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 ows_producer() noexcept { return impl::ows_producer_t{}; }
 
 //
@@ -601,7 +601,7 @@ ows_producer() noexcept { return impl::ows_producer_t{}; }
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 ows() noexcept { return ows_producer() >> skip(); }
 
 //
@@ -625,7 +625,7 @@ ows() noexcept { return ows_producer() >> skip(); }
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 token_producer() noexcept { return impl::token_producer_t{}; }
 
 //
@@ -652,7 +652,7 @@ token_producer() noexcept { return impl::token_producer_t{}; }
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 quoted_string_producer() noexcept
 {
 	return impl::quoted_string_producer_t{};
@@ -765,7 +765,7 @@ public :
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 qvalue_producer() noexcept
 {
 	return impl::qvalue_producer_t{};
@@ -792,7 +792,7 @@ qvalue_producer() noexcept
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 weight_producer() noexcept
 {
 	return produce< qvalue_t >(
@@ -1112,7 +1112,7 @@ namespace params_with_value_producer_details
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 make_parser()
 {
 	return produce< parameter_with_mandatory_value_container_t >(
@@ -1198,7 +1198,7 @@ T := *( OWS ';' OWS token '=' OWS (token / quoted_string))
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-impl::params_with_value_producer_t
+inline impl::params_with_value_producer_t
 params_with_value_producer() { return {}; }
 
 //
@@ -1288,7 +1288,7 @@ namespace params_with_opt_value_producer_details
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 make_parser()
 {
 	return produce< parameter_with_optional_value_container_t >(
@@ -1376,7 +1376,7 @@ T := *( OWS ';' OWS token ['=' OWS (token / quoted_string)] )
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-impl::params_with_opt_value_producer_t
+inline impl::params_with_opt_value_producer_t
 params_with_opt_value_producer() { return {}; }
 
 } /* namespace http_field_parser */

@@ -71,6 +71,7 @@ SET(RESTINIO_HEADERS_ALL
 	compiler_features.hpp
 	connection_state_listener.hpp
 	exception.hpp
+	expected.hpp
 	http_headers.hpp
 	http_server.hpp
 	http_server_run.hpp
@@ -90,13 +91,27 @@ SET(RESTINIO_HEADERS_ALL
 	string_view.hpp
 	tcp_connection_ctx_base.hpp
 	timer_common.hpp
+	tls_fwd.hpp
 	tls.hpp
 	traits.hpp
 	uri_helpers.hpp
 	value_or.hpp
 	variant.hpp
 	version.hpp
-	tls_fwd.hpp
+
+	helpers/easy_parser.hpp
+	helpers/file_upload.hpp
+	helpers/multipart_body.hpp
+	helpers/string_algo.hpp
+
+	helpers/http_field_parsers/accept.hpp
+	helpers/http_field_parsers/basics.hpp
+	helpers/http_field_parsers/cache-control.hpp
+	helpers/http_field_parsers/content-disposition.hpp
+	helpers/http_field_parsers/content-encoding.hpp
+	helpers/http_field_parsers/content-type.hpp
+	helpers/http_field_parsers/media-type.hpp
+
 	impl/acceptor.hpp
 	impl/connection_base.hpp
 	impl/connection.hpp
@@ -110,14 +125,15 @@ SET(RESTINIO_HEADERS_ALL
 	impl/os_unknown.ipp
 	impl/os_win.ipp
 	impl/parser_callbacks.ipp
-	impl/write_group_output_ctx.hpp
 	impl/response_coordinator.hpp
 	impl/sendfile_operation_default.ipp
 	impl/sendfile_operation.hpp
 	impl/sendfile_operation_posix.ipp
 	impl/sendfile_operation_win.ipp
+	impl/string_caseless_compare.hpp
 	impl/tls_socket.hpp
-	impl/to_lower_lut.ipp
+	impl/to_lower_lut.hpp
+	impl/write_group_output_ctx.hpp
 
 	path2regex/path2regex.hpp
 
@@ -129,6 +145,7 @@ SET(RESTINIO_HEADERS_ALL
 
 	so5/so_timer_manager.hpp
 
+	third_party/expected-lite/expected.hpp
 	third_party/optional-lite/optional.hpp
 	third_party/string-view-lite/string_view.hpp
 	third_party/variant-lite/variant.hpp
@@ -139,9 +156,11 @@ SET(RESTINIO_HEADERS_ALL
 	utils/base64_lut.ipp
 	utils/from_string_details.ipp
 	utils/from_string.hpp
+	utils/metaprogramming.hpp
 	utils/percent_encoding.hpp
 	utils/sha1.hpp
 	utils/suppress_exceptions.hpp
+	utils/tuple_algorithms.hpp
 
 	utils/impl/bitops.hpp
 	utils/impl/safe_uint_truncate.hpp
