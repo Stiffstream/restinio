@@ -61,6 +61,7 @@ struct media_type_value_t
 @endverbatim
 	 * @since v.0.6.1
 	 */
+	RESTINIO_NODISCARD
 	static auto
 	make_default_parser()
 	{
@@ -87,6 +88,7 @@ struct media_type_value_t
 @endverbatim
 	 * @since v.0.6.1
 	 */
+	RESTINIO_NODISCARD
 	static auto
 	make_weight_aware_parser()
 	{
