@@ -216,7 +216,7 @@ TEST_CASE( "Several parts in the body", "[body]" )
 			"\r\n"
 			"Hello, World!\r\n"
 			"--1234567890\r\n"
-			"Content-Disposition: form-data; name=\"file2\"; filename*=\"t2.txt\"\r\n"
+			"Content-Disposition: form-data; name=\"file2\"; filename*=utf-8''t2.txt\r\n"
 			"\r\n"
 			"Bye, World!\r\n"
 			"\r\n"
@@ -227,7 +227,7 @@ TEST_CASE( "Several parts in the body", "[body]" )
 			"--1234567890\r\n"
 			"Content-Disposition: form-data; name=\"file3\"; "
 					"filename=\"t31.txt\"; "
-					"filename*=\"t32.txt\"\r\n"
+					"filename*=utf-8''t32.txt\r\n"
 			"\r\n"
 			"Bye, Bye!\r\n"
 			"--1234567890--\r\n"s,
@@ -250,7 +250,7 @@ TEST_CASE( "Several parts in the body", "[body]" )
 				{
 					REQUIRE( "Bye, World!\r\n" == part.body );
 					REQUIRE( "file2" == part.name );
-					REQUIRE( "t2.txt" == part.filename_star );
+					REQUIRE( "utf-8''t2.txt" == part.filename_star );
 					REQUIRE( !part.filename );
 				}
 				else if( 2 == ordinal )
@@ -258,7 +258,7 @@ TEST_CASE( "Several parts in the body", "[body]" )
 					REQUIRE( "Bye, Bye!" == part.body );
 					REQUIRE( "file3" == part.name );
 					REQUIRE( "t31.txt" == part.filename );
-					REQUIRE( "t32.txt" == part.filename_star );
+					REQUIRE( "utf-8''t32.txt" == part.filename_star );
 				}
 
 				++ordinal;
