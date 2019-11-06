@@ -36,6 +36,8 @@
  * \example sample/ip_blocker/main.cpp
  *
  * \example sample/tls_inspector/main.cpp
+ *
+ * \example sample/file_upload/main.cpp
  */
 
 // vim:ft=cpp.doxygen

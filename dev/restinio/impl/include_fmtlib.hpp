@@ -11,6 +11,12 @@
 
 #pragma once
 
+// Because fmt can include `windows.h` we should include
+// Asio's header before fmt.
+//
+// Since v.0.6.1
+#include <restinio/asio_include.hpp>
+
 #if defined(__GNUG__) || defined(__clang__)
 
 #pragma GCC diagnostic push

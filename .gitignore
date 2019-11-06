@@ -27,4 +27,6 @@ o/*
 *.swp
 *.log
 /dev/local-build.rb
+/dev/__*.vim
+/dev/__*.cpp
 

@@ -1,6 +1,10 @@
 project(tests)
 
 add_subdirectory(catch_main)
+add_subdirectory(metaprogramming)
+add_subdirectory(tuple_algorithms)
+add_subdirectory(http_field_parser)
+add_subdirectory(multipart_body)
 add_subdirectory(default_constructed_settings)
 add_subdirectory(ref_qualifiers_settings)
 add_subdirectory(header)
@@ -21,6 +25,7 @@ add_subdirectory(transforms/zlib_body_handler)
 add_subdirectory(encoders)
 add_subdirectory(from_string)
 add_subdirectory(websocket)
+add_subdirectory(file_upload)
 
 if ( OPENSSL_FOUND )
 	add_subdirectory(socket_options_tls)

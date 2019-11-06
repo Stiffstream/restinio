@@ -7,6 +7,11 @@ require 'restinio/boost_helper.rb'
 
 MxxRu::Cpp::composite_target {
 
+	required_prj( "test/metaprogramming/prj.ut.rb" )
+	required_prj( "test/tuple_algorithms/prj.ut.rb" )
+	required_prj( "test/http_field_parser/prj.ut.rb" )
+	required_prj( "test/multipart_body/prj.ut.rb" )
+
 	required_prj( "test/header/prj.ut.rb" )
 	required_prj( "test/default_constructed_settings/prj.ut.rb" )
 	required_prj( "test/ref_qualifiers_settings/prj.ut.rb" )
@@ -84,4 +89,9 @@ MxxRu::Cpp::composite_target {
 	required_prj( "test/websocket/validators/prj.ut.rb" )
 	required_prj( "test/websocket/ws_connection/prj.ut.rb" )
 	required_prj( "test/websocket/notificators/prj.ut.rb" )
+
+	# ================================================================
+	# File upload support.
+	required_prj( "test/file_upload/prj.ut.rb" )
 }
+
