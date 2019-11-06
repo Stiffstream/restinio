@@ -21,6 +21,7 @@ MxxRu::Cpp::composite_target {
 	required_prj 'sample/custom_buffer/prj.rb'
 	required_prj 'sample/connection_state/prj.rb'
 	required_prj 'sample/ip_blocker/prj.rb'
+	required_prj 'sample/file_upload/prj.rb'
 
 	required_prj 'sample/websocket/prj.rb'
 	required_prj 'sample/websocket_detailed/prj.rb'

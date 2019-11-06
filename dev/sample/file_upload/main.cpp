@@ -98,15 +98,16 @@ void save_file(
 			[&args]( const part_description_t & part ) {
 				if( "file" == part.name )
 				{
-					// If `filename*` and `filename` are present at the same
-					// time then `filename*` is preferable.
-					restinio::string_view_t file_name = part.filename_star ?
-							*(part.filename_star) : *(part.filename);
+					// We can handle the name only in 'filename' parameter.
+					if( part.filename )
+					{
+						// NOTE: the validity of filename is not checked.
+						// This is just for simplification of the example.
+						store_file_to_disk( args, *part.filename, part.body );
 
-					store_file_to_disk( args, file_name, part.body );
-
-					// There is no need to handle other parts.
-					return handling_result_t::stop_enumeration;
+						// There is no need to handle other parts.
+						return handling_result_t::stop_enumeration;
+					}
 				}
 
 				// We expect only one part with name 'file'.
