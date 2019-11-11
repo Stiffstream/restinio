@@ -39,7 +39,7 @@ auto server_handler()
 		"/json",
 		[]( auto req, auto ){
 				init_resp( req->create_response() )
-					.append_header( restinio::http_field::content_type, "text/json; charset=utf-8" )
+					.append_header( restinio::http_field::content_type, "application/json" )
 					.set_body( R"-({"message" : "Hello world!"})-")
 					.done();
 
@@ -107,6 +107,7 @@ int main( int argc, const char * argv[] )
 		restinio::run(
 			restinio::on_this_thread< traits_t >()
 				.address( "localhost" )
+			        .port( 8443 )
 				.request_handler( server_handler() )
 				.read_next_http_message_timelimit( 10s )
 				.write_http_response_timelimit( 1s )
