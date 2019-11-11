@@ -358,8 +358,15 @@ struct valid_handler_type<
 template< typename Handler >
 expected_t< std::size_t, enumeration_error_t >
 enumerate_parts_with_files(
+	//! Request to be processed.
 	const request_t & req,
-	Handler && handler )
+	//! Handler to be called for every part with uploaded file.
+	Handler && handler,
+	//! The value of 'type' part of media-type in Content-Type field.
+	//! Please note: the special value '*' is not supported here.
+	string_view_t expected_media_type = string_view_t{"multipart"},
+	//! The value of 'subtype' part of media-type in Content-Type field.
+	string_view_t expected_media_subtype = string_view_t{"form-data"} )
 {
 	static_assert(
 			impl::valid_handler_type< std::decay_t<Handler> >::value,
@@ -392,8 +399,8 @@ enumerate_parts_with_files(
 					return handling_result_t::terminate_enumeration;
 				}
 			},
-			"multipart",
-			"form-data" );
+			expected_media_type,
+			expected_media_subtype );
 
 	if( error )
 		return make_unexpected( *error );
