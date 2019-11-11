@@ -33,7 +33,7 @@ auto create_request_handler()
 		"/json",
 		[]( auto req, auto ){
 				init_resp( req->create_response() )
-					.append_header( restinio::http_field::content_type, "text/json; charset=utf-8" )
+					.append_header( restinio::http_field::content_type, "application/json" )
 					.set_body( R"-({"message" : "Hello world!"})-")
 					.done();
 
