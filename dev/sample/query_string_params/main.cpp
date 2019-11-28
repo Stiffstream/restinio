@@ -23,7 +23,7 @@ restinio::request_handling_status_t handler( const restinio::request_handle_t& r
 
 			for( const auto p : qp )
 			{
-				sout << "'"<< p.first << "' => "<<  p.second << "'\n";
+				sout << "'"<< p.first << "' => '"<<  p.second << "'\n";
 			}
 		}
 
