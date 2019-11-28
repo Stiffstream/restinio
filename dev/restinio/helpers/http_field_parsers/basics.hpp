@@ -174,17 +174,17 @@ private :
 
 public :
 
-	qvalue_t() = default;
+	constexpr qvalue_t() = default;
 
 	qvalue_t( untrusted val ) noexcept
 		:	m_value{ val.get() }
 	{}
 
-	qvalue_t( trusted val ) noexcept
+	constexpr qvalue_t( trusted val ) noexcept
 		:	m_value{ val.get() }
 	{}
 
-	auto as_uint() const noexcept { return m_value; }
+	constexpr auto as_uint() const noexcept { return m_value; }
 
 	auto as_string() const
 	{
