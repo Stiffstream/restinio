@@ -43,7 +43,7 @@ struct accept_encoding_value_t
 	struct item_t
 	{
 		std::string content_coding;
-		restinio::optional_t< qvalue_t > weight;
+		qvalue_t weight{ qvalue_t::maximum };
 	};
 
 	using item_container_t = std::vector< item_t >;

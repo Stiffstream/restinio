@@ -46,7 +46,7 @@ TEST_CASE( "Accept-Encoding", "[accept-encoding]" )
 		REQUIRE( result );
 
 		accept_encoding_value_t::item_container_t expected{
-			{ "compress"s, restinio::nullopt }
+			{ "compress"s, qvalue_t{ qvalue_t::maximum } }
 		};
 
 		REQUIRE( expected == result->codings );
@@ -59,8 +59,8 @@ TEST_CASE( "Accept-Encoding", "[accept-encoding]" )
 		REQUIRE( result );
 
 		accept_encoding_value_t::item_container_t expected{
-			{ "compress"s, restinio::nullopt }
-			, { "gzip"s, restinio::nullopt }
+			{ "compress"s, qvalue_t{ qvalue_t::maximum } }
+			, { "gzip"s, qvalue_t{ qvalue_t::maximum } }
 		};
 
 		REQUIRE( expected == result->codings );
@@ -74,7 +74,7 @@ TEST_CASE( "Accept-Encoding", "[accept-encoding]" )
 
 		accept_encoding_value_t::item_container_t expected{
 			{ "compress"s, qvalue_t{ qvalue_t::trusted{500} } }
-			, { "gzip"s, restinio::nullopt }
+			, { "gzip"s, qvalue_t{ qvalue_t::maximum } }
 		};
 
 		REQUIRE( expected == result->codings );
@@ -117,7 +117,7 @@ TEST_CASE( "Accept-Encoding", "[accept-encoding]" )
 
 		accept_encoding_value_t::item_container_t expected{
 			{ "gzip"s, qvalue_t{ qvalue_t::maximum } }
-			, { "identity"s, restinio::nullopt }
+			, { "identity"s, qvalue_t{ qvalue_t::maximum } }
 			, { "*"s, qvalue_t{ qvalue_t::zero } }
 		};
 
