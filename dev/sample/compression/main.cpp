@@ -7,6 +7,7 @@
 
 #include <restinio/all.hpp>
 #include <restinio/transforms/zlib.hpp>
+#include <restinio/helpers/http_field_parsers/accept-encoding.hpp>
 
 #include <clara.hpp>
 #include <fmt/format.h>
@@ -88,26 +89,77 @@ std::string get_random_nums_str( std::size_t count )
 using router_t = restinio::router::express_router_t<>;
 
 namespace rtz = restinio::transforms::zlib;
+namespace hfp = restinio::http_field_parsers;
 
 auto make_transform_params(
 	const restinio::request_t & req,
 	const restinio::query_string_params_t & qp )
 {
-	const auto accept_encoding =
+	auto copression_level = [&]{ return restinio::value_or( qp, "level", -1 ); };
+
+	const auto accept_encoding_field =
 		req.header().get_field_or(
 			restinio::http_field::accept_encoding,
 			"deflate" );
+	// Value of Accept-Encoding field should be parsed.
+	auto parsed_accept_encoding = hfp::accept_encoding_value_t::try_parse(
+					accept_encoding_field );
+	if( !parsed_accept_encoding )
+		throw std::runtime_error( "Unable to parse Accept-Encoding field" );
 
-	auto copression_level = [&]{ return restinio::value_or( qp, "level", -1 ); };
+	auto & codings = parsed_accept_encoding->codings;
 
-	if( std::string::npos != accept_encoding.find( "deflate" ) )
+	// Sort codings with the respect to their weights.
+	std::sort( codings.begin(), codings.end(),
+			[]( const auto & a, const auto & b ) {
+				// Sort if reverse order: items with greater weight
+				// should be at the beginning of the result vector.
+				return b.weight < a.weight;
+			} );
+
+	// Select appropriate Content-Encoding based on values from
+	// Accept-Encoding HTTP-field.
+	constexpr hfp::qvalue_t disabled = hfp::qvalue_t{ hfp::qvalue_t::zero };
+	bool deflate_disabled = false;
+	bool gzip_disabled = false;
+	bool identity_disabled = false;
+
+	for( const auto & c : codings )
 	{
-		return rtz::make_deflate_compress_params( copression_level() );
+		if( "deflate" == c.content_coding )
+		{
+			if( disabled != c.weight )
+				return rtz::make_deflate_compress_params( copression_level() );
+			else
+				deflate_disabled = true;
+		}
+		else if( "gzip" == c.content_coding )
+		{
+			if( disabled != c.weight )
+				return rtz::make_gzip_compress_params( copression_level() );
+			else
+				gzip_disabled = true;
+		}
+		else if( "identity" == c.content_coding )
+		{
+			if( disabled != c.weight )
+				return rtz::make_identity_params();
+			else
+				identity_disabled = true;
+		}
+		else if( "*" == c.content_coding && disabled != c.weight )
+		{
+			if( !deflate_disabled )
+				return rtz::make_deflate_compress_params( copression_level() );
+			else if( !gzip_disabled )
+				return rtz::make_gzip_compress_params( copression_level() );
+			else if( !identity_disabled )
+				return rtz::make_identity_params();
+		}
 	}
-	else if( std::string::npos != accept_encoding.find( "gzip" ) )
-	{
-		return rtz::make_gzip_compress_params( copression_level() );
-	}
+
+	if( identity_disabled )
+		throw std::runtime_error( "Value of Accept-Encoding field is not supported" );
 
 	return rtz::make_identity_params();
 }
