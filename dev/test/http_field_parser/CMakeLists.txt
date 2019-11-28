@@ -6,6 +6,7 @@ set(UNITTEST_SRCFILES
 	cache-control.cpp
 	content-encoding.cpp
 	accept.cpp
+	accept-encoding.cpp
 	content-disposition.cpp
 )
 include(${CMAKE_SOURCE_DIR}/cmake/unittest.cmake)
