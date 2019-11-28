@@ -10,6 +10,13 @@ restinio::request_handling_status_t handler( const restinio::request_handle_t& r
 		std::ostringstream sout;
 		sout << "GET request to '" << req->header().request_target() << "'\n";
 
+		// Request header fields.
+		sout << "HTTP-fields (" << req->header().fields_count() << "):\n";
+		for( const auto & f : req->header() )
+		{
+			sout << f.name() << ": " << f.value() << "\n";
+		}
+
 		// Query params.
 		const auto qp = restinio::parse_query( req->header().query() );
 
