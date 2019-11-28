@@ -1,5 +1,5 @@
- /*
-	Simple example using sendfile facility.
+/*
+	Simple example using restinio::transforms::zlib facility.
 */
 
 #include <iostream>
