@@ -270,6 +270,46 @@ using param_appender_sequence_t =
 	path2regex::param_appender_sequence_t< route_params_appender_t >;
 
 //
+// target_path_holder_t
+//
+//FIXME: document this!
+/*!
+ *
+ * @since v.0.6.2
+ */
+class target_path_holder_t
+{
+	public:
+		using data_t = std::unique_ptr<char[]>;
+
+		target_path_holder_t( string_view_t original_path )
+			:	m_data{ new char[ original_path.size() ] }
+		{
+			std::copy( original_path.begin(), original_path.end(), m_data.get() );
+			m_size = restinio::utils::inplace_unescape_percent_encoding(
+					m_data.get(), original_path.size() );
+		}
+
+		RESTINIO_NODISCARD
+		string_view_t
+		view() const noexcept
+		{
+			return { m_data.get(), m_size };
+		}
+
+		RESTINIO_NODISCARD
+		data_t
+		giveout_data() noexcept
+		{
+			return std::move(m_data);
+		}
+
+	private:
+		data_t m_data;
+		std::size_t m_size;
+};
+
+//
 // route_matcher_t
 //
 
@@ -299,12 +339,12 @@ class route_matcher_t
 		//! Try to match a given request target with this route.
 		bool
 		match_route(
-			string_view_t target_path,
+			target_path_holder_t & target_path,
 			route_params_t & parameters ) const
 		{
 			match_results_t matches;
 			if( Regex_Engine::try_match(
-					target_path,
+					target_path.view(),
 					m_route_regex,
 					matches ) )
 			{
@@ -312,8 +352,7 @@ class route_matcher_t
 
 				// Data for route_params_t initialization.
 
-				std::unique_ptr< char[] > captured_params{ new char[ target_path.size() ] };
-				std::memcpy( captured_params.get(), target_path.data(), target_path.size() );
+				auto captured_params = target_path.giveout_data();
 
 				const string_view_t match{
 					captured_params.get() + Regex_Engine::submatch_begin_pos( matches[0] ),
@@ -366,10 +405,10 @@ class route_matcher_t
 
 		inline bool
 		operator () (
-			const http_request_header_t & h,
+			target_path_holder_t & target_path,
 			route_params_t & parameters ) const
 		{
-			return m_method == h.method() && match_route( h.path(), parameters );
+			return m_method == h.method() && match_route( target_path, parameters );
 		}
 
 	private:
@@ -464,31 +503,22 @@ class express_route_entry_t
 
 		//! Checks if request header matches entry,
 		//! and if so, set route params.
+		RESTINIO_NODISCARD
 		bool
-		match( const http_request_header_t & h, route_params_t & params ) const
+		match(
+			impl::target_path_holder_t & target_path,
+			route_params_t & params ) const
 		{
 			return m_matcher( h, params );
 		}
 
 		//! Calls a handler of given request with given params.
+		RESTINIO_NODISCARD
 		request_handling_status_t
 		handle( request_handle_t rh, route_params_t rp ) const
 		{
 			return m_handler( std::move( rh ), std::move( rp ) );
 		}
-
-#if 0
-		//! Try to match the entry and calls a handler with extracted params.
-		request_handling_status_t
-		try_to_handle( request_handle_t rh ) const
-		{
-			route_params_t params;
-			if( match( rh->header(), params ) )
-				return handle( std::move( rh ), std::move( params ) );
-
-			return request_rejected();
-		}
-#endif
 
 	private:
 		impl::route_matcher_t< Regex_Engine > m_matcher;
@@ -521,13 +551,15 @@ class express_router_t
 		express_router_t() = default;
 		express_router_t( express_router_t && ) = default;
 
+		RESTINIO_NODISCARD
 		request_handling_status_t
 		operator () ( request_handle_t req ) const
 		{
+			impl::target_path_holder_t target_path{ req->header().path() };
 			route_params_t params;
 			for( const auto & entry : m_handlers )
 			{
-				if( entry.match( req->header(), params ) )
+				if( entry.match( target_path, params ) )
 				{
 					return entry.handle( std::move( req ), std::move( params ) );
 				}
