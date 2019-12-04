@@ -236,6 +236,97 @@ TEST_CASE( "In-place unescape percent encoding" , "[unescape][percent_encoding][
 	}
 }
 
+TEST_CASE( "unreserved-chars: estimate capacity",
+		"[unreserved_chars][estimate_required_capacity]" )
+{
+	namespace uri_norm = restinio::utils::uri_normalization;
+	namespace uc = uri_norm::unreserved_chars;
+
+	{
+		const auto what = restinio::string_view_t{ "/just/a/test" };
+		const auto r = uc::estimate_required_capacity( what );
+
+		REQUIRE( restinio::holds_alternative< uri_norm::keep_unchanged_t >(r) );
+	}
+
+	{
+		const auto what = restinio::string_view_t{ "/just/a/~test" };
+		const auto r = uc::estimate_required_capacity( what );
+
+		REQUIRE( restinio::holds_alternative< uri_norm::keep_unchanged_t >(r) );
+	}
+
+	{
+		const auto what = restinio::string_view_t{ "/just/a/%7Etest" };
+		const auto r = uc::estimate_required_capacity( what );
+
+		REQUIRE( restinio::holds_alternative< uri_norm::required_capacity_t >(r) );
+		REQUIRE( (what.size() - 2) ==
+				restinio::get< uri_norm::required_capacity_t >(r).m_value );
+	}
+
+	{
+		const auto what = restinio::string_view_t{ "/j%75st/%41/~test" };
+		const auto r = uc::estimate_required_capacity( what );
+
+		REQUIRE( restinio::holds_alternative< uri_norm::required_capacity_t >(r) );
+		REQUIRE( (what.size() - 4) ==
+				restinio::get< uri_norm::required_capacity_t >(r).m_value );
+	}
+
+	{
+		const auto what = restinio::string_view_t{ "/j%75st/%4/~test" };
+		REQUIRE_THROWS( uc::estimate_required_capacity( what ) );
+	}
+}
+
+TEST_CASE( "unreserved-chars: normalize",
+		"[unreserved_chars][normalize_to]" )
+{
+	namespace uri_norm = restinio::utils::uri_normalization;
+	namespace uc = uri_norm::unreserved_chars;
+
+	{
+		const auto what = restinio::string_view_t{ "/just/a/test" };
+		std::vector< char > dest( what.size(), '\x00' );
+		uc::normalize_to( what, dest.data() );
+
+		REQUIRE( restinio::string_view_t{ dest.data(), dest.size() } == what );
+	}
+
+	{
+		const auto what = restinio::string_view_t{ "/just/a/~test" };
+		std::vector< char > dest( what.size(), '\x00' );
+		uc::normalize_to( what, dest.data() );
+
+		REQUIRE( restinio::string_view_t{ dest.data(), dest.size() } == what );
+	}
+
+	{
+		const auto what = restinio::string_view_t{ "/just/a/%7Etest" };
+		const auto expected = restinio::string_view_t{ "/just/a/~test" };
+		std::vector< char > dest( expected.size(), '\x00' );
+		uc::normalize_to( what, dest.data() );
+
+		REQUIRE( restinio::string_view_t{ dest.data(), dest.size() } == expected );
+	}
+
+	{
+		const auto what = restinio::string_view_t{ "/j%75st/%41/~test" };
+		const auto expected = restinio::string_view_t{ "/just/A/~test" };
+		std::vector< char > dest( expected.size(), '\x00' );
+		uc::normalize_to( what, dest.data() );
+
+		REQUIRE( restinio::string_view_t{ dest.data(), dest.size() } == expected );
+	}
+
+	{
+		const auto what = restinio::string_view_t{ "/j%75st/%4/~test" };
+		std::vector< char > dest( what.size(), '\x00' );
+		REQUIRE_THROWS( uc::normalize_to( what, dest.data() ) );
+	}
+}
+
 TEST_CASE( "Parse query params" , "[parse_query]" )
 {
 	const auto case_1 = []( const restinio::string_view_t query )

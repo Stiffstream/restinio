@@ -13,6 +13,7 @@
 #include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/string_view.hpp>
+#include <restinio/variant.hpp>
 #include <restinio/exception.hpp>
 
 namespace restinio
@@ -252,6 +253,131 @@ inplace_unescape_percent_encoding( char * data, std::size_t size )
 }
 
 //! \}
+
+namespace uri_normalization
+{
+
+//FIXME: document this!
+struct required_capacity_t
+{
+	std::size_t m_value;
+};
+
+//FIXME: document this!
+struct keep_unchanged_t {};
+
+namespace unreserved_chars
+{
+
+//FIXME: document this!
+RESTINIO_NODISCARD
+constexpr inline bool
+is_unreserved_char( const char ch ) noexcept
+{
+	return restinio_default_unescape_traits::ordinary_char( ch );
+}
+
+//FIXME: document this!
+RESTINIO_NODISCARD
+inline variant_t<required_capacity_t, keep_unchanged_t>
+estimate_required_capacity(
+	string_view_t what )
+{
+	std::size_t calculated_capacity = 0u;
+
+	std::size_t chars_to_handle = what.size();
+	const char * d = what.data();
+
+	while( 0 < chars_to_handle )
+	{
+		if( '%' != *d )
+		{
+			// Just one symbol to the output.
+			++calculated_capacity;
+			--chars_to_handle;
+			++d;
+		}
+		else if( chars_to_handle >= 3 &&
+			impl::is_hexdigit( d[ 1 ] ) && impl::is_hexdigit( d[ 2 ] ) )
+		{
+			const char ch = impl::extract_escaped_char( d[ 1 ], d[ 2 ] );
+			if( is_unreserved_char( ch ) )
+				// percent encoded char will be replaced by one char.
+				++calculated_capacity; 
+			else
+				// this percent encoding sequence will go to the output.
+				calculated_capacity += 3;
+
+			chars_to_handle -= 3;
+			d += 3;
+		}
+		else
+		{
+			throw exception_t{
+				fmt::format( "invalid escape sequence at pos {}", d - what.data() )
+			};
+		}
+	}
+
+	if( calculated_capacity != what.size() )
+		return required_capacity_t{ calculated_capacity };
+	else
+		return keep_unchanged_t{};
+}
+
+//FIXME: document this!
+inline void
+normalize_to(
+	string_view_t what,
+	char * dest )
+{
+	std::size_t chars_to_handle = what.size();
+	const char * d = what.data();
+
+	while( 0 < chars_to_handle )
+	{
+		if( '%' != *d )
+		{
+			// Just one symbol to the output.
+			*dest = *d;
+			++dest;
+			++d;
+			--chars_to_handle;
+		}
+		else if( chars_to_handle >= 3 &&
+			impl::is_hexdigit( d[ 1 ] ) && impl::is_hexdigit( d[ 2 ] ) )
+		{
+			const char ch = impl::extract_escaped_char( d[ 1 ], d[ 2 ] );
+			if( is_unreserved_char( ch ) )
+			{
+				// percent encoded char will be replaced by one char.
+				*dest = ch;
+				++dest;
+			}
+			else
+			{
+				// this percent encoding sequence will go to the output.
+				dest[ 0 ] = d[ 0 ];
+				dest[ 1 ] = d[ 1 ];
+				dest[ 3 ] = d[ 3 ];
+				dest += 3;
+			}
+
+			chars_to_handle -= 3;
+			d += 3;
+		}
+		else
+		{
+			throw exception_t{
+				fmt::format( "invalid escape sequence at pos {}", d - what.data() )
+			};
+		}
+	}
+}
+
+} /* namespace unreserved_chars */
+
+} /* namespace uri_normalization */
 
 } /* namespace utils */
 
