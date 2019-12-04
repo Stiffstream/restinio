@@ -40,6 +40,11 @@ constexpr underlying_uint_t maximum = 1000u;
 //! The minimal allowed value for a qvalue.
 constexpr underlying_uint_t zero = 0u;
 
+// A part of workaround for problem with static constexpr members
+// detected after release of v.0.6.1.
+enum class extremum_min_t { v };
+enum class extremum_max_t { v };
+
 //! A helper wrapper to indicate that value is already checked and
 //! shouldn't be checked again.
 class trusted
@@ -137,10 +142,14 @@ public :
 	//! The type that checks a value to be used for qvalue. 
 	using untrusted = qvalue_details::untrusted;
 
-	//! The maximum allowed value for qvalue.
-	static constexpr trusted maximum{ qvalue_details::maximum };
-	//! The minimal allowed value for qvalue.
-	static constexpr trusted zero{ qvalue_details::zero };
+	//! The indicator that tells that new qvalue object should have
+	//! the maximal allowed value.
+	static constexpr qvalue_details::extremum_max_t maximum =
+			qvalue_details::extremum_max_t::v;
+	//! The indicator that tells that new qvalue object should have
+	//! the minimal allowed value.
+	static constexpr qvalue_details::extremum_min_t zero =
+			qvalue_details::extremum_min_t::v;
 
 private :
 	// Note: with the terminal 0-symbol.
@@ -152,7 +161,7 @@ private :
 	make_char_array() const noexcept
 	{
 		underlying_char_array_t result;
-		if( maximum.get() == m_value )
+		if( qvalue_details::maximum == m_value )
 		{
 			std::strcpy( &result[0], "1.000" );
 		}
@@ -182,6 +191,14 @@ public :
 
 	constexpr qvalue_t( trusted val ) noexcept
 		:	m_value{ val.get() }
+	{}
+
+	constexpr qvalue_t( qvalue_details::extremum_min_t ) noexcept
+		:	m_value{ qvalue_details::zero }
+	{}
+
+	constexpr qvalue_t( qvalue_details::extremum_max_t ) noexcept
+		:	m_value{ qvalue_details::maximum }
 	{}
 
 	constexpr auto as_uint() const noexcept { return m_value; }
