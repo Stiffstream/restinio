@@ -477,6 +477,7 @@ class express_route_entry_t
 			return m_handler( std::move( rh ), std::move( rp ) );
 		}
 
+#if 0
 		//! Try to match the entry and calls a handler with extracted params.
 		request_handling_status_t
 		try_to_handle( request_handle_t rh ) const
@@ -487,6 +488,7 @@ class express_route_entry_t
 
 			return request_rejected();
 		}
+#endif
 
 	private:
 		impl::route_matcher_t< Regex_Engine > m_matcher;
