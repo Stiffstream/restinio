@@ -259,15 +259,34 @@ namespace uri_normalization
 namespace unreserved_chars
 {
 
-//FIXME: document this!
+/*!
+ * @brief Is this symbol a part of unreserved set?
+ *
+ * See https://tools.ietf.org/html/rfc3986#section-2.3 for more details.
+ *
+ * @since v.0.6.2
+ */
 RESTINIO_NODISCARD
 constexpr inline bool
 is_unreserved_char( const char ch ) noexcept
 {
+	// In this version of RESTinio class restinio_default_unescape_traits
+	// already implements necessary check.
 	return restinio_default_unescape_traits::ordinary_char( ch );
 }
 
-//FIXME: document this!
+/*!
+ * @brief Calculate the size of a buffer to hold normalized value of a URI.
+ *
+ * If @a what has some chars from unreserved set in percent-encoded form
+ * then this function returns the size of a buffer to hold normalized value
+ * of @a what. Otherwise the original size of @a what is returned.
+ *
+ * @note
+ * This functions throws if @a what has invalid value.
+ *
+ * @since v.0.6.2
+ */
 RESTINIO_NODISCARD
 inline std::size_t
 estimate_required_capacity(
@@ -312,7 +331,24 @@ estimate_required_capacity(
 	return calculated_capacity;
 }
 
-//FIXME: document this!
+/*!
+ * @brief Perform normalization of URI value.
+ *
+ * Copies the content of @a what into @a dest and replaces the
+ * percent-encoded representation of chars from unreserved set into
+ * their normal values.
+ *
+ * @attention
+ * The capacity of @a dest should be enough to hold the result value.
+ * It's assumed that estimate_required_capacity() is called before that
+ * function and the result of estimate_required_capacity() is used for
+ * allocation of a buffer for @a dest.
+ *
+ * @note
+ * This functions throws if @a what has invalid value.
+ *
+ * @since v.0.6.2
+ */
 inline void
 normalize_to(
 	string_view_t what,
