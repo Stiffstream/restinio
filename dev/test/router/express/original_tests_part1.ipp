@@ -1029,6 +1029,27 @@ TEST_CASE( "Original tests #18", "[path2regex][original][generated][n18]")
 	{
 		route_params_t params;
 
+		// A special check for normalization of incoming path before
+		// searching the required pattern.
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/s%6fm%65thi%6Eg%2Fel%73e)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
+		REQUIRE( params.match() == R"match(/something%2Felse)match" );
+
+		REQUIRE( 1 == params.named_parameters_size() );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( params );
+		REQUIRE( 1 == nps.size() );
+		REQUIRE( params.has( R"key(test)key" ) );
+		REQUIRE( nps[0].first == R"key(test)key" );
+		REQUIRE( nps[0].second == R"value(something%2Felse)value" );
+
+		REQUIRE( 0 == params.indexed_parameters_size() );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
+		REQUIRE( ips.empty() );
+	}
+
+	{
+		route_params_t params;
+
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/something%2Felse%2Fmore)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/something%2Felse%2Fmore)match" );
