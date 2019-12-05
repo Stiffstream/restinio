@@ -16,10 +16,17 @@ TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 
 		route_params_t params;
 
-		REQUIRE_FALSE( rm.match_route( "/foo/42/q", params ) );
-		REQUIRE_FALSE( rm.match_route( "/oof/42", params ) );
+		{
+			restinio::router::impl::target_path_holder_t target_path{ "/foo/42/q" };
+			REQUIRE_FALSE( rm.match_route( target_path, params ) );
+		}
+		{
+			restinio::router::impl::target_path_holder_t target_path{ "/oof/42" };
+			REQUIRE_FALSE( rm.match_route( target_path, params ) );
+		}
 
-		REQUIRE( rm.match_route( "/foo/42", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ "/foo/42" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == "/foo/42" );
 		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( params );
 		REQUIRE( nps.size() == 1 );
@@ -45,7 +52,8 @@ TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 
 		route_params_t params;
 
-		REQUIRE( rm.match_route( "/a-route/42", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ "/a-route/42" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == "/a-route/42" );
 
 		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( params );
@@ -138,7 +146,8 @@ TEST_CASE( "value_or" , "[value_or]" )
 
 	route_params_t params;
 
-	REQUIRE( rm.match_route( "/815875200/1133136000/38/f", params ) );
+	restinio::router::impl::target_path_holder_t target_path{ "/815875200/1133136000/38/f" };
+	REQUIRE( rm.match_route( target_path, params ) );
 	REQUIRE( restinio::value_or< std::uint32_t >( params, "to", 0L ) == 815875200L );
 	REQUIRE( restinio::value_or< std::uint32_t >( params, "from", 0L ) == 1133136000UL );
 	REQUIRE( restinio::value_or( params, "age", std::uint16_t{99} ) == 38 );
@@ -149,3 +158,4 @@ TEST_CASE( "value_or" , "[value_or]" )
 	REQUIRE( restinio::value_or( params, "e", string_view_t{ "2.71828" } ) ==
 															"2.71828" );
 }
+

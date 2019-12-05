@@ -54,13 +54,15 @@ TEST_CASE( "Original tests #67", "[path2regex][original][generated][n67]")
 	{
 		route_params_t params;
 
-		REQUIRE_FALSE( rm.match_route( R"target(/testing)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/testing)target" };
+		REQUIRE_FALSE( rm.match_route( target_path, params ) );
 	}
 
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/(testing))target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/(testing))target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/(testing))match" );
 
 		REQUIRE( 0 == params.named_parameters_size() );
@@ -94,7 +96,8 @@ TEST_CASE( "Original tests #68", "[path2regex][original][generated][n68]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/.+*?=^!:${}[]|)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/.+*?=^!:${}[]|)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/.+*?=^!:${}[]|)match" );
 
 		REQUIRE( 0 == params.named_parameters_size() );
@@ -128,13 +131,15 @@ TEST_CASE( "Original tests #69", "[path2regex][original][generated][n69]")
 	{
 		route_params_t params;
 
-		REQUIRE_FALSE( rm.match_route( R"target(/test)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/test)target" };
+		REQUIRE_FALSE( rm.match_route( target_path, params ) );
 	}
 
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/test/)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/test/)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/test/)match" );
 
 		REQUIRE( 2 == params.named_parameters_size() );
@@ -155,7 +160,8 @@ TEST_CASE( "Original tests #69", "[path2regex][original][generated][n69]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/test/u123)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/test/u123)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/test/u123)match" );
 
 		REQUIRE( 2 == params.named_parameters_size() );
@@ -176,7 +182,8 @@ TEST_CASE( "Original tests #69", "[path2regex][original][generated][n69]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/test/c123)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/test/c123)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/test/c123)match" );
 
 		REQUIRE( 2 == params.named_parameters_size() );
@@ -216,7 +223,8 @@ TEST_CASE( "Original tests #70", "[path2regex][original][generated][n70]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/icon-240.png)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/icon-240.png)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/icon-240.png)match" );
 
 		REQUIRE( 1 == params.named_parameters_size() );
@@ -235,7 +243,8 @@ TEST_CASE( "Original tests #70", "[path2regex][original][generated][n70]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/apple-icon-240.png)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/apple-icon-240.png)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/apple-icon-240.png)match" );
 
 		REQUIRE( 1 == params.named_parameters_size() );
@@ -273,7 +282,8 @@ TEST_CASE( "Original tests #71", "[path2regex][original][generated][n71]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/match/route)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/match/route)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/match/route)match" );
 
 		REQUIRE( 2 == params.named_parameters_size() );
@@ -332,7 +342,8 @@ TEST_CASE( "Original tests #73", "[path2regex][original][generated][n73]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/endpoint/user)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/endpoint/user)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/endpoint/user)match" );
 
 		REQUIRE( 2 == params.named_parameters_size() );
@@ -353,7 +364,8 @@ TEST_CASE( "Original tests #73", "[path2regex][original][generated][n73]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/endpoint/user-name)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/endpoint/user-name)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/endpoint/user-name)match" );
 
 		REQUIRE( 2 == params.named_parameters_size() );
@@ -374,7 +386,8 @@ TEST_CASE( "Original tests #73", "[path2regex][original][generated][n73]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/foo.bar/user-name)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/foo.bar/user-name)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/foo.bar/user-name)match" );
 
 		REQUIRE( 2 == params.named_parameters_size() );
@@ -414,7 +427,8 @@ TEST_CASE( "Original tests #74", "[path2regex][original][generated][n74]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/route?)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/route?)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/route?)match" );
 
 		REQUIRE( 1 == params.named_parameters_size() );
@@ -451,7 +465,8 @@ TEST_CASE( "Original tests #75", "[path2regex][original][generated][n75]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/foobaz)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/foobaz)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/foobaz)match" );
 
 		REQUIRE( 1 == params.named_parameters_size() );
@@ -469,7 +484,8 @@ TEST_CASE( "Original tests #75", "[path2regex][original][generated][n75]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/foo/barbaz)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/foo/barbaz)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/foo/barbaz)match" );
 
 		REQUIRE( 1 == params.named_parameters_size() );
@@ -487,7 +503,8 @@ TEST_CASE( "Original tests #75", "[path2regex][original][generated][n75]")
 	{
 		route_params_t params;
 
-		REQUIRE_FALSE( rm.match_route( R"target(/baz)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/baz)target" };
+		REQUIRE_FALSE( rm.match_route( target_path, params ) );
 	}
 
 }
@@ -512,7 +529,8 @@ TEST_CASE( "Original tests #76", "[path2regex][original][generated][n76]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/foobaz)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/foobaz)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/foobaz)match" );
 
 		REQUIRE( 1 == params.named_parameters_size() );
@@ -530,7 +548,8 @@ TEST_CASE( "Original tests #76", "[path2regex][original][generated][n76]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/baz)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/baz)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/baz)match" );
 
 		REQUIRE( 1 == params.named_parameters_size() );
@@ -567,7 +586,8 @@ TEST_CASE( "Original tests #77", "[path2regex][original][generated][n77]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/hello(world))target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/hello(world))target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/hello(world))match" );
 
 		REQUIRE( 2 == params.named_parameters_size() );
@@ -588,7 +608,8 @@ TEST_CASE( "Original tests #77", "[path2regex][original][generated][n77]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/hello())target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/hello())target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/hello())match" );
 
 		REQUIRE( 2 == params.named_parameters_size() );
@@ -628,7 +649,8 @@ TEST_CASE( "Original tests #78", "[path2regex][original][generated][n78]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/video)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/video)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/video)match" );
 
 		REQUIRE( 1 == params.named_parameters_size() );
@@ -647,7 +669,8 @@ TEST_CASE( "Original tests #78", "[path2regex][original][generated][n78]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/video+test)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/video+test)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/video+test)match" );
 
 		REQUIRE( 1 == params.named_parameters_size() );
@@ -666,7 +689,8 @@ TEST_CASE( "Original tests #78", "[path2regex][original][generated][n78]")
 	{
 		route_params_t params;
 
-		REQUIRE_FALSE( rm.match_route( R"target(/video+)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/video+)target" };
+		REQUIRE_FALSE( rm.match_route( target_path, params ) );
 	}
 
 }
@@ -691,7 +715,8 @@ TEST_CASE( "Original tests #79", "[path2regex][original][generated][n79]")
 	{
 		route_params_t params;
 
-		REQUIRE( rm.match_route( R"target(/café)target", params ) );
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/café)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
 		REQUIRE( params.match() == R"match(/café)match" );
 
 		REQUIRE( 1 == params.named_parameters_size() );
@@ -705,5 +730,4 @@ TEST_CASE( "Original tests #79", "[path2regex][original][generated][n79]")
 		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
 		REQUIRE( ips.empty() );
 	}
-
 }
