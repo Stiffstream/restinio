@@ -13,7 +13,6 @@
 #include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/string_view.hpp>
-#include <restinio/variant.hpp>
 #include <restinio/exception.hpp>
 
 namespace restinio
@@ -257,15 +256,6 @@ inplace_unescape_percent_encoding( char * data, std::size_t size )
 namespace uri_normalization
 {
 
-//FIXME: document this!
-struct required_capacity_t
-{
-	std::size_t m_value;
-};
-
-//FIXME: document this!
-struct keep_unchanged_t {};
-
 namespace unreserved_chars
 {
 
@@ -279,7 +269,7 @@ is_unreserved_char( const char ch ) noexcept
 
 //FIXME: document this!
 RESTINIO_NODISCARD
-inline variant_t<required_capacity_t, keep_unchanged_t>
+inline std::size_t
 estimate_required_capacity(
 	string_view_t what )
 {
@@ -319,10 +309,7 @@ estimate_required_capacity(
 		}
 	}
 
-	if( calculated_capacity != what.size() )
-		return required_capacity_t{ calculated_capacity };
-	else
-		return keep_unchanged_t{};
+	return calculated_capacity;
 }
 
 //FIXME: document this!
@@ -359,7 +346,7 @@ normalize_to(
 				// this percent encoding sequence will go to the output.
 				dest[ 0 ] = d[ 0 ];
 				dest[ 1 ] = d[ 1 ];
-				dest[ 3 ] = d[ 3 ];
+				dest[ 2 ] = d[ 2 ];
 				dest += 3;
 			}
 

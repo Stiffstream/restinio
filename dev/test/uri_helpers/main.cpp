@@ -246,32 +246,28 @@ TEST_CASE( "unreserved-chars: estimate capacity",
 		const auto what = restinio::string_view_t{ "/just/a/test" };
 		const auto r = uc::estimate_required_capacity( what );
 
-		REQUIRE( restinio::holds_alternative< uri_norm::keep_unchanged_t >(r) );
+		REQUIRE( what.size() == r );
 	}
 
 	{
 		const auto what = restinio::string_view_t{ "/just/a/~test" };
 		const auto r = uc::estimate_required_capacity( what );
 
-		REQUIRE( restinio::holds_alternative< uri_norm::keep_unchanged_t >(r) );
+		REQUIRE( what.size() == r );
 	}
 
 	{
 		const auto what = restinio::string_view_t{ "/just/a/%7Etest" };
 		const auto r = uc::estimate_required_capacity( what );
 
-		REQUIRE( restinio::holds_alternative< uri_norm::required_capacity_t >(r) );
-		REQUIRE( (what.size() - 2) ==
-				restinio::get< uri_norm::required_capacity_t >(r).m_value );
+		REQUIRE( (what.size() - 2) == r );
 	}
 
 	{
 		const auto what = restinio::string_view_t{ "/j%75st/%41/~test" };
 		const auto r = uc::estimate_required_capacity( what );
 
-		REQUIRE( restinio::holds_alternative< uri_norm::required_capacity_t >(r) );
-		REQUIRE( (what.size() - 4) ==
-				restinio::get< uri_norm::required_capacity_t >(r).m_value );
+		REQUIRE( (what.size() - 4) == r );
 	}
 
 	{
@@ -303,8 +299,25 @@ TEST_CASE( "unreserved-chars: normalize",
 	}
 
 	{
+		const auto what = restinio::string_view_t{ "/just%2Fa%2F~test" };
+		std::vector< char > dest( what.size(), '\x00' );
+		uc::normalize_to( what, dest.data() );
+
+		REQUIRE( restinio::string_view_t{ dest.data(), dest.size() } == what );
+	}
+
+	{
 		const auto what = restinio::string_view_t{ "/just/a/%7Etest" };
 		const auto expected = restinio::string_view_t{ "/just/a/~test" };
+		std::vector< char > dest( expected.size(), '\x00' );
+		uc::normalize_to( what, dest.data() );
+
+		REQUIRE( restinio::string_view_t{ dest.data(), dest.size() } == expected );
+	}
+
+	{
+		const auto what = restinio::string_view_t{ "/just%2Fa%2F%7Etest" };
+		const auto expected = restinio::string_view_t{ "/just%2Fa%2F~test" };
 		std::vector< char > dest( expected.size(), '\x00' );
 		uc::normalize_to( what, dest.data() );
 

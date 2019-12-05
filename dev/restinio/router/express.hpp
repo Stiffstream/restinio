@@ -283,11 +283,13 @@ class target_path_holder_t
 		using data_t = std::unique_ptr<char[]>;
 
 		target_path_holder_t( string_view_t original_path )
-			:	m_data{ new char[ original_path.size() ] }
+			:	m_size{ restinio::utils::uri_normalization::
+					unreserved_chars::estimate_required_capacity( original_path ) }
 		{
-			std::copy( original_path.begin(), original_path.end(), m_data.get() );
-			m_size = restinio::utils::inplace_unescape_percent_encoding(
-					m_data.get(), original_path.size() );
+			m_data.reset( new char[ m_size ] );
+
+			restinio::utils::uri_normalization::unreserved_chars::normalize_to(
+					original_path, m_data.get() );
 		}
 
 		RESTINIO_NODISCARD
@@ -405,6 +407,7 @@ class route_matcher_t
 
 		inline bool
 		operator () (
+			const http_request_header_t & h,
 			target_path_holder_t & target_path,
 			route_params_t & parameters ) const
 		{
@@ -506,10 +509,11 @@ class express_route_entry_t
 		RESTINIO_NODISCARD
 		bool
 		match(
+			const http_request_header_t & h,
 			impl::target_path_holder_t & target_path,
 			route_params_t & params ) const
 		{
-			return m_matcher( h, params );
+			return m_matcher( h, target_path, params );
 		}
 
 		//! Calls a handler of given request with given params.
@@ -559,7 +563,7 @@ class express_router_t
 			route_params_t params;
 			for( const auto & entry : m_handlers )
 			{
-				if( entry.match( target_path, params ) )
+				if( entry.match( req->header(), target_path, params ) )
 				{
 					return entry.handle( std::move( req ), std::move( params ) );
 				}
