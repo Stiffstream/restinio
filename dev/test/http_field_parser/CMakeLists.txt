@@ -6,6 +6,7 @@ set(UNITTEST_SRCFILES
 	cache-control.cpp
 	content-encoding.cpp
 	accept.cpp
+	accept-charset.cpp
 	accept-encoding.cpp
 	content-disposition.cpp
 )

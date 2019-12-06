@@ -4,13 +4,14 @@
 
 /*!
  * @file
- * @brief Stuff related to value of Accept HTTP-field.
+ * @brief Stuff related to value of Accept-Encoding HTTP-field.
  *
  * @since v.0.6.2
  */
 
 #pragma once
 
+//FIXME: has this header really needed?
 #include <restinio/helpers/http_field_parsers/media-type.hpp>
 
 namespace restinio
@@ -51,7 +52,7 @@ struct accept_encoding_value_t
 	item_container_t codings;
 
 	/*!
-	 * @brief A factory function for a parser of Accept value.
+	 * @brief A factory function for a parser of Accept-Encoding value.
 	 *
 	 * @since v.0.6.2
 	 */
@@ -70,9 +71,9 @@ struct accept_encoding_value_t
 	}
 
 	/*!
-	 * @brief An attempt to parse Accept HTTP-field.
+	 * @brief An attempt to parse Accept-Encoding HTTP-field.
 	 *
-	 * @since v.0.6.1
+	 * @since v.0.6.2
 	 */
 	RESTINIO_NODISCARD
 	static expected_t< accept_encoding_value_t, restinio::easy_parser::parse_error_t >
