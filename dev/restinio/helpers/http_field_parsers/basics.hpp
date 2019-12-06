@@ -267,6 +267,44 @@ is_alpha( const char ch ) noexcept
 }
 
 //
+// is_alpha_predicate_t
+//
+/*!
+ * @brief A preducate for symbol_producer_template that checks that
+ * a symbol is an alpha.
+ *
+ * @since v.0.6.2
+ */
+struct is_alpha_predicate_t
+{
+	RESTINIO_NODISCARD
+	bool
+	operator()( const char actual ) const noexcept
+	{
+		return is_alpha(actual);
+	}
+};
+
+//
+// is_alphanum_predicate_t
+//
+/*!
+ * @brief A preducate for symbol_producer_template that checks that
+ * a symbol is an alpha or numeric.
+ *
+ * @since v.0.6.2
+ */
+struct is_alphanum_predicate_t
+{
+	RESTINIO_NODISCARD
+	bool
+	operator()( const char actual ) const noexcept
+	{
+		return is_alpha(actual) || is_digit(actual);
+	}
+};
+
+//
 // is_vchar
 //
 /*!
@@ -564,6 +602,30 @@ public :
 };
 
 } /* namespace impl */
+
+//
+// alpha_symbol_producer
+//
+//FIXME: document this!
+RESTINIO_NODISCARD
+inline auto
+alpha_symbol_producer()
+{
+	return restinio::easy_parser::impl::symbol_producer_template_t<
+			impl::is_alpha_predicate_t >{};
+}
+
+//
+// alphanum_symbol_producer
+//
+//FIXME: document this!
+RESTINIO_NODISCARD
+inline auto
+alphanum_symbol_producer()
+{
+	return restinio::easy_parser::impl::symbol_producer_template_t<
+			impl::is_alphanum_predicate_t >{};
+}
 
 //
 // ows_producer

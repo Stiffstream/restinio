@@ -8,6 +8,7 @@ set(UNITTEST_SRCFILES
 	accept.cpp
 	accept-charset.cpp
 	accept-encoding.cpp
+	accept-language.cpp
 	content-disposition.cpp
 )
 include(${CMAKE_SOURCE_DIR}/cmake/unittest.cmake)

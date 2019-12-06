@@ -14,6 +14,7 @@ MxxRu::Cpp::exe_target {
 	cpp_source( "accept.cpp" )
 	cpp_source( "accept-charset.cpp" )
 	cpp_source( "accept-encoding.cpp" )
+	cpp_source( "accept-language.cpp" )
 	cpp_source( "content-disposition.cpp" )
 }
 
