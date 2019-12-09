@@ -24,6 +24,17 @@ namespace http_field_parsers
 namespace range_details
 {
 
+/*!
+ * @brief Value of range for the case where both ends of the range
+ * are defined.
+ *
+ * This type will be used if a range is defined such way:
+@verbatim
+bytes=1000-5000,6000-7000
+@endverbatim
+ *
+ * @since v.0.6.2
+ */
 template< typename T >
 struct double_ended_range_t
 {
@@ -31,41 +42,110 @@ struct double_ended_range_t
 	T last;
 };
 
+/*!
+ * @brief Value of range for the case where only left border of the
+ * range is defined.
+ *
+ * This type will be used if a range is defined such way:
+@verbatim
+bytes=1000-
+@endverbatim
+ *
+ * @since v.0.6.2
+ */
 template< typename T >
 struct open_ended_range_t
 {
 	T first;
 };
 
+/*!
+ * @brief Value of range for the case where only length of range's
+ * suffix is defined.
+ *
+ * This type will be used if a range is defined such way:
+@verbatim
+bytes=-450
+@endverbatim
+ *
+ * @since v.0.6.2
+ */
 template< typename T >
 struct suffix_length_t
 {
 	T length;
 };
 
+/*!
+ * @brief Variant type for all possible cases of specification for one range.
+ *
+ * @since v.0.6.2
+ */
 template< typename T >
 using byte_range_spec_t = variant_t<
 		double_ended_range_t<T>,
 		open_ended_range_t<T>,
 		suffix_length_t<T> >;
 
+/*!
+ * @brief A struct that holds a container of byte_range_specs.
+ *
+ * @since v.0.6.2
+ */
 template< typename T >
 struct byte_ranges_specifier_t
 {
 	std::vector< byte_range_spec_t<T> > ranges;
 };
 
+/*!
+ * @brief A description of a range value of units those are not "bytes".
+ *
+ * This type will be used for values like:
+@verbatim
+x-megabytes=1-45,450-1300
+@endverbatim
+ *
+ * Please note that other_ranges_specifier_t::range_set contains the raw
+ * value. E.g. for the example above range_set will hold "1-45,450-1300".
+ *
+ * @since v.0.6.2
+ */
 struct other_ranges_specifier_t
 {
 	std::string range_unit;
 	std::string range_set;
 };
 
+/*!
+ * @brief Variant type for holding parsed value of Range HTTP-field.
+ *
+ * @since v.0.6.2
+ */
 template< typename T >
 using value_t = variant_t<
 		byte_ranges_specifier_t<T>,
 		other_ranges_specifier_t >;
 
+/*!
+ * @brief Factory for creation of a parser for byte_range_spec values.
+ *
+ * Creates a parser for the following rule:
+@verbatim
+byte-range-spec = byte-range / suffix-byte-range-spec
+
+byte-range      = first-byte-pos "-" [ last-byte-pos ]
+first-byte-pos  = 1*DIGIT
+last-byte-pos   = 1*DIGIT
+
+suffix-byte-range-spec = "-" suffix-length
+suffix-length = 1*DIGIT
+@endverbatim
+ *
+ * The parser returned produces value of byte_range_spec_t<T>.
+ *
+ * @since v.0.6.2
+ */
 template< typename T >
 RESTINIO_NODISCARD
 auto
@@ -94,6 +174,25 @@ make_byte_range_spec_parser()
 	);
 }
 
+/*!
+ * @brief Factory for creation of a parser for byte_ranges_specifier values.
+ *
+ * Creates a parser for the following rule:
+@verbatim
+byte-ranges-specifier = bytes-unit "=" byte-range-set
+byte-range-set  = 1#( byte-range-spec / suffix-byte-range-spec )
+byte-range-spec = first-byte-pos "-" [ last-byte-pos ]
+first-byte-pos  = 1*DIGIT
+last-byte-pos   = 1*DIGIT
+
+suffix-byte-range-spec = "-" suffix-length
+suffix-length = 1*DIGIT
+@endverbatim
+ *
+ * The parser returned produces value of byte_ranges_specifier_t<T>.
+ *
+ * @since v.0.6.2
+ */
 template< typename T >
 RESTINIO_NODISCARD
 auto
@@ -109,6 +208,19 @@ make_byte_ranges_specifier_parser()
 	);
 }
 
+/*!
+ * @brief Factory for creation of a parser for other_ranges_specifier values.
+ *
+ * Creates a parser for the following rule:
+@verbatim
+other-ranges-specifier = other-range-unit "=" other-range-set
+other-range-set = 1*VCHAR
+@endverbatim
+ *
+ * The parser returned produces value of other_ranges_specifier_t.
+ *
+ * @since v.0.6.2
+ */
 RESTINIO_NODISCARD
 inline auto
 make_other_ranges_specifier_parser()
