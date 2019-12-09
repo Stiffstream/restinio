@@ -41,6 +41,77 @@ struct value_with_opt_params_t
 	param_storage_t m_params;
 };
 
+TEST_CASE( "positive decimal number", "[positive_decimal_number_producer]" )
+{
+	using namespace restinio::http_field_parsers;
+//	using namespace restinio::easy_parser;
+
+	{
+		const auto result =
+			try_parse( "", positive_decimal_number_producer<int>() );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result =
+			try_parse( "1", positive_decimal_number_producer<int>() );
+
+		REQUIRE( result );
+		REQUIRE( 1 == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "-1", positive_decimal_number_producer<int>() );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result =
+			try_parse( "123456", positive_decimal_number_producer<int>() );
+
+		REQUIRE( result );
+		REQUIRE( 123456 == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "123456", positive_decimal_number_producer<unsigned long>() );
+
+		REQUIRE( result );
+		REQUIRE( 123456u == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "123456w",
+					produce<int>(
+							positive_decimal_number_producer<int>() >> as_result(),
+							symbol('w')
+					)
+			);
+
+		REQUIRE( result );
+		REQUIRE( 123456 == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "123456w",
+					produce<unsigned long>(
+							positive_decimal_number_producer<unsigned long>() >>
+									as_result(),
+							symbol('w')
+					)
+			);
+
+		REQUIRE( result );
+		REQUIRE( 123456u == *result );
+	}
+}
+
 TEST_CASE( "token", "[token]" )
 {
 	using namespace restinio::http_field_parsers;

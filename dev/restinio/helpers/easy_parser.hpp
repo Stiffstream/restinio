@@ -1446,6 +1446,56 @@ public:
 };
 
 //
+// positive_decimal_number_producer_t
+//
+/*!
+ * @brief A producer for the case when a non-negative decimal number is
+ * expected in the input stream.
+ *
+ * In the case of success returns the extracted number.
+ *
+ * @since v.0.6.2
+ */
+template< typename T >
+class positive_decimal_number_producer_t : public producer_tag< T >
+{
+public:
+	RESTINIO_NODISCARD
+	expected_t< T, parse_error_t >
+	try_parse( source_t & from ) const noexcept
+	{
+		T result{};
+		constexpr T multiplier{10};
+		int symbols_processed{};
+
+		for( auto ch = from.getch(); !ch.m_eof; ch = from.getch() )
+		{
+			if( is_digit(ch.m_ch) )
+			{
+				//FIXME: check for overflow should be implemented here!
+				result *= multiplier;
+				result += static_cast<T>(ch.m_ch - '0');
+				++symbols_processed;
+			}
+			else
+			{
+				from.putback();
+				break;
+			}
+		}
+
+		if( !symbols_processed )
+			// There is nothing extracted from the input stream.
+			return make_unexpected( parse_error_t{
+					from.current_position(),
+					error_reason_t::pattern_not_found
+			} );
+		else
+			return result;
+	}
+};
+
+//
 // any_value_skipper_t
 //
 /*!
@@ -1999,6 +2049,27 @@ inline auto
 digit() noexcept
 {
 	return digit_producer() >> skip();
+}
+
+//
+// positive_decimal_number_producer
+//
+//FIXME: add note to the comment that values like 111someword can be parsed
+//and result will be 111.
+/*!
+ * @brief A factory function to create a positive_decimal_number_producer.
+ *
+ * @return a producer that expects a positive decimal number in the input stream
+ * and returns it if a number is found.
+ * 
+ * @since v.0.6.2
+ */
+template< typename T >
+RESTINIO_NODISCARD
+inline auto
+positive_decimal_number_producer() noexcept
+{
+	return impl::positive_decimal_number_producer_t<T>{};
 }
 
 //

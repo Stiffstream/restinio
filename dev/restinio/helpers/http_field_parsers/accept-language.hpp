@@ -68,7 +68,7 @@ alphanum        = ALPHA / DIGIT
 @endverbatim
  *
  * @note
- * Values of `language-range` store their case during parsing
+ * Values of `language-range` keep their case during parsing
  * (it means that they are not converted to lower or upper case).
  *
  * @since v.0.6.2

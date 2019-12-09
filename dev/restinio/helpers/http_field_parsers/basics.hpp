@@ -322,6 +322,24 @@ is_vchar( const char ch ) noexcept
 }
 
 //
+// is_vchar_predicate_t
+//
+/*!
+ * @brief A preducate for symbol_producer_template that checks that
+ * a symbol is a VCHAR.
+ *
+ * @since v.0.6.2
+ */
+struct is_vchar_predicate_t
+{
+	RESTINIO_NODISCARD
+	bool
+	operator()( const char actual ) const noexcept
+	{
+		return is_vchar(actual);
+	}
+};
+//
 // is_obs_text
 //
 /*!
@@ -625,6 +643,18 @@ alphanum_symbol_producer()
 {
 	return restinio::easy_parser::impl::symbol_producer_template_t<
 			impl::is_alphanum_predicate_t >{};
+}
+
+//
+// vchar_symbol_producer
+//
+//FIXME: document this!
+RESTINIO_NODISCARD
+inline auto
+vchar_symbol_producer()
+{
+	return restinio::easy_parser::impl::symbol_producer_template_t<
+			impl::is_vchar_predicate_t >{};
 }
 
 //
@@ -1027,6 +1057,7 @@ public :
 //
 // non_empty_comma_separated_list_producer
 //
+//FIXME: usage example should be added to the comment!
 /*!
  * @brief A factory for a producer that handles non-empty list of
  * comma-separated values.
@@ -1068,6 +1099,7 @@ non_empty_comma_separated_list_producer( Element_Producer element )
 //
 // maybe_empty_comma_separated_list_producer
 //
+//FIXME: usage example should be added to the comment!
 /*!
  * @brief A factory for a producer that handles possibly empty list of
  * comma-separated values.
