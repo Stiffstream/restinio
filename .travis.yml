@@ -17,6 +17,7 @@ common_sources: &all_sources
 common_packages: &all_packages
   - g++-7
   - g++-8
+  - g++-9
   - clang-6.0
   - clang-7
   - clang-8
@@ -56,6 +57,15 @@ matrix:
           packages: *all_packages
       env:
         - MATRIX_EVAL="CXX_COMPILER=g++-8 C_COMPILER=gcc-8"
+
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources: *all_sources
+          packages: *all_packages
+      env:
+        - MATRIX_EVAL="CXX_COMPILER=g++-9 C_COMPILER=gcc-9"
 
     # Clang on Linux
     - os: linux
