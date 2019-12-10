@@ -11,8 +11,7 @@
 
 #pragma once
 
-//FIXME: has this header really needed?
-#include <restinio/helpers/http_field_parsers/media-type.hpp>
+#include <restinio/helpers/http_field_parsers/basics.hpp>
 
 namespace restinio
 {

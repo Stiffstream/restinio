@@ -1375,7 +1375,12 @@ public:
 //
 // particular_symbol_predicate_t
 //
-//FIXME: document this!
+/*!
+ * @brief A predicate for cases where exact match of expected and
+ * actual symbols is required.
+ *
+ * @since v.0.6.1
+ */
 struct particular_symbol_predicate_t
 {
 	char m_expected;
@@ -1472,6 +1477,8 @@ public:
 	{
 		restinio::impl::overflow_controlled_integer_accumulator_t<T> acc;
 
+		source_t::content_consumer_t consumer{ from };
+
 		int symbols_processed{};
 
 		for( auto ch = from.getch(); !ch.m_eof; ch = from.getch() )
@@ -1481,9 +1488,8 @@ public:
 				acc.next_digit( static_cast<T>(ch.m_ch - '0') );
 
 				if( acc.overflow_detected() )
-//FIXME: what about restoring the current position in the case of error?
 					return make_unexpected( parse_error_t{
-							from.current_position(),
+							consumer.started_at(),
 							error_reason_t::illegal_value_found
 					} );
 
@@ -1503,7 +1509,10 @@ public:
 					error_reason_t::pattern_not_found
 			} );
 		else
+		{
+			consumer.commit();
 			return acc.value();
+		}
 	}
 };
 
@@ -2066,10 +2075,14 @@ digit() noexcept
 //
 // positive_decimal_number_producer
 //
-//FIXME: add note to the comment that values like 111someword can be parsed
-//and result will be 111.
 /*!
  * @brief A factory function to create a positive_decimal_number_producer.
+ *
+ * @note
+ * This parser consumes all digits until the first non-digit symbol will
+ * be found in the input. It means that in the case of `1111someword` the
+ * first four digits (e.g. `1111`) will be extracted from the input and
+ * the remaining part (e.g. `someword`) won't be consumed by this parser.
  *
  * @return a producer that expects a positive decimal number in the input stream
  * and returns it if a number is found.

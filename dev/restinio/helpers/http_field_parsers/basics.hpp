@@ -624,7 +624,17 @@ public :
 //
 // alpha_symbol_producer
 //
-//FIXME: document this!
+/*!
+ * @brief A factory for producer of ALPHA symbols.
+ *
+ * Usage example:
+ * @code
+	produce<std::string>(
+		repeat(1, 20, alpha_symbol_producer() >> to_container());
+ * @endcode
+ *
+ * @since v.0.6.2
+ */
 RESTINIO_NODISCARD
 inline auto
 alpha_symbol_producer()
@@ -636,7 +646,17 @@ alpha_symbol_producer()
 //
 // alphanum_symbol_producer
 //
-//FIXME: document this!
+/*!
+ * @brief A factory for producer of symbol that an ALPHA or DIGIT.
+ *
+ * Usage example:
+ * @code
+	produce<std::string>(
+		repeat(1, 20, alphanum_symbol_producer() >> to_container());
+ * @endcode
+ *
+ * @since v.0.6.2
+ */
 RESTINIO_NODISCARD
 inline auto
 alphanum_symbol_producer()
@@ -648,7 +668,17 @@ alphanum_symbol_producer()
 //
 // vchar_symbol_producer
 //
-//FIXME: document this!
+/*!
+ * @brief A factory for producer of VCHAR symbols.
+ *
+ * Usage example:
+ * @code
+	produce<std::string>(
+		repeat(1, 20, vchar_symbol_producer() >> to_container());
+ * @endcode
+ *
+ * @since v.0.6.2
+ */
 RESTINIO_NODISCARD
 inline auto
 vchar_symbol_producer()
@@ -1057,7 +1087,6 @@ public :
 //
 // non_empty_comma_separated_list_producer
 //
-//FIXME: usage example should be added to the comment!
 /*!
  * @brief A factory for a producer that handles non-empty list of
  * comma-separated values.
@@ -1069,6 +1098,16 @@ public :
  *
  * See: https://tools.ietf.org/html/rfc7230
  * (section "7. ABNF List Extension: #rule")
+ *
+ * Usage example:
+ * @code
+	auto parse = produce< byte_ranges_data >(
+			make_bytes_prefix_parser(),
+			non_empty_comma_separated_list_producer< std::vector< byte_range > >(
+					make_byte_range_parser()
+			) >> &byte_ranges_data::ranges
+	);
+ * @endcode
  *
  * @tparam Container the type of container to be produced.
  *
@@ -1099,7 +1138,6 @@ non_empty_comma_separated_list_producer( Element_Producer element )
 //
 // maybe_empty_comma_separated_list_producer
 //
-//FIXME: usage example should be added to the comment!
 /*!
  * @brief A factory for a producer that handles possibly empty list of
  * comma-separated values.
@@ -1111,6 +1149,16 @@ non_empty_comma_separated_list_producer( Element_Producer element )
  *
  * See: https://tools.ietf.org/html/rfc7230
  * (section "7. ABNF List Extension: #rule")
+ *
+ * Usage example:
+ * @code
+	auto parse = produce< byte_ranges_data >(
+			make_bytes_prefix_parser(),
+			maybe_empty_comma_separated_list_producer< std::vector< byte_range > >(
+					make_byte_range_parser()
+			) >> &byte_ranges_data::ranges
+	);
+ * @endcode
  *
  * @tparam Container the type of container to be produced.
  *

@@ -174,7 +174,11 @@ make_byte_range_spec_parser()
 	);
 }
 
-//FIXME: document this!
+/*!
+ * @brief Factory for a parser of 'bytes=' prefix.
+ *
+ * @since v.0.6.2
+ */
 RESTINIO_NODISCARD
 inline auto
 make_bytes_prefix_parser()
