@@ -91,14 +91,20 @@ class response_context_t
 
 			write_group_t result{ std::move( m_write_groups.front() ) };
 
-			// We expect that m_write_groups.erase() isn't noexpect
-			// and because of that this call should be done via
-			// suppress_exceptions_quietly.
-			RESTINIO_STATIC_ASSERT_NOT_NOEXCEPT(
-					m_write_groups.erase(m_write_groups.begin()) );
-			restinio::utils::suppress_exceptions_quietly( [this] {
-					m_write_groups.erase( begin( m_write_groups ) );
-				} );
+			// Some STL implementation can have std::vector::erase that
+			// doesn't throw. So we use a kind of static if to select
+			// an appropriate behaviour.
+			static_if_else< noexcept(m_write_groups.erase(m_write_groups.begin())) >(
+					// This is for the case when std::vector::erase doesn't throw.
+					[this]() noexcept {
+						m_write_groups.erase( m_write_groups.begin() );
+					},
+					// This is for the case when std::vector::erase does throw.
+					[this]() {
+						restinio::utils::suppress_exceptions_quietly( [this] {
+								m_write_groups.erase( m_write_groups.begin() );
+						} );
+					} );
 
 			return result;
 		}

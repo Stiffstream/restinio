@@ -105,3 +105,69 @@
 #define RESTINIO_STATIC_ASSERT_NOT_NOEXCEPT(expr) \
 	static_assert(!noexcept(expr), #expr " is not expected to be noexcept" )
 
+namespace restinio
+{
+
+namespace static_if_details
+{
+
+template< bool Condition >
+struct static_if_impl;
+
+template<>
+struct static_if_impl<true>
+{
+	template<typename If_Part, typename Else_Part>
+	static decltype(auto)
+	call( If_Part && if_part, Else_Part && )
+	{
+		return if_part();
+	}
+};
+
+template<>
+struct static_if_impl<false>
+{
+	template<typename If_Part, typename Else_Part>
+	static decltype(auto)
+	call( If_Part &&, Else_Part && else_part )
+	{
+		return else_part();
+	}
+};
+
+} /* namespace static_if_details */
+
+//
+// static_if_else
+//
+/*!
+ * @brief An emulation of if constexpr for C++14.
+ *
+ * Usage example:
+ * @code
+ * static_if_else< noexcept(some-expression) >(
+ * 	[]() noexcept {
+ * 		... // Some action that doesn't throw.
+ * 	},
+ * 	[] {
+ * 		try {
+ * 			... // Some action that throws.
+ * 		}
+ * 		catch(...) {}
+ * 	});
+ * @endcode
+ *
+ * @since v.0.6.1.1
+ */
+template< bool Condition, typename If_Part, typename Else_Part >
+decltype(auto)
+static_if_else( If_Part && if_part, Else_Part && else_part )
+{
+	return static_if_details::static_if_impl<Condition>::call(
+			std::forward<If_Part>(if_part),
+			std::forward<Else_Part>(else_part) );
+}
+
+} /* namespace restinio */
+
