@@ -246,5 +246,94 @@ TEST_CASE( "Range", "[range]" )
 		REQUIRE( "-450,100-5000,6000-9000,15000-"s == v->range_set );
 	}
 
+	{
+		using range_type = range_value_t<std::int16_t>;
+
+		{
+			const auto result = range_type::try_parse(
+					"bytes=-450" );
+
+			REQUIRE( result );
+
+			const auto * v = restinio::get_if<range_type::byte_ranges_specifier_t>(
+					&(result->value) );
+			REQUIRE( v );
+			REQUIRE( 1u == v->ranges.size() );
+
+			const auto * f = restinio::get_if<range_type::suffix_length_t>(
+					&( v->ranges[0] ) );
+			REQUIRE( f );
+			REQUIRE( 450 == f->length );
+		}
+
+		{
+			const auto result = range_type::try_parse(
+					"bytes=-32767" );
+
+			REQUIRE( result );
+
+			const auto * v = restinio::get_if<range_type::byte_ranges_specifier_t>(
+					&(result->value) );
+			REQUIRE( v );
+			REQUIRE( 1u == v->ranges.size() );
+
+			const auto * f = restinio::get_if<range_type::suffix_length_t>(
+					&( v->ranges[0] ) );
+			REQUIRE( f );
+			REQUIRE( 32767 == f->length );
+		}
+
+		{
+			const auto result = range_type::try_parse(
+					"bytes=-32768" );
+
+			REQUIRE( !result );
+		}
+	}
+
+	{
+		using range_type = range_value_t<std::uint16_t>;
+
+		{
+			const auto result = range_type::try_parse(
+					"bytes=-450" );
+
+			REQUIRE( result );
+
+			const auto * v = restinio::get_if<range_type::byte_ranges_specifier_t>(
+					&(result->value) );
+			REQUIRE( v );
+			REQUIRE( 1u == v->ranges.size() );
+
+			const auto * f = restinio::get_if<range_type::suffix_length_t>(
+					&( v->ranges[0] ) );
+			REQUIRE( f );
+			REQUIRE( 450u == f->length );
+		}
+
+		{
+			const auto result = range_type::try_parse(
+					"bytes=-65535" );
+
+			REQUIRE( result );
+
+			const auto * v = restinio::get_if<range_type::byte_ranges_specifier_t>(
+					&(result->value) );
+			REQUIRE( v );
+			REQUIRE( 1u == v->ranges.size() );
+
+			const auto * f = restinio::get_if<range_type::suffix_length_t>(
+					&( v->ranges[0] ) );
+			REQUIRE( f );
+			REQUIRE( 65535u == f->length );
+		}
+
+		{
+			const auto result = range_type::try_parse(
+					"bytes=-65536" );
+
+			REQUIRE( !result );
+		}
+	}
 }
 

@@ -13,6 +13,7 @@
 #pragma once
 
 #include <restinio/impl/to_lower_lut.hpp>
+#include <restinio/impl/overflow_controlled_integer_accumulator.hpp>
 
 #include <restinio/utils/tuple_algorithms.hpp>
 #include <restinio/utils/metaprogramming.hpp>
@@ -59,7 +60,12 @@ enum class error_reason_t
 	pattern_not_found,
 	//! There are some unconsumed non-whitespace characters in the input
 	//! after the completion of parsing.
-	unconsumed_input
+	unconsumed_input,
+	//! Illegal value was found in the input.
+	/*!
+	 * @since v.0.6.2
+	 */
+	illegal_value_found
 };
 
 //
@@ -1464,17 +1470,23 @@ public:
 	expected_t< T, parse_error_t >
 	try_parse( source_t & from ) const noexcept
 	{
-		T result{};
-		constexpr T multiplier{10};
+		restinio::impl::overflow_controlled_integer_accumulator_t<T> acc;
+
 		int symbols_processed{};
 
 		for( auto ch = from.getch(); !ch.m_eof; ch = from.getch() )
 		{
 			if( is_digit(ch.m_ch) )
 			{
-				//FIXME: check for overflow should be implemented here!
-				result *= multiplier;
-				result += static_cast<T>(ch.m_ch - '0');
+				acc.next_digit( static_cast<T>(ch.m_ch - '0') );
+
+				if( acc.overflow_detected() )
+//FIXME: what about restoring the current position in the case of error?
+					return make_unexpected( parse_error_t{
+							from.current_position(),
+							error_reason_t::illegal_value_found
+					} );
+
 				++symbols_processed;
 			}
 			else
@@ -1491,7 +1503,7 @@ public:
 					error_reason_t::pattern_not_found
 			} );
 		else
-			return result;
+			return acc.value();
 	}
 };
 
@@ -2440,6 +2452,13 @@ make_error_description(
 
 		case error_reason_t::unconsumed_input:
 			result += "unconsumed input found at ";
+			result += std::to_string( error.position() );
+			result += ": ";
+			append_quote( result );
+		break;
+
+		case error_reason_t::illegal_value_found:
+			result += "some illegal value found at ";
 			result += std::to_string( error.position() );
 			result += ": ";
 			append_quote( result );

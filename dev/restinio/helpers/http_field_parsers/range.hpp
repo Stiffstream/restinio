@@ -174,6 +174,17 @@ make_byte_range_spec_parser()
 	);
 }
 
+//FIXME: document this!
+RESTINIO_NODISCARD
+inline auto
+make_bytes_prefix_parser()
+{
+	return sequence(
+			symbol('b'), symbol('y'), symbol('t'), symbol('e'), symbol('s'),
+			symbol('=')
+	);
+}
+
 /*!
  * @brief Factory for creation of a parser for byte_ranges_specifier values.
  *
@@ -199,8 +210,7 @@ auto
 make_byte_ranges_specifier_parser()
 {
 	return produce< byte_ranges_specifier_t<T> >(
-			symbol('b'), symbol('y'), symbol('t'), symbol('e'), symbol('s'),
-			symbol('='),
+			make_bytes_prefix_parser(),
 			non_empty_comma_separated_list_producer<
 							std::vector< byte_range_spec_t<T> > >(
 					make_byte_range_spec_parser<T>()
@@ -226,6 +236,10 @@ inline auto
 make_other_ranges_specifier_parser()
 {
 	return produce< other_ranges_specifier_t >(
+			//FIXME: this is just a workaround for the case when
+			// rule 'bytes=1*VCHAR' doesn't not parsed because of invalid or
+			// illelal values in '1*VCHAR' part.
+			not_clause( make_bytes_prefix_parser() ),
 			token_producer() >> &other_ranges_specifier_t::range_unit,
 			symbol('='),
 			produce< std::string >(
