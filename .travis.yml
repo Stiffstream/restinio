@@ -8,19 +8,7 @@ branches:
 git:
   depth: 1
 
-common_sources: &all_sources
-  - ubuntu-toolchain-r-test
-  - llvm-toolchain-bionic-6.0
-  - llvm-toolchain-bionic-7.0
-  - llvm-toolchain-bionic-8.0
-
 common_packages: &all_packages
-  - g++-7
-  - g++-8
-  - g++-9
-  - clang-6.0
-  - clang-7
-  - clang-8
   - libpcre3-dev
   - libpcre2-dev
 
@@ -33,6 +21,7 @@ matrix:
       compiler: clang
       env:
         - MATRIX_EVAL="CXX_COMPILER=clang++ C_COMPILER=clang"
+
     - os: osx
       osx_image: xcode10.2
       compiler: clang
@@ -44,17 +33,19 @@ matrix:
       compiler: gcc
       addons:
         apt:
-          sources: *all_sources
           packages: *all_packages
       env:
-        - MATRIX_EVAL="CXX_COMPILER=g++-7 C_COMPILER=gcc-7"
+        - MATRIX_EVAL="CXX_COMPILER=g++ C_COMPILER=gcc"
 
     - os: linux
       compiler: gcc
       addons:
         apt:
-          sources: *all_sources
-          packages: *all_packages
+          sources:
+             - sourceline: "ppa:ubuntu-toolchain-r/test"
+          packages:
+             - *all_packages
+             - g++-8
       env:
         - MATRIX_EVAL="CXX_COMPILER=g++-8 C_COMPILER=gcc-8"
 
@@ -62,8 +53,11 @@ matrix:
       compiler: gcc
       addons:
         apt:
-          sources: *all_sources
-          packages: *all_packages
+          sources:
+             - sourceline: "ppa:ubuntu-toolchain-r/test"
+          packages:
+             - *all_packages
+             - g++-9
       env:
         - MATRIX_EVAL="CXX_COMPILER=g++-9 C_COMPILER=gcc-9"
 
@@ -72,8 +66,27 @@ matrix:
       compiler: clang
       addons:
         apt:
-          sources: *all_sources
-          packages: *all_packages
+          sources:
+           - sourceline: 'ppa:ubuntu-toolchain-r/test'
+           - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-5.0 main'
+             key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+          packages:
+            - *all_packages
+            - clang-5.0
+      env:
+        - MATRIX_EVAL="CXX_COMPILER=clang++-5.0 C_COMPILER=clang-5.0"
+
+    - os: linux
+      compiler: clang
+      addons:
+        apt:
+          sources:
+           - sourceline: 'ppa:ubuntu-toolchain-r/test'
+           - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-6.0 main'
+             key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+          packages:
+            - *all_packages
+            - clang-6.0
       env:
         - MATRIX_EVAL="CXX_COMPILER=clang++-6.0 C_COMPILER=clang-6.0"
 
@@ -81,8 +94,13 @@ matrix:
       compiler: clang
       addons:
         apt:
-          sources: *all_sources
-          packages: *all_packages
+          sources:
+            - sourceline: 'ppa:ubuntu-toolchain-r/test'
+            - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-7 main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+          packages:
+            - *all_packages
+            - clang-7
       env:
         - MATRIX_EVAL="CXX_COMPILER=clang++-7 C_COMPILER=clang-7"
 
@@ -90,10 +108,45 @@ matrix:
       compiler: clang
       addons:
         apt:
-          sources: *all_sources
-          packages: *all_packages
+          sources:
+            - sourceline: 'ppa:ubuntu-toolchain-r/test'
+            - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-8 main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+          packages:
+            - *all_packages
+            - clang-8
       env:
         - MATRIX_EVAL="CXX_COMPILER=clang++-8 C_COMPILER=clang-8"
+
+    - os: linux
+      compiler: clang
+      addons:
+        apt:
+          packages:
+            - *all_packages
+            - clang-9
+            - g++-9
+          sources:
+            - sourceline: 'ppa:ubuntu-toolchain-r/test'
+            - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+      env:
+        - MATRIX_EVAL="CXX_COMPILER=clang++-9 C_COMPILER=clang-9"
+ 
+    - os: linux
+      compiler: clang
+      addons:
+        apt:
+          packages:
+            - *all_packages
+            - clang-10
+            - g++-9
+          sources:
+            - sourceline: 'ppa:ubuntu-toolchain-r/test'
+            - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+      env:
+        - MATRIX_EVAL="CXX_COMPILER=clang++-10 C_COMPILER=clang-10"
 
 before_install:
     - eval "${MATRIX_EVAL}"
@@ -114,3 +167,4 @@ notifications:
     recipients:
       - utromvecherom@gmail.com
       - eao197@gmail.com
+
