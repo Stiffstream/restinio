@@ -38,6 +38,10 @@ class tls_socket_t
 	public:
 		using socket_t = asio_ns::ssl::stream< asio_ns::ip::tcp::socket >;
 		using context_handle_t = std::shared_ptr< asio_ns::ssl::context >;
+		// Needed for asio >= 1.16.0 (starting with boost-1.72.0)
+#if RESTINIO_ASIO_VERSION >= 101600
+		using executor_type = asio_ns::executor;
+#endif
 		tls_socket_t( const tls_socket_t & ) = delete;
 		tls_socket_t & operator = ( const tls_socket_t & ) = delete;
 

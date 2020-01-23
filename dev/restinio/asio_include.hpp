@@ -13,6 +13,9 @@
 // RESTinio uses stand-alone version of asio.
 #include <asio.hpp>
 
+// Define added to not have to distinguish between boost and non-boost asio in other code.
+#define RESTINIO_ASIO_VERSION ASIO_VERSION
+
 namespace restinio
 {
 	namespace asio_ns = ::asio;
@@ -56,6 +59,9 @@ namespace restinio
 
 // RESTinio uses boost::asio.
 #include <boost/asio.hpp>
+
+// Define added to not have to distinguish between boost and non-boost asio in other code.
+#define RESTINIO_ASIO_VERSION BOOST_ASIO_VERSION
 
 namespace restinio
 {
