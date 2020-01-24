@@ -368,8 +368,10 @@ class acceptor_t final
 			//! socket index in the pool of sockets.
 			std::size_t i )
 		{
+			auto incoming_socket = this->move_socket( i );
+
 			auto remote_endpoint =
-					this->socket( i ).lowest_layer().remote_endpoint();
+					incoming_socket.lowest_layer().remote_endpoint();
 
 			m_logger.trace( [&]{
 				return fmt::format(
@@ -379,7 +381,6 @@ class acceptor_t final
 
 			// Since v.0.5.1 the incoming connection must be
 			// inspected by IP-blocker.
-			auto incoming_socket = this->move_socket( i );
 			const auto inspection_result = this->inspect_incoming(
 					incoming_socket );
 
