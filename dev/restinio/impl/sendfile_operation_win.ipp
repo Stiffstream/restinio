@@ -138,21 +138,10 @@ class sendfile_operation_runner_t final
 
 	private:
 		std::unique_ptr< char[] > m_buffer{ new char [ this->m_chunk_size ] };
-/*
-		// Starting with asio-1.14.0 (boost-1.70.0) we must use executor_or_context_from_socket
-		// in order to get the io_context.
-#if RESTINIO_ASIO_VERSION >= 101400
-*/
-		asio_ns::windows::random_access_handle
-			m_file_handle{
+		asio_ns::windows::random_access_handle m_file_handle{
 				asio_details::executor_or_context_from_socket(this->m_socket),
-				this->m_file_descriptor };
-/*
-#else
-		asio_ns::windows::random_access_handle
-			m_file_handle{ this->m_socket.get_executor().context(), this->m_file_descriptor };
-#endif
-*/
+				this->m_file_descriptor
+		};
 
 		auto
 		make_async_read_some_at_handler() noexcept
