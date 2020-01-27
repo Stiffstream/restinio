@@ -12,6 +12,8 @@ using router_t = rr::express_router_t<>;
 
 namespace rws = restinio::websocket::basic;
 
+namespace asio_ns = restinio::asio_ns;
+
 using traits_t =
 	restinio::traits_t<
 		restinio::asio_timer_manager_t,
@@ -38,7 +40,7 @@ class actual_handler_t final
 {
 private :
 	// This timer will be used for checking activity of client.
-	asio::steady_timer m_timer;
+	asio_ns::steady_timer m_timer;
 
 	// Reference to the registry.
 	// It is necessary to remove handler from it when close_frame is received.
@@ -55,7 +57,7 @@ private :
 
 public :
 	actual_handler_t(
-		asio::io_context & io_ctx,
+		asio_ns::io_context & io_ctx,
 		ws_registry_t & registry )
 		:	m_timer{ io_ctx }
 		,	m_registry{ registry }
@@ -192,7 +194,7 @@ struct handler_proxy_t
 	}
 };
 
-auto server_handler( asio::io_context & io_ctx, ws_registry_t & registry )
+auto server_handler( asio_ns::io_context & io_ctx, ws_registry_t & registry )
 {
 	auto router = std::make_unique< router_t >();
 
@@ -238,7 +240,7 @@ int main()
 	{
 		// We have to use external Asio's io_context because
 		// we should have a reference to it in actual_handler_t.
-		asio::io_context io_ctx;
+		asio_ns::io_context io_ctx;
 
 		ws_registry_t registry;
 
