@@ -1592,36 +1592,26 @@ class connection_factory_t
 			,	m_logger{ *(m_connection_settings->m_logger ) }
 		{}
 
+		// NOTE: since v.0.6.3 it returns non-empty
+		// shared_ptr<connection_t<Traits>> or anexception is thrown in
+		// the case of an error.
 		auto
 		create_new_connection(
 			stream_socket_t socket,
 			endpoint_t remote_endpoint )
 		{
 			using connection_type_t = connection_t< Traits >;
-			std::shared_ptr< connection_type_t > result;
-			try
-			{
-				{
-					socket_options_t options{ socket.lowest_layer() };
-					(*m_socket_options_setter)( options );
-				}
 
-				result = std::make_shared< connection_type_t >(
-					m_connection_id_counter++,
-					std::move( socket ),
-					m_connection_settings,
-					std::move( remote_endpoint ) );
-			}
-			catch( const std::exception & ex )
 			{
-				m_logger.error( [&]{
-					return fmt::format(
-						"failed to create connection: {}",
-						ex.what() );
-				} );
+				socket_options_t options{ socket.lowest_layer() };
+				(*m_socket_options_setter)( options );
 			}
 
-			return result;
+			return std::make_shared< connection_type_t >(
+				m_connection_id_counter++,
+				std::move( socket ),
+				m_connection_settings,
+				std::move( remote_endpoint ) );
 		}
 
 	private:

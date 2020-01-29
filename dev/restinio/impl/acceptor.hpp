@@ -422,13 +422,14 @@ class acceptor_t final
 							"do_accept_current_connection.create_and_init_connection",
 							[&] {
 								// Create new connection handler.
+								// NOTE: since v.0.6.3 this method throws in
+								// the case of an error. Because of that there is
+								// no need to check the value returned.
 								auto conn = factory->create_new_connection(
 										std::move(sock), std::move(ep) );
 
-								// If connection handler was created,
-								// then start waiting for request message.
-								if( conn )
-									conn->init();
+								// Start waiting for request message.
+								conn->init();
 							} );
 				};
 
