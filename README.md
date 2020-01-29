@@ -4,7 +4,7 @@ RESTinio is a header-only C++14 library that gives you an embedded
 HTTP/Websocket server. It is based on standalone version of ASIO
 and targeted primarily for asynchronous processing of HTTP-requests.
 Since v.0.4.1 Boost::ASIO (1.66 or higher) is also supported
-(see [notes on building with Boost::ASIO](https://stiffstream.com/en/docs/restinio/0.4/obtaining.html#building-with-boost)).
+(see [notes on building with Boost::ASIO](https://stiffstream.com/en/docs/restinio/0.6/obtaining.html#notes-on-building-with-boost-asio)).
 
 # A Very Basic Example Of RESTinio
 
@@ -109,7 +109,7 @@ RESTinio is distributed under BSD-3-CLAUSE license.
 
 # How To Use It?
 
-The full documentation for RESTinio can be found [here](https://stiffstream.com/en/docs/restinio/0.5).
+The full documentation for RESTinio can be found [here](https://stiffstream.com/en/docs/restinio/0.6/).
 
 # More
 
