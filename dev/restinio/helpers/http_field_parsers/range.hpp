@@ -240,7 +240,7 @@ inline auto
 make_other_ranges_specifier_parser()
 {
 	return produce< other_ranges_specifier_t >(
-			//FIXME: this is just a workaround for the case when
+			// This not_clause is necessary for the case when
 			// rule 'bytes=1*VCHAR' doesn't not parsed because of invalid or
 			// illelal values in '1*VCHAR' part.
 			not_clause( make_bytes_prefix_parser() ),
