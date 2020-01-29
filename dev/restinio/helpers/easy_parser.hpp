@@ -726,7 +726,7 @@ struct is_clause< T, meta::void_t< decltype(T::entity_type) > >
  * @note
  * The current implementation checks only the presence of T::entity_type of
  * type entity_type_t and the value of T::entity_type. Presence of
- * T::try_parse is not checked.
+ * T::try_process is not checked.
  *
  * @since v.0.6.1
  */
