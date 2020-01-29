@@ -89,6 +89,21 @@ TEST_CASE( "buffers on std::string" , "[buffers][std::string]" )
 	REQUIRE( 0 == memcmp( address( buf ), s3, size( buf ) ) );
 }
 
+TEST_CASE( "buffers on fmt::basic_memory_buffer<char,1>" ,
+		"[buffers][fmt::basic_memory_buffer]" )
+{
+	fmt::basic_memory_buffer<char, 1u> fmt_buf;
+	fmt::format_to( fmt_buf, "Hello, {}", "World!" );
+
+	writable_item_t bs{ std::move( fmt_buf ) };
+	REQUIRE( writable_item_type_t::trivial_write_operation == bs.write_type() );
+
+	auto buf = bs.buf();
+
+	REQUIRE( size( buf ) == 13 );
+	REQUIRE( 0 == memcmp( address( buf ), "Hello, World!", size( buf ) ) );
+}
+
 TEST_CASE( "buffers on shared pointer" , "[buffers][std::shared_ptr]" )
 {
 	auto str1 = std::make_shared< std::string >( "01234567890123456789xy");

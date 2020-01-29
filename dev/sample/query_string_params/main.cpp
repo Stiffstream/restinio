@@ -7,14 +7,17 @@ restinio::request_handling_status_t handler( const restinio::request_handle_t& r
 {
 	if( restinio::http_method_get() == req->header().method() )
 	{
-		std::ostringstream sout;
-		sout << "GET request to '" << req->header().request_target() << "'\n";
+		fmt::basic_memory_buffer< char, 1u > response_body;
+		fmt::format_to( response_body, "GET request to '{}'\n",
+				req->header().request_target() );
 
 		// Request header fields.
-		sout << "HTTP-fields (" << req->header().fields_count() << "):\n";
+		fmt::format_to( response_body, "HTTP-fields ({}):\n",
+				req->header().fields_count() );
 		for( const auto & f : req->header() )
 		{
-			sout << f.name() << ": " << f.value() << "\n";
+			fmt::format_to( response_body, "{}: {}\n",
+					f.name(), f.value() );
 		}
 
 		// Query params.
@@ -22,28 +25,30 @@ restinio::request_handling_status_t handler( const restinio::request_handle_t& r
 
 		if( qp.empty() )
 		{
-			sout << "No query parameters.";
+			fmt::format_to( response_body, "No query parameters." );
 		}
 		else
 		{
-			sout << "Query params ("<< qp.size() << "):\n";
+			fmt::format_to( response_body, "Query params ({}):\n", qp.size() );
 
 			for( const auto p : qp )
 			{
-				sout << "'"<< p.first << "' => '"<<  p.second << "'\n";
+				fmt::format_to( response_body, "'{}' => '{}'\n",
+						p.first, p.second );
 			}
 		}
 
 		if( qp.has( "debug" ) && qp[ "debug" ] == "true" )
 		{
-			std::cout << sout.str() << std::endl;
+			std::cout.write( response_body.data(), response_body.size() );
+			std::cout << std::flush;
 		}
 
 		req->create_response()
 			.append_header( restinio::http_field::server, "RESTinio query string params server" )
 			.append_header_date_field()
 			.append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
-			.set_body( sout.str() )
+			.set_body( std::move(response_body) )
 			.done();
 
 		return restinio::request_accepted();

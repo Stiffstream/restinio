@@ -21,9 +21,21 @@
 #include <restinio/compiler_features.hpp>
 #include <restinio/utils/suppress_exceptions.hpp>
 
+#include <restinio/impl/include_fmtlib.hpp>
+
 
 namespace restinio
 {
+
+//
+// fmt_minimal_memory_buffer_t
+//
+/*!
+ * @brief An alias for fmt::basic_memory_buffer<char,1>.
+ *
+ * @since v.0.6.3
+ */
+using fmt_minimal_memory_buffer_t = fmt::basic_memory_buffer<char, 1u>;
 
 namespace impl
 {
@@ -242,6 +254,14 @@ class datasizeable_buf_t final : public buf_iface_t
 */
 using string_buf_t = datasizeable_buf_t< std::string >;
 
+//! An alias for a fmt_minimal_memory_buffer_t instantiation of datasizeable_buf_t<D> template.
+/*!
+	Used to figure out buffer_storage_align and needed_storage_max_size
+	constants.
+*/
+using fmt_minimal_memory_buffer_buf_t =
+		datasizeable_buf_t< fmt_minimal_memory_buffer_t >;
+
 //
 // shared_datasizeable_buf_t
 //
@@ -357,7 +377,8 @@ constexpr std::size_t buffer_storage_align =
 		alignof( const_buf_t ),
 		alignof( string_buf_t ),
 		alignof( shared_datasizeable_buf_t< std::string > ),
-		alignof( sendfile_write_operation_t ) } );
+		alignof( sendfile_write_operation_t ),
+		alignof( fmt_minimal_memory_buffer_buf_t ) } );
 
 //! An of memory that is to be enough to hold any possible buffer entity.
 constexpr std::size_t needed_storage_max_size =
@@ -366,7 +387,8 @@ constexpr std::size_t needed_storage_max_size =
 		sizeof( const_buf_t ),
 		sizeof( string_buf_t ),
 		sizeof( shared_datasizeable_buf_t< std::string > ),
-		sizeof( sendfile_write_operation_t ) } );
+		sizeof( sendfile_write_operation_t ),
+		sizeof( fmt_minimal_memory_buffer_buf_t ) } );
 
 } /* namespace impl */
 

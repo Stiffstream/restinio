@@ -21,6 +21,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 
 #if defined(__clang__)
 	#pragma GCC diagnostic ignored "-Wgnu-string-literal-operator-template"
