@@ -339,6 +339,7 @@ struct is_vchar_predicate_t
 		return is_vchar(actual);
 	}
 };
+
 //
 // is_obs_text
 //
