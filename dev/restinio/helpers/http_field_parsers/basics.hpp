@@ -367,7 +367,7 @@ is_obs_text( const char ch ) noexcept
 // is_qdtext
 //
 /*!
- * @brief Is a character an qdtext?
+ * @brief Is a character a qdtext?
  *
  * See: https://tools.ietf.org/html/rfc7230 
  *
@@ -384,6 +384,47 @@ is_qdtext( const char ch ) noexcept
 			(ch >= '\x5D' && ch <= '\x7E') ||
 			is_obs_text( ch );
 }
+
+//
+// is_ctext
+//
+/*!
+ * @brief Is a character a ctext?
+ *
+ * See: https://tools.ietf.org/html/rfc7230 
+ *
+ * @since v.0.6.4
+ */
+RESTINIO_NODISCARD
+inline constexpr bool
+is_ctext( const char ch ) noexcept
+{
+	return ch == SP ||
+			ch == HTAB ||
+			(ch >= '\x21' && ch <= '\x27') ||
+			(ch >= '\x2A' && ch <= '\x5B') ||
+			(ch >= '\x5D' && ch <= '\x7E') ||
+			is_obs_text( ch );
+}
+
+//
+// is_ctext_predicate_t
+//
+/*!
+ * @brief A preducate for symbol_producer_template that checks that
+ * a symbol is a ctext.
+ *
+ * @since v.0.6.4
+ */
+struct is_ctext_predicate_t
+{
+	RESTINIO_NODISCARD
+	bool
+	operator()( const char actual ) const noexcept
+	{
+		return is_ctext(actual);
+	}
+};
 
 //
 // ows_producer_t
@@ -620,6 +661,88 @@ public :
 	}
 };
 
+//
+// quoted_pair_producer_t
+//
+/*!
+ * @brief A producer for quoted_pair.
+ *
+ * If a quoted_pair is found in the input stream it produces char
+ * with the value of that token.
+ *
+ * See: https://tools.ietf.org/html/rfc7230
+ *
+ * @since v.0.6.4
+ */
+class quoted_pair_producer_t : public producer_tag< char >
+{
+public :
+	RESTINIO_NODISCARD
+	expected_t< result_type, parse_error_t >
+	try_parse( source_t & from ) const
+	{
+		source_t::content_consumer_t consumer{ from };
+
+		error_reason_t reason = error_reason_t::unexpected_eof;
+
+		const auto ch = from.getch();
+		if( !ch.m_eof )
+		{
+			if( '\\' == ch.m_ch )
+			{
+				const auto next = from.getch();
+				if( !next.m_eof )
+				{
+					if( SP == next.m_ch || HTAB == next.m_ch ||
+							is_vchar( next.m_ch ) ||
+							is_obs_text( next.m_ch ) )
+					{
+						consumer.commit();
+						return next.m_ch;
+					}
+
+					reason = error_reason_t::unexpected_character;
+				}
+			}
+			else
+				reason = error_reason_t::unexpected_character;
+		}
+
+		return make_unexpected( parse_error_t{
+				from.current_position(),
+				reason
+		} );
+	}
+};
+
+//
+// comment_producer_t
+//
+/*!
+ * @brief A producer for comment.
+ *
+ * If a comment is found in the input stream it produces std::string
+ * with the value of that token.
+ *
+ * Comment is defined that way:
+@verbatim
+comment        = "(" *( ctext / quoted-pair / comment ) ")"
+ctext          = HTAB / SP / %x21-27 / %x2A-5B / %x5D-7E / obs-text
+quoted-pair    = "\" ( HTAB / SP / VCHAR / obs-text )
+@endverbatim
+ *
+ * See: https://tools.ietf.org/html/rfc7230
+ *
+ * @since v.0.6.4
+ */
+class comment_producer_t : public producer_tag< std::string >
+{
+public :
+	RESTINIO_NODISCARD
+	expected_t< result_type, parse_error_t >
+	try_parse( source_t & from ) const; // NOTE: implementation below.
+};
+
 } /* namespace impl */
 
 //
@@ -686,6 +809,44 @@ vchar_symbol_producer()
 {
 	return restinio::easy_parser::impl::symbol_producer_template_t<
 			impl::is_vchar_predicate_t >{};
+}
+
+//
+// ctext_symbol_producer
+//
+/*!
+ * @brief A factory for producer of ctext symbols.
+ *
+ * Usage example:
+ * @code
+	produce<std::string>(
+		repeat(1, 20, ctext_symbol_producer() >> to_container());
+ * @endcode
+ *
+ * @since v.0.6.4
+ */
+RESTINIO_NODISCARD
+inline auto
+ctext_symbol_producer()
+{
+	return restinio::easy_parser::impl::symbol_producer_template_t<
+			impl::is_ctext_predicate_t >{};
+}
+
+//
+// comment_producer
+//
+//FIXME: example should be provided in the code.
+/*!
+ * @brief A factory for producer of comment token.
+ *
+ * @since v.0.6.4
+ */
+RESTINIO_NODISCARD
+inline auto
+comment_producer()
+{
+	return impl::comment_producer_t{};
 }
 
 //
@@ -798,8 +959,57 @@ quoted_string_producer() noexcept
 	return impl::quoted_string_producer_t{};
 }
 
+//
+// quoted_pair_producer
+//
+/*!
+ * @brief A factory function to create a quoted_pair_producer.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(
+ * 	repeat(1, N,
+ * 		alternatives(
+ * 			ctext_symbol_producer() >> to_container(),
+ * 			quoted_pair_producer() >> to_container()
+ * 	)
+ * );
+ * @endcode
+ *
+ * @since v.0.6.4
+ */
+RESTINIO_NODISCARD
+inline auto
+quoted_pair_producer() noexcept
+{
+	return impl::quoted_pair_producer_t{};
+}
+
 namespace impl
 {
+
+//
+// comment_producer_t implementation
+//
+RESTINIO_NODISCARD
+inline expected_t< comment_producer_t::result_type, parse_error_t >
+comment_producer_t::try_parse( source_t & from ) const
+{
+	return produce< std::string >(
+			sequence(
+				symbol('('),
+				repeat(0, N,
+					alternatives(
+						ctext_symbol_producer() >> to_container(),
+						quoted_pair_producer() >> to_container(),
+						comment_producer() >> custom_consumer(
+							[]( std::string & dest, std::string && what ) {
+								dest += what;
+							} )
+					) ),
+				symbol(')') )
+		).try_parse( from );
+}
 
 //
 // qvalue_producer_t

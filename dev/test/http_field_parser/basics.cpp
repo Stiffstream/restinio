@@ -1340,3 +1340,74 @@ TEST_CASE( "maybe_empty_comma_separated_list_producer",
 	}
 }
 
+TEST_CASE( "comment producer", "[comment_producer]" )
+{
+	using namespace restinio::http_field_parsers;
+
+	const auto try_parse = []( restinio::string_view_t what ) {
+		return restinio::easy_parser::try_parse(
+				what,
+				comment_producer() 
+			);
+	};
+
+	{
+		const auto result = try_parse("");
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse("(");
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse(")");
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse("()");
+
+		REQUIRE( result );
+		REQUIRE( "" == *result );
+	}
+
+	{
+		const auto result = try_parse("(a)");
+
+		REQUIRE( result );
+		REQUIRE( "a" == *result );
+	}
+
+	{
+		const auto result = try_parse("(abc(def)ghk)");
+
+		REQUIRE( result );
+		REQUIRE( "abcdefghk" == *result );
+	}
+
+	{
+		const auto result = try_parse("(abc(def ghk)");
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse("(abc\\(def\\)ghk)");
+
+		REQUIRE( result );
+		REQUIRE( "abc(def)ghk" );
+	}
+
+	{
+		const auto result = try_parse("(a(b(c)d(e)((f))))");
+
+		REQUIRE( result );
+		REQUIRE( "abcdef" == *result );
+	}
+}
+
