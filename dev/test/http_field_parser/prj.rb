@@ -17,5 +17,6 @@ MxxRu::Cpp::exe_target {
 	cpp_source( "accept-language.cpp" )
 	cpp_source( "content-disposition.cpp" )
 	cpp_source( "range.cpp" )
+	cpp_source( "user-agent.cpp" )
 }
 

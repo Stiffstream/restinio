@@ -11,6 +11,7 @@ set(UNITTEST_SRCFILES
 	accept-language.cpp
 	content-disposition.cpp
 	range.cpp
+	user-agent.cpp
 )
 include(${CMAKE_SOURCE_DIR}/cmake/unittest.cmake)
 

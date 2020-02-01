@@ -261,6 +261,25 @@ is_space( const char ch ) noexcept
 }
 
 //
+// is_space_predicate_t
+//
+/*!
+ * @brief A preducate for symbol_producer_template that checks that
+ * a symbol is a space.
+ *
+ * @since v.0.6.4
+ */
+struct is_space_predicate_t
+{
+	RESTINIO_NODISCARD
+	bool
+	operator()( const char actual ) const noexcept
+	{
+		return is_space(actual);
+	}
+};
+
+//
 // is_digit
 //
 /*!
@@ -2031,6 +2050,45 @@ inline auto
 symbol( char expected ) noexcept
 {
 	return symbol_producer(expected) >> skip();
+}
+
+//
+// space_producer
+//
+/*!
+ * @brief A factory function to create a space_producer.
+ *
+ * @return a producer that expects space character in the input stream
+ * and returns it if that character is found.
+ * 
+ * @since v.0.6.4
+ */
+RESTINIO_NODISCARD
+inline auto
+space_producer() noexcept
+{
+	return impl::symbol_producer_template_t< impl::is_space_predicate_t >{};
+}
+
+//
+// space
+//
+/*!
+ * @brief A factory function to create a clause that expects a space,
+ * extracts it and then skips it.
+ *
+ * The call to `space()` function is an equivalent of:
+ * @code
+ * space_producer() >> skip()
+ * @endcode
+ *
+ * @since v.0.6.4
+ */
+RESTINIO_NODISCARD
+inline auto
+space() noexcept
+{
+	return space_producer() >> skip();
 }
 
 //
