@@ -13,6 +13,8 @@
 
 #include <restinio/http_server.hpp>
 
+#include <exception>
+
 namespace restinio
 {
 
@@ -751,6 +753,8 @@ class on_pool_runner_t
 	impl::ioctx_on_thread_pool_t< impl::external_io_context_for_thread_pool_t >
 			m_pool;
 
+	std::exception_ptr m_error;
+
 public :
 	on_pool_runner_t( const on_pool_runner_t & ) = delete;
 	on_pool_runner_t( on_pool_runner_t && ) = delete;
@@ -778,12 +782,9 @@ public :
 			[]{ /* Ok. */},
 			[this]( std::exception_ptr /*ex*/ ){
 				// There is no sense to run pool.
-				m_pool.stop();
+				m_error = std::current_exception();
 
-				//FIXME: the exception should be stored to be handled
-				//later in wait() method.
-				//NOTE: this fix is planned for v.0.7.0.
-				//std::rethrow_exception( ex );
+				m_pool.stop();
 			} );
 
 		m_pool.start();
@@ -792,7 +793,14 @@ public :
 
 	//! Is server started.
 	bool
-	started() const noexcept { return m_pool.started(); }
+	started() const noexcept
+	{
+		if (m_error)
+		{
+			std::rethrow_exception(m_error);
+		}
+		return m_pool.started();
+	}
 
 	//! Stop the server.
 	void
@@ -804,10 +812,7 @@ public :
 				m_pool.stop();
 			},
 			[]( std::exception_ptr /*ex*/ ){
-				//FIXME: the exception should be stored to be handled
-				//later in wait() method.
-				//NOTE: this fix is planned for v.0.7.0.
-				//std::rethrow_exception( ex );
+				m_error = std::current_exception();
 			} );
 	}
 
@@ -821,7 +826,14 @@ public :
 	//
 	//! Wait for full stop of the server.
 	void
-	wait() { m_pool.wait(); }
+	wait() 
+	{
+		if (m_error)
+		{
+			std::rethrow_exception(m_error);
+		}
+		m_pool.wait(); 
+	}
 };
 
 } /* namespace restinio */
