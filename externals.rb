@@ -72,7 +72,7 @@ MxxRu::arch_externals :clara do |e|
 end
 
 MxxRu::arch_externals :catch do |e|
-  e.url 'https://github.com/catchorg/Catch2/archive/v2.11.0.tar.gz'
+  e.url 'https://github.com/catchorg/Catch2/archive/v2.11.1.tar.gz'
 
   e.map_dir 'single_include/catch2' => 'dev'
 end
