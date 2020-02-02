@@ -93,5 +93,49 @@ TEST_CASE( "User-Agent Field", "[user-agent]" )
 
 		REQUIRE( result->tail == expected );
 	}
+
+	{
+		const auto result = user_agent_value_t::try_parse(
+				"Mozilla/5.0 (X11; Linux x86_64) "
+				"AppleWebKit/537.36 (KHTML, like Gecko) "
+				"Chrome/79.0.3945.130 Safari/537.36" );
+
+		REQUIRE( result );
+
+		REQUIRE( "Mozilla" == result->product.product );
+		REQUIRE( "5.0" == *(result->product.product_version) );
+
+		std::vector< user_agent_value_t::tail_item_t > expected{
+			"X11; Linux x86_64"s,
+			user_agent_value_t::product_t{ "AppleWebKit"s, "537.36"s },
+			"KHTML, like Gecko"s,
+			user_agent_value_t::product_t{ "Chrome"s, "79.0.3945.130"s },
+			user_agent_value_t::product_t{ "Safari"s, "537.36"s }
+		};
+
+		REQUIRE( result->tail == expected );
+	}
+
+	{
+		const auto result = user_agent_value_t::try_parse(
+				"Mozilla/5.0 (X11; Linux x86_64) "
+				"AppleWebKit (KHTML, like Gecko) "
+				"Chrome/79.0.3945.130 Safari" );
+
+		REQUIRE( result );
+
+		REQUIRE( "Mozilla" == result->product.product );
+		REQUIRE( "5.0" == *(result->product.product_version) );
+
+		std::vector< user_agent_value_t::tail_item_t > expected{
+			"X11; Linux x86_64"s,
+			user_agent_value_t::product_t{ "AppleWebKit"s, restinio::nullopt },
+			"KHTML, like Gecko"s,
+			user_agent_value_t::product_t{ "Chrome"s, "79.0.3945.130"s },
+			user_agent_value_t::product_t{ "Safari"s, restinio::nullopt }
+		};
+
+		REQUIRE( result->tail == expected );
+	}
 }
 

@@ -836,9 +836,18 @@ ctext_symbol_producer()
 //
 // comment_producer
 //
-//FIXME: example should be provided in the code.
 /*!
  * @brief A factory for producer of comment token.
+ *
+ * Usage example:
+ * @code
+	produce<std::string>(
+		alternatives(
+			token_producer() >> as_result(),
+			comment_producer() >> as_result()
+		)
+	);
+ * @endcode
  *
  * @since v.0.6.4
  */

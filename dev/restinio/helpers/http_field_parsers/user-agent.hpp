@@ -40,14 +40,22 @@ namespace http_field_parsers
  */
 struct user_agent_value_t
 {
-//FIXME: document this!
+	/*!
+	 * @brief A type for holding an info about a product.
+	 *
+	 * @since v.0.6.4
+	 */
 	struct product_t
 	{
 		std::string product;
 		restinio::optional_t<std::string> product_version;
 	};
 
-//FIXME: document this!
+	/*!
+	 * @brief A type for holding an info about a product or a comment.
+	 *
+	 * @since v.0.6.4
+	 */
 	using tail_item_t = restinio::variant_t< product_t, std::string >;
 
 	product_t product;
