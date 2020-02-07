@@ -1003,6 +1003,7 @@ class connection_t final
 
 			if( m_response_coordinator.closed() )
 			{
+std::cout << "handle_trivial_write_operation: " << this << std::endl;
 				m_logger.trace( [&]{
 					return fmt::format(
 							"[connection:{}] sending resp data with "
@@ -1040,6 +1041,7 @@ class connection_t final
 					// NOTE: since v.0.6.0 this lambda is noexcept.
 					( const asio_ns::error_code & ec, std::size_t written ) noexcept
 					{
+std::cout << "handle_trivial_write_operation.async_write lambda: " << this << std::endl;
 						if( !ec )
 						{
 							restinio::utils::log_trace_noexcept( m_logger,
@@ -1116,6 +1118,7 @@ class connection_t final
 						}
 						else
 						{
+std::cout << "handle_file_write_operation.start_sendfile_operation lambda: " << this << std::endl;
 							restinio::utils::log_error_noexcept( m_logger,
 								[&]{
 									return fmt::format(
@@ -1126,6 +1129,7 @@ class connection_t final
 								} );
 						}
 
+std::cout << "handle_file_write_operation.start_sendfile_operation lambda just before calling after_write: " << this << std::endl;
 						RESTINIO_ENSURE_NOEXCEPT_CALL( after_write( ec ) );
 					} ) );
 		}
@@ -1239,6 +1243,9 @@ class connection_t final
 		void
 		after_write( const asio_ns::error_code & ec ) noexcept
 		{
+std::cout << "after_write: " << this << std::endl;
+std::cout << "after_write!: connection_id=" << std::flush
+<< connection_id() << std::endl;
 			if( !ec )
 			{
 				RESTINIO_ENSURE_NOEXCEPT_CALL( handle_current_write_ctx() );
@@ -1351,6 +1358,7 @@ class connection_t final
 		void
 		trigger_error_and_close( Message_Builder msg_builder ) noexcept
 		{
+std::cout << "trigger_error_and_close: " << this << std::endl;
 			// An exception from logger/msg_builder shouldn't prevent
 			// a call to close().
 			restinio::utils::log_error_noexcept(
