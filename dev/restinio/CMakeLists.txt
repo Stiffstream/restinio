@@ -104,13 +104,17 @@ SET(RESTINIO_HEADERS_ALL
 	helpers/multipart_body.hpp
 	helpers/string_algo.hpp
 
+	helpers/http_field_parsers/accept-charset.hpp
+	helpers/http_field_parsers/accept-encoding.hpp
 	helpers/http_field_parsers/accept.hpp
+	helpers/http_field_parsers/accept-language.hpp
 	helpers/http_field_parsers/basics.hpp
 	helpers/http_field_parsers/cache-control.hpp
 	helpers/http_field_parsers/content-disposition.hpp
 	helpers/http_field_parsers/content-encoding.hpp
 	helpers/http_field_parsers/content-type.hpp
 	helpers/http_field_parsers/media-type.hpp
+	helpers/http_field_parsers/range.hpp
 
 	impl/acceptor.hpp
 	impl/connection_base.hpp
@@ -124,6 +128,7 @@ SET(RESTINIO_HEADERS_ALL
 	impl/os_posix.ipp
 	impl/os_unknown.ipp
 	impl/os_win.ipp
+	impl/overflow_controlled_integer_accumulator.hpp
 	impl/parser_callbacks.ipp
 	impl/response_coordinator.hpp
 	impl/sendfile_operation_default.ipp
