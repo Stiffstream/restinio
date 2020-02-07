@@ -203,10 +203,19 @@ namespace nonstd {
 #include <initializer_list>
 #include <memory>
 #include <new>
-#include <stdexcept>
 #include <system_error>
 #include <type_traits>
 #include <utility>
+
+// additional includes:
+
+#if nsel_CONFIG_NO_EXCEPTIONS
+// already included: <cassert>
+#else
+# include <stdexcept>
+#endif
+
+// C++ feature usage:
 
 #if nsel_CPP11_OR_GREATER
 # define nsel_constexpr  constexpr
@@ -242,16 +251,17 @@ namespace nonstd {
 
 // Compiler versions:
 //
-// MSVC++ 6.0  _MSC_VER == 1200 (Visual Studio 6.0)
-// MSVC++ 7.0  _MSC_VER == 1300 (Visual Studio .NET 2002)
-// MSVC++ 7.1  _MSC_VER == 1310 (Visual Studio .NET 2003)
-// MSVC++ 8.0  _MSC_VER == 1400 (Visual Studio 2005)
-// MSVC++ 9.0  _MSC_VER == 1500 (Visual Studio 2008)
-// MSVC++ 10.0 _MSC_VER == 1600 (Visual Studio 2010)
-// MSVC++ 11.0 _MSC_VER == 1700 (Visual Studio 2012)
-// MSVC++ 12.0 _MSC_VER == 1800 (Visual Studio 2013)
-// MSVC++ 14.0 _MSC_VER == 1900 (Visual Studio 2015)
-// MSVC++ 14.1 _MSC_VER >= 1910 (Visual Studio 2017)
+// MSVC++  6.0  _MSC_VER == 1200  nsel_COMPILER_MSVC_VERSION ==  60  (Visual Studio 6.0)
+// MSVC++  7.0  _MSC_VER == 1300  nsel_COMPILER_MSVC_VERSION ==  70  (Visual Studio .NET 2002)
+// MSVC++  7.1  _MSC_VER == 1310  nsel_COMPILER_MSVC_VERSION ==  71  (Visual Studio .NET 2003)
+// MSVC++  8.0  _MSC_VER == 1400  nsel_COMPILER_MSVC_VERSION ==  80  (Visual Studio 2005)
+// MSVC++  9.0  _MSC_VER == 1500  nsel_COMPILER_MSVC_VERSION ==  90  (Visual Studio 2008)
+// MSVC++ 10.0  _MSC_VER == 1600  nsel_COMPILER_MSVC_VERSION == 100  (Visual Studio 2010)
+// MSVC++ 11.0  _MSC_VER == 1700  nsel_COMPILER_MSVC_VERSION == 110  (Visual Studio 2012)
+// MSVC++ 12.0  _MSC_VER == 1800  nsel_COMPILER_MSVC_VERSION == 120  (Visual Studio 2013)
+// MSVC++ 14.0  _MSC_VER == 1900  nsel_COMPILER_MSVC_VERSION == 140  (Visual Studio 2015)
+// MSVC++ 14.1  _MSC_VER >= 1910  nsel_COMPILER_MSVC_VERSION == 141  (Visual Studio 2017)
+// MSVC++ 14.2  _MSC_VER >= 1920  nsel_COMPILER_MSVC_VERSION == 142  (Visual Studio 2019)
 
 #if defined(_MSC_VER) && !defined(__clang__)
 # define nsel_COMPILER_MSVC_VER      (_MSC_VER )
@@ -433,7 +443,7 @@ public:
     storage_t_impl() {}
     ~storage_t_impl() {}
 
-    explicit storage_t_impl( bool has_value ) 
+    explicit storage_t_impl( bool has_value )
         : m_has_value( has_value )
     {}
 
@@ -627,7 +637,7 @@ public:
         return std::move( m_error );
     }
 
-    bool has_value() const 
+    bool has_value() const
     {
         return m_has_value;
     }
@@ -992,7 +1002,8 @@ unexpected_type( E ) -> unexpected_type< E >;
 
 /// class unexpected_type, std::exception_ptr specialization (P0323R2)
 
-#if nsel_P0323R <= 2
+#if !nsel_CONFIG_NO_EXCEPTIONS
+#if  nsel_P0323R <= 2
 
 // TODO: Should expected be specialized for particular E types such as exception_ptr and how?
 //       See p0323r7 2.1. Ergonomics, http://wg21.link/p0323
@@ -1034,6 +1045,7 @@ private:
 };
 
 #endif // nsel_P0323R
+#endif // !nsel_CONFIG_NO_EXCEPTIONS
 
 /// x.x.4, Unexpected equality operators
 
@@ -1166,6 +1178,8 @@ public:
 
 /// x.x.6 bad_expected_access: expected access error
 
+#if !nsel_CONFIG_NO_EXCEPTIONS
+
 template< typename E >
 class bad_expected_access : public bad_expected_access< void >
 {
@@ -1209,6 +1223,8 @@ private:
     error_type m_error;
 };
 
+#endif // nsel_CONFIG_NO_EXCEPTIONS
+
 /// x.x.8 unexpect tag, in_place_unexpected tag: construct an error
 
 struct unexpect_t{};
@@ -1218,6 +1234,40 @@ nsel_inline17 constexpr unexpect_t unexpect{};
 nsel_inline17 constexpr unexpect_t in_place_unexpected{};
 
 /// class error_traits
+
+#if nsel_CONFIG_NO_EXCEPTIONS
+
+namespace detail {
+    bool text( char const * /*text*/ ) { return true; }
+}
+template< typename Error >
+struct error_traits
+{
+    static void rethrow( Error const & /*e*/ )
+    {
+        assert( false && detail::text("throw bad_expected_access<Error>{ e };") );
+    }
+};
+
+template<>
+struct error_traits< std::exception_ptr >
+{
+    static void rethrow( std::exception_ptr const & /*e*/ )
+    {
+        assert( false && detail::text("throw bad_expected_access<std::exception_ptr>{ e };") );
+    }
+};
+
+template<>
+struct error_traits< std::error_code >
+{
+    static void rethrow( std::error_code const & /*e*/ )
+    {
+        assert( false && detail::text("throw std::system_error( e );") );
+    }
+};
+
+#else // nsel_CONFIG_NO_EXCEPTIONS
 
 template< typename Error >
 struct error_traits
@@ -1245,6 +1295,8 @@ struct error_traits< std::error_code >
         throw std::system_error( e );
     }
 };
+
+#endif // nsel_CONFIG_NO_EXCEPTIONS
 
 } // namespace expected_lite
 
@@ -2398,7 +2450,7 @@ namespace nonstd {
 
 // void unexpected() is deprecated && removed in C++17
 
-#if nsel_CPP17_OR_GREATER && nsel_COMPILER_MSVC_VERSION > 141
+#if nsel_CPP17_OR_GREATER || nsel_COMPILER_MSVC_VERSION > 141
 template< typename E >
 using unexpected = unexpected_type<E>;
 #endif
