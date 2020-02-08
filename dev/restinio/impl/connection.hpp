@@ -27,6 +27,7 @@
 #include <restinio/impl/sendfile_operation.hpp>
 
 #include <restinio/utils/impl/safe_uint_truncate.hpp>
+#include <restinio/utils/at_scope_exit.hpp>
 
 namespace restinio
 {
@@ -1003,7 +1004,6 @@ class connection_t final
 
 			if( m_response_coordinator.closed() )
 			{
-std::cout << "handle_trivial_write_operation: " << this << std::endl;
 				m_logger.trace( [&]{
 					return fmt::format(
 							"[connection:{}] sending resp data with "
@@ -1041,7 +1041,6 @@ std::cout << "handle_trivial_write_operation: " << this << std::endl;
 					// NOTE: since v.0.6.0 this lambda is noexcept.
 					( const asio_ns::error_code & ec, std::size_t written ) noexcept
 					{
-std::cout << "handle_trivial_write_operation.async_write lambda: " << this << std::endl;
 						if( !ec )
 						{
 							restinio::utils::log_trace_noexcept( m_logger,
@@ -1103,8 +1102,15 @@ std::cout << "handle_trivial_write_operation.async_write lambda: " << this << st
 					// NOTE: since v.0.6.0 this lambda is noexcept
 					(const asio_ns::error_code & ec, file_size_t written ) mutable noexcept
 					{
-						// Reset sendfile operation context.
-						RESTINIO_ENSURE_NOEXCEPT_CALL( op_ctx.reset() );
+						// NOTE: op_ctx should be reset just before return from
+						// that lambda. We can't call reset() until the end of
+						// the lambda because lambda object itself will be
+						// destroyed.
+						auto op_ctx_reseter = restinio::utils::at_scope_exit(
+								[&op_ctx] {
+									// Reset sendfile operation context.
+									RESTINIO_ENSURE_NOEXCEPT_CALL( op_ctx.reset() );
+								} );
 
 						if( !ec )
 						{
@@ -1118,7 +1124,6 @@ std::cout << "handle_trivial_write_operation.async_write lambda: " << this << st
 						}
 						else
 						{
-std::cout << "handle_file_write_operation.start_sendfile_operation lambda: " << this << std::endl;
 							restinio::utils::log_error_noexcept( m_logger,
 								[&]{
 									return fmt::format(
@@ -1129,7 +1134,6 @@ std::cout << "handle_file_write_operation.start_sendfile_operation lambda: " << 
 								} );
 						}
 
-std::cout << "handle_file_write_operation.start_sendfile_operation lambda just before calling after_write: " << this << std::endl;
 						RESTINIO_ENSURE_NOEXCEPT_CALL( after_write( ec ) );
 					} ) );
 		}
@@ -1243,9 +1247,6 @@ std::cout << "handle_file_write_operation.start_sendfile_operation lambda just b
 		void
 		after_write( const asio_ns::error_code & ec ) noexcept
 		{
-std::cout << "after_write: " << this << std::endl;
-std::cout << "after_write!: connection_id=" << std::flush
-<< connection_id() << std::endl;
 			if( !ec )
 			{
 				RESTINIO_ENSURE_NOEXCEPT_CALL( handle_current_write_ctx() );
@@ -1358,7 +1359,6 @@ std::cout << "after_write!: connection_id=" << std::flush
 		void
 		trigger_error_and_close( Message_Builder msg_builder ) noexcept
 		{
-std::cout << "trigger_error_and_close: " << this << std::endl;
 			// An exception from logger/msg_builder shouldn't prevent
 			// a call to close().
 			restinio::utils::log_error_noexcept(

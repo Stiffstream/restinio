@@ -10,6 +10,8 @@
 
 #include <restinio/all.hpp>
 
+#include <restinio/utils/at_scope_exit.hpp>
+
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
@@ -675,6 +677,9 @@ TEST_CASE( "sendfile with partially-read response" ,
 	other_thread.run();
 
 	auto old_sig = signal(SIGPIPE, SIG_IGN);
+	auto sig_restorer = restinio::utils::at_scope_exit( [&old_sig] {
+			signal(SIGPIPE, old_sig);
+		} );
 
 	const std::string request{
 			"GET / HTTP/1.0\r\n"
@@ -700,18 +705,6 @@ TEST_CASE( "sendfile with partially-read response" ,
 
 				socket.close();
 			} );
-
-#if 0
-		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
-
-		REQUIRE_THAT(
-			response,
-			Catch::Matchers::EndsWith(
-				"0123456789\n"
-				"FILE1\n"
-				"0123456789\n" ) );
-#endif
 	}
 
 	other_thread.stop_and_join();

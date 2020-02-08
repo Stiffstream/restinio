@@ -157,6 +157,7 @@ SET(RESTINIO_HEADERS_ALL
 
 	transforms/zlib.hpp
 
+	utils/at_scope_exit.hpp
 	utils/base64.hpp
 	utils/base64_lut.ipp
 	utils/from_string_details.ipp
