@@ -676,10 +676,12 @@ TEST_CASE( "sendfile with partially-read response" ,
 	other_work_thread_for_server_t<http_server_t> other_thread{ http_server };
 	other_thread.run();
 
+#if defined(SIGPIPE)
 	auto old_sig = signal(SIGPIPE, SIG_IGN);
 	auto sig_restorer = restinio::utils::at_scope_exit( [&old_sig] {
 			signal(SIGPIPE, old_sig);
 		} );
+#endif
 
 	const std::string request{
 			"GET / HTTP/1.0\r\n"
