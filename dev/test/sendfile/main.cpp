@@ -10,6 +10,8 @@
 
 #include <restinio/all.hpp>
 
+#include <restinio/utils/at_scope_exit.hpp>
+
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
@@ -637,3 +639,76 @@ TEST_CASE( "sendfile_chunk_size_guarded_value_t " , "[chunk_size_guarded_value]"
 		REQUIRE( chunk.value() == restinio::sendfile_max_chunk_size );
 	}
 }
+
+TEST_CASE( "sendfile with partially-read response" ,
+		"[sendfile][close-during-read]" )
+{
+	using http_server_t =
+		restinio::http_server_t<
+			restinio::traits_t<
+				restinio::asio_timer_manager_t,
+				utest_logger_t > >;
+
+	http_server_t http_server{
+		restinio::own_io_context(),
+		[]( auto & settings ){
+			settings
+				.port( utest_default_port() )
+				.address( "127.0.0.1" )
+				.request_handler(
+					[]( auto req ){
+						if( restinio::http_method_get() == req->header().method() )
+						{
+							req->create_response()
+								.append_header( "Server", "RESTinio utest server" )
+								.append_header_date_field()
+								.append_header( "Content-Type", "text/plain; charset=utf-8" )
+								.set_body( restinio::sendfile( "test/sendfile/f3.dat" ) )
+								.done();
+							return restinio::request_accepted();
+						}
+
+						return restinio::request_rejected();
+					} );
+		}
+	};
+
+	other_work_thread_for_server_t<http_server_t> other_thread{ http_server };
+	other_thread.run();
+
+#if defined(SIGPIPE)
+	auto old_sig = signal(SIGPIPE, SIG_IGN);
+	auto sig_restorer = restinio::utils::at_scope_exit( [&old_sig] {
+			signal(SIGPIPE, old_sig);
+		} );
+#endif
+
+	const std::string request{
+			"GET / HTTP/1.0\r\n"
+			"From: unit-test\r\n"
+			"User-Agent: unit-test\r\n"
+			"Content-Type: application/x-www-form-urlencoded\r\n"
+			"Connection: close\r\n"
+			"\r\n"
+	};
+
+	for(unsigned int i = 0; i != 20; ++i ) {
+		do_with_socket(
+			[&request]( auto & socket, auto & /*io_context*/ ) {
+				restinio::asio_ns::streambuf b;
+				std::ostream req_stream(&b);
+				req_stream << request;
+				restinio::asio_ns::write( socket, b );
+
+				restinio::asio_ns::streambuf response_stream;
+				restinio::asio_ns::read_until( socket, response_stream, "\r\n\r\n" );
+				std::array<char, 10> body;
+				restinio::asio_ns::read( socket, restinio::asio_ns::buffer(body) );
+
+				socket.close();
+			} );
+	}
+
+	other_thread.stop_and_join();
+}
+

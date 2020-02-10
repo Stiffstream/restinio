@@ -27,6 +27,7 @@
 #include <restinio/impl/sendfile_operation.hpp>
 
 #include <restinio/utils/impl/safe_uint_truncate.hpp>
+#include <restinio/utils/at_scope_exit.hpp>
 
 namespace restinio
 {
@@ -1101,8 +1102,15 @@ class connection_t final
 					// NOTE: since v.0.6.0 this lambda is noexcept
 					(const asio_ns::error_code & ec, file_size_t written ) mutable noexcept
 					{
-						// Reset sendfile operation context.
-						RESTINIO_ENSURE_NOEXCEPT_CALL( op_ctx.reset() );
+						// NOTE: op_ctx should be reset just before return from
+						// that lambda. We can't call reset() until the end of
+						// the lambda because lambda object itself will be
+						// destroyed.
+						auto op_ctx_reseter = restinio::utils::at_scope_exit(
+								[&op_ctx] {
+									// Reset sendfile operation context.
+									RESTINIO_ENSURE_NOEXCEPT_CALL( op_ctx.reset() );
+								} );
 
 						if( !ec )
 						{
