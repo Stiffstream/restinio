@@ -231,7 +231,18 @@ struct all_of< Predicate, H >
 //
 // all_of
 //
-//FIXME: document this!
+/*!
+ * @brief Applies the predicate to all types from the list and
+ * return true only if all types satisty that predicate.
+ *
+ * Usage example:
+ * @code
+ * using namespace restinio::utils::metaprogramming;
+ * static_assert(all_of_v<std::is_integral, int, long, unsigned short>, "Ok");
+ * @endcode
+ *
+ * @since v.0.6.1
+ */
 template< template<class...> class Predicate, typename... List >
 constexpr bool all_of_v = impl::all_of<Predicate, List...>::value;
 
