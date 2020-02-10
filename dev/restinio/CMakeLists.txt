@@ -115,6 +115,7 @@ SET(RESTINIO_HEADERS_ALL
 	helpers/http_field_parsers/content-type.hpp
 	helpers/http_field_parsers/media-type.hpp
 	helpers/http_field_parsers/range.hpp
+	helpers/http_field_parsers/user-agent.hpp
 
 	impl/acceptor.hpp
 	impl/connection_base.hpp
