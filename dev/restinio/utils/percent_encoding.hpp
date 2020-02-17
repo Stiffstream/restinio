@@ -49,9 +49,13 @@ struct restinio_default_unescape_traits
  * @brief The traits for escaping and unexcaping symbols in
  * JavaScript-compatible mode.
  *
- * Unescaped asterisk is allowed.
+ * The following symbols are allowed to be unescaped:
+ * `-`, `.`, `~`, `_`, `*`, `!`, `'`, `(`, `)`
  *
- * @since v.0.4.9.1
+ * @note
+ * The list of allowed symbols was extended in v.0.6.5.
+ *
+ * @since v.0.4.9.1, v.0.6.5
  */
 struct javascript_compatible_unescape_traits
 {
@@ -66,7 +70,11 @@ struct javascript_compatible_unescape_traits
 			'.' == c ||
 			'~' == c ||
 			'_' == c ||
-			'*' == c;
+			'*' == c ||
+			'!' == c ||
+			'\'' == c ||
+			'(' == c ||
+			')' == c;
 	}
 };
 

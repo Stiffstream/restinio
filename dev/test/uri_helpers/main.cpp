@@ -422,6 +422,27 @@ TEST_CASE( "Parse query params" , "[parse_query]" )
 		REQUIRE( params.has( "name" ) );
 		REQUIRE( params[ "name" ] == "A*" );
 	}
+
+	{
+		const restinio::string_view_t
+			query{ "one=%3A%2F%3F%23%5B%5D%40"
+					"&two=!%24%26'()*%2B%2C%3B%3D"
+					"&three=-.~_*"};
+
+		using traits_t = restinio::parse_query_traits::javascript_compatible;
+		auto params = restinio::parse_query< traits_t >( query );
+
+		REQUIRE( 3 == params.size() );
+
+		REQUIRE( params.has( "one" ) );
+		REQUIRE( params[ "one" ] == ":/?#[]@" );
+
+		REQUIRE( params.has( "two" ) );
+		REQUIRE( params[ "two" ] == "!$&'()*+,;=" );
+
+		REQUIRE( params.has( "three" ) );
+		REQUIRE( params[ "three" ] == "-.~_*" );
+	}
 }
 
 TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_multi_map]" )
