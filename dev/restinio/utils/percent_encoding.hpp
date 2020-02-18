@@ -228,19 +228,36 @@ unescape_percent_encoding( const string_view_t data )
 	while( 0 < chars_to_handle )
 	{
 		char c = *d;
-		if( Traits::ordinary_char( c ) )
-		{
-			result += c;
-			--chars_to_handle;
-			++d;
-		}
-		else if( '+' == c )
+		if( '+' == c )
 		{
 			result += ' ';
 			--chars_to_handle;
 			++d;
 		}
-		else if( '%' != c )
+		else if( '%' == c )
+		{
+			if( chars_to_handle >= 3 &&
+				impl::is_hexdigit( d[ 1 ] ) &&
+				impl::is_hexdigit( d[ 2 ] ) )
+			{
+				result += impl::extract_escaped_char( d[ 1 ], d[ 2 ] );
+				chars_to_handle -= 3;
+				d += 3;
+			}
+			else
+			{
+				throw exception_t{
+					fmt::format(
+						"invalid escape sequence at pos {}", d - data.data() ) };
+			}
+		}
+		else if( Traits::ordinary_char( c ) )
+		{
+			result += c;
+			--chars_to_handle;
+			++d;
+		}
+		else
 		{
 			throw exception_t{
 				fmt::format(
@@ -248,21 +265,8 @@ unescape_percent_encoding( const string_view_t data )
 					c,
 					d - data.data() ) };
 		}
-		else if( chars_to_handle >= 3 &&
-			impl::is_hexdigit( d[ 1 ] ) &&
-			impl::is_hexdigit( d[ 2 ] ) )
-		{
-			result += impl::extract_escaped_char( d[ 1 ], d[ 2 ] );
-			chars_to_handle -= 3;
-			d += 3;
-		}
-		else
-		{
-			throw exception_t{
-				fmt::format(
-					"invalid escape sequence at pos {}", d - data.data() ) };
-		}
 	}
+
 	return result;
 }
 
