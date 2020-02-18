@@ -179,6 +179,31 @@ get( const query_string_params_t & params, string_view_t key )
 namespace parse_query_traits
 {
 
+namespace details
+{
+
+/*!
+ * @brief Helper class to be reused in implementation of query-string
+ * parsing traits.
+ *
+ * Implements `find_next_separator` method that recongnizes `&` and
+ * `;` as `name=value` separators.
+ *
+ * @since v.0.6.5
+ */
+struct ampersand_and_semicolon_as_separators
+{
+	static string_view_t::size_type
+	find_next_separator(
+		string_view_t where,
+		string_view_t::size_type start_from ) noexcept
+	{
+		return where.find_first_of( "&;", start_from );
+	}
+};
+
+} /* namespace details */
+
 /*!
  * @brief Traits for the default RESTinio parser for query string.
  *
@@ -196,12 +221,16 @@ namespace parse_query_traits
  *
  * @since v.0.4.9.1
  */
-using restinio_defaults = restinio::utils::restinio_default_unescape_traits;
+struct restinio_defaults
+	:	public restinio::utils::restinio_default_unescape_traits
+	,	public details::ampersand_and_semicolon_as_separators
+{};
 
 /*!
  * @brief Traits for parsing a query string in JavaScript-compatible mode.
  *
- * In that mode unexcaped asterisk is alowed.
+ * In that mode several non-percent-encoded characters are allowed:
+ * `-`, `.`, `~`, `_`, `*`, `!`, `'`, `(`, `)`
  *
  * Usage example:
  * @code
@@ -210,7 +239,10 @@ using restinio_defaults = restinio::utils::restinio_default_unescape_traits;
  *
  * @since v.0.4.9.1
  */
-using javascript_compatible = restinio::utils::javascript_compatible_unescape_traits;
+struct javascript_compatible
+	:	public restinio::utils::javascript_compatible_unescape_traits
+	,	public details::ampersand_and_semicolon_as_separators
+{};
 
 } /* namespace parse_query_traits */
 
@@ -237,8 +269,6 @@ parse_query(
 	//! Query part of the request target.
 	string_view_t original_query_string )
 {
-	constexpr const string_view_t separators{ "&;", 2u };
-
 	std::unique_ptr< char[] > data_buffer;
 	query_string_params_t::parameters_container_t parameters;
 
@@ -293,8 +323,8 @@ parse_query(
 			}
 
 			const auto eq_pos_next = eq_pos + 1u;
-			auto separator_pos = work_query_string.find_first_of(
-					separators, eq_pos_next );
+			auto separator_pos = Parse_Traits::find_next_separator(
+					work_query_string, eq_pos_next );
 			if( string_view_t::npos == separator_pos )
 				separator_pos = work_query_string.size();
 
