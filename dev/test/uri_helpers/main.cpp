@@ -523,7 +523,367 @@ TEST_CASE( "Parse query params" , "[parse_query]" )
 		REQUIRE( params[ "k2" ] == "==" );
 		REQUIRE( params[ "k3" ] == "===" );
 	}
+}
 
+TEST_CASE( "Corner cases of query string",
+		"[query_string][relaxed_traits][javascript_compatible_traits]" )
+{
+	using default_traits = restinio::parse_query_traits::restinio_defaults;
+	using js_comp_traits = restinio::parse_query_traits::javascript_compatible;
+	using relaxed_traits = restinio::parse_query_traits::relaxed;
+	using restinio::parse_query;
+
+	// param%00=123
+	{
+		const std::string query_to_check( "param%00=123" );
+		const std::string expected_param_name( "param\0", 6u );
+		const std::string expected_param_value( "123" );
+		{
+			auto params = parse_query< default_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+
+		{
+			auto params = parse_query< js_comp_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+
+		{
+			auto params = parse_query< relaxed_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+	}
+
+	// par%00am=123
+	{
+		const std::string query_to_check( "par%00am=123" );
+		const std::string expected_param_name( "par\0am", 6u );
+		const std::string expected_param_value( "123" );
+		{
+			auto params = parse_query< default_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+
+		{
+			auto params = parse_query< js_comp_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+
+		{
+			auto params = parse_query< relaxed_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+	}
+
+	// param+=123
+	{
+		const std::string query_to_check( "param+=123" );
+		const std::string expected_param_name( "param ", 6u );
+		const std::string expected_param_value( "123" );
+		{
+			auto params = parse_query< default_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+
+		{
+			auto params = parse_query< js_comp_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+
+		{
+			auto params = parse_query< relaxed_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+	}
+	// param.=123
+	{
+		const std::string query_to_check( "param.=123" );
+		const std::string expected_param_name( "param.", 6u );
+		const std::string expected_param_value( "123" );
+		{
+			auto params = parse_query< default_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+
+		{
+			auto params = parse_query< js_comp_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+
+		{
+			auto params = parse_query< relaxed_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+	}
+	// param[=123
+	{
+		const std::string query_to_check( "param[=123" );
+		const std::string expected_param_name( "param[", 6u );
+		const std::string expected_param_value( "123" );
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			auto params = parse_query< relaxed_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+	}
+	// %00=123
+	{
+		const std::string query_to_check( "%00=123" );
+		const std::string expected_param_name( "\0", 1u );
+		const std::string expected_param_value( "123" );
+		{
+			auto params = parse_query< default_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+
+		{
+			auto params = parse_query< js_comp_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+
+		{
+			auto params = parse_query< relaxed_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+	}
+	// 1+2
+	{
+		const std::string query_to_check( "1+2" );
+		const std::string expected_tag( "1 2" );
+		{
+			auto params = parse_query< default_traits >( query_to_check );
+
+			REQUIRE( 0 == params.size() );
+			REQUIRE( params.tag() == expected_tag );
+		}
+
+		{
+			auto params = parse_query< default_traits >( query_to_check );
+
+			REQUIRE( 0 == params.size() );
+			REQUIRE( params.tag() == expected_tag );
+		}
+
+		{
+			auto params = parse_query< default_traits >( query_to_check );
+
+			REQUIRE( 0 == params.size() );
+			REQUIRE( params.tag() == expected_tag );
+		}
+	}
+	// param[]=123
+	{
+		const std::string query_to_check( "param[]=123" );
+		const std::string expected_param_name( "param[]" );
+		const std::string expected_param_value( "123" );
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			auto params = parse_query< relaxed_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+	}
+	// param[]xxx=123
+	{
+		const std::string query_to_check( "param[]xxx=123" );
+		const std::string expected_param_name( "param[]xxx" );
+		const std::string expected_param_value( "123" );
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			auto params = parse_query< relaxed_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+	}
+	// [xxx&param=123
+	{
+		const std::string query_to_check( "[xxx&param=123" );
+		const std::string expected_param_name( "[xxx&param" );
+		const std::string expected_param_value( "123" );
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			auto params = parse_query< relaxed_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+	}
+	// par am=123
+	{
+		const std::string query_to_check( "par am=123" );
+		const std::string expected_param_name( "par am" );
+		const std::string expected_param_value( "123" );
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			auto params = parse_query< relaxed_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+	}
+	// param=12%3
+	{
+		const std::string query_to_check( "param=12%3" );
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+	}
+	// par%am=123
+	{
+		const std::string query_to_check( "par%am=123" );
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+	}
+	// %para%00m=123
+	{
+		const std::string query_to_check( "%para%00m=123" );
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+	}
+	// +=123
+	{
+		const std::string query_to_check( "+=123" );
+		const std::string expected_param_name( " " );
+		const std::string expected_param_value( "123" );
+		{
+			auto params = parse_query< default_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+
+		{
+			auto params = parse_query< js_comp_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+
+		{
+			auto params = parse_query< relaxed_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+	}
 }
 
 TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_multi_map]" )
