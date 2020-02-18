@@ -443,6 +443,37 @@ TEST_CASE( "Parse query params" , "[parse_query]" )
 		REQUIRE( params.has( "three" ) );
 		REQUIRE( params[ "three" ] == "-.~_*" );
 	}
+
+	{
+		const restinio::string_view_t
+			query{ "one=A*&two.=.value&_three=_value_&fo+ur=+4+" };
+
+		using traits_t = restinio::parse_query_traits::x_www_form_urlencoded;
+		auto params = restinio::parse_query< traits_t >( query );
+
+		REQUIRE( 4 == params.size() );
+
+		REQUIRE( params.has( "one" ) );
+		REQUIRE( params[ "one" ] == "A*" );
+
+		REQUIRE( params.has( "two." ) );
+		REQUIRE( params[ "two." ] == ".value" );
+
+		REQUIRE( params.has( "_three" ) );
+		REQUIRE( params[ "_three" ] == "_value_" );
+
+		REQUIRE( params.has( "fo ur" ) );
+		REQUIRE( params[ "fo ur" ] == " 4 " );
+	}
+
+	{
+		const restinio::string_view_t
+			// semicolon can't be used as separator for x-www-form-urlencoded.
+			query{ "one=A*;two.=.value" };
+
+		using traits_t = restinio::parse_query_traits::x_www_form_urlencoded;
+		REQUIRE_THROWS( restinio::parse_query< traits_t >( query ) );
+	}
 }
 
 TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_multi_map]" )

@@ -202,6 +202,26 @@ struct ampersand_and_semicolon_as_separators
 	}
 };
 
+/*!
+ * @brief Helper class to be reused in implementation of query-string
+ * parsing traits.
+ *
+ * Implements `find_next_separator` method that recongnizes only `&`
+ * `name=value` separator.
+ *
+ * @since v.0.6.5
+ */
+struct ampersand_only_as_separators
+{
+	static string_view_t::size_type
+	find_next_separator(
+		string_view_t where,
+		string_view_t::size_type start_from ) noexcept
+	{
+		return where.find_first_of( '&', start_from );
+	}
+};
+
 } /* namespace details */
 
 /*!
@@ -242,6 +262,33 @@ struct restinio_defaults
 struct javascript_compatible
 	:	public restinio::utils::javascript_compatible_unescape_traits
 	,	public details::ampersand_and_semicolon_as_separators
+{};
+
+/*!
+ * @brief Traits for parsing a query string in
+ * application/x-www-form-urlencoded mode.
+ *
+ * In that mode:
+ *
+ * - `name=value` pairs can be concatenated only by `&`;
+ * - the following characters can only be used unescaped: `*` (0x2A), `-`
+ *   (0x2D), `.` (0x2E), `_` (0x5F), `0`..`9` (0x30..0x39), `A`..`Z`
+ *   (0x41..0x5A), `a`..`z` (0x61..0x7A);
+ * - space character (0x20) should be replaced by + (0x2B);
+ * - *all other characters should be represented as percent-encoded*.
+ *
+ * Reference for more details: https://url.spec.whatwg.org/#concept-urlencoded-byte-serializer
+ *
+ * Usage example:
+ * @code
+ * auto result = restinio::parse_query<restinio::parse_query_traits::x_www_form_urlencoded>("name=A*");
+ * @endcode
+ *
+ * @since v.0.6.5
+ */
+struct x_www_form_urlencoded
+	:	public restinio::utils::x_www_form_urlencoded_unescape_traits
+	,	public details::ampersand_only_as_separators
 {};
 
 } /* namespace parse_query_traits */

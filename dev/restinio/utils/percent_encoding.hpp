@@ -46,6 +46,31 @@ struct restinio_default_unescape_traits
 };
 
 /*!
+ * @brief Traits for escaping and unexcaping symbols in
+ * a query string in correspondence with application/x-www-form-urlencoded
+ * rules.
+ *
+ * Reference for more details: https://url.spec.whatwg.org/#concept-urlencoded-byte-serializer
+ *
+ * @since v.0.6.5
+ */
+struct x_www_form_urlencoded_unescape_traits
+{
+	static constexpr bool
+	ordinary_char( char c ) noexcept
+	{
+		return
+			( '0' <= c && c <= '9' ) ||
+			( 'a' <= c && c <= 'z' ) ||
+			( 'A' <= c && c <= 'Z' ) ||
+			'*' == c ||
+			'-' == c ||
+			'.' == c ||
+			'_' == c;
+	}
+};
+
+/*!
  * @brief The traits for escaping and unexcaping symbols in
  * JavaScript-compatible mode.
  *
