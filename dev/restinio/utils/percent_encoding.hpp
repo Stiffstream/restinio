@@ -71,6 +71,42 @@ struct x_www_form_urlencoded_unescape_traits
 };
 
 /*!
+ * @brief Traits for escaping and unexcaping symbols in
+ * a query string in very relaxed mode.
+ *
+ * In that mode all characters described in that rule from
+ * [RCF3986](https://tools.ietf.org/html/rfc3986) can be used as unexceped:
+@verbatim
+query         = *( pchar / "/" / "?" )
+pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
+unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+reserved      = gen-delims / sub-delims
+gen-delims    = ":" / "/" / "?" / "#" / "[" / "]" / "@"
+sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
+                 / "*" / "+" / "," / ";" / "="
+@endverbatim
+ *
+ * Additionaly this traits allows to use unexcaped space character.
+ *
+ * @since v.0.6.5
+ */
+struct relaxed_unescape_traits
+{
+	static bool
+	ordinary_char( char c ) noexcept
+	{
+		return nullptr != std::strchr(
+				" " // Space
+				"ABCDEFGHIJKLMNOPQRSTUVWXYZ" // ALPHA
+				"abcdefghijklmnopqrstuvwxyz"
+				"0123456789" // DIGIT
+				"-._~" // unreserved
+				":/?#[]@" // gen-delims
+				"!$&'()*+,;=", c );
+	}
+};
+
+/*!
  * @brief The traits for escaping and unexcaping symbols in
  * JavaScript-compatible mode.
  *

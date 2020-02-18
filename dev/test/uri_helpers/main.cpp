@@ -399,7 +399,6 @@ TEST_CASE( "Parse query params" , "[parse_query]" )
 
 	const auto case_2 = []( const restinio::string_view_t query )
 	{
-
 		auto params = restinio::parse_query( query );
 
 		REQUIRE( 2 == params.size() );
@@ -474,6 +473,57 @@ TEST_CASE( "Parse query params" , "[parse_query]" )
 		using traits_t = restinio::parse_query_traits::x_www_form_urlencoded;
 		REQUIRE_THROWS( restinio::parse_query< traits_t >( query ) );
 	}
+
+	{
+		const restinio::string_view_t
+			query{ "a=(&b=)&c=[&d=]&e=!&f=,&g=;&h='&i=@&par am=z" };
+
+		using traits_t = restinio::parse_query_traits::relaxed;
+		auto params = restinio::parse_query< traits_t >( query );
+
+		REQUIRE( 10 == params.size() );
+
+		REQUIRE( params.has( "a" ) );
+		REQUIRE( params[ "a" ] == "(" );
+
+		REQUIRE( params.has( "b" ) );
+		REQUIRE( params[ "b" ] == ")" );
+
+		REQUIRE( params.has( "c" ) );
+		REQUIRE( params[ "c" ] == "[" );
+
+		REQUIRE( params.has( "d" ) );
+		REQUIRE( params[ "d" ] == "]" );
+
+		REQUIRE( params.has( "e" ) );
+		REQUIRE( params[ "e" ] == "!" );
+
+		REQUIRE( params.has( "f" ) );
+		REQUIRE( params[ "f" ] == "," );
+
+		REQUIRE( params.has( "g" ) );
+		REQUIRE( params[ "g" ] == ";" );
+
+		REQUIRE( params.has( "h" ) );
+		REQUIRE( params[ "h" ] == "'" );
+
+		REQUIRE( params.has( "i" ) );
+		REQUIRE( params[ "i" ] == "@" );
+
+		REQUIRE( params.has( "par am" ) );
+		REQUIRE( params[ "par am" ] == "z" );
+	}
+	{
+		auto params = restinio::parse_query<
+				restinio::parse_query_traits::relaxed >( "k1==&k2===&k3====" );
+
+		REQUIRE( 3 == params.size() );
+
+		REQUIRE( params[ "k1" ] == "=" );
+		REQUIRE( params[ "k2" ] == "==" );
+		REQUIRE( params[ "k3" ] == "===" );
+	}
+
 }
 
 TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_multi_map]" )

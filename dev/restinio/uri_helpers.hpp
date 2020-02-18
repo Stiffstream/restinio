@@ -291,6 +291,42 @@ struct x_www_form_urlencoded
 	,	public details::ampersand_only_as_separators
 {};
 
+/*!
+ * @brief Traits for parsing a query string in a very relaxed mode.
+ *
+ * In that mode all characters described in that rule from
+ * [RCF3986](https://tools.ietf.org/html/rfc3986) can be used as unexceped:
+@verbatim
+query         = *( pchar / "/" / "?" )
+pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
+unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+reserved      = gen-delims / sub-delims
+gen-delims    = ":" / "/" / "?" / "#" / "[" / "]" / "@"
+sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
+                 / "*" / "+" / "," / ";" / "="
+@endverbatim
+ *
+ * Additionaly this traits allows to use unexcaped space character.
+ *
+ * Note that despite that fact that symbols like `#`, `+`, `=` and `&` can be
+ * used in non-percent-encoded form they play special role and are interpreted
+ * special way. So such symbols should be percent-encoded if they are used as
+ * part of name or value in query string.
+ *
+ * Only ampersand (`&`) can be used as `name=value` pairs separator.
+ *
+ * Usage example:
+ * @code
+ * auto result = restinio::parse_query<restinio::parse_query_traits::relaxed>("a=(&b=)&c=[&d=]&e=!&f=,&g=;");
+ * @endcode
+ *
+ * @since v.0.6.5
+ */
+struct relaxed
+	:	public restinio::utils::relaxed_unescape_traits
+	,	public details::ampersand_only_as_separators
+{};
+
 } /* namespace parse_query_traits */
 
 //! Parse query key-value parts.
