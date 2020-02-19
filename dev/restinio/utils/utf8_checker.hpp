@@ -120,6 +120,9 @@ public:
 		m_current_symbol_rest_bytes = 0;
 	}
 
+	std::uint32_t
+	current_symbol() const noexcept { return m_current_symbol; }
+
 private:
 
 	void

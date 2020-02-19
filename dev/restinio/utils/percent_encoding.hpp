@@ -230,6 +230,8 @@ do_unescape_percent_encoding(
 				d += 3;
 
 				expect_next_utf8_byte = !utf8_checker.finalized();
+				if( !expect_next_utf8_byte )
+					utf8_checker.reset();
 			}
 			else
 			{
@@ -341,6 +343,9 @@ namespace uri_normalization
 namespace unreserved_chars
 {
 
+namespace impl
+{
+
 /*!
  * @brief Is this symbol a part of unreserved set?
  *
@@ -356,6 +361,112 @@ is_unreserved_char( const char ch ) noexcept
 	// already implements necessary check.
 	return restinio_default_unescape_traits::ordinary_char( ch );
 }
+
+/*!
+ * @brief Internal helper to perform the main logic of enumeration
+ * of symbols in URI.
+ *
+ * Inspect the content of \a what and calls \a one_byte_handler if
+ * single characted should be used as output, otherwise calls
+ * \a three_bytes_handler (if percent-encoding sequence from three chars
+ * should be passed to the output as is).
+ *
+ * @attention
+ * Throws if invalid UTF-8 sequence is found.
+ *
+ * @brief v.0.6.5
+ */
+template<
+	typename One_Byte_Handler,
+	typename Three_Byte_Handler >
+void
+run_normalization_algo(
+	string_view_t what,
+	One_Byte_Handler && one_byte_handler,
+	Three_Byte_Handler && three_byte_handler )
+{
+	using namespace restinio::utils::impl;
+
+	std::size_t chars_to_handle = what.size();
+	const char * d = what.data();
+
+	utf8_checker_t utf8_checker;
+	bool expect_next_utf8_byte = false;
+
+	const auto current_pos = [&d, &what]() noexcept { return d - what.data(); };
+
+	while( 0 < chars_to_handle )
+	{
+		if( expect_next_utf8_byte && '%' != *d )
+			throw exception_t{
+				fmt::format( "next byte from UTF-8 sequence expected at {}",
+						current_pos() )
+			};
+
+		if( '%' != *d )
+		{
+			// Just one symbol to the output.
+			one_byte_handler( *d );
+			++d;
+			--chars_to_handle;
+		}
+		else if( chars_to_handle >= 3 &&
+			is_hexdigit( d[ 1 ] ) && is_hexdigit( d[ 2 ] ) )
+		{
+			const char ch = extract_escaped_char( d[ 1 ], d[ 2 ] );
+			if( !utf8_checker.process_byte( static_cast<std::uint8_t>(ch) ) )
+				throw exception_t{
+						fmt::format( "invalid UTF-8 sequence detected at {}",
+								current_pos() )
+				};
+
+			bool keep_three_bytes = true;
+
+			if( utf8_checker.finalized() )
+			{
+				expect_next_utf8_byte = false;
+
+				const auto symbol = utf8_checker.current_symbol();
+				utf8_checker.reset();
+
+				if( symbol < 0x80u )
+				{
+					const char ascii_char = static_cast<char>(symbol);
+					if( is_unreserved_char( ascii_char ) )
+					{
+						// percent encoded char will be replaced by one char.
+						one_byte_handler( ascii_char );
+						keep_three_bytes = false;
+					}
+				}
+			}
+			else
+			{
+				expect_next_utf8_byte = true;
+			}
+
+			if( keep_three_bytes )
+			{
+				// this part of multi-byte char will go to the output as is.
+				three_byte_handler( d[ 0 ], d[ 1 ], d[ 2 ] );
+			}
+
+			chars_to_handle -= 3;
+			d += 3u;
+		}
+		else
+		{
+			throw exception_t{
+				fmt::format( "invalid escape sequence at pos {}", current_pos() )
+			};
+		}
+	}
+
+	if( expect_next_utf8_byte )
+		throw exception_t{ fmt::format( "unfinished UTF-8 sequence" ) };
+}
+
+} /* namespace impl */
 
 /*!
  * @brief Calculate the size of a buffer to hold normalized value of a URI.
@@ -376,39 +487,13 @@ estimate_required_capacity(
 {
 	std::size_t calculated_capacity = 0u;
 
-	std::size_t chars_to_handle = what.size();
-	const char * d = what.data();
-
-	while( 0 < chars_to_handle )
-	{
-		if( '%' != *d )
-		{
-			// Just one symbol to the output.
-			++calculated_capacity;
-			--chars_to_handle;
-			++d;
-		}
-		else if( chars_to_handle >= 3 &&
-			impl::is_hexdigit( d[ 1 ] ) && impl::is_hexdigit( d[ 2 ] ) )
-		{
-			const char ch = impl::extract_escaped_char( d[ 1 ], d[ 2 ] );
-			if( is_unreserved_char( ch ) )
-				// percent encoded char will be replaced by one char.
-				++calculated_capacity; 
-			else
-				// this percent encoding sequence will go to the output.
-				calculated_capacity += 3;
-
-			chars_to_handle -= 3;
-			d += 3;
-		}
-		else
-		{
-			throw exception_t{
-				fmt::format( "invalid escape sequence at pos {}", d - what.data() )
-			};
-		}
-	}
+	impl::run_normalization_algo( what,
+			[&calculated_capacity]( char ) noexcept {
+				++calculated_capacity;
+			},
+			[&calculated_capacity]( char, char, char ) noexcept {
+				calculated_capacity += 3u;
+			} );
 
 	return calculated_capacity;
 }
@@ -436,48 +521,16 @@ normalize_to(
 	string_view_t what,
 	char * dest )
 {
-	std::size_t chars_to_handle = what.size();
-	const char * d = what.data();
-
-	while( 0 < chars_to_handle )
-	{
-		if( '%' != *d )
-		{
-			// Just one symbol to the output.
-			*dest = *d;
-			++dest;
-			++d;
-			--chars_to_handle;
-		}
-		else if( chars_to_handle >= 3 &&
-			impl::is_hexdigit( d[ 1 ] ) && impl::is_hexdigit( d[ 2 ] ) )
-		{
-			const char ch = impl::extract_escaped_char( d[ 1 ], d[ 2 ] );
-			if( is_unreserved_char( ch ) )
-			{
-				// percent encoded char will be replaced by one char.
-				*dest = ch;
-				++dest;
-			}
-			else
-			{
-				// this percent encoding sequence will go to the output.
-				dest[ 0 ] = d[ 0 ];
-				dest[ 1 ] = d[ 1 ];
-				dest[ 2 ] = d[ 2 ];
+	impl::run_normalization_algo( what,
+			[&dest]( char ch ) noexcept {
+				*dest++ = ch;
+			},
+			[&dest]( char ch1, char ch2, char ch3 ) noexcept {
+				dest[ 0 ] = ch1;
+				dest[ 1 ] = ch2;
+				dest[ 2 ] = ch3;
 				dest += 3;
-			}
-
-			chars_to_handle -= 3;
-			d += 3;
-		}
-		else
-		{
-			throw exception_t{
-				fmt::format( "invalid escape sequence at pos {}", d - what.data() )
-			};
-		}
-	}
+			} );
 }
 
 } /* namespace unreserved_chars */

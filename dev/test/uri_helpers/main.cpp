@@ -274,6 +274,18 @@ TEST_CASE( "unreserved-chars: estimate capacity",
 		const auto what = restinio::string_view_t{ "/j%75st/%4/~test" };
 		REQUIRE_THROWS( uc::estimate_required_capacity( what ) );
 	}
+
+	{
+		const auto what = restinio::string_view_t{ "/just/a/%C5%1Fest" };
+		REQUIRE_THROWS( uc::estimate_required_capacity( what ) );
+	}
+
+	{
+		const auto what = restinio::string_view_t{ "/something%2Felse" };
+		const auto r = uc::estimate_required_capacity( what );
+
+		REQUIRE( what.size() == r );
+	}
 }
 
 TEST_CASE( "unreserved-chars: normalize",
@@ -337,6 +349,24 @@ TEST_CASE( "unreserved-chars: normalize",
 		const auto what = restinio::string_view_t{ "/j%75st/%4/~test" };
 		std::vector< char > dest( what.size(), '\x00' );
 		REQUIRE_THROWS( uc::normalize_to( what, dest.data() ) );
+	}
+
+	{
+		const auto what = restinio::string_view_t{ "/just/a/%C5%BEest" };
+		const auto expected = restinio::string_view_t{ "/just/a/%C5%BEest" };
+		std::vector< char > dest( expected.size(), '\x00' );
+		uc::normalize_to( what, dest.data() );
+
+		REQUIRE( restinio::string_view_t{ dest.data(), dest.size() } == expected );
+	}
+
+	{
+		const auto what = restinio::string_view_t{ "/something%2Felse" };
+		const auto expected = restinio::string_view_t{ "/something%2Felse" };
+		std::vector< char > dest( expected.size(), '\x00' );
+		uc::normalize_to( what, dest.data() );
+
+		REQUIRE( restinio::string_view_t{ dest.data(), dest.size() } == expected );
 	}
 }
 
