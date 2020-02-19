@@ -1,5 +1,5 @@
 /*!
-	Protocol header validator .
+	Protocol header validator.
 */
 
 #pragma once
@@ -307,7 +307,7 @@ class ws_protocol_validator_t
 
 			if( m_current_frame.m_final_flag )
 			{
-				if( !m_utf8_checker.final() )
+				if( !m_utf8_checker.finalized() )
 					set_validation_state(
 						validation_state_t::incorrect_utf8_data );
 
@@ -571,7 +571,7 @@ class ws_protocol_validator_t
 		expected_data_t m_expected_close_code;
 
 		//! UTF-8 checker for text frames and close frames.
-		utf8_checker_t m_utf8_checker;
+		restinio::utils::utf8_checker_t m_utf8_checker;
 
 		//! This flag set if it's need to unmask payload parts.
 		bool m_unmask_flag{ false };
