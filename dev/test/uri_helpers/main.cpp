@@ -884,6 +884,124 @@ TEST_CASE( "Corner cases of query string",
 			REQUIRE( params[ expected_param_name ] == expected_param_value );
 		}
 	}
+	// param%80=123
+	{
+		const std::string query_to_check( "param%80=123" );
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< js_comp_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< relaxed_traits >( query_to_check ) );
+		}
+	}
+	// param%FF=123
+	{
+		const std::string query_to_check( "param%FF=123" );
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< js_comp_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< relaxed_traits >( query_to_check ) );
+		}
+	}
+	// param=123%80
+	{
+		const std::string query_to_check( "param=123%80" );
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< js_comp_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< relaxed_traits >( query_to_check ) );
+		}
+	}
+	// param=123%FF
+	{
+		const std::string query_to_check( "param=123%FF" );
+		{
+			REQUIRE_THROWS( parse_query< default_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< js_comp_traits >( query_to_check ) );
+		}
+
+		{
+			REQUIRE_THROWS( parse_query< relaxed_traits >( query_to_check ) );
+		}
+	}
+	// p=Привет
+	{
+		const std::string query_to_check( "p=%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82" );
+		const std::string expected_param_name( "p" );
+		const std::string expected_param_value( "Привет" );
+		{
+			auto params = parse_query< default_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+
+		{
+			auto params = parse_query< js_comp_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+
+		{
+			auto params = parse_query< relaxed_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+	}
+	// p=𒈙
+	{
+		const std::string query_to_check( "p=%F0%92%88%99" );
+		const std::string expected_param_name( "p" );
+		const std::string expected_param_value( "𒈙" );
+		{
+			auto params = parse_query< default_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+
+		{
+			auto params = parse_query< js_comp_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+
+		{
+			auto params = parse_query< relaxed_traits >( query_to_check );
+
+			REQUIRE( 1 == params.size() );
+			REQUIRE( params.has( expected_param_name ) );
+			REQUIRE( params[ expected_param_name ] == expected_param_value );
+		}
+	}
 }
 
 TEST_CASE( "Parse get params to std::multi_map" , "[parse_query_multi_map]" )

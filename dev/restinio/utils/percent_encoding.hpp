@@ -15,6 +15,8 @@
 #include <restinio/string_view.hpp>
 #include <restinio/exception.hpp>
 
+#include <restinio/utils/utf8_checker.hpp>
+
 namespace restinio
 {
 
@@ -177,6 +179,91 @@ extract_escaped_char( char c1,  char c2 )
 	return result;
 }
 
+//
+// do_unescape_percent_encoding
+//
+/*!
+ * @brief The actual implementation of unescape-percent-encoding procedure.
+ *
+ * @since v.0.6.5
+ */
+template<
+	typename Traits,
+	typename Chars_Collector >
+void
+do_unescape_percent_encoding(
+	const string_view_t data,
+	Chars_Collector && collector )
+{
+	std::size_t chars_to_handle = data.size();
+	const char * d = data.data();
+
+	utf8_checker_t utf8_checker;
+	bool expect_next_utf8_byte = false;
+
+	const auto current_pos = [&d, &data]() noexcept { return d - data.data(); };
+
+	while( 0 < chars_to_handle )
+	{
+		char c = *d;
+		if( expect_next_utf8_byte && '%' != c )
+			throw exception_t{
+				fmt::format( "next byte from UTF-8 sequence expected at {}",
+						current_pos() )
+			};
+
+		if( '%' == c )
+		{
+			if( chars_to_handle >= 3 &&
+				is_hexdigit( d[ 1 ] ) &&
+				is_hexdigit( d[ 2 ] ) )
+			{
+				const auto ch = extract_escaped_char( d[ 1 ], d[ 2 ] );
+				if( !utf8_checker.process_byte( static_cast<std::uint8_t>(ch) ) )
+					throw exception_t{
+							fmt::format( "invalid UTF-8 sequence detected at {}",
+									current_pos() )
+					};
+
+				collector( ch );
+				chars_to_handle -= 3;
+				d += 3;
+
+				expect_next_utf8_byte = !utf8_checker.finalized();
+			}
+			else
+			{
+				throw exception_t{
+					fmt::format(
+						"invalid escape sequence at pos {}", current_pos() ) };
+			}
+		}
+		else if( '+' == c )
+		{
+			collector( ' ' );
+			--chars_to_handle;
+			++d;
+		}
+		else if( Traits::ordinary_char( c ) )
+		{
+			collector( c );
+			--chars_to_handle;
+			++d;
+		}
+		else
+		{
+			throw exception_t{
+				fmt::format(
+					"invalid non-escaped char with code {:#02X} at pos: {}",
+					c,
+					current_pos() ) };
+		}
+	}
+
+	if( expect_next_utf8_byte )
+		throw exception_t{ fmt::format( "unfinished UTF-8 sequence" ) };
+}
+
 } /* namespace impl */
 
 //! Percent encoding.
@@ -222,50 +309,9 @@ unescape_percent_encoding( const string_view_t data )
 	std::string result;
 	result.reserve( data.size() );
 
-	std::size_t chars_to_handle = data.size();
-	const char * d = data.data();
-
-	while( 0 < chars_to_handle )
-	{
-		char c = *d;
-		if( '+' == c )
-		{
-			result += ' ';
-			--chars_to_handle;
-			++d;
-		}
-		else if( '%' == c )
-		{
-			if( chars_to_handle >= 3 &&
-				impl::is_hexdigit( d[ 1 ] ) &&
-				impl::is_hexdigit( d[ 2 ] ) )
-			{
-				result += impl::extract_escaped_char( d[ 1 ], d[ 2 ] );
-				chars_to_handle -= 3;
-				d += 3;
-			}
-			else
-			{
-				throw exception_t{
-					fmt::format(
-						"invalid escape sequence at pos {}", d - data.data() ) };
-			}
-		}
-		else if( Traits::ordinary_char( c ) )
-		{
-			result += c;
-			--chars_to_handle;
-			++d;
-		}
-		else
-		{
-			throw exception_t{
-				fmt::format(
-					"invalid non-escaped char with code {:#02X} at pos: {}",
-					c,
-					d - data.data() ) };
-		}
-	}
+	impl::do_unescape_percent_encoding<Traits>(
+			data,
+			[&result]( char ch ) { result += ch; } );
 
 	return result;
 }
@@ -274,55 +320,15 @@ template< typename Traits = restinio_default_unescape_traits >
 std::size_t
 inplace_unescape_percent_encoding( char * data, std::size_t size )
 {
-	std::size_t result_size = size;
-	std::size_t chars_to_handle = size;
-	const char * d = data;
+	std::size_t result_size = 0u;
 	char * dest = data;
 
-	while( 0 < chars_to_handle )
-	{
-		char c = *d;
-		if( '+' == c )
-		{
-			// Replace with space.
-			*dest++ = ' ';
-			--chars_to_handle;
-			++d;
-		}
-		else if( '%' == c )
-		{
-			if( chars_to_handle >= 3 &&
-				impl::is_hexdigit( d[ 1 ] ) &&
-				impl::is_hexdigit( d[ 2 ] ) )
-			{
-				*dest++ = impl::extract_escaped_char( d[ 1 ], d[ 2 ] );
-				chars_to_handle -= 3;
-				d += 3;
-				result_size -= 2; // 3 chars => 1 char.
-			}
-			else
-			{
-				throw exception_t{
-					fmt::format(
-						"invalid escape sequence at pos {}", d - data ) };
-			}
-		}
-		else if( Traits::ordinary_char( c ) )
-		{
-			// Skip.
-			*dest++ = c;
-			--chars_to_handle;
-			++d;
-		}
-		else
-		{
-			throw exception_t{
-				fmt::format(
-					"invalid non-escaped char with code {:#02X} at pos: {}",
-					c,
-					d - data ) };
-		}
-	}
+	impl::do_unescape_percent_encoding<Traits>(
+			string_view_t{ data, size },
+			[&result_size, &dest]( char ch ) {
+				*dest++ = ch;
+				++result_size;
+			} );
 
 	return result_size;
 }
