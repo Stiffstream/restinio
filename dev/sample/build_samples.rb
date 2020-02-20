@@ -13,6 +13,7 @@ MxxRu::Cpp::composite_target {
 	required_prj 'sample/express_router_tutorial/prj.rb'
 	required_prj 'sample/sendfiles/prj.rb'
 	required_prj 'sample/query_string_params/prj.rb'
+	required_prj 'sample/try_parse_query_string/prj.rb'
 	required_prj 'sample/using_external_io_context/prj.rb'
 	required_prj 'sample/async_handling_with_sobjectizer/prj.rb'
 	required_prj 'sample/compression/prj.rb'

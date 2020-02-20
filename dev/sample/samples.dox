@@ -20,6 +20,7 @@
  * \example sample/hello_world_sendfile_https/main.cpp
  *
  * \example sample/query_string_params/main.cpp
+ * \example sample/try_parse_query_string/main.cpp
  *
  * \example sample/sendfiles/main.cpp
  *
