@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include <restinio/compiler_features.hpp>
+
 #include <cstdint>
 
 namespace restinio
@@ -23,12 +25,18 @@ namespace utils
 // utf8_checker_t
 //
 
-//FIXME: document this!
+/*!
+ * @brief Helper class for checking UTF-8 byte sequence during parsing
+ * URI or incoming byte stream.
+ *
+ * Note: this class is moved to restinio::utils namespace in v.0.6.5.
+ */
 class utf8_checker_t
 {
 public:
 	utf8_checker_t() = default;
 
+	RESTINIO_NODISCARD
 	bool
 	process_byte( std::uint8_t byte ) noexcept
 	{
@@ -107,6 +115,7 @@ public:
 	/*!
 	 * @return true if the current sequence finalized.
 	 */
+	RESTINIO_NODISCARD
 	bool
 	finalized() const noexcept
 	{
@@ -120,6 +129,7 @@ public:
 		m_current_symbol_rest_bytes = 0;
 	}
 
+	RESTINIO_NODISCARD
 	std::uint32_t
 	current_symbol() const noexcept { return m_current_symbol; }
 

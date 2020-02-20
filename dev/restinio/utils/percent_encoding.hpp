@@ -14,6 +14,7 @@
 
 #include <restinio/string_view.hpp>
 #include <restinio/exception.hpp>
+#include <restinio/expected.hpp>
 
 #include <restinio/utils/utf8_checker.hpp>
 
@@ -141,6 +142,47 @@ struct javascript_compatible_unescape_traits
 	}
 };
 
+/*!
+ * @brief Type that indicates that unescaping of percent-encoded symbols
+ * completed successfully.
+ *
+ * @since v.0.6.5
+ */
+struct unescape_percent_encoding_success_t {};
+
+/*!
+ * @brief Type that indicates a failure of unescaping of percent-encoded
+ * symbols.
+ *
+ * @since v.0.6.5
+ */
+class unescape_percent_encoding_failure_t
+{
+	//! Description of a failure.
+	std::string m_description;
+
+public:
+	unescape_percent_encoding_failure_t(
+		std::string description )
+		:	m_description{ std::move(description) }
+	{}
+
+	//! Get a reference to the description of the failure.
+	RESTINIO_NODISCARD
+	const std::string &
+	description() const noexcept { return m_description; }
+
+	//! Get out the value of the description of the failure.
+	/*!
+	 * This method is intended for cases when this description should be move
+	 * elsewhere (to another object like unescape_percent_encoding_failure_t or
+	 * to some exception-like object).
+	 */
+	RESTINIO_NODISCARD
+	std::string
+	giveout_description() noexcept { return std::move(m_description); }
+};
+
 namespace impl
 {
 
@@ -190,7 +232,10 @@ extract_escaped_char( char c1,  char c2 )
 template<
 	typename Traits,
 	typename Chars_Collector >
-void
+RESTINIO_NODISCARD
+expected_t<
+	unescape_percent_encoding_success_t,
+	unescape_percent_encoding_failure_t >
 do_unescape_percent_encoding(
 	const string_view_t data,
 	Chars_Collector && collector )
@@ -207,10 +252,11 @@ do_unescape_percent_encoding(
 	{
 		char c = *d;
 		if( expect_next_utf8_byte && '%' != c )
-			throw exception_t{
-				fmt::format( "next byte from UTF-8 sequence expected at {}",
-						current_pos() )
-			};
+			return make_unexpected( unescape_percent_encoding_failure_t{
+					fmt::format(
+							"next byte from UTF-8 sequence expected at {}",
+							current_pos() )
+				} );
 
 		if( '%' == c )
 		{
@@ -220,10 +266,10 @@ do_unescape_percent_encoding(
 			{
 				const auto ch = extract_escaped_char( d[ 1 ], d[ 2 ] );
 				if( !utf8_checker.process_byte( static_cast<std::uint8_t>(ch) ) )
-					throw exception_t{
+					return make_unexpected( unescape_percent_encoding_failure_t{
 							fmt::format( "invalid UTF-8 sequence detected at {}",
 									current_pos() )
-					};
+						} );
 
 				collector( ch );
 				chars_to_handle -= 3;
@@ -235,9 +281,10 @@ do_unescape_percent_encoding(
 			}
 			else
 			{
-				throw exception_t{
-					fmt::format(
-						"invalid escape sequence at pos {}", current_pos() ) };
+				return make_unexpected( unescape_percent_encoding_failure_t{
+						fmt::format(
+							"invalid escape sequence at pos {}", current_pos() )
+					} );
 			}
 		}
 		else if( '+' == c )
@@ -254,16 +301,21 @@ do_unescape_percent_encoding(
 		}
 		else
 		{
-			throw exception_t{
-				fmt::format(
-					"invalid non-escaped char with code {:#02X} at pos: {}",
-					c,
-					current_pos() ) };
+			return make_unexpected( unescape_percent_encoding_failure_t{
+					fmt::format(
+						"invalid non-escaped char with code {:#02X} at pos: {}",
+						c,
+						current_pos() )
+				} );
 		}
 	}
 
 	if( expect_next_utf8_byte )
-		throw exception_t{ fmt::format( "unfinished UTF-8 sequence" ) };
+		return make_unexpected( unescape_percent_encoding_failure_t{
+				fmt::format( "unfinished UTF-8 sequence" )
+			} );
+
+	return unescape_percent_encoding_success_t{};
 }
 
 } /* namespace impl */
@@ -271,6 +323,7 @@ do_unescape_percent_encoding(
 //! Percent encoding.
 //! \{
 template< typename Traits = restinio_default_unescape_traits >
+RESTINIO_NODISCARD
 std::string
 escape_percent_encoding( const string_view_t data )
 {
@@ -305,32 +358,99 @@ escape_percent_encoding( const string_view_t data )
 }
 
 template< typename Traits = restinio_default_unescape_traits >
+RESTINIO_NODISCARD
 std::string
 unescape_percent_encoding( const string_view_t data )
 {
 	std::string result;
 	result.reserve( data.size() );
 
-	impl::do_unescape_percent_encoding<Traits>(
+	auto r = impl::do_unescape_percent_encoding<Traits>(
 			data,
 			[&result]( char ch ) { result += ch; } );
+	if( !r )
+		throw exception_t{ r.error().giveout_description() };
+
+	return result;
+}
+
+/*!
+ * @brief Helper function for unescaping percent-encoded string.
+ *
+ * This function doesn't throw if some character can't be unescaped or
+ * some ill-formed sequence is found.
+ *
+ * @note
+ * This function is not noexcept and can throw on other types of
+ * failures (like unability to allocate a memory).
+ *
+ * @since v.0.6.5
+ */
+template< typename Traits = restinio_default_unescape_traits >
+RESTINIO_NODISCARD
+expected_t< std::string, unescape_percent_encoding_failure_t >
+try_unescape_percent_encoding( const string_view_t data )
+{
+	std::string result;
+	result.reserve( data.size() );
+
+	auto r = impl::do_unescape_percent_encoding<Traits>(
+			data,
+			[&result]( char ch ) { result += ch; } );
+	if( !r )
+		return make_unexpected( std::move(r.error()) );
 
 	return result;
 }
 
 template< typename Traits = restinio_default_unescape_traits >
+RESTINIO_NODISCARD
 std::size_t
 inplace_unescape_percent_encoding( char * data, std::size_t size )
 {
 	std::size_t result_size = 0u;
 	char * dest = data;
 
-	impl::do_unescape_percent_encoding<Traits>(
+	auto r = impl::do_unescape_percent_encoding<Traits>(
 			string_view_t{ data, size },
 			[&result_size, &dest]( char ch ) {
 				*dest++ = ch;
 				++result_size;
 			} );
+	if( !r )
+		throw exception_t{ r.error().giveout_description() };
+
+	return result_size;
+}
+
+/*!
+ * @brief Helper function for unescaping percent-encoded string inplace.
+ *
+ * This function doesn't throw if some character can't be unescaped or
+ * some ill-formed sequence is found.
+ *
+ * @note
+ * This function is not noexcept and can throw on other types of
+ * failures.
+ *
+ * @since v.0.6.5
+ */
+template< typename Traits = restinio_default_unescape_traits >
+RESTINIO_NODISCARD
+expected_t< std::size_t, unescape_percent_encoding_failure_t >
+try_inplace_unescape_percent_encoding( char * data, std::size_t size )
+{
+	std::size_t result_size = 0u;
+	char * dest = data;
+
+	auto r = impl::do_unescape_percent_encoding<Traits>(
+			string_view_t{ data, size },
+			[&result_size, &dest]( char ch ) {
+				*dest++ = ch;
+				++result_size;
+			} );
+	if( !r )
+		return make_unexpected( std::move(r.error()) );
 
 	return result_size;
 }

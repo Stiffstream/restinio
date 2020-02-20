@@ -329,26 +329,73 @@ struct relaxed
 
 } /* namespace parse_query_traits */
 
-//! Parse query key-value parts.
 /*!
-	Since v.0.4.9 this function correctly handles the following cases:
+ * @brief Type that indicates a failure of an attempt of query-string parsing.
+ *
+ * @since v.0.6.5
+ */
+class parse_query_failure_t
+{
+	//! Description of a failure.
+	std::string m_description;
 
-	- presence of tag (web beacon) in URI. For example, when URI looks like
-	`http://example.com/resource?tag`. In that case value of the tag (web
-	beacon) can be obtained via query_string_params_t::tag() method.
-   References: [web beacon](https://en.wikipedia.org/wiki/Web_beacon) and
-	[query-string-tracking](https://en.wikipedia.org/wiki/Query_string#Tracking);
-	- usage of `;` instead of `&` as parameter separator.
+public:
+	parse_query_failure_t( std::string description )
+		:	m_description{ std::move(description) }
+	{}
+	parse_query_failure_t(
+		utils::unescape_percent_encoding_failure_t && failure )
+		:	m_description{ std::move(failure.giveout_description()) }
+	{}
 
-	Since v.0.4.9.1 this function can be parametrized by parser traits. For
-	example:
-	@code
-	auto result = restinio::parse_query<restinio::parse_query_traits::javascript_compatible>("name=A*");
-	@endcode
-*/
-template< typename Parse_Traits = parse_query_traits::restinio_defaults >
-inline query_string_params_t
-parse_query(
+	//! Get a reference to the description of the failure.
+	RESTINIO_NODISCARD
+	const std::string &
+	description() const noexcept { return m_description; }
+
+	//! Get out the value of the description of the failure.
+	/*!
+	 * This method is intended for cases when this description should be move
+	 * elsewhere (to another object like parse_query_failure_t or to some
+	 * exception-like object).
+	 */
+	RESTINIO_NODISCARD
+	std::string
+	giveout_description() noexcept { return m_description; }
+};
+
+/*!
+ * @brief Helper function for parsing query string.
+ *
+ * Unlike parse_query() function the try_parse_query() doesn't throw if
+ * some unsupported character sequence is found.
+ *
+ * @note
+ * Parsing traits should be specified explicitly.
+ *
+ * Usage example:
+ * @code
+ * auto result = restinio::try_parse_query<
+ * 		restinio::parse_query_traits::javascript_compatible>("name=A*&flags=!");
+ * if(!result) {
+ * 	std::cerr << "Unable to parse query-string: " << result.error().description() << std::endl;
+ * }
+ * else {
+ * 	const restinio::query_string_params_t & params = *result;
+ * 	...
+ * }
+ * @endcode
+ *
+ * @attention
+ * This function is not noexcept and can throw on other types of
+ * failures (like unability to allocate a memory).
+ *
+ * @since v.0.6.5
+ */
+template< typename Parse_Traits >
+RESTINIO_NODISCARD
+expected_t< query_string_params_t, parse_query_failure_t >
+try_parse_query(
 	//! Query part of the request target.
 	string_view_t original_query_string )
 {
@@ -384,22 +431,26 @@ parse_query(
 				// Tag can be the only item in query string.
 				if( pos != 0u )
 					// The query string has illegal format.
-					throw exception_t{
-						fmt::format(
-							"invalid format of key-value pairs in query_string: {}, "
-							"no '=' symbol starting from position {}",
-							original_query_string,
-							pos ) };
+					return make_unexpected( parse_query_failure_t{
+							fmt::format(
+								"invalid format of key-value pairs in query_string, "
+								"no '=' symbol starting from position {}",
+								pos )
+						} );
 				else
 				{
 					// Query string contains only tag (web beacon).
-					const auto tag_size =
-							utils::inplace_unescape_percent_encoding< Parse_Traits >(
+					auto tag_unescape_result =
+							utils::try_inplace_unescape_percent_encoding< Parse_Traits >(
 									&data_buffer[ pos ],
 									end_pos - pos );
+					if( !tag_unescape_result )
+						return make_unexpected( parse_query_failure_t{
+								std::move(tag_unescape_result.error())
+							} );
 
 					const string_view_t tag = work_query_string.substr(
-							pos, tag_size );
+							pos, *tag_unescape_result );
 
 					return query_string_params_t{ std::move( data_buffer ), tag };
 				}
@@ -412,21 +463,29 @@ parse_query(
 				separator_pos = work_query_string.size();
 
 			// Handle next pair of parameters found.
-			string_view_t key{
-					&data_buffer[ pos ],
-					utils::inplace_unescape_percent_encoding< Parse_Traits >(
+			auto key_unescape_result =
+					utils::try_inplace_unescape_percent_encoding< Parse_Traits >(
 							&data_buffer[ pos ],
-							eq_pos - pos )
-			};
+							eq_pos - pos );
+			if( !key_unescape_result )
+				return make_unexpected( parse_query_failure_t{
+						std::move(key_unescape_result.error())
+					} );
 
-			string_view_t value{
-					&data_buffer[ eq_pos_next ],
-					utils::inplace_unescape_percent_encoding< Parse_Traits >(
+			auto value_unescape_result =
+					utils::try_inplace_unescape_percent_encoding< Parse_Traits >(
 							&data_buffer[ eq_pos_next ],
-							separator_pos - eq_pos_next )
-			};
+							separator_pos - eq_pos_next );
+			if( !value_unescape_result )
+				return make_unexpected( parse_query_failure_t{
+						std::move(value_unescape_result.error())
+					} );
 
-			parameters.emplace_back( std::move( key ), std::move( value ) );
+			string_view_t value;
+
+			parameters.emplace_back(
+					string_view_t{ &data_buffer[ pos ], *key_unescape_result },
+					string_view_t{ &data_buffer[ eq_pos_next ], *value_unescape_result } );
 
 			pos = separator_pos + 1u;
 		}
@@ -436,6 +495,37 @@ parse_query(
 			std::move( data_buffer ),
 			std::move( parameters )
 	};
+}
+
+//! Parse query key-value parts.
+/*!
+	Since v.0.4.9 this function correctly handles the following cases:
+
+	- presence of tag (web beacon) in URI. For example, when URI looks like
+	`http://example.com/resource?tag`. In that case value of the tag (web
+	beacon) can be obtained via query_string_params_t::tag() method.
+   References: [web beacon](https://en.wikipedia.org/wiki/Web_beacon) and
+	[query-string-tracking](https://en.wikipedia.org/wiki/Query_string#Tracking);
+	- usage of `;` instead of `&` as parameter separator.
+
+	Since v.0.4.9.1 this function can be parametrized by parser traits. For
+	example:
+	@code
+	auto result = restinio::parse_query<restinio::parse_query_traits::javascript_compatible>("name=A*");
+	@endcode
+*/
+template< typename Parse_Traits = parse_query_traits::restinio_defaults >
+RESTINIO_NODISCARD
+query_string_params_t
+parse_query(
+	//! Query part of the request target.
+	string_view_t original_query_string )
+{
+	auto r = try_parse_query< Parse_Traits >( original_query_string );
+	if( !r )
+		throw exception_t{ std::move(r.error().giveout_description()) };
+
+	return std::move(*r);
 }
 
 } /* namespace restinio */
