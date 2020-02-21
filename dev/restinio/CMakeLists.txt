@@ -176,6 +176,7 @@ SET(RESTINIO_HEADERS_ALL
 	utils/sha1.hpp
 	utils/suppress_exceptions.hpp
 	utils/tuple_algorithms.hpp
+	utils/utf8_checker.hpp
 
 	utils/impl/bitops.hpp
 	utils/impl/safe_uint_truncate.hpp
