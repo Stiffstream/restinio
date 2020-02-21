@@ -20,6 +20,10 @@ option(RESTINIO_FIND_DEPS "Use `find_package()` for including RESTinio dependenc
 
 option(RESTINIO_ALLOW_SOBJECTIZER "Allow add_subdirectory(so_5) in the main RESTinio CMakeLists.txt" ${RESTINIO_MASTER_PROJECT})
 
+# Since v.0.6.5 a user can force usage of already installed http-parser
+# library.
+option(RESTINIO_FIND_EXTERNAL_HTTP_PARSER "Use already installed http-parser library" OFF)
+
 SET(RESTINIO_USE_BOOST_ASIO "none" CACHE STRING "Use boost version of ASIO")
 SET(RESTINIO_USE_BOOST_ASIO_VALUES "none;static;shared")
 
@@ -70,7 +74,11 @@ IF (RESTINIO_MASTER_PROJECT)
 		ENDIF ()
 
 		# HTTP parser
-		find_package(unofficial-http-parser CONFIG REQUIRED)
+		IF (RESTINIO_FIND_EXTERNAL_HTTP_PARSER)
+			find_package(http-parser REQUIRED)
+		ELSE ()
+			find_package(unofficial-http-parser CONFIG REQUIRED)
+		ENDIF ()
 
 		# fmtlib
 		find_package(fmt REQUIRED)
