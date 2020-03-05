@@ -1413,6 +1413,31 @@ struct particular_symbol_predicate_t
 };
 
 //
+// caseless_particular_symbol_predicate_t
+//
+//FIXME: document this!
+struct caseless_particular_symbol_predicate_t
+{
+	char m_expected;
+
+	caseless_particular_symbol_predicate_t( char v ) noexcept
+		:	m_expected{ static_cast<char>(
+//FIXME: there should be more compact way of translate a char to lower case!
+				restinio::impl::to_lower_lut<unsigned char>()[
+						static_cast<unsigned char>(v)]) }
+	{}
+
+	RESTINIO_NODISCARD
+	bool
+	operator()( const char actual ) const noexcept
+	{
+		return m_expected == static_cast<char>(
+				restinio::impl::to_lower_lut<unsigned char>()[
+						static_cast<unsigned char>(actual)]);
+	}
+};
+
+//
 // symbol_producer_t
 //
 /*!
@@ -1432,6 +1457,32 @@ class symbol_producer_t
 public:
 	symbol_producer_t( char expected )
 		:	base_type_t{ particular_symbol_predicate_t{expected} }
+	{}
+};
+
+//
+// caseless_symbol_producer_t
+//
+/*!
+ * @brief A producer for the case when a particual character is expected
+ * in the input stream.
+ *
+ * Performs caseless comparison of symbols.
+ *
+ * In the case of success returns the character from the input stream
+ * (e.g. without transformation to lower or upper case).
+ *
+ * @since v.0.6.6
+ */
+class caseless_symbol_producer_t
+	: public symbol_producer_template_t< caseless_particular_symbol_predicate_t >
+{
+	using base_type_t =
+		symbol_producer_template_t< caseless_particular_symbol_predicate_t >;
+
+public:
+	caseless_symbol_producer_t( char expected )
+		:	base_type_t{ caseless_particular_symbol_predicate_t{expected} }
 	{}
 };
 
@@ -2055,6 +2106,26 @@ symbol_producer( char expected ) noexcept
 }
 
 //
+// caseless_symbol_producer
+//
+/*!
+ * @brief A factory function to create a caseless_symbol_producer.
+ *
+ * This producer performs caseless comparison of characters.
+ *
+ * @return a producer that expects @a expected in the input stream
+ * and returns it if that character is found.
+ * 
+ * @since v.0.6.6
+ */
+RESTINIO_NODISCARD
+inline auto
+caseless_symbol_producer( char expected ) noexcept
+{
+	return impl::caseless_symbol_producer_t{expected};
+}
+
+//
 // symbol
 //
 /*!
@@ -2073,6 +2144,29 @@ inline auto
 symbol( char expected ) noexcept
 {
 	return symbol_producer(expected) >> skip();
+}
+
+//
+// caseless_symbol
+//
+/*!
+ * @brief A factory function to create a clause that expects the
+ * speficied symbol, extracts it and then skips it.
+ *
+ * This clause performs caseless comparison of characters.
+ *
+ * The call to `caseless_symbol('a')` function is an equivalent of:
+ * @code
+ * caseless_symbol_producer('a') >> skip()
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+RESTINIO_NODISCARD
+inline auto
+caseless_symbol( char expected ) noexcept
+{
+	return caseless_symbol_producer(expected) >> skip();
 }
 
 //
