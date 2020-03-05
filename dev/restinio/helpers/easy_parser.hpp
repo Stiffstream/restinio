@@ -1691,6 +1691,29 @@ struct to_lower_transformer_t : public transformer_tag< std::string >
 	}
 };
 
+//
+// just_value_transformer_t
+//
+//FIXME: document this!
+template< typename T >
+class just_value_transformer_t : public transformer_tag< T >
+{
+	T m_value;
+
+public :
+	just_value_transformer_t( T v ) noexcept(noexcept(T{std::move(v)}))
+		: m_value{ std::move(v) }
+	{}
+
+	template< typename Input >
+	RESTINIO_NODISCARD
+	T
+	transform( Input && ) const noexcept(noexcept(T{m_value}))
+	{
+		return m_value;
+	}
+};
+
 } /* namespace impl */
 
 //
@@ -2345,6 +2368,18 @@ to_container()
 RESTINIO_NODISCARD
 inline auto
 to_lower() noexcept { return impl::to_lower_transformer_t{}; }
+
+//
+// just
+//
+//FIXME: document this!
+template< typename T >
+RESTINIO_NODISCARD
+auto
+just( T value ) noexcept(noexcept(impl::just_value_transformer_t<T>{value}))
+{
+	return impl::just_value_transformer_t<T>{value};
+}
 
 //
 // try_parse
