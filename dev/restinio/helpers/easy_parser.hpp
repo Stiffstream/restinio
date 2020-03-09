@@ -1413,6 +1413,27 @@ struct particular_symbol_predicate_t
 };
 
 //
+// not_particular_symbol_predicate_t
+//
+/*!
+ * @brief A predicate for cases where mismatch with a particular
+ * symbol is required.
+ *
+ * @since v.0.6.6
+ */
+struct not_particular_symbol_predicate_t
+{
+	char m_sentinel;
+
+	RESTINIO_NODISCARD
+	bool
+	operator()( const char actual ) const noexcept
+	{
+		return m_sentinel != actual;
+	}
+};
+
+//
 // caseless_particular_symbol_predicate_t
 //
 //FIXME: document this!
@@ -1457,6 +1478,29 @@ class symbol_producer_t
 public:
 	symbol_producer_t( char expected )
 		:	base_type_t{ particular_symbol_predicate_t{expected} }
+	{}
+};
+
+//
+// any_if_not_symbol_producer_t
+//
+/*!
+ * @brief A producer for the case when any character except the specific
+ * sentinel character is expected in the input stream.
+ *
+ * In the case of success returns a character from the input stream.
+ *
+ * @since v.0.6.6
+ */
+class any_if_not_symbol_producer_t
+	: public symbol_producer_template_t< not_particular_symbol_predicate_t >
+{
+	using base_type_t =
+		symbol_producer_template_t< not_particular_symbol_predicate_t >;
+
+public:
+	any_if_not_symbol_producer_t( char sentinel )
+		:	base_type_t{ not_particular_symbol_predicate_t{sentinel} }
 	{}
 };
 
@@ -2103,6 +2147,25 @@ inline auto
 symbol_producer( char expected ) noexcept
 {
 	return impl::symbol_producer_t{expected};
+}
+
+//FIXME: maybe this is not a good name? Is there any good alternative?
+//
+// any_if_not_symbol_producer
+//
+/*!
+ * @brief A factory function to create a any_if_not_symbol_producer.
+ *
+ * @return a producer that expects any character except @a sentinel in the
+ * input stream and returns it if that character is found.
+ * 
+ * @since v.0.6.6
+ */
+RESTINIO_NODISCARD
+inline auto
+any_if_not_symbol_producer( char sentinel ) noexcept
+{
+	return impl::any_if_not_symbol_producer_t{sentinel};
 }
 
 //
