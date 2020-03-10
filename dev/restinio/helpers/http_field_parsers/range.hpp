@@ -154,20 +154,20 @@ make_byte_range_spec_parser()
 	return produce< byte_range_spec_t<T> >(
 			alternatives(
 				produce< double_ended_range_t<T> >(
-						positive_decimal_number_producer<T>()
+						non_negative_decimal_number_producer<T>()
 								>> &double_ended_range_t<T>::first,
 						symbol('-'),
-						positive_decimal_number_producer<T>()
+						non_negative_decimal_number_producer<T>()
 								>> &double_ended_range_t<T>::last
 				) >> as_result(),
 				produce< open_ended_range_t<T> >(
-						positive_decimal_number_producer<T>()
+						non_negative_decimal_number_producer<T>()
 								>> &open_ended_range_t<T>::first,
 						symbol('-')
 				) >> as_result(),
 				produce< suffix_length_t<T> >(
 						symbol('-'),
-						positive_decimal_number_producer<T>()
+						non_negative_decimal_number_producer<T>()
 								>> &suffix_length_t<T>::length
 				) >> as_result()
 			)

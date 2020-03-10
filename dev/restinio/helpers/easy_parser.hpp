@@ -1571,7 +1571,7 @@ public:
 };
 
 //
-// positive_decimal_number_producer_t
+// non_negative_decimal_number_producer_t
 //
 /*!
  * @brief A producer for the case when a non-negative decimal number is
@@ -1582,7 +1582,7 @@ public:
  * @since v.0.6.2
  */
 template< typename T >
-class positive_decimal_number_producer_t : public producer_tag< T >
+class non_negative_decimal_number_producer_t : public producer_tag< T >
 {
 public:
 	RESTINIO_NODISCARD
@@ -2311,10 +2311,10 @@ digit() noexcept
 }
 
 //
-// positive_decimal_number_producer
+// non_negative_decimal_number_producer
 //
 /*!
- * @brief A factory function to create a positive_decimal_number_producer.
+ * @brief A factory function to create a non_negative_decimal_number_producer.
  *
  * @note
  * This parser consumes all digits until the first non-digit symbol will
@@ -2330,9 +2330,28 @@ digit() noexcept
 template< typename T >
 RESTINIO_NODISCARD
 inline auto
+non_negative_decimal_number_producer() noexcept
+{
+	return impl::non_negative_decimal_number_producer_t<T>{};
+}
+
+//
+// positive_decimal_number_producer
+//
+/*!
+ * @brief A factory function to create a producer for non-negative
+ * decimal numbers.
+ *
+ * @deprecated Use non_negative_decimal_number_producer.
+ *
+ * @since v.0.6.2
+ */
+template< typename T >
+[[deprecated]] RESTINIO_NODISCARD
+inline auto
 positive_decimal_number_producer() noexcept
 {
-	return impl::positive_decimal_number_producer_t<T>{};
+	return non_negative_decimal_number_producer<T>();
 }
 
 //
