@@ -7,6 +7,7 @@
 #pragma once
 
 #include <restinio/router/impl/target_path_holder.hpp>
+#include <restinio/router/non_matched_request_handler.hpp>
 
 #include <restinio/helpers/easy_parser.hpp>
 
@@ -223,17 +224,13 @@ public:
 			}
 		}
 
-//FIXME: implement this!
-#if 0
 		// Here: none of the routes matches this handler.
-
 		if( m_non_matched_request_handler )
 		{
 			// If non matched request handler is set
 			// then call it.
 			return m_non_matched_request_handler( std::move( req ) );
 		}
-#endif
 
 		return request_rejected();
 	}
@@ -261,11 +258,21 @@ public:
 		m_entries.push_back( std::move(entry) );
 	}
 
+	//! Set handler for requests that don't match any route.
+	void
+	non_matched_request_handler( non_matched_request_handler_t nmrh )
+	{
+		m_non_matched_request_handler= std::move( nmrh );
+	}
+
 private:
 	using entries_container_t =
 			std::vector< easy_parser_router::impl::router_entry_unique_ptr_t >;
 
 	entries_container_t m_entries;
+
+	//! Handler that is called for requests that don't match any route.
+	non_matched_request_handler_t m_non_matched_request_handler;
 };
 
 } /* namespace router */

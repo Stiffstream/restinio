@@ -256,6 +256,14 @@ auto server_handler( book_collection_t & book_collection )
 					epr::path_fragment() >> epr::unescape() >> epr::as_result() ),
 			by( &books_handler_t::on_author_get ) );
 
+	router->non_matched_request_handler(
+		[]( auto req ){
+			return req->create_response( restinio::status_not_found() )
+					.append_header_date_field()
+					.connection_close()
+					.done();
+		} );
+
 	return router;
 }
 

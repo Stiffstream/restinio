@@ -9,8 +9,8 @@
 #pragma once
 
 #include <restinio/router/impl/target_path_holder.hpp>
+#include <restinio/router/non_matched_request_handler.hpp>
 
-#include <restinio/request_handler.hpp>
 #include <restinio/optional.hpp>
 
 #include <restinio/path2regex/path2regex.hpp>
@@ -396,13 +396,6 @@ class route_matcher_t
 
 using express_request_handler_t =
 		std::function< request_handling_status_t( request_handle_t, route_params_t ) >;
-
-//
-// express_unmatched_request_handler_t
-//
-
-using non_matched_request_handler_t =
-		std::function< request_handling_status_t( request_handle_t ) >;
 
 //
 // express_route_entry_t
