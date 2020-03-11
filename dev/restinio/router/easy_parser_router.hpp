@@ -223,7 +223,12 @@ public:
 	{
 		using namespace easy_parser_router::impl;
 
-		target_path_holder_t target_path{ req->header().path() };
+		// Take care of an optional trailing slash.
+		string_view_t path_to_inspect{ req->header().path() };
+		if( path_to_inspect.size() > 1u && '/' == path_to_inspect.back() )
+			path_to_inspect.remove_suffix( 1u );
+
+		target_path_holder_t target_path{ path_to_inspect };
 		for( const auto & entry : m_entries )
 		{
 			const auto r = entry->try_handle( req, target_path );
