@@ -1680,6 +1680,37 @@ struct as_result_consumer_t : public consumer_tag
 };
 
 //
+// just_result_consumer_t
+//
+/*!
+ * @brief A consumer for the case when a specific value should
+ * be used as the result instead of the value produced on
+ * the previous step.
+ *
+ * @since v.0.6.6
+ */
+template< typename Result_Type >
+class just_result_consumer_t : public consumer_tag
+{
+	Result_Type m_result;
+
+public :
+	template< typename Result_Arg >
+	just_result_consumer_t( Result_Arg && result )
+		noexcept(noexcept(Result_Type{std::forward<Result_Arg>(result)}))
+		:	m_result{ std::forward<Result_Arg>(result) }
+	{}
+
+	template< typename Target_Type, typename Value >
+	void
+	consume( Target_Type & dest, Value && ) const
+		noexcept(noexcept(dest=m_result))
+	{
+		dest = m_result;
+	}
+};
+
+//
 // custom_consumer_t
 //
 /*!
@@ -2555,6 +2586,19 @@ auto
 just( T value ) noexcept(noexcept(impl::just_value_transformer_t<T>{value}))
 {
 	return impl::just_value_transformer_t<T>{value};
+}
+
+//
+// just_result
+//
+//FIXME: document this!
+template< typename T >
+RESTINIO_NODISCARD
+auto
+just_result( T value )
+	noexcept(noexcept(impl::just_result_consumer_t<T>{value}))
+{
+	return impl::just_result_consumer_t<T>{value};
 }
 
 //

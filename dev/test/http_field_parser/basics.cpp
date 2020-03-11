@@ -112,6 +112,101 @@ TEST_CASE( "positive decimal number", "[non_negative_decimal_number_producer]" )
 	}
 }
 
+TEST_CASE( "just_result (chunk_size case)", "[just_result]" )
+{
+	using namespace restinio::easy_parser;
+
+	struct chunk_size_t
+	{
+		std::size_t count_{ 1u };
+		std::size_t multiplier_{ 1u };
+	};
+
+	const auto total = [](const chunk_size_t & c) {
+		return c.count_ * c.multiplier_;
+	};
+
+	constexpr std::size_t one_byte = 1u;
+	constexpr std::size_t one_kib = 1024u * one_byte;
+	constexpr std::size_t one_mib = 1024u * one_kib;
+
+	auto parser = produce<chunk_size_t>(
+			non_negative_decimal_number_producer<std::size_t>()
+					>> &chunk_size_t::count_,
+			maybe(
+				produce<std::size_t>(
+					alternatives(
+						caseless_symbol_producer('b') >> just_result(one_byte),
+						caseless_symbol_producer('k') >> just_result(one_kib),
+						caseless_symbol_producer('m') >> just_result(one_mib)
+					)
+				) >> &chunk_size_t::multiplier_
+			)
+		);
+
+	{
+		const auto result = try_parse( "196", parser );
+
+		REQUIRE( result );
+		REQUIRE( 196u == total(*result) );
+	}
+
+	{
+		const auto result = try_parse( "196B", parser );
+
+		REQUIRE( result );
+		REQUIRE( 196u == total(*result) );
+	}
+
+	{
+		const auto result = try_parse( "10k", parser );
+
+		REQUIRE( result );
+		REQUIRE( (10u * one_kib) == total(*result) );
+	}
+
+	{
+		const auto result = try_parse( "200K", parser );
+
+		REQUIRE( result );
+		REQUIRE( (200u * one_kib) == total(*result) );
+	}
+
+	{
+		const auto result = try_parse( "400M", parser );
+
+		REQUIRE( result );
+		REQUIRE( (400u * one_mib) == total(*result) );
+	}
+}
+
+TEST_CASE( "just_result (string case)", "[just_result]" )
+{
+	using namespace restinio::easy_parser;
+	using namespace std::string_literals;
+
+	auto parser = produce<std::string>(
+			alternatives(
+				caseless_symbol_producer('f') >> just_result("Female"s),
+				caseless_symbol_producer('m') >> just_result("Male"s)
+			)
+		);
+
+	{
+		const auto result = try_parse( "f", parser );
+
+		REQUIRE( result );
+		REQUIRE( "Female"s == *result );
+	}
+
+	{
+		const auto result = try_parse( "m", parser );
+
+		REQUIRE( result );
+		REQUIRE( "Male"s == *result );
+	}
+}
+
 TEST_CASE( "token", "[token]" )
 {
 	using namespace restinio::http_field_parsers;
