@@ -168,6 +168,15 @@ slash()
 
 RESTINIO_NODISCARD
 auto
+exact_producer( string_view_t fragment )
+{
+	return impl::exact_fragment_t{
+			std::string{ fragment.data(), fragment.size() }
+		};
+}
+
+RESTINIO_NODISCARD
+auto
 exact( string_view_t fragment )
 {
 	return impl::exact_fragment_t{

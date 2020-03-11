@@ -23,7 +23,7 @@ struct app_args_t
 {
 	bool m_help{ false };
 
-	std::string m_address{ "loalhost" };
+	std::string m_address{ "localhost" };
 	std::uint16_t m_port{ 8080 };
 	std::size_t m_pool_size{ 1 };
 	std::string m_routes_file;
