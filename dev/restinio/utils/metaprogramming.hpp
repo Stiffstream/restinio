@@ -206,6 +206,66 @@ namespace impl
 {
 
 //
+// transform
+//
+
+template<
+	template<class...> class Transform_F,
+	typename To,
+	typename From >
+struct transform;
+
+template<
+	template<class...> class Transform_F,
+	template<class...> class From,
+	typename... Sources,
+	template<class...> class To,
+	typename... Results >
+struct transform< Transform_F, From<Sources...>, To<Results...> >
+{
+	using type = typename transform<
+			Transform_F,
+			tail_of_t<Sources...>,
+			To<Results..., typename Transform_F< head_of_t<Sources...> >::type>
+		>::type;
+};
+
+template<
+	template<class...> class Transform_F,
+	template<class...> class From,
+	template<class...> class To,
+	typename... Results >
+struct transform< Transform_F, From<>, To<Results...> >
+{
+	using type = To<Results...>;
+};
+
+} /* namespace impl */
+
+/*!
+ * @brief Applies a specified meta-function to every item from
+ * a specified type-list and return a new type-list.
+ *
+ * Usage example:
+ * @code
+ * using namespace restinio::utils::metaprogramming;
+ * using T = transform_t<std::decay, type_list<int, char &, const long &>>;
+ * static_assert(std::is_same<T, type_list<int, char, long>>::value, "!Ok");
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+template< template<class...> class Transform_F, typename From >
+using transform_t = typename impl::transform<
+		Transform_F,
+		From,
+		type_list<>
+	>::type;
+
+namespace impl
+{
+
+//
 // all_of
 //
 template<
@@ -226,6 +286,17 @@ struct all_of< Predicate, H >
 	static constexpr bool value = Predicate<H>::value;
 };
 
+// Specialization for the case when types are represented as type_list.
+//
+// Since v.0.6.6.
+template<
+	template<class...> class Predicate,
+	typename... Types >
+struct all_of< Predicate, type_list<Types...> >
+{
+	static constexpr bool value = all_of<Predicate, Types...>::value;
+};
+
 } /* namespace impl */
 
 //
@@ -238,7 +309,14 @@ struct all_of< Predicate, H >
  * Usage example:
  * @code
  * using namespace restinio::utils::metaprogramming;
- * static_assert(all_of_v<std::is_integral, int, long, unsigned short>, "Ok");
+ * static_assert(all_of_v<std::is_integral, int, long, unsigned short>, "!Ok");
+ * @endcode
+ *
+ * Since v.0.6.6 can be used with type_list:
+ * @code
+ * using namespace restinio::utils::metaprogramming;
+ * static_assert(all_of_v<std::is_integral,
+ * 	transform_t<std::decay, type_list<int &, long &, unsigned short&>>>, "!Ok");
  * @endcode
  *
  * @since v.0.6.1

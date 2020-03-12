@@ -734,9 +734,12 @@ template< typename T, typename = meta::void_t<> >
 struct is_clause : public std::false_type {};
 
 template< typename T >
-struct is_clause< T, meta::void_t< decltype(T::entity_type) > >
+struct is_clause< T, meta::void_t<
+	decltype(std::decay_t<T>::entity_type) > >
 {
-	static constexpr bool value = entity_type_t::clause == T::entity_type;
+	using real_type = std::decay_t<T>;
+
+	static constexpr bool value = entity_type_t::clause == real_type::entity_type;
 };
 
 /*!
@@ -751,6 +754,44 @@ struct is_clause< T, meta::void_t< decltype(T::entity_type) > >
  */
 template< typename T >
 constexpr bool is_clause_v = is_clause<T>::value;
+
+//
+// tuple_of_entities_t
+//
+/*!
+ * @brief A helper meta-function to create an actual type of tuple
+ * with clauses/producers.
+ *
+ * Usage example:
+ * @code
+ * template< typename... Clauses >
+ * auto
+ * some_clause( Clauses && ...clauses ) {
+ * 	using clause_type = impl::some_clause_t<
+ * 			impl::tuple_of_entities_t<Clauses...> >;
+ * 	return clause_type{ std::forward<Clauses>(clauses)... };
+ * }
+ * @endcode
+ *
+ * The tuple_of_entities_t takes care about such cases as references and
+ * constness of parameters. For example:
+ * @code
+ * auto c = symbol('c');
+ * const auto b = symbol('b');
+ * auto clause = some_clause(c, b);
+ * @endcode
+ * In that case `Clauses...` will be `symbol_clause_t&, const
+ * symbol_clause_t&`. And an attempt to make type `std::tuple<Clauses...>` will
+ * produce type `std::tuple<symbol_clause_t&, const symbol_clause_t&>`. But we
+ * need `std::tuple<symbol_clause_t, symbol_clause_t>`. This result will be
+ * obtained if `tuple_of_entities_t` is used instead of `std::tuple`.
+ *
+ * @since v.0.6.6
+ */
+template< typename... Entities >
+using tuple_of_entities_t = meta::rename_t<
+		meta::transform_t< std::decay, meta::type_list<Entities...> >,
+		std::tuple >;
 
 //
 // consume_value_clause_t
@@ -1871,7 +1912,7 @@ produce( Clauses &&... clauses )
 
 	using producer_type_t = impl::produce_t<
 			Target_Type,
-			std::tuple<Clauses...> >;
+			impl::tuple_of_entities_t<Clauses...> >;
 
 	return producer_type_t{
 			std::make_tuple(std::forward<Clauses>(clauses)...)
@@ -1910,7 +1951,8 @@ alternatives( Clauses &&... clauses )
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for alternatives() should be clauses" );
 
-	using clause_type_t = impl::alternatives_clause_t< std::tuple<Clauses...> >;
+	using clause_type_t = impl::alternatives_clause_t<
+			impl::tuple_of_entities_t< Clauses... > >;
 
 	return clause_type_t{
 			std::make_tuple(std::forward<Clauses>(clauses)...)
@@ -1948,7 +1990,8 @@ maybe( Clauses &&... clauses )
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for maybe() should be clauses" );
 
-	using clause_type_t = impl::maybe_clause_t< std::tuple<Clauses...> >;
+	using clause_type_t = impl::maybe_clause_t<
+			impl::tuple_of_entities_t<Clauses...> >;
 
 	return clause_type_t{
 			std::make_tuple(std::forward<Clauses>(clauses)...)
@@ -1989,7 +2032,8 @@ not_clause( Clauses &&... clauses )
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for not_clause() should be clauses" );
 
-	using clause_type_t = impl::not_clause_t< std::tuple<Clauses...> >;
+	using clause_type_t = impl::not_clause_t<
+			impl::tuple_of_entities_t<Clauses...> >;
 
 	return clause_type_t{
 			std::make_tuple(std::forward<Clauses>(clauses)...)
@@ -2030,7 +2074,8 @@ and_clause( Clauses &&... clauses )
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for sequence() should be clauses" );
 
-	using clause_type_t = impl::and_clause_t< std::tuple<Clauses...> >;
+	using clause_type_t = impl::and_clause_t<
+			impl::tuple_of_entities_t<Clauses...> >;
 
 	return clause_type_t{
 			std::make_tuple(std::forward<Clauses>(clauses)...)
@@ -2069,7 +2114,8 @@ sequence( Clauses &&... clauses )
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for sequence() should be clauses" );
 
-	using clause_type_t = impl::sequence_clause_t< std::tuple<Clauses...> >;
+	using clause_type_t = impl::sequence_clause_t<
+			impl::tuple_of_entities_t< Clauses... > >;
 
 	return clause_type_t{
 			std::make_tuple(std::forward<Clauses>(clauses)...)
@@ -2133,7 +2179,8 @@ repeat(
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for repeat() should be clauses" );
 
-	using producer_type_t = impl::repeat_clause_t< std::tuple<Clauses...> >;
+	using producer_type_t = impl::repeat_clause_t<
+			impl::tuple_of_entities_t<Clauses...> >;
 
 	return producer_type_t{
 			min_occurences,

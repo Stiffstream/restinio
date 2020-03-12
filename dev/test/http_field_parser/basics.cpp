@@ -112,6 +112,30 @@ TEST_CASE( "positive decimal number", "[non_negative_decimal_number_producer]" )
 	}
 }
 
+TEST_CASE( "clause by reference", "[clause]" )
+{
+	using namespace restinio::easy_parser;
+
+	struct dummy_t {};
+
+	auto minus = symbol( '-' );
+	auto plus = symbol( '+' );
+	auto flag = caseless_symbol( 'F' );
+
+	const auto parser = produce<dummy_t>(
+			alternatives(
+					sequence( minus, flag, alternatives( minus, plus ) ),
+					sequence( plus, flag, alternatives( minus, plus ) ),
+					sequence( flag, alternatives( minus, plus ) )
+			)
+		);
+
+	{
+		const auto r = try_parse( "-f+", parser );
+		REQUIRE( r );
+	}
+}
+
 TEST_CASE( "just_result (chunk_size case)", "[just_result]" )
 {
 	using namespace restinio::easy_parser;
