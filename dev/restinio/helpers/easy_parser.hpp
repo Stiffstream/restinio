@@ -1881,6 +1881,105 @@ public :
 	}
 };
 
+//
+// try_parse_exact_fragment
+//
+template< typename It >
+RESTINIO_NODISCARD
+expected_t< bool, parse_error_t >
+try_parse_exact_fragment( source_t & from, It begin, It end )
+{
+	source_t::content_consumer_t consumer{ from };
+
+	for( auto ch = from.getch(); !ch.m_eof; ch = from.getch() )
+	{
+		if( ch.m_ch != *begin )
+			return make_unexpected( parse_error_t{
+					consumer.started_at(),
+					error_reason_t::pattern_not_found
+				} );
+		if( ++begin == end )
+			break;
+	}
+
+	if( begin != end )
+		return make_unexpected( parse_error_t{
+				consumer.started_at(),
+				error_reason_t::unexpected_eof
+			} );
+
+	consumer.commit();
+
+	return true;
+}
+
+//
+// exact_fixed_size_fragment_producer_t
+//
+/*!
+ * @brief A producer that expects a fragment in the input and
+ * produces boolean value if that fragment is found.
+ *
+ * This class is indended for working with fixed-size string literals
+ * with terminating null-symbol.
+ *
+ * @since v.0.6.6
+ */
+template< std::size_t Size >
+class exact_fixed_size_fragment_producer_t
+	:	public producer_tag< bool >
+{
+	static_assert( 1u < Size, "Size is expected to greater that 1" );
+
+	// NOTE: there is no space for last zero-byte.
+	std::array< char, Size-1u > m_fragment;
+
+public:
+	exact_fixed_size_fragment_producer_t( const char (&f)[Size] )
+	{
+		// NOTE: last zero-byte is discarded.
+		std::copy( &f[ 0 ], &f[ m_fragment.size() ], m_fragment.data() );
+	}
+
+	RESTINIO_NODISCARD
+	expected_t< bool, parse_error_t >
+	try_parse( source_t & from )
+	{
+		return try_parse_exact_fragment( from,
+				m_fragment.begin(), m_fragment.end() );
+	}
+};
+
+//
+// exact_fragment_producer_t
+//
+/*!
+ * @brief A producer that expects a fragment in the input and
+ * produces boolean value if that fragment is found.
+ *
+ * @since v.0.6.6
+ */
+class exact_fragment_producer_t
+	:	public producer_tag< bool >
+{
+	std::string m_fragment;
+
+public:
+	//FIXME: fragment shouldn't be empty.
+	//This must be expressed somehow. Or must be checked at run-time.
+	exact_fragment_producer_t( std::string fragment )
+		:	m_fragment{ std::move(fragment) }
+	{}
+
+	RESTINIO_NODISCARD
+	expected_t< bool, parse_error_t >
+	try_parse( source_t & from )
+	{
+		return try_parse_exact_fragment( from,
+				m_fragment.begin(), m_fragment.end() );
+	}
+};
+
 } /* namespace impl */
 
 //
@@ -2646,6 +2745,135 @@ just_result( T value )
 	noexcept(noexcept(impl::just_result_consumer_t<T>{value}))
 {
 	return impl::just_result_consumer_t<T>{value};
+}
+
+//
+// exact_producer
+//
+/*!
+ * @brief A factory function that creates an instance of
+ * exact_fragment_producer.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(
+ * 	alternatives(
+ * 		exact_producer("pro") >> just_result("Professional"),
+ * 		exact_producer("con") >> just_result("Consumer")
+ * 	)
+ * );
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+RESTINIO_NODISCARD
+inline auto
+exact_producer( string_view_t fragment )
+{
+	return impl::exact_fragment_producer_t{
+			std::string{ fragment.data(), fragment.size() }
+		};
+}
+
+/*!
+ * @brief A factory function that creates an instance of
+ * exact_fragment_producer.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(
+ * 	alternatives(
+ * 		exact_producer("pro") >> just_result("Professional"),
+ * 		exact_producer("con") >> just_result("Consumer")
+ * 	)
+ * );
+ * @endcode
+ *
+ * @attention
+ * This version is dedicated to be used with string literals.
+ * Because of that the last byte from a literal will be ignored (it's
+ * assumed that this byte contains zero).
+ * But this behavior would lead to unexpected results in such cases:
+ * @code
+ * const char prefix[]{ 'h', 'e', 'l', 'l', 'o' };
+ *
+ * produce<std::string>(exact_producer(prefix) >> just_result("Hi!"));
+ * @endcode
+ * because the last byte with value 'o' will be ignored by
+ * exact_producer. To avoid such behavior string_view_t should be
+ * used explicitely:
+ * @code
+ * produce<std::string>(exact_producer(string_view_t{prefix})
+ * 		>> just_result("Hi!"));
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+template< std::size_t Size >
+RESTINIO_NODISCARD
+auto
+exact_producer( const char (&fragment)[Size] )
+{
+	return impl::exact_fixed_size_fragment_producer_t<Size>{ fragment };
+}
+
+//
+// exact
+//
+/*!
+ * @brief A factory function that creates an instance of
+ * exact_fragment clause.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(exact("version="), token() >> as_result());
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+RESTINIO_NODISCARD
+inline auto
+exact( string_view_t fragment )
+{
+	return impl::exact_fragment_producer_t{
+			std::string{ fragment.data(), fragment.size() }
+		} >> skip();
+}
+
+/*!
+ * @brief A factory function that creates an instance of
+ * exact_fragment clause.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(exact("version="), token() >> as_result());
+ * @endcode
+ *
+ * @attention
+ * This version is dedicated to be used with string literals.
+ * Because of that the last byte from a literal will be ignored (it's
+ * assumed that this byte contains zero).
+ * But this behavior would lead to unexpected results in such cases:
+ * @code
+ * const char prefix[]{ 'v', 'e', 'r', 's', 'i', 'o', 'n', '=' };
+ *
+ * produce<std::string>(exact(prefix), token() >> as_result());
+ * @endcode
+ * because the last byte with value '=' will be ignored by
+ * exact_producer. To avoid such behavior string_view_t should be
+ * used explicitely:
+ * @code
+ * produce<std::string>(exact(string_view_t{prefix}),	token() >> as_result());
+ * @endcode
+ * 
+ * @since v.0.6.6
+ */
+template< std::size_t Size >
+RESTINIO_NODISCARD
+auto
+exact( const char (&fragment)[Size] )
+{
+	return impl::exact_fixed_size_fragment_producer_t<Size>{ fragment } >> skip();
 }
 
 //

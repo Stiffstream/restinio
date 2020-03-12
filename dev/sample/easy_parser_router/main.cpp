@@ -250,9 +250,7 @@ auto server_handler( book_collection_t & book_collection )
 	router->add_handler(
 			restinio::http_method_get(),
 			epr::produce< author_name_t >(
-					epr::slash(),
-					epr::exact("author"),
-					epr::slash(),
+					epr::exact("/author/"),
 					epr::path_fragment() >> epr::unescape() >> epr::as_result() ),
 			by( &books_handler_t::on_author_get ) );
 

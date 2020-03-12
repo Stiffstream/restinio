@@ -207,10 +207,14 @@ create_server_handler()
 		return std::bind( method, processor, _1, _2 );
 	};
 
+	const auto t_users = epr::exact( "/users/" );
+	const auto t_locations = epr::exact( "/locations/" );
+	const auto t_visits = epr::exact( "/visits/" );
+
 	router->add_handler(
 			restinio::http_method_get(),
 			epr::produce< user_id_t >(
-				epr::slash(), epr::exact("users"), epr::slash(),
+				t_users,
 				user_id >> epr::as_result()
 			),
 			by( &request_processor_t::on_get_user ) );
@@ -218,7 +222,7 @@ create_server_handler()
 	router->add_handler(
 			restinio::http_method_get(),
 			epr::produce< user_id_t >(
-				epr::slash(), epr::exact("users"), epr::slash(),
+				t_users,
 				user_id >> epr::as_result(),
 				epr::slash(), epr::exact("visits")
 			),
@@ -227,7 +231,7 @@ create_server_handler()
 	router->add_handler(
 			restinio::http_method_post(),
 			epr::produce< user_id_t >(
-				epr::slash(), epr::exact("users"), epr::slash(),
+				t_users,
 				user_id >> epr::as_result()
 			),
 			by( &request_processor_t::on_post_user ) );
@@ -235,7 +239,7 @@ create_server_handler()
 	router->add_handler(
 			restinio::http_method_post(),
 			epr::produce< make_new_user_t >(
-				epr::slash(), epr::exact("users"), epr::slash(),
+				t_users,
 				epr::exact("new")
 			),
 			by( &request_processor_t::on_make_new_user ) );
@@ -243,7 +247,7 @@ create_server_handler()
 	router->add_handler(
 			restinio::http_method_get(),
 			epr::produce< location_id_t >(
-				epr::slash(), epr::exact("locations"), epr::slash(),
+				t_locations,
 				location_id >> epr::as_result()
 			),
 			by( &request_processor_t::on_get_location ) );
@@ -251,16 +255,16 @@ create_server_handler()
 	router->add_handler(
 			restinio::http_method_get(),
 			epr::produce< location_id_t >(
-				epr::slash(), epr::exact("locations"), epr::slash(),
+				t_locations,
 				location_id >> epr::as_result(),
-				epr::slash(), epr::exact("avg")
+				epr::exact("/avg")
 			),
 			by( &request_processor_t::on_get_location_avg ) );
 
 	router->add_handler(
 			restinio::http_method_post(),
 			epr::produce< location_id_t >(
-				epr::slash(), epr::exact("locations"), epr::slash(),
+				t_locations,
 				user_id >> epr::as_result()
 			),
 			by( &request_processor_t::on_post_location ) );
@@ -268,7 +272,7 @@ create_server_handler()
 	router->add_handler(
 			restinio::http_method_post(),
 			epr::produce< make_new_location_t >(
-				epr::slash(), epr::exact("locations"), epr::slash(),
+				t_locations,
 				epr::exact("new")
 			),
 			by( &request_processor_t::on_make_new_location ) );
@@ -276,7 +280,7 @@ create_server_handler()
 	router->add_handler(
 			restinio::http_method_get(),
 			epr::produce< visit_id_t >(
-				epr::slash(), epr::exact("visits"), epr::slash(),
+				t_visits,
 				visit_id >> epr::as_result()
 			),
 			by( &request_processor_t::on_get_location ) );
@@ -284,7 +288,7 @@ create_server_handler()
 	router->add_handler(
 			restinio::http_method_post(),
 			epr::produce< visit_id_t >(
-				epr::slash(), epr::exact("visits"), epr::slash(),
+				t_visits,
 				user_id >> epr::as_result()
 			),
 			by( &request_processor_t::on_post_visit ) );
@@ -292,7 +296,7 @@ create_server_handler()
 	router->add_handler(
 			restinio::http_method_post(),
 			epr::produce< make_new_visit_t >(
-				epr::slash(), epr::exact("visits"), epr::slash(),
+				t_visits,
 				epr::exact("new")
 			),
 			by( &request_processor_t::on_make_new_visit ) );

@@ -153,39 +153,21 @@ using namespace restinio::easy_parser;
 struct root_t {};
 
 RESTINIO_NODISCARD
-auto
+inline auto
 root()
 {
 	return symbol_producer( '/' ) >> just( root_t{} );
 }
 
 RESTINIO_NODISCARD
-auto
+inline auto
 slash()
 {
 	return symbol( '/' );
 }
 
 RESTINIO_NODISCARD
-auto
-exact_producer( string_view_t fragment )
-{
-	return impl::exact_fragment_t{
-			std::string{ fragment.data(), fragment.size() }
-		};
-}
-
-RESTINIO_NODISCARD
-auto
-exact( string_view_t fragment )
-{
-	return impl::exact_fragment_t{
-			std::string{ fragment.data(), fragment.size() }
-		} >> skip();
-}
-
-RESTINIO_NODISCARD
-auto
+inline auto
 path_fragment( char separator = '/' )
 {
 	return produce< std::string >(

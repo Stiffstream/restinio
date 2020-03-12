@@ -29,5 +29,6 @@ MxxRu::Cpp::composite_target {
 	end
 
 	required_prj( "test/router/cmp_router_bench/prj.rb" )
+	required_prj( "test/router/easy_parser_router_bench/prj.rb" )
 }
 
