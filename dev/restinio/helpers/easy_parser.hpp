@@ -2015,13 +2015,27 @@ public :
 	template< typename Input_Type >
 	RESTINIO_NODISCARD
 	auto
-	make_transformer() const
+	make_transformer() const &
 		noexcept(noexcept(Converter{m_converter}))
 	{
 		using output_type = std::decay_t<
 				decltype(m_converter(std::declval<Input_Type&>())) >;
 
 		return convert_transformer_t< output_type, Converter >{ m_converter };
+	}
+
+	template< typename Input_Type >
+	RESTINIO_NODISCARD
+	auto
+	make_transformer() &&
+		noexcept(noexcept(Converter{std::move(m_converter)}))
+	{
+		using output_type = std::decay_t<
+				decltype(m_converter(std::declval<Input_Type&>())) >;
+
+		return convert_transformer_t< output_type, Converter >{
+				std::move(m_converter)
+		};
 	}
 };
 
