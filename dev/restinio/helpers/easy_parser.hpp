@@ -17,6 +17,7 @@
 
 #include <restinio/utils/tuple_algorithms.hpp>
 #include <restinio/utils/metaprogramming.hpp>
+#include <restinio/utils/lambda_traits.hpp>
 
 #include <restinio/string_view.hpp>
 #include <restinio/compiler_features.hpp>
@@ -1882,6 +1883,37 @@ public :
 };
 
 //
+// convert_transformer_t
+//
+/*!
+ * @brief A transformator that uses a user supplied function/functor
+ * for conversion a value from one type to another.
+ *
+ * @since v.0.6.6
+ */
+template< typename Output_Type, typename Converter >
+class convert_transformer_t : public transformer_tag< Output_Type >
+{
+	Converter m_converter;
+
+public :
+	template< typename Convert_Arg >
+	convert_transformer_t( Convert_Arg && converter )
+		noexcept(noexcept(Converter{std::forward<Convert_Arg>(converter)}))
+		: m_converter{ std::forward<Convert_Arg>(converter) }
+	{}
+
+	template< typename Input >
+	RESTINIO_NODISCARD
+	Output_Type
+	transform( Input && input ) const
+		noexcept(noexcept(m_converter(std::forward<Input>(input))))
+	{
+		return m_converter(std::forward<Input>(input));
+	}
+};
+
+//
 // try_parse_exact_fragment
 //
 template< typename It >
@@ -2745,6 +2777,52 @@ just_result( T value )
 	noexcept(noexcept(impl::just_result_consumer_t<T>{value}))
 {
 	return impl::just_result_consumer_t<T>{value};
+}
+
+//
+// convert
+//
+/*!
+ * @brief A factory function to create convert_transformer.
+ *
+ * Usage example:
+ * @code
+ * struct tmp_size { std::uint32_t c_{1u}; std::uint32_t m_{1u}; };
+ * auto size_producer = produce<std::uint64_t>(
+ * 	produce<tmp_size>(
+ * 		non_negative_decimal_number_producer<std::uint32_t>()
+ * 				>> &tmp_size::c_,
+ * 		maybe(
+ * 			produce<std::uint32_t>(
+ * 				alternatives(
+ * 					caseless_symbol_producer('b') >> just_result(1u),
+ * 					caseless_symbol_producer('k') >> just_result(1024u),
+ * 					caseless_symbol_producer('m') >> just_result(1024u*1024u)
+ * 				)
+ * 			) >> &tmp_size::m_
+ * 		)
+ * 	) >> convert( [](const tmp_size & ts) {
+ * 				return std::uint64_t{ts.c_} * ts.m_;
+ * 			} )
+ * 		>> as_result()
+ * );
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+template< typename Converter >
+RESTINIO_NODISCARD
+auto
+convert( Converter && converter )
+{
+	using converter_type = std::decay_t<Converter>;
+	using lambda_traits = restinio::utils::lambda_traits::traits<converter_type>;
+
+	using transformer_type = impl::convert_transformer_t<
+			typename lambda_traits::result_type,
+			converter_type>;
+
+	return transformer_type{ std::forward<Converter>(converter) };
 }
 
 //
