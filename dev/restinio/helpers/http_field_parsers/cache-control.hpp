@@ -57,14 +57,14 @@ struct cache_control_value_t
 	make_parser()
 	{
 		return produce< cache_control_value_t >(
-			non_empty_comma_separated_list_producer< directive_container_t >(
+			non_empty_comma_separated_list_p< directive_container_t >(
 				produce< directive_t >(
-					token_producer() >> to_lower() >> &directive_t::first,
+					token_p() >> to_lower() >> &directive_t::first,
 					maybe(
 						symbol('='),
 						alternatives(
-							token_producer() >> &directive_t::second,
-							quoted_string_producer() >> &directive_t::second
+							token_p() >> &directive_t::second,
+							quoted_string_p() >> &directive_t::second
 						)
 					)
 				)

@@ -71,10 +71,10 @@ struct user_agent_value_t
 	make_parser()
 	{
 		auto product_producer = produce< product_t >(
-				token_producer() >> &product_t::product,
+				token_p() >> &product_t::product,
 				maybe(
 					symbol('/'),
-					token_producer() >> &product_t::product_version
+					token_p() >> &product_t::product_version
 				)
 			);
 
@@ -86,7 +86,7 @@ struct user_agent_value_t
 						ows(),
 						alternatives(
 							product_producer >> to_container(),
-							comment_producer() >> to_container()
+							comment_p() >> to_container()
 						)
 					)
 				) >> &user_agent_value_t::tail

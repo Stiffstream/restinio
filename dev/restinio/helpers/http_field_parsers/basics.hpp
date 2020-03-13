@@ -754,14 +754,14 @@ public :
  * Usage example:
  * @code
 	produce<std::string>(
-		repeat(1, 20, alpha_symbol_producer() >> to_container());
+		repeat(1, 20, alpha_symbol_p() >> to_container());
  * @endcode
  *
  * @since v.0.6.2
  */
 RESTINIO_NODISCARD
 inline auto
-alpha_symbol_producer()
+alpha_symbol_p()
 {
 	return restinio::easy_parser::impl::symbol_producer_template_t<
 			impl::is_alpha_predicate_t >{};
@@ -776,14 +776,14 @@ alpha_symbol_producer()
  * Usage example:
  * @code
 	produce<std::string>(
-		repeat(1, 20, alphanum_symbol_producer() >> to_container());
+		repeat(1, 20, alphanum_symbol_p() >> to_container());
  * @endcode
  *
  * @since v.0.6.2
  */
 RESTINIO_NODISCARD
 inline auto
-alphanum_symbol_producer()
+alphanum_symbol_p()
 {
 	return restinio::easy_parser::impl::symbol_producer_template_t<
 			impl::is_alphanum_predicate_t >{};
@@ -798,14 +798,14 @@ alphanum_symbol_producer()
  * Usage example:
  * @code
 	produce<std::string>(
-		repeat(1, 20, vchar_symbol_producer() >> to_container());
+		repeat(1, 20, vchar_symbol_p() >> to_container());
  * @endcode
  *
  * @since v.0.6.2
  */
 RESTINIO_NODISCARD
 inline auto
-vchar_symbol_producer()
+vchar_symbol_p()
 {
 	return restinio::easy_parser::impl::symbol_producer_template_t<
 			impl::is_vchar_predicate_t >{};
@@ -820,14 +820,14 @@ vchar_symbol_producer()
  * Usage example:
  * @code
 	produce<std::string>(
-		repeat(1, 20, ctext_symbol_producer() >> to_container());
+		repeat(1, 20, ctext_symbol_p() >> to_container());
  * @endcode
  *
  * @since v.0.6.4
  */
 RESTINIO_NODISCARD
 inline auto
-ctext_symbol_producer()
+ctext_symbol_p()
 {
 	return restinio::easy_parser::impl::symbol_producer_template_t<
 			impl::is_ctext_predicate_t >{};
@@ -843,8 +843,8 @@ ctext_symbol_producer()
  * @code
 	produce<std::string>(
 		alternatives(
-			token_producer() >> as_result(),
-			comment_producer() >> as_result()
+			token_p() >> as_result(),
+			comment_p() >> as_result()
 		)
 	);
  * @endcode
@@ -853,7 +853,7 @@ ctext_symbol_producer()
  */
 RESTINIO_NODISCARD
 inline auto
-comment_producer()
+comment_p()
 {
 	return impl::comment_producer_t{};
 }
@@ -867,22 +867,22 @@ comment_producer()
  * Usage example:
  * @code
  * produce<std::string>(
- * 	ows_producer() >> skip(),
+ * 	ows_p() >> skip(),
  * 	symbol('v'),
  * 	symbol('='),
- * 	ows_producer() >> skip(),
- * 	token_producer() >> as_result()
+ * 	ows_p() >> skip(),
+ * 	token_p() >> as_result()
  * );
  * @endcode
  *
  * @note
- * Factory function ows() can be used instead of expression `ows_producer() >> skip()`.
+ * Factory function ows() can be used instead of expression `ows_p() >> skip()`.
  *
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
 inline auto
-ows_producer() noexcept { return impl::ows_producer_t{}; }
+ows_p() noexcept { return impl::ows_producer_t{}; }
 
 //
 // ows
@@ -900,7 +900,7 @@ ows_producer() noexcept { return impl::ows_producer_t{}; }
  * 	symbol('v'),
  * 	symbol('='),
  * 	ows(),
- * 	token_producer() >> as_result()
+ * 	token_p() >> as_result()
  * );
  * @endcode
  * This expression corresponds the following rule:
@@ -912,7 +912,7 @@ ows_producer() noexcept { return impl::ows_producer_t{}; }
  */
 RESTINIO_NODISCARD
 inline auto
-ows() noexcept { return ows_producer() >> skip(); }
+ows() noexcept { return ows_p() >> skip(); }
 
 //
 // token_producer
@@ -925,10 +925,10 @@ ows() noexcept { return ows_producer() >> skip(); }
  * using parameter = std::pair<std::string, std::string>;
  * produce<parameter>(
  * 	ows(),
- * 	token_producer() >> &parameter::first,
+ * 	token_p() >> &parameter::first,
  * 	symbol('='),
  * 	ows(),
- * 	token_producer() >> &parameter::second
+ * 	token_p() >> &parameter::second
  * );
  * @endcode
  *
@@ -936,7 +936,7 @@ ows() noexcept { return ows_producer() >> skip(); }
  */
 RESTINIO_NODISCARD
 inline auto
-token_producer() noexcept { return impl::token_producer_t{}; }
+token_p() noexcept { return impl::token_producer_t{}; }
 
 //
 // quoted_string_producer
@@ -949,12 +949,12 @@ token_producer() noexcept { return impl::token_producer_t{}; }
  * using parameter = std::pair<std::string, std::string>;
  * produce<parameter>(
  * 	ows(),
- * 	token_producer() >> &parameter::first,
+ * 	token_p() >> &parameter::first,
  * 	symbol('='),
  * 	ows(),
  * 	alternatives(
- * 		token_producer() >> &parameter::second,
- * 		quoted_string_producer() >> &parameter::second
+ * 		token_p() >> &parameter::second,
+ * 		quoted_string_p() >> &parameter::second
  * 	)
  * );
  * @endcode
@@ -963,7 +963,7 @@ token_producer() noexcept { return impl::token_producer_t{}; }
  */
 RESTINIO_NODISCARD
 inline auto
-quoted_string_producer() noexcept
+quoted_string_p() noexcept
 {
 	return impl::quoted_string_producer_t{};
 }
@@ -979,8 +979,8 @@ quoted_string_producer() noexcept
  * produce<std::string>(
  * 	repeat(1, N,
  * 		alternatives(
- * 			ctext_symbol_producer() >> to_container(),
- * 			quoted_pair_producer() >> to_container()
+ * 			ctext_symbol_p() >> to_container(),
+ * 			quoted_pair_p() >> to_container()
  * 	)
  * );
  * @endcode
@@ -989,7 +989,7 @@ quoted_string_producer() noexcept
  */
 RESTINIO_NODISCARD
 inline auto
-quoted_pair_producer() noexcept
+quoted_pair_p() noexcept
 {
 	return impl::quoted_pair_producer_t{};
 }
@@ -1009,9 +1009,9 @@ comment_producer_t::try_parse( source_t & from ) const
 				symbol('('),
 				repeat(0, N,
 					alternatives(
-						ctext_symbol_producer() >> to_container(),
-						quoted_pair_producer() >> to_container(),
-						comment_producer() >> custom_consumer(
+						ctext_symbol_p() >> to_container(),
+						quoted_pair_p() >> to_container(),
+						comment_p() >> custom_consumer(
 							[]( std::string & dest, std::string && what ) {
 								dest += what;
 							} )
@@ -1076,15 +1076,15 @@ public :
 						symbol('0'),
 						maybe(
 							symbol('.'),
-							maybe( digit_producer() >> digit_consumer_t{100},
-								maybe( digit_producer() >> digit_consumer_t{10},
-									maybe( digit_producer() >> digit_consumer_t{1} )
+							maybe( digit_p() >> digit_consumer_t{100},
+								maybe( digit_p() >> digit_consumer_t{10},
+									maybe( digit_p() >> digit_consumer_t{1} )
 								)
 							)
 						)
 					),
 					sequence(
-						symbol_producer('1') >> digit_consumer_t{1000},
+						symbol_p('1') >> digit_consumer_t{1000},
 						maybe(
 							symbol('.'),
 							maybe( symbol('0'),
@@ -1117,7 +1117,7 @@ public :
  * produce<qvalue_t>(
  * 	alternatives(symbol('r'), symbol('R')),
  * 	symbol('='),
- * 	qvalue_producer() >> as_result()
+ * 	qvalue_p() >> as_result()
  * );
  * @endcode
  *
@@ -1125,7 +1125,7 @@ public :
  */
 RESTINIO_NODISCARD
 inline auto
-qvalue_producer() noexcept
+qvalue_p() noexcept
 {
 	return impl::qvalue_producer_t{};
 }
@@ -1152,7 +1152,7 @@ qvalue_producer() noexcept
  */
 RESTINIO_NODISCARD
 inline auto
-weight_producer() noexcept
+weight_p() noexcept
 {
 	return produce< qvalue_t >(
 			ows(),
@@ -1160,7 +1160,7 @@ weight_producer() noexcept
 			ows(),
 			alternatives( symbol('q'), symbol('Q') ),
 			symbol('='),
-			qvalue_producer() >> as_result()
+			qvalue_p() >> as_result()
 		);
 }
 
@@ -1323,7 +1323,7 @@ public :
  * @code
 	auto parse = produce< byte_ranges_data >(
 			make_bytes_prefix_parser(),
-			non_empty_comma_separated_list_producer< std::vector< byte_range > >(
+			non_empty_comma_separated_list_p< std::vector< byte_range > >(
 					make_byte_range_parser()
 			) >> &byte_ranges_data::ranges
 	);
@@ -1344,7 +1344,7 @@ template<
 	typename Element_Producer >
 RESTINIO_NODISCARD
 auto
-non_empty_comma_separated_list_producer( Element_Producer element )
+non_empty_comma_separated_list_p( Element_Producer element )
 {
 	static_assert( impl::is_producer_v<Element_Producer>,
 			"Element_Producer should be a value producer type" );
@@ -1374,7 +1374,7 @@ non_empty_comma_separated_list_producer( Element_Producer element )
  * @code
 	auto parse = produce< byte_ranges_data >(
 			make_bytes_prefix_parser(),
-			maybe_empty_comma_separated_list_producer< std::vector< byte_range > >(
+			maybe_empty_comma_separated_list_p< std::vector< byte_range > >(
 					make_byte_range_parser()
 			) >> &byte_ranges_data::ranges
 	);
@@ -1395,7 +1395,7 @@ template<
 	typename Element_Producer >
 RESTINIO_NODISCARD
 auto
-maybe_empty_comma_separated_list_producer( Element_Producer element )
+maybe_empty_comma_separated_list_p( Element_Producer element )
 {
 	static_assert( impl::is_producer_v<Element_Producer>,
 			"Element_Producer should be a value producer type" );
@@ -1500,13 +1500,13 @@ make_parser()
 					ows(),
 					symbol(';'),
 					ows(),
-					token_producer() >> to_lower()
+					token_p() >> to_lower()
 							>> &parameter_with_mandatory_value_t::first,
 					symbol('='),
 					alternatives(
-						token_producer()
+						token_p()
 								>> &parameter_with_mandatory_value_t::second,
-						quoted_string_producer()
+						quoted_string_p()
 								>> &parameter_with_mandatory_value_t::second
 					)
 				) >> to_container()
@@ -1565,8 +1565,8 @@ T := *( OWS ';' OWS token '=' OWS (token / quoted_string))
  * 	parameter_with_mandatory_value_container_t params;
  * };
  * produce<my_field>(
- * 	token_producer() >> to_lower() >> &my_field,
- * 	params_with_value_producer() >> &my_field
+ * 	token_p() >> to_lower() >> &my_field,
+ * 	params_with_value_p() >> &my_field
  * );
  * @endcode
  *
@@ -1578,7 +1578,7 @@ T := *( OWS ';' OWS token '=' OWS (token / quoted_string))
  */
 RESTINIO_NODISCARD
 inline impl::params_with_value_producer_t
-params_with_value_producer() { return {}; }
+params_with_value_p() { return {}; }
 
 //
 // parameter_with_optional_value_t
@@ -1676,14 +1676,14 @@ make_parser()
 					ows(),
 					symbol(';'),
 					ows(),
-					token_producer() >> to_lower()
+					token_p() >> to_lower()
 							>> &parameter_with_optional_value_t::first,
 					maybe(
 						symbol('='),
 						alternatives(
-							token_producer()
+							token_p()
 									>> &parameter_with_optional_value_t::second,
-							quoted_string_producer()
+							quoted_string_p()
 									>> &parameter_with_optional_value_t::second
 						)
 					)
@@ -1743,8 +1743,8 @@ T := *( OWS ';' OWS token ['=' OWS (token / quoted_string)] )
  * 	parameter_with_optional_value_container_t params;
  * };
  * produce<my_field>(
- * 	token_producer() >> to_lower() >> &my_field,
- * 	params_with_opt_value_producer() >> &my_field
+ * 	token_p() >> to_lower() >> &my_field,
+ * 	params_with_opt_value_p() >> &my_field
  * );
  * @endcode
  *
@@ -1756,7 +1756,7 @@ T := *( OWS ';' OWS token ['=' OWS (token / quoted_string)] )
  */
 RESTINIO_NODISCARD
 inline impl::params_with_opt_value_producer_t
-params_with_opt_value_producer() { return {}; }
+params_with_opt_value_p() { return {}; }
 
 } /* namespace http_field_parser */
 

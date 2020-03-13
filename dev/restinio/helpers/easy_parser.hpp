@@ -1703,9 +1703,9 @@ struct any_value_skipper_t : public consumer_tag
 	@endverbatim
  * such rule will be implemented by a such sequence of clauses:
  * @code
- * produce<std::string>(symbol('v'), symbol('='), token_producer() >> as_result());
+ * produce<std::string>(symbol('v'), symbol('='), token_p() >> as_result());
  * @endcode
- * The result of `token_producer()` producer in a subclause should be returned
+ * The result of `token_p()` producer in a subclause should be returned
  * as the result of top-level producer.
  *
  * @since v.0.6.1
@@ -2023,7 +2023,7 @@ public:
  *
  * Usage example:
  * @code
- * produce<std::string>(symbol('v'), symbol('='), token_producer() >> as_result());
+ * produce<std::string>(symbol('v'), symbol('='), token_p() >> as_result());
  * @endcode
  *
  * @tparam Target_Type the type of value to be produced.
@@ -2060,8 +2060,8 @@ produce( Clauses &&... clauses )
  * @code
  * produce<std::string>(
  * 	alternatives(
- * 		sequence(symbol('v'), symbol('='), token_producer() >> as_result()),
- * 		sequence(symbol('T'), symbol('/'), token_producer() >> as_result())
+ * 		sequence(symbol('v'), symbol('='), token_p() >> as_result()),
+ * 		sequence(symbol('T'), symbol('/'), token_p() >> as_result())
  * 	)
  * );
  * @endcode
@@ -2099,10 +2099,10 @@ alternatives( Clauses &&... clauses )
  * Usage example:
  * @code
  * produce<std::pair<std::string, std::string>>(
- * 	token_producer() >> &std::pair<std::string, std::string>::first,
+ * 	token_p() >> &std::pair<std::string, std::string>::first,
  * 	maybe(
  * 		symbol('='),
- * 		token_producer() >> &std::pair<std::string, std::string>::second
+ * 		token_p() >> &std::pair<std::string, std::string>::second
  * 	)
  * );
  * @endcode
@@ -2138,9 +2138,9 @@ maybe( Clauses &&... clauses )
  * Usage example:
  * @code
  * produce<std::pair<std::string, std::string>>(
- * 	token_producer() >> &std::pair<std::string, std::string>::first,
+ * 	token_p() >> &std::pair<std::string, std::string>::first,
  * 	symbol(' '),
- * 	token_producer() >> &std::pair<std::string, std::string>::second
+ * 	token_p() >> &std::pair<std::string, std::string>::second
  * 	not_clause(symbol('.'))
  * );
  * @endcode
@@ -2180,10 +2180,10 @@ not_clause( Clauses &&... clauses )
  * Usage example:
  * @code
  * produce<std::pair<std::string, std::string>>(
- * 	token_producer() >> &std::pair<std::string, std::string>::first,
+ * 	token_p() >> &std::pair<std::string, std::string>::first,
  * 	symbol(' '),
- * 	token_producer() >> &std::pair<std::string, std::string>::second
- * 	and_clause(symbol(','), maybe(symbol(' ')), token_producer() >> skip())
+ * 	token_p() >> &std::pair<std::string, std::string>::second
+ * 	and_clause(symbol(','), maybe(symbol(' ')), token_p() >> skip())
  * );
  * @endcode
  * this expression corresponds the following rule:
@@ -2223,8 +2223,8 @@ and_clause( Clauses &&... clauses )
  * @code
  * produce<std::string>(
  * 	alternatives(
- * 		sequence(symbol('v'), symbol('='), token_producer() >> as_result()),
- * 		sequence(symbol('T'), symbol('/'), token_producer() >> as_result())
+ * 		sequence(symbol('v'), symbol('='), token_p() >> as_result()),
+ * 		sequence(symbol('T'), symbol('/'), token_p() >> as_result())
  * 	)
  * );
  * @endcode
@@ -2264,16 +2264,16 @@ sequence( Clauses &&... clauses )
  * using str_pair = std::pair<std::string, std::string>;
  * produce<std::vector<str_pair>>(
  * 	produce<str_pair>(
- * 		token_producer() >> &str_pair::first,
+ * 		token_p() >> &str_pair::first,
  * 		symbol('='),
- * 		token_producer() >> &str_pair::second
+ * 		token_p() >> &str_pair::second
  * 	) >> to_container(),
  * 	repeat(0, N,
  * 		symbol(','),
  * 		produce<str_pair>(
- * 			token_producer() >> &str_pair::first,
+ * 			token_p() >> &str_pair::first,
  * 			symbol('='),
- * 			token_producer() >> &str_pair::second
+ * 			token_p() >> &str_pair::second
  * 		) >> to_container()
  * 	)
  * );
@@ -2329,8 +2329,8 @@ repeat(
  * Usage example:
  * @code
  * produce<std::string>(
- * 	token_producer() >> as_result(),
- * 	not_clause(symbol('='), token_producer() >> skip())
+ * 	token_p() >> as_result(),
+ * 	not_clause(symbol('='), token_p() >> skip())
  * );
  * @endcode
  *
@@ -2353,7 +2353,7 @@ skip() noexcept { return impl::any_value_skipper_t{}; }
  */
 RESTINIO_NODISCARD
 inline auto
-symbol_producer( char expected ) noexcept
+symbol_p( char expected ) noexcept
 {
 	return impl::symbol_producer_t{expected};
 }
@@ -2372,7 +2372,7 @@ symbol_producer( char expected ) noexcept
  */
 RESTINIO_NODISCARD
 inline auto
-any_if_not_symbol_producer( char sentinel ) noexcept
+any_if_not_symbol_p( char sentinel ) noexcept
 {
 	return impl::any_if_not_symbol_producer_t{sentinel};
 }
@@ -2392,7 +2392,7 @@ any_if_not_symbol_producer( char sentinel ) noexcept
  */
 RESTINIO_NODISCARD
 inline auto
-caseless_symbol_producer( char expected ) noexcept
+caseless_symbol_p( char expected ) noexcept
 {
 	return impl::caseless_symbol_producer_t{expected};
 }
@@ -2406,7 +2406,7 @@ caseless_symbol_producer( char expected ) noexcept
  *
  * The call to `symbol('a')` function is an equivalent of:
  * @code
- * symbol_producer('a') >> skip()
+ * symbol_p('a') >> skip()
  * @endcode
  *
  * @since v.0.6.1
@@ -2415,7 +2415,7 @@ RESTINIO_NODISCARD
 inline auto
 symbol( char expected ) noexcept
 {
-	return symbol_producer(expected) >> skip();
+	return symbol_p(expected) >> skip();
 }
 
 //
@@ -2429,7 +2429,7 @@ symbol( char expected ) noexcept
  *
  * The call to `caseless_symbol('a')` function is an equivalent of:
  * @code
- * caseless_symbol_producer('a') >> skip()
+ * caseless_symbol_p('a') >> skip()
  * @endcode
  *
  * @since v.0.6.6
@@ -2438,7 +2438,7 @@ RESTINIO_NODISCARD
 inline auto
 caseless_symbol( char expected ) noexcept
 {
-	return caseless_symbol_producer(expected) >> skip();
+	return caseless_symbol_p(expected) >> skip();
 }
 
 //
@@ -2454,7 +2454,7 @@ caseless_symbol( char expected ) noexcept
  */
 RESTINIO_NODISCARD
 inline auto
-space_producer() noexcept
+space_p() noexcept
 {
 	return impl::symbol_producer_template_t< impl::is_space_predicate_t >{};
 }
@@ -2468,7 +2468,7 @@ space_producer() noexcept
  *
  * The call to `space()` function is an equivalent of:
  * @code
- * space_producer() >> skip()
+ * space_p() >> skip()
  * @endcode
  *
  * @since v.0.6.4
@@ -2477,7 +2477,7 @@ RESTINIO_NODISCARD
 inline auto
 space() noexcept
 {
-	return space_producer() >> skip();
+	return space_p() >> skip();
 }
 
 //
@@ -2493,7 +2493,7 @@ space() noexcept
  */
 RESTINIO_NODISCARD
 inline auto
-digit_producer() noexcept
+digit_p() noexcept
 {
 	return impl::digit_producer_t{};
 }
@@ -2507,7 +2507,7 @@ digit_producer() noexcept
  *
  * The call to `digit()` function is an equivalent of:
  * @code
- * digit_producer() >> skip()
+ * digit_p() >> skip()
  * @endcode
  *
  * @since v.0.6.1
@@ -2516,7 +2516,7 @@ RESTINIO_NODISCARD
 inline auto
 digit() noexcept
 {
-	return digit_producer() >> skip();
+	return digit_p() >> skip();
 }
 
 //
@@ -2539,7 +2539,7 @@ digit() noexcept
 template< typename T >
 RESTINIO_NODISCARD
 inline auto
-non_negative_decimal_number_producer() noexcept
+non_negative_decimal_number_p() noexcept
 {
 	return impl::non_negative_decimal_number_producer_t<T>{};
 }
@@ -2551,7 +2551,7 @@ non_negative_decimal_number_producer() noexcept
  * @brief A factory function to create a producer for non-negative
  * decimal numbers.
  *
- * @deprecated Use non_negative_decimal_number_producer.
+ * @deprecated Use non_negative_decimal_number_p.
  *
  * @since v.0.6.2
  */
@@ -2560,7 +2560,7 @@ template< typename T >
 inline auto
 positive_decimal_number_producer() noexcept
 {
-	return non_negative_decimal_number_producer<T>();
+	return non_negative_decimal_number_p<T>();
 }
 
 //
@@ -2574,7 +2574,7 @@ positive_decimal_number_producer() noexcept
  * produce<std::string>(
  * 	symbol('v'),
  * 	symbol('='),
- * 	token_producer() >> as_result(),
+ * 	token_p() >> as_result(),
  * 	symbol('.')
  * );
  * @endcode
@@ -2604,12 +2604,12 @@ as_result() noexcept { return impl::as_result_consumer_t{}; }
  * 	...
  * };
  * produce<composed_value>(
- * 	token_producer() >> custom_consumer(
+ * 	token_p() >> custom_consumer(
  * 		[](composed_value & to, std::string && what) {
  * 			to.set_name(std::move(what));
  * 		} ),
  * 	symbol('='),
- * 	token_producer() >> custom_consumer(
+ * 	token_p() >> custom_consumer(
  * 		[](composed_value & to, std::string && what) {
  * 			to.set_value(std::move(what));
  * 		} ),
@@ -2678,16 +2678,16 @@ struct to_container_consumer_t : public consumer_tag
  * using str_pair = std::pair<std::string, std::string>;
  * produce<std::vector<str_pair>>(
  * 	produce<str_pair>(
- * 		token_producer() >> &str_pair::first,
+ * 		token_p() >> &str_pair::first,
  * 		symbol('='),
- * 		token_producer() >> &str_pair::second
+ * 		token_p() >> &str_pair::second
  * 	) >> to_container(),
  * 	repeat(0, N,
  * 		symbol(','),
  * 		produce<str_pair>(
- * 			token_producer() >> &str_pair::first,
+ * 			token_p() >> &str_pair::first,
  * 			symbol('='),
- * 			token_producer() >> &str_pair::second
+ * 			token_p() >> &str_pair::second
  * 		) >> to_container()
  * 	)
  * );
@@ -2715,9 +2715,9 @@ struct to_container_consumer_t : public consumer_tag
  * produce<my_container>(
  * 	repeat(0, N,
  * 		produce<my_item>(
- * 			token_producer() >> &my_item::first,
+ * 			token_p() >> &my_item::first,
  * 			symbol('='),
- * 			token_producer() >> &my_item::second
+ * 			token_p() >> &my_item::second
  * 		) >> to_container<dense_hash_table_adaptor>()
  * 	)
  * );
@@ -2744,7 +2744,7 @@ to_container()
  * @code
  * produce<std::string>(
  * 	symbol('T'), symbol(':',
- * 	token_producer() >> to_lower() >> as_result()
+ * 	token_p() >> to_lower() >> as_result()
  * );
  * @endcode
  *
@@ -2790,14 +2790,14 @@ just_result( T value )
  * struct tmp_size { std::uint32_t c_{1u}; std::uint32_t m_{1u}; };
  * auto size_producer = produce<std::uint64_t>(
  * 	produce<tmp_size>(
- * 		non_negative_decimal_number_producer<std::uint32_t>()
+ * 		non_negative_decimal_number_p<std::uint32_t>()
  * 				>> &tmp_size::c_,
  * 		maybe(
  * 			produce<std::uint32_t>(
  * 				alternatives(
- * 					caseless_symbol_producer('b') >> just_result(1u),
- * 					caseless_symbol_producer('k') >> just_result(1024u),
- * 					caseless_symbol_producer('m') >> just_result(1024u*1024u)
+ * 					caseless_symbol_p('b') >> just_result(1u),
+ * 					caseless_symbol_p('k') >> just_result(1024u),
+ * 					caseless_symbol_p('m') >> just_result(1024u*1024u)
  * 				)
  * 			) >> &tmp_size::m_
  * 		)
@@ -2836,8 +2836,8 @@ convert( Converter && converter )
  * @code
  * produce<std::string>(
  * 	alternatives(
- * 		exact_producer("pro") >> just_result("Professional"),
- * 		exact_producer("con") >> just_result("Consumer")
+ * 		exact_p("pro") >> just_result("Professional"),
+ * 		exact_p("con") >> just_result("Consumer")
  * 	)
  * );
  * @endcode
@@ -2846,7 +2846,7 @@ convert( Converter && converter )
  */
 RESTINIO_NODISCARD
 inline auto
-exact_producer( string_view_t fragment )
+exact_p( string_view_t fragment )
 {
 	return impl::exact_fragment_producer_t{
 			std::string{ fragment.data(), fragment.size() }
@@ -2861,8 +2861,8 @@ exact_producer( string_view_t fragment )
  * @code
  * produce<std::string>(
  * 	alternatives(
- * 		exact_producer("pro") >> just_result("Professional"),
- * 		exact_producer("con") >> just_result("Consumer")
+ * 		exact_p("pro") >> just_result("Professional"),
+ * 		exact_p("con") >> just_result("Consumer")
  * 	)
  * );
  * @endcode
@@ -2875,13 +2875,13 @@ exact_producer( string_view_t fragment )
  * @code
  * const char prefix[]{ 'h', 'e', 'l', 'l', 'o' };
  *
- * produce<std::string>(exact_producer(prefix) >> just_result("Hi!"));
+ * produce<std::string>(exact_p(prefix) >> just_result("Hi!"));
  * @endcode
  * because the last byte with value 'o' will be ignored by
  * exact_producer. To avoid such behavior string_view_t should be
  * used explicitely:
  * @code
- * produce<std::string>(exact_producer(string_view_t{prefix})
+ * produce<std::string>(exact_p(string_view_t{prefix})
  * 		>> just_result("Hi!"));
  * @endcode
  *
@@ -2890,7 +2890,7 @@ exact_producer( string_view_t fragment )
 template< std::size_t Size >
 RESTINIO_NODISCARD
 auto
-exact_producer( const char (&fragment)[Size] )
+exact_p( const char (&fragment)[Size] )
 {
 	return impl::exact_fixed_size_fragment_producer_t<Size>{ fragment };
 }
@@ -2972,10 +2972,10 @@ exact( const char (&fragment)[Size] )
  * const auto tokens = try_parse(
  * 	"first,Second;Third;Four",
  * 	produce<std::vector<std::string>>(
- * 		token_producer() >> to_lower() >> to_container(),
+ * 		token_p() >> to_lower() >> to_container(),
  * 		repeat( 0, N,
  * 			alternatives(symbol(','), symbol(';')),
- * 			token_producer() >> to_lower() >> to_container()
+ * 			token_p() >> to_lower() >> to_container()
  * 		)
  * 	)
  * );
@@ -3029,10 +3029,10 @@ try_parse(
  * const auto tokens = try_parse(
  * 	content,
  * 	produce<std::vector<std::string>>(
- * 		token_producer() >> to_lower() >> to_container(),
+ * 		token_p() >> to_lower() >> to_container(),
  * 		repeat( 0, N,
  * 			alternatives(symbol(','), symbol(';')),
- * 			token_producer() >> to_lower() >> to_container()
+ * 			token_p() >> to_lower() >> to_container()
  * 		)
  * 	)
  * );

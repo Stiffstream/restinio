@@ -259,7 +259,7 @@ make_parser()
 			produce< http_header_fields_t >(
 				repeat( 0, N,
 					produce< http_header_field_t >(
-						token_producer() >> to_lower() >> custom_consumer(
+						token_p() >> to_lower() >> custom_consumer(
 								[](auto & f, std::string && v) {
 									f.name(std::move(v));
 								} ),

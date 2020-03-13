@@ -156,7 +156,7 @@ RESTINIO_NODISCARD
 inline auto
 root()
 {
-	return symbol_producer( '/' ) >> just( root_t{} );
+	return symbol_p( '/' ) >> just( root_t{} );
 }
 
 RESTINIO_NODISCARD
@@ -172,7 +172,7 @@ path_fragment( char separator = '/' )
 {
 	return produce< std::string >(
 			repeat( 1, N,
-					any_if_not_symbol_producer( separator ) >> to_container() ) );
+					any_if_not_symbol_p( separator ) >> to_container() ) );
 }
 
 template< typename Unescape_Traits =

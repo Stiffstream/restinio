@@ -218,7 +218,7 @@ auto server_handler( book_collection_t & book_collection )
 
 	auto book_num = epr::produce< book_number_t >(
 			epr::slash(),
-			epr::non_negative_decimal_number_producer< book_number_t >()
+			epr::non_negative_decimal_number_p< book_number_t >()
 					>> epr::as_result()
 		);
 

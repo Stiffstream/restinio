@@ -190,15 +190,15 @@ create_server_handler()
 	auto processor = std::make_shared< request_processor_t >();
 
 	auto user_id = epr::produce< user_id_t >(
-			epr::non_negative_decimal_number_producer< user_id_t >()
+			epr::non_negative_decimal_number_p< user_id_t >()
 					>> epr::as_result()
 		);
 	auto location_id = epr::produce< location_id_t >(
-			epr::non_negative_decimal_number_producer< location_id_t >()
+			epr::non_negative_decimal_number_p< location_id_t >()
 					>> epr::as_result()
 		);
 	auto visit_id = epr::produce< location_id_t >(
-			epr::non_negative_decimal_number_producer< visit_id_t >()
+			epr::non_negative_decimal_number_p< visit_id_t >()
 					>> epr::as_result()
 		);
 
