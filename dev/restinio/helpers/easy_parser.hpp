@@ -17,7 +17,6 @@
 
 #include <restinio/utils/tuple_algorithms.hpp>
 #include <restinio/utils/metaprogramming.hpp>
-#include <restinio/utils/lambda_traits.hpp>
 
 #include <restinio/string_view.hpp>
 #include <restinio/compiler_features.hpp>
@@ -477,7 +476,13 @@ enum class entity_type_t
 	//! and doesn't produces anything.
 	consumer,
 	//! Entity is a clause. It doesn't produces anything.
-	clause
+	clause,
+	//! Entity is a transformer-proxy. It can't be used directly, only
+	//! for binding a producer and transformer together.
+	/*!
+	 * @since v.0.6.6.
+	 */
+	transformer_proxy
 };
 
 //
@@ -652,6 +657,84 @@ operator>>(
 	using transformator_type = transformed_value_producer_t< P, T >;
 
 	return transformator_type{ std::move(producer), std::move(transformer) };
+};
+
+//
+// transformer_proxy_tag
+//
+/*!
+ * @brief A special base class to be used with transformer-proxies.
+ *
+ * Every transformer-proxy class should have the following content:
+ *
+ * @code
+ * class some_transformer_proxy_type
+ * {
+ * public:
+ * 	static constexpr entity_type_t entity_type = entity_type_t::transformer;
+ *
+ * 	template< typename Input_Type >
+ * 	auto
+ * 	make_transformer();
+ * 	...
+ * };
+ * @endcode
+ * where `Input_Type` is will be specified by a producer.
+ *
+ * @since v.0.6.6
+ */
+struct transformer_proxy_tag
+{
+	static constexpr entity_type_t entity_type = entity_type_t::transformer_proxy;
+};
+
+template< typename T, typename = meta::void_t<> >
+struct is_transformer_proxy : public std::false_type {};
+
+template< typename T >
+struct is_transformer_proxy< T, meta::void_t< decltype(T::entity_type) > >
+{
+	static constexpr bool value = entity_type_t::transformer_proxy == T::entity_type;
+};
+
+/*!
+ * @brief A meta-value to check whether T is a transformer-proxy type.
+ *
+ * @note
+ * The current implementation checks only the presence of T::entity_type of
+ * type entity_type_t and the value of T::entity_type.
+ *
+ * @since v.0.6.6
+ */
+template< typename T >
+constexpr bool is_transformer_proxy_v = is_transformer_proxy<T>::value;
+
+/*!
+ * @brief A special operator to connect a value producer with value transformer
+ * via transformer-proxy.
+ *
+ * @since v.0.6.6
+ */
+template<
+	typename P,
+	typename T,
+	typename S = std::enable_if_t<
+			is_producer_v<P> & is_transformer_proxy_v<T>,
+			void > >
+RESTINIO_NODISCARD
+auto
+operator>>(
+	P producer,
+	T transformer_proxy )
+{
+	auto real_transformer = transformer_proxy.template make_transformer< 
+			typename P::result_type >();
+
+	using transformator_type = std::decay_t< decltype(real_transformer) >;
+
+	using producer_type = transformed_value_producer_t< P, transformator_type >;
+
+	return producer_type{ std::move(producer), std::move(real_transformer) };
 };
 
 //
@@ -1914,6 +1997,35 @@ public :
 };
 
 //
+// convert_transformer_proxy_t
+//
+//FIXME: document this!
+template< typename Converter >
+class convert_transformer_proxy_t : public transformer_proxy_tag
+{
+	Converter m_converter;
+
+public :
+	template< typename Convert_Arg >
+	convert_transformer_proxy_t( Convert_Arg && converter )
+		noexcept(noexcept(Converter{std::forward<Convert_Arg>(converter)}))
+		: m_converter{ std::forward<Convert_Arg>(converter) }
+	{}
+
+	template< typename Input_Type >
+	RESTINIO_NODISCARD
+	auto
+	make_transformer() const
+		noexcept(noexcept(Converter{m_converter}))
+	{
+		using output_type = std::decay_t<
+				decltype(m_converter(std::declval<Input_Type&>())) >;
+
+		return convert_transformer_t< output_type, Converter >{ m_converter };
+	}
+};
+
+//
 // try_parse_exact_fragment
 //
 template< typename It >
@@ -2816,13 +2928,11 @@ auto
 convert( Converter && converter )
 {
 	using converter_type = std::decay_t<Converter>;
-	using lambda_traits = restinio::utils::lambda_traits::traits<converter_type>;
 
-	using transformer_type = impl::convert_transformer_t<
-			typename lambda_traits::result_type,
-			converter_type>;
+	using transformer_proxy_type = impl::convert_transformer_proxy_t<
+			converter_type >;
 
-	return transformer_type{ std::forward<Converter>(converter) };
+	return transformer_proxy_type{ std::forward<Converter>(converter) };
 }
 
 //

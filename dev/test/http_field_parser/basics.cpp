@@ -260,6 +260,35 @@ TEST_CASE( "convert", "[convert_transformer]" )
 	}
 }
 
+TEST_CASE( "convert generic case", "[convert_transformer]" )
+{
+	using namespace restinio::easy_parser;
+	using namespace std::string_literals;
+
+	const auto parser = produce<std::string>(
+			alternatives(
+					symbol_p('f')
+						>> convert([](auto c) { return std::string(1u, c); })
+						>> as_result(),
+					symbol_p('m')
+						>> convert([](auto c) { return std::string(1u, c); })
+						>> as_result()
+			)
+		);
+
+	{
+		const auto r = try_parse( "f", parser );
+		REQUIRE( r );
+		REQUIRE( "f"s == *r );
+	}
+
+	{
+		const auto r = try_parse( "m", parser );
+		REQUIRE( r );
+		REQUIRE( "m"s == *r );
+	}
+}
+
 TEST_CASE( "token", "[token]" )
 {
 	using namespace restinio::http_field_parsers;
