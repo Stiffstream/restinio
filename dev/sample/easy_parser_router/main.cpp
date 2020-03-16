@@ -229,7 +229,7 @@ auto server_handler( book_collection_t & book_collection )
 
 	router->add_handler(
 			restinio::http_method_get(),
-			epr::root(), by( &books_handler_t::on_books_list ) );
+			epr::root_p(), by( &books_handler_t::on_books_list ) );
 
 	router->add_handler(
 			restinio::http_method_get(),
@@ -245,13 +245,13 @@ auto server_handler( book_collection_t & book_collection )
 
 	router->add_handler(
 			restinio::http_method_post(),
-			epr::root(), by( &books_handler_t::on_new_book ) );
+			epr::root_p(), by( &books_handler_t::on_new_book ) );
 
 	router->add_handler(
 			restinio::http_method_get(),
 			epr::produce< author_name_t >(
 					epr::exact("/author/"),
-					epr::path_fragment() >> epr::unescape() >> epr::as_result() ),
+					epr::path_fragment_p() >> epr::unescape() >> epr::as_result() ),
 			by( &books_handler_t::on_author_get ) );
 
 	router->non_matched_request_handler(
