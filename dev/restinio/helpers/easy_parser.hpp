@@ -1612,7 +1612,7 @@ public:
 };
 
 //
-// any_if_not_symbol_producer_t
+// any_symbol_if_not_producer_t
 //
 /*!
  * @brief A producer for the case when any character except the specific
@@ -1622,14 +1622,14 @@ public:
  *
  * @since v.0.6.6
  */
-class any_if_not_symbol_producer_t
+class any_symbol_if_not_producer_t
 	: public symbol_producer_template_t< not_particular_symbol_predicate_t >
 {
 	using base_type_t =
 		symbol_producer_template_t< not_particular_symbol_predicate_t >;
 
 public:
-	any_if_not_symbol_producer_t( char sentinel )
+	any_symbol_if_not_producer_t( char sentinel )
 		:	base_type_t{ not_particular_symbol_predicate_t{sentinel} }
 	{}
 };
@@ -2512,12 +2512,11 @@ symbol_p( char expected ) noexcept
 	return impl::symbol_producer_t{expected};
 }
 
-//FIXME: maybe this is not a good name? Is there any good alternative?
 //
-// any_if_not_symbol_p
+// any_symbol_if_not_p
 //
 /*!
- * @brief A factory function to create a any_if_not_symbol_producer.
+ * @brief A factory function to create a any_symbol_if_not_producer.
  *
  * @return a producer that expects any character except @a sentinel in the
  * input stream and returns it if that character is found.
@@ -2526,9 +2525,9 @@ symbol_p( char expected ) noexcept
  */
 RESTINIO_NODISCARD
 inline auto
-any_if_not_symbol_p( char sentinel ) noexcept
+any_symbol_if_not_p( char sentinel ) noexcept
 {
-	return impl::any_if_not_symbol_producer_t{sentinel};
+	return impl::any_symbol_if_not_producer_t{sentinel};
 }
 
 //

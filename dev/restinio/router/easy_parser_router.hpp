@@ -267,7 +267,7 @@ path_fragment_p( char separator = '/' )
 {
 	return produce< std::string >(
 			repeat( 1, N,
-					any_if_not_symbol_p( separator ) >> to_container() ) );
+					any_symbol_if_not_p( separator ) >> to_container() ) );
 }
 
 /*!
