@@ -1561,7 +1561,12 @@ struct not_particular_symbol_predicate_t
 //
 // caseless_particular_symbol_predicate_t
 //
-//FIXME: document this!
+/*!
+ * @brief A predicate for cases where the case-insensitive match of expected
+ * and actual symbols is required.
+ *
+ * @since v.0.6.1
+ */
 struct caseless_particular_symbol_predicate_t
 {
 	char m_expected;
@@ -1945,7 +1950,12 @@ struct to_lower_transformer_t : public transformer_tag< std::string >
 //
 // just_value_transformer_t
 //
-//FIXME: document this!
+/*!
+ * @brief A transformer that skips incoming value and returns
+ * a value specified by a user.
+ *
+ * @since v.0.6.6
+ */
 template< typename T >
 class just_value_transformer_t : public transformer_tag< T >
 {
@@ -1999,7 +2009,19 @@ public :
 //
 // convert_transformer_proxy_t
 //
-//FIXME: document this!
+/*!
+ * @brief A proxy for the creation of convert_transformer instances
+ * for a specific value producers.
+ *
+ * @note
+ * This class is intended to be used in implementation of operator>>
+ * for cases like that:
+ * @code
+ * symbol_p('k') >> conver([](auto ch) { return 1024u; })
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
 template< typename Converter >
 class convert_transformer_proxy_t : public transformer_proxy_tag
 {
@@ -2042,11 +2064,15 @@ public :
 //
 // try_parse_exact_fragment
 //
+
+// Requires that begin is not equal to end.
 template< typename It >
 RESTINIO_NODISCARD
 expected_t< bool, parse_error_t >
 try_parse_exact_fragment( source_t & from, It begin, It end )
 {
+	assert( begin != end );
+
 	source_t::content_consumer_t consumer{ from };
 
 	for( auto ch = from.getch(); !ch.m_eof; ch = from.getch() )
@@ -2123,11 +2149,13 @@ class exact_fragment_producer_t
 	std::string m_fragment;
 
 public:
-	//FIXME: fragment shouldn't be empty.
-	//This must be expressed somehow. Or must be checked at run-time.
 	exact_fragment_producer_t( std::string fragment )
 		:	m_fragment{ std::move(fragment) }
-	{}
+	{
+		if( m_fragment.empty() )
+			throw exception_t( "'fragment' value for exact_fragment_producer_t "
+					"can't be empty!" );
+	}
 
 	RESTINIO_NODISCARD
 	expected_t< bool, parse_error_t >
@@ -2467,7 +2495,7 @@ inline auto
 skip() noexcept { return impl::any_value_skipper_t{}; }
 
 //
-// symbol_producer
+// symbol_p
 //
 /*!
  * @brief A factory function to create a symbol_producer.
@@ -2486,7 +2514,7 @@ symbol_p( char expected ) noexcept
 
 //FIXME: maybe this is not a good name? Is there any good alternative?
 //
-// any_if_not_symbol_producer
+// any_if_not_symbol_p
 //
 /*!
  * @brief A factory function to create a any_if_not_symbol_producer.
@@ -2504,7 +2532,7 @@ any_if_not_symbol_p( char sentinel ) noexcept
 }
 
 //
-// caseless_symbol_producer
+// caseless_symbol_p
 //
 /*!
  * @brief A factory function to create a caseless_symbol_producer.
@@ -2568,7 +2596,7 @@ caseless_symbol( char expected ) noexcept
 }
 
 //
-// space_producer
+// space_p
 //
 /*!
  * @brief A factory function to create a space_producer.
@@ -2607,7 +2635,7 @@ space() noexcept
 }
 
 //
-// digit_producer
+// digit_p
 //
 /*!
  * @brief A factory function to create a digit_producer.
@@ -2646,7 +2674,7 @@ digit() noexcept
 }
 
 //
-// non_negative_decimal_number_producer
+// non_negative_decimal_number_p
 //
 /*!
  * @brief A factory function to create a non_negative_decimal_number_producer.
@@ -2671,7 +2699,7 @@ non_negative_decimal_number_p() noexcept
 }
 
 //
-// positive_decimal_number_producer
+// positive_decimal_number_p
 //
 /*!
  * @brief A factory function to create a producer for non-negative
@@ -2883,7 +2911,23 @@ to_lower() noexcept { return impl::to_lower_transformer_t{}; }
 //
 // just
 //
-//FIXME: document this!
+/*!
+ * @brief A special transformer that replaces the produced value by
+ * a value specified by a user.
+ *
+ * Usage example:
+ * @code
+ * produce<unsigned int>(
+ * 	alternatives(
+ * 		symbol('b') >> just(1u) >> as_result(),
+ * 		symbol('k') >> just(1024u) >> as_result(),
+ * 		symbol('m') >> just(1024u*1024u) >> as_result()
+ * 	)
+ * );
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
 template< typename T >
 RESTINIO_NODISCARD
 auto
@@ -2895,7 +2939,24 @@ just( T value ) noexcept(noexcept(impl::just_value_transformer_t<T>{value}))
 //
 // just_result
 //
-//FIXME: document this!
+/*!
+ * @brief A special consumer that replaces the produced value by
+ * a value specified by a user and sets that user-specified value
+ * as the result.
+ *
+ * Usage example:
+ * @code
+ * produce<unsigned int>(
+ * 	alternatives(
+ * 		symbol('b') >> just_result(1u),
+ * 		symbol('k') >> just_result(1024u),
+ * 		symbol('m') >> just_result(1024u*1024u)
+ * 	)
+ * );
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
 template< typename T >
 RESTINIO_NODISCARD
 auto
@@ -2950,7 +3011,7 @@ convert( Converter && converter )
 }
 
 //
-// exact_producer
+// exact_p
 //
 /*!
  * @brief A factory function that creates an instance of
