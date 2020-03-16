@@ -476,7 +476,13 @@ enum class entity_type_t
 	//! and doesn't produces anything.
 	consumer,
 	//! Entity is a clause. It doesn't produces anything.
-	clause
+	clause,
+	//! Entity is a transformer-proxy. It can't be used directly, only
+	//! for binding a producer and transformer together.
+	/*!
+	 * @since v.0.6.6.
+	 */
+	transformer_proxy
 };
 
 //
@@ -654,6 +660,84 @@ operator>>(
 };
 
 //
+// transformer_proxy_tag
+//
+/*!
+ * @brief A special base class to be used with transformer-proxies.
+ *
+ * Every transformer-proxy class should have the following content:
+ *
+ * @code
+ * class some_transformer_proxy_type
+ * {
+ * public:
+ * 	static constexpr entity_type_t entity_type = entity_type_t::transformer;
+ *
+ * 	template< typename Input_Type >
+ * 	auto
+ * 	make_transformer();
+ * 	...
+ * };
+ * @endcode
+ * where `Input_Type` is will be specified by a producer.
+ *
+ * @since v.0.6.6
+ */
+struct transformer_proxy_tag
+{
+	static constexpr entity_type_t entity_type = entity_type_t::transformer_proxy;
+};
+
+template< typename T, typename = meta::void_t<> >
+struct is_transformer_proxy : public std::false_type {};
+
+template< typename T >
+struct is_transformer_proxy< T, meta::void_t< decltype(T::entity_type) > >
+{
+	static constexpr bool value = entity_type_t::transformer_proxy == T::entity_type;
+};
+
+/*!
+ * @brief A meta-value to check whether T is a transformer-proxy type.
+ *
+ * @note
+ * The current implementation checks only the presence of T::entity_type of
+ * type entity_type_t and the value of T::entity_type.
+ *
+ * @since v.0.6.6
+ */
+template< typename T >
+constexpr bool is_transformer_proxy_v = is_transformer_proxy<T>::value;
+
+/*!
+ * @brief A special operator to connect a value producer with value transformer
+ * via transformer-proxy.
+ *
+ * @since v.0.6.6
+ */
+template<
+	typename P,
+	typename T,
+	typename S = std::enable_if_t<
+			is_producer_v<P> & is_transformer_proxy_v<T>,
+			void > >
+RESTINIO_NODISCARD
+auto
+operator>>(
+	P producer,
+	T transformer_proxy )
+{
+	auto real_transformer = transformer_proxy.template make_transformer< 
+			typename P::result_type >();
+
+	using transformator_type = std::decay_t< decltype(real_transformer) >;
+
+	using producer_type = transformed_value_producer_t< P, transformator_type >;
+
+	return producer_type{ std::move(producer), std::move(real_transformer) };
+};
+
+//
 // consumer_tag
 //
 /*!
@@ -734,9 +818,12 @@ template< typename T, typename = meta::void_t<> >
 struct is_clause : public std::false_type {};
 
 template< typename T >
-struct is_clause< T, meta::void_t< decltype(T::entity_type) > >
+struct is_clause< T, meta::void_t<
+	decltype(std::decay_t<T>::entity_type) > >
 {
-	static constexpr bool value = entity_type_t::clause == T::entity_type;
+	using real_type = std::decay_t<T>;
+
+	static constexpr bool value = entity_type_t::clause == real_type::entity_type;
 };
 
 /*!
@@ -751,6 +838,44 @@ struct is_clause< T, meta::void_t< decltype(T::entity_type) > >
  */
 template< typename T >
 constexpr bool is_clause_v = is_clause<T>::value;
+
+//
+// tuple_of_entities_t
+//
+/*!
+ * @brief A helper meta-function to create an actual type of tuple
+ * with clauses/producers.
+ *
+ * Usage example:
+ * @code
+ * template< typename... Clauses >
+ * auto
+ * some_clause( Clauses && ...clauses ) {
+ * 	using clause_type = impl::some_clause_t<
+ * 			impl::tuple_of_entities_t<Clauses...> >;
+ * 	return clause_type{ std::forward<Clauses>(clauses)... };
+ * }
+ * @endcode
+ *
+ * The tuple_of_entities_t takes care about such cases as references and
+ * constness of parameters. For example:
+ * @code
+ * auto c = symbol('c');
+ * const auto b = symbol('b');
+ * auto clause = some_clause(c, b);
+ * @endcode
+ * In that case `Clauses...` will be `symbol_clause_t&, const
+ * symbol_clause_t&`. And an attempt to make type `std::tuple<Clauses...>` will
+ * produce type `std::tuple<symbol_clause_t&, const symbol_clause_t&>`. But we
+ * need `std::tuple<symbol_clause_t, symbol_clause_t>`. This result will be
+ * obtained if `tuple_of_entities_t` is used instead of `std::tuple`.
+ *
+ * @since v.0.6.6
+ */
+template< typename... Entities >
+using tuple_of_entities_t = meta::rename_t<
+		meta::transform_t< std::decay, meta::type_list<Entities...> >,
+		std::tuple >;
 
 //
 // consume_value_clause_t
@@ -1413,6 +1538,57 @@ struct particular_symbol_predicate_t
 };
 
 //
+// not_particular_symbol_predicate_t
+//
+/*!
+ * @brief A predicate for cases where mismatch with a particular
+ * symbol is required.
+ *
+ * @since v.0.6.6
+ */
+struct not_particular_symbol_predicate_t
+{
+	char m_sentinel;
+
+	RESTINIO_NODISCARD
+	bool
+	operator()( const char actual ) const noexcept
+	{
+		return m_sentinel != actual;
+	}
+};
+
+//
+// caseless_particular_symbol_predicate_t
+//
+/*!
+ * @brief A predicate for cases where the case-insensitive match of expected
+ * and actual symbols is required.
+ *
+ * @since v.0.6.1
+ */
+struct caseless_particular_symbol_predicate_t
+{
+	char m_expected;
+
+	caseless_particular_symbol_predicate_t( char v ) noexcept
+		:	m_expected{ static_cast<char>(
+//FIXME: there should be more compact way of translate a char to lower case!
+				restinio::impl::to_lower_lut<unsigned char>()[
+						static_cast<unsigned char>(v)]) }
+	{}
+
+	RESTINIO_NODISCARD
+	bool
+	operator()( const char actual ) const noexcept
+	{
+		return m_expected == static_cast<char>(
+				restinio::impl::to_lower_lut<unsigned char>()[
+						static_cast<unsigned char>(actual)]);
+	}
+};
+
+//
 // symbol_producer_t
 //
 /*!
@@ -1432,6 +1608,55 @@ class symbol_producer_t
 public:
 	symbol_producer_t( char expected )
 		:	base_type_t{ particular_symbol_predicate_t{expected} }
+	{}
+};
+
+//
+// any_symbol_if_not_producer_t
+//
+/*!
+ * @brief A producer for the case when any character except the specific
+ * sentinel character is expected in the input stream.
+ *
+ * In the case of success returns a character from the input stream.
+ *
+ * @since v.0.6.6
+ */
+class any_symbol_if_not_producer_t
+	: public symbol_producer_template_t< not_particular_symbol_predicate_t >
+{
+	using base_type_t =
+		symbol_producer_template_t< not_particular_symbol_predicate_t >;
+
+public:
+	any_symbol_if_not_producer_t( char sentinel )
+		:	base_type_t{ not_particular_symbol_predicate_t{sentinel} }
+	{}
+};
+
+//
+// caseless_symbol_producer_t
+//
+/*!
+ * @brief A producer for the case when a particual character is expected
+ * in the input stream.
+ *
+ * Performs caseless comparison of symbols.
+ *
+ * In the case of success returns the character from the input stream
+ * (e.g. without transformation to lower or upper case).
+ *
+ * @since v.0.6.6
+ */
+class caseless_symbol_producer_t
+	: public symbol_producer_template_t< caseless_particular_symbol_predicate_t >
+{
+	using base_type_t =
+		symbol_producer_template_t< caseless_particular_symbol_predicate_t >;
+
+public:
+	caseless_symbol_producer_t( char expected )
+		:	base_type_t{ caseless_particular_symbol_predicate_t{expected} }
 	{}
 };
 
@@ -1476,7 +1701,7 @@ public:
 };
 
 //
-// positive_decimal_number_producer_t
+// non_negative_decimal_number_producer_t
 //
 /*!
  * @brief A producer for the case when a non-negative decimal number is
@@ -1487,7 +1712,7 @@ public:
  * @since v.0.6.2
  */
 template< typename T >
-class positive_decimal_number_producer_t : public producer_tag< T >
+class non_negative_decimal_number_producer_t : public producer_tag< T >
 {
 public:
 	RESTINIO_NODISCARD
@@ -1566,9 +1791,9 @@ struct any_value_skipper_t : public consumer_tag
 	@endverbatim
  * such rule will be implemented by a such sequence of clauses:
  * @code
- * produce<std::string>(symbol('v'), symbol('='), token_producer() >> as_result());
+ * produce<std::string>(symbol('v'), symbol('='), token_p() >> as_result());
  * @endcode
- * The result of `token_producer()` producer in a subclause should be returned
+ * The result of `token_p()` producer in a subclause should be returned
  * as the result of top-level producer.
  *
  * @since v.0.6.1
@@ -1581,6 +1806,37 @@ struct as_result_consumer_t : public consumer_tag
 		noexcept(noexcept(dest=std::forward<Value>(src)))
 	{
 		dest = std::forward<Value>(src);
+	}
+};
+
+//
+// just_result_consumer_t
+//
+/*!
+ * @brief A consumer for the case when a specific value should
+ * be used as the result instead of the value produced on
+ * the previous step.
+ *
+ * @since v.0.6.6
+ */
+template< typename Result_Type >
+class just_result_consumer_t : public consumer_tag
+{
+	Result_Type m_result;
+
+public :
+	template< typename Result_Arg >
+	just_result_consumer_t( Result_Arg && result )
+		noexcept(noexcept(Result_Type{std::forward<Result_Arg>(result)}))
+		:	m_result{ std::forward<Result_Arg>(result) }
+	{}
+
+	template< typename Target_Type, typename Value >
+	void
+	consume( Target_Type & dest, Value && ) const
+		noexcept(noexcept(dest=m_result))
+	{
+		dest = m_result;
 	}
 };
 
@@ -1691,6 +1947,225 @@ struct to_lower_transformer_t : public transformer_tag< std::string >
 	}
 };
 
+//
+// just_value_transformer_t
+//
+/*!
+ * @brief A transformer that skips incoming value and returns
+ * a value specified by a user.
+ *
+ * @since v.0.6.6
+ */
+template< typename T >
+class just_value_transformer_t : public transformer_tag< T >
+{
+	T m_value;
+
+public :
+	just_value_transformer_t( T v ) noexcept(noexcept(T{std::move(v)}))
+		: m_value{ std::move(v) }
+	{}
+
+	template< typename Input >
+	RESTINIO_NODISCARD
+	T
+	transform( Input && ) const noexcept(noexcept(T{m_value}))
+	{
+		return m_value;
+	}
+};
+
+//
+// convert_transformer_t
+//
+/*!
+ * @brief A transformator that uses a user supplied function/functor
+ * for conversion a value from one type to another.
+ *
+ * @since v.0.6.6
+ */
+template< typename Output_Type, typename Converter >
+class convert_transformer_t : public transformer_tag< Output_Type >
+{
+	Converter m_converter;
+
+public :
+	template< typename Convert_Arg >
+	convert_transformer_t( Convert_Arg && converter )
+		noexcept(noexcept(Converter{std::forward<Convert_Arg>(converter)}))
+		: m_converter{ std::forward<Convert_Arg>(converter) }
+	{}
+
+	template< typename Input >
+	RESTINIO_NODISCARD
+	Output_Type
+	transform( Input && input ) const
+		noexcept(noexcept(m_converter(std::forward<Input>(input))))
+	{
+		return m_converter(std::forward<Input>(input));
+	}
+};
+
+//
+// convert_transformer_proxy_t
+//
+/*!
+ * @brief A proxy for the creation of convert_transformer instances
+ * for a specific value producers.
+ *
+ * @note
+ * This class is intended to be used in implementation of operator>>
+ * for cases like that:
+ * @code
+ * symbol_p('k') >> conver([](auto ch) { return 1024u; })
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+template< typename Converter >
+class convert_transformer_proxy_t : public transformer_proxy_tag
+{
+	Converter m_converter;
+
+public :
+	template< typename Convert_Arg >
+	convert_transformer_proxy_t( Convert_Arg && converter )
+		noexcept(noexcept(Converter{std::forward<Convert_Arg>(converter)}))
+		: m_converter{ std::forward<Convert_Arg>(converter) }
+	{}
+
+	template< typename Input_Type >
+	RESTINIO_NODISCARD
+	auto
+	make_transformer() const &
+		noexcept(noexcept(Converter{m_converter}))
+	{
+		using output_type = std::decay_t<
+				decltype(m_converter(std::declval<Input_Type&>())) >;
+
+		return convert_transformer_t< output_type, Converter >{ m_converter };
+	}
+
+	template< typename Input_Type >
+	RESTINIO_NODISCARD
+	auto
+	make_transformer() &&
+		noexcept(noexcept(Converter{std::move(m_converter)}))
+	{
+		using output_type = std::decay_t<
+				decltype(m_converter(std::declval<Input_Type&>())) >;
+
+		return convert_transformer_t< output_type, Converter >{
+				std::move(m_converter)
+		};
+	}
+};
+
+//
+// try_parse_exact_fragment
+//
+
+// Requires that begin is not equal to end.
+template< typename It >
+RESTINIO_NODISCARD
+expected_t< bool, parse_error_t >
+try_parse_exact_fragment( source_t & from, It begin, It end )
+{
+	assert( begin != end );
+
+	source_t::content_consumer_t consumer{ from };
+
+	for( auto ch = from.getch(); !ch.m_eof; ch = from.getch() )
+	{
+		if( ch.m_ch != *begin )
+			return make_unexpected( parse_error_t{
+					consumer.started_at(),
+					error_reason_t::pattern_not_found
+				} );
+		if( ++begin == end )
+			break;
+	}
+
+	if( begin != end )
+		return make_unexpected( parse_error_t{
+				consumer.started_at(),
+				error_reason_t::unexpected_eof
+			} );
+
+	consumer.commit();
+
+	return true;
+}
+
+//
+// exact_fixed_size_fragment_producer_t
+//
+/*!
+ * @brief A producer that expects a fragment in the input and
+ * produces boolean value if that fragment is found.
+ *
+ * This class is indended for working with fixed-size string literals
+ * with terminating null-symbol.
+ *
+ * @since v.0.6.6
+ */
+template< std::size_t Size >
+class exact_fixed_size_fragment_producer_t
+	:	public producer_tag< bool >
+{
+	static_assert( 1u < Size, "Size is expected to greater that 1" );
+
+	// NOTE: there is no space for last zero-byte.
+	std::array< char, Size-1u > m_fragment;
+
+public:
+	exact_fixed_size_fragment_producer_t( const char (&f)[Size] )
+	{
+		// NOTE: last zero-byte is discarded.
+		std::copy( &f[ 0 ], &f[ m_fragment.size() ], m_fragment.data() );
+	}
+
+	RESTINIO_NODISCARD
+	expected_t< bool, parse_error_t >
+	try_parse( source_t & from )
+	{
+		return try_parse_exact_fragment( from,
+				m_fragment.begin(), m_fragment.end() );
+	}
+};
+
+//
+// exact_fragment_producer_t
+//
+/*!
+ * @brief A producer that expects a fragment in the input and
+ * produces boolean value if that fragment is found.
+ *
+ * @since v.0.6.6
+ */
+class exact_fragment_producer_t
+	:	public producer_tag< bool >
+{
+	std::string m_fragment;
+
+public:
+	exact_fragment_producer_t( std::string fragment )
+		:	m_fragment{ std::move(fragment) }
+	{
+		if( m_fragment.empty() )
+			throw exception_t( "'fragment' value for exact_fragment_producer_t "
+					"can't be empty!" );
+	}
+
+	RESTINIO_NODISCARD
+	expected_t< bool, parse_error_t >
+	try_parse( source_t & from )
+	{
+		return try_parse_exact_fragment( from,
+				m_fragment.begin(), m_fragment.end() );
+	}
+};
+
 } /* namespace impl */
 
 //
@@ -1702,7 +2177,7 @@ struct to_lower_transformer_t : public transformer_tag< std::string >
  *
  * Usage example:
  * @code
- * produce<std::string>(symbol('v'), symbol('='), token_producer() >> as_result());
+ * produce<std::string>(symbol('v'), symbol('='), token_p() >> as_result());
  * @endcode
  *
  * @tparam Target_Type the type of value to be produced.
@@ -1722,7 +2197,7 @@ produce( Clauses &&... clauses )
 
 	using producer_type_t = impl::produce_t<
 			Target_Type,
-			std::tuple<Clauses...> >;
+			impl::tuple_of_entities_t<Clauses...> >;
 
 	return producer_type_t{
 			std::make_tuple(std::forward<Clauses>(clauses)...)
@@ -1739,8 +2214,8 @@ produce( Clauses &&... clauses )
  * @code
  * produce<std::string>(
  * 	alternatives(
- * 		sequence(symbol('v'), symbol('='), token_producer() >> as_result()),
- * 		sequence(symbol('T'), symbol('/'), token_producer() >> as_result())
+ * 		sequence(symbol('v'), symbol('='), token_p() >> as_result()),
+ * 		sequence(symbol('T'), symbol('/'), token_p() >> as_result())
  * 	)
  * );
  * @endcode
@@ -1761,7 +2236,8 @@ alternatives( Clauses &&... clauses )
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for alternatives() should be clauses" );
 
-	using clause_type_t = impl::alternatives_clause_t< std::tuple<Clauses...> >;
+	using clause_type_t = impl::alternatives_clause_t<
+			impl::tuple_of_entities_t< Clauses... > >;
 
 	return clause_type_t{
 			std::make_tuple(std::forward<Clauses>(clauses)...)
@@ -1777,10 +2253,10 @@ alternatives( Clauses &&... clauses )
  * Usage example:
  * @code
  * produce<std::pair<std::string, std::string>>(
- * 	token_producer() >> &std::pair<std::string, std::string>::first,
+ * 	token_p() >> &std::pair<std::string, std::string>::first,
  * 	maybe(
  * 		symbol('='),
- * 		token_producer() >> &std::pair<std::string, std::string>::second
+ * 		token_p() >> &std::pair<std::string, std::string>::second
  * 	)
  * );
  * @endcode
@@ -1799,7 +2275,8 @@ maybe( Clauses &&... clauses )
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for maybe() should be clauses" );
 
-	using clause_type_t = impl::maybe_clause_t< std::tuple<Clauses...> >;
+	using clause_type_t = impl::maybe_clause_t<
+			impl::tuple_of_entities_t<Clauses...> >;
 
 	return clause_type_t{
 			std::make_tuple(std::forward<Clauses>(clauses)...)
@@ -1815,9 +2292,9 @@ maybe( Clauses &&... clauses )
  * Usage example:
  * @code
  * produce<std::pair<std::string, std::string>>(
- * 	token_producer() >> &std::pair<std::string, std::string>::first,
+ * 	token_p() >> &std::pair<std::string, std::string>::first,
  * 	symbol(' '),
- * 	token_producer() >> &std::pair<std::string, std::string>::second
+ * 	token_p() >> &std::pair<std::string, std::string>::second
  * 	not_clause(symbol('.'))
  * );
  * @endcode
@@ -1840,7 +2317,8 @@ not_clause( Clauses &&... clauses )
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for not_clause() should be clauses" );
 
-	using clause_type_t = impl::not_clause_t< std::tuple<Clauses...> >;
+	using clause_type_t = impl::not_clause_t<
+			impl::tuple_of_entities_t<Clauses...> >;
 
 	return clause_type_t{
 			std::make_tuple(std::forward<Clauses>(clauses)...)
@@ -1856,10 +2334,10 @@ not_clause( Clauses &&... clauses )
  * Usage example:
  * @code
  * produce<std::pair<std::string, std::string>>(
- * 	token_producer() >> &std::pair<std::string, std::string>::first,
+ * 	token_p() >> &std::pair<std::string, std::string>::first,
  * 	symbol(' '),
- * 	token_producer() >> &std::pair<std::string, std::string>::second
- * 	and_clause(symbol(','), maybe(symbol(' ')), token_producer() >> skip())
+ * 	token_p() >> &std::pair<std::string, std::string>::second
+ * 	and_clause(symbol(','), maybe(symbol(' ')), token_p() >> skip())
  * );
  * @endcode
  * this expression corresponds the following rule:
@@ -1881,7 +2359,8 @@ and_clause( Clauses &&... clauses )
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for sequence() should be clauses" );
 
-	using clause_type_t = impl::and_clause_t< std::tuple<Clauses...> >;
+	using clause_type_t = impl::and_clause_t<
+			impl::tuple_of_entities_t<Clauses...> >;
 
 	return clause_type_t{
 			std::make_tuple(std::forward<Clauses>(clauses)...)
@@ -1898,8 +2377,8 @@ and_clause( Clauses &&... clauses )
  * @code
  * produce<std::string>(
  * 	alternatives(
- * 		sequence(symbol('v'), symbol('='), token_producer() >> as_result()),
- * 		sequence(symbol('T'), symbol('/'), token_producer() >> as_result())
+ * 		sequence(symbol('v'), symbol('='), token_p() >> as_result()),
+ * 		sequence(symbol('T'), symbol('/'), token_p() >> as_result())
  * 	)
  * );
  * @endcode
@@ -1920,7 +2399,8 @@ sequence( Clauses &&... clauses )
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for sequence() should be clauses" );
 
-	using clause_type_t = impl::sequence_clause_t< std::tuple<Clauses...> >;
+	using clause_type_t = impl::sequence_clause_t<
+			impl::tuple_of_entities_t< Clauses... > >;
 
 	return clause_type_t{
 			std::make_tuple(std::forward<Clauses>(clauses)...)
@@ -1938,16 +2418,16 @@ sequence( Clauses &&... clauses )
  * using str_pair = std::pair<std::string, std::string>;
  * produce<std::vector<str_pair>>(
  * 	produce<str_pair>(
- * 		token_producer() >> &str_pair::first,
+ * 		token_p() >> &str_pair::first,
  * 		symbol('='),
- * 		token_producer() >> &str_pair::second
+ * 		token_p() >> &str_pair::second
  * 	) >> to_container(),
  * 	repeat(0, N,
  * 		symbol(','),
  * 		produce<str_pair>(
- * 			token_producer() >> &str_pair::first,
+ * 			token_p() >> &str_pair::first,
  * 			symbol('='),
- * 			token_producer() >> &str_pair::second
+ * 			token_p() >> &str_pair::second
  * 		) >> to_container()
  * 	)
  * );
@@ -1984,7 +2464,8 @@ repeat(
 	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
 			"all arguments for repeat() should be clauses" );
 
-	using producer_type_t = impl::repeat_clause_t< std::tuple<Clauses...> >;
+	using producer_type_t = impl::repeat_clause_t<
+			impl::tuple_of_entities_t<Clauses...> >;
 
 	return producer_type_t{
 			min_occurences,
@@ -2002,8 +2483,8 @@ repeat(
  * Usage example:
  * @code
  * produce<std::string>(
- * 	token_producer() >> as_result(),
- * 	not_clause(symbol('='), token_producer() >> skip())
+ * 	token_p() >> as_result(),
+ * 	not_clause(symbol('='), token_p() >> skip())
  * );
  * @endcode
  *
@@ -2014,7 +2495,7 @@ inline auto
 skip() noexcept { return impl::any_value_skipper_t{}; }
 
 //
-// symbol_producer
+// symbol_p
 //
 /*!
  * @brief A factory function to create a symbol_producer.
@@ -2026,9 +2507,47 @@ skip() noexcept { return impl::any_value_skipper_t{}; }
  */
 RESTINIO_NODISCARD
 inline auto
-symbol_producer( char expected ) noexcept
+symbol_p( char expected ) noexcept
 {
 	return impl::symbol_producer_t{expected};
+}
+
+//
+// any_symbol_if_not_p
+//
+/*!
+ * @brief A factory function to create a any_symbol_if_not_producer.
+ *
+ * @return a producer that expects any character except @a sentinel in the
+ * input stream and returns it if that character is found.
+ * 
+ * @since v.0.6.6
+ */
+RESTINIO_NODISCARD
+inline auto
+any_symbol_if_not_p( char sentinel ) noexcept
+{
+	return impl::any_symbol_if_not_producer_t{sentinel};
+}
+
+//
+// caseless_symbol_p
+//
+/*!
+ * @brief A factory function to create a caseless_symbol_producer.
+ *
+ * This producer performs caseless comparison of characters.
+ *
+ * @return a producer that expects @a expected in the input stream
+ * and returns it if that character is found.
+ * 
+ * @since v.0.6.6
+ */
+RESTINIO_NODISCARD
+inline auto
+caseless_symbol_p( char expected ) noexcept
+{
+	return impl::caseless_symbol_producer_t{expected};
 }
 
 //
@@ -2040,7 +2559,7 @@ symbol_producer( char expected ) noexcept
  *
  * The call to `symbol('a')` function is an equivalent of:
  * @code
- * symbol_producer('a') >> skip()
+ * symbol_p('a') >> skip()
  * @endcode
  *
  * @since v.0.6.1
@@ -2049,11 +2568,34 @@ RESTINIO_NODISCARD
 inline auto
 symbol( char expected ) noexcept
 {
-	return symbol_producer(expected) >> skip();
+	return symbol_p(expected) >> skip();
 }
 
 //
-// space_producer
+// caseless_symbol
+//
+/*!
+ * @brief A factory function to create a clause that expects the
+ * speficied symbol, extracts it and then skips it.
+ *
+ * This clause performs caseless comparison of characters.
+ *
+ * The call to `caseless_symbol('a')` function is an equivalent of:
+ * @code
+ * caseless_symbol_p('a') >> skip()
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+RESTINIO_NODISCARD
+inline auto
+caseless_symbol( char expected ) noexcept
+{
+	return caseless_symbol_p(expected) >> skip();
+}
+
+//
+// space_p
 //
 /*!
  * @brief A factory function to create a space_producer.
@@ -2065,7 +2607,7 @@ symbol( char expected ) noexcept
  */
 RESTINIO_NODISCARD
 inline auto
-space_producer() noexcept
+space_p() noexcept
 {
 	return impl::symbol_producer_template_t< impl::is_space_predicate_t >{};
 }
@@ -2079,7 +2621,7 @@ space_producer() noexcept
  *
  * The call to `space()` function is an equivalent of:
  * @code
- * space_producer() >> skip()
+ * space_p() >> skip()
  * @endcode
  *
  * @since v.0.6.4
@@ -2088,11 +2630,11 @@ RESTINIO_NODISCARD
 inline auto
 space() noexcept
 {
-	return space_producer() >> skip();
+	return space_p() >> skip();
 }
 
 //
-// digit_producer
+// digit_p
 //
 /*!
  * @brief A factory function to create a digit_producer.
@@ -2104,7 +2646,7 @@ space() noexcept
  */
 RESTINIO_NODISCARD
 inline auto
-digit_producer() noexcept
+digit_p() noexcept
 {
 	return impl::digit_producer_t{};
 }
@@ -2118,7 +2660,7 @@ digit_producer() noexcept
  *
  * The call to `digit()` function is an equivalent of:
  * @code
- * digit_producer() >> skip()
+ * digit_p() >> skip()
  * @endcode
  *
  * @since v.0.6.1
@@ -2127,14 +2669,14 @@ RESTINIO_NODISCARD
 inline auto
 digit() noexcept
 {
-	return digit_producer() >> skip();
+	return digit_p() >> skip();
 }
 
 //
-// positive_decimal_number_producer
+// non_negative_decimal_number_p
 //
 /*!
- * @brief A factory function to create a positive_decimal_number_producer.
+ * @brief A factory function to create a non_negative_decimal_number_producer.
  *
  * @note
  * This parser consumes all digits until the first non-digit symbol will
@@ -2150,9 +2692,28 @@ digit() noexcept
 template< typename T >
 RESTINIO_NODISCARD
 inline auto
+non_negative_decimal_number_p() noexcept
+{
+	return impl::non_negative_decimal_number_producer_t<T>{};
+}
+
+//
+// positive_decimal_number_p
+//
+/*!
+ * @brief A factory function to create a producer for non-negative
+ * decimal numbers.
+ *
+ * @deprecated Use non_negative_decimal_number_p.
+ *
+ * @since v.0.6.2
+ */
+template< typename T >
+[[deprecated]] RESTINIO_NODISCARD
+inline auto
 positive_decimal_number_producer() noexcept
 {
-	return impl::positive_decimal_number_producer_t<T>{};
+	return non_negative_decimal_number_p<T>();
 }
 
 //
@@ -2166,7 +2727,7 @@ positive_decimal_number_producer() noexcept
  * produce<std::string>(
  * 	symbol('v'),
  * 	symbol('='),
- * 	token_producer() >> as_result(),
+ * 	token_p() >> as_result(),
  * 	symbol('.')
  * );
  * @endcode
@@ -2196,12 +2757,12 @@ as_result() noexcept { return impl::as_result_consumer_t{}; }
  * 	...
  * };
  * produce<composed_value>(
- * 	token_producer() >> custom_consumer(
+ * 	token_p() >> custom_consumer(
  * 		[](composed_value & to, std::string && what) {
  * 			to.set_name(std::move(what));
  * 		} ),
  * 	symbol('='),
- * 	token_producer() >> custom_consumer(
+ * 	token_p() >> custom_consumer(
  * 		[](composed_value & to, std::string && what) {
  * 			to.set_value(std::move(what));
  * 		} ),
@@ -2270,16 +2831,16 @@ struct to_container_consumer_t : public consumer_tag
  * using str_pair = std::pair<std::string, std::string>;
  * produce<std::vector<str_pair>>(
  * 	produce<str_pair>(
- * 		token_producer() >> &str_pair::first,
+ * 		token_p() >> &str_pair::first,
  * 		symbol('='),
- * 		token_producer() >> &str_pair::second
+ * 		token_p() >> &str_pair::second
  * 	) >> to_container(),
  * 	repeat(0, N,
  * 		symbol(','),
  * 		produce<str_pair>(
- * 			token_producer() >> &str_pair::first,
+ * 			token_p() >> &str_pair::first,
  * 			symbol('='),
- * 			token_producer() >> &str_pair::second
+ * 			token_p() >> &str_pair::second
  * 		) >> to_container()
  * 	)
  * );
@@ -2307,9 +2868,9 @@ struct to_container_consumer_t : public consumer_tag
  * produce<my_container>(
  * 	repeat(0, N,
  * 		produce<my_item>(
- * 			token_producer() >> &my_item::first,
+ * 			token_p() >> &my_item::first,
  * 			symbol('='),
- * 			token_producer() >> &my_item::second
+ * 			token_p() >> &my_item::second
  * 		) >> to_container<dense_hash_table_adaptor>()
  * 	)
  * );
@@ -2336,7 +2897,7 @@ to_container()
  * @code
  * produce<std::string>(
  * 	symbol('T'), symbol(':',
- * 	token_producer() >> to_lower() >> as_result()
+ * 	token_p() >> to_lower() >> as_result()
  * );
  * @endcode
  *
@@ -2345,6 +2906,237 @@ to_container()
 RESTINIO_NODISCARD
 inline auto
 to_lower() noexcept { return impl::to_lower_transformer_t{}; }
+
+//
+// just
+//
+/*!
+ * @brief A special transformer that replaces the produced value by
+ * a value specified by a user.
+ *
+ * Usage example:
+ * @code
+ * produce<unsigned int>(
+ * 	alternatives(
+ * 		symbol('b') >> just(1u) >> as_result(),
+ * 		symbol('k') >> just(1024u) >> as_result(),
+ * 		symbol('m') >> just(1024u*1024u) >> as_result()
+ * 	)
+ * );
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+template< typename T >
+RESTINIO_NODISCARD
+auto
+just( T value ) noexcept(noexcept(impl::just_value_transformer_t<T>{value}))
+{
+	return impl::just_value_transformer_t<T>{value};
+}
+
+//
+// just_result
+//
+/*!
+ * @brief A special consumer that replaces the produced value by
+ * a value specified by a user and sets that user-specified value
+ * as the result.
+ *
+ * Usage example:
+ * @code
+ * produce<unsigned int>(
+ * 	alternatives(
+ * 		symbol('b') >> just_result(1u),
+ * 		symbol('k') >> just_result(1024u),
+ * 		symbol('m') >> just_result(1024u*1024u)
+ * 	)
+ * );
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+template< typename T >
+RESTINIO_NODISCARD
+auto
+just_result( T value )
+	noexcept(noexcept(impl::just_result_consumer_t<T>{value}))
+{
+	return impl::just_result_consumer_t<T>{value};
+}
+
+//
+// convert
+//
+/*!
+ * @brief A factory function to create convert_transformer.
+ *
+ * Usage example:
+ * @code
+ * struct tmp_size { std::uint32_t c_{1u}; std::uint32_t m_{1u}; };
+ * auto size_producer = produce<std::uint64_t>(
+ * 	produce<tmp_size>(
+ * 		non_negative_decimal_number_p<std::uint32_t>()
+ * 				>> &tmp_size::c_,
+ * 		maybe(
+ * 			produce<std::uint32_t>(
+ * 				alternatives(
+ * 					caseless_symbol_p('b') >> just_result(1u),
+ * 					caseless_symbol_p('k') >> just_result(1024u),
+ * 					caseless_symbol_p('m') >> just_result(1024u*1024u)
+ * 				)
+ * 			) >> &tmp_size::m_
+ * 		)
+ * 	) >> convert( [](const tmp_size & ts) {
+ * 				return std::uint64_t{ts.c_} * ts.m_;
+ * 			} )
+ * 		>> as_result()
+ * );
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+template< typename Converter >
+RESTINIO_NODISCARD
+auto
+convert( Converter && converter )
+{
+	using converter_type = std::decay_t<Converter>;
+
+	using transformer_proxy_type = impl::convert_transformer_proxy_t<
+			converter_type >;
+
+	return transformer_proxy_type{ std::forward<Converter>(converter) };
+}
+
+//
+// exact_p
+//
+/*!
+ * @brief A factory function that creates an instance of
+ * exact_fragment_producer.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(
+ * 	alternatives(
+ * 		exact_p("pro") >> just_result("Professional"),
+ * 		exact_p("con") >> just_result("Consumer")
+ * 	)
+ * );
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+RESTINIO_NODISCARD
+inline auto
+exact_p( string_view_t fragment )
+{
+	return impl::exact_fragment_producer_t{
+			std::string{ fragment.data(), fragment.size() }
+		};
+}
+
+/*!
+ * @brief A factory function that creates an instance of
+ * exact_fragment_producer.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(
+ * 	alternatives(
+ * 		exact_p("pro") >> just_result("Professional"),
+ * 		exact_p("con") >> just_result("Consumer")
+ * 	)
+ * );
+ * @endcode
+ *
+ * @attention
+ * This version is dedicated to be used with string literals.
+ * Because of that the last byte from a literal will be ignored (it's
+ * assumed that this byte contains zero).
+ * But this behavior would lead to unexpected results in such cases:
+ * @code
+ * const char prefix[]{ 'h', 'e', 'l', 'l', 'o' };
+ *
+ * produce<std::string>(exact_p(prefix) >> just_result("Hi!"));
+ * @endcode
+ * because the last byte with value 'o' will be ignored by
+ * exact_producer. To avoid such behavior string_view_t should be
+ * used explicitely:
+ * @code
+ * produce<std::string>(exact_p(string_view_t{prefix})
+ * 		>> just_result("Hi!"));
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+template< std::size_t Size >
+RESTINIO_NODISCARD
+auto
+exact_p( const char (&fragment)[Size] )
+{
+	return impl::exact_fixed_size_fragment_producer_t<Size>{ fragment };
+}
+
+//
+// exact
+//
+/*!
+ * @brief A factory function that creates an instance of
+ * exact_fragment clause.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(exact("version="), token() >> as_result());
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+RESTINIO_NODISCARD
+inline auto
+exact( string_view_t fragment )
+{
+	return impl::exact_fragment_producer_t{
+			std::string{ fragment.data(), fragment.size() }
+		} >> skip();
+}
+
+/*!
+ * @brief A factory function that creates an instance of
+ * exact_fragment clause.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(exact("version="), token() >> as_result());
+ * @endcode
+ *
+ * @attention
+ * This version is dedicated to be used with string literals.
+ * Because of that the last byte from a literal will be ignored (it's
+ * assumed that this byte contains zero).
+ * But this behavior would lead to unexpected results in such cases:
+ * @code
+ * const char prefix[]{ 'v', 'e', 'r', 's', 'i', 'o', 'n', '=' };
+ *
+ * produce<std::string>(exact(prefix), token() >> as_result());
+ * @endcode
+ * because the last byte with value '=' will be ignored by
+ * exact_producer. To avoid such behavior string_view_t should be
+ * used explicitely:
+ * @code
+ * produce<std::string>(exact(string_view_t{prefix}),	token() >> as_result());
+ * @endcode
+ * 
+ * @since v.0.6.6
+ */
+template< std::size_t Size >
+RESTINIO_NODISCARD
+auto
+exact( const char (&fragment)[Size] )
+{
+	return impl::exact_fixed_size_fragment_producer_t<Size>{ fragment } >> skip();
+}
 
 //
 // try_parse
@@ -2364,10 +3156,10 @@ to_lower() noexcept { return impl::to_lower_transformer_t{}; }
  * const auto tokens = try_parse(
  * 	"first,Second;Third;Four",
  * 	produce<std::vector<std::string>>(
- * 		token_producer() >> to_lower() >> to_container(),
+ * 		token_p() >> to_lower() >> to_container(),
  * 		repeat( 0, N,
  * 			alternatives(symbol(','), symbol(';')),
- * 			token_producer() >> to_lower() >> to_container()
+ * 			token_p() >> to_lower() >> to_container()
  * 		)
  * 	)
  * );
@@ -2421,10 +3213,10 @@ try_parse(
  * const auto tokens = try_parse(
  * 	content,
  * 	produce<std::vector<std::string>>(
- * 		token_producer() >> to_lower() >> to_container(),
+ * 		token_p() >> to_lower() >> to_container(),
  * 		repeat( 0, N,
  * 			alternatives(symbol(','), symbol(';')),
- * 			token_producer() >> to_lower() >> to_container()
+ * 			token_p() >> to_lower() >> to_container()
  * 		)
  * 	)
  * );

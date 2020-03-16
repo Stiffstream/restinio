@@ -27,25 +27,25 @@ namespace hfp_impl = restinio::http_field_parsers::impl;
 
 RESTINIO_NODISCARD
 inline auto
-make_language_tag_producer()
+make_language_tag_p()
 {
 	return produce<std::string>(
-			repeat(1u, 8u, alpha_symbol_producer() >> to_container()),
+			repeat(1u, 8u, alpha_symbol_p() >> to_container()),
 			repeat(0u, N,
-					symbol_producer('-') >> to_container(),
-					repeat(1u, 8u, alphanum_symbol_producer() >> to_container())
+					symbol_p('-') >> to_container(),
+					repeat(1u, 8u, alphanum_symbol_p() >> to_container())
 			)
 	);
 }
 
 RESTINIO_NODISCARD
 inline auto
-make_language_range_producer()
+make_language_range_p()
 {
 	return produce<std::string>(
 			alternatives(
-					symbol_producer('*') >> to_container(),
-					make_language_tag_producer() >> as_result()
+					symbol_p('*') >> to_container(),
+					make_language_tag_p() >> as_result()
 			)
 	);
 }
@@ -97,10 +97,10 @@ struct accept_language_value_t
 		using namespace accept_language_details;
 
 		return produce< accept_language_value_t >(
-			non_empty_comma_separated_list_producer< item_container_t >(
+			non_empty_comma_separated_list_p< item_container_t >(
 				produce< item_t >(
-					make_language_range_producer() >> &item_t::language_range,
-					maybe( weight_producer() >> &item_t::weight )
+					make_language_range_p() >> &item_t::language_range,
+					maybe( weight_p() >> &item_t::weight )
 				)
 			) >> &accept_language_value_t::languages
 		);

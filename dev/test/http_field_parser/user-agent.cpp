@@ -35,8 +35,8 @@ operator<<(
 			to << ", " << *(p->product_version);
 		to << "]";
 	}
-	else if( auto p = restinio::get_if<std::string>(&i) ) {
-		to << "(" << *p << ")";
+	else if( auto p2 = restinio::get_if<std::string>(&i) ) {
+		to << "(" << *p2 << ")";
 	}
 
 	return to;

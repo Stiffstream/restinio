@@ -77,12 +77,12 @@ struct accept_value_t
 		const auto media_type = media_type_value_t::make_weight_aware_parser();
 
 		return produce< accept_value_t >(
-			maybe_empty_comma_separated_list_producer< item_container_t >(
+			maybe_empty_comma_separated_list_p< item_container_t >(
 				produce< item_t >(
 					media_type >> &item_t::media_type,
 					maybe(
-						weight_producer() >> &item_t::weight,
-						params_with_opt_value_producer() >> &item_t::accept_params
+						weight_p() >> &item_t::weight,
+						params_with_opt_value_p() >> &item_t::accept_params
 					)
 				)
 			) >> &accept_value_t::items

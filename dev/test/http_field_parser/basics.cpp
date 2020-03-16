@@ -41,21 +41,21 @@ struct value_with_opt_params_t
 	param_storage_t m_params;
 };
 
-TEST_CASE( "positive decimal number", "[positive_decimal_number_producer]" )
+TEST_CASE( "positive decimal number", "[non_negative_decimal_number_p]" )
 {
 	using namespace restinio::http_field_parsers;
 //	using namespace restinio::easy_parser;
 
 	{
 		const auto result =
-			try_parse( "", positive_decimal_number_producer<int>() );
+			try_parse( "", non_negative_decimal_number_p<int>() );
 
 		REQUIRE( !result );
 	}
 
 	{
 		const auto result =
-			try_parse( "1", positive_decimal_number_producer<int>() );
+			try_parse( "1", non_negative_decimal_number_p<int>() );
 
 		REQUIRE( result );
 		REQUIRE( 1 == *result );
@@ -63,14 +63,14 @@ TEST_CASE( "positive decimal number", "[positive_decimal_number_producer]" )
 
 	{
 		const auto result =
-			try_parse( "-1", positive_decimal_number_producer<int>() );
+			try_parse( "-1", non_negative_decimal_number_p<int>() );
 
 		REQUIRE( !result );
 	}
 
 	{
 		const auto result =
-			try_parse( "123456", positive_decimal_number_producer<int>() );
+			try_parse( "123456", non_negative_decimal_number_p<int>() );
 
 		REQUIRE( result );
 		REQUIRE( 123456 == *result );
@@ -78,7 +78,7 @@ TEST_CASE( "positive decimal number", "[positive_decimal_number_producer]" )
 
 	{
 		const auto result =
-			try_parse( "123456", positive_decimal_number_producer<unsigned long>() );
+			try_parse( "123456", non_negative_decimal_number_p<unsigned long>() );
 
 		REQUIRE( result );
 		REQUIRE( 123456u == *result );
@@ -88,7 +88,7 @@ TEST_CASE( "positive decimal number", "[positive_decimal_number_producer]" )
 		const auto result =
 			try_parse( "123456w",
 					produce<int>(
-							positive_decimal_number_producer<int>() >> as_result(),
+							non_negative_decimal_number_p<int>() >> as_result(),
 							symbol('w')
 					)
 			);
@@ -101,7 +101,7 @@ TEST_CASE( "positive decimal number", "[positive_decimal_number_producer]" )
 		const auto result =
 			try_parse( "123456w",
 					produce<unsigned long>(
-							positive_decimal_number_producer<unsigned long>() >>
+							non_negative_decimal_number_p<unsigned long>() >>
 									as_result(),
 							symbol('w')
 					)
@@ -112,12 +112,189 @@ TEST_CASE( "positive decimal number", "[positive_decimal_number_producer]" )
 	}
 }
 
+TEST_CASE( "clause by reference", "[clause]" )
+{
+	using namespace restinio::easy_parser;
+
+	struct dummy_t {};
+
+	auto minus = symbol( '-' );
+	auto plus = symbol( '+' );
+	auto flag = caseless_symbol( 'F' );
+
+	const auto parser = produce<dummy_t>(
+			alternatives(
+					sequence( minus, flag, alternatives( minus, plus ) ),
+					sequence( plus, flag, alternatives( minus, plus ) ),
+					sequence( flag, alternatives( minus, plus ) )
+			)
+		);
+
+	{
+		const auto r = try_parse( "-f+", parser );
+		REQUIRE( r );
+	}
+}
+
+TEST_CASE( "just_result (chunk_size case)", "[just_result]" )
+{
+	using namespace restinio::easy_parser;
+
+	struct chunk_size_t
+	{
+		std::size_t count_{ 1u };
+		std::size_t multiplier_{ 1u };
+	};
+
+	const auto total = [](const chunk_size_t & c) {
+		return c.count_ * c.multiplier_;
+	};
+
+	constexpr std::size_t one_byte = 1u;
+	constexpr std::size_t one_kib = 1024u * one_byte;
+	constexpr std::size_t one_mib = 1024u * one_kib;
+
+	auto parser = produce<chunk_size_t>(
+			non_negative_decimal_number_p<std::size_t>()
+					>> &chunk_size_t::count_,
+			maybe(
+				produce<std::size_t>(
+					alternatives(
+						caseless_symbol_p('b') >> just_result(one_byte),
+						caseless_symbol_p('k') >> just_result(one_kib),
+						caseless_symbol_p('m') >> just_result(one_mib)
+					)
+				) >> &chunk_size_t::multiplier_
+			)
+		);
+
+	{
+		const auto result = try_parse( "196", parser );
+
+		REQUIRE( result );
+		REQUIRE( 196u == total(*result) );
+	}
+
+	{
+		const auto result = try_parse( "196B", parser );
+
+		REQUIRE( result );
+		REQUIRE( 196u == total(*result) );
+	}
+
+	{
+		const auto result = try_parse( "10k", parser );
+
+		REQUIRE( result );
+		REQUIRE( (10u * one_kib) == total(*result) );
+	}
+
+	{
+		const auto result = try_parse( "200K", parser );
+
+		REQUIRE( result );
+		REQUIRE( (200u * one_kib) == total(*result) );
+	}
+
+	{
+		const auto result = try_parse( "400M", parser );
+
+		REQUIRE( result );
+		REQUIRE( (400u * one_mib) == total(*result) );
+	}
+}
+
+TEST_CASE( "just_result (string case)", "[just_result]" )
+{
+	using namespace restinio::easy_parser;
+	using namespace std::string_literals;
+
+	auto parser = produce<std::string>(
+			alternatives(
+				caseless_symbol_p('f') >> just_result("Female"s),
+				caseless_symbol_p('m') >> just_result("Male"s)
+			)
+		);
+
+	{
+		const auto result = try_parse( "f", parser );
+
+		REQUIRE( result );
+		REQUIRE( "Female"s == *result );
+	}
+
+	{
+		const auto result = try_parse( "m", parser );
+
+		REQUIRE( result );
+		REQUIRE( "Male"s == *result );
+	}
+}
+
+TEST_CASE( "convert", "[convert_transformer]" )
+{
+	using namespace restinio::easy_parser;
+	using namespace std::string_literals;
+
+	const auto parser = produce<std::string>(
+			alternatives(
+					symbol_p('f')
+						>> convert([](char c) { return std::string(1u, c); })
+						>> as_result(),
+					symbol_p('m')
+						>> convert([](char c) { return std::string(1u, c); })
+						>> as_result()
+			)
+		);
+
+	{
+		const auto r = try_parse( "f", parser );
+		REQUIRE( r );
+		REQUIRE( "f"s == *r );
+	}
+
+	{
+		const auto r = try_parse( "m", parser );
+		REQUIRE( r );
+		REQUIRE( "m"s == *r );
+	}
+}
+
+TEST_CASE( "convert generic case", "[convert_transformer]" )
+{
+	using namespace restinio::easy_parser;
+	using namespace std::string_literals;
+
+	const auto parser = produce<std::string>(
+			alternatives(
+					symbol_p('f')
+						>> convert([](auto c) { return std::string(1u, c); })
+						>> as_result(),
+					symbol_p('m')
+						>> convert([](auto c) { return std::string(1u, c); })
+						>> as_result()
+			)
+		);
+
+	{
+		const auto r = try_parse( "f", parser );
+		REQUIRE( r );
+		REQUIRE( "f"s == *r );
+	}
+
+	{
+		const auto r = try_parse( "m", parser );
+		REQUIRE( r );
+		REQUIRE( "m"s == *r );
+	}
+}
+
 TEST_CASE( "token", "[token]" )
 {
 	using namespace restinio::http_field_parsers;
 
 	const auto try_parse = []( restinio::string_view_t what ) {
-		return restinio::easy_parser::try_parse( what, token_producer() );
+		return restinio::easy_parser::try_parse( what, token_p() );
 	};
 
 	{
@@ -156,7 +333,7 @@ TEST_CASE( "alternatives", "[token][alternatives]" )
 				produce< std::string >(
 					alternatives(
 						symbol(','),
-						token_producer() >> to_lower() >> as_result() )
+						token_p() >> to_lower() >> as_result() )
 				)
 			);
 	};
@@ -192,10 +369,10 @@ TEST_CASE( "maybe", "[token][maybe]" )
 	const auto try_parse = []( restinio::string_view_t what ) {
 		return restinio::easy_parser::try_parse( what,
 				produce< result_t >(
-					token_producer() >> &result_t::first,
+					token_p() >> &result_t::first,
 					maybe(
 						symbol('/'),
-						token_producer() >> &result_t::second
+						token_p() >> &result_t::second
 					)
 				)
 			);
@@ -228,9 +405,9 @@ TEST_CASE( "sequence", "[token][sequence]" )
 		return restinio::easy_parser::try_parse( what,
 				produce< result_t >(
 					sequence(
-						token_producer() >> &result_t::first,
+						token_p() >> &result_t::first,
 						symbol('/'),
-						token_producer() >> &result_t::second
+						token_p() >> &result_t::second
 					)
 				)
 			);
@@ -267,16 +444,16 @@ TEST_CASE( "not", "[token][not]" )
 	const auto try_parse = []( restinio::string_view_t what ) {
 		return restinio::easy_parser::try_parse( what,
 				produce< result_t >(
-					token_producer() >> &result_t::first,
+					token_p() >> &result_t::first,
 					symbol('/'),
-					token_producer() >> &result_t::second,
+					token_p() >> &result_t::second,
 					not_clause(
 						symbol(';'),
 						symbol('q')
 					),
 					maybe(
 						symbol(';'),
-						token_producer() >> &result_t::third
+						token_p() >> &result_t::third
 					)
 				)
 			);
@@ -336,15 +513,15 @@ TEST_CASE( "and", "[token][and]" )
 	const auto try_parse = []( restinio::string_view_t what ) {
 		return restinio::easy_parser::try_parse( what,
 				produce< result_t >(
-					token_producer() >> &result_t::first,
+					token_p() >> &result_t::first,
 					symbol('/'),
-					token_producer() >> &result_t::second,
+					token_p() >> &result_t::second,
 					and_clause(
 						symbol(';'),
 						symbol('q')
 					),
 					symbol(';'),
-					token_producer() >> &result_t::third
+					token_p() >> &result_t::third
 				)
 			);
 	};
@@ -394,13 +571,13 @@ TEST_CASE( "alternatives with symbol", "[alternatives][symbol][field_setter]" )
 		return restinio::easy_parser::try_parse(
 			what,
 			produce< media_type_t >(
-				token_producer() >> &media_type_t::m_type,
+				token_p() >> &media_type_t::m_type,
 				alternatives(
 					symbol('/'),
 					symbol('='),
 					symbol('[')
 				),
-				token_producer() >> &media_type_t::m_subtype )
+				token_p() >> &media_type_t::m_subtype )
 		);
 	};
 
@@ -440,10 +617,10 @@ TEST_CASE( "simple try_parse", "[try_parse]" )
 	const auto tokens = try_parse(
 		content,
 		produce<std::vector<std::string>>(
-			token_producer() >> to_lower() >> to_container(),
+			token_p() >> to_lower() >> to_container(),
 			repeat( 0, N,
 				alternatives(symbol(','), symbol(';')),
-				token_producer() >> to_lower() >> to_container()
+				token_p() >> to_lower() >> to_container()
 			)
 		)
 	);
@@ -472,9 +649,9 @@ TEST_CASE( "produce media_type", "[produce][media_type]" )
 				what,
 				produce< media_type_holder_t >(
 					produce< media_type_t >(
-						token_producer() >> &media_type_t::m_type,
+						token_p() >> &media_type_t::m_type,
 						symbol('/'),
-						token_producer() >> &media_type_t::m_subtype
+						token_p() >> &media_type_t::m_subtype
 					) >> &media_type_holder_t::m_media
 				)
 			);
@@ -528,9 +705,9 @@ TEST_CASE( "simple repeat (vector target)", "[repeat][vector]" )
 					repeat( 0, N,
 						produce< pairs_holder_t::value_t >(
 							symbol(';'),
-							token_producer() >> &pairs_holder_t::value_t::first,
+							token_p() >> &pairs_holder_t::value_t::first,
 							symbol('='),
-							token_producer() >> &pairs_holder_t::value_t::second
+							token_p() >> &pairs_holder_t::value_t::second
 						) >> to_container()
 					)
 				) >> &pairs_holder_t::m_pairs
@@ -564,9 +741,9 @@ TEST_CASE( "simple repeat (map target)", "[repeat][map]" )
 					repeat( 0, N,
 						produce< pairs_holder_t::value_t >(
 							symbol(';'),
-							token_producer() >> &pairs_holder_t::value_t::first,
+							token_p() >> &pairs_holder_t::value_t::first,
 							symbol('='),
-							token_producer() >> &pairs_holder_t::value_t::second
+							token_p() >> &pairs_holder_t::value_t::second
 						) >> to_container()
 					)
 				) >> &pairs_holder_t::m_pairs
@@ -592,7 +769,7 @@ TEST_CASE( "simple repeat (string)", "[repeat][string][symbol_producer]" )
 			what,
 			produce< std::string >(
 					repeat( 3, 7,
-						symbol_producer('*') >> to_container()
+						symbol_p('*') >> to_container()
 					)
 				)
 			);
@@ -641,9 +818,9 @@ TEST_CASE( "simple content_type", "[content_type]" )
 			what,
 			produce< content_type_t >(
 				produce< media_type_t >(
-					token_producer() >> to_lower() >> &media_type_t::m_type,
+					token_p() >> to_lower() >> &media_type_t::m_type,
 					symbol('/'),
-					token_producer() >> to_lower() >> &media_type_t::m_subtype
+					token_p() >> to_lower() >> &media_type_t::m_subtype
 				) >> &content_type_t::m_media_type,
 
 				produce< std::map<std::string, std::string> >(
@@ -652,17 +829,17 @@ TEST_CASE( "simple content_type", "[content_type]" )
 							symbol(';'),
 							ows(),
 
-							token_producer() >> to_lower() >>
+							token_p() >> to_lower() >>
 									&std::pair<std::string, std::string>::first,
 
 							symbol('='),
 
 							produce< std::string >(
 								alternatives(
-									token_producer()
+									token_p()
 											>> to_lower()
 											>> as_result(),
-									quoted_string_producer()
+									quoted_string_p()
 											>> as_result()
 								)
 							) >> &std::pair<std::string, std::string>::second
@@ -785,7 +962,7 @@ TEST_CASE( "sequence with optional", "[optional][simple]" )
 		return restinio::easy_parser::try_parse(
 			what,
 			produce< value_with_opt_params_t >(
-				token_producer() >> to_lower() >>
+				token_p() >> to_lower() >>
 						&value_with_opt_params_t::m_value,
 
 				produce< value_with_opt_params_t::param_storage_t >(
@@ -794,7 +971,7 @@ TEST_CASE( "sequence with optional", "[optional][simple]" )
 							symbol(';'),
 							ows(),
 
-							token_producer() >> to_lower() >>
+							token_p() >> to_lower() >>
 									&value_with_opt_params_t::param_t::first,
 
 							produce< restinio::optional_t<std::string> >(
@@ -802,8 +979,8 @@ TEST_CASE( "sequence with optional", "[optional][simple]" )
 									symbol('='),
 
 									alternatives(
-										token_producer() >> to_lower() >> as_result(),
-										quoted_string_producer() >> as_result()
+										token_p() >> to_lower() >> as_result(),
+										quoted_string_p() >> as_result()
 									)
 								)
 							) >> &value_with_opt_params_t::param_t::second
@@ -875,29 +1052,29 @@ TEST_CASE( "rollback on backtracking", "[rollback][alternative]" )
 				alternatives(
 					sequence(
 						symbol('1'), symbol('='),
-						token_producer() >> &accumulator_t::m_one,
+						token_p() >> &accumulator_t::m_one,
 						symbol(';') ),
 					sequence(
 						symbol('1'), symbol('='),
-						token_producer() >> &accumulator_t::m_one,
+						token_p() >> &accumulator_t::m_one,
 						symbol(','), symbol('2'), symbol('='),
-						token_producer() >> &accumulator_t::m_two,
+						token_p() >> &accumulator_t::m_two,
 						symbol(';') ),
 					sequence(
 						symbol('1'), symbol('='),
-						token_producer() >> &accumulator_t::m_one,
+						token_p() >> &accumulator_t::m_one,
 						symbol(','), symbol('2'), symbol('='),
-						token_producer() >> &accumulator_t::m_two,
+						token_p() >> &accumulator_t::m_two,
 						symbol(','), symbol('3'), symbol('='),
-						token_producer() >> &accumulator_t::m_three,
+						token_p() >> &accumulator_t::m_three,
 						symbol(';') ),
 					sequence(
 						symbol('1'), symbol('='),
-						token_producer() >> skip(),
+						token_p() >> skip(),
 						symbol(','), symbol('2'), symbol('='),
-						token_producer() >> skip(),
+						token_p() >> skip(),
 						symbol(','), symbol('3'), symbol('='),
-						token_producer() >> &accumulator_t::m_three,
+						token_p() >> &accumulator_t::m_three,
 						symbol(','), symbol(',') )
 					)
 				)
@@ -936,7 +1113,7 @@ TEST_CASE( "qvalue", "[qvalue]" )
 	using untrusted = qvalue_t::untrusted;
 
 	const auto try_parse = []( restinio::string_view_t what ) {
-		return restinio::easy_parser::try_parse( what, qvalue_producer() );
+		return restinio::easy_parser::try_parse( what, qvalue_p() );
 	};
 
 	{
@@ -1071,7 +1248,7 @@ TEST_CASE( "weight", "[qvalue][weight]" )
 	using untrusted = qvalue_t::untrusted;
 
 	const auto try_parse = []( restinio::string_view_t what ) {
-		return restinio::easy_parser::try_parse( what, weight_producer() );
+		return restinio::easy_parser::try_parse( what, weight_p() );
 	};
 
 	{
@@ -1181,13 +1358,13 @@ TEST_CASE( "non_empty_comma_separated_list_producer",
 
 	const auto try_parse = []( restinio::string_view_t what ) {
 		const auto media_type = produce< media_type_t >(
-				token_producer() >> to_lower() >> &media_type_t::m_type,
+				token_p() >> to_lower() >> &media_type_t::m_type,
 				symbol('/'),
-				token_producer() >> to_lower() >> &media_type_t::m_subtype );
+				token_p() >> to_lower() >> &media_type_t::m_subtype );
 
 		return restinio::easy_parser::try_parse(
 				what,
-				non_empty_comma_separated_list_producer<
+				non_empty_comma_separated_list_p<
 						std::vector< media_type_t > >( media_type )
 			);
 	};
@@ -1262,13 +1439,13 @@ TEST_CASE( "maybe_empty_comma_separated_list_producer",
 
 	const auto try_parse = []( restinio::string_view_t what ) {
 		const auto media_type = produce< media_type_t >(
-				token_producer() >> to_lower() >> &media_type_t::m_type,
+				token_p() >> to_lower() >> &media_type_t::m_type,
 				symbol('/'),
-				token_producer() >> to_lower() >> &media_type_t::m_subtype );
+				token_p() >> to_lower() >> &media_type_t::m_subtype );
 
 		return restinio::easy_parser::try_parse(
 				what,
-				maybe_empty_comma_separated_list_producer<
+				maybe_empty_comma_separated_list_p<
 						std::vector< media_type_t > >( media_type ) 
 			);
 	};
@@ -1347,7 +1524,7 @@ TEST_CASE( "comment producer", "[comment_producer]" )
 	const auto try_parse = []( restinio::string_view_t what ) {
 		return restinio::easy_parser::try_parse(
 				what,
-				comment_producer() 
+				comment_p() 
 			);
 	};
 
