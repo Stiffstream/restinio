@@ -283,7 +283,7 @@ struct is_space_predicate_t
 // is_digit
 //
 /*!
- * @brief Is a character a digit?
+ * @brief Is a character a decimal digit?
  *
  * @since v.0.6.1
  */
@@ -293,6 +293,60 @@ is_digit( const char ch ) noexcept
 {
 	return (ch >= '0' && ch <= '9');
 }
+
+//
+// is_digit_predicate_t
+//
+/*!
+ * @brief A predicate for cases where char to be expected to be a decimal digit.
+ *
+ * @since v.0.6.6
+ */
+struct is_digit_predicate_t
+{
+	RESTINIO_NODISCARD
+	bool
+	operator()( const char actual ) const noexcept
+	{
+		return is_digit( actual );
+	}
+};
+
+//
+// is_hexdigit
+//
+/*!
+ * @brief Is a character a hexadecimal digit?
+ *
+ * @since v.0.6.6
+ */
+RESTINIO_NODISCARD
+inline constexpr bool
+is_hexdigit( const char ch ) noexcept
+{
+	return (ch >= '0' && ch <= '9') ||
+			(ch >= 'A' && ch <= 'F') ||
+			(ch >= 'a' && ch <= 'f');
+}
+
+//
+// is_hexdigit_predicate_t
+//
+/*!
+ * @brief A predicate for cases where char to be expected
+ * to be a hexadecimal digit.
+ *
+ * @since v.0.6.6
+ */
+struct is_hexdigit_predicate_t
+{
+	RESTINIO_NODISCARD
+	bool
+	operator()( const char actual ) const noexcept
+	{
+		return is_hexdigit( actual );
+	}
+};
 
 //
 // source_t
@@ -1664,40 +1718,36 @@ public:
 // digit_producer_t
 //
 /*!
- * @brief A producer for the case when a DIGIT is expected
+ * @brief A producer for the case when a decimal digit is expected
  * in the input stream.
  *
  * In the case of success returns the extracted character.
  *
  * @since v.0.6.1
  */
-class digit_producer_t : public producer_tag< char >
+class digit_producer_t
+	: public symbol_producer_template_t< is_digit_predicate_t >
 {
 public:
-	RESTINIO_NODISCARD
-	expected_t< char, parse_error_t >
-	try_parse( source_t & from ) const noexcept
-	{
-		const auto ch = from.getch();
-		if( !ch.m_eof )
-		{
-			if( is_digit(ch.m_ch) )
-				return ch.m_ch;
-			else
-			{
-				from.putback();
-				return make_unexpected( parse_error_t{
-						from.current_position(),
-						error_reason_t::unexpected_character
-				} );
-			}
-		}
-		else
-			return make_unexpected( parse_error_t{
-					from.current_position(),
-					error_reason_t::unexpected_eof
-			} );
-	}
+	digit_producer_t() {}
+};
+
+//
+// hexdigit_producer_t
+//
+/*!
+ * @brief A producer for the case when a hexadecimal digit is expected
+ * in the input stream.
+ *
+ * In the case of success returns the extracted character.
+ *
+ * @since v.0.6.6
+ */
+class hexdigit_producer_t
+	: public symbol_producer_template_t< is_hexdigit_predicate_t >
+{
+public:
+	hexdigit_producer_t() {}
 };
 
 //
@@ -2639,8 +2689,8 @@ space() noexcept
 /*!
  * @brief A factory function to create a digit_producer.
  *
- * @return a producer that expects a DIGIT in the input stream
- * and returns it if a DIGIT is found.
+ * @return a producer that expects a decimal digit in the input stream
+ * and returns it if a decimal digit is found.
  * 
  * @since v.0.6.1
  */
@@ -2655,7 +2705,7 @@ digit_p() noexcept
 // digit
 //
 /*!
- * @brief A factory function to create a clause that expects a DIGIT,
+ * @brief A factory function to create a clause that expects a decimal digit,
  * extracts it and then skips it.
  *
  * The call to `digit()` function is an equivalent of:
@@ -2663,13 +2713,52 @@ digit_p() noexcept
  * digit_p() >> skip()
  * @endcode
  *
- * @since v.0.6.1
+ * @since v.0.6.6
  */
 RESTINIO_NODISCARD
 inline auto
 digit() noexcept
 {
 	return digit_p() >> skip();
+}
+
+//
+// hexdigit_p
+//
+/*!
+ * @brief A factory function to create a hexdigit_producer.
+ *
+ * @return a producer that expects a hexadecimal digit in the input stream
+ * and returns it if a hexadecimal digit is found.
+ * 
+ * @since v.0.6.6
+ */
+RESTINIO_NODISCARD
+inline auto
+hexdigit_p() noexcept
+{
+	return impl::hexdigit_producer_t{};
+}
+
+//
+// hexdigit
+//
+/*!
+ * @brief A factory function to create a clause that expects a hexadecimal
+ * digit, extracts it and then skips it.
+ *
+ * The call to `hexdigit()` function is an equivalent of:
+ * @code
+ * hexdigit_p() >> skip()
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+RESTINIO_NODISCARD
+inline auto
+hexdigit() noexcept
+{
+	return hexdigit_p() >> skip();
 }
 
 //
