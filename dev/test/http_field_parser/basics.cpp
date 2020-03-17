@@ -289,6 +289,59 @@ TEST_CASE( "convert generic case", "[convert_transformer]" )
 	}
 }
 
+TEST_CASE( "GUID parser", "[hexdigit]" )
+{
+	using namespace restinio::http_field_parsers;
+	using namespace std::string_literals;
+
+	const auto try_parse = []( restinio::string_view_t what ) {
+		const auto parser = produce<std::string>(
+			repeat(8u, 8u, hexdigit_p() >> to_container()),
+			symbol_p('-') >> to_container(),
+			repeat(3u, 3u,
+				repeat(4u, 4u, hexdigit_p() >> to_container()),
+				symbol_p('-') >> to_container()),
+			repeat(12u, 12u, hexdigit_p() >> to_container())
+		);
+		return restinio::easy_parser::try_parse( what, parser );
+	};
+
+	{
+		const auto result = try_parse( "" );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse(
+				"12345678:0000-1111-2222-123456789abc" );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse(
+				"12345678a0000-1111-2222-123456789abc" );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse(
+				"1234567x-0000-1111-2222-123456789abc" );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse(
+				"12345678-0000-1111-2222-123456789abc" );
+
+		REQUIRE( result );
+		REQUIRE( "12345678-0000-1111-2222-123456789abc"s == *result );
+	}
+}
+
 TEST_CASE( "token", "[token]" )
 {
 	using namespace restinio::http_field_parsers;
