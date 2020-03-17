@@ -411,7 +411,10 @@ template < typename Regex_Engine = std_regex_engine_t>
 class express_route_entry_t
 {
 		using matcher_init_data_t =
-			path2regex::impl::route_regex_matcher_data_t< impl::route_params_appender_t, Regex_Engine >;
+			path2regex::impl::route_regex_matcher_data_t<
+					impl::route_params_appender_t,
+					Regex_Engine >;
+
 		express_route_entry_t(
 			http_method_id_t method,
 			matcher_init_data_t matcher_data,
