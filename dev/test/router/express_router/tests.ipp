@@ -314,7 +314,10 @@ TEST_CASE( "Http method matchers" , "[express][simple][http_method_matchers]" )
 			restinio::router::no_one_of_methods(
 				http_method_get(),
 				http_method_post(),
-				http_method_delete() ),
+				http_method_delete(),
+				http_method_copy(),
+				http_method_lock(),
+				http_method_move() ),
 			"/user",
 			[&]( const auto & req, auto ){
 				last_http_method = req->header().method();

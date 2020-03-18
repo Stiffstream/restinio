@@ -39,32 +39,6 @@ struct method_matcher_t
 namespace impl
 {
 
-//FIXME: is this code really needed?
-#if 0
-//
-// nonallocated_matcher_proxy_t
-//
-//FIXME: document this!
-template< typename Matcher >
-class nonallocated_matcher_proxy_t : public method_matcher_t
-{
-	Matcher m_matcher;
-
-public :
-	template< typename... Args >
-	nonallocated_matcher_proxy_t( Args && ...args )
-		:	m_matcher{ std::forward<Args>(args)... }
-	{}
-
-	RESTINIO_NODISCARD
-	bool
-	match( const http_method_id_t & method ) const noexcept
-	{
-		return m_matcher.match( method );
-	}
-};
-#endif
-
 //
 // allocated_matcher_proxy_t
 //
