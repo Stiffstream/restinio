@@ -16,6 +16,7 @@
 #include <restinio/http_headers.hpp>
 
 #include <initializer_list>
+#include <vector>
 
 namespace restinio
 {
@@ -26,11 +27,25 @@ namespace router
 //
 // method_matcher_t
 //
-//FIXME: document this!
+/*!
+ * @brief An interface of method_matcher.
+ *
+ * Method_matchers are used by routers to detect an applicability
+ * of an incoming request to a route. If method_matcher_t::match()
+ * returns `true` then HTTP method from an incoming request is
+ * applicable to a route.
+ *
+ * @since v.0.6.6
+ */
 struct method_matcher_t
 {
 	virtual ~method_matcher_t() = default;
 
+	//! Is the specified method can be applied to a route?
+	/*!
+	 * \retval true if @a method can be applied to a route.
+	 * \retval false if @a method can't be applied to a route.
+	 */
 	RESTINIO_NODISCARD
 	virtual bool
 	match( const http_method_id_t & method ) const noexcept = 0;
@@ -42,7 +57,18 @@ namespace impl
 //
 // allocated_matcher_proxy_t
 //
-//FIXME: document this!
+/*!
+ * @brief A proxy for actual method_matcher that will be allocated
+ * in dynamic memory.
+ *
+ * An instance of Matcher class will be allocated automatically in
+ * the constructor of allocated_matcher_proxy_t.
+ *
+ * @note
+ * This is a moveable class.
+ *
+ * @since v.0.6.6
+ */
 template< typename Matcher >
 class allocated_matcher_proxy_t : public method_matcher_t
 {
@@ -65,7 +91,15 @@ public :
 //
 // simple_matcher_t
 //
-//FIXME: document this!
+/*!
+ * @brief A simple method_matcher that compares just one user-specified
+ * value.
+ *
+ * The allowed value is specified in the constructor and can't be changed
+ * after that.
+ *
+ * @since v.0.6.6
+ */
 class simple_matcher_t : public method_matcher_t
 {
 	http_method_id_t m_method;
@@ -86,13 +120,27 @@ public :
 //
 // fixed_size_any_of_matcher_t
 //
-//FIXME: document this!
+/*!
+ * @brief A matcher that finds a value in the vector of allowed values
+ * of fixed size.
+ *
+ * A method is allowed if it's found in the vector of allowed values.
+ *
+ * @since v.0.6.6
+ */
 template< std::size_t Size >
 class fixed_size_any_of_matcher_t : public method_matcher_t
 {
 	std::array< http_method_id_t, Size > m_methods;
 
 public :
+	/*!
+	 * @brief Initializing constructor.
+	 *
+	 * @attention
+	 * The values.size() is expected to be equal to Size. The behavior is
+	 * undefined otherwise.
+	 */
 	fixed_size_any_of_matcher_t(
 		std::initializer_list< http_method_id_t > values )
 	{
@@ -116,7 +164,14 @@ public :
 //
 // fixed_size_no_one_of_matcher_t
 //
-//FIXME: document this!
+/*!
+ * @brief A matcher that finds a value in the vector of disabled values
+ * of fixed size.
+ *
+ * A method is allowed if it isn't found in the vector of disabled values.
+ *
+ * @since v.0.6.6
+ */
 template< std::size_t Size >
 class fixed_size_no_one_of_matcher_t
 	: public fixed_size_any_of_matcher_t<Size>
@@ -138,11 +193,35 @@ public :
 // buffered_matcher_holder_t
 //
 //FIXME: document this!
+/*!
+ * @brief A special class that allows to hold a copy of small-size
+ * method_matchers or a pointer to dynamically allocated large-size
+ * method_matchers.
+ *
+ * An instance of this class looks like a smart pointer to
+ * method_matcher_t. This smart pointer is moveable, but not
+ * copyable (it's like unique_ptr).
+ *
+ * A value is set by assign() method:
+ * @code
+ * buffered_matcher_holder_t matcher;
+ * matcher.assign<fixed_size_any_of_matcher_t<10>>(
+ * 	std::initializer_list<http_method_id_t>{
+ * 		http_method_get(),
+ * 		http_method_head(),
+ * 		...
+ * 	});
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
 class buffered_matcher_holder_t
 {
+	//! The size of the internal buffer.
 	static constexpr std::size_t buffer_size =
 			sizeof(fixed_size_any_of_matcher_t<4>);
 
+	//! Alignment to be used by the internal buffer.
 	static constexpr std::size_t alignment =
 			std::max( {
 					alignof(simple_matcher_t),
@@ -150,10 +229,29 @@ class buffered_matcher_holder_t
 					alignof(allocated_matcher_proxy_t<
 							fixed_size_any_of_matcher_t<20>>) } );
 
-	using pfn_move_t = method_matcher_t* (*)(void*, void*);
+	//! A type of free function to be used to move a value of
+	//! an object to the specified buffer.
+	/*!
+	 * This function should allocate a new instance in @a buffer and
+	 * move the content of @a object into it. The pointer to the allocated
+	 * instance should be returned.
+	 */
+	using pfn_move_t = method_matcher_t* (*)(void* object, void* buffer);
 
+	//! A pointer to actual matcher allocated inside the internall buffer.
+	/*!
+	 * Can be nullptr. For example: just after the creation and before
+	 * the call to assign(). Or after a move-constructor or move-operator.
+	 */
 	method_matcher_t * m_matcher{ nullptr };
+
+	//! The internal buffer.
 	alignas(alignment) std::array<char, buffer_size> m_buffer;
+
+	//! An actual move-function.
+	/*!
+	 * Can be nullptr if assign() is not called yet.
+	 */
 	pfn_move_t m_mover{ nullptr };
 
 	void
@@ -208,6 +306,18 @@ public :
 		return *this;
 	}
 
+	/*!
+	 * @brief Creates an instance of Target_Type and initializes it
+	 * with arguments Args.
+	 *
+	 * Previous value of buffered_matcher_holder_t will be destroyed.
+	 *
+	 * A new object is created in the internal buffer if its size is
+	 * not greater than buffer_size. Otherwise a new object is created
+	 * in dynamic memory and allocated_matcher_proxy_t for it
+	 * is placed into the internal buffer.
+	 *
+	 */
 	template< typename Target_Type, typename... Args >
 	void
 	assign( Args &&... args )
@@ -236,14 +346,17 @@ public :
 		}
 	}
 
+	//! Get the pointer to actual matcher inside the holder.
 	RESTINIO_NODISCARD
 	method_matcher_t *
 	get() const noexcept { return m_matcher; }
 
+	//! Get the pointer to actual matcher inside the holder.
 	RESTINIO_NODISCARD
 	method_matcher_t *
 	operator->() const noexcept { return m_matcher; }
 
+	//! Get a reference to actual matcher inside the holder.
 	RESTINIO_NODISCARD
 	method_matcher_t &
 	operator*() const noexcept { return *m_matcher; }
@@ -254,7 +367,24 @@ public :
 //
 // any_of_methods
 //
-//FIXME: document this!
+/*!
+ * @brief A factory function that creates a method_matcher that allows
+ * a method if it's found in the list of allowed methods.
+ *
+ * Usage example:
+ * @code
+ * router->add_handler(
+ * 	restinio::router::any_of_methods(
+ * 		restinio::http_method_get(), restinio::http_method_head()),
+ * 	"/users/:id",
+ * 	[](const auto & req, auto & params) {...});
+ * @endcode
+ *
+ * @note
+ * Returns the created object by value without any allocations.
+ *
+ * @since v.0.6.6
+ */
 template< typename... Args >
 RESTINIO_NODISCARD
 impl::fixed_size_any_of_matcher_t< sizeof...(Args) >
@@ -266,7 +396,27 @@ any_of_methods( Args && ...args )
 //
 // no_one_of_methods
 //
-//FIXME: document this!
+/*!
+ * @brief A factory function that creates a method_matcher that allows
+ * a method if it isn't found in the list of disabled methods.
+ *
+ * Usage example:
+ * @code
+ * router->add_handler(
+ * 	restinio::router::no_one_of_methods(
+ * 		restinio::http_method_get(), restinio::http_method_head()),
+ * 	"/users/:id",
+ * 	[](const auto & req, auto &) {
+ * 		return req->create_response(status_method_not_allowed())
+ * 			.connection_close().done();
+ * 	});
+ * @endcode
+ *
+ * @note
+ * Returns the created object by value without any allocations.
+ *
+ * @since v.0.6.6
+ */
 template< typename... Args >
 RESTINIO_NODISCARD
 impl::fixed_size_no_one_of_matcher_t< sizeof...(Args) >
@@ -274,6 +424,128 @@ no_one_of_methods( Args && ...args )
 {
 	return { std::initializer_list<http_method_id_t>{ std::forward<Args>(args)... } };
 }
+
+//
+// dynamic_any_of_methods_matcher_t
+//
+/*!
+ * @brief An implementation of method_matcher that allows a method
+ * if it's found in a dynamic list of allowed methods.
+ *
+ * Usage example:
+ * @code
+ * restinio::router::dynamic_any_of_methods_matcher_t matcher;
+ * if(config.handle_get_method())
+ * 	matcher.add(restinio::http_method_get());
+ * if(config.handle_head_method())
+ * 	matcher.add(restinio::http_method_head());
+ * router->add_handler(matcher, // Or std::move(matcher) if matcher is no more needed.
+ * 	"/users/:id",
+ * 	[](const auto & req, auto & params) {...});
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+class dynamic_any_of_methods_matcher_t : public method_matcher_t
+{
+	std::vector< http_method_id_t > m_methods;
+
+public:
+	dynamic_any_of_methods_matcher_t() = default;
+
+	RESTINIO_NODISCARD
+	bool
+	match( const http_method_id_t & method ) const noexcept override
+	{
+		for( const auto & m : m_methods )
+			if( m == method )
+				return true;
+
+		return false;
+	}
+
+	dynamic_any_of_methods_matcher_t &
+	add( http_method_id_t method )
+	{
+		m_methods.emplace_back( std::move(method) );
+		return *this;
+	}
+
+	RESTINIO_NODISCARD
+	std::size_t
+	size() const noexcept
+	{
+		return m_methods.size();
+	}
+
+	RESTINIO_NODISCARD
+	bool
+	empty() const noexcept
+	{
+		return m_methods.empty();
+	}
+};
+
+//
+// dynamic_no_one_of_methods_matcher_t
+//
+/*!
+ * @brief An implementation of method_matcher that allows a method
+ * if it isn't found in a dynamic list of disabled methods.
+ *
+ * Usage example:
+ * @code
+ * restinio::router::dynamic_any_of_methods_matcher_t matcher;
+ * if(config.handle_get_method())
+ * 	matcher.add(restinio::http_method_get());
+ * if(config.handle_head_method())
+ * 	matcher.add(restinio::http_method_head());
+ * router->add_handler(matcher, // Or std::move(matcher) if matcher is no more needed.
+ * 	"/users/:id",
+ * 	[](const auto & req, auto & params) {...});
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+class dynamic_no_one_of_methods_matcher_t : public method_matcher_t
+{
+	std::vector< http_method_id_t > m_methods;
+
+public:
+	dynamic_no_one_of_methods_matcher_t() = default;
+
+	RESTINIO_NODISCARD
+	bool
+	match( const http_method_id_t & method ) const noexcept override
+	{
+		for( const auto & m : m_methods )
+			if( m == method )
+				return false;
+
+		return true;
+	}
+
+	dynamic_no_one_of_methods_matcher_t &
+	add( http_method_id_t method )
+	{
+		m_methods.emplace_back( std::move(method) );
+		return *this;
+	}
+
+	RESTINIO_NODISCARD
+	std::size_t
+	size() const noexcept
+	{
+		return m_methods.size();
+	}
+
+	RESTINIO_NODISCARD
+	bool
+	empty() const noexcept
+	{
+		return m_methods.empty();
+	}
+};
 
 } /* namespace router */
 
