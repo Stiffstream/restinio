@@ -261,6 +261,85 @@ TEST_CASE( "Http methods" , "[express][simple][http_methods]" )
 	REQUIRE( http_method_put() == extract_last_http_method() );
 }
 
+TEST_CASE( "Http method matchers" , "[express][simple][http_method_matchers]" )
+{
+
+	http_method_id_t last_http_method = http_method_unknown();
+
+	auto extract_last_http_method = [&]{
+		http_method_id_t result = last_http_method;
+		last_http_method = http_method_unknown();
+		return result;
+	};
+
+	SECTION( "any_of_methods" )
+	{
+		express_router_t router;
+
+		router.add_handler(
+			restinio::router::any_of_methods(
+				http_method_get(),
+				http_method_post(),
+				http_method_delete() ),
+			"/user",
+			[&]( const auto & req, auto ){
+				last_http_method = req->header().method();
+				return request_accepted();
+			} );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_delete() ) ) );
+		REQUIRE( http_method_delete() == extract_last_http_method() );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_get() ) ) );
+		REQUIRE( http_method_get() == extract_last_http_method() );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_head() ) ) );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_post() ) ) );
+		REQUIRE( http_method_post() == extract_last_http_method() );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_put() ) ) );
+	}
+
+	SECTION( "no_one_of_methods" )
+	{
+		express_router_t router;
+
+		router.add_handler(
+			restinio::router::no_one_of_methods(
+				http_method_get(),
+				http_method_post(),
+				http_method_delete() ),
+			"/user",
+			[&]( const auto & req, auto ){
+				last_http_method = req->header().method();
+				return request_accepted();
+			} );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_delete() ) ) );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_get() ) ) );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_head() ) ) );
+		REQUIRE( http_method_head() == extract_last_http_method() );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_post() ) ) );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_put() ) ) );
+		REQUIRE( http_method_put() == extract_last_http_method() );
+	}
+}
+
 TEST_CASE( "Many params" , "[express][named_params][indexed_params]" )
 {
 	int last_handler_called = -1;
