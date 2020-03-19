@@ -297,7 +297,14 @@ class route_matcher_t
 			m_method_matcher.assign< simple_matcher_t >( std::move(method) );
 		}
 
-		//FIXME: document this!
+		/*!
+		 * Creates matcher with a given parameters.
+		 *
+		 * This constructor is intended for cases where method_matcher is
+		 * specified as object of class derived from method_matcher_t.
+		 *
+		 * @since v.0.6.6
+		 */
 		template< typename Method_Matcher >
 		route_matcher_t(
 			Method_Matcher && method_matcher,

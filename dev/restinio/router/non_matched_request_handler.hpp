@@ -9,8 +9,6 @@
  * @since v.0.6.6
  */
 
-//FIXME: this file should be added to CMakeLists.txt
-
 #pragma once
 
 #include <restinio/request_handler.hpp>

@@ -9,8 +9,6 @@
  * @since v.0.6.6
  */
 
-//FIXME: this file should be added to CMakeLists.txt
-
 #pragma once
 
 #include <restinio/http_headers.hpp>
@@ -192,7 +190,6 @@ public :
 //
 // buffered_matcher_holder_t
 //
-//FIXME: document this!
 /*!
  * @brief A special class that allows to hold a copy of small-size
  * method_matchers or a pointer to dynamically allocated large-size
