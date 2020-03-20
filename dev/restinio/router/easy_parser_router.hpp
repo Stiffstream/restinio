@@ -106,7 +106,7 @@ public:
 					m_producer );
 			if( parse_result )
 			{
-				return m_handler( req, *parse_result );
+				return Producer::invoke_handler( req, m_handler, *parse_result );
 			}
 		}
 
@@ -400,6 +400,32 @@ struct dsl_processor
 	using clauses_tuple = dsl_details::make_clauses_types_t< arg_types >;
 };
 
+//
+// special_tuple_producer_t
+//
+template<
+	typename Target_Type,
+	typename Subitems_Tuple >
+class special_tuple_producer_t
+	:	public ep::impl::produce_t< Target_Type, Subitems_Tuple >
+{
+	using base_type_t = ep::impl::produce_t< Target_Type, Subitems_Tuple >;
+
+public:
+	using base_type_t::base_type_t;
+
+	template< typename Handler >
+	RESTINIO_NODISCARD
+	static auto
+	invoke_handler(
+		const request_handle_t & req,
+		Handler && handler,
+		typename base_type_t::result_type & type )
+	{
+		return handler( req, type );
+	}
+};
+
 } /* namespace impl */
 
 using namespace restinio::easy_parser;
@@ -601,7 +627,7 @@ path_to_tuple( Args && ...args )
 	using result_tuple_type = typename dsl_processor::result_tuple;
 	using subclauses_tuple_type = typename dsl_processor::clauses_tuple;
 
-	using producer_type = restinio::easy_parser::impl::produce_t<
+	using producer_type = impl::special_tuple_producer_t<
 			result_tuple_type,
 			subclauses_tuple_type >;
 
