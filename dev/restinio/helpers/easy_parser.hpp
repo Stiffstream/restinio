@@ -1969,6 +1969,22 @@ operator>>( P producer, F C::*member_ptr )
 }
 
 //
+// tuple_item_consumer_t
+//
+//FIXME: document this!
+template< std::size_t Index >
+struct tuple_item_consumer_t : public consumer_tag
+{
+	template< typename Target_Type, typename Value >
+	void
+	consume( Target_Type && to, Value && value )
+	{
+		std::get<Index>(std::forward<Target_Type>(to)) =
+				std::forward<Value>(value);
+	}
+};
+
+//
 // to_lower_transformer_t
 //
 /*!

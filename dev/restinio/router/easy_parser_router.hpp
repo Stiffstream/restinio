@@ -30,6 +30,9 @@ namespace easy_parser_router
 namespace impl
 {
 
+namespace meta = restinio::utils::metaprogramming;
+namespace ep = restinio::easy_parser;
+
 using target_path_holder_t = restinio::router::impl::target_path_holder_t;
 
 /*!
@@ -133,6 +136,268 @@ struct unescape_transformer_t
 		return restinio::utils::unescape_percent_encoding< Unescape_Traits >(
 				input );
 	}
+};
+
+//
+// special_produce_tuple_item_clause_t
+//
+//FIXME: document this!
+template< typename Producer, std::size_t Index >
+class special_produce_tuple_item_clause_t
+	:	public ep::impl::consume_value_clause_t<
+				Producer,
+				ep::impl::tuple_item_consumer_t<Index> >
+{
+	using consumer_t = ep::impl::tuple_item_consumer_t<Index>;
+
+	using base_type_t = ep::impl::consume_value_clause_t<
+			Producer,
+			consumer_t >;
+
+public:
+	template< typename Producer_Arg >
+	special_produce_tuple_item_clause_t( Producer_Arg && producer )
+		:	base_type_t{
+				Producer{ std::forward<Producer_Arg>(producer) },
+				consumer_t{} }
+	{}
+};
+
+//
+// special_exact_fixed_size_fragment_clause_t
+//
+//FIXME: document this!
+template< std::size_t Size >
+class special_exact_fixed_size_fragment_clause_t
+	:	public ep::impl::consume_value_clause_t<
+			ep::impl::exact_fixed_size_fragment_producer_t<Size>,
+			ep::impl::any_value_skipper_t >
+{
+	using producer_t = ep::impl::exact_fixed_size_fragment_producer_t<Size>;
+	using consumer_t = ep::impl::any_value_skipper_t;
+
+	using base_type_t = ep::impl::consume_value_clause_t<
+			producer_t,
+			consumer_t >;
+
+public:
+	special_exact_fixed_size_fragment_clause_t(
+		const char (&fragment)[Size] )
+		:	base_type_t{ producer_t{ fragment }, consumer_t{} }
+	{}
+};
+
+//
+// special_exact_fragment_clause_t
+//
+//FIXME: document this!
+class special_exact_fragment_clause_t
+	:	public ep::impl::consume_value_clause_t<
+			ep::impl::exact_fragment_producer_t,
+			ep::impl::any_value_skipper_t >
+{
+	using producer_t = ep::impl::exact_fragment_producer_t;
+	using consumer_t = ep::impl::any_value_skipper_t;
+
+	using base_type_t = ep::impl::consume_value_clause_t<
+			producer_t,
+			consumer_t >;
+
+public:
+	special_exact_fragment_clause_t( std::string value )
+		:	base_type_t{ producer_t{ std::move(value) }, consumer_t{} }
+	{}
+
+	special_exact_fragment_clause_t( string_view_t value )
+		:	base_type_t{
+				producer_t{ std::string{ value.data(), value.size() } },
+				consumer_t{} }
+	{}
+};
+
+namespace dsl_details
+{
+
+template< typename H, typename R, bool Is_Producer >
+struct add_type_if_necessary_impl;
+
+template<
+	typename H,
+	template<class...> class To,
+	typename... Results >
+struct add_type_if_necessary_impl< H, To<Results...>, false >
+{
+	using type = To<Results...>;
+};
+
+template<
+	typename H,
+	template<class...> class To,
+	typename... Results >
+struct add_type_if_necessary_impl< H, To<Results...>, true >
+{
+	using type = To<Results..., typename H::result_type>;
+};
+
+template< typename H, typename R >
+struct add_type_if_necessary
+	: add_type_if_necessary_impl< H, R, ep::impl::is_producer_v<H> >
+{};
+
+template< typename From, typename To >
+struct result_tuple_detector;
+
+template<
+	template<class...> class From,
+	typename... Sources,
+	template<class...> class To,
+	typename... Results >
+struct result_tuple_detector< From<Sources...>, To<Results...> >
+{
+	using type = typename result_tuple_detector<
+			meta::tail_of_t< Sources... >,
+			typename add_type_if_necessary<
+					meta::head_of_t< Sources... >,
+					To< Results... > >::type
+		>::type;
+};
+
+template<
+	template<class...> class From,
+	template<class...> class To,
+	typename... Results >
+struct result_tuple_detector< From<>, To<Results...> >
+{
+	using type = To<Results...>;
+};
+
+template< typename Args_Type_List >
+struct detect_result_tuple
+{
+	using type = meta::rename_t<
+			typename result_tuple_detector<
+					Args_Type_List,
+					meta::type_list<> >::type,
+			std::tuple >;
+};
+
+template< typename Args_Type_List >
+using detect_result_tuple_t = typename detect_result_tuple<Args_Type_List>::type;
+
+template< typename T, bool Is_Producer, std::size_t Current_Index >
+struct one_clause_type_processor
+{
+	using clause_type = T;
+	static constexpr std::size_t next_index = Current_Index;
+};
+
+template< std::size_t Size, std::size_t Current_Index >
+struct one_clause_type_processor<const char[Size], false, Current_Index>
+{
+	using clause_type = special_exact_fixed_size_fragment_clause_t<Size>;
+	static constexpr std::size_t next_index = Current_Index;
+};
+
+template< std::size_t Current_Index >
+struct one_clause_type_processor<std::string, false, Current_Index>
+{
+	using clause_type = special_exact_fragment_clause_t;
+	static constexpr std::size_t next_index = Current_Index;
+};
+
+template< std::size_t Current_Index >
+struct one_clause_type_processor<string_view_t, false, Current_Index>
+{
+	using clause_type = special_exact_fragment_clause_t;
+	static constexpr std::size_t next_index = Current_Index;
+};
+
+template< typename T, std::size_t Current_Index >
+struct one_clause_type_processor<T, true, Current_Index>
+{
+	using clause_type = special_produce_tuple_item_clause_t< T, Current_Index >;
+	static constexpr std::size_t next_index = Current_Index + 1u;
+};
+
+template< typename From, typename To, std::size_t Current_Index >
+struct clauses_type_maker;
+
+template<
+	template<class...> class From,
+	typename... Sources,
+	template<class...> class To,
+	typename... Results,
+	std::size_t Current_Index >
+struct clauses_type_maker< From<Sources...>, To<Results...>, Current_Index >
+{
+private:
+	using head_type = meta::head_of_t< Sources... >;
+
+	using one_clause_type = one_clause_type_processor<
+			head_type,
+			ep::impl::is_producer_v<head_type>,
+			Current_Index >;
+
+public:
+	using type = typename clauses_type_maker<
+			meta::tail_of_t< Sources... >,
+			To< Results..., typename one_clause_type::clause_type >,
+			one_clause_type::next_index >::type;
+};
+
+template<
+	template<class...> class From,
+	template<class...> class To,
+	typename... Results,
+	std::size_t Current_Index >
+struct clauses_type_maker< From<>, To<Results...>, Current_Index >
+{
+	using type = To< Results... >;
+};
+
+template< typename Args_Type_List >
+struct make_clauses_types
+{
+	using type = meta::rename_t<
+			typename clauses_type_maker<
+					Args_Type_List,
+					meta::type_list<>,
+					0u >::type,
+			std::tuple >;
+};
+
+template< typename Args_Type_List >
+using make_clauses_types_t = typename make_clauses_types<Args_Type_List>::type;
+
+//
+// special_decay
+//
+//FIXME: document this!
+template< typename T >
+struct special_decay
+{
+private:
+	using U = std::remove_reference_t<T>;
+
+public:
+	using type = typename std::conditional<
+				std::is_array<U>::value,
+				U,
+				std::remove_cv_t<U>
+			>::type;
+};
+
+} /* namespace dsl_details */
+
+template< typename... Args >
+struct dsl_processor
+{
+	using arg_types = meta::transform_t<
+			dsl_details::special_decay, meta::type_list<Args...> >;
+
+	using result_tuple = dsl_details::detect_result_tuple_t< arg_types >;
+
+	using clauses_tuple = dsl_details::make_clauses_types_t< arg_types >;
 };
 
 } /* namespace impl */
@@ -324,6 +589,25 @@ auto
 unescape()
 {
 	return impl::unescape_transformer_t< Unescape_Traits >{};
+}
+
+//FIXME: document this!
+template< typename... Args >
+RESTINIO_NODISCARD
+auto
+path_to_tuple( Args && ...args )
+{
+	using dsl_processor = impl::dsl_processor< Args... >;
+	using result_tuple_type = typename dsl_processor::result_tuple;
+	using subclauses_tuple_type = typename dsl_processor::clauses_tuple;
+
+	using producer_type = restinio::easy_parser::impl::produce_t<
+			result_tuple_type,
+			subclauses_tuple_type >;
+
+	return producer_type{
+			subclauses_tuple_type{ std::forward<Args>(args)... }
+	};
 }
 
 } /* namespace easy_parser_router */
