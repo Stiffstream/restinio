@@ -118,8 +118,7 @@ public:
 
 	auto
 	on_make_new_user(
-		const restinio::request_handle_t & req,
-		const make_new_user_t & )
+		const restinio::request_handle_t & req )
 	{
 		return make_response( req, "on_make_new_user" );
 	}
@@ -150,8 +149,7 @@ public:
 
 	auto
 	on_make_new_location(
-		const restinio::request_handle_t & req,
-		const make_new_location_t & )
+		const restinio::request_handle_t & req )
 	{
 		return make_response( req, "on_make_new_location" );
 	}
@@ -174,8 +172,7 @@ public:
 
 	auto
 	on_make_new_visit(
-		const restinio::request_handle_t & req,
-		const make_new_visit_t & )
+		const restinio::request_handle_t & req )
 	{
 		return make_response( req, "on_make_new_visit" );
 	}
@@ -189,117 +186,77 @@ create_server_handler()
 	auto router = std::make_unique< router_t >();
 	auto processor = std::make_shared< request_processor_t >();
 
-	auto user_id = epr::produce< user_id_t >(
-			epr::non_negative_decimal_number_p< user_id_t >()
-					>> epr::as_result()
-		);
-	auto location_id = epr::produce< location_id_t >(
-			epr::non_negative_decimal_number_p< location_id_t >()
-					>> epr::as_result()
-		);
-	auto visit_id = epr::produce< location_id_t >(
-			epr::non_negative_decimal_number_p< visit_id_t >()
-					>> epr::as_result()
-		);
+	auto user_id = epr::non_negative_decimal_number_p< user_id_t >();
+	auto location_id = epr::non_negative_decimal_number_p< location_id_t >();
+	auto visit_id = epr::non_negative_decimal_number_p< visit_id_t >();
 
 	auto by = [&]( auto method ) {
 		using namespace std::placeholders;
 		return std::bind( method, processor, _1, _2 );
 	};
+	auto by0 = [&]( auto method ) {
+		using namespace std::placeholders;
+		return std::bind( method, processor, _1 );
+	};
 
-	const auto t_users = epr::exact( "/users/" );
-	const auto t_locations = epr::exact( "/locations/" );
-	const auto t_visits = epr::exact( "/visits/" );
+	const char t_users[]{ "/users/" };
+	const char t_locations[]{ "/locations/" };
+	const char t_visits[]{ "/visits/" };
 
 	router->add_handler(
 			restinio::http_method_get(),
-			epr::produce< user_id_t >(
-				t_users,
-				user_id >> epr::as_result()
-			),
+			epr::path_to_params( t_users, user_id ),
 			by( &request_processor_t::on_get_user ) );
 
 	router->add_handler(
 			restinio::http_method_get(),
-			epr::produce< user_id_t >(
-				t_users,
-				user_id >> epr::as_result(),
-				epr::slash(), epr::exact("visits")
-			),
+			epr::path_to_params( t_users, user_id, "/visits" ),
 			by( &request_processor_t::on_get_user_visits ) );
 
 	router->add_handler(
 			restinio::http_method_post(),
-			epr::produce< user_id_t >(
-				t_users,
-				user_id >> epr::as_result()
-			),
+			epr::path_to_params( t_users, user_id ),
 			by( &request_processor_t::on_post_user ) );
 
 	router->add_handler(
 			restinio::http_method_post(),
-			epr::produce< make_new_user_t >(
-				t_users,
-				epr::exact("new")
-			),
-			by( &request_processor_t::on_make_new_user ) );
+			epr::path_to_params( t_users, "new" ),
+			by0( &request_processor_t::on_make_new_user ) );
 
 	router->add_handler(
 			restinio::http_method_get(),
-			epr::produce< location_id_t >(
-				t_locations,
-				location_id >> epr::as_result()
-			),
+			epr::path_to_params( t_locations, location_id ),
 			by( &request_processor_t::on_get_location ) );
 
 	router->add_handler(
 			restinio::http_method_get(),
-			epr::produce< location_id_t >(
-				t_locations,
-				location_id >> epr::as_result(),
-				epr::exact("/avg")
-			),
+			epr::path_to_params( t_locations, location_id, "/avg" ),
 			by( &request_processor_t::on_get_location_avg ) );
 
 	router->add_handler(
 			restinio::http_method_post(),
-			epr::produce< location_id_t >(
-				t_locations,
-				user_id >> epr::as_result()
-			),
+			epr::path_to_params( t_locations, location_id ),
 			by( &request_processor_t::on_post_location ) );
 
 	router->add_handler(
 			restinio::http_method_post(),
-			epr::produce< make_new_location_t >(
-				t_locations,
-				epr::exact("new")
-			),
-			by( &request_processor_t::on_make_new_location ) );
+			epr::path_to_params( t_locations, "new" ),
+			by0( &request_processor_t::on_make_new_location ) );
 
 	router->add_handler(
 			restinio::http_method_get(),
-			epr::produce< visit_id_t >(
-				t_visits,
-				visit_id >> epr::as_result()
-			),
+			epr::path_to_params( t_visits, visit_id ),
 			by( &request_processor_t::on_get_location ) );
 
 	router->add_handler(
 			restinio::http_method_post(),
-			epr::produce< visit_id_t >(
-				t_visits,
-				user_id >> epr::as_result()
-			),
+			epr::path_to_params( t_visits, visit_id ),
 			by( &request_processor_t::on_post_visit ) );
 
 	router->add_handler(
 			restinio::http_method_post(),
-			epr::produce< make_new_visit_t >(
-				t_visits,
-				epr::exact("new")
-			),
-			by( &request_processor_t::on_make_new_visit ) );
+			epr::path_to_params( t_visits, "new" ),
+			by0( &request_processor_t::on_make_new_visit ) );
 
 	return router;
 }

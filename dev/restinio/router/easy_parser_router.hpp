@@ -499,6 +499,44 @@ public:
 
 using namespace restinio::easy_parser;
 
+//FIXME: document this!
+template< typename... Args >
+RESTINIO_NODISCARD
+auto
+path_to_tuple( Args && ...args )
+{
+	using dsl_processor = impl::dsl_processor< Args... >;
+	using result_tuple_type = typename dsl_processor::result_tuple;
+	using subclauses_tuple_type = typename dsl_processor::clauses_tuple;
+
+	using producer_type = impl::path_to_tuple_producer_t<
+			result_tuple_type,
+			subclauses_tuple_type >;
+
+	return producer_type{
+			subclauses_tuple_type{ std::forward<Args>(args)... }
+	};
+}
+
+//FIXME: document this!
+template< typename... Args >
+RESTINIO_NODISCARD
+auto
+path_to_params( Args && ...args )
+{
+	using dsl_processor = impl::dsl_processor< Args... >;
+	using result_tuple_type = typename dsl_processor::result_tuple;
+	using subclauses_tuple_type = typename dsl_processor::clauses_tuple;
+
+	using producer_type = impl::path_to_params_producer_t<
+			result_tuple_type,
+			subclauses_tuple_type >;
+
+	return producer_type{
+			subclauses_tuple_type{ std::forward<Args>(args)... }
+	};
+}
+
 //
 // root_t
 //
@@ -545,42 +583,10 @@ RESTINIO_NODISCARD
 inline auto
 root_p()
 {
-	return symbol_p( '/' ) >> just( root_t{} );
+	return path_to_params( symbol_p( '/' ) >> just( root_t{} ) );
 }
 
-//
-// slash
-//
-/*!
- * @brief A factory for a clause that matches '/' in the route path.
- *
- * Usage example:
- * @code
- * namespace epr = restinio::router::easy_parser_router;
- *
- * struct load_params { std::uint32_t count{1}, timeout_sec{1}; };
- *
- * router->add_handler(restinio::http_method_get(),
- * 	epr::produce<load_params>(
- * 		epr::slash(), // '/'
- * 		epr::non_negative_decimal_number_p() >> &load_params::count,
- * 		epr::slash(), // '/'
- * 		epr::non_negative_decimal_number_p() >> &load_params::timeout_sec
- * 	),
- * 	[](const restinio::request_handle_t & req, const load_params params) {
- * 		...
- * 	});
- * @endcode
- *
- * @since v.0.6.6
- */
-RESTINIO_NODISCARD
-inline auto
-slash()
-{
-	return symbol( '/' );
-}
-
+//FIXME: fix code examples in comment!
 /*!
  * @brief A factory that creates a string-producer that extracts a
  * sequence on symbols until the separator will be found.
@@ -630,6 +636,7 @@ path_fragment_p( char separator = '/' )
 					any_symbol_if_not_p( separator ) >> to_container() ) );
 }
 
+//FIXME: fix code examples in comment!
 /*!
  * @brief A factory for unescape_transformer.
  *
@@ -684,44 +691,6 @@ auto
 unescape()
 {
 	return impl::unescape_transformer_t< Unescape_Traits >{};
-}
-
-//FIXME: document this!
-template< typename... Args >
-RESTINIO_NODISCARD
-auto
-path_to_tuple( Args && ...args )
-{
-	using dsl_processor = impl::dsl_processor< Args... >;
-	using result_tuple_type = typename dsl_processor::result_tuple;
-	using subclauses_tuple_type = typename dsl_processor::clauses_tuple;
-
-	using producer_type = impl::path_to_tuple_producer_t<
-			result_tuple_type,
-			subclauses_tuple_type >;
-
-	return producer_type{
-			subclauses_tuple_type{ std::forward<Args>(args)... }
-	};
-}
-
-//FIXME: document this!
-template< typename... Args >
-RESTINIO_NODISCARD
-auto
-path_to_params( Args && ...args )
-{
-	using dsl_processor = impl::dsl_processor< Args... >;
-	using result_tuple_type = typename dsl_processor::result_tuple;
-	using subclauses_tuple_type = typename dsl_processor::clauses_tuple;
-
-	using producer_type = impl::path_to_params_producer_t<
-			result_tuple_type,
-			subclauses_tuple_type >;
-
-	return producer_type{
-			subclauses_tuple_type{ std::forward<Args>(args)... }
-	};
 }
 
 } /* namespace easy_parser_router */

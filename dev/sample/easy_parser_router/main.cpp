@@ -50,7 +50,7 @@ public :
 	books_handler_t( books_handler_t && ) = delete;
 
 	auto on_books_list(
-		const restinio::request_handle_t& req, const epr::root_t & ) const
+		const restinio::request_handle_t& req ) const
 	{
 		auto resp = init_resp( req->create_response() );
 
@@ -118,8 +118,7 @@ public :
 	}
 
 	auto on_new_book(
-		const restinio::request_handle_t& req,
-		const epr::root_t & )
+		const restinio::request_handle_t& req )
 	{
 		auto resp = init_resp( req->create_response() );
 
@@ -216,42 +215,47 @@ auto server_handler( book_collection_t & book_collection )
 	auto router = std::make_unique< router_t >();
 	auto handler = std::make_shared< books_handler_t >( std::ref(book_collection) );
 
-	auto book_num = epr::produce< book_number_t >(
-			epr::slash(),
-			epr::non_negative_decimal_number_p< book_number_t >()
-					>> epr::as_result()
-		);
+	auto book_num = epr::non_negative_decimal_number_p< book_number_t >();
 
 	auto by = [&]( auto method ) {
 		using namespace std::placeholders;
 		return std::bind( method, handler, _1, _2 );
 	};
+	auto by0 = [&]( auto method ) {
+		using namespace std::placeholders;
+		return std::bind( method, handler, _1 );
+	};
 
 	router->add_handler(
 			restinio::http_method_get(),
-			epr::root_p(), by( &books_handler_t::on_books_list ) );
+			epr::path_to_params( "/" ),
+			by0( &books_handler_t::on_books_list ) );
 
 	router->add_handler(
 			restinio::http_method_get(),
-			book_num, by( &books_handler_t::on_book_get ) );
+			epr::path_to_params( "/", book_num ),
+			by( &books_handler_t::on_book_get ) );
 
 	router->add_handler(
 			restinio::http_method_put(),
-			book_num, by( &books_handler_t::on_book_update ) );
+			epr::path_to_params( "/", book_num ),
+			by( &books_handler_t::on_book_update ) );
 
 	router->add_handler(
 			restinio::http_method_delete(),
-			book_num, by( &books_handler_t::on_book_delete ) );
+			epr::path_to_params( "/", book_num ),
+			by( &books_handler_t::on_book_delete ) );
 
 	router->add_handler(
 			restinio::http_method_post(),
-			epr::root_p(), by( &books_handler_t::on_new_book ) );
+			epr::path_to_params( "/" ),
+			by0( &books_handler_t::on_new_book ) );
 
 	router->add_handler(
 			restinio::http_method_get(),
-			epr::produce< author_name_t >(
-					epr::exact("/author/"),
-					epr::path_fragment_p() >> epr::unescape() >> epr::as_result() ),
+			epr::path_to_params(
+					"/author/",
+					epr::path_fragment_p() >> epr::unescape() ),
 			by( &books_handler_t::on_author_get ) );
 
 	router->non_matched_request_handler(
