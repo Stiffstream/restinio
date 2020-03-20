@@ -401,12 +401,13 @@ struct dsl_processor
 };
 
 //
-// special_tuple_producer_t
+// path_to_tuple_producer_t
 //
+//FIXME: document this!
 template<
 	typename Target_Type,
 	typename Subitems_Tuple >
-class special_tuple_producer_t
+class path_to_tuple_producer_t
 	:	public ep::impl::produce_t< Target_Type, Subitems_Tuple >
 {
 	using base_type_t = ep::impl::produce_t< Target_Type, Subitems_Tuple >;
@@ -423,6 +424,74 @@ public:
 		typename base_type_t::result_type & type )
 	{
 		return handler( req, type );
+	}
+};
+
+namespace path_to_params_details
+{
+
+template<
+	typename F,
+	typename Tuple,
+	std::size_t... Indexes >
+decltype(auto)
+call_with_tuple_impl(
+	F && what,
+	const request_handle_t & req,
+	Tuple && params,
+	std::index_sequence<Indexes...> )
+{
+	return std::forward<F>(what)(
+			req,
+			std::get<Indexes>(std::forward<Tuple>(params))... );
+}
+
+//
+// call_with_tuple
+//
+//FIXME: document this!
+template< typename F, typename Tuple >
+decltype(auto)
+call_with_tuple(
+	F && what,
+	const request_handle_t & req,
+	Tuple && params )
+{
+	return call_with_tuple_impl(
+			std::forward<F>(what),
+			req,
+			std::forward<Tuple>(params),
+			std::make_index_sequence<
+					std::tuple_size< std::remove_reference_t<Tuple> >::value
+			>{} );
+}
+
+} /* namespace path_to_params_details */
+
+//
+// path_to_params_producer_t
+//
+//FIXME: document this!
+template<
+	typename Target_Type,
+	typename Subitems_Tuple >
+class path_to_params_producer_t
+	:	public ep::impl::produce_t< Target_Type, Subitems_Tuple >
+{
+	using base_type_t = ep::impl::produce_t< Target_Type, Subitems_Tuple >;
+
+public:
+	using base_type_t::base_type_t;
+
+	template< typename Handler >
+	RESTINIO_NODISCARD
+	static auto
+	invoke_handler(
+		const request_handle_t & req,
+		Handler && handler,
+		typename base_type_t::result_type & type )
+	{
+		return path_to_params_details::call_with_tuple( handler, req, type );
 	}
 };
 
@@ -627,7 +696,26 @@ path_to_tuple( Args && ...args )
 	using result_tuple_type = typename dsl_processor::result_tuple;
 	using subclauses_tuple_type = typename dsl_processor::clauses_tuple;
 
-	using producer_type = impl::special_tuple_producer_t<
+	using producer_type = impl::path_to_tuple_producer_t<
+			result_tuple_type,
+			subclauses_tuple_type >;
+
+	return producer_type{
+			subclauses_tuple_type{ std::forward<Args>(args)... }
+	};
+}
+
+//FIXME: document this!
+template< typename... Args >
+RESTINIO_NODISCARD
+auto
+path_to_params( Args && ...args )
+{
+	using dsl_processor = impl::dsl_processor< Args... >;
+	using result_tuple_type = typename dsl_processor::result_tuple;
+	using subclauses_tuple_type = typename dsl_processor::clauses_tuple;
+
+	using producer_type = impl::path_to_params_producer_t<
 			result_tuple_type,
 			subclauses_tuple_type >;
 
