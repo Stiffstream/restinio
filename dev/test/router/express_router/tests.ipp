@@ -415,12 +415,12 @@ TEST_CASE( "Http method matchers" , "[express][http_method_matchers]" )
 			create_fake_request( "/user", http_method_copy() ) ) );
 	}
 
-	SECTION( "no_one_of_methods" )
+	SECTION( "none_of_methods" )
 	{
 		express_router_t router;
 
 		router.add_handler(
-			restinio::router::no_one_of_methods(
+			restinio::router::none_of_methods(
 				http_method_get(),
 				http_method_post(),
 				http_method_delete(),
@@ -451,11 +451,11 @@ TEST_CASE( "Http method matchers" , "[express][http_method_matchers]" )
 		REQUIRE( http_method_put() == extract_last_http_method() );
 	}
 
-	SECTION( "dynamic_no_one_of_methods-1" )
+	SECTION( "dynamic_none_of_methods-1" )
 	{
 		express_router_t router;
 
-		restinio::router::dynamic_no_one_of_methods_matcher_t matcher;
+		restinio::router::dynamic_none_of_methods_matcher_t matcher;
 		matcher.add( http_method_get() );
 		matcher.add( http_method_post() );
 		matcher.add( http_method_copy() );
@@ -487,11 +487,11 @@ TEST_CASE( "Http method matchers" , "[express][http_method_matchers]" )
 		REQUIRE( http_method_put() == extract_last_http_method() );
 	}
 
-	SECTION( "dynamic_no_one_of_methods-2" )
+	SECTION( "dynamic_none_of_methods-2" )
 	{
 		express_router_t router;
 
-		restinio::router::dynamic_no_one_of_methods_matcher_t matcher;
+		restinio::router::dynamic_none_of_methods_matcher_t matcher;
 		matcher.add( http_method_get() );
 		matcher.add( http_method_post() );
 		matcher.add( http_method_copy() );
