@@ -230,7 +230,7 @@ auto server_handler( book_collection_t & book_collection )
 
 	// Disable all other methods for '/'.
 	router->add_handler(
-			restinio::router::no_one_of_methods(
+			restinio::router::none_of_methods(
 					restinio::http_method_get(), restinio::http_method_post() ),
 			"/", method_not_allowed );
 
@@ -239,7 +239,7 @@ auto server_handler( book_collection_t & book_collection )
 
 	// Disable all other methods for '/author/:author'.
 	router->add_handler(
-			restinio::router::no_one_of_methods( restinio::http_method_get() ),
+			restinio::router::none_of_methods( restinio::http_method_get() ),
 			"/author/:author", method_not_allowed );
 
 	// Handlers for '/:booknum' path.
@@ -255,7 +255,7 @@ auto server_handler( book_collection_t & book_collection )
 
 	// Disable all other methods for '/:booknum'.
 	router->add_handler(
-			restinio::router::no_one_of_methods(
+			restinio::router::none_of_methods(
 					restinio::http_method_get(),
 					restinio::http_method_post(),
 					restinio::http_method_delete() ),

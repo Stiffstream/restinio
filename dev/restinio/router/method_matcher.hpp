@@ -160,7 +160,7 @@ public :
 };
 
 //
-// fixed_size_no_one_of_matcher_t
+// fixed_size_none_of_matcher_t
 //
 /*!
  * @brief A matcher that finds a value in the vector of disabled values
@@ -171,7 +171,7 @@ public :
  * @since v.0.6.6
  */
 template< std::size_t Size >
-class fixed_size_no_one_of_matcher_t
+class fixed_size_none_of_matcher_t
 	: public fixed_size_any_of_matcher_t<Size>
 {
 	using base_type_t = fixed_size_any_of_matcher_t<Size>;
@@ -391,7 +391,7 @@ any_of_methods( Args && ...args )
 }
 
 //
-// no_one_of_methods
+// none_of_methods
 //
 /*!
  * @brief A factory function that creates a method_matcher that allows
@@ -400,7 +400,7 @@ any_of_methods( Args && ...args )
  * Usage example:
  * @code
  * router->add_handler(
- * 	restinio::router::no_one_of_methods(
+ * 	restinio::router::none_of_methods(
  * 		restinio::http_method_get(), restinio::http_method_head()),
  * 	"/users/:id",
  * 	[](const auto & req, auto &) {
@@ -416,8 +416,8 @@ any_of_methods( Args && ...args )
  */
 template< typename... Args >
 RESTINIO_NODISCARD
-impl::fixed_size_no_one_of_matcher_t< sizeof...(Args) >
-no_one_of_methods( Args && ...args )
+impl::fixed_size_none_of_matcher_t< sizeof...(Args) >
+none_of_methods( Args && ...args )
 {
 	return { std::initializer_list<http_method_id_t>{ std::forward<Args>(args)... } };
 }
@@ -484,7 +484,7 @@ public:
 };
 
 //
-// dynamic_no_one_of_methods_matcher_t
+// dynamic_none_of_methods_matcher_t
 //
 /*!
  * @brief An implementation of method_matcher that allows a method
@@ -492,7 +492,7 @@ public:
  *
  * Usage example:
  * @code
- * restinio::router::dynamic_any_of_methods_matcher_t matcher;
+ * restinio::router::dynamic_none_of_methods_matcher_t matcher;
  * if(config.handle_get_method())
  * 	matcher.add(restinio::http_method_get());
  * if(config.handle_head_method())
@@ -504,12 +504,12 @@ public:
  *
  * @since v.0.6.6
  */
-class dynamic_no_one_of_methods_matcher_t : public method_matcher_t
+class dynamic_none_of_methods_matcher_t : public method_matcher_t
 {
 	std::vector< http_method_id_t > m_methods;
 
 public:
-	dynamic_no_one_of_methods_matcher_t() = default;
+	dynamic_none_of_methods_matcher_t() = default;
 
 	RESTINIO_NODISCARD
 	bool
@@ -522,7 +522,7 @@ public:
 		return true;
 	}
 
-	dynamic_no_one_of_methods_matcher_t &
+	dynamic_none_of_methods_matcher_t &
 	add( http_method_id_t method )
 	{
 		m_methods.emplace_back( std::move(method) );
