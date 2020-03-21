@@ -141,7 +141,12 @@ struct unescape_transformer_t
 //
 // special_produce_tuple_item_clause_t
 //
-//FIXME: document this!
+/*!
+ * @brief A special case of produce-consume clause where the produced
+ * value is stored into a tuple.
+ *
+ * @since v.0.6.6
+ */
 template< typename Producer, std::size_t Index >
 class special_produce_tuple_item_clause_t
 	:	public ep::impl::consume_value_clause_t<
@@ -166,7 +171,16 @@ public:
 //
 // special_exact_fixed_size_fragment_clause_t
 //
-//FIXME: document this!
+/*!
+ * @brief A special clause type for case when
+ * exact_fixed_size_fragment_producer should be used without storing
+ * its value.
+ *
+ * This type is an equivalent of `exact_p() >> skip()`, but it can be
+ * used where a type is required.
+ *
+ * @since v.0.6.6
+ */
 template< std::size_t Size >
 class special_exact_fixed_size_fragment_clause_t
 	:	public ep::impl::consume_value_clause_t<
@@ -190,7 +204,16 @@ public:
 //
 // special_exact_fragment_clause_t
 //
-//FIXME: document this!
+/*!
+ * @brief A special clause type for case when
+ * exact_fragment_producer should be used without storing
+ * its value.
+ *
+ * This type is an equivalent of `exact_p() >> skip()`, but it can be
+ * used where a type is required.
+ *
+ * @since v.0.6.6
+ */
 class special_exact_fragment_clause_t
 	:	public ep::impl::consume_value_clause_t<
 			ep::impl::exact_fragment_producer_t,
@@ -218,6 +241,7 @@ public:
 namespace dsl_details
 {
 
+// Adds type H to type list R if Is_Producer is true.
 template< typename H, typename R, bool Is_Producer >
 struct add_type_if_necessary_impl;
 
@@ -239,14 +263,17 @@ struct add_type_if_necessary_impl< H, To<Results...>, true >
 	using type = To<Results..., typename H::result_type>;
 };
 
+// Adds type H to type list R if H is a producer.
 template< typename H, typename R >
 struct add_type_if_necessary
 	: add_type_if_necessary_impl< H, R, ep::impl::is_producer_v<H> >
 {};
 
+// Produces a type-list of producers from type-list From.
 template< typename From, typename To >
 struct result_tuple_detector;
 
+// Adds a type from Sources to Results only if this type is a producer.
 template<
 	template<class...> class From,
 	typename... Sources,
@@ -271,6 +298,7 @@ struct result_tuple_detector< From<>, To<Results...> >
 	using type = To<Results...>;
 };
 
+// Produces a type of std::tuple of producers from type-list Args_Type_List.
 template< typename Args_Type_List >
 struct detect_result_tuple
 {
@@ -284,6 +312,15 @@ struct detect_result_tuple
 template< typename Args_Type_List >
 using detect_result_tuple_t = typename detect_result_tuple<Args_Type_List>::type;
 
+// Detects an appropriate type of clause for T.
+// If T is a producer then there will be a new clause that
+// consumes a value T produces.
+// In that case Current_Index will also be incremented.
+//
+// If T is not a producer then Current_Index will be kept.
+//
+// If T is a string literal, or std::string, or string_view
+// then T will be replaced by a special clause.
 template< typename T, bool Is_Producer, std::size_t Current_Index >
 struct one_clause_type_processor
 {
@@ -319,6 +356,10 @@ struct one_clause_type_processor<T, true, Current_Index>
 	static constexpr std::size_t next_index = Current_Index + 1u;
 };
 
+// Takes a type-list of user-specified types From and produces a
+// typelist of actual clauses types To.
+//
+// The Current_Index should 0 at the first invocation.
 template< typename From, typename To, std::size_t Current_Index >
 struct clauses_type_maker;
 
@@ -355,6 +396,8 @@ struct clauses_type_maker< From<>, To<Results...>, Current_Index >
 	using type = To< Results... >;
 };
 
+// Takes a type-list of user-specified types Args_Type_List and produces a
+// typelist of actual clauses types to be used for parsing.
 template< typename Args_Type_List >
 struct make_clauses_types
 {
@@ -372,7 +415,20 @@ using make_clauses_types_t = typename make_clauses_types<Args_Type_List>::type;
 //
 // special_decay
 //
-//FIXME: document this!
+/*!
+ * @brief A special analog of std::decay meta-function that is
+ * handles array differently.
+ *
+ * The std::decay converts `char[]` into `char*` and that is not
+ * appropriate because `const char[]` is handled by
+ * exact_fixed_size_fragment_producer.
+ *
+ * The special_decay keeps the type of arrays and do not handles
+ * function pointers (it's because function pointers is not used
+ * by easy-parser).
+ *
+ * @since v.0.6.6
+ */
 template< typename T >
 struct special_decay
 {
@@ -389,9 +445,27 @@ public:
 
 } /* namespace dsl_details */
 
+//
+// dsl_processor
+//
+/*!
+ * @brief The main meta-function for processing route DSL.
+ *
+ * It takes types of user-supplied clauses/produces and makes
+ * two types:
+ *
+ * - result_tuple. This is a type of std::tuple for holding all values produced
+ *   by producers from Args. This tuple can be an empty tuple.
+ * - clauses_tuple. This a type of std::tuple with clauses for parsing of a
+ *   user's route.
+ *
+ * @since v.0.6.6
+ */
 template< typename... Args >
 struct dsl_processor
 {
+	static_assert( 0u != sizeof...(Args), "Args can be an empty list" );
+
 	using arg_types = meta::transform_t<
 			dsl_details::special_decay, meta::type_list<Args...> >;
 
@@ -403,7 +477,14 @@ struct dsl_processor
 //
 // path_to_tuple_producer_t
 //
-//FIXME: document this!
+/*!
+ * @brief An implementation of a producer for path_to_tuple case.
+ *
+ * This implementation produces a tuple and provides a way to call a
+ * request-handler with passing that tuple as a single argument.
+ *
+ * @since v.0.6.6
+ */
 template<
 	typename Target_Type,
 	typename Subitems_Tuple >
@@ -449,7 +530,13 @@ call_with_tuple_impl(
 //
 // call_with_tuple
 //
-//FIXME: document this!
+/*!
+ * @brief A helper function to call a request-handler with a tuple.
+ *
+ * This helper passes every item of a tuple as a separate parameter.
+ *
+ * @since v.0.6.6
+ */
 template< typename F, typename Tuple >
 decltype(auto)
 call_with_tuple(
@@ -471,7 +558,15 @@ call_with_tuple(
 //
 // path_to_params_producer_t
 //
-//FIXME: document this!
+/*!
+ * @brief An implementation of a producer for path_to_params case.
+ *
+ * This implementation produces a tuple and provides a way to call a
+ * request-handler with passing that tuple as a set of separate
+ * parameters.
+ *
+ * @since v.0.6.6
+ */
 template<
 	typename Target_Type,
 	typename Subitems_Tuple >
@@ -537,56 +632,6 @@ path_to_params( Args && ...args )
 	};
 }
 
-//
-// root_t
-//
-/*!
- * @brief A special type that indicates the root path.
- *
- * It should be used in the cases when a request-handler for the root
- * path (aka '/') has be defined:
- * @code
- * namespace epr = restinio::router::easy_parser_router;
- * ...
- * router->add_handler(retinio::http_method_get(),
- * 	epr::root_p(),
- * 	[](const restinio::request_handle_t & req, const epr::root_t ) {
- * 		...
- * 	});
- * @endcode
- *
- * @since v.0.6.6
- */
-struct root_t {};
-
-//
-// root_p
-//
-/*!
- * @brief A factory for the creation of special root-producer.
- *
- * It should be used in the cases when a request-handler for the root
- * path (aka '/') has be defined:
- * @code
- * namespace epr = restinio::router::easy_parser_router;
- * ...
- * router->add_handler(retinio::http_method_get(),
- * 	epr::root_p(),
- * 	[](const restinio::request_handle_t & req, const epr::root_t ) {
- * 		...
- * 	});
- * @endcode
- *
- * @since v.0.6.6
- */
-RESTINIO_NODISCARD
-inline auto
-root_p()
-{
-	return path_to_params( symbol_p( '/' ) >> just( root_t{} ) );
-}
-
-//FIXME: fix code examples in comment!
 /*!
  * @brief A factory that creates a string-producer that extracts a
  * sequence on symbols until the separator will be found.
@@ -595,17 +640,17 @@ root_p()
  * @code
  * namespace epr = restinio::router::easy_parser_router;
  *
- * struct film_by_athor_and_title { std::string author, title };
  * router->add_handler(http_method_get(),
  * 	// Route for '/film/:author/:title'
- * 	produce<film_by_athor_and_title>(
- * 		epr::exact("/film/"),
- * 		epr::path_fragment_p() >> &film_by_athor_and_title::author,
- * 		epr::slash(),
- * 		epr::path_fragment_p() >> &film_by_athor_and_title::title
+ * 	path_to_params(
+ * 		"/film/",
+ * 		epr::path_fragment_p(),
+ * 		"/",
+ * 		epr::path_fragment_p()
  * 	),
  * 	[](const restinio::request_handle_t & req,
- * 		const film_by_athor_and_title & params) {...});
+ * 		const std::string & author,
+ * 		const std::string & title) {...});
  * @endcode
  *
  * By default the separator is '/', by it can be changed by @a separator
@@ -613,16 +658,16 @@ root_p()
  * @code
  * namespace epr = restinio::router::easy_parser_router;
  *
- * struct user_group { std::string user, group };
  * router->add_handler(http_method_get(),
  * 	// Route for '/user-group'
- * 	produce<user_group>(
- * 		epr::slash(),
- * 		epr::path_fragment_p('-') >> &user_group::user,
- * 		epr::path_fragment_p() >> &user_group::group
+ * 	path_to_params(
+ * 		"/",
+ * 		epr::path_fragment_p('-'),
+ * 		epr::path_fragment_p()
  * 	),
  * 	[](const restinio::request_handle_t & req,
- * 		const user_group & params) {...});
+ * 		const std::string & user,
+ * 		const std::string & group) {...});
  * @endcode
  *
  * @since v.0.6.6
@@ -636,7 +681,6 @@ path_fragment_p( char separator = '/' )
 					any_symbol_if_not_p( separator ) >> to_container() ) );
 }
 
-//FIXME: fix code examples in comment!
 /*!
  * @brief A factory for unescape_transformer.
  *
@@ -647,17 +691,17 @@ path_fragment_p( char separator = '/' )
  * @code
  * namespace epr = restinio::router::easy_parser_router;
  *
- * struct film_by_athor_and_title { std::string author, title };
  * router->add_handler(http_method_get(),
  * 	// Route for '/film/:author/:title'
- * 	produce<film_by_athor_and_title>(
- * 		epr::exact("/film/"),
- * 		epr::path_fragment_p() >> epr::unescape() >> &film_by_athor_and_title::author,
- * 		epr::slash(),
- * 		epr::path_fragment_p() >> epr::unescape() >> &film_by_athor_and_title::title
+ * 	path_to_params(
+ * 		"/film/",
+ * 		epr::path_fragment_p() >> epr::unescape(),
+ * 		"/",
+ * 		epr::path_fragment_p() >> epr::unescape()
  * 	),
  * 	[](const restinio::request_handle_t & req,
- * 		const film_by_athor_and_title & params) {...});
+ * 		const std::string & author,
+ * 		const std::string & title) {...});
  * @endcode
  *
  * @note
@@ -668,18 +712,17 @@ path_fragment_p( char separator = '/' )
  * struct film_by_athor_and_title { std::string author, title };
  * router->add_handler(http_method_get(),
  * 	// Route for '/film/:author/:title'
- * 	produce<film_by_athor_and_title>(
- * 		epr::exact("/film/"),
+ * 	path_to_params(
+ * 		"/film/",
+ * 		epr::path_fragment_p()
+ * 			>> epr::unescape<restinio::utils::javascript_compatible_unescape_traits>(),
+ * 		"/",
  * 		epr::path_fragment_p()
  * 			>> epr::unescape<restinio::utils::javascript_compatible_unescape_traits>()
- * 			>> &film_by_athor_and_title::author,
- * 		epr::slash(),
- * 		epr::path_fragment_p()
- * 			>> epr::unescape<restinio::utils::javascript_compatible_unescape_traits>()
- * 			>> &film_by_athor_and_title::title
  * 	),
  * 	[](const restinio::request_handle_t & req,
- * 		const film_by_athor_and_title & params) {...});
+ * 		const std::string & author,
+ * 		const std::string & title) {...});
  * @endcode
  *
  * @since v.0.6.6
