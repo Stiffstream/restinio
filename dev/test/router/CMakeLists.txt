@@ -1,3 +1,7 @@
+add_subdirectory(easy_parser_router_dsl)
+add_subdirectory(easy_parser_path_to_tuple)
+add_subdirectory(easy_parser_path_to_params)
+
 add_subdirectory(express)
 add_subdirectory(express_router)
 

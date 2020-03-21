@@ -6,6 +6,10 @@ require 'restinio/boost_helper.rb'
 
 MxxRu::Cpp::composite_target {
 
+	required_prj( "test/router/easy_parser_router_dsl/prj.ut.rb" )
+	required_prj( "test/router/easy_parser_path_to_tuple/prj.ut.rb" )
+	required_prj( "test/router/easy_parser_path_to_params/prj.ut.rb" )
+
 	required_prj( "test/router/express/prj.ut.rb" )
 	required_prj( "test/router/express_router/prj.ut.rb" )
 	required_prj( "test/router/express_router_bench/prj.rb" )
