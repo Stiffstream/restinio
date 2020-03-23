@@ -294,7 +294,7 @@ class route_matcher_t
 			,	m_named_params_buffer{ std::move( named_params_buffer ) }
 			,	m_param_appender_sequence{ std::move( param_appender_sequence ) }
 		{
-			m_method_matcher.assign< simple_matcher_t >( std::move(method) );
+			assign( m_method_matcher, std::move(method) );
 		}
 
 		/*!
@@ -315,13 +315,8 @@ class route_matcher_t
 			,	m_named_params_buffer{ std::move( named_params_buffer ) }
 			,	m_param_appender_sequence{ std::move( param_appender_sequence ) }
 		{
-			using pure_method_matcher_type = std::decay_t<Method_Matcher>;
-
-			static_assert( std::is_base_of<
-					method_matcher_t, pure_method_matcher_type >::value,
-					"Method_Matcher should be derived from method_matcher_t" );
-
-			m_method_matcher.assign< pure_method_matcher_type >(
+			assign(
+					m_method_matcher,
 					std::forward<Method_Matcher>(method_matcher) );
 		}
 

@@ -357,6 +357,26 @@ public :
 	RESTINIO_NODISCARD
 	method_matcher_t &
 	operator*() const noexcept { return *m_matcher; }
+
+	friend void
+	assign( buffered_matcher_holder_t & holder, http_method_id_t method )
+	{
+		holder.assign< simple_matcher_t >( std::move(method) );
+	}
+
+	template< typename Arg >
+	friend void
+	assign( buffered_matcher_holder_t & holder, Arg && method_matcher )
+	{
+		using pure_method_matcher_type = std::decay_t<Arg>;
+
+		static_assert( std::is_base_of<
+				method_matcher_t, pure_method_matcher_type >::value,
+				"Arg should be derived from method_matcher_t" );
+
+		holder.assign< pure_method_matcher_type >(
+				std::forward<Arg>(method_matcher) );
+	}
 };
 
 } /* namespace impl */

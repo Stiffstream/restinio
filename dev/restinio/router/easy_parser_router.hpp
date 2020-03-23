@@ -13,6 +13,7 @@
 
 #include <restinio/router/impl/target_path_holder.hpp>
 #include <restinio/router/non_matched_request_handler.hpp>
+#include <restinio/router/method_matcher.hpp>
 
 #include <restinio/helpers/easy_parser.hpp>
 
@@ -74,24 +75,45 @@ public:
  */
 using router_entry_unique_ptr_t = std::unique_ptr< router_entry_t >;
 
-//FIXME: document this!
+//
+// actual_router_entry_t
+//
+/*!
+ * @brief An actual implementation of router_entry interface.
+ *
+ * @tparam Producer A type of producer that parses a route and produces
+ * a value to be used as argument(s) for request handler.
+ *
+ * @tparam Handle A type of request handler.
+ *
+ * @since v.0.6.6
+ */
 template< typename Producer, typename Handler >
 class actual_router_entry_t : public router_entry_t
 {
-	http_method_id_t m_method;
+	//! HTTP method to match.
+	restinio::router::impl::buffered_matcher_holder_t m_method_matcher;
+
+	//! Parser of a route and producer of argument(s) for request handler.
 	Producer m_producer;
+
+	//! Request handler to be used.
 	Handler m_handler;
 
 public:
-	template< typename Producer_Arg, typename Handler_Arg >
+	template<
+		typename Method_Matcher,
+		typename Producer_Arg,
+		typename Handler_Arg >
 	actual_router_entry_t(
-		http_method_id_t method,
+		Method_Matcher && method_matcher,
 		Producer_Arg && producer,
 		Handler_Arg && handler )
-		:	m_method{ method }
-		,	m_producer{ std::forward<Producer_Arg>(producer) }
+		:	m_producer{ std::forward<Producer_Arg>(producer) }
 		,	m_handler{ std::forward<Handler_Arg>(handler) }
-	{}
+	{
+		assign( m_method_matcher, std::forward<Method_Matcher>(method_matcher) );
+	}
 
 	RESTINIO_NODISCARD
 	expected_t< request_handling_status_t, no_match_t >
@@ -99,7 +121,7 @@ public:
 		const request_handle_t & req,
 		target_path_holder_t & target_path ) const override
 	{
-		if( m_method == req->header().method() )
+		if( m_method_matcher->match( req->header().method() ) )
 		{
 			auto parse_result = easy_parser::try_parse(
 					target_path.view(),
@@ -817,7 +839,62 @@ unescape()
 //
 // easy_parser_router_t
 //
-//FIXME: document this!
+/*!
+ * @brief A request router that uses easy_parser for matching requests
+ * with handlers.
+ *
+ * Usage example:
+ * @code
+ * using router_t = restinio::router::easy_parser_router_t;
+ * namespace epr = restinio::router::easy_parser_router;
+ *
+ * auto make_router(...) {
+ * 	auto router = std::make_unique<router_t>();
+ * 	...
+ * 	router->http_get(epr::path_to_params(...),
+ * 		[](const auto & req, ...) {...});
+ * 	router->http_post(epr::path_to_params(...),
+ * 		[](const auto & req, ...) {...});
+ * 	router->http_delete(epr::path_to_params(...),
+ * 		[](const auto & req, ...) {...});
+ *
+ * 	router->add_handler(
+ * 		restinio::http_method_lock(),
+ * 		epr::path_to_params(...),
+ * 		[](const auto & req, ...) {...});
+ *
+ * 	router->add_handler(
+ * 		restinio::router::any_of_methods(
+ * 			restinio::http_method_get(),
+ * 			restinio::http_method_delete(),
+ * 			restinio::http_method_post()),
+ * 		epr::path_to_params(...),
+ * 		[](const auto & req, ...) {...});
+ *
+ * 	router->add_handler(
+ * 		restinio::router::none_of_methods(
+ * 			restinio::http_method_get(),
+ * 			restinio::http_method_delete(),
+ * 			restinio::http_method_post()),
+ * 		epr::path_to_params(...),
+ * 		[](const auto & req, ...) {...});
+ *
+ * 	return router;
+ * }
+ * ...
+ * struct traits_t : public restinio::default_traits_t {
+ * 	using request_handler_t = router_t;
+ * }
+ * ...
+ * restinio::run(
+ * 	restinio::on_this_thread<traits_t>()
+ * 		.request_handler(make_router)
+ * 		...
+ * );
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
 class easy_parser_router_t
 {
 public:
@@ -863,27 +940,95 @@ public:
 		return request_rejected();
 	}
 
-	template< typename Producer, typename Handler >
+	template<
+		typename Method_Matcher,
+		typename Route_Producer,
+		typename Handler >
 	void
 	add_handler(
-		http_method_id_t method,
-		Producer && producer,
+		Method_Matcher && method_matcher,
+		Route_Producer && route,
 		Handler && handler )
 	{
 		using namespace easy_parser_router::impl;
 
-		using producer_type = std::decay_t< Producer >;
+		using producer_type = std::decay_t< Route_Producer >;
 		using handler_type = std::decay_t< Handler >;
 
 		using actual_entry_type = actual_router_entry_t<
 				producer_type, handler_type >;
 
 		auto entry = std::make_unique< actual_entry_type >(
-				method,
-				std::forward<Producer>(producer),
+				std::forward<Method_Matcher>(method_matcher),
+				std::forward<Route_Producer>(route),
 				std::forward<Handler>(handler) );
 
 		m_entries.push_back( std::move(entry) );
+	}
+
+	//! Set handler for HTTP GET request.
+	template< typename Route_Producer, typename Handler >
+	void
+	http_get(
+		Route_Producer && route,
+		Handler && handler )
+	{
+		this->add_handler(
+				http_method_get(),
+				std::forward<Route_Producer>(route),
+				std::forward<Handler>(handler) );
+	}
+
+	//! Set handler for HTTP DELETE request.
+	template< typename Route_Producer, typename Handler >
+	void
+	http_delete(
+		Route_Producer && route,
+		Handler && handler )
+	{
+		this->add_handler(
+				http_method_delete(),
+				std::forward<Route_Producer>(route),
+				std::forward<Handler>(handler) );
+	}
+
+	//! Set handler for HTTP HEAD request.
+	template< typename Route_Producer, typename Handler >
+	void
+	http_head(
+		Route_Producer && route,
+		Handler && handler )
+	{
+		this->add_handler(
+				http_method_head(),
+				std::forward<Route_Producer>(route),
+				std::forward<Handler>(handler) );
+	}
+
+	//! Set handler for HTTP POST request.
+	template< typename Route_Producer, typename Handler >
+	void
+	http_post(
+		Route_Producer && route,
+		Handler && handler )
+	{
+		this->add_handler(
+				http_method_post(),
+				std::forward<Route_Producer>(route),
+				std::forward<Handler>(handler) );
+	}
+
+	//! Set handler for HTTP PUT request.
+	template< typename Route_Producer, typename Handler >
+	void
+	http_put(
+		Route_Producer && route,
+		Handler && handler )
+	{
+		this->add_handler(
+				http_method_put(),
+				std::forward<Route_Producer>(route),
+				std::forward<Handler>(handler) );
 	}
 
 	//! Set handler for requests that don't match any route.

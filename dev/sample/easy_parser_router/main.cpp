@@ -226,33 +226,27 @@ auto server_handler( book_collection_t & book_collection )
 		return std::bind( method, handler, _1 );
 	};
 
-	router->add_handler(
-			restinio::http_method_get(),
+	router->http_get(
 			epr::path_to_params( "/" ),
 			by0( &books_handler_t::on_books_list ) );
 
-	router->add_handler(
-			restinio::http_method_get(),
+	router->http_get(
 			epr::path_to_params( "/", book_num ),
 			by( &books_handler_t::on_book_get ) );
 
-	router->add_handler(
-			restinio::http_method_put(),
+	router->http_put(
 			epr::path_to_params( "/", book_num ),
 			by( &books_handler_t::on_book_update ) );
 
-	router->add_handler(
-			restinio::http_method_delete(),
+	router->http_delete(
 			epr::path_to_params( "/", book_num ),
 			by( &books_handler_t::on_book_delete ) );
 
-	router->add_handler(
-			restinio::http_method_post(),
+	router->http_post(
 			epr::path_to_params( "/" ),
 			by0( &books_handler_t::on_new_book ) );
 
-	router->add_handler(
-			restinio::http_method_get(),
+	router->http_get(
 			epr::path_to_params(
 					"/author/",
 					epr::path_fragment_p() >> epr::unescape() ),
