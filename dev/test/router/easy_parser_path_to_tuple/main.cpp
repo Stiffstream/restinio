@@ -113,3 +113,23 @@ TEST_CASE( "two parameters" , "[path_to_tuple]" )
 			create_fake_request( "/api/v1/books/123/versions/4386/" ) ) );
 }
 
+TEST_CASE( "no parameters" , "[path_to_tuple]" )
+{
+	router_t router;
+
+	router.add_handler(
+		restinio::http_method_get(),
+		epr::path_to_tuple( "/api/v1/books" ),
+		[&]( const auto &, auto p ){
+			static_assert(std::is_same<std::tuple<>, decltype(p)>::value,
+					"std::tuple<> is expected");
+
+			return request_accepted();
+		} );
+
+	REQUIRE( request_accepted() == router(
+			create_fake_request( "/api/v1/books" ) ) );
+	REQUIRE( request_accepted() == router(
+			create_fake_request( "/api/v1/books/" ) ) );
+}
+

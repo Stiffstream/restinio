@@ -1971,7 +1971,12 @@ operator>>( P producer, F C::*member_ptr )
 //
 // tuple_item_consumer_t
 //
-//FIXME: document this!
+/*!
+ * @brief A consumer that stores a result value at the specified
+ * index in the result tuple.
+ *
+ * @since v.0.6.6
+ */
 template< std::size_t Index >
 struct tuple_item_consumer_t : public consumer_tag
 {

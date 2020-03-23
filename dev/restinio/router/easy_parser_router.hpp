@@ -594,7 +594,48 @@ public:
 
 using namespace restinio::easy_parser;
 
-//FIXME: document this!
+//
+// path_to_tuple
+// 
+/*!
+ * @brief Describe a route for a handler that accepts params from the
+ * route in form of a tuple.
+ *
+ * Usage example:
+ * @code
+ * router->add_handler(http_method_get(),
+ * 	path_to_tuple("/api/v1/users/", user_id_parser),
+ * 	[](const auto & req, const auto & params) {
+ *			auto uid = std::get<0>(params);
+ *			...
+ * 	});
+ *
+ * router->add_handler(http_method_get(),
+ * 	path_to_tuple(
+ * 		"/api/v1/books/", book_id_parser,
+ * 		"/versions/", version_id_parser),
+ * 	[](const auto & req, const auto & params) {
+ * 		auto book_id = std::get<0>(params);
+ * 		auto ver_id = std::get<1>(params);
+ * 		...
+ * 	});
+ * @endcode
+ *
+ * Please note that a route can contain no params at all. In that case
+ * an empty tuple will be passed as an argument to the request handler:
+ * @code
+ * router->add_handler(http_method_get(),
+ * 	path_to_tuple("/api/v1/books"),
+ * 	[](const auto & req, auto params) {
+ * 		static_assert(
+ * 			std::is_same<std::tuple<>, decltype(params)>::value,
+ * 			"type std::tuple<> is expected");
+ * 		...
+ * 	});
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
 template< typename... Args >
 RESTINIO_NODISCARD
 auto
@@ -613,7 +654,42 @@ path_to_tuple( Args && ...args )
 	};
 }
 
-//FIXME: document this!
+//
+// path_to_params
+//
+/*!
+ * @brief Describe a route for a handler that accepts params from the
+ * route in form of a list of separate arguments.
+ *
+ * Usage example:
+ * @code
+ * router->add_handler(http_method_get(),
+ * 	path_to_params("/api/v1/users/", user_id_parser),
+ * 	[](const auto & req, const auto & uid) {
+ *			...
+ * 	});
+ *
+ * router->add_handler(http_method_get(),
+ * 	path_to_params(
+ * 		"/api/v1/books/", book_id_parser,
+ * 		"/versions/", version_id_parser),
+ * 	[](const auto & req, const auto & book_id, const auto & ver_id) {
+ * 		...
+ * 	});
+ * @endcode
+ *
+ * Please note that a route can contain no params at all. In that case
+ * the request handler will receive just one parameter: a requst_handle.
+ * @code
+ * router->add_handler(http_method_get(),
+ * 	path_to_params("/api/v1/books"),
+ * 	[](const auto & req) {
+ * 		...
+ * 	});
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
 template< typename... Args >
 RESTINIO_NODISCARD
 auto

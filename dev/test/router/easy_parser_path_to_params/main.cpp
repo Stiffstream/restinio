@@ -113,3 +113,20 @@ TEST_CASE( "two parameters" , "[path_to_params]" )
 			create_fake_request( "/api/v1/books/123/versions/4386/" ) ) );
 }
 
+TEST_CASE( "no parameters" , "[path_to_params]" )
+{
+	router_t router;
+
+	router.add_handler(
+		restinio::http_method_get(),
+		epr::path_to_params( "/api/v1/books" ),
+		[&]( const auto & ){
+			return request_accepted();
+		} );
+
+	REQUIRE( request_accepted() == router(
+			create_fake_request( "/api/v1/books" ) ) );
+	REQUIRE( request_accepted() == router(
+			create_fake_request( "/api/v1/books/" ) ) );
+}
+
