@@ -1626,19 +1626,14 @@ struct caseless_particular_symbol_predicate_t
 	char m_expected;
 
 	caseless_particular_symbol_predicate_t( char v ) noexcept
-		:	m_expected{ static_cast<char>(
-//FIXME: there should be more compact way of translate a char to lower case!
-				restinio::impl::to_lower_lut<unsigned char>()[
-						static_cast<unsigned char>(v)]) }
+		:	m_expected{ restinio::impl::to_lower_case( v ) }
 	{}
 
 	RESTINIO_NODISCARD
 	bool
 	operator()( const char actual ) const noexcept
 	{
-		return m_expected == static_cast<char>(
-				restinio::impl::to_lower_lut<unsigned char>()[
-						static_cast<unsigned char>(actual)]);
+		return m_expected == restinio::impl::to_lower_case(actual);
 	}
 };
 
@@ -2009,9 +2004,7 @@ struct to_lower_transformer_t : public transformer_tag< std::string >
 		result_type result{ std::move(input) };
 		std::transform( result.begin(), result.end(), result.begin(),
 			[]( unsigned char ch ) -> char {
-				return static_cast<char>(
-						restinio::impl::to_lower_lut<unsigned char>()[ch]
-				);
+				return restinio::impl::to_lower_case(ch);
 			} );
 
 		return result;
