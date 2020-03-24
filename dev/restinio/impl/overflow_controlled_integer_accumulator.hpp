@@ -68,11 +68,15 @@ is_greater_than_maximum( Storage_Type, Storage_Type )
  *
  * @since v.0.6.2
  */
-template<typename T>
+template<
+	typename T,
+	typename Storage_Type = std::make_unsigned_t<T>,
+	Storage_Type Maximum = static_cast<Storage_Type>(
+			std::numeric_limits<T>::max()) >
 class overflow_controlled_integer_accumulator_t
 {
 	//! Type to be used for holding intermediate value.
-	using storage_type = std::make_unsigned_t<T>;
+	using storage_type = Storage_Type;
 
 	//! The current value of the accumulator.
 	storage_type m_current{};
@@ -90,15 +94,12 @@ public :
 		using namespace overflow_controlled_integer_accumulator_details;
 
 		constexpr storage_type multiplier{10};
-		constexpr storage_type maximum{ static_cast<storage_type>(
-				std::numeric_limits<T>::max())
-		};
 
 		const storage_type updated_value = m_current * multiplier +
 				static_cast<storage_type>(digit);
 
 		if( updated_value < m_current ||
-				is_greater_than_maximum<T>( updated_value, maximum ) )
+				is_greater_than_maximum<T>( updated_value, Maximum ) )
 			m_overflow_detected = true;
 		else
 			m_current = updated_value;

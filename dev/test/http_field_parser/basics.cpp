@@ -41,7 +41,7 @@ struct value_with_opt_params_t
 	param_storage_t m_params;
 };
 
-TEST_CASE( "positive decimal number", "[non_negative_decimal_number_p]" )
+TEST_CASE( "non-negative decimal number", "[non_negative_decimal_number_p]" )
 {
 	using namespace restinio::http_field_parsers;
 //	using namespace restinio::easy_parser;
@@ -109,6 +109,102 @@ TEST_CASE( "positive decimal number", "[non_negative_decimal_number_p]" )
 
 		REQUIRE( result );
 		REQUIRE( 123456u == *result );
+	}
+}
+
+TEST_CASE( "decimal number", "[decimal_number_p]" )
+{
+	using namespace restinio::http_field_parsers;
+//	using namespace restinio::easy_parser;
+
+	{
+		const auto result =
+			try_parse( "", decimal_number_p<int>() );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result =
+			try_parse( "1", decimal_number_p<int>() );
+
+		REQUIRE( result );
+		REQUIRE( 1 == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "+1", decimal_number_p<int>() );
+
+		REQUIRE( result );
+		REQUIRE( 1 == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "-1", decimal_number_p<int>() );
+
+		REQUIRE( result );
+		REQUIRE( -1 == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "123456", decimal_number_p<int>() );
+
+		REQUIRE( result );
+		REQUIRE( 123456 == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "-123456", decimal_number_p<int>() );
+
+		REQUIRE( result );
+		REQUIRE( -123456 == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "123456w",
+					produce<int>(
+							decimal_number_p<int>() >> as_result(),
+							symbol('w')
+					)
+			);
+
+		REQUIRE( result );
+		REQUIRE( 123456 == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "-32768", decimal_number_p<std::int16_t>() );
+
+		REQUIRE( result );
+		REQUIRE( -32768 == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "-32769", decimal_number_p<std::int16_t>() );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result =
+			try_parse( "32767", decimal_number_p<std::int16_t>() );
+
+		REQUIRE( result );
+		REQUIRE( 32767 == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "32768", decimal_number_p<std::int16_t>() );
+
+		REQUIRE( !result );
 	}
 }
 

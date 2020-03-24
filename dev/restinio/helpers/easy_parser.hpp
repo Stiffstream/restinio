@@ -1746,6 +1746,53 @@ public:
 };
 
 //
+// try_parse_digits
+//
+//FIXME: document this!
+template< typename T, typename Value_Accumulator >
+RESTINIO_NODISCARD
+expected_t< T, parse_error_t >
+try_parse_digits( source_t & from, Value_Accumulator acc ) noexcept
+{
+	source_t::content_consumer_t consumer{ from };
+
+	int symbols_processed{};
+
+	for( auto ch = from.getch(); !ch.m_eof; ch = from.getch() )
+	{
+		if( is_digit(ch.m_ch) )
+		{
+			acc.next_digit( static_cast<T>(ch.m_ch - '0') );
+
+			if( acc.overflow_detected() )
+				return make_unexpected( parse_error_t{
+						consumer.started_at(),
+						error_reason_t::illegal_value_found
+				} );
+
+			++symbols_processed;
+		}
+		else
+		{
+			from.putback();
+			break;
+		}
+	}
+
+	if( !symbols_processed )
+		// There is nothing extracted from the input stream.
+		return make_unexpected( parse_error_t{
+				from.current_position(),
+				error_reason_t::pattern_not_found
+		} );
+	else
+	{
+		consumer.commit();
+		return acc.value();
+	}
+}
+
+//
 // non_negative_decimal_number_producer_t
 //
 /*!
@@ -1764,44 +1811,105 @@ public:
 	expected_t< T, parse_error_t >
 	try_parse( source_t & from ) const noexcept
 	{
-		restinio::impl::overflow_controlled_integer_accumulator_t<T> acc;
+		return try_parse_digits< T >(
+				from,
+				restinio::impl::overflow_controlled_integer_accumulator_t<T>{} );
+	}
+};
 
+//
+// decimal_number_producer_t
+//
+/*!
+ * @brief A producer for the case when a signed decimal number is
+ * expected in the input stream.
+ *
+ * In the case of success returns the extracted number.
+ *
+ * @since v.0.6.6
+ */
+template< typename T >
+class decimal_number_producer_t : public producer_tag<T>
+{
+	static_assert( std::is_signed<T>::value,
+			"decimal_number_producer_t can be used only for signed types" );
+
+public:
+	using try_parse_result_type = expected_t< T, parse_error_t >;
+
+	RESTINIO_NODISCARD
+	try_parse_result_type
+	try_parse( source_t & from ) const noexcept
+	{
 		source_t::content_consumer_t consumer{ from };
 
-		int symbols_processed{};
-
-		for( auto ch = from.getch(); !ch.m_eof; ch = from.getch() )
+		auto sign_ch = from.getch();
+		if( !sign_ch.m_eof )
 		{
-			if( is_digit(ch.m_ch) )
-			{
-				acc.next_digit( static_cast<T>(ch.m_ch - '0') );
+			const auto r = try_parse_with_this_first_symbol( from, sign_ch.m_ch );
+			if( r )
+				consumer.commit();
 
-				if( acc.overflow_detected() )
-					return make_unexpected( parse_error_t{
-							consumer.started_at(),
-							error_reason_t::illegal_value_found
-					} );
-
-				++symbols_processed;
-			}
-			else
-			{
-				from.putback();
-				break;
-			}
+			return r;
 		}
-
-		if( !symbols_processed )
-			// There is nothing extracted from the input stream.
+		else
 			return make_unexpected( parse_error_t{
 					from.current_position(),
 					error_reason_t::pattern_not_found
 			} );
-		else
+	}
+
+private:
+	RESTINIO_NODISCARD
+	static try_parse_result_type
+	try_parse_with_this_first_symbol(
+		source_t & from,
+		char first_symbol ) noexcept
+	{
+		using restinio::impl::overflow_controlled_integer_accumulator_t;
+
+		using UT = std::make_unsigned_t<T>;
+
+		static constexpr auto unsigned_minimum_val =
+				static_cast<UT>(std::numeric_limits<T>::min());
+		static constexpr auto unsigned_maximum_val =
+				static_cast<UT>(std::numeric_limits<T>::max());
+
+		static_assert(
+				unsigned_minimum_val == (unsigned_maximum_val + 1u),
+				"The integer representation is expected to be two's complement" );
+
+		if( '-' == first_symbol )
 		{
-			consumer.commit();
-			return acc.value();
+			const auto r = try_parse_digits< T >(
+					from,
+					overflow_controlled_integer_accumulator_t<
+							T,
+							UT,
+							unsigned_minimum_val >{} );
+			if( r )
+				return -(*r);
+			else
+				return r;
 		}
+		else if( '+' == first_symbol )
+		{
+			return try_parse_digits< T >(
+					from,
+					overflow_controlled_integer_accumulator_t< T >{} );
+		}
+		else if( is_digit(first_symbol) )
+		{
+			from.putback();
+			return try_parse_digits< T >(
+					from,
+					overflow_controlled_integer_accumulator_t< T >{} );
+		}
+
+		return make_unexpected( parse_error_t{
+				from.current_position(),
+				error_reason_t::pattern_not_found
+		} );
 	}
 };
 
@@ -2800,6 +2908,7 @@ non_negative_decimal_number_p() noexcept
 	return impl::non_negative_decimal_number_producer_t<T>{};
 }
 
+//FIXME: remove in v.0.7.0!
 //
 // positive_decimal_number_p
 //
@@ -2817,6 +2926,45 @@ inline auto
 positive_decimal_number_producer() noexcept
 {
 	return non_negative_decimal_number_p<T>();
+}
+
+//
+// decimal_number_p
+//
+/*!
+ * @brief A factory function to create a decimal_number_producer.
+ *
+ * Parses numbers in the form:
+@verbatim
+number = [sign] DIGIT+
+sign = '-' | '+'
+@endverbatim
+ *
+ * @note
+ * This parser consumes all digits until the first non-digit symbol will be
+ * found in the input. It means that in the case of `-1111someword` the leading
+ * minus sign and thefirst four digits (e.g. `-1111`) will be extracted from
+ * the input and the remaining part (e.g. `someword`) won't be consumed by this
+ * parser.
+ *
+ * @attention
+ * Can be used only for singed number types (e.g. short, int, long,
+ * std::int32_t and so on).
+ *
+ * @return a producer that expects a decimal number in the input stream
+ * and returns it if a number is found.
+ * 
+ * @since v.0.6.6
+ */
+template< typename T >
+RESTINIO_NODISCARD
+inline auto
+decimal_number_p() noexcept
+{
+	static_assert( std::is_signed<T>::value,
+			"decimal_number_p() can be used only for signed numeric types" );
+
+	return impl::decimal_number_producer_t<T>{};
 }
 
 //
