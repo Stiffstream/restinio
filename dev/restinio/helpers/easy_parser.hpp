@@ -1748,7 +1748,23 @@ public:
 //
 // try_parse_digits
 //
-//FIXME: document this!
+/*!
+ * @brief Helper function for parsing integers.
+ *
+ * Usage example:
+ * @code
+ * // For the case of unsigned or positive signed integer:
+ * auto r = try_parse_digits<unsigned int>(from,
+ * 		restinio::impl::overflow_controlled_integer_accumulator_t<unsigned int>{});
+ * // For the case of negative signed integer.
+ * auto r = try_parse_digits<short>(from
+ * 		restinio::impl::overflow_controlled_integer_accumulator_t<
+ * 				short,
+ * 				restinio::impl::check_negative_extremum>{});
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
 template< typename T, typename Value_Accumulator >
 RESTINIO_NODISCARD
 expected_t< T, parse_error_t >
@@ -1867,17 +1883,7 @@ private:
 		char first_symbol ) noexcept
 	{
 		using restinio::impl::overflow_controlled_integer_accumulator_t;
-
-		using UT = std::make_unsigned_t<T>;
-
-		static constexpr auto unsigned_minimum_val =
-				static_cast<UT>(std::numeric_limits<T>::min());
-		static constexpr auto unsigned_maximum_val =
-				static_cast<UT>(std::numeric_limits<T>::max());
-
-		static_assert(
-				unsigned_minimum_val == (unsigned_maximum_val + 1u),
-				"The integer representation is expected to be two's complement" );
+		using restinio::impl::check_negative_extremum;
 
 		if( '-' == first_symbol )
 		{
@@ -1885,8 +1891,7 @@ private:
 					from,
 					overflow_controlled_integer_accumulator_t<
 							T,
-							UT,
-							unsigned_minimum_val >{} );
+							check_negative_extremum >{} );
 			if( r )
 				return -(*r);
 			else
