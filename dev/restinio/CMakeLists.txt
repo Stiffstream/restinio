@@ -166,10 +166,10 @@ SET(RESTINIO_HEADERS_ALL
 
 	so5/so_timer_manager.hpp
 
-	third_party/expected-lite/expected.hpp
-	third_party/optional-lite/optional.hpp
-	third_party/string-view-lite/string_view.hpp
-	third_party/variant-lite/variant.hpp
+	third_party/nonstd/expected.hpp
+	third_party/nonstd/optional.hpp
+	third_party/nonstd/string_view.hpp
+	third_party/nonstd/variant.hpp
 
 	transforms/zlib.hpp
 
@@ -197,6 +197,15 @@ SET(RESTINIO_HEADERS_ALL
 	websocket/impl/ws_parser.hpp
 	websocket/impl/ws_protocol_validator.hpp
 	)
+	
+IF (RESTINIO_FIND_THIRD_PARTY)
+	list(REMOVE_ITEM RESTINIO_HEADERS_ALL
+		third_party/nonstd/expected.hpp
+		third_party/nonstd/optional.hpp
+		third_party/nonstd/string_view.hpp
+		third_party/nonstd/variant.hpp
+		)
+ENDIF()
 
 IF (RESTINIO_INSTALL)
 	include(GNUInstallDirs)
