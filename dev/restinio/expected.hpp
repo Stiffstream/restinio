@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "third_party/expected-lite/expected.hpp"
+#include "expected-lite/expected.hpp"
 
 namespace restinio
 {
