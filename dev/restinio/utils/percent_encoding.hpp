@@ -400,7 +400,7 @@ try_unescape_percent_encoding( const string_view_t data )
 	if( !r )
 		return make_unexpected( std::move(r.error()) );
 
-	return result;
+	return std::move(result);
 }
 
 template< typename Traits = restinio_default_unescape_traits >
