@@ -37,6 +37,15 @@ namespace router
  */
 struct method_matcher_t
 {
+	method_matcher_t( const method_matcher_t & ) = default;
+	method_matcher_t &
+	operator=( const method_matcher_t & ) = default;
+
+	method_matcher_t( method_matcher_t && ) = default;
+	method_matcher_t &
+	operator=( method_matcher_t && ) = default;
+
+	method_matcher_t() = default;
 	virtual ~method_matcher_t() = default;
 
 	//! Is the specified method can be applied to a route?

@@ -345,7 +345,7 @@ public:
 	{}
 	parse_query_failure_t(
 		utils::unescape_percent_encoding_failure_t && failure )
-		:	m_description{ std::move(failure.giveout_description()) }
+		:	m_description{ failure.giveout_description() }
 	{}
 
 	//! Get a reference to the description of the failure.
@@ -480,8 +480,6 @@ try_parse_query(
 				return make_unexpected( parse_query_failure_t{
 						std::move(value_unescape_result.error())
 					} );
-
-			string_view_t value;
 
 			parameters.emplace_back(
 					string_view_t{ &data_buffer[ pos ], *key_unescape_result },

@@ -848,7 +848,10 @@ class response_builder_t< chunked_output_t > final
 
 			if( appendix_begin != appendix_end )
 			{
-				bufs.emplace_back( const_buffer( appendix_begin, appendix_end - appendix_begin ) );
+				bufs.emplace_back( const_buffer(
+						appendix_begin,
+						static_cast<std::size_t>(appendix_end - appendix_begin)
+					) );
 			}
 
 			m_chunks.clear();
