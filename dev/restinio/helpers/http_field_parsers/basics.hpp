@@ -546,7 +546,7 @@ public :
 		std::string value;
 		const auto try_result = try_parse_value( from, value );
 		if( !try_result )
-			return value;
+			return std::move(value);
 		else
 			return make_unexpected( *try_result );
 	}

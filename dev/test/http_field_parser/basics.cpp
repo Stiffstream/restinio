@@ -1726,7 +1726,7 @@ TEST_CASE( "comment producer", "[comment_producer]" )
 		const auto result = try_parse("(abc\\(def\\)ghk)");
 
 		REQUIRE( result );
-		REQUIRE( "abc(def)ghk" );
+		REQUIRE( "abc(def)ghk" == *result );
 	}
 
 	{
