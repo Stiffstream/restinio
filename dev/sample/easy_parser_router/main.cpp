@@ -225,11 +225,28 @@ auto server_handler( book_collection_t & book_collection )
 		using namespace std::placeholders;
 		return std::bind( method, handler, _1 );
 	};
+	auto method_not_allowed = []( const auto & req, const auto & ) {
+		return req->create_response( restinio::status_method_not_allowed() )
+				.connection_close()
+				.done();
+	};
 
+	// Handlers for '/' path.
 	router->http_get(
 			epr::path_to_params( "/" ),
 			by0( &books_handler_t::on_books_list ) );
+	router->http_post(
+			epr::path_to_params( "/" ),
+			by0( &books_handler_t::on_new_book ) );
 
+	// Disable all other methods for '/'.
+	router->add_handler(
+			restinio::router::none_of_methods(
+					restinio::http_method_get(), restinio::http_method_post() ),
+			epr::path_to_tuple( "/" ),
+			method_not_allowed );
+
+	// Handlers for '/:booknum' path.
 	router->http_get(
 			epr::path_to_params( "/", book_num ),
 			by( &books_handler_t::on_book_get ) );
@@ -242,15 +259,29 @@ auto server_handler( book_collection_t & book_collection )
 			epr::path_to_params( "/", book_num ),
 			by( &books_handler_t::on_book_delete ) );
 
-	router->http_post(
-			epr::path_to_params( "/" ),
-			by0( &books_handler_t::on_new_book ) );
+	// Disable all other methods for '/:booknum'.
+	router->add_handler(
+			restinio::router::none_of_methods(
+					restinio::http_method_get(),
+					restinio::http_method_post(),
+					restinio::http_method_delete() ),
+			epr::path_to_tuple( "/", book_num ),
+			method_not_allowed );
 
+	// Handler for '/author/:author' path.
 	router->http_get(
 			epr::path_to_params(
 					"/author/",
 					epr::path_fragment_p() >> epr::unescape() ),
 			by( &books_handler_t::on_author_get ) );
+
+	// Disable all other methods for '/author/:author'.
+	router->add_handler(
+			restinio::router::none_of_methods( restinio::http_method_get() ),
+			epr::path_to_tuple(
+					"/author/",
+					epr::path_fragment_p() >> epr::unescape() ),
+			method_not_allowed );
 
 	router->non_matched_request_handler(
 		[]( auto req ){
