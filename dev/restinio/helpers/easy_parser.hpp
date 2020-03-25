@@ -1619,7 +1619,7 @@ struct not_particular_symbol_predicate_t
  * @brief A predicate for cases where the case-insensitive match of expected
  * and actual symbols is required.
  *
- * @since v.0.6.1
+ * @since v.0.6.6
  */
 struct caseless_particular_symbol_predicate_t
 {

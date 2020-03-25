@@ -1158,7 +1158,7 @@ weight_p() noexcept
 			ows(),
 			symbol(';'),
 			ows(),
-			alternatives( symbol('q'), symbol('Q') ),
+			caseless_symbol('q'),
 			symbol('='),
 			qvalue_p() >> as_result()
 		);

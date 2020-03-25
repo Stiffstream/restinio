@@ -43,6 +43,15 @@ to_lower_case( char ch )
 		);
 }
 
+RESTINIO_NODISCARD
+inline char
+to_lower_case( unsigned char ch )
+{
+	return static_cast<char>(
+			to_lower_lut<unsigned char>()[ch]
+		);
+}
+
 } /* namespace impl */
 
 } /* namespace restinio */

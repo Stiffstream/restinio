@@ -183,10 +183,7 @@ RESTINIO_NODISCARD
 inline auto
 make_bytes_prefix_parser()
 {
-	return sequence(
-			symbol('b'), symbol('y'), symbol('t'), symbol('e'), symbol('s'),
-			symbol('=')
-	);
+	return sequence( exact( "bytes" ), symbol('=') );
 }
 
 /*!
