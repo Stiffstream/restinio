@@ -17,6 +17,7 @@ option(RESTINIO_INSTALL_SAMPLES "Build install samples." ${RESTINIO_MASTER_PROJE
 option(RESTINIO_BENCH "Build the test target." ${RESTINIO_MASTER_PROJECT})
 option(RESTINIO_INSTALL_BENCHES "Build install samples." ${RESTINIO_MASTER_PROJECT})
 option(RESTINIO_FIND_DEPS "Use `find_package()` for including RESTinio dependencies." OFF)
+option(RESTINIO_FIND_THIRD_PARTY "Use `find_package()` for including RESTinio third_party includes." OFF)
 
 option(RESTINIO_ALLOW_SOBJECTIZER "Allow add_subdirectory(so_5) in the main RESTinio CMakeLists.txt" ${RESTINIO_MASTER_PROJECT})
 
@@ -82,10 +83,18 @@ IF (RESTINIO_MASTER_PROJECT)
 
 		# fmtlib
 		find_package(fmt REQUIRED)
+		
+		IF (RESTINIO_FIND_THIRD_PARTY)
+			find_package(expected-lite REQUIRED)
+			find_package(optional-lite REQUIRED)
+			find_package(string-view-lite REQUIRED)
+			find_package(variant-lite REQUIRED)
+		ENDIF()
 	ELSE ()
 		# Add necessary dependecies.
 
 		include_directories("${CMAKE_SOURCE_DIR}/clara")
+		include_directories("${CMAKE_SOURCE_DIR}/third_party")
 
 		# HTTP parser
 		IF (RESTINIO_USE_EXTERNAL_HTTP_PARSER)
