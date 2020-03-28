@@ -51,13 +51,20 @@ IF (RESTINIO_FIND_DEPS)
 	message(STATUS "RESTinio dependencies are included with `find_package()`")
 
 	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE fmt::fmt-header-only)
-	IF (RESTINIO_FIND_THIRD_PARTY)
+		
+	IF (RESTINIO_USE_EXTERNAL_EXPECTED_LITE)
 		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE nonstd::expected-lite)
+	ENDIF()
+	IF (RESTINIO_USE_EXTERNAL_OPTIONAL_LITE)
 		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE nonstd::optional-lite)
+	ENDIF()
+	IF (RESTINIO_USE_EXTERNAL_STRING_VIEW_LITE)
 		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE nonstd::string-view-lite)
+	ENDIF()
+	IF (RESTINIO_USE_EXTERNAL_VARIANT_LITE)
 		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE nonstd::variant-lite)
 	ENDIF()
-	
+
 	IF (RESTINIO_USE_EXTERNAL_HTTP_PARSER)
 		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE http_parser)
 	ELSE ()
@@ -197,14 +204,19 @@ SET(RESTINIO_HEADERS_ALL
 	websocket/impl/ws_parser.hpp
 	websocket/impl/ws_protocol_validator.hpp
 	)
+
 	
-IF (RESTINIO_FIND_THIRD_PARTY)
-	list(REMOVE_ITEM RESTINIO_HEADERS_ALL
-		third_party/nonstd/expected.hpp
-		third_party/nonstd/optional.hpp
-		third_party/nonstd/string_view.hpp
-		third_party/nonstd/variant.hpp
-		)
+IF (RESTINIO_USE_EXTERNAL_EXPECTED_LITE)
+	list(REMOVE_ITEM RESTINIO_HEADERS_ALL third_party/nonstd/expected.hpp)
+ENDIF()
+IF (RESTINIO_USE_EXTERNAL_OPTIONAL_LITE)
+	list(REMOVE_ITEM RESTINIO_HEADERS_ALL third_party/nonstd/optional.hpp)
+ENDIF()
+IF (RESTINIO_USE_EXTERNAL_STRING_VIEW_LITE)
+	list(REMOVE_ITEM RESTINIO_HEADERS_ALL third_party/nonstd/variant.hpp)
+ENDIF()
+IF (RESTINIO_USE_EXTERNAL_VARIANT_LITE)
+	list(REMOVE_ITEM RESTINIO_HEADERS_ALL third_party/nonstd/string_view.hpp)
 ENDIF()
 
 IF (RESTINIO_INSTALL)
