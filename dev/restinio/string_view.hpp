@@ -10,7 +10,7 @@
 
 #include <memory>
 
-#include "third_party/string-view-lite/string_view.hpp"
+#include "nonstd/string_view.hpp"
 
 namespace restinio
 {

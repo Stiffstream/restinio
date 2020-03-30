@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "third_party/variant-lite/variant.hpp"
+#include "nonstd/variant.hpp"
 
 namespace restinio
 {
