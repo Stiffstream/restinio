@@ -69,7 +69,7 @@ public :
 
 		auto resp = init_resp( req->create_response() );
 
-		if( 0 != booknum && booknum < m_books.size() )
+		if( 0 != booknum && booknum <= m_books.size() )
 		{
 			const auto & b = m_books[ booknum - 1 ];
 			resp.set_body(
@@ -142,7 +142,7 @@ public :
 		{
 			auto b = json_dto::from_json< book_t >( req->body() );
 
-			if( 0 != booknum && booknum < m_books.size() )
+			if( 0 != booknum && booknum <= m_books.size() )
 			{
 				m_books[ booknum - 1 ] = b;
 			}
@@ -167,7 +167,7 @@ public :
 
 		auto resp = init_resp( req->create_response() );
 
-		if( 0 != booknum && booknum < m_books.size() )
+		if( 0 != booknum && booknum <= m_books.size() )
 		{
 			const auto & b = m_books[ booknum - 1 ];
 			resp.set_body(
@@ -193,7 +193,7 @@ private :
 	init_resp( RESP resp )
 	{
 		resp
-			.append_header( "Server", "RESTinio sample server /v.0.2" )
+			.append_header( "Server", "RESTinio sample server /v.0.6" )
 			.append_header_date_field()
 			.append_header( "Content-Type", "text/plain; charset=utf-8" );
 
@@ -218,17 +218,48 @@ auto server_handler( book_collection_t & book_collection )
 		return std::bind( method, handler, _1, _2 );
 	};
 
+	auto method_not_allowed = []( const auto & req, auto ) {
+			return req->create_response( restinio::status_method_not_allowed() )
+					.connection_close()
+					.done();
+		};
+
+	// Handlers for '/' path.
 	router->http_get( "/", by( &books_handler_t::on_books_list ) );
-
-	router->http_get( R"(/:booknum(\d+))", by( &books_handler_t::on_book_get ) );
-
-	router->http_get( "/author/:author", by( &books_handler_t::on_author_get ) );
-
 	router->http_post( "/", by( &books_handler_t::on_new_book ) );
 
-	router->http_put( R"(/:booknum(\d+))", by( &books_handler_t::on_book_update ) );
+	// Disable all other methods for '/'.
+	router->add_handler(
+			restinio::router::none_of_methods(
+					restinio::http_method_get(), restinio::http_method_post() ),
+			"/", method_not_allowed );
 
-	router->http_delete( R"(/:booknum(\d+))", by( &books_handler_t::on_book_delete ) );
+	// Handler for '/author/:author' path.
+	router->http_get( "/author/:author", by( &books_handler_t::on_author_get ) );
+
+	// Disable all other methods for '/author/:author'.
+	router->add_handler(
+			restinio::router::none_of_methods( restinio::http_method_get() ),
+			"/author/:author", method_not_allowed );
+
+	// Handlers for '/:booknum' path.
+	router->http_get(
+			R"(/:booknum(\d+))",
+			by( &books_handler_t::on_book_get ) );
+	router->http_put(
+			R"(/:booknum(\d+))",
+			by( &books_handler_t::on_book_update ) );
+	router->http_delete(
+			R"(/:booknum(\d+))",
+			by( &books_handler_t::on_book_delete ) );
+
+	// Disable all other methods for '/:booknum'.
+	router->add_handler(
+			restinio::router::none_of_methods(
+					restinio::http_method_get(),
+					restinio::http_method_post(),
+					restinio::http_method_delete() ),
+			R"(/:booknum(\d+))", method_not_allowed );
 
 	return router;
 }

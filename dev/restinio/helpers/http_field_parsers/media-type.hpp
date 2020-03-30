@@ -66,10 +66,10 @@ struct media_type_value_t
 	make_default_parser()
 	{
 		return produce< media_type_value_t >(
-			token_producer() >> to_lower() >> &media_type_value_t::type,
+			token_p() >> to_lower() >> &media_type_value_t::type,
 			symbol('/'),
-			token_producer() >> to_lower() >> &media_type_value_t::subtype,
-			params_with_value_producer() >> &media_type_value_t::parameters
+			token_p() >> to_lower() >> &media_type_value_t::subtype,
+			params_with_value_p() >> &media_type_value_t::parameters
 		);
 	}
 
@@ -93,21 +93,21 @@ struct media_type_value_t
 	make_weight_aware_parser()
 	{
 		return produce< media_type_value_t >(
-			token_producer() >> to_lower() >> &media_type_value_t::type,
+			token_p() >> to_lower() >> &media_type_value_t::type,
 			symbol('/'),
-			token_producer() >> to_lower() >> &media_type_value_t::subtype,
+			token_p() >> to_lower() >> &media_type_value_t::subtype,
 			produce< parameter_container_t >(
 				repeat( 0, N,
 					produce< parameter_t >(
-						not_clause( weight_producer() >> skip() ),
+						not_clause( weight_p() >> skip() ),
 						ows(),
 						symbol(';'),
 						ows(),
-						token_producer() >> to_lower() >> &parameter_t::first,
+						token_p() >> to_lower() >> &parameter_t::first,
 						symbol('='),
 						alternatives(
-							token_producer() >> &parameter_t::second,
-							quoted_string_producer() >> &parameter_t::second
+							token_p() >> &parameter_t::second,
+							quoted_string_p() >> &parameter_t::second
 						)
 					) >> to_container()
 				)

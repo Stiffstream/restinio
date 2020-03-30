@@ -45,6 +45,11 @@ int main()
 	}
 
 	{
+		using T = transform_t<std::decay, type_list<int, int &, const int &>>;
+		static_assert(std::is_same<T, type_list<int, int, int>>::value, "!Ok");
+	}
+
+	{
 		constexpr bool v = all_of_v<std::is_integral, int, char, long>;
 		static_assert(v, "!Ok");
 	}
@@ -52,6 +57,12 @@ int main()
 	{
 		constexpr bool v = all_of_v<std::is_integral, int, float, long>;
 		static_assert(!v, "!Ok");
+	}
+
+	{
+		constexpr bool v = all_of_v< std::is_integral,
+				transform_t<std::decay, type_list<int &, char &, long&> > >;
+		static_assert(v, "!Ok");
 	}
 
 	return 0;

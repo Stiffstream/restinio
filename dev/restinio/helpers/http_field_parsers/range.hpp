@@ -154,20 +154,20 @@ make_byte_range_spec_parser()
 	return produce< byte_range_spec_t<T> >(
 			alternatives(
 				produce< double_ended_range_t<T> >(
-						positive_decimal_number_producer<T>()
+						non_negative_decimal_number_p<T>()
 								>> &double_ended_range_t<T>::first,
 						symbol('-'),
-						positive_decimal_number_producer<T>()
+						non_negative_decimal_number_p<T>()
 								>> &double_ended_range_t<T>::last
 				) >> as_result(),
 				produce< open_ended_range_t<T> >(
-						positive_decimal_number_producer<T>()
+						non_negative_decimal_number_p<T>()
 								>> &open_ended_range_t<T>::first,
 						symbol('-')
 				) >> as_result(),
 				produce< suffix_length_t<T> >(
 						symbol('-'),
-						positive_decimal_number_producer<T>()
+						non_negative_decimal_number_p<T>()
 								>> &suffix_length_t<T>::length
 				) >> as_result()
 			)
@@ -183,10 +183,7 @@ RESTINIO_NODISCARD
 inline auto
 make_bytes_prefix_parser()
 {
-	return sequence(
-			symbol('b'), symbol('y'), symbol('t'), symbol('e'), symbol('s'),
-			symbol('=')
-	);
+	return sequence( exact( "bytes" ), symbol('=') );
 }
 
 /*!
@@ -215,7 +212,7 @@ make_byte_ranges_specifier_parser()
 {
 	return produce< byte_ranges_specifier_t<T> >(
 			make_bytes_prefix_parser(),
-			non_empty_comma_separated_list_producer<
+			non_empty_comma_separated_list_p<
 							std::vector< byte_range_spec_t<T> > >(
 					make_byte_range_spec_parser<T>()
 			) >> &byte_ranges_specifier_t<T>::ranges
@@ -244,10 +241,10 @@ make_other_ranges_specifier_parser()
 			// rule 'bytes=1*VCHAR' doesn't not parsed because of invalid or
 			// illelal values in '1*VCHAR' part.
 			not_clause( make_bytes_prefix_parser() ),
-			token_producer() >> &other_ranges_specifier_t::range_unit,
+			token_p() >> &other_ranges_specifier_t::range_unit,
 			symbol('='),
 			produce< std::string >(
-				repeat( 1u, N, vchar_symbol_producer() >> to_container() )
+				repeat( 1u, N, vchar_symbol_p() >> to_container() )
 			) >> &other_ranges_specifier_t::range_set
 		);
 }

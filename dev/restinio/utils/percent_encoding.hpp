@@ -74,11 +74,11 @@ struct x_www_form_urlencoded_unescape_traits
 };
 
 /*!
- * @brief Traits for escaping and unexcaping symbols in
+ * @brief Traits for escaping and unescaping symbols in
  * a query string in very relaxed mode.
  *
  * In that mode all characters described in that rule from
- * [RCF3986](https://tools.ietf.org/html/rfc3986) can be used as unexceped:
+ * [RCF3986](https://tools.ietf.org/html/rfc3986) can be used as unescaped:
 @verbatim
 query         = *( pchar / "/" / "?" )
 pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
@@ -89,7 +89,7 @@ sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
                  / "*" / "+" / "," / ";" / "="
 @endverbatim
  *
- * Additionaly this traits allows to use unexcaped space character.
+ * Additionaly this traits allows to use unescaped space character.
  *
  * @since v.0.6.5
  */
@@ -400,7 +400,7 @@ try_unescape_percent_encoding( const string_view_t data )
 	if( !r )
 		return make_unexpected( std::move(r.error()) );
 
-	return result;
+	return std::move(result);
 }
 
 template< typename Traits = restinio_default_unescape_traits >

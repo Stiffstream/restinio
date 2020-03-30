@@ -157,7 +157,7 @@ struct mime_charsetc_predicate_t
  */
 RESTINIO_NODISCARD
 auto
-mime_charsetc_symbol_producer()
+mime_charsetc_symbol_p()
 {
 	return ep_impl::symbol_producer_template_t< mime_charsetc_predicate_t >{};
 }
@@ -201,7 +201,7 @@ struct language_predicate_t
  */
 RESTINIO_NODISCARD
 auto
-language_symbol_producer()
+language_symbol_p()
 {
 	return ep_impl::symbol_producer_template_t< language_predicate_t >{};
 }
@@ -253,7 +253,7 @@ struct attr_char_predicate_t
  */
 RESTINIO_NODISCARD
 auto
-attr_char_symbol_producer()
+attr_char_symbol_p()
 {
 	return ep_impl::symbol_producer_template_t< attr_char_predicate_t >{};
 }
@@ -302,7 +302,7 @@ struct hexdigit_predicate_t
  */
 RESTINIO_NODISCARD
 auto
-hexdigit_symbol_producer()
+hexdigit_symbol_p()
 {
 	return ep_impl::symbol_producer_template_t< hexdigit_predicate_t >{};
 }
@@ -352,12 +352,12 @@ struct pct_encoded_one_symbol_consumer_t : public ep_impl::consumer_tag
  */
 RESTINIO_NODISCARD
 auto
-pct_encoded_symbols_producer()
+pct_encoded_symbols_p()
 {
 	return produce< pct_encoded_result_type_t >(
-			symbol_producer( '%' ) >> pct_encoded_one_symbol_consumer_t<0>{},
-			hexdigit_symbol_producer() >> pct_encoded_one_symbol_consumer_t<1>{},
-			hexdigit_symbol_producer() >> pct_encoded_one_symbol_consumer_t<2>{}
+			symbol_p( '%' ) >> pct_encoded_one_symbol_consumer_t<0>{},
+			hexdigit_symbol_p() >> pct_encoded_one_symbol_consumer_t<1>{},
+			hexdigit_symbol_p() >> pct_encoded_one_symbol_consumer_t<2>{}
 		);
 }
 
@@ -414,17 +414,17 @@ attr-char     = ALPHA / DIGIT
  */
 RESTINIO_NODISCARD
 auto
-ext_parameter_value_producer()
+ext_parameter_value_p()
 {
 	return produce< std::string >(
-			repeat( 1, N, mime_charsetc_symbol_producer() >> to_container() ),
-			symbol_producer( '\'' ) >> to_container(),
-			repeat( 0, N, language_symbol_producer() >> to_container() ),
-			symbol_producer( '\'' ) >> to_container(),
+			repeat( 1, N, mime_charsetc_symbol_p() >> to_container() ),
+			symbol_p( '\'' ) >> to_container(),
+			repeat( 0, N, language_symbol_p() >> to_container() ),
+			symbol_p( '\'' ) >> to_container(),
 			repeat( 0, N,
 				alternatives(
-					attr_char_symbol_producer() >> to_container(),
-					pct_encoded_symbols_producer() >>
+					attr_char_symbol_p() >> to_container(),
+					pct_encoded_symbols_p() >>
 							pct_encoded_symbols_consumer_t{} )
 			)
 		);
@@ -472,7 +472,7 @@ struct content_disposition_value_t
 		using namespace content_disposition_details;
 
 		return produce< content_disposition_value_t >(
-			token_producer() >> to_lower()
+			token_p() >> to_lower()
 					>> &content_disposition_value_t::value,
 			produce< parameter_container_t >(
 				repeat( 0, N,
@@ -486,15 +486,15 @@ struct content_disposition_value_t
 										>> to_lower() >> &parameter_t::first,
 								symbol('='),
 								alternatives(
-									token_producer() >> &parameter_t::second,
-									quoted_string_producer() >> &parameter_t::second
+									token_p() >> &parameter_t::second,
+									quoted_string_p() >> &parameter_t::second
 								)
 							),
 							sequence(
 								ext_token_producer_t{}
 										>> to_lower() >> &parameter_t::first,
 								symbol('='),
-								ext_parameter_value_producer() >> &parameter_t::second
+								ext_parameter_value_p() >> &parameter_t::second
 							)
 						)
 					) >> to_container()

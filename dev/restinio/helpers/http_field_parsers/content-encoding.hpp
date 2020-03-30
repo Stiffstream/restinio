@@ -54,8 +54,8 @@ struct content_encoding_value_t
 	make_parser()
 	{
 		return produce< content_encoding_value_t >(
-			non_empty_comma_separated_list_producer< value_container_t >(
-				token_producer() >> to_lower()
+			non_empty_comma_separated_list_p< value_container_t >(
+				token_p() >> to_lower()
 			) >> &content_encoding_value_t::values
 		);
 	}

@@ -261,6 +261,269 @@ TEST_CASE( "Http methods" , "[express][simple][http_methods]" )
 	REQUIRE( http_method_put() == extract_last_http_method() );
 }
 
+TEST_CASE( "Http method matchers" , "[express][http_method_matchers]" )
+{
+
+	http_method_id_t last_http_method = http_method_unknown();
+
+	auto extract_last_http_method = [&]{
+		http_method_id_t result = last_http_method;
+		last_http_method = http_method_unknown();
+		return result;
+	};
+
+	SECTION( "any_of_methods" )
+	{
+		express_router_t router;
+
+		router.add_handler(
+			restinio::router::any_of_methods(
+				http_method_get(),
+				http_method_post(),
+				http_method_delete() ),
+			"/user",
+			[&]( const auto & req, auto ){
+				last_http_method = req->header().method();
+				return request_accepted();
+			} );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_delete() ) ) );
+		REQUIRE( http_method_delete() == extract_last_http_method() );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_get() ) ) );
+		REQUIRE( http_method_get() == extract_last_http_method() );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_head() ) ) );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_post() ) ) );
+		REQUIRE( http_method_post() == extract_last_http_method() );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_put() ) ) );
+	}
+
+	SECTION( "dynamic_any_of_methods-1" )
+	{
+		express_router_t router;
+
+		restinio::router::dynamic_any_of_methods_matcher_t matcher;
+		matcher.add( http_method_get() );
+		matcher.add( http_method_post() );
+		matcher.add( http_method_head() );
+		matcher.add( http_method_delete() );
+
+		router.add_handler(
+			matcher,
+			"/user",
+			[&]( const auto & req, auto ){
+				last_http_method = req->header().method();
+				return request_accepted();
+			} );
+
+		router.add_handler(
+			matcher,
+			"/status",
+			[&]( const auto & req, auto ){
+				last_http_method = req->header().method();
+				return request_accepted();
+			} );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_delete() ) ) );
+		REQUIRE( http_method_delete() == extract_last_http_method() );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_get() ) ) );
+		REQUIRE( http_method_get() == extract_last_http_method() );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_head() ) ) );
+		REQUIRE( http_method_head() == extract_last_http_method() );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_post() ) ) );
+		REQUIRE( http_method_post() == extract_last_http_method() );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_put() ) ) );
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_copy() ) ) );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/status", http_method_delete() ) ) );
+		REQUIRE( http_method_delete() == extract_last_http_method() );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/status", http_method_get() ) ) );
+		REQUIRE( http_method_get() == extract_last_http_method() );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/status", http_method_head() ) ) );
+		REQUIRE( http_method_head() == extract_last_http_method() );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/status", http_method_post() ) ) );
+		REQUIRE( http_method_post() == extract_last_http_method() );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/status", http_method_put() ) ) );
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/status", http_method_copy() ) ) );
+	}
+
+	SECTION( "dynamic_any_of_methods-2" )
+	{
+		express_router_t router;
+
+		restinio::router::dynamic_any_of_methods_matcher_t matcher;
+		matcher.add( http_method_get() );
+		matcher.add( http_method_post() );
+		matcher.add( http_method_head() );
+		matcher.add( http_method_delete() );
+
+		router.add_handler(
+			std::move(matcher),
+			"/user",
+			[&]( const auto & req, auto ){
+				last_http_method = req->header().method();
+				return request_accepted();
+			} );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_delete() ) ) );
+		REQUIRE( http_method_delete() == extract_last_http_method() );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_get() ) ) );
+		REQUIRE( http_method_get() == extract_last_http_method() );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_head() ) ) );
+		REQUIRE( http_method_head() == extract_last_http_method() );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_post() ) ) );
+		REQUIRE( http_method_post() == extract_last_http_method() );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_put() ) ) );
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_copy() ) ) );
+	}
+
+	SECTION( "none_of_methods" )
+	{
+		express_router_t router;
+
+		router.add_handler(
+			restinio::router::none_of_methods(
+				http_method_get(),
+				http_method_post(),
+				http_method_delete(),
+				http_method_copy(),
+				http_method_lock(),
+				http_method_move() ),
+			"/user",
+			[&]( const auto & req, auto ){
+				last_http_method = req->header().method();
+				return request_accepted();
+			} );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_delete() ) ) );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_get() ) ) );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_head() ) ) );
+		REQUIRE( http_method_head() == extract_last_http_method() );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_post() ) ) );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_put() ) ) );
+		REQUIRE( http_method_put() == extract_last_http_method() );
+	}
+
+	SECTION( "dynamic_none_of_methods-1" )
+	{
+		express_router_t router;
+
+		restinio::router::dynamic_none_of_methods_matcher_t matcher;
+		matcher.add( http_method_get() );
+		matcher.add( http_method_post() );
+		matcher.add( http_method_copy() );
+		matcher.add( http_method_delete() );
+
+		router.add_handler(
+			matcher,
+			"/user",
+			[&]( const auto & req, auto ){
+				last_http_method = req->header().method();
+				return request_accepted();
+			} );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_delete() ) ) );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_get() ) ) );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_head() ) ) );
+		REQUIRE( http_method_head() == extract_last_http_method() );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_post() ) ) );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_put() ) ) );
+		REQUIRE( http_method_put() == extract_last_http_method() );
+	}
+
+	SECTION( "dynamic_none_of_methods-2" )
+	{
+		express_router_t router;
+
+		restinio::router::dynamic_none_of_methods_matcher_t matcher;
+		matcher.add( http_method_get() );
+		matcher.add( http_method_post() );
+		matcher.add( http_method_copy() );
+		matcher.add( http_method_delete() );
+
+		router.add_handler(
+			std::move(matcher),
+			"/user",
+			[&]( const auto & req, auto ){
+				last_http_method = req->header().method();
+				return request_accepted();
+			} );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_delete() ) ) );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_get() ) ) );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_head() ) ) );
+		REQUIRE( http_method_head() == extract_last_http_method() );
+
+		REQUIRE( request_rejected() == router(
+			create_fake_request( "/user", http_method_post() ) ) );
+
+		REQUIRE( request_accepted() == router(
+			create_fake_request( "/user", http_method_put() ) ) );
+		REQUIRE( http_method_put() == extract_last_http_method() );
+	}
+}
+
 TEST_CASE( "Many params" , "[express][named_params][indexed_params]" )
 {
 	int last_handler_called = -1;

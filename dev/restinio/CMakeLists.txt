@@ -50,8 +50,12 @@ ENDIF ()
 IF (RESTINIO_FIND_DEPS)
 	message(STATUS "RESTinio dependencies are included with `find_package()`")
 
-	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE fmt::fmt-header-only)
-		
+	IF (RESTINIO_FMT_HEADER_ONLY)
+		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE fmt::fmt-header-only)
+	ELSE ()
+		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE fmt::fmt)
+	ENDIF ()
+  
 	IF (RESTINIO_USE_EXTERNAL_EXPECTED_LITE)
 		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE nonstd::expected-lite)
 	ENDIF()
@@ -71,7 +75,12 @@ IF (RESTINIO_FIND_DEPS)
 		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE unofficial::http_parser::http_parser)
 	ENDIF ()
 ELSE ()
-	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE $<BUILD_INTERFACE:fmt::fmt-header-only>)
+	IF (RESTINIO_FMT_HEADER_ONLY)
+		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE $<BUILD_INTERFACE:fmt::fmt-header-only>)
+	ELSE ()
+		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE $<BUILD_INTERFACE:fmt::fmt>)
+	ENDIF ()
+
 	IF (RESTINIO_USE_EXTERNAL_HTTP_PARSER)
 		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE $<BUILD_INTERFACE:http_parser>)
 	ELSE ()
@@ -83,128 +92,7 @@ IF ( NOT (RESTINIO_USE_BOOST_ASIO STREQUAL "none") )
 	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE ${Boost_SYSTEM_LIBRARY} )
 ENDIF ()
 
-SET(RESTINIO_HEADERS_ALL
-	all.hpp
-	asio_include.hpp
-	asio_timer_manager.hpp
-	buffers.hpp
-	cast_to.hpp
-	common_types.hpp
-	compiler_features.hpp
-	connection_state_listener.hpp
-	exception.hpp
-	expected.hpp
-	http_headers.hpp
-	http_server.hpp
-	http_server_run.hpp
-	ip_blocker.hpp
-	message_builders.hpp
-	null_logger.hpp
-	null_timer_manager.hpp
-	optional.hpp
-	os.hpp
-	ostream_logger.hpp
-	request_handler.hpp
-	sendfile_defs_default.hpp
-	sendfile_defs_posix.hpp
-	sendfile_defs_win.hpp
-	sendfile.hpp
-	settings.hpp
-	string_view.hpp
-	tcp_connection_ctx_base.hpp
-	timer_common.hpp
-	tls_fwd.hpp
-	tls.hpp
-	traits.hpp
-	uri_helpers.hpp
-	value_or.hpp
-	variant.hpp
-	version.hpp
-
-	helpers/easy_parser.hpp
-	helpers/file_upload.hpp
-	helpers/multipart_body.hpp
-	helpers/string_algo.hpp
-
-	helpers/http_field_parsers/accept-charset.hpp
-	helpers/http_field_parsers/accept-encoding.hpp
-	helpers/http_field_parsers/accept.hpp
-	helpers/http_field_parsers/accept-language.hpp
-	helpers/http_field_parsers/basics.hpp
-	helpers/http_field_parsers/cache-control.hpp
-	helpers/http_field_parsers/content-disposition.hpp
-	helpers/http_field_parsers/content-encoding.hpp
-	helpers/http_field_parsers/content-type.hpp
-	helpers/http_field_parsers/media-type.hpp
-	helpers/http_field_parsers/range.hpp
-	helpers/http_field_parsers/user-agent.hpp
-
-	impl/acceptor.hpp
-	impl/connection_base.hpp
-	impl/connection.hpp
-	impl/connection_settings.hpp
-	impl/executor_wrapper.hpp
-	impl/fixed_buffer.hpp
-	impl/header_helpers.hpp
-	impl/include_fmtlib.hpp
-	impl/ioctx_on_thread_pool.hpp
-	impl/os_posix.ipp
-	impl/os_unknown.ipp
-	impl/os_win.ipp
-	impl/overflow_controlled_integer_accumulator.hpp
-	impl/parser_callbacks.ipp
-	impl/response_coordinator.hpp
-	impl/sendfile_operation_default.ipp
-	impl/sendfile_operation.hpp
-	impl/sendfile_operation_posix.ipp
-	impl/sendfile_operation_win.ipp
-	impl/string_caseless_compare.hpp
-	impl/tls_socket.hpp
-	impl/to_lower_lut.hpp
-	impl/write_group_output_ctx.hpp
-
-	path2regex/path2regex.hpp
-
-	router/boost_regex_engine.hpp
-	router/express.hpp
-	router/pcre2_regex_engine.hpp
-	router/pcre_regex_engine.hpp
-	router/std_regex_engine.hpp
-
-	so5/so_timer_manager.hpp
-
-	third_party/nonstd/expected.hpp
-	third_party/nonstd/optional.hpp
-	third_party/nonstd/string_view.hpp
-	third_party/nonstd/variant.hpp
-
-	transforms/zlib.hpp
-
-	utils/at_scope_exit.hpp
-	utils/base64.hpp
-	utils/base64_lut.ipp
-	utils/from_string_details.ipp
-	utils/from_string.hpp
-	utils/metaprogramming.hpp
-	utils/percent_encoding.hpp
-	utils/sha1.hpp
-	utils/suppress_exceptions.hpp
-	utils/tuple_algorithms.hpp
-	utils/utf8_checker.hpp
-
-	utils/impl/bitops.hpp
-	utils/impl/safe_uint_truncate.hpp
-
-	websocket/message.hpp
-	websocket/websocket.hpp
-
-	websocket/impl/utf8.hpp
-	websocket/impl/ws_connection_base.hpp
-	websocket/impl/ws_connection.hpp
-	websocket/impl/ws_parser.hpp
-	websocket/impl/ws_protocol_validator.hpp
-	)
-
+FILE(GLOB_RECURSE RESTINIO_HEADERS_ALL RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.?pp)
 	
 IF (RESTINIO_USE_EXTERNAL_EXPECTED_LITE)
 	list(REMOVE_ITEM RESTINIO_HEADERS_ALL third_party/nonstd/expected.hpp)

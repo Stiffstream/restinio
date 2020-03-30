@@ -1,8 +1,13 @@
+add_subdirectory(easy_parser_router_dsl)
+add_subdirectory(easy_parser_path_to_tuple)
+add_subdirectory(easy_parser_path_to_params)
+
 add_subdirectory(express)
 add_subdirectory(express_router)
 
 if ( RESTINIO_BENCH )
 	add_subdirectory(express_router_bench)
+	add_subdirectory(easy_parser_router_bench)
 	add_subdirectory(cmp_router_bench)
 endif ()
 
@@ -29,6 +34,4 @@ if ( Boost_FOUND )
 		add_subdirectory(express_router_boost_regex_bench)
 	endif ()
 endif ()
-
-
 

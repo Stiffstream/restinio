@@ -11,6 +11,7 @@ MxxRu::Cpp::composite_target {
 	required_prj 'sample/run_for_minute/prj.rb'
 	required_prj 'sample/express_router/prj.rb'
 	required_prj 'sample/express_router_tutorial/prj.rb'
+	required_prj 'sample/easy_parser_router/prj.rb'
 	required_prj 'sample/sendfiles/prj.rb'
 	required_prj 'sample/query_string_params/prj.rb'
 	required_prj 'sample/try_parse_query_string/prj.rb'

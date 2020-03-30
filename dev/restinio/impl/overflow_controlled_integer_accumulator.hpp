@@ -22,6 +22,16 @@ namespace restinio
 namespace impl
 {
 
+//
+// check_positive_extremum
+//
+struct check_positive_extremum {};
+
+//
+// check_negative_extremum
+//
+struct check_negative_extremum {};
+
 namespace overflow_controlled_integer_accumulator_details
 {
 
@@ -41,6 +51,38 @@ is_greater_than_maximum( Storage_Type, Storage_Type )
 {
 	return false;
 }
+
+//
+// extremum_value
+//
+template< typename T, typename Ext >
+struct extremum_value;
+
+template< typename T >
+struct extremum_value< T, check_positive_extremum >
+{
+	using storage_type = std::make_unsigned_t<T>;
+
+	static constexpr storage_type value = static_cast<storage_type>(
+			std::numeric_limits<T>::max() );
+};
+
+template< typename T >
+struct extremum_value< T, check_negative_extremum >
+{
+	static_assert( std::is_signed<T>::value,
+			"extremum_value<T, check_negative_extremum> is defined only "
+			"for signed numeric types" );
+
+	using storage_type = std::make_unsigned_t<T>;
+
+	static constexpr storage_type value = static_cast<storage_type>(
+			std::numeric_limits<T>::min() );
+
+	static_assert(
+			value == (static_cast<storage_type>(std::numeric_limits<T>::max()) + 1u),
+			"The integer representation is expected to be two's complement" );
+};
 
 } /* namespace overflow_controlled_integer_accumulator_details */
 
@@ -66,13 +108,34 @@ is_greater_than_maximum( Storage_Type, Storage_Type )
 	}
  * @endcode
  *
+ * @note
+ * Since v.0.6.6 it can be used for parsing digits of negative decimal
+ * numbers. In that case it should be used like that:
+ * @code
+ * char ch = next_char();
+ * if('-' == ch) {
+ * 	// Digits of negative number should be extracted.
+ * 	overflow_controlled_integer_accumulator_t<
+ * 			int,
+ * 			check_negative_extremum > acc;
+ * 	...
+ * }
+ * @endcode
+ *
  * @since v.0.6.2
  */
-template<typename T>
+template<
+	typename T,
+	typename Extremum_Type = check_positive_extremum >
 class overflow_controlled_integer_accumulator_t
 {
+	using extremum_value = 
+			overflow_controlled_integer_accumulator_details::extremum_value<
+					T,
+					Extremum_Type >;
+
 	//! Type to be used for holding intermediate value.
-	using storage_type = std::make_unsigned_t<T>;
+	using storage_type = typename extremum_value::storage_type;
 
 	//! The current value of the accumulator.
 	storage_type m_current{};
@@ -90,15 +153,12 @@ public :
 		using namespace overflow_controlled_integer_accumulator_details;
 
 		constexpr storage_type multiplier{10};
-		constexpr storage_type maximum{ static_cast<storage_type>(
-				std::numeric_limits<T>::max())
-		};
 
 		const storage_type updated_value = m_current * multiplier +
 				static_cast<storage_type>(digit);
 
 		if( updated_value < m_current ||
-				is_greater_than_maximum<T>( updated_value, maximum ) )
+				is_greater_than_maximum<T>( updated_value, extremum_value::value ) )
 			m_overflow_detected = true;
 		else
 			m_current = updated_value;

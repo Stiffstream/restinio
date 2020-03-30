@@ -59,10 +59,10 @@ struct accept_charset_value_t
 	make_parser()
 	{
 		return produce< accept_charset_value_t >(
-			non_empty_comma_separated_list_producer< item_container_t >(
+			non_empty_comma_separated_list_p< item_container_t >(
 				produce< item_t >(
-					token_producer() >> to_lower() >> &item_t::charset,
-					maybe( weight_producer() >> &item_t::weight )
+					token_p() >> to_lower() >> &item_t::charset,
+					maybe( weight_p() >> &item_t::weight )
 				)
 			) >> &accept_charset_value_t::charsets
 		);

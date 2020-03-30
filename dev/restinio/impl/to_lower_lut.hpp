@@ -1,3 +1,5 @@
+#include <restinio/compiler_features.hpp>
+
 #pragma once
 
 namespace restinio
@@ -6,8 +8,8 @@ namespace restinio
 namespace impl
 {
 
-//FIXME: can it be declared as constexpr?
 template< typename C >
+RESTINIO_NODISCARD
 const C * to_lower_lut()
 {
 	static constexpr C table[] = {
@@ -30,6 +32,24 @@ const C * to_lower_lut()
 0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9, 0xEA, 0xEB, 0xEC, 0xED, 0xEE, 0xEF,
 0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF };
 	return table;
+}
+
+RESTINIO_NODISCARD
+inline char
+to_lower_case( char ch )
+{
+	return static_cast<char>(
+			to_lower_lut<unsigned char>()[static_cast<unsigned char>(ch)]
+		);
+}
+
+RESTINIO_NODISCARD
+inline char
+to_lower_case( unsigned char ch )
+{
+	return static_cast<char>(
+			to_lower_lut<unsigned char>()[ch]
+		);
 }
 
 } /* namespace impl */

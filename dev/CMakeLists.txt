@@ -17,6 +17,7 @@ option(RESTINIO_INSTALL_SAMPLES "Build install samples." ${RESTINIO_MASTER_PROJE
 option(RESTINIO_BENCH "Build the test target." ${RESTINIO_MASTER_PROJECT})
 option(RESTINIO_INSTALL_BENCHES "Build install samples." ${RESTINIO_MASTER_PROJECT})
 option(RESTINIO_FIND_DEPS "Use `find_package()` for including RESTinio dependencies." OFF)
+option(RESTINIO_FMT_HEADER_ONLY "Include fmt library as header-only." ON)
 
 option(RESTINIO_ALLOW_SOBJECTIZER "Allow add_subdirectory(so_5) in the main RESTinio CMakeLists.txt" ${RESTINIO_MASTER_PROJECT})
 
