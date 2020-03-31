@@ -247,3 +247,54 @@ TEST_CASE( "std::function by rvalue reference in close-async",
 
 }
 
+TEST_CASE( "failed-start-restart" , "[start][stop]" )
+{
+	constexpr unsigned short test_port = 8096;
+
+	restinio::asio_ns::io_context io_svc;
+	restinio::asio_ns::ip::tcp::socket dummy_socket( io_svc,
+			restinio::asio_ns::ip::tcp::endpoint(
+						restinio::asio_ns::ip::make_address( "127.0.0.1" ),
+						test_port ) );
+
+	using http_server_t =
+		restinio::http_server_t<
+			restinio::traits_t<
+				restinio::asio_timer_manager_t,
+				utest_logger_t > >;
+
+	http_server_t http_server{
+		restinio::external_io_context( io_svc ),
+		[]( auto & settings ){
+			settings
+				.port( test_port )
+				.protocol( restinio::asio_ns::ip::tcp::v4() )
+				.address( "127.0.0.1" )
+				.request_handler(
+					[]( auto ){ return restinio::request_rejected(); } );
+		} };
+
+	restinio::asio_ns::post( http_server.io_context(),
+		[&] {
+			REQUIRE_THROWS( http_server.open_sync() );
+
+			dummy_socket.close();
+
+			REQUIRE_NOTHROW( http_server.open_sync() );
+
+			// Now server should be started and should accept
+			// incoming connections.
+			restinio::asio_ns::ip::tcp::socket socket( io_svc );
+			auto do_connect = [&socket]() {
+				socket.connect( restinio::asio_ns::ip::tcp::endpoint(
+						restinio::asio_ns::ip::make_address( "127.0.0.1" ),
+						test_port ) );
+			};
+			REQUIRE_NOTHROW( do_connect() );
+			REQUIRE_NOTHROW( socket.close() );
+
+			REQUIRE_NOTHROW( http_server.close_sync() );
+		} );
+	http_server.io_context().run();
+}
+

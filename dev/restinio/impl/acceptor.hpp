@@ -257,6 +257,10 @@ class acceptor_t final
 			}
 			catch( const std::exception & ex )
 			{
+				// Acceptor should be closes in the case of an error.
+				if( m_acceptor.is_open() )
+					m_acceptor.close();
+
 				m_logger.error( [&]() -> auto {
 					return fmt::format( "failed to start server on {}: {}",
 						ep,
