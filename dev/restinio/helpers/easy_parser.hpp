@@ -1571,6 +1571,27 @@ public:
 };
 
 //
+// any_symbol_predicate_t
+//
+/*!
+ * @brief A predicate that allows extraction of any symbol.
+ *
+ * This predicate is necessary for implementation of any_symbol_p()
+ * producer.
+ *
+ * @since v.0.6.6
+ */
+struct any_symbol_predicate_t
+{
+	RESTINIO_NODISCARD
+	constexpr bool
+	operator()( const char ) const noexcept
+	{
+		return true;
+	}
+};
+
+//
 // particular_symbol_predicate_t
 //
 /*!
@@ -2670,6 +2691,24 @@ repeat(
 RESTINIO_NODISCARD
 inline auto
 skip() noexcept { return impl::any_value_skipper_t{}; }
+
+//
+// any_symbol_p
+//
+/*!
+ * @brief A factory function to create an any_symbol_producer.
+ *
+ * @return a producer that expects any symbol in the input stream
+ * and returns it.
+ * 
+ * @since v.0.6.6
+ */
+RESTINIO_NODISCARD
+inline auto
+any_symbol_p() noexcept
+{
+	return impl::symbol_producer_template_t<impl::any_symbol_predicate_t>{};
+}
 
 //
 // symbol_p
