@@ -254,6 +254,68 @@ TEST_CASE( "any_symbol", "[any_symbol]" )
 	}
 }
 
+TEST_CASE( "any_symbol with to_lower", "[any_symbol][to_lower]" )
+{
+	using namespace restinio::easy_parser;
+
+	struct indicator {
+		char class_;
+		char level_;
+	};
+
+	auto parser = produce< indicator >(
+			any_symbol_p() >> to_lower() >> &indicator::class_,
+			digit_p() >> &indicator::level_ );
+
+	{
+		const auto r = try_parse( "c", parser );
+
+		REQUIRE( !r );
+	}
+
+	{
+		const auto r = try_parse( "1", parser );
+
+		REQUIRE( !r );
+	}
+
+	{
+		const auto r = try_parse( "1c", parser );
+
+		REQUIRE( !r );
+	}
+
+	{
+		const auto r = try_parse( "cc", parser );
+
+		REQUIRE( !r );
+	}
+
+	{
+		const auto r = try_parse( "c1", parser );
+
+		REQUIRE( r );
+		REQUIRE( r->class_ == 'c' );
+		REQUIRE( r->level_ == '1' );
+	}
+
+	{
+		const auto r = try_parse( "C1", parser );
+
+		REQUIRE( r );
+		REQUIRE( r->class_ == 'c' );
+		REQUIRE( r->level_ == '1' );
+	}
+
+	{
+		const auto r = try_parse( "D6", parser );
+
+		REQUIRE( r );
+		REQUIRE( r->class_ == 'd' );
+		REQUIRE( r->level_ == '6' );
+	}
+}
+
 TEST_CASE( "clause by reference", "[clause]" )
 {
 	using namespace restinio::easy_parser;

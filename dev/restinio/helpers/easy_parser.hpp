@@ -2121,13 +2121,18 @@ struct tuple_item_consumer_t : public consumer_tag
 //
 // to_lower_transformer_t
 //
+template< typename Input_Type >
+struct to_lower_transformer_t;
+
 /*!
  * @brief An implementation of transformer that converts the content
  * of the input std::string to lower case.
  *
  * @since v.0.6.1
  */
-struct to_lower_transformer_t : public transformer_tag< std::string >
+template<>
+struct to_lower_transformer_t< std::string >
+	: public transformer_tag< std::string >
 {
 	using input_type = std::string;
 
@@ -2142,6 +2147,45 @@ struct to_lower_transformer_t : public transformer_tag< std::string >
 			} );
 
 		return result;
+	}
+};
+
+/*!
+ * @brief An implementation of transformer that converts the content
+ * of the input character to lower case.
+ *
+ * @since v.0.6.6
+ */
+template<>
+struct to_lower_transformer_t< char >
+	: public transformer_tag< char >
+{
+	using input_type = char;
+
+	RESTINIO_NODISCARD
+	result_type
+	transform( input_type && input ) const noexcept
+	{
+		return restinio::impl::to_lower_case(input);
+	}
+};
+
+//
+// to_lower_transformer_proxy_t
+//
+/*!
+ * @brief A proxy for the creation of an appropriate to_lower_transformer.
+ *
+ * @since v.0.6.6
+ */
+struct to_lower_transformer_proxy_t : public transformer_proxy_tag
+{
+	template< typename Input_Type >
+	RESTINIO_NODISCARD
+	auto
+	make_transformer() const noexcept
+	{
+		return to_lower_transformer_t< Input_Type >{};
 	}
 };
 
@@ -2215,7 +2259,7 @@ public :
  * This class is intended to be used in implementation of operator>>
  * for cases like that:
  * @code
- * symbol_p('k') >> conver([](auto ch) { return 1024u; })
+ * symbol_p('k') >> convert([](auto ch) { return 1024u; })
  * @endcode
  *
  * @since v.0.6.6
@@ -3191,16 +3235,20 @@ to_container()
  * Usage example:
  * @code
  * produce<std::string>(
- * 	symbol('T'), symbol(':',
+ * 	symbol('T'), symbol(':'),
  * 	token_p() >> to_lower() >> as_result()
  * );
+ * ...
+ * // Since v.0.6.6 to_lower can also be used for a single character.
+ * produce<char>(
+ * 	exact("I="), any_symbol_p() >> to_lower() >> as_result() );
  * @endcode
  *
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
 inline auto
-to_lower() noexcept { return impl::to_lower_transformer_t{}; }
+to_lower() noexcept { return impl::to_lower_transformer_proxy_t{}; }
 
 //
 // just
