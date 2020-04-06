@@ -109,6 +109,10 @@ struct extremum_value< T, check_negative_extremum >
  * @endcode
  *
  * @note
+ * Since v.0.6.6 it can be used for parcing not only decinal numbers,
+ * but also numbers with base of @a Multiplier.
+ *
+ * @note
  * Since v.0.6.6 it can be used for parsing digits of negative decimal
  * numbers. In that case it should be used like that:
  * @code
@@ -126,6 +130,7 @@ struct extremum_value< T, check_negative_extremum >
  */
 template<
 	typename T,
+	int Multiplier,
 	typename Extremum_Type = check_positive_extremum >
 class overflow_controlled_integer_accumulator_t
 {
@@ -152,7 +157,9 @@ public :
 	{
 		using namespace overflow_controlled_integer_accumulator_details;
 
-		constexpr storage_type multiplier{10};
+		constexpr storage_type multiplier{
+				static_cast<storage_type>(Multiplier)
+		};
 
 		const storage_type updated_value = m_current * multiplier +
 				static_cast<storage_type>(digit);

@@ -1776,11 +1776,12 @@ public:
  * @code
  * // For the case of unsigned or positive signed integer:
  * auto r = try_parse_digits<unsigned int>(from,
- * 		restinio::impl::overflow_controlled_integer_accumulator_t<unsigned int>{});
+ * 		restinio::impl::overflow_controlled_integer_accumulator_t<unsigned int, 10>{});
  * // For the case of negative signed integer.
- * auto r = try_parse_digits<short>(from
+ * auto r = try_parse_digits<short>(from,
  * 		restinio::impl::overflow_controlled_integer_accumulator_t<
  * 				short,
+ * 				10,
  * 				restinio::impl::check_negative_extremum>{});
  * @endcode
  *
@@ -1800,6 +1801,76 @@ try_parse_digits( source_t & from, Value_Accumulator acc ) noexcept
 		if( is_digit(ch.m_ch) )
 		{
 			acc.next_digit( static_cast<T>(ch.m_ch - '0') );
+
+			if( acc.overflow_detected() )
+				return make_unexpected( parse_error_t{
+						consumer.started_at(),
+						error_reason_t::illegal_value_found
+				} );
+
+			++symbols_processed;
+		}
+		else
+		{
+			from.putback();
+			break;
+		}
+	}
+
+	if( !symbols_processed )
+		// There is nothing extracted from the input stream.
+		return make_unexpected( parse_error_t{
+				from.current_position(),
+				error_reason_t::pattern_not_found
+		} );
+	else
+	{
+		consumer.commit();
+		return acc.value();
+	}
+}
+
+//
+// try_parse_hexdigits
+//
+/*!
+ * @brief Helper function for parsing integers in hexadecimal form.
+ *
+ * Usage example:
+ * @code
+ * // For the case of unsigned or positive signed integer:
+ * auto r = try_parse_hexdigits<unsigned int>(from,
+ * 		restinio::impl::overflow_controlled_integer_accumulator_t<unsigned int, 16>{});
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+template< typename T, typename Value_Accumulator >
+RESTINIO_NODISCARD
+expected_t< T, parse_error_t >
+try_parse_hexdigits( source_t & from, Value_Accumulator acc ) noexcept
+{
+	const auto ch_to_digit = []( char ch ) -> std::pair<bool, T> {
+		if( ch >= '0' && ch <= '9' )
+			return std::make_pair( true, static_cast<T>(ch - '0') );
+		else if( ch >= 'A' && ch <= 'F' )
+			return std::make_pair( true, static_cast<T>(10 + (ch - 'A')) );
+		else if( ch >= 'a' && ch <= 'f' )
+			return std::make_pair( true, static_cast<T>(10 + (ch - 'a')) );
+		else
+			return std::make_pair( false, static_cast<T>(0) );
+	};
+
+	source_t::content_consumer_t consumer{ from };
+
+	int symbols_processed{};
+
+	for( auto ch = from.getch(); !ch.m_eof; ch = from.getch() )
+	{
+		const auto d = ch_to_digit( ch.m_ch );
+		if( d.first )
+		{
+			acc.next_digit( d.second );
 
 			if( acc.overflow_detected() )
 				return make_unexpected( parse_error_t{
@@ -1850,7 +1921,35 @@ public:
 	{
 		return try_parse_digits< T >(
 				from,
-				restinio::impl::overflow_controlled_integer_accumulator_t<T>{} );
+				restinio::impl::overflow_controlled_integer_accumulator_t<T, 10>{} );
+	}
+};
+
+//
+// hexadecimal_number_producer_t
+//
+/*!
+ * @brief A producer for the case when a number in hexadecimal form is expected
+ * in the input stream.
+ *
+ * In the case of success returns the extracted number.
+ *
+ * @since v.0.6.6
+ */
+template< typename T >
+class hexadecimal_number_producer_t : public producer_tag< T >
+{
+	static_assert( std::is_unsigned<T>::value,
+			"T is expected to be unsigned type" );
+
+public:
+	RESTINIO_NODISCARD
+	expected_t< T, parse_error_t >
+	try_parse( source_t & from ) const noexcept
+	{
+		return try_parse_hexdigits< T >(
+				from,
+				restinio::impl::overflow_controlled_integer_accumulator_t<T, 16>{} );
 	}
 };
 
@@ -1912,6 +2011,7 @@ private:
 					from,
 					overflow_controlled_integer_accumulator_t<
 							T,
+							10,
 							check_negative_extremum >{} );
 			if( r )
 				return -(*r);
@@ -1922,14 +2022,14 @@ private:
 		{
 			return try_parse_digits< T >(
 					from,
-					overflow_controlled_integer_accumulator_t< T >{} );
+					overflow_controlled_integer_accumulator_t< T, 10 >{} );
 		}
 		else if( is_digit(first_symbol) )
 		{
 			from.putback();
 			return try_parse_digits< T >(
 					from,
-					overflow_controlled_integer_accumulator_t< T >{} );
+					overflow_controlled_integer_accumulator_t< T, 10 >{} );
 		}
 
 		return make_unexpected( parse_error_t{
@@ -3014,6 +3114,34 @@ inline auto
 positive_decimal_number_producer() noexcept
 {
 	return non_negative_decimal_number_p<T>();
+}
+
+//
+// hexadecimal_number_p
+//
+/*!
+ * @brief A factory function to create a hexadecimal_number_producer.
+ *
+ * @note
+ * This parser consumes all digits until the first non-digit symbol will
+ * be found in the input. It means that in the case of `1111someword` the
+ * first four digits (e.g. `1111`) will be extracted from the input and
+ * the remaining part (e.g. `someword`) won't be consumed by this parser.
+ *
+ * @attention
+ * T should be an unsigned type.
+ *
+ * @return a producer that expects a positive hexadecimal number in the input
+ * stream and returns it if a number is found.
+ * 
+ * @since v.0.6.6
+ */
+template< typename T >
+RESTINIO_NODISCARD
+inline auto
+hexadecimal_number_p() noexcept
+{
+	return impl::hexadecimal_number_producer_t<T>{};
 }
 
 //

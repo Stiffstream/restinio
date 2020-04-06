@@ -112,6 +112,76 @@ TEST_CASE( "non-negative decimal number", "[non_negative_decimal_number_p]" )
 	}
 }
 
+TEST_CASE( "hexadecimal number", "[hexadecimal_number_p]" )
+{
+	using namespace restinio::http_field_parsers;
+//	using namespace restinio::easy_parser;
+
+	{
+		const auto result =
+			try_parse( "", hexadecimal_number_p<unsigned int>() );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result =
+			try_parse( "1", hexadecimal_number_p<unsigned int>() );
+
+		REQUIRE( result );
+		REQUIRE( 1u == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "-1", hexadecimal_number_p<unsigned int>() );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result =
+			try_parse( "1234", hexadecimal_number_p<unsigned int>() );
+
+		REQUIRE( result );
+		REQUIRE( 0x1234u == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "123456", hexadecimal_number_p<unsigned long>() );
+
+		REQUIRE( result );
+		REQUIRE( 0x123456u == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "1234w",
+					produce<unsigned int>(
+							hexadecimal_number_p<unsigned int>() >> as_result(),
+							symbol('w')
+					)
+			);
+
+		REQUIRE( result );
+		REQUIRE( 0x1234 == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "aFbDw",
+					produce<unsigned int>(
+							hexadecimal_number_p<unsigned int>() >> as_result(),
+							symbol('w')
+					)
+			);
+
+		REQUIRE( result );
+		REQUIRE( 0xafbd == *result );
+	}
+}
+
 TEST_CASE( "decimal number", "[decimal_number_p]" )
 {
 	using namespace restinio::http_field_parsers;
