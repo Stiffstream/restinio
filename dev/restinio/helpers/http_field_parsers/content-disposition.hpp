@@ -259,55 +259,6 @@ attr_char_symbol_p()
 }
 
 //
-// hexdigit_predicate_t
-//
-/*!
- * @brief A preducate for symbol_producer_template that checks that
- * a symbol is hex-digit.
- *
- * @since v.0.6.1
- */
-struct hexdigit_predicate_t
-{
-	RESTINIO_NODISCARD
-	bool
-	operator()( const char actual ) const noexcept
-	{
-		//FIXME: is seems that helper function to_lower() is necessary
-		//to convert a single char to lower case.
-		const char normalized_actual = static_cast<char>(
-						restinio::impl::to_lower_lut<unsigned char>()[
-							static_cast<std::size_t>(
-								static_cast<unsigned char>(actual))
-						]
-				);
-		return hfp_impl::is_digit(normalized_actual)
-				|| 'a' == normalized_actual
-				|| 'b' == normalized_actual
-				|| 'c' == normalized_actual
-				|| 'd' == normalized_actual
-				|| 'e' == normalized_actual
-				|| 'f' == normalized_actual
-				;
-	}
-};
-
-//
-// hexdigit_symbol_producer
-//
-/*!
- * @brief A factory for producer that extracts hex-digits.
- *
- * @since v.0.6.1
- */
-RESTINIO_NODISCARD
-auto
-hexdigit_symbol_p()
-{
-	return ep_impl::symbol_producer_template_t< hexdigit_predicate_t >{};
-}
-
-//
 // pct_encoded_result_type_t
 //
 /*!
@@ -319,25 +270,6 @@ hexdigit_symbol_p()
  * @since v.0.6.1
  */
 using pct_encoded_result_type_t = std::array< char, 3 >;
-
-//
-// pct_encoded_one_symbol_consumer_t
-//
-/*!
- * @brief A special consumer that inserts an extracted symbol into
- * pct_encoded_result_type at the specified position.
- *
- * @since v.0.6.1
- */
-template< std::size_t I >
-struct pct_encoded_one_symbol_consumer_t : public ep_impl::consumer_tag
-{
-	void
-	consume( pct_encoded_result_type_t & to, char && symbol ) const noexcept
-	{
-		to[ I ] = symbol;
-	}
-};
 
 //
 // pct_encoded_symbols_producer
@@ -355,9 +287,9 @@ auto
 pct_encoded_symbols_p()
 {
 	return produce< pct_encoded_result_type_t >(
-			symbol_p( '%' ) >> pct_encoded_one_symbol_consumer_t<0>{},
-			hexdigit_symbol_p() >> pct_encoded_one_symbol_consumer_t<1>{},
-			hexdigit_symbol_p() >> pct_encoded_one_symbol_consumer_t<2>{}
+			symbol_p( '%' ) >> to_container(),
+			hexdigit_p() >> to_container(),
+			hexdigit_p() >> to_container()
 		);
 }
 

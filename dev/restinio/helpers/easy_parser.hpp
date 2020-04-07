@@ -200,6 +200,61 @@ struct result_value_wrapper< std::vector< T, Args... > >
 	}
 };
 
+namespace impl
+{
+
+//FIXME: document this!
+template< typename T, std::size_t S >
+struct std_array_wrapper
+{
+	std::array< T, S > m_array;
+	std::size_t m_index{ 0u };
+};
+
+} /* namespace impl */
+
+template< typename T, std::size_t S >
+struct result_value_wrapper< std::array< T, S > >
+{
+	using result_type = std::array< T, S >;
+	using value_type = typename result_type::value_type;
+	using wrapped_type = impl::std_array_wrapper< T, S >;
+
+	static void
+	as_result( wrapped_type & to, result_type && what )
+	{
+		to.m_array = std::move(what);
+		to.m_index = 0u;
+	}
+
+	static void
+	to_container( wrapped_type & to, value_type && what )
+	{
+		if( to.m_index >= S )
+			throw exception_t(
+					"index in the result std::array is out of range, "
+					"index=" + std::to_string(to.m_index) +
+					", size={}" + std::to_string(S) );
+
+		to.m_array[ to.m_index ] = std::move(what);
+		++to.m_index;
+	}
+
+	RESTINIO_NODISCARD
+	static result_type &&
+	unwrap_value( wrapped_type & v )
+	{
+		return std::move(v.m_array);
+	}
+};
+
+//FIXME: document this!
+template< typename T, std::size_t S >
+struct result_wrapper_for< impl::std_array_wrapper<T, S> >
+{
+	using type = result_value_wrapper< std::array< T, S > >;
+};
+
 template< typename Char, typename... Args >
 struct result_value_wrapper< std::basic_string< Char, Args... > >
 {
