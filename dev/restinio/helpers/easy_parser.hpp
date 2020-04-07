@@ -115,15 +115,16 @@ public:
 struct nothing_t {};
 
 //
-// default_container_adaptor
+// result_value_wrapper
 //
+//FIXME: extend the docs!
 /*!
  * @brief A template with specializations for different kind
  * of containers and for type `nothing`.
  *
  * Every specialization will have the following content:
  * @code
- * struct default_container_adaptor<...>
+ * struct result_value_wrapper<...>
  * {
  * 	using container_type = ... // some type of the container.
  * 	using value_type = ... // type of object to be placed into a container.
@@ -136,58 +137,145 @@ struct nothing_t {};
  * @since v.0.6.1
  */
 template< typename T >
-struct default_container_adaptor;
-
-template< typename T, typename... Args >
-struct default_container_adaptor< std::vector< T, Args... > >
+struct result_value_wrapper
 {
-	using container_type = std::vector< T, Args... >;
-	using value_type = typename container_type::value_type;
+	using result_type = T;
+	using value_type = T;
+	using wrapped_type = result_type;
 
 	static void
-	store( container_type & to, value_type && what )
+	as_result( wrapped_type & to, result_type && what )
+	{
+		to = std::move(what);
+	}
+
+	static void
+	to_container( wrapped_type & to, value_type && what )
+	{
+		to = std::move(what);
+	}
+
+	RESTINIO_NODISCARD
+	static result_type &&
+	unwrap_value( wrapped_type & v )
+	{
+		return std::move(v);
+	}
+};
+
+//FIXME: document this!
+template< typename T >
+struct result_wrapper_for
+{
+	using type = result_value_wrapper< T >;
+};
+
+template< typename T >
+using result_wrapper_for_t = typename result_wrapper_for<T>::type;
+
+template< typename T, typename... Args >
+struct result_value_wrapper< std::vector< T, Args... > >
+{
+	using result_type = std::vector< T, Args... >;
+	using value_type = typename result_type::value_type;
+	using wrapped_type = result_type;
+
+	static void
+	as_result( wrapped_type & to, result_type && what )
+	{
+		to = std::move(what);
+	}
+
+	static void
+	to_container( wrapped_type & to, value_type && what )
 	{
 		to.push_back( std::move(what) );
+	}
+
+	RESTINIO_NODISCARD
+	static result_type &&
+	unwrap_value( wrapped_type & v )
+	{
+		return std::move(v);
 	}
 };
 
 template< typename Char, typename... Args >
-struct default_container_adaptor< std::basic_string< Char, Args... > >
+struct result_value_wrapper< std::basic_string< Char, Args... > >
 {
-	using container_type = std::basic_string< Char, Args... >;
+	using result_type = std::basic_string< Char, Args... >;
 	using value_type = Char;
+	using wrapped_type = result_type;
 
 	static void
-	store( container_type & to, value_type && what )
+	as_result( wrapped_type & to, result_type && what )
+	{
+		to = std::move(what);
+	}
+
+	static void
+	to_container( wrapped_type & to, value_type && what )
 	{
 		to.push_back( what );
+	}
+
+	RESTINIO_NODISCARD
+	static result_type &&
+	unwrap_value( wrapped_type & v )
+	{
+		return std::move(v);
 	}
 };
 
 template< typename K, typename V, typename... Args >
-struct default_container_adaptor< std::map< K, V, Args... > >
+struct result_value_wrapper< std::map< K, V, Args... > >
 {
-	using container_type = std::map< K, V, Args... >;
+	using result_type = std::map< K, V, Args... >;
 	// NOTE: we can't use container_type::value_type here
 	// because value_type for std::map is std::pair<const K, V>,
 	// not just std::pair<K, V>,
 	using value_type = std::pair<K, V>;
+	using wrapped_type = result_type;
 
 	static void
-	store( container_type & to, value_type && what )
+	as_result( wrapped_type & to, result_type && what )
+	{
+		to = std::move(what);
+	}
+
+	static void
+	to_container( wrapped_type & to, value_type && what )
 	{
 		to.emplace( std::move(what) );
+	}
+
+	RESTINIO_NODISCARD
+	static result_type &&
+	unwrap_value( wrapped_type & v )
+	{
+		return std::move(v);
 	}
 };
 
 template<>
-struct default_container_adaptor< nothing_t >
+struct result_value_wrapper< nothing_t >
 {
-	using container_type = nothing_t;
+	using result_type = nothing_t;
 	using value_type = nothing_t;
+	using wrapped_type = result_type;
 
 	static void
-	store( container_type &, value_type && ) noexcept {}
+	as_result( wrapped_type &, result_type && ) noexcept {}
+
+	static void
+	to_container( wrapped_type &, value_type && ) noexcept {}
+
+	RESTINIO_NODISCARD
+	static result_type &&
+	unwrap_value( wrapped_type & v )
+	{
+		return std::move(v);
+	}
 };
 
 /*!
@@ -1416,6 +1504,8 @@ template<
 	typename Subitems_Tuple >
 class produce_t : public producer_tag< Target_Type >
 {
+	using value_wrapper_t = result_value_wrapper< Target_Type >;
+
 	Subitems_Tuple m_subitems;
 
 public :
@@ -1428,7 +1518,7 @@ public :
 	expected_t< Target_Type, parse_error_t >
 	try_parse( source_t & from )
 	{
-		Target_Type tmp_value;
+		typename value_wrapper_t::wrapped_type tmp_value;
 		optional_t< parse_error_t > error;
 
 		const bool success = restinio::utils::tuple_algorithms::all_of(
@@ -1439,7 +1529,7 @@ public :
 				} );
 
 		if( success )
-			return std::move(tmp_value);
+			return value_wrapper_t::unwrap_value( tmp_value );
 		else
 			return make_unexpected( *error );
 	}
@@ -2082,9 +2172,11 @@ struct as_result_consumer_t : public consumer_tag
 	template< typename Target_Type, typename Value >
 	void
 	consume( Target_Type & dest, Value && src ) const
-		noexcept(noexcept(dest=std::forward<Value>(src)))
+//FIXME: fix the noexcept clause!
+//		noexcept(noexcept(dest=std::forward<Value>(src)))
 	{
-		dest = std::forward<Value>(src);
+		using value_wrapper_type = result_wrapper_for_t<Target_Type>;
+		value_wrapper_type::as_result( dest, std::forward<Value>(src) );
 	}
 };
 
@@ -2113,9 +2205,11 @@ public :
 	template< typename Target_Type, typename Value >
 	void
 	consume( Target_Type & dest, Value && ) const
-		noexcept(noexcept(dest=m_result))
+//FIXME: fix the noexcept clause!
+//		noexcept(noexcept(dest=m_result))
 	{
-		dest = m_result;
+		using value_wrapper_type = result_wrapper_for_t<Target_Type>;
+		value_wrapper_type::as_result( dest, Result_Type{m_result} );
 	}
 };
 
@@ -2513,6 +2607,7 @@ public:
 //
 // produce
 //
+//FIXME: extend the docs!
 /*!
  * @brief A factory function to create a producer that creates an
  * instance of the target type by using specified clauses.
@@ -2527,7 +2622,9 @@ public:
  *
  * @since v.0.6.1
  */
-template< typename Target_Type, typename... Clauses >
+template<
+	typename Target_Type,
+	typename... Clauses >
 RESTINIO_NODISCARD
 auto
 produce( Clauses &&... clauses )
@@ -3268,20 +3365,19 @@ namespace impl
  * Instances of such consumer will be used inside repeat_clause_t.
  *
  * @tparam Container_Adaptor a class that knows how to store a value
- * into the target container. See default_container_adaptor for the
+ * into the target container. See result_value_wrapper for the
  * requirement for such type.
  *
  * @since v.0.6.1
  */
-template<
-	template<class> class Container_Adaptor >
 struct to_container_consumer_t : public consumer_tag
 {
 	template< typename Container, typename Item >
 	void
 	consume( Container & to, Item && item )
 	{
-		Container_Adaptor<Container>::store( to, std::move(item) );
+		using container_adaptor_type = result_wrapper_for_t<Container>;
+		container_adaptor_type::to_container( to, std::move(item) );
 	}
 };
 
@@ -3290,6 +3386,7 @@ struct to_container_consumer_t : public consumer_tag
 //
 // to_container
 //
+//FIXME: update the docs!
 /*!
  * @brief A factory function to create a to_container_consumer.
  *
@@ -3345,13 +3442,11 @@ struct to_container_consumer_t : public consumer_tag
  *
  * @since v.0.6.1
  */
-template<
-	template<class> class Container_Adaptor = default_container_adaptor >
 RESTINIO_NODISCARD
-auto
+inline auto
 to_container()
 {
-	return impl::to_container_consumer_t<Container_Adaptor>();
+	return impl::to_container_consumer_t();
 }
 
 //

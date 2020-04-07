@@ -1184,16 +1184,12 @@ namespace impl
  *
  * @tparam Container the type of container to be produced.
  *
- * @tparam Container_Adaptor the type of adaptor to be used with @a Container
- * for filling the resulting container.
- *
  * @tparam Element_Producer the type of the producer of a single item.
  * 
  * @since v.0.6.1
  */
 template<
 	typename Container,
-	template<class> class Container_Adaptor,
 	typename Element_Producer >
 class non_empty_comma_separated_list_producer_t
 	: public producer_tag< Container >
@@ -1217,7 +1213,7 @@ public :
 	{
 		Container tmp_value;
 
-		const auto appender = to_container<Container_Adaptor>();
+		const auto appender = to_container();
 
 		const auto process_result = sequence(
 				repeat( 0, N, symbol(','), ows() ),
@@ -1252,16 +1248,12 @@ public :
  *
  * @tparam Container the type of container to be produced.
  *
- * @tparam Container_Adaptor the type of adaptor to be used with @a Container
- * for filling the resulting container.
- *
  * @tparam Element_Producer the type of the producer of a single item.
  * 
  * @since v.0.6.1
  */
 template<
 	typename Container,
-	template<class> class Container_Adaptor,
 	typename Element_Producer >
 class maybe_empty_comma_separated_list_producer_t
 	:	public producer_tag< Container >
@@ -1285,7 +1277,7 @@ public :
 	{
 		Container tmp_value;
 
-		const auto appender = to_container<Container_Adaptor>();
+		const auto appender = to_container();
 
 		const auto process_result = maybe(
 				alternatives( symbol(','), m_element >> appender ),
@@ -1331,16 +1323,12 @@ public :
  *
  * @tparam Container the type of container to be produced.
  *
- * @tparam Container_Adaptor the type of adaptor to be used with @a Container
- * for filling the resulting container.
- *
  * @tparam Element_Producer the type of the producer of a single item.
  * 
  * @since v.0.6.1
  */
 template<
 	typename Container,
-	template<class> class Container_Adaptor = default_container_adaptor,
 	typename Element_Producer >
 RESTINIO_NODISCARD
 auto
@@ -1351,7 +1339,6 @@ non_empty_comma_separated_list_p( Element_Producer element )
 
 	return impl::non_empty_comma_separated_list_producer_t<
 			Container,
-			Container_Adaptor,
 			Element_Producer >{ std::move(element) };
 }
 
@@ -1382,16 +1369,12 @@ non_empty_comma_separated_list_p( Element_Producer element )
  *
  * @tparam Container the type of container to be produced.
  *
- * @tparam Container_Adaptor the type of adaptor to be used with @a Container
- * for filling the resulting container.
- *
  * @tparam Element_Producer the type of the producer of a single item.
  * 
  * @since v.0.6.1
  */
 template<
 	typename Container,
-	template<class> class Container_Adaptor = default_container_adaptor,
 	typename Element_Producer >
 RESTINIO_NODISCARD
 auto
@@ -1402,7 +1385,6 @@ maybe_empty_comma_separated_list_p( Element_Producer element )
 
 	return impl::maybe_empty_comma_separated_list_producer_t<
 			Container,
-			Container_Adaptor,
 			Element_Producer >{ std::move(element) };
 }
 
