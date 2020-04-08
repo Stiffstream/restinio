@@ -422,6 +422,126 @@ struct result_value_wrapper< nothing_t >
  */
 constexpr std::size_t N = std::numeric_limits<std::size_t>::max();
 
+//
+// digits_to_consume_t
+//
+/*!
+ * @brief Limits for number of digits to be extracted during
+ * parsing of decimal numbers.
+ *
+ * @since v.0.6.6
+ */
+class digits_to_consume_t
+{
+public:
+	using underlying_int_t = std::int_fast8_t;
+
+	//! Minimal number of digits to consume.
+	/*!
+	 * @note
+	 * Can't be 0, but this value is not checked for
+	 * performance reasons.
+	 */
+	underlying_int_t m_min;
+	//! Maximal number of digits to consume.
+	underlying_int_t m_max;
+
+public:
+	/*!
+	 * A constructor for the case when min = max and both are
+	 * equal to @a total.
+	 */
+	constexpr
+	digits_to_consume_t( underlying_int_t total ) noexcept
+		:	m_min{ total }
+		,	m_max{ total }
+	{}
+
+	/*!
+	 * A constructor for the case when min and max are specified
+	 * separately.
+	 */
+	constexpr
+	digits_to_consume_t(
+		underlying_int_t min,
+		underlying_int_t max ) noexcept
+		:	m_min{ min }
+		,	m_max{ max }
+	{}
+
+	//! Get the minimal value.
+	RESTINIO_NODISCARD
+	constexpr auto
+	min() const noexcept { return m_min; }
+
+	//! Get the maximum value.
+	RESTINIO_NODISCARD
+	constexpr auto
+	max() const noexcept { return m_max; }
+
+	//! Get the value that means that maximum is not limited.
+	RESTINIO_NODISCARD
+	constexpr static auto
+	unlimited_max() noexcept
+	{
+		return std::numeric_limits<underlying_int_t>::max();
+	}
+
+	/*!
+	 * Returns `digits_to_consume_t{1, unlimited_max()}`.
+	 */
+	RESTINIO_NODISCARD
+	constexpr static auto
+	from_one_to_max() noexcept
+	{
+		return digits_to_consume_t{ 1, unlimited_max() };
+	}
+};
+
+/*!
+ * @brief Create a limit for number of digits to be extracted.
+ *
+ * Makes a limit where min==max and both are equal to @a total.
+ *
+ * Usage example:
+ * @code
+ * using namespace restinio::easy_parser;
+ *
+ * auto x_uint32_p = hexadecimal_number_p<std::uint32_t>(expected_digits(8));
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+RESTINIO_NODISCARD
+inline constexpr digits_to_consume_t
+expected_digits( digits_to_consume_t::underlying_int_t total ) noexcept
+{
+	return { total };
+}
+
+/*!
+ * @brief Create a limit for number of digits to be extracted.
+ *
+ * Makes a limit where min and max are specified separately.
+ *
+ * Usage example:
+ * @code
+ * using namespace restinio::easy_parser;
+ *
+ * auto ten_digits_int32_p = decimal_number_p<std::int32_t>(expected_digits(1, 10));
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
+RESTINIO_NODISCARD
+inline constexpr digits_to_consume_t
+expected_digits(
+	digits_to_consume_t::underlying_int_t min,
+	digits_to_consume_t::underlying_int_t max ) noexcept
+{
+	return { min, max };
+}
+
 namespace impl
 {
 
@@ -1992,18 +2112,21 @@ public:
 };
 
 //
-// try_parse_digits
+// try_parse_digits_with_digits_limit
 //
 /*!
- * @brief Helper function for parsing integers.
+ * @brief Helper function for parsing integers with respect to
+ * the number of digits to be consumed.
  *
  * Usage example:
  * @code
  * // For the case of unsigned or positive signed integer:
- * auto r = try_parse_digits<unsigned int>(from,
+ * auto r = try_parse_digits_with_digits_limit<unsigned int>(from,
+ * 		expected_digits(4),
  * 		restinio::impl::overflow_controlled_integer_accumulator_t<unsigned int, 10>{});
  * // For the case of negative signed integer.
- * auto r = try_parse_digits<short>(from,
+ * auto r = try_parse_digits_with_digits_limit<short>(from,
+ * 		expected_digits(4),
  * 		restinio::impl::overflow_controlled_integer_accumulator_t<
  * 				short,
  * 				10,
@@ -2015,11 +2138,14 @@ public:
 template< typename T, typename Value_Accumulator >
 RESTINIO_NODISCARD
 expected_t< T, parse_error_t >
-try_parse_digits( source_t & from, Value_Accumulator acc ) noexcept
+try_parse_digits_with_digits_limit(
+	source_t & from,
+	digits_to_consume_t digits_limit,
+	Value_Accumulator acc ) noexcept
 {
 	source_t::content_consumer_t consumer{ from };
 
-	int symbols_processed{};
+	digits_to_consume_t::underlying_int_t symbols_processed{};
 
 	for( auto ch = from.getch(); !ch.m_eof; ch = from.getch() )
 	{
@@ -2034,6 +2160,8 @@ try_parse_digits( source_t & from, Value_Accumulator acc ) noexcept
 				} );
 
 			++symbols_processed;
+			if( symbols_processed == digits_limit.max() )
+				break;
 		}
 		else
 		{
@@ -2042,8 +2170,8 @@ try_parse_digits( source_t & from, Value_Accumulator acc ) noexcept
 		}
 	}
 
-	if( !symbols_processed )
-		// There is nothing extracted from the input stream.
+	if( symbols_processed < digits_limit.min() )
+		// Not all required digits are extracted.
 		return make_unexpected( parse_error_t{
 				from.current_position(),
 				error_reason_t::pattern_not_found
@@ -2056,7 +2184,7 @@ try_parse_digits( source_t & from, Value_Accumulator acc ) noexcept
 }
 
 //
-// try_parse_hexdigits
+// try_parse_hexdigits_with_digits_limit
 //
 /*!
  * @brief Helper function for parsing integers in hexadecimal form.
@@ -2064,7 +2192,8 @@ try_parse_digits( source_t & from, Value_Accumulator acc ) noexcept
  * Usage example:
  * @code
  * // For the case of unsigned or positive signed integer:
- * auto r = try_parse_hexdigits<unsigned int>(from,
+ * auto r = try_parse_hexdigits_with_digits_limit<unsigned int>(from,
+ * 		expected_digits(4, 8),
  * 		restinio::impl::overflow_controlled_integer_accumulator_t<unsigned int, 16>{});
  * @endcode
  *
@@ -2073,7 +2202,10 @@ try_parse_digits( source_t & from, Value_Accumulator acc ) noexcept
 template< typename T, typename Value_Accumulator >
 RESTINIO_NODISCARD
 expected_t< T, parse_error_t >
-try_parse_hexdigits( source_t & from, Value_Accumulator acc ) noexcept
+try_parse_hexdigits_with_digits_limit(
+	source_t & from,
+	digits_to_consume_t digits_limit,
+	Value_Accumulator acc ) noexcept
 {
 	const auto ch_to_digit = []( char ch ) -> std::pair<bool, T> {
 		if( ch >= '0' && ch <= '9' )
@@ -2088,7 +2220,7 @@ try_parse_hexdigits( source_t & from, Value_Accumulator acc ) noexcept
 
 	source_t::content_consumer_t consumer{ from };
 
-	int symbols_processed{};
+	digits_to_consume_t::underlying_int_t symbols_processed{};
 
 	for( auto ch = from.getch(); !ch.m_eof; ch = from.getch() )
 	{
@@ -2104,6 +2236,8 @@ try_parse_hexdigits( source_t & from, Value_Accumulator acc ) noexcept
 				} );
 
 			++symbols_processed;
+			if( symbols_processed == digits_limit.max() )
+				break;
 		}
 		else
 		{
@@ -2112,8 +2246,8 @@ try_parse_hexdigits( source_t & from, Value_Accumulator acc ) noexcept
 		}
 	}
 
-	if( !symbols_processed )
-		// There is nothing extracted from the input stream.
+	if( symbols_processed < digits_limit.min() )
+		// Not all required digits are extracted.
 		return make_unexpected( parse_error_t{
 				from.current_position(),
 				error_reason_t::pattern_not_found
@@ -2144,8 +2278,45 @@ public:
 	expected_t< T, parse_error_t >
 	try_parse( source_t & from ) const noexcept
 	{
-		return try_parse_digits< T >(
+		return try_parse_digits_with_digits_limit< T >(
 				from,
+				digits_to_consume_t::from_one_to_max(),
+				restinio::impl::overflow_controlled_integer_accumulator_t<T, 10>{} );
+	}
+};
+
+//
+// non_negative_decimal_number_producer_with_digits_limit_t
+//
+/*!
+ * @brief A producer for the case when a non-negative decimal number is
+ * expected in the input stream.
+ *
+ * This class takes into account a number of digits to be consumed.
+ *
+ * In the case of success returns the extracted number.
+ *
+ * @since v.0.6.6
+ */
+template< typename T >
+class non_negative_decimal_number_producer_with_digits_limit_t
+	:	public non_negative_decimal_number_producer_t<T>
+{
+	digits_to_consume_t m_digits_limit;
+
+public:
+	non_negative_decimal_number_producer_with_digits_limit_t(
+		digits_to_consume_t digits_limit )
+		:	m_digits_limit{ digits_limit }
+	{}
+
+	RESTINIO_NODISCARD
+	expected_t< T, parse_error_t >
+	try_parse( source_t & from ) const noexcept
+	{
+		return try_parse_digits_with_digits_limit< T >(
+				from,
+				m_digits_limit,
 				restinio::impl::overflow_controlled_integer_accumulator_t<T, 10>{} );
 	}
 };
@@ -2172,8 +2343,45 @@ public:
 	expected_t< T, parse_error_t >
 	try_parse( source_t & from ) const noexcept
 	{
-		return try_parse_hexdigits< T >(
+		return try_parse_hexdigits_with_digits_limit< T >(
 				from,
+				digits_to_consume_t::from_one_to_max(),
+				restinio::impl::overflow_controlled_integer_accumulator_t<T, 16>{} );
+	}
+};
+
+//
+// hexadecimal_number_producer_with_digits_limit_t
+//
+/*!
+ * @brief A producer for the case when a number in hexadecimal form is expected
+ * in the input stream.
+ *
+ * This class takes into account a number of digits to be consumed.
+ *
+ * In the case of success returns the extracted number.
+ *
+ * @since v.0.6.6
+ */
+template< typename T >
+class hexadecimal_number_producer_with_digits_limit_t
+	:	public hexadecimal_number_producer_t< T >
+{
+	digits_to_consume_t m_digits_limit;
+
+public:
+	hexadecimal_number_producer_with_digits_limit_t(
+		digits_to_consume_t digits_limit )
+		:	m_digits_limit{ digits_limit }
+	{}
+
+	RESTINIO_NODISCARD
+	expected_t< T, parse_error_t >
+	try_parse( source_t & from ) const noexcept
+	{
+		return try_parse_hexdigits_with_digits_limit< T >(
+				from,
+				m_digits_limit,
 				restinio::impl::overflow_controlled_integer_accumulator_t<T, 16>{} );
 	}
 };
@@ -2202,12 +2410,30 @@ public:
 	try_parse_result_type
 	try_parse( source_t & from ) const noexcept
 	{
+		return try_parse_impl( from,
+				[]() noexcept {
+					return digits_to_consume_t::from_one_to_max();
+				} );
+	}
+
+protected:
+	template< typename Digits_Limit_Maker >
+	RESTINIO_NODISCARD
+	try_parse_result_type
+	try_parse_impl(
+		source_t & from,
+		Digits_Limit_Maker && digits_limit_maker ) const noexcept
+	{
 		source_t::content_consumer_t consumer{ from };
 
 		auto sign_ch = from.getch();
 		if( !sign_ch.m_eof )
 		{
-			const auto r = try_parse_with_this_first_symbol( from, sign_ch.m_ch );
+			const auto r = try_parse_with_this_first_symbol(
+					from,
+					sign_ch.m_ch,
+					std::forward<Digits_Limit_Maker>(digits_limit_maker) );
+
 			if( r )
 				consumer.commit();
 
@@ -2221,39 +2447,46 @@ public:
 	}
 
 private:
+	template< typename Digits_Limit_Maker >
 	RESTINIO_NODISCARD
 	static try_parse_result_type
 	try_parse_with_this_first_symbol(
 		source_t & from,
-		char first_symbol ) noexcept
+		char first_symbol,
+		Digits_Limit_Maker && digits_limit_maker ) noexcept
 	{
 		using restinio::impl::overflow_controlled_integer_accumulator_t;
 		using restinio::impl::check_negative_extremum;
 
 		if( '-' == first_symbol )
 		{
-			const auto r = try_parse_digits< T >(
+			const auto r = try_parse_digits_with_digits_limit< T >(
 					from,
+					digits_limit_maker(),
 					overflow_controlled_integer_accumulator_t<
 							T,
 							10,
 							check_negative_extremum >{} );
 			if( r )
-				return -(*r);
+				return static_cast< T >( -(*r) ); // This static_cast is required
+					// for clang compiler that warns that if type of *r is `short`,
+					// then -(*r) will have type `int`.
 			else
 				return r;
 		}
 		else if( '+' == first_symbol )
 		{
-			return try_parse_digits< T >(
+			return try_parse_digits_with_digits_limit< T >(
 					from,
+					digits_limit_maker(),
 					overflow_controlled_integer_accumulator_t< T, 10 >{} );
 		}
 		else if( is_digit(first_symbol) )
 		{
 			from.putback();
-			return try_parse_digits< T >(
+			return try_parse_digits_with_digits_limit< T >(
 					from,
+					digits_limit_maker(),
 					overflow_controlled_integer_accumulator_t< T, 10 >{} );
 		}
 
@@ -2261,6 +2494,41 @@ private:
 				from.current_position(),
 				error_reason_t::pattern_not_found
 		} );
+	}
+};
+
+//
+// decimal_number_producer_with_digits_limit_t
+//
+/*!
+ * @brief A producer for the case when a signed decimal number is
+ * expected in the input stream.
+ *
+ * This class takes into account a number of digits to be consumed.
+ *
+ * In the case of success returns the extracted number.
+ *
+ * @since v.0.6.6
+ */
+template< typename T >
+class decimal_number_producer_with_digits_limit_t
+	:	public decimal_number_producer_t< T >
+{
+	digits_to_consume_t m_digits_limit;
+
+public:
+	decimal_number_producer_with_digits_limit_t(
+		digits_to_consume_t digits_limit )
+		:	m_digits_limit{ digits_limit }
+	{}
+
+	RESTINIO_NODISCARD
+	auto
+	try_parse( source_t & from ) const noexcept
+	{
+		return this->try_parse_impl(
+				from,
+				[this]() noexcept { return m_digits_limit; } );
 	}
 };
 
@@ -3364,6 +3632,47 @@ non_negative_decimal_number_p() noexcept
 	return impl::non_negative_decimal_number_producer_t<T>{};
 }
 
+//
+// non_negative_decimal_number_p
+//
+/*!
+ * @brief A factory function to create a non_negative_decimal_number_producer.
+ *
+ * @note
+ * This parser consumes a number of digits with respect to @a digits_limit.
+ *
+ * Usage example:
+ * @code
+ * using namespace restinio::easy_parser;
+ *
+ * struct compound_number {
+ * 	short prefix_;
+ * 	int suffix_;
+ * };
+ *
+ * auto parse = produce<compound_number>(
+ * 	non_negative_decimal_number_p<short>(expected_digits(2, 5))
+ * 		>> &compound_number::prefix_,
+ * 	non_negative_decimal_number_p<int>(expected_digits(7, 12))
+ * 		>> &compound_number::suffix_
+ * );
+ * @endcode
+ *
+ * @return a producer that expects a positive decimal number in the input stream
+ * and returns it if a number is found.
+ * 
+ * @since v.0.6.2
+ */
+template< typename T >
+RESTINIO_NODISCARD
+inline auto
+non_negative_decimal_number_p( digits_to_consume_t digits_limit ) noexcept
+{
+	return impl::non_negative_decimal_number_producer_with_digits_limit_t<T>{
+			digits_limit
+	};
+}
+
 //FIXME: remove in v.0.7.0!
 //
 // positive_decimal_number_p
@@ -3413,6 +3722,50 @@ hexadecimal_number_p() noexcept
 }
 
 //
+// hexadecimal_number_p
+//
+/*!
+ * @brief A factory function to create a hexadecimal_number_producer.
+ *
+ * @note
+ * This parser consumes a number of digits with respect to @a digits_limit.
+ *
+ * Usage example:
+ * @code
+ * using namespace restinio::easy_parser;
+ *
+ * struct compound_number {
+ * 	short prefix_;
+ * 	int suffix_;
+ * };
+ *
+ * auto parse = produce<compound_number>(
+ * 	hexadecimal_number_p<short>(expected_digits(4))
+ * 		>> &compound_number::prefix_,
+ * 	hexadecimal_number_p<int>(expected_digits(7, 12))
+ * 		>> &compound_number::suffix_
+ * );
+ * @endcode
+ *
+ * @attention
+ * T should be an unsigned type.
+ *
+ * @return a producer that expects a positive hexadecimal number in the input
+ * stream and returns it if a number is found.
+ * 
+ * @since v.0.6.6
+ */
+template< typename T >
+RESTINIO_NODISCARD
+inline auto
+hexadecimal_number_p( digits_to_consume_t digits_limit ) noexcept
+{
+	return impl::hexadecimal_number_producer_with_digits_limit_t<T>{
+			digits_limit
+	};
+}
+
+//
 // decimal_number_p
 //
 /*!
@@ -3449,6 +3802,61 @@ decimal_number_p() noexcept
 			"decimal_number_p() can be used only for signed numeric types" );
 
 	return impl::decimal_number_producer_t<T>{};
+}
+
+//
+// decimal_number_p
+//
+/*!
+ * @brief A factory function to create a decimal_number_producer.
+ *
+ * Parses numbers in the form:
+@verbatim
+number = [sign] DIGIT+
+sign = '-' | '+'
+@endverbatim
+ *
+ * @note
+ * This parser consumes a number of digits with respect to @a digits_limit.
+ * The leading sign (if present) is not added to a number of extracted digits.
+ *
+ * Usage example:
+ * @code
+ * using namespace restinio::easy_parser;
+ *
+ * struct compound_number {
+ * 	short prefix_;
+ * 	int suffix_;
+ * };
+ *
+ * auto parse = produce<compound_number>(
+ * 	decimal_number_p<short>(expected_digits(4))
+ * 		>> &compound_number::prefix_,
+ * 	decimal_number_p<int>(expected_digits(7, 12))
+ * 		>> &compound_number::suffix_
+ * );
+ * @endcode
+ *
+ * @attention
+ * Can be used only for singed number types (e.g. short, int, long,
+ * std::int32_t and so on).
+ *
+ * @return a producer that expects a decimal number in the input stream
+ * and returns it if a number is found.
+ * 
+ * @since v.0.6.6
+ */
+template< typename T >
+RESTINIO_NODISCARD
+inline auto
+decimal_number_p( digits_to_consume_t digits_limit ) noexcept
+{
+	static_assert( std::is_signed<T>::value,
+			"decimal_number_p() can be used only for signed numeric types" );
+
+	return impl::decimal_number_producer_with_digits_limit_t<T>{
+			digits_limit
+	};
 }
 
 //

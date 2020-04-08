@@ -4,6 +4,8 @@
 
 #include <catch2/catch.hpp>
 
+#include <fmt/format.h>
+
 #include <restinio/helpers/easy_parser.hpp>
 
 #include <restinio/helpers/http_field_parsers/basics.hpp>
@@ -110,6 +112,52 @@ TEST_CASE( "non-negative decimal number", "[non_negative_decimal_number_p]" )
 		REQUIRE( result );
 		REQUIRE( 123456u == *result );
 	}
+
+	{
+		const auto result =
+			try_parse( "1234",
+					non_negative_decimal_number_p<unsigned long>(
+							expected_digits(6) )
+			);
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result =
+			try_parse( "1234",
+					non_negative_decimal_number_p<unsigned long>(
+							expected_digits(2, 4) )
+			);
+
+		REQUIRE( result );
+		REQUIRE( 1234u == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "1234",
+					non_negative_decimal_number_p<unsigned long>(
+							expected_digits(2, 6) )
+			);
+
+		REQUIRE( result );
+		REQUIRE( 1234u == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "1234567",
+					produce<unsigned long>(
+						non_negative_decimal_number_p<unsigned long>(
+								expected_digits(2, 6) ) >> as_result(),
+						digit()
+					)
+			);
+
+		REQUIRE( result );
+		REQUIRE( 123456u == *result );
+	}
 }
 
 TEST_CASE( "hexadecimal number", "[hexadecimal_number_p]" )
@@ -179,6 +227,35 @@ TEST_CASE( "hexadecimal number", "[hexadecimal_number_p]" )
 
 		REQUIRE( result );
 		REQUIRE( 0xafbd == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "aFbDe",
+					produce<unsigned int>(
+							hexadecimal_number_p<unsigned int>(
+								expected_digits(4) ) >> as_result(),
+							hexdigit()
+					)
+			);
+
+		REQUIRE( result );
+		REQUIRE( 0xafbd == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "aFbD",
+					produce< std::pair<unsigned int, unsigned int> >(
+						hexadecimal_number_p<unsigned int>( expected_digits(2) )
+							>> &std::pair<unsigned int, unsigned int>::first,
+						hexadecimal_number_p<unsigned int>( expected_digits(2) )
+							>> &std::pair<unsigned int, unsigned int>::second
+					)
+			);
+
+		REQUIRE( result );
+		REQUIRE( std::make_pair(0xAFu, 0xBDu) == *result );
 	}
 }
 
@@ -275,6 +352,64 @@ TEST_CASE( "decimal number", "[decimal_number_p]" )
 			try_parse( "32768", decimal_number_p<std::int16_t>() );
 
 		REQUIRE( !result );
+	}
+
+	{
+		const auto result =
+			try_parse( "2",
+					decimal_number_p<std::int16_t>( expected_digits(2) ) );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result =
+			try_parse( "-22",
+					decimal_number_p<std::int16_t>( expected_digits(2) ) );
+
+		REQUIRE( result );
+		REQUIRE( -22 == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "+22",
+					decimal_number_p<std::int16_t>( expected_digits(2) ) );
+
+		REQUIRE( result );
+		REQUIRE( 22 == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "22",
+					decimal_number_p<std::int16_t>( expected_digits(2) ) );
+
+		REQUIRE( result );
+		REQUIRE( 22 == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "2234",
+					decimal_number_p<std::int16_t>( expected_digits(2, 6) ) );
+
+		REQUIRE( result );
+		REQUIRE( 2234 == *result );
+	}
+
+	{
+		const auto result =
+			try_parse( "2234",
+					produce<std::int16_t>(
+						decimal_number_p<std::int16_t>( expected_digits(2, 3) )
+							>> as_result(),
+						digit()
+					)
+			);
+
+		REQUIRE( result );
+		REQUIRE( 223 == *result );
 	}
 }
 
@@ -674,6 +809,91 @@ TEST_CASE( "GUID parser to std::array", "[hexdigit][std::array]" )
 		REQUIRE( result );
 		REQUIRE( make_from_string( "12345678-0000-1111-2222-123456789abc" )
 				== *result );
+	}
+}
+
+TEST_CASE( "GUID parser to string", "[hexdigit][expected_digits]" )
+{
+	using namespace restinio::http_field_parsers;
+
+	struct uuid_t
+	{
+		std::uint32_t time_low_;
+		std::uint16_t time_mid_;
+		std::uint16_t time_hi_and_version_;
+		std::uint8_t clock_seq_hi_and_res_;
+		std::uint8_t clock_seq_low_;
+		std::array< std::uint8_t, 6 > node_;
+	};
+
+	const auto to_string = []( const uuid_t & v ) {
+		return fmt::format(
+				"{:08x}-{:04x}-{:04x}-{:02x}{:02x}-"
+				"{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+				v.time_low_, v.time_mid_, v.time_hi_and_version_,
+				v.clock_seq_hi_and_res_, v.clock_seq_low_,
+				v.node_[0], v.node_[1], v.node_[2], v.node_[3],
+				v.node_[4], v.node_[5] );
+	};
+
+	const auto try_parse = []( restinio::string_view_t what ) {
+		const auto x_uint32_p =
+				hexadecimal_number_p<std::uint32_t>(expected_digits(8));
+		const auto x_uint16_p =
+				hexadecimal_number_p<std::uint16_t>(expected_digits(4));
+		const auto x_uint8_p =
+				hexadecimal_number_p<std::uint8_t>(expected_digits(2));
+
+		const auto parser = produce<uuid_t>(
+			x_uint32_p >> &uuid_t::time_low_,
+			symbol('-'),
+			x_uint16_p >> &uuid_t::time_mid_,
+			symbol('-'),
+			x_uint16_p >> &uuid_t::time_hi_and_version_,
+			symbol('-'),
+			x_uint8_p >> &uuid_t::clock_seq_hi_and_res_,
+			x_uint8_p >> &uuid_t::clock_seq_low_,
+			symbol('-'),
+			produce< std::array<std::uint8_t, 6> >(
+				repeat( 6, 6, x_uint8_p >> to_container() )
+			) >> &uuid_t::node_
+		);
+		return restinio::easy_parser::try_parse( what, parser );
+	};
+
+	{
+		const auto result = try_parse( "" );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse(
+				"12345678:0000-1111-2222-123456789abc" );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse(
+				"12345678a0000-1111-2222-123456789abc" );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse(
+				"1234567x-0000-1111-2222-123456789abc" );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse(
+				"12345678-0000-1111-2222-123456789ABC" );
+
+		REQUIRE( result );
+		REQUIRE( "12345678-0000-1111-2222-123456789abc" == to_string( *result ) );
 	}
 }
 
