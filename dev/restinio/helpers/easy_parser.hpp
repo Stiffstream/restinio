@@ -117,40 +117,59 @@ struct nothing_t {};
 //
 // result_value_wrapper
 //
-//FIXME: extend the docs!
 /*!
  * @brief A template with specializations for different kind
- * of containers and for type `nothing`.
+ * of result values and for type `nothing`.
  *
- * Every specialization will have the following content:
+ * Every specialization for a case when T is not a container should have the
+ * following content:
  * @code
  * struct result_value_wrapper<...>
  * {
- * 	using container_type = ... // some type of the container.
- * 	using value_type = ... // type of object to be placed into a container.
+ * 	using result_type = ... // type of the result value.
+ * 	using wrapped_type = ... // type to be created inside a producer
+ * 		// to hold a temporary value during the parsing.
  *
- * 	static void store( container_type & to, value_type && what )
- * 	{ ... }
+ * 	static void
+ * 	as_result( wrapped_type & to, result_type && what );
+ *
+ * 	RESTINIO_NODISCARD static result_type &&
+ * 	unwrap_value( wrapped_type & from );
  * };
  * @endcode
  *
- * @since v.0.6.1
+ * Every specialization for a case when T is a container should have
+ * the following content:
+ * @code
+ * struct result_value_wrapper<...>
+ * {
+ * 	using result_type = ... // type of the result value.
+ * 	using value_type = ... // type of object to be placed into a container
+ * 		// if result_type is a container.
+ * 	using wrapped_type = ... // type to be created inside a producer
+ * 		// to hold a temporary value during the parsing.
+ *
+ * 	static void
+ * 	as_result( wrapped_type & to, result_type && what );
+ *
+ * 	static void
+ * 	to_container( wrapped_type & to, value_type && item );
+ *
+ * 	RESTINIO_NODISCARD static result_type &&
+ * 	unwrap_value( wrapped_type & from );
+ * };
+ * @endcode
+ *
+ * @since v.0.6.6
  */
 template< typename T >
 struct result_value_wrapper
 {
 	using result_type = T;
-	using value_type = T;
 	using wrapped_type = result_type;
 
 	static void
 	as_result( wrapped_type & to, result_type && what )
-	{
-		to = std::move(what);
-	}
-
-	static void
-	to_container( wrapped_type & to, value_type && what )
 	{
 		to = std::move(what);
 	}
@@ -163,7 +182,51 @@ struct result_value_wrapper
 	}
 };
 
-//FIXME: document this!
+//
+// result_wrapper_for
+//
+/*!
+ * @brief A metafunction for detection of actual result_value_wrapper
+ * type for T
+ *
+ * If a specialization of result_value_wrapper defines wrapped_type
+ * as a different type from result_type then transform() and consume()
+ * methods will receive a reference to wrapped_type. And there will be
+ * a task to detect actual result_type from a wrapped_type.
+ *
+ * To solve this task it is necessary to have a way to get
+ * result_value_wrapper<result_type> from wrapped_type.
+ *
+ * This metafunction is that way.
+ *
+ * @note
+ * For each specialization of result_value_wrapper<T> that introduces
+ * wrapped_type different from result_type a specialization of
+ * result_wrapper_for should also be provided. For example:
+ * @code
+ * class my_type {...};
+ * class my_type_wrapper { ... };
+ *
+ * namespace restinio {
+ * namespace easy_parser {
+ *
+ * template<>
+ * struct result_value_wrapper<my_type> {
+ * 	using result_type = my_type;
+ * 	using wrapped_type = my_type_wrapper;
+ * 	...
+ * };
+ * template<>
+ * struct result_wrapper_for<my_type_wrapper> {
+ * 	using type = result_value_wrapper<my_type>;
+ * };
+ *
+ * } // namespace easy_parser
+ * } // namespace restinio
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
 template< typename T >
 struct result_wrapper_for
 {
@@ -203,7 +266,21 @@ struct result_value_wrapper< std::vector< T, Args... > >
 namespace impl
 {
 
-//FIXME: document this!
+//
+// std_array_wrapper
+//
+/*!
+ * @brief A special wrapper for std::array type to be used inside
+ * a producer during the parsing.
+ *
+ * This type is intended to be used inside a specialization of
+ * result_value_wrapper for std::array.
+ *
+ * This type holds the current index that can be used by
+ * to_container method for addition of a new item to the result array.
+ *
+ * @since v.0.6.6
+ */
 template< typename T, std::size_t S >
 struct std_array_wrapper
 {
@@ -248,7 +325,12 @@ struct result_value_wrapper< std::array< T, S > >
 	}
 };
 
-//FIXME: document this!
+/*!
+ * @brief A specialization of result_wrapper_for metafunction for
+ * the case of std::array wrapper.
+ *
+ * @since v.0.6.6
+ */
 template< typename T, std::size_t S >
 struct result_wrapper_for< impl::std_array_wrapper<T, S> >
 {
@@ -1251,8 +1333,6 @@ public :
 		const bool success = restinio::utils::tuple_algorithms::any_of(
 				m_subitems,
 				[&from, &target]( auto && one_producer ) {
-//FIXME: is this consumer really needed?
-//Every failed try_process should restore the current position itself.
 					source_t::content_consumer_t consumer{ from };
 					Target_Type tmp_value{ target };
 
@@ -2227,11 +2307,9 @@ struct as_result_consumer_t : public consumer_tag
 	template< typename Target_Type, typename Value >
 	void
 	consume( Target_Type & dest, Value && src ) const
-//FIXME: fix the noexcept clause!
-//		noexcept(noexcept(dest=std::forward<Value>(src)))
 	{
-		using value_wrapper_type = result_wrapper_for_t<Target_Type>;
-		value_wrapper_type::as_result( dest, std::forward<Value>(src) );
+		result_wrapper_for_t<Target_Type>::as_result(
+				dest, std::forward<Value>(src) );
 	}
 };
 
@@ -2260,11 +2338,11 @@ public :
 	template< typename Target_Type, typename Value >
 	void
 	consume( Target_Type & dest, Value && ) const
-//FIXME: fix the noexcept clause!
-//		noexcept(noexcept(dest=m_result))
 	{
-		using value_wrapper_type = result_wrapper_for_t<Target_Type>;
-		value_wrapper_type::as_result( dest, Result_Type{m_result} );
+		result_wrapper_for_t<Target_Type>::as_result(
+				dest,
+				// NOTE: use a copy of m_result.
+				Result_Type{m_result} );
 	}
 };
 
@@ -2293,6 +2371,9 @@ public :
 	consume( Target_Type & dest, Value && src ) const
 		noexcept(noexcept(m_consumer(dest, std::forward<Value>(src))))
 	{
+//FIXME: this code should be checked for the case when
+//result_value_wrapper::result_type differs from
+//result_value_wrapper::wrapped_type.
 		m_consumer( dest, std::forward<Value>(src) );
 	}
 };
@@ -2319,6 +2400,12 @@ class field_setter_consumer_t : public consumer_tag
 public :
 	field_setter_consumer_t( pointer_t ptr ) noexcept : m_ptr{ptr} {}
 
+	// NOTE: it seems that this method won't be compiled if
+	// result_value_wrapper::result_type differs from
+	// result_value_wrapper::wrapped_type.
+	//
+	// This is not a problem for the current version.
+	// But this moment would require more attention in the future.
 	void
 	consume( C & to, F && value ) const
 		noexcept(noexcept(to.*m_ptr = std::move(value)))
@@ -2358,6 +2445,12 @@ operator>>( P producer, F C::*member_ptr )
 template< std::size_t Index >
 struct tuple_item_consumer_t : public consumer_tag
 {
+	// NOTE: it seems that this method won't be compiled if
+	// result_value_wrapper::result_type differs from
+	// result_value_wrapper::wrapped_type.
+	//
+	// This is not a problem for the current version.
+	// But this moment would require more attention in the future.
 	template< typename Target_Type, typename Value >
 	void
 	consume( Target_Type && to, Value && value )
@@ -2418,6 +2511,9 @@ struct to_lower_transformer_t< char >
 		return restinio::impl::to_lower_case(input);
 	}
 };
+
+//FIXME: should there be a specialization of to_lower_transformer_t for
+// std::array<char, N>?
 
 //
 // to_lower_transformer_proxy_t
@@ -2487,6 +2583,9 @@ public :
 		: m_converter{ std::forward<Convert_Arg>(converter) }
 	{}
 
+//FIXME: this implementation should be tested in cases when
+//result_value_wrapper::result_type differs from
+//result_value_wrapper::wrapped_type.
 	template< typename Input >
 	RESTINIO_NODISCARD
 	Output_Type
@@ -2662,7 +2761,6 @@ public:
 //
 // produce
 //
-//FIXME: extend the docs!
 /*!
  * @brief A factory function to create a producer that creates an
  * instance of the target type by using specified clauses.
@@ -3441,7 +3539,6 @@ struct to_container_consumer_t : public consumer_tag
 //
 // to_container
 //
-//FIXME: update the docs!
 /*!
  * @brief A factory function to create a to_container_consumer.
  *
@@ -3461,36 +3558,6 @@ struct to_container_consumer_t : public consumer_tag
  * 			symbol('='),
  * 			token_p() >> &str_pair::second
  * 		) >> to_container()
- * 	)
- * );
- * @endcode
- *
- * Note that to_container() can be parametrized by own Container_Adaptor type.
- * For example:
- * @code
- * template< typename K, typename V >
- * class dense_hash_table {...};
- *
- * template< typename DHT >
- * struct dense_hash_table_adaptor
- * {
- * 	using container_type = DHT;
- * 	using value_type = std::pair<typename DHT::key_type, typename DHT::value_type>;
- *
- * 	static void	store(container_type & to, value_type && what) {
- * 		to.insert(std::move(what.first), std::move(what.second));
- * 	}
- * };
- * ...
- * using my_container = dense_hash_table<std::string, std::string>;
- * using my_item = typename dense_hash_table_adaptor<my_container>::value_type;
- * produce<my_container>(
- * 	repeat(0, N,
- * 		produce<my_item>(
- * 			token_p() >> &my_item::first,
- * 			symbol('='),
- * 			token_p() >> &my_item::second
- * 		) >> to_container<dense_hash_table_adaptor>()
  * 	)
  * );
  * @endcode
