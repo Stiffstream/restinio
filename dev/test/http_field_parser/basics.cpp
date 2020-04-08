@@ -677,6 +677,97 @@ TEST_CASE( "GUID parser to std::array", "[hexdigit][std::array]" )
 	}
 }
 
+TEST_CASE( "custom_consumer and std::array", "[custom_consumer][std::array]" )
+{
+	using namespace restinio::http_field_parsers;
+
+	using array_t = std::array< char, 4 >;
+	struct parse_result_t {
+		std::string m_data;
+	};
+
+	const auto try_parse = []( restinio::string_view_t what ) {
+		const auto parser = produce<parse_result_t>(
+			produce<array_t>(
+				repeat(4u, 4u, hexdigit_p() >> to_container())
+			) >> custom_consumer( []( parse_result_t & to, array_t && value ) {
+					to.m_data.assign( &value[0], value.size() );
+				} )
+		);
+		return restinio::easy_parser::try_parse( what, parser );
+	};
+
+	{
+		const auto result = try_parse( "" );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse( "12345678:0000-1111-2222-123456789abc" );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse( "1234" );
+
+		REQUIRE( result );
+		REQUIRE( "1234" == result->m_data );
+	}
+
+	{
+		const auto result = try_parse( "aBcD" );
+
+		REQUIRE( result );
+		REQUIRE( "aBcD" == result->m_data );
+	}
+}
+
+TEST_CASE( "convert and std::array", "[convert][std::array]" )
+{
+	using namespace restinio::http_field_parsers;
+
+	using array_t = std::array< char, 4 >;
+
+	const auto try_parse = []( restinio::string_view_t what ) {
+		const auto parser = produce<std::string>(
+			produce<array_t>(
+				repeat(4u, 4u, hexdigit_p() >> to_container())
+			) >> convert( []( array_t && value ) {
+					return std::string( &value[0], value.size() );
+				} )
+			>> as_result()
+		);
+		return restinio::easy_parser::try_parse( what, parser );
+	};
+
+	{
+		const auto result = try_parse( "" );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse( "12345678:0000-1111-2222-123456789abc" );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse( "1234" );
+
+		REQUIRE( result );
+		REQUIRE( "1234" == *result );
+	}
+
+	{
+		const auto result = try_parse( "aBcD" );
+
+		REQUIRE( result );
+		REQUIRE( "aBcD" == *result );
+	}
+}
 TEST_CASE( "token", "[token]" )
 {
 	using namespace restinio::http_field_parsers;

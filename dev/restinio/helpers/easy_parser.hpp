@@ -2371,9 +2371,6 @@ public :
 	consume( Target_Type & dest, Value && src ) const
 		noexcept(noexcept(m_consumer(dest, std::forward<Value>(src))))
 	{
-//FIXME: this code should be checked for the case when
-//result_value_wrapper::result_type differs from
-//result_value_wrapper::wrapped_type.
 		m_consumer( dest, std::forward<Value>(src) );
 	}
 };
@@ -2583,9 +2580,6 @@ public :
 		: m_converter{ std::forward<Convert_Arg>(converter) }
 	{}
 
-//FIXME: this implementation should be tested in cases when
-//result_value_wrapper::result_type differs from
-//result_value_wrapper::wrapped_type.
 	template< typename Input >
 	RESTINIO_NODISCARD
 	Output_Type
@@ -2631,7 +2625,7 @@ public :
 		noexcept(noexcept(Converter{m_converter}))
 	{
 		using output_type = std::decay_t<
-				decltype(m_converter(std::declval<Input_Type&>())) >;
+				decltype(m_converter(std::declval<Input_Type&&>())) >;
 
 		return convert_transformer_t< output_type, Converter >{ m_converter };
 	}
@@ -2643,7 +2637,7 @@ public :
 		noexcept(noexcept(Converter{std::move(m_converter)}))
 	{
 		using output_type = std::decay_t<
-				decltype(m_converter(std::declval<Input_Type&>())) >;
+				decltype(m_converter(std::declval<Input_Type&&>())) >;
 
 		return convert_transformer_t< output_type, Converter >{
 				std::move(m_converter)
