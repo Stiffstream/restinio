@@ -2509,8 +2509,32 @@ struct to_lower_transformer_t< char >
 	}
 };
 
-//FIXME: should there be a specialization of to_lower_transformer_t for
-// std::array<char, N>?
+/*!
+ * @brief An implementation of transformer that converts the content
+ * of the input std::array to lower case.
+ *
+ * @since v.0.6.6
+ */
+template< std::size_t S >
+struct to_lower_transformer_t< std::array< char, S > >
+	: public transformer_tag< std::array< char, S > >
+{
+	using input_type = std::array< char, S >;
+	using base_type = transformer_tag< input_type >;
+
+	RESTINIO_NODISCARD
+	typename base_type::result_type
+	transform( input_type && input ) const noexcept
+	{
+		typename base_type::result_type result;
+		std::transform( input.begin(), input.end(), result.begin(),
+			[]( unsigned char ch ) -> char {
+				return restinio::impl::to_lower_case(ch);
+			} );
+
+		return result;
+	}
+};
 
 //
 // to_lower_transformer_proxy_t
