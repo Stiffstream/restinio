@@ -10,6 +10,8 @@
 
 #include <restinio/helpers/http_field_parsers/basics.hpp>
 
+#include <restinio/variant.hpp>
+
 struct media_type_t
 {
 	std::string m_type;
@@ -1033,6 +1035,52 @@ TEST_CASE( "convert and std::array", "[convert][std::array]" )
 		REQUIRE( "aBcD" == *result );
 	}
 }
+
+TEST_CASE( "alternatives, as_result and variant",
+		"[alternatives][as_result][token_p][variant]" )
+{
+	using namespace restinio::http_field_parsers;
+
+	using book_identity = restinio::variant_t<int, std::string>;
+
+	const auto try_parse = []( restinio::string_view_t what ) {
+		const auto parser = produce<book_identity>(
+				alternatives(
+					non_negative_decimal_number_p<int>() >> as_result(),
+					token_p() >> as_result()
+				)
+			);
+
+		return restinio::easy_parser::try_parse( what, parser );
+	};
+
+	{
+		const auto result = try_parse( "" );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse( "1234" );
+
+		REQUIRE( result );
+		const auto & identity = *result;
+		const auto * n = restinio::get_if<int>(&identity);
+		REQUIRE( n );
+		REQUIRE( 1234 == *n );
+	}
+
+	{
+		const auto result = try_parse( "SomeName" );
+
+		REQUIRE( result );
+		const auto & identity = *result;
+		const auto * n = restinio::get_if<std::string>(&identity);
+		REQUIRE( n );
+		REQUIRE( "SomeName" == *n );
+	}
+}
+
 TEST_CASE( "token", "[token]" )
 {
 	using namespace restinio::http_field_parsers;
