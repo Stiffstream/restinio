@@ -913,15 +913,13 @@ TEST_CASE( "to_lower and std::array", "[hexdigit][to_lower][std::array]" )
 
 	const auto try_parse = []( restinio::string_view_t what ) {
 		const auto parser = produce<uuid_image_t>(
-			produce<uuid_image_t>(
 				repeat(8u, 8u, hexdigit_p() >> to_container()),
 				symbol_p('-') >> to_container(),
 				repeat(3u, 3u,
 					repeat(4u, 4u, hexdigit_p() >> to_container()),
 					symbol_p('-') >> to_container()),
 				repeat(12u, 12u, hexdigit_p() >> to_container())
-			) >> to_lower() >> as_result()
-		);
+			) >> to_lower();
 		return restinio::easy_parser::try_parse( what, parser );
 	};
 
