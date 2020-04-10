@@ -2596,6 +2596,19 @@ class just_result_consumer_t : public consumer_tag
 {
 	Result_Type m_result;
 
+	// NOTE: this helper method is necessary for MSVC++ compiler.
+	// It's because MSVC++ can't compile expression:
+	//
+	// as_result(dest, Result_Type{m_result})
+	//
+	// in consume() method for trivial types like size_t.
+	Result_Type
+	make_copy_of_result() const
+		noexcept(noexcept(Result_Type{m_result}))
+	{
+		return m_result;
+	}
+
 public :
 	template< typename Result_Arg >
 	just_result_consumer_t( Result_Arg && result )
@@ -2610,7 +2623,7 @@ public :
 		result_wrapper_for_t<Target_Type>::as_result(
 				dest,
 				// NOTE: use a copy of m_result.
-				Result_Type{m_result} );
+				make_copy_of_result() );
 	}
 };
 
