@@ -249,7 +249,7 @@ TEST_CASE( "std::function by rvalue reference in close-async",
 
 TEST_CASE( "failed-start-restart" , "[start][stop]" )
 {
-	constexpr unsigned short test_port = 8096;
+	unsigned short test_port = 8096;
 
 	restinio::asio_ns::io_context io_svc;
 	restinio::asio_ns::ip::tcp::socket dummy_socket( io_svc,
@@ -265,7 +265,7 @@ TEST_CASE( "failed-start-restart" , "[start][stop]" )
 
 	http_server_t http_server{
 		restinio::external_io_context( io_svc ),
-		[]( auto & settings ){
+		[test_port]( auto & settings ){
 			settings
 				.port( test_port )
 				.protocol( restinio::asio_ns::ip::tcp::v4() )
@@ -285,7 +285,7 @@ TEST_CASE( "failed-start-restart" , "[start][stop]" )
 			// Now server should be started and should accept
 			// incoming connections.
 			restinio::asio_ns::ip::tcp::socket socket( io_svc );
-			auto do_connect = [&socket]() {
+			auto do_connect = [&socket, test_port]() {
 				socket.connect( restinio::asio_ns::ip::tcp::endpoint(
 						restinio::asio_ns::ip::make_address( "127.0.0.1" ),
 						test_port ) );
