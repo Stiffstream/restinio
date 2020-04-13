@@ -181,11 +181,20 @@ class special_produce_tuple_item_clause_t
 			Producer,
 			consumer_t >;
 
+	// NOTE: this is just a workaround for VS2017.
+	template< typename Producer_Arg >
+	RESTINIO_NODISCARD
+	static Producer
+	make_producer( Producer_Arg && producer )
+	{
+		return { std::forward<Producer_Arg>(producer) };
+	}
+
 public:
 	template< typename Producer_Arg >
 	special_produce_tuple_item_clause_t( Producer_Arg && producer )
 		:	base_type_t{
-				Producer{ std::forward<Producer_Arg>(producer) },
+				make_producer( std::forward<Producer_Arg>(producer) ),
 				consumer_t{} }
 	{}
 };
