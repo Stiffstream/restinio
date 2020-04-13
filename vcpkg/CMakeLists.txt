@@ -4,6 +4,7 @@ SET(CMAKE_CXX_STANDARD 14)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(RESTINIO_INSTALL "Generate the install target." ON)
+option(RESTINIO_FMT_HEADER_ONLY "Include fmt library as header-only." ON)
 
 SET(RESTINIO_USE_BOOST_ASIO "none" CACHE STRING "Use boost version of ASIO")
 
