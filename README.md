@@ -43,7 +43,9 @@ so you can apply a complex logic for handling requests.
 * Response builders. Need chunked-encoded body - then RESTinio has a special
   response builder for you (obviously it is not the only builder).
 * ExpressJS-like request routing (see an example below).
+* An experimental typesafe request router that allows avoiding problems of ExpressJS-like router with help of static checks from C++ compiler.
 * Working with query string parameters.
+* Several ready-to-use helpers for working with HTTP headers (for example, the support for HTTP headers related to file uploading).
 * Supports sending files and its parts (with sendfile on linux/unix and TransmitFile on windows).
 * Supports compression (deflate, gzip).
 * Supports TLS (HTTPS).
