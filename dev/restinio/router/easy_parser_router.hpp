@@ -495,7 +495,7 @@ public:
 template< typename... Args >
 struct dsl_processor
 {
-	static_assert( 0u != sizeof...(Args), "Args can be an empty list" );
+	static_assert( 0u != sizeof...(Args), "Args can't be an empty list" );
 
 	using arg_types = meta::transform_t<
 			dsl_details::special_decay, meta::type_list<Args...> >;
