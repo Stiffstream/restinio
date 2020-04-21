@@ -789,6 +789,26 @@ public :
 		m_pool.start();
 	}
 
+	//FIXME: document this!
+	template<
+		typename On_Ok_Callback,
+		typename On_Error_Callback >
+	void
+	start(
+		On_Ok_Callback && on_ok,
+		On_Error_Callback && on_error )
+	{
+		m_server.open_async(
+			[callback = std::move(on_ok)]{ callback(); },
+			[this, callback = std::move(on_error)]( std::exception_ptr ex ){
+				// There is no sense to run pool.
+				m_pool.stop();
+
+				callback( std::move(ex) );
+			} );
+
+		m_pool.start();
+	}
 
 	//! Is server started.
 	bool
@@ -823,6 +843,96 @@ public :
 	void
 	wait() { m_pool.wait(); }
 };
+
+template< typename Http_Server >
+class running_server_instance_t;
+
+template< typename Traits >
+using running_server_handle_t =
+		std::unique_ptr< running_server_instance_t< http_server_t<Traits> > >;
+
+//
+// running_server_instance_t
+//
+//FIXME: document this!
+template< typename Http_Server >
+class running_server_instance_t
+{
+	template< typename Traits >
+	friend running_server_handle_t<Traits>
+	run_async(
+			io_context_holder_t,
+			server_settings_t<Traits> &&,
+			std::size_t thread_pool_size );
+
+	//! Actual server instance.
+	Http_Server m_server;
+
+	//! The runner of the server.
+	on_pool_runner_t< Http_Server > m_runner;
+
+	//! Initializing constructor.
+	running_server_instance_t(
+		io_context_holder_t io_context,
+		server_settings_t< typename Http_Server::traits_t > && settings,
+		std::size_t thread_pool_size )
+		:	m_server{ std::move(io_context), std::move(settings) }
+		,	m_runner{ thread_pool_size, m_server }
+	{}
+
+	//FIXME: document this!
+	void
+	start()
+	{
+		std::promise<void> p;
+		auto f = p.get_future();
+		m_runner.start(
+				[&p]() { p.set_value(); },
+				[&p]( std::exception_ptr ex ) {
+					p.set_exception( std::move(ex) );
+				} );
+		f.get();
+	}
+
+public :
+	//FIXME: document this!
+	void
+	stop()
+	{
+		m_runner.stop();
+	}
+
+	//FIXME: document this!
+	void
+	wait()
+	{
+		m_runner.wait();
+	}
+};
+
+//
+// run_async
+//
+//FIXME: document this!
+template< typename Traits = default_traits_t >
+RESTINIO_NODISCARD
+running_server_handle_t< Traits >
+run_async(
+	io_context_holder_t io_context,
+	server_settings_t< Traits > && settings,
+	std::size_t thread_pool_size )
+{
+	running_server_handle_t< Traits > handle{
+			new running_server_instance_t< http_server_t<Traits> >{
+					std::move(io_context),
+					std::move(settings),
+					thread_pool_size }
+	};
+
+	handle->start();
+	
+	return handle;
+}
 
 } /* namespace restinio */
 
