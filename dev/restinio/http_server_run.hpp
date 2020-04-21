@@ -767,37 +767,72 @@ public :
 		,	m_pool{ pool_size, server.io_context() }
 	{}
 
-	//FIXME: maybe this method should be extended in v.0.7.0 with
-	//error-handler specified by user (this error-handler will be called
-	//in err_cb in open_async())?
-	//! Start the server.
-	void
-	start()
-	{
-		m_server.open_async(
-			[]{ /* Ok. */},
-			[this]( std::exception_ptr /*ex*/ ){
-				// There is no sense to run pool.
-				m_pool.stop();
-
-				//FIXME: the exception should be stored to be handled
-				//later in wait() method.
-				//NOTE: this fix is planned for v.0.7.0.
-				//std::rethrow_exception( ex );
-			} );
-
-		m_pool.start();
-	}
-
-	//FIXME: document this!
+	/*!
+	 * @brief Start the server with callbacks that will be called on
+	 * success or failure.
+	 *
+	 * The @a on_ok should be a function/functor with the format:
+	 * @code
+	 * void () noexcept;
+	 * @endcode
+	 *
+	 * The @a on_error should be a function/functor with the format:
+	 * @code
+	 * void (std::exception_ptr) noexcept;
+	 * @endcode
+	 *
+	 * @note
+	 * Both callbacks will be passed to http_server_t::open_async method.
+	 * It means that @a on_error callback will be called for errors detected
+	 * by open_async() methods.
+	 *
+	 * @attention
+	 * Both callbacks should be noexcept functions/functors.
+	 *
+	 * Usage example:
+	 * @code
+	 * using my_http_server = restinio::http_server_t<some_traits>;
+	 *
+	 * my_http_server server{...};
+	 * restinio::on_pool_runner_t<my_http_server> runner{16, server};
+	 *
+	 * std::promise<void> run_promise;
+	 * auto run_future = run_promise.get_future();
+	 * runner.start(
+	 * 	// Ok callback.
+	 * 	[&run_promise]() noexcept {
+	 * 		run_promise.set_value();
+	 * 	},
+	 * 	// Error callback.
+	 * 	[&run_promise](std::exception_ptr ex) noexcept {
+	 * 		run_promise.set_exception(std::move(ex));
+	 * 	});
+	 * // Wait while HTTP-server started (or start failed).
+	 * run_future.get();
+	 * @endcode
+	 *
+	 * @since v.0.6.7
+	 */
 	template<
 		typename On_Ok_Callback,
 		typename On_Error_Callback >
 	void
 	start(
+		//! A callback to be called if HTTP-server started successfully.
 		On_Ok_Callback && on_ok,
+		//! A callback to be called if HTTP-server is not started by
+		//! some reasons. Please note that this callback is passed
+		//! to http_server_t::open_async() and will be called only
+		//! for errors detected by open_async() methods.
+		//! If some error is detected outside of open_async() (for
+		//! example a failure to start a thread pool) then on_error
+		//! callback won't be called.
 		On_Error_Callback && on_error )
 	{
+		static_assert( noexcept(on_ok()), "On_Ok_Callback should be noexcept" );
+		static_assert( noexcept(on_error(std::declval<std::exception_ptr>())),
+				"On_Error_Callback should be noexcept" );
+
 		m_server.open_async(
 			[callback = std::move(on_ok)]{ callback(); },
 			[this, callback = std::move(on_error)]( std::exception_ptr ex ){
@@ -810,10 +845,25 @@ public :
 		m_pool.start();
 	}
 
+	//! Start the server.
+	/*!
+	 * It just a shorthand for a version of `start` method with callbacks
+	 * where all callbacks to nothing.
+	 */
+	void
+	start()
+	{
+		this->start(
+				[]() noexcept { /* nothing to do */ },
+				[]( std::exception_ptr ) noexcept { /* nothing to do */ } );
+	}
+
 	//! Is server started.
 	bool
 	started() const noexcept { return m_pool.started(); }
 
+	//FIXME: there should be a version of stop() with callbacks like
+	//for start() method above.
 	//! Stop the server.
 	void
 	stop()
@@ -844,9 +894,21 @@ public :
 	wait() { m_pool.wait(); }
 };
 
+// Forward declaration.
+// It's necessary for running_server_handle_t.
 template< typename Http_Server >
 class running_server_instance_t;
 
+//
+// running_server_handle_t
+//
+/*!
+ * @brief The type to be used as a handle for running server instance.
+ *
+ * The handle should be seen as a Moveable and not Copyable type.
+ *
+ * @since v.0.6.7
+ */
 template< typename Traits >
 using running_server_handle_t =
 		std::unique_ptr< running_server_instance_t< http_server_t<Traits> > >;
@@ -887,8 +949,8 @@ class running_server_instance_t
 		std::promise<void> p;
 		auto f = p.get_future();
 		m_runner.start(
-				[&p]() { p.set_value(); },
-				[&p]( std::exception_ptr ex ) {
+				[&p]() noexcept { p.set_value(); },
+				[&p]( std::exception_ptr ex ) noexcept {
 					p.set_exception( std::move(ex) );
 				} );
 		f.get();
