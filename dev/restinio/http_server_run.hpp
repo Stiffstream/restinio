@@ -865,8 +865,12 @@ public :
 	//FIXME: there should be a version of stop() with callbacks like
 	//for start() method above.
 	//! Stop the server.
+	/*!
+	 * @note
+	 * This method is noexcept since v.0.6.7
+	 */
 	void
-	stop()
+	stop() noexcept
 	{
 		m_server.close_async(
 			[this]{
@@ -890,8 +894,12 @@ public :
 	// wait(Exception_Handler && on_exception);
 	//
 	//! Wait for full stop of the server.
+	/*!
+	 * @note
+	 * This method is noexcept since v.0.6.7
+	 */
 	void
-	wait() { m_pool.wait(); }
+	wait() noexcept { m_pool.wait(); }
 };
 
 // Forward declaration.
@@ -916,7 +924,18 @@ using running_server_handle_t =
 //
 // running_server_instance_t
 //
-//FIXME: document this!
+/*!
+ * @brief A helper class used in an implementation of #run_async function.
+ *
+ * An instance of that class holds an HTTP-server and thread pool on that
+ * this HTTP-server is launched.
+ *
+ * The HTTP-server will automatically be stopped in the destructor.
+ * However, a user can stop the HTTP-server manually by using
+ * stop() and wait() methods.
+ *
+ * @since v.0.6.7
+ */
 template< typename Http_Server >
 class running_server_instance_t
 {
@@ -942,7 +961,15 @@ class running_server_instance_t
 		,	m_runner{ thread_pool_size, m_server }
 	{}
 
-	//FIXME: document this!
+
+	//! Start the HTTP-server.
+	/*!
+	 * Returns when HTTP-server started or some startup failure detected.
+	 * It means that the caller thread will be blocked until HTTP-server
+	 * calls on_ok or on_error callback.
+	 *
+	 * Throws an exception on an error.
+	 */
 	void
 	start()
 	{
@@ -957,16 +984,51 @@ class running_server_instance_t
 	}
 
 public :
-	//FIXME: document this!
+	/*!
+	 * Stop the HTTP-server.
+	 *
+	 * This method initiates shutdown procedure that can take some
+	 * time. But stop() returns without the waiting for the completeness
+	 * of the shutdown. To wait for the completeness use wait() method:
+	 *
+	 * @code
+	 * auto server = restinio::run_async(...);
+	 * ...
+	 * server->stop(); // Returns without the waiting.
+	 * ... // Some other actions.
+	 * server->wait(); // Returns only when HTTP-server stopped.
+	 * @endcode
+	 *
+	 * @attention
+	 * The current version doesn't guarantee that stop() can be called
+	 * safely several times. Please take care of that and call stop()
+	 * only once.
+	 */
 	void
-	stop()
+	stop() noexcept
 	{
 		m_runner.stop();
 	}
 
-	//FIXME: document this!
+	/*!
+	 * @brief Wait for the shutdown of HTTP-server.
+	 *
+	 * @note
+	 * Method stop() should be called before the call to wait():
+	 * @code
+	 * auto server = restinio::run_async(...);
+	 * ...
+	 * server->stop(); // Initiates the shutdown and returns without the waiting.
+	 * server->wait(); // Returns only when HTTP-server stopped.
+	 * @endcode
+	 *
+	 * @attention
+	 * The current version doesn't guarantee that wait() can be called
+	 * safely several times. Please take care of that and call wait()
+	 * only once.
+	 */
 	void
-	wait()
+	wait() noexcept
 	{
 		m_runner.wait();
 	}
@@ -975,7 +1037,74 @@ public :
 //
 // run_async
 //
-//FIXME: document this!
+/*!
+ * @brief Creates an instance of HTTP-server and launches it on a
+ * separate thread or thread pool.
+ *
+ * Usage example:
+ * @code
+ * int main() {
+ * 	auto server = restinio::run_async(
+ * 		// Asio's io_context to be used.
+ * 		// HTTP-server will use own Asio's io_context object.
+ * 		restinio::own_io_context(),
+ * 		// The settings for the HTTP-server.
+ * 		restinio::server_settings_t{}
+ * 			.address("127.0.0.1")
+ * 			.port(8080)
+ * 			.request_handler(...),
+ * 		// The size of thread-pool for the HTTP-server.
+ * 		16);
+ * 	// If we are here and run_async doesn't throw then HTTP-server
+ * 	// is started.
+ *
+ * 	... // Some other actions.
+ *
+ * 	// No need to stop HTTP-server manually. It will be automatically
+ * 	// stopped in the destructor of `server` object.
+ * }
+ * @endcode
+ * Or, if user-defined traits should be used:
+ * @code
+ * int main() {
+ * 	struct my_traits : public restinio::default_traits_t {
+ * 		...
+ * 	};
+ *
+ * 	auto server = restinio::run_async<my_traits>(
+ * 		restinio::own_io_context(),
+ * 		restinio::server_settings_t<my_traits>{}
+ * 			.address(...)
+ * 			.port(...)
+ * 			.request_handler(...),
+ * 		// Use just one thread for the HTTP-server.
+ * 		1u);
+ *
+ * 	... // Some other actions.
+ * }
+ * @endcode
+ *
+ * run_async() returns control when HTTP-server is started or some
+ * startup failure is detected. But if a failure is detected then an
+ * exception is thrown. So if run_async() returns successfuly then
+ * HTTP-server is working.
+ *
+ * The started HTTP-server will be automatically stopped at the
+ * destruction of the returned value. Because of that the returned
+ * value should be stored for the time while HTTP-server is needed.
+ *
+ * The started HTTP-server can be stopped manually by calling
+ * stop() and wait() methods:
+ * @code
+ * auto server = restinio::run_async(...);
+ * ...
+ * server->stop(); // Returns without the waiting.
+ * ... // Some other actions.
+ * server->wait(); // Returns only when HTTP-server stopped.
+ * @endcode
+ *
+ * @since v.0.6.7
+ */
 template< typename Traits = default_traits_t >
 RESTINIO_NODISCARD
 running_server_handle_t< Traits >

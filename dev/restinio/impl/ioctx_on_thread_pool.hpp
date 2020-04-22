@@ -138,8 +138,12 @@ class ioctx_on_thread_pool_t
 			}
 		}
 
+		// NOTE: this method is marked as noexcept in v.0.6.7.
+		// It's because this method can be called from destructors and
+		// there is no way to recover from an exception thrown from
+		// this method.
 		void
-		stop()
+		stop() noexcept
 		{
 			if( started() )
 			{
@@ -147,8 +151,12 @@ class ioctx_on_thread_pool_t
 			}
 		}
 
+		// NOTE: this method is marked as noexcept in v.0.6.7.
+		// It's because this method can be called from destructors and
+		// there is no way to recover from an exception thrown from
+		// this method.
 		void
-		wait()
+		wait() noexcept
 		{
 			if( started() )
 			{
