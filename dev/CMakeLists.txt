@@ -25,6 +25,17 @@ option(RESTINIO_ALLOW_SOBJECTIZER "Allow add_subdirectory(so_5) in the main REST
 # library.
 option(RESTINIO_USE_EXTERNAL_HTTP_PARSER "Use already installed http-parser library" OFF)
 
+# Since v.0.6.7 a user can force usage of already installed nonstd
+# libraries.
+option(RESTINIO_USE_EXTERNAL_EXPECTED_LITE
+	"Use already installed expected-lite library" OFF)
+option(RESTINIO_USE_EXTERNAL_OPTIONAL_LITE
+	"Use already installed optional-lite library" OFF)
+option(RESTINIO_USE_EXTERNAL_STRING_VIEW_LITE
+	"Use already installed string-view-lite library" OFF)
+option(RESTINIO_USE_EXTERNAL_VARIANT_LITE
+	"Use already installed variant-lite library" OFF)
+
 SET(RESTINIO_USE_BOOST_ASIO "none" CACHE STRING "Use boost version of ASIO")
 SET(RESTINIO_USE_BOOST_ASIO_VALUES "none;static;shared")
 
@@ -98,6 +109,21 @@ IF (RESTINIO_MASTER_PROJECT)
 		# fmtlib
 		add_subdirectory(fmt)
 	ENDIF ()
+
+	# If RESTINIO_USE_EXTERNAL_*_LITE is defined we should
+	# search that libs regardless of RESTINIO_FIND_DEPS option.
+	IF (RESTINIO_USE_EXTERNAL_EXPECTED_LITE)
+		find_package(expected-lite REQUIRED)
+	ENDIF()
+	IF (RESTINIO_USE_EXTERNAL_OPTIONAL_LITE)
+		find_package(optional-lite REQUIRED)
+	ENDIF()
+	IF (RESTINIO_USE_EXTERNAL_STRING_VIEW_LITE)
+		find_package(string-view-lite REQUIRED)
+	ENDIF()
+	IF (RESTINIO_USE_EXTERNAL_VARIANT_LITE)
+		find_package(variant-lite REQUIRED)
+	ENDIF()
 
 	# ------------------------------------------------------------------------------
 

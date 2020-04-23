@@ -10,7 +10,11 @@
 
 #pragma once
 
-#include "third_party/expected-lite/expected.hpp"
+#if defined(RESTINIO_EXTERNAL_EXPECTED_LITE)
+	#include <nonstd/expected.hpp>
+#else
+	#include "third_party/expected-lite/expected.hpp"
+#endif
 
 namespace restinio
 {

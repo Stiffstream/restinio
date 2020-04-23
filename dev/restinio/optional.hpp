@@ -10,7 +10,11 @@
 
 #pragma once
 
-#include "third_party/optional-lite/optional.hpp"
+#if defined(RESTINIO_EXTERNAL_OPTIONAL_LITE)
+	#include <nonstd/optional.hpp>
+#else
+	#include "third_party/optional-lite/optional.hpp"
+#endif
 
 namespace restinio
 {
