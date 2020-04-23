@@ -287,6 +287,56 @@ TEST_CASE( "run_async with manual stop/wait" , "[run_async]" )
 	REQUIRE( "" != endpoint_value );
 }
 
+TEST_CASE( "run_async with manual stop without wait" , "[run_async]" )
+{
+	std::string endpoint_value;
+
+	{
+		using traits_t = restinio::traits_t<
+				restinio::asio_timer_manager_t,
+				utest_logger_t >;
+
+		auto server_handle = restinio::run_async<traits_t>(
+			restinio::own_io_context(),
+			restinio::server_settings_t<traits_t>{}
+				.port( utest_default_port() )
+				.address( "127.0.0.1" )
+				.request_handler(
+					[&endpoint_value]( auto req ){
+						endpoint_value = fmt::format( "{}", req->remote_endpoint() );
+
+						req->create_response()
+							.append_header( "Server", "RESTinio utest server" )
+							.append_header_date_field()
+							.append_header( "Content-Type", "text/plain; charset=utf-8" )
+							.set_body(
+								restinio::const_buffer( req->header().method().c_str() ) )
+							.done();
+
+						return restinio::request_accepted();
+					} ),
+			2 );
+
+		std::string response;
+		const char * request_str =
+			"GET / HTTP/1.1\r\n"
+			"Host: 127.0.0.1\r\n"
+			"User-Agent: unit-test\r\n"
+			"Accept: */*\r\n"
+			"Connection: close\r\n"
+			"\r\n";
+
+		REQUIRE_NOTHROW( response = repeat_request( request_str ) );
+
+		REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
+
+		server_handle->stop();
+		// NOTE server_handle->wait is not called manually.
+	}
+
+	REQUIRE( "" != endpoint_value );
+}
+
 TEST_CASE( "run_async with automatic stop/wait" , "[run_async]" )
 {
 	std::string endpoint_value;
