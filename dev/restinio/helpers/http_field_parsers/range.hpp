@@ -212,10 +212,12 @@ make_byte_ranges_specifier_parser()
 {
 	return produce< byte_ranges_specifier_t<T> >(
 			make_bytes_prefix_parser(),
-			non_empty_comma_separated_list_p<
-							std::vector< byte_range_spec_t<T> > >(
-					make_byte_range_spec_parser<T>()
-			) >> &byte_ranges_specifier_t<T>::ranges
+			force_only_this_alternative(
+				non_empty_comma_separated_list_p<
+								std::vector< byte_range_spec_t<T> > >(
+						make_byte_range_spec_parser<T>()
+				) >> &byte_ranges_specifier_t<T>::ranges
+			)
 	);
 }
 
@@ -237,15 +239,13 @@ inline auto
 make_other_ranges_specifier_parser()
 {
 	return produce< other_ranges_specifier_t >(
-			// This not_clause is necessary for the case when
-			// rule 'bytes=1*VCHAR' doesn't not parsed because of invalid or
-			// illelal values in '1*VCHAR' part.
-			not_clause( make_bytes_prefix_parser() ),
 			token_p() >> &other_ranges_specifier_t::range_unit,
 			symbol('='),
-			produce< std::string >(
-				repeat( 1u, N, vchar_symbol_p() >> to_container() )
-			) >> &other_ranges_specifier_t::range_set
+			force_only_this_alternative(
+				produce< std::string >(
+					repeat( 1u, N, vchar_symbol_p() >> to_container() )
+				) >> &other_ranges_specifier_t::range_set
+			)
 		);
 }
 

@@ -65,7 +65,20 @@ enum class error_reason_t
 	/*!
 	 * @since v.0.6.2
 	 */
-	illegal_value_found
+	illegal_value_found,
+	//! A failure of parsing an alternative marked as "force only this
+	//! alternative".
+	/*!
+	 * This error code is intended for internal use for the implementation
+	 * of alternatives() and force_only_this_alternative() stuff.
+	 *
+	 * This error tells the parser that other alternatives should not be
+	 * checked and the parsing of the whole alternatives clause should
+	 * failed too.
+	 *
+	 * @since v.0.6.7
+	 */
+	force_only_this_alternative_failed
 };
 
 //
@@ -1450,25 +1463,32 @@ public :
 	{
 		const auto starting_pos = from.current_position();
 
+		optional_t< parse_error_t > actual_parse_error;
 		const bool success = restinio::utils::tuple_algorithms::any_of(
 				m_subitems,
-				[&from, &target]( auto && one_producer ) {
+				[&from, &target, &actual_parse_error]( auto && one_producer ) {
 					source_t::content_consumer_t consumer{ from };
 					Target_Type tmp_value{ target };
 
-					auto result = one_producer.try_process( from, tmp_value );
-					if( !result )
+					actual_parse_error = one_producer.try_process( from, tmp_value );
+					if( !actual_parse_error )
 					{
 						target = std::move(tmp_value);
 						consumer.commit();
 
 						return true;
 					}
-
-					return false;
+					else {
+						// Since v.0.6.7 we should check for
+						// force_only_this_alternative_failed error.
+						// In the case of that error enumeration of alternatives
+						// should be stopped.
+						return error_reason_t::force_only_this_alternative_failed ==
+								actual_parse_error->reason();
+					}
 				} );
 
-		if( !success )
+		if( !success || actual_parse_error )
 			return parse_error_t{
 					starting_pos,
 					error_reason_t::no_appropriate_alternative
@@ -1734,6 +1754,49 @@ public :
 		}
 
 		return result;
+	}
+};
+
+//
+// forced_alternative_clause_t
+//
+/*!
+ * @brief An alternative that should be parsed correctly or the parsing
+ * of the whole alternatives clause should fail.
+ *
+ * This special clause is intended to be used in the implementation
+ * of restinio::easy_parser::force_only_this_alternative(). See the
+ * description of that function for more details.
+ *
+ * @since v.0.6.7
+ */
+template<
+	typename Subitems_Tuple >
+class forced_alternative_clause_t : public sequence_clause_t< Subitems_Tuple >
+{
+	using base_type_t = sequence_clause_t< Subitems_Tuple >;
+
+public :
+	using base_type_t::base_type_t;
+
+	template< typename Target_Type >
+	RESTINIO_NODISCARD
+	optional_t< parse_error_t >
+	try_process( source_t & from, Target_Type & target )
+	{
+		const auto starting_pos = from.current_position();
+
+		if( base_type_t::try_process( from, target ) )
+		{
+			// The forced clause is not parsed correctly.
+			// So the special error code should be returned in that case.
+			return parse_error_t{
+					starting_pos,
+					error_reason_t::force_only_this_alternative_failed
+			};
+		}
+		else
+			return nullopt;
 	}
 };
 
@@ -3299,6 +3362,70 @@ sequence( Clauses &&... clauses )
 }
 
 //
+// force_only_this_alternative
+//
+/*!
+ * @brief An alternative that should be parsed correctly or the parsing
+ * of the whole alternatives clause should fail.
+ *
+ * This special clause is intended to be used to avoid mistakes in
+ * grammars like that:
+@verbatim
+v = "key" '=' token
+  | token '=' 1*VCHAR
+@endverbatim
+ * If that grammar will be used for parsing a sentence like "key=123" then
+ * the second alternative will be selected. It's because the parsing
+ * of rule <tt>"key" '=' token</tt> fails at `123` and the second alternative
+ * will be tried. And "key" will be recognized as a token.
+ *
+ * Before v.0.6.7 this mistake can be avoided by using rules like those:
+@verbatim
+v = "key" '=' token
+  | !"key" token '=' 1*VCHAR
+@endverbatim
+ *
+ * Since v.0.6.7 this mistake can be avoided by using
+ * force_only_this_alternative() function:
+ * @code
+ * alternatives(
+ * 	sequence(
+ * 		exact("key"),
+ * 		force_only_this_alternative(
+ * 			symbol('='),
+ * 			token() >> skip()
+ * 		)
+ * 	),
+ * 	sequence(
+ * 		token() >> skip(),
+ * 		symbol('='),
+ * 		repeat(1, N, vchar_symbol_p() >> skip())
+ * 	)
+ * );
+ * @endcode
+ *
+ * @since v.0.6.7
+ */
+template< typename... Clauses >
+RESTINIO_NODISCARD
+auto
+force_only_this_alternative( Clauses &&... clauses )
+{
+	static_assert( 0 != sizeof...(clauses),
+			"list of clauses can't be empty" );
+	static_assert( meta::all_of_v< impl::is_clause, Clauses... >,
+			"all arguments for force_only_this_alternative() should "
+			"be clauses" );
+
+	using clause_type_t = impl::forced_alternative_clause_t<
+			impl::tuple_of_entities_t< Clauses... > >;
+
+	return clause_type_t{
+			std::make_tuple(std::forward<Clauses>(clauses)...)
+	};
+}
+
+//
 // repeat
 //
 /*!
@@ -4412,13 +4539,18 @@ make_error_description(
 
 	std::string result;
 
+	const auto basic_reaction = [&](const char * msg) {
+		result += msg;
+		result += " at ";
+		result += std::to_string( error.position() );
+		result += ": ";
+		append_quote( result );
+	};
+
 	switch( error.reason() )
 	{
 		case error_reason_t::unexpected_character:
-			result += "unexpected character at ";
-			result += std::to_string( error.position() );
-			result += ": ";
-			append_quote( result );
+			basic_reaction( "unexpected character" );
 		break;
 
 		case error_reason_t::unexpected_eof:
@@ -4427,31 +4559,23 @@ make_error_description(
 		break;
 
 		case error_reason_t::no_appropriate_alternative:
-			result += "appropriate alternative can't found at ";
-			result += std::to_string( error.position() );
-			result += ": ";
-			append_quote( result );
+			basic_reaction( "appropriate alternative can't found" );
 		break;
 
 		case error_reason_t::pattern_not_found:
-			result += "expected pattern is not found at ";
-			result += std::to_string( error.position() );
-			result += ": ";
-			append_quote( result );
+			basic_reaction( "expected pattern is not found" );
 		break;
 
 		case error_reason_t::unconsumed_input:
-			result += "unconsumed input found at ";
-			result += std::to_string( error.position() );
-			result += ": ";
-			append_quote( result );
+			basic_reaction( "unconsumed input found" );
 		break;
 
 		case error_reason_t::illegal_value_found:
-			result += "some illegal value found at ";
-			result += std::to_string( error.position() );
-			result += ": ";
-			append_quote( result );
+			basic_reaction( "some illegal value found" );
+		break;
+
+		case error_reason_t::force_only_this_alternative_failed:
+			basic_reaction( "forced selection alternative failed" );
 		break;
 	}
 

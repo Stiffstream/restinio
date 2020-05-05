@@ -1079,6 +1079,67 @@ TEST_CASE( "alternatives, as_result and variant",
 	}
 }
 
+TEST_CASE( "force_only_this_alternative",
+		"[alternatives][force_only_this_alternative]" )
+{
+	using namespace restinio::http_field_parsers;
+
+	struct increment_t { int m_v; };
+	struct decrement_t { int m_v; };
+
+	using inc_or_dec_t = restinio::variant_t<increment_t, decrement_t>;
+
+	const auto try_parse = []( restinio::string_view_t what ) {
+		return restinio::easy_parser::try_parse( what,
+				produce<inc_or_dec_t>(
+					alternatives(
+						produce<increment_t>(
+							exact("increment"),
+							force_only_this_alternative(
+								symbol('='),
+								decimal_number_p<int>() >> &increment_t::m_v
+							)
+						) >> as_result(),
+						produce<decrement_t>(
+							token_p() >> skip(),
+							force_only_this_alternative(
+								symbol(' '),
+								decimal_number_p<int>() >> &decrement_t::m_v
+							)
+						) >> as_result()
+					)
+				) );
+	};
+
+	{
+		const auto result = try_parse( "increment=234" );
+
+		REQUIRE( result );
+		REQUIRE( 0 == result->index() );
+		REQUIRE( 234 == restinio::get<increment_t>(*result).m_v );
+	}
+
+	{
+		const auto result = try_parse( "increment 234" );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse( "increment=2a4" );
+
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = try_parse( "decrement 234" );
+
+		REQUIRE( result );
+		REQUIRE( 1 == result->index() );
+		REQUIRE( 234 == restinio::get<decrement_t>(*result).m_v );
+	}
+}
+
 TEST_CASE( "token", "[token]" )
 {
 	using namespace restinio::http_field_parsers;
