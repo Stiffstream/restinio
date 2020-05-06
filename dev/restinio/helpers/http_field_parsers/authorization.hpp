@@ -197,32 +197,31 @@ struct authorization_value_t
 		// NOTE: token68 should consume all input.
 		// So there should not be any symbols after the value.
 		auto token68_seq = sequence(
-					token68_p() >> as_result(),
-					not_clause( any_symbol_p() >> skip() ) );
+				token68_p() >> as_result(),
+				not_clause( any_symbol_p() >> skip() ) );
+		// Parameters list can be empty.
+		auto params_seq = maybe_empty_comma_separated_list_p< param_container_t >(
+				produce< param_t >(
+					token_p() >> to_lower() >> &param_t::name,
+					ows(),
+					symbol('='),
+					ows(),
+					produce< param_value_t >(
+						alternatives(
+							token_p() >> convert( token_to_v ) >> as_result(),
+							quoted_string_p() >> convert( qstring_to_v )
+									>> as_result()
+						)
+					) >> &param_t::value
+				)
+			) >> as_result();
 
 		return produce< authorization_value_t >(
 				token_p() >> to_lower() >> &authorization_value_t::auth_scheme,
 				maybe(
 					repeat( 1, N, space() ),
 					produce< auth_param_t >(
-						alternatives(
-							token68_seq,
-							maybe_empty_comma_separated_list_p< param_container_t >(
-								produce< param_t >(
-									token_p() >> to_lower() >> &param_t::name,
-									ows(),
-									symbol('='),
-									ows(),
-									produce< param_value_t >(
-										alternatives(
-											token_p() >> convert( token_to_v ) >> as_result(),
-											quoted_string_p() >> convert( qstring_to_v )
-													>> as_result()
-										)
-									) >> &param_t::value
-								)
-							) >> as_result()
-						)
+							alternatives( token68_seq, params_seq )
 					) >> &authorization_value_t::auth_param
 				)
 		);
