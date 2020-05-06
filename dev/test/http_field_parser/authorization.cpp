@@ -61,6 +61,21 @@ TEST_CASE( "Authorization", "[authorization]" )
 	}
 
 	{
+		const auto what = "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ#"s;
+		const auto result = authorization_value_t::try_parse( what );
+
+		REQUIRE( !result );
+	}
+
+	{
+		// # can't be used in token68, but can be used in token.
+		const auto what = "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ#="s;
+		const auto result = authorization_value_t::try_parse( what );
+
+		REQUIRE( !result );
+	}
+
+	{
 		const auto what = "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="s;
 		const auto result = authorization_value_t::try_parse( what );
 
@@ -91,6 +106,29 @@ TEST_CASE( "Authorization", "[authorization]" )
 
 		auto expected_param = authorization_value_t::auth_param_t{
 				authorization_value_t::token68_t{ "QWxhZGRpbjpvcGVuIHNlc2FtZQ=="s }
+		};
+
+		REQUIRE( "basic" == result->auth_scheme );
+		REQUIRE( expected_param == result->auth_param );
+	}
+
+	{
+		// # can't be used in token68, but can be used in token.
+		const auto what = "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ#=#"s;
+		const auto result = authorization_value_t::try_parse( what );
+
+		if(!result)
+			std::cerr << "*** "
+				<< make_error_description(result.error(), what) << std::endl;
+
+		REQUIRE( result );
+
+		auto expected_param = authorization_value_t::auth_param_t{
+			authorization_value_t::param_container_t{
+				param_t{ "qwxhzgrpbjpvcgvuihnlc2ftzq#",
+					param_value_t{ "#",
+						value_form_t::token } }
+			}
 		};
 
 		REQUIRE( "basic" == result->auth_scheme );

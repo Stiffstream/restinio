@@ -97,13 +97,10 @@ RESTINIO_NODISCARD
 inline auto
 token68_p()
 {
-	// NOTE: token68 should consume all input.
-	// So there should not be any symbols after the value.
 	return produce< token68_t >(
 			produce< std::string >(
 				repeat( 1, N, token68_symbol_p() >> to_container() ),
-				repeat( 0, N, symbol_p('=') >> to_container() ),
-				not_clause( any_symbol_p() >> skip() )
+				repeat( 0, N, symbol_p('=') >> to_container() )
 			) >> &token68_t::value
 		);
 }
@@ -197,13 +194,19 @@ struct authorization_value_t
 			return { std::move(v), value_form_t::quoted_string };
 		};
 
+		// NOTE: token68 should consume all input.
+		// So there should not be any symbols after the value.
+		auto token68_seq = sequence(
+					token68_p() >> as_result(),
+					not_clause( any_symbol_p() >> skip() ) );
+
 		return produce< authorization_value_t >(
 				token_p() >> to_lower() >> &authorization_value_t::auth_scheme,
 				maybe(
 					repeat( 1, N, space() ),
 					produce< auth_param_t >(
 						alternatives(
-							token68_p() >> as_result(),
+							token68_seq,
 							maybe_empty_comma_separated_list_p< param_container_t >(
 								produce< param_t >(
 									token_p() >> to_lower() >> &param_t::name,
