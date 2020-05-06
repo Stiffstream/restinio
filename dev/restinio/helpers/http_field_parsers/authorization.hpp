@@ -175,28 +175,30 @@ struct authorization_value_t
 		};
 
 		return produce< authorization_value_t >(
-				token_p() >> &authorization_value_t::auth_scheme,
-				repeat( 1, N, space() ),
-				produce< auth_param_t >(
-					alternatives(
-						token68_p() >> as_result(),
-						maybe_empty_comma_separated_list_p< param_container_t >(
-							produce< param_t >(
-								token_p() >> to_lower() >> &param_t::name,
-								ows(),
-								symbol('='),
-								ows(),
-								produce< param_value_t >(
-									alternatives(
-										token_p() >> convert( token_to_v ) >> as_result(),
-										quoted_string_p() >> convert( qstring_to_v )
-												>> as_result()
-									)
-								) >> &param_t::value
-							)
-						) >> as_result()
-					)
-				) >> &authorization_value_t::auth_param
+				token_p() >> to_lower() >> &authorization_value_t::auth_scheme,
+				maybe(
+					repeat( 1, N, space() ),
+					produce< auth_param_t >(
+						alternatives(
+							token68_p() >> as_result(),
+							maybe_empty_comma_separated_list_p< param_container_t >(
+								produce< param_t >(
+									token_p() >> to_lower() >> &param_t::name,
+									ows(),
+									symbol('='),
+									ows(),
+									produce< param_value_t >(
+										alternatives(
+											token_p() >> convert( token_to_v ) >> as_result(),
+											quoted_string_p() >> convert( qstring_to_v )
+													>> as_result()
+										)
+									) >> &param_t::value
+								)
+							) >> as_result()
+						)
+					) >> &authorization_value_t::auth_param
+				)
 		);
 	}
 
