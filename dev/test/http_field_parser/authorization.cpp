@@ -206,5 +206,38 @@ TEST_CASE( "Authorization", "[authorization]" )
 		REQUIRE( "verynonstandard" == result->auth_scheme );
 		REQUIRE( expected_param == result->auth_param );
 	}
+
+	{
+		const auto what = R"(Digest , ,username="Mufasa",)"
+				R"(realm="http-auth@example.org", )"
+				R"(URI="/dir/index.html" )"
+				;
+
+		const auto result = authorization_value_t::try_parse( what );
+
+		if(!result)
+			std::cerr << "*** "
+				<< make_error_description(result.error(), what) << std::endl;
+
+		REQUIRE( result );
+
+		auto expected_param = authorization_value_t::auth_param_t{
+			authorization_value_t::param_container_t{
+				param_t{ "username",
+					param_value_t{ "Mufasa",
+						value_form_t::quoted_string } }
+				,param_t{ "realm",
+					param_value_t{ "http-auth@example.org",
+						value_form_t::quoted_string } }
+				,param_t{ "uri",
+					param_value_t{ "/dir/index.html",
+						value_form_t::quoted_string } }
+			}
+		};
+
+		REQUIRE( "digest" == result->auth_scheme );
+		REQUIRE( expected_param == result->auth_param );
+	}
+
 }
 

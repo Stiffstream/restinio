@@ -68,7 +68,17 @@ token68_symbol_p()
 			is_token68_char_predicate_t >{};
 }
 
-//FIXME: document this!
+//
+// token68_t
+//
+/*!
+ * @brief A structure for holding a value of token68 from RFC7235.
+ *
+ * The actual value of token68 is stored as `std::string` inside that
+ * struct.
+ *
+ * @since v.0.6.7
+ */
 struct token68_t
 {
 	std::string value;
@@ -124,36 +134,49 @@ token68 = 1*( ALPHA / DIGIT / "-" / "." / "_" / "~" / "+" / "/" ) *"="
  */
 struct authorization_value_t
 {
-	//FIXME: document this!
+	//! An indicator of the source form of the value of a parameter.
 	enum class value_form_t
 	{
+		//! The value of a parameter was specified as token.
 		token,
+		//! The value of a parameter was specified as quoted_string.
 		quoted_string
 	};
 
-	//FIXME: document this!
+	//! A storage for the value of a parameter.
 	struct param_value_t
 	{
+		//! The value of a parameter.
 		std::string value;
+		//! How this value was represented: as a token, or a quoted string?
 		value_form_t form;
 	};
 
-	//FIXME: document this!
+	//! A storage for a parameter with a name and a value.
 	struct param_t
 	{
+		//! The name of a parameter.
 		std::string name;
+		//! The value of a parameter.
 		param_value_t value;
 	};
 
+	//! Type of container for holding parameters.
 	using param_container_t = std::vector< param_t >;
 
-	//FIXME: document this!
+	//! Type for holding a value of token68 from RFC7235.
 	using token68_t = authorization_details::token68_t;
 
-	//FIXME: document this!
+	//! Type for holding a parameter for authorization.
 	using auth_param_t = variant_t< token68_t, param_container_t >;
 
+	//! A value of auth-scheme.
 	std::string auth_scheme;
+	//! A parameter for authorization.
+	/*!
+	 * @note
+	 * It can be empty.
+	 */
 	auth_param_t auth_param;
 
 	/*!
@@ -217,6 +240,9 @@ struct authorization_value_t
 	}
 };
 
+//
+// Various helpers for dumping values to std::ostream.
+//
 inline std::ostream &
 operator<<(
 	std::ostream & to,

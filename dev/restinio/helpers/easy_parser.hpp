@@ -1416,10 +1416,14 @@ ensure_no_remaining_content(
 //
 // remove_trailing_spaces
 //
-//FIXME: document this!
+/*!
+ * @brief Helper function for removal of trailing spaces from a string-view.
+ *
+ * @since v.0.6.7
+ */
 RESTINIO_NODISCARD
 inline string_view_t
-remove_trailing_spaces( string_view_t from )
+remove_trailing_spaces( string_view_t from ) noexcept
 {
 	auto s = from.size();
 	for(; s && is_space( from[ (s-1u) ] ); --s) {}
