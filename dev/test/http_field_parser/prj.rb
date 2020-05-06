@@ -16,6 +16,7 @@ MxxRu::Cpp::exe_target {
 	cpp_source( "accept-charset.cpp" )
 	cpp_source( "accept-encoding.cpp" )
 	cpp_source( "accept-language.cpp" )
+	cpp_source( "authorization.cpp" )
 	cpp_source( "content-disposition.cpp" )
 	cpp_source( "range.cpp" )
 	cpp_source( "user-agent.cpp" )

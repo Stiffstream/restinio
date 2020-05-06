@@ -9,6 +9,7 @@ set(UNITTEST_SRCFILES
 	accept-charset.cpp
 	accept-encoding.cpp
 	accept-language.cpp
+	authorization.cpp
 	content-disposition.cpp
 	range.cpp
 	user-agent.cpp

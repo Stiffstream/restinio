@@ -1414,6 +1414,20 @@ ensure_no_remaining_content(
 }
 
 //
+// remove_trailing_spaces
+//
+//FIXME: document this!
+RESTINIO_NODISCARD
+inline string_view_t
+remove_trailing_spaces( string_view_t from )
+{
+	auto s = from.size();
+	for(; s && is_space( from[ (s-1u) ] ); --s) {}
+
+	return from.substr( 0u, s );
+}
+
+//
 // alternatives_clause_t
 //
 /*!
@@ -4404,6 +4418,8 @@ exact( const char (&fragment)[Size] )
  * whitespace remaining in @from after the return from
  * Producer::try_parser. But if there will be some non-whitespace
  * symbol the failure will be reported.
+ * (As a side note: since v.0.6.7 all trailing spaces are removed
+ * from @from before the parsing starts.)
  *
  * Usage example
  * @code
@@ -4434,6 +4450,7 @@ try_parse(
 	static_assert( impl::is_producer_v<Producer>,
 			"Producer should be a value producer type" );
 
+	from = impl::remove_trailing_spaces( from );
 	impl::source_t source{ from };
 
 	auto result = impl::top_level_clause_t< Producer >{ std::move(producer) }
