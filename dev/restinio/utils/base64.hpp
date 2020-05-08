@@ -9,6 +9,7 @@
 #pragma once
 
 #include <restinio/exception.hpp>
+#include <restinio/expected.hpp>
 
 #include <restinio/utils/impl/bitops.hpp>
 
@@ -105,25 +106,6 @@ is_valid_base64_string( string_view_t str ) noexcept
 	return true;
 }
 
-inline void
-ensure_string_is_base64( string_view_t str )
-{
-	if( !is_valid_base64_string( str ) )
-	{
-		constexpr size_t max_allowed_len = 32u;
-		// If str is too long only a part of it will be included
-		// in the error message.
-		if( str.size() > max_allowed_len )
-			throw exception_t{
-					fmt::format( "invalid base64 string that starts with '{}'",
-							str.substr( 0u, max_allowed_len ) )
-			};
-		else
-			throw exception_t{
-				fmt::format( "invalid base64 string '{}'", str ) };
-	}
-}
-
 inline uint_type_t
 uch( char ch )
 {
@@ -192,14 +174,21 @@ encode( string_view_t str )
 	return result;
 }
 
-inline std::string
-decode( string_view_t str )
+//! Description of base64 decode error.
+enum class decoding_error_t
 {
+	invalid_base64_sequence
+};
+
+inline expected_t< std::string, decoding_error_t >
+try_decode( string_view_t str )
+{
+	if( !is_valid_base64_string( str ) )
+		return make_unexpected( decoding_error_t::invalid_base64_sequence );
+
 	constexpr std::size_t group_size = 4;
 
 	std::string result;
-
-	ensure_string_is_base64( str );
 	result.reserve( (str.size() / group_size) * 3 );
 
 	const unsigned char * const decode_table = base64_decode_lut< unsigned char >();
@@ -255,8 +244,40 @@ decode( string_view_t str )
 	return result;
 }
 
+namespace impl
+{
+
+void
+throw_exception_on_invalid_base64_string( string_view_t str )
+{
+	constexpr size_t max_allowed_len = 32u;
+	// If str is too long only a part of it will be included
+	// in the error message.
+	if( str.size() > max_allowed_len )
+		throw exception_t{
+				fmt::format( "invalid base64 string that starts with '{}'",
+						str.substr( 0u, max_allowed_len ) )
+		};
+	else
+		throw exception_t{
+			fmt::format( "invalid base64 string '{}'", str ) };
+}
+
+} /* namespace impl */
+
+inline std::string
+decode( string_view_t str )
+{
+	auto result = try_decode( str );
+	if( !result )
+		impl::throw_exception_on_invalid_base64_string( str );
+
+	return std::move( *result );
+}
+
 } /* namespace base64 */
 
 } /* namespace utils */
 
 } /* namespace restinio */
+
