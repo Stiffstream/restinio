@@ -71,5 +71,9 @@ MxxRu::Cpp::composite_target {
 	# ================================================================
 	# File upload support.
 	required_prj( "test/file_upload/prj.ut.rb" )
+
+	# ================================================================
+	# Basic Authentification support.
+	required_prj( "test/basic_auth/prj.ut.rb" )
 }
 
