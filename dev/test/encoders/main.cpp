@@ -43,6 +43,30 @@ TEST_CASE(
 	"[encoders][base64]" )
 {
 	{
+		std::string str{"A"};
+		REQUIRE( restinio::utils::base64::encode( str ) == "QQ==" );
+	}
+	{
+		std::string str(1u, '\0');
+		REQUIRE( restinio::utils::base64::encode( str ) == "AA==" );
+	}
+	{
+		std::string str(2u, '\0');
+		REQUIRE( restinio::utils::base64::encode( str ) == "AAA=" );
+	}
+	{
+		std::string str(3u, '\0');
+		REQUIRE( restinio::utils::base64::encode( str ) == "AAAA" );
+	}
+	{
+		std::string str("\x04\x10", 2u);
+		REQUIRE( restinio::utils::base64::encode( str ) == "BBA=" );
+	}
+	{
+		std::string str("\x01\x10\x01", 3u);
+		REQUIRE( restinio::utils::base64::encode( str ) == "ARAB" );
+	}
+	{
 		std::string str{"Man"};
 		REQUIRE( restinio::utils::base64::encode( str ) == "TWFu" );
 	}
@@ -76,8 +100,62 @@ TEST_CASE(
 		REQUIRE_THROWS( restinio::utils::base64::decode( str ) );
 	}
 	{
+		std::string str{ "=" };
+		REQUIRE_THROWS( restinio::utils::base64::decode( str ) );
+	}
+	{
+		std::string str{ "==" };
+		REQUIRE_THROWS( restinio::utils::base64::decode( str ) );
+	}
+	{
+		std::string str{ "===" };
+		REQUIRE_THROWS( restinio::utils::base64::decode( str ) );
+	}
+	{
+		std::string str{ "====" };
+		REQUIRE_THROWS( restinio::utils::base64::decode( str ) );
+	}
+	{
+		std::string str{ "A===" };
+		REQUIRE_THROWS( restinio::utils::base64::decode( str ) );
+	}
+	{
+		std::string str{ "Q=Q==" };
+		REQUIRE_THROWS( restinio::utils::base64::decode( str ) );
+	}
+	{
 		std::string str{"TWFu"};
 		REQUIRE( restinio::utils::base64::decode( str ) == "Man" );
+	}
+	{
+		const std::string str{"AA=="};
+		const std::string expected(1u, '\0');
+		const std::string result = restinio::utils::base64::decode( str );
+		REQUIRE( result == expected );
+	}
+	{
+		const std::string str{"AAA="};
+		const std::string expected(2u, '\0');
+		const std::string result = restinio::utils::base64::decode( str );
+		REQUIRE( result == expected );
+	}
+	{
+		const std::string str{"AAAA"};
+		const std::string expected(3u, '\0');
+		const std::string result = restinio::utils::base64::decode( str );
+		REQUIRE( result == expected );
+	}
+	{
+		const std::string str{"BBA="};
+		const std::string expected("\x04\x10", 2u);
+		const std::string result = restinio::utils::base64::decode( str );
+		REQUIRE( result == expected );
+	}
+	{
+		const std::string str{"ARAB"};
+		const std::string expected("\x01\x10\x01", 3u);
+		const std::string result = restinio::utils::base64::decode( str );
+		REQUIRE( result == expected );
 	}
 	{
 		std::string str{"TWFueQ=="};
