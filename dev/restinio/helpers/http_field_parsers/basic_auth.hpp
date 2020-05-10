@@ -67,7 +67,7 @@ enum class extraction_error_t
 	//! There is no HTTP field with authentification parameters.
 	no_auth_http_field,
 	
-	//! The HTTP field with authentification parameters can't be parser.
+	//! The HTTP field with authentification parameters can't be parsed.
 	illegal_http_field_value,
 
 	//! Different authentification scheme found.
@@ -89,23 +89,19 @@ enum class extraction_error_t
 	empty_username,
 };
 
-//
-// try_extract_params
-//
-//FIXME: document this!
+namespace impl
+{
+
 RESTINIO_NODISCARD
 inline expected_t< params_t, extraction_error_t >
-try_extract_params(
-	const request_t & req,
-	string_view_t auth_field_name )
+perform_extraction_attempt(
+	const optional_t< string_view_t > opt_field_value )
 {
-	const auto opt_auth_field_value =
-			req.header().opt_value_of( auth_field_name );
-	if( !opt_auth_field_value )
+	if( !opt_field_value )
 		return make_unexpected( extraction_error_t::no_auth_http_field );
 
 	const auto field_value_parse_result = authorization_value_t::try_parse(
-			*opt_auth_field_value );
+			*opt_field_value );
 	if( !field_value_parse_result )
 		return make_unexpected( extraction_error_t::illegal_http_field_value );
 
@@ -137,14 +133,77 @@ try_extract_params(
 	};
 }
 
-//FIXME: document this!
+} /* namespace impl */
+
+//
+// try_extract_params
+//
+/*!
+ * @brief Helper function for getting parameters of basic authentification
+ * from a request.
+ *
+ * This helper function is intended to be used for cases when authentification
+ * parameters are stored inside a HTTP-field with a custom name. For example:
+ * @code
+ * auto on_request(restinio::request_handle_t & req) {
+ * 	using namespace restinio::http_field_parsers::basic_auth;
+ * 	const auto auth_params = try_extract_params(*req, "X-My-Authorization");
+ * 	if(auth_params) {
+ * 		const std::string & username = auth_params->username;
+ * 		const std::string & password = auth_params->password;
+ * 		... // Do something with username and password.
+ * 	}
+ * 	...
+ * }
+ * @endcode
+ *
+ * @since v.0.6.7
+ */
 RESTINIO_NODISCARD
 inline expected_t< params_t, extraction_error_t >
 try_extract_params(
+	//! A request that should hold a HTTP-field with authentification
+	//! parameters.
 	const request_t & req,
+	//! The name of a HTTP-field with authentification parameters.
+	string_view_t auth_field_name )
+{
+	return impl::perform_extraction_attempt(
+			req.header().opt_value_of( auth_field_name ) );
+}
+
+/*!
+ * @brief Helper function for getting parameters of basic authentification
+ * from a request.
+ *
+ * Usage example:
+ * @code
+ * auto on_request(restinio::request_handle_t & req) {
+ * 	using namespace restinio::http_field_parsers::basic_auth;
+ * 	const auto auth_params = try_extract_params(
+ * 			*req, restinio::http_field::authorization);
+ * 	if(auth_params) {
+ * 		const std::string & username = auth_params->username;
+ * 		const std::string & password = auth_params->password;
+ * 		... // Do something with username and password.
+ * 	}
+ * 	...
+ * }
+ * @endcode
+ *
+ * @since v.0.6.7
+ */
+RESTINIO_NODISCARD
+inline expected_t< params_t, extraction_error_t >
+try_extract_params(
+	//! A request that should hold a HTTP-field with authentification
+	//! parameters.
+	const request_t & req,
+	//! The ID of a HTTP-field with authentification parameters.
 	http_field_t auth_field_id )
 {
-	return try_extract_params( req, field_to_string( auth_field_id ) );
+	return impl::perform_extraction_attempt(
+			req.header().opt_value_of( auth_field_id ) );
 }
 
 } /* namespace basic_auth */
