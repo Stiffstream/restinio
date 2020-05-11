@@ -11,7 +11,7 @@
 
 #pragma once
 
-// The current version is 0.6.7
+// The current version is 0.6.7.1
 //
 /*!
  * The major part of version number.

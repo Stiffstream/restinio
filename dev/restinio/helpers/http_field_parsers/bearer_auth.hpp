@@ -75,11 +75,11 @@ enum class extraction_error_t
 	not_bearer_auth_scheme,
 
 	//! Invalid value of parameter for bearer authentification scheme.
-	//! The single parameter in the form of token68 is expected.
+	//! The single parameter in the form of b64token is expected.
 	invalid_bearer_auth_param,
 
-	//! Value of token68 parameter for bearer authentification can't be decoded.
-	token68_decode_error,
+	//! Value of b64token parameter for bearer authentification can't be decoded.
+	b64token_decode_error,
 
 	//! Wrong format for id:secret in decoded parameter.
 	//! Maybe there is no colon symbol.
@@ -112,24 +112,28 @@ perform_extraction_attempt(
 	if( "bearer" != parsed_value.auth_scheme )
 		return make_unexpected( extraction_error_t::not_bearer_auth_scheme );
 
-	const auto * token68 = get_if<authorization_value_t::token68_t>(
+	const auto * b64token = get_if<authorization_value_t::token68_t>(
 			&parsed_value.auth_param );
-	if( !token68 )
+	if( !b64token )
 		return make_unexpected( extraction_error_t::invalid_bearer_auth_param );
 
 	const auto unbase64_result =
-			restinio::utils::base64::try_decode( token68->value );
+			restinio::utils::base64::try_decode( b64token->value );
 	if( !unbase64_result )
-		return make_unexpected( extraction_error_t::token68_decode_error );
+		return make_unexpected( extraction_error_t::b64token_decode_error );
 
 	const std::string & id_secret = *unbase64_result;
+	if( id_secret.empty() )
+		return make_unexpected(
+				extraction_error_t::invalid_id_secret_pair );
+
 	const auto first_colon = id_secret.find( ':' );
 	if( std::string::npos == first_colon )
 		return make_unexpected(
 				extraction_error_t::invalid_id_secret_pair );
 	if( 0u == first_colon )
 		return make_unexpected( extraction_error_t::empty_id );
-	if( id_secret.length() == first_colon )
+	if( id_secret.length() - 1u == first_colon )
 		return make_unexpected( extraction_error_t::empty_secret );
 
 	return params_t{

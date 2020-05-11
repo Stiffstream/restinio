@@ -75,5 +75,7 @@ MxxRu::Cpp::composite_target {
 	# ================================================================
 	# Basic Authentification support.
 	required_prj( "test/basic_auth/prj.ut.rb" )
+	# Bearer Authentification support
+	required_prj( "test/bearer_auth/prj.ut.rb" )
 }
 
