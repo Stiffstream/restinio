@@ -218,8 +218,8 @@ TEST_CASE( "Valid Authorization field", "[bearer_auth]" )
 			restinio::http_field::authorization );
 
 	REQUIRE( result );
-	REQUIRE( "user" == result->id );
-	REQUIRE( "1234" == result->secret );
+	REQUIRE( "user" == result->client_id );
+	REQUIRE( "1234" == result->client_secret );
 }
 
 TEST_CASE( "Valid X-My-Authorization field", "[bearer_auth]" )
@@ -248,6 +248,6 @@ TEST_CASE( "Valid X-My-Authorization field", "[bearer_auth]" )
 			"x-my-authorization" );
 
 	REQUIRE( result );
-	REQUIRE( "my-user" == result->id );
-	REQUIRE( "my-1234" == result->secret );
+	REQUIRE( "my-user" == result->client_id );
+	REQUIRE( "my-1234" == result->client_secret );
 }
