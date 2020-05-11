@@ -27,6 +27,7 @@ add_subdirectory(from_string)
 add_subdirectory(websocket)
 add_subdirectory(file_upload)
 add_subdirectory(basic_auth)
+add_subdirectory(bearer_auth)
 
 if ( OPENSSL_FOUND )
 	add_subdirectory(socket_options_tls)
