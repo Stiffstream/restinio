@@ -123,9 +123,6 @@ perform_extraction_attempt(
 		return make_unexpected( extraction_error_t::b64token_decode_error );
 
 	const std::string & id_secret = *unbase64_result;
-	if( id_secret.empty() )
-		return make_unexpected(
-				extraction_error_t::invalid_id_secret_pair );
 
 	const auto first_colon = id_secret.find( ':' );
 	if( std::string::npos == first_colon )
@@ -133,7 +130,7 @@ perform_extraction_attempt(
 				extraction_error_t::invalid_id_secret_pair );
 	if( 0u == first_colon )
 		return make_unexpected( extraction_error_t::empty_id );
-	if( id_secret.length() - 1u == first_colon )
+	if( id_secret.length() == first_colon + 1u )
 		return make_unexpected( extraction_error_t::empty_secret );
 
 	return params_t{
@@ -158,8 +155,8 @@ perform_extraction_attempt(
  * 	using namespace restinio::http_field_parsers::bearer_auth;
  * 	const auto auth_params = try_extract_params(*req, "X-My-Authorization");
  * 	if(auth_params) {
- * 		const std::string & id = auth_params->id;
- * 		const std::string & secret = auth_params->secret;
+ * 		const std::string & id = auth_params->client_id;
+ * 		const std::string & secret = auth_params->client_secret;
  * 		... // Do something with id and secret.
  * 	}
  * 	...
@@ -192,8 +189,8 @@ try_extract_params(
  * 	const auto auth_params = try_extract_params(
  * 			*req, restinio::http_field::authorization);
  * 	if(auth_params) {
- * 		const std::string & id = auth_params->id;
- * 		const std::string & secret = auth_params->secret;
+ * 		const std::string & id = auth_params->client_id;
+ * 		const std::string & secret = auth_params->client_secret;
  * 		... // Do something with id and secret.
  * 	}
  * 	...
