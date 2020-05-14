@@ -82,17 +82,20 @@ template< typename Parsed_Field_Type >
 RESTINIO_NODISCARD
 result_variant_t< Parsed_Field_Type >
 try_extract_field_value_from(
-	optional_t< string_view_t > opt_value )
+	optional_t< string_view_t > opt_value,
+	string_view_t default_value )
 {
 	static_assert( valid_field_type<Parsed_Field_Type>::value,
 			"Parsed_Field_Type should have static try_parse method that "
 			"accepts string_view_t and returns "
 			"expected_t<Parsed_Field_Type, parse_error_t>" );
 
-	if( !opt_value )
+	if( !opt_value && default_value.empty() )
 		return { field_not_found_t{} };
 
-	auto parse_result = Parsed_Field_Type::try_parse( *opt_value );
+	string_view_t content = opt_value ? *opt_value : default_value;
+
+	auto parse_result = Parsed_Field_Type::try_parse( content );
 	if( parse_result )
 		return { std::move(*parse_result) };
 	else
@@ -145,12 +148,17 @@ try_parse_field(
 	//! A request that should hold a HTTP-field.
 	const request_t & req,
 	//! The name of HTTP-field to be extracted and parsed.
-	string_view_t field_name )
+	string_view_t field_name,
+	//! The default value to be used if HTTP-field is not found.
+	//! If this value is not empty, then the variant with
+	//! field_not_found_t won't be returned.
+	string_view_t default_value = string_view_t{} )
 {
 	using namespace try_extract_field_details;
 
 	return try_extract_field_value_from< Parsed_Field_Type >(
-			req.header().opt_value_of( field_name ) );
+			req.header().opt_value_of( field_name ),
+			default_value );
 }
 
 /*!
@@ -194,12 +202,17 @@ try_parse_field(
 	//! A request that should hold a HTTP-field.
 	const request_t & req,
 	//! The ID of a HTTP-field to be extracted and parsed.
-	http_field_t field_id )
+	http_field_t field_id,
+	//! The default value to be used if HTTP-field is not found.
+	//! If this value is not empty, then the variant with
+	//! field_not_found_t won't be returned.
+	string_view_t default_value = string_view_t{} )
 {
 	using namespace try_extract_field_details;
 
 	return try_extract_field_value_from< Parsed_Field_Type >(
-			req.header().opt_value_of( field_id ) );
+			req.header().opt_value_of( field_id ),
+			default_value );
 }
 
 } /* namespace http_field_parsers */
