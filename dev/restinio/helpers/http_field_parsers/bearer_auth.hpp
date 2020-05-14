@@ -71,9 +71,6 @@ enum class extraction_error_t
 	//! Invalid value of parameter for bearer authentification scheme.
 	//! The single parameter in the form of b64token is expected.
 	invalid_bearer_auth_param,
-
-	//! Empty token.
-	empty_token,
 };
 
 namespace impl
