@@ -90,7 +90,7 @@ perform_extraction_attempt(
 		return make_unexpected( extraction_error_t::illegal_http_field_value );
 
 	const auto & parsed_value = *field_value_parse_result;
-	if( "Bearer" != parsed_value.auth_scheme )
+	if( "bearer" != parsed_value.auth_scheme )
 		return make_unexpected( extraction_error_t::not_bearer_auth_scheme );
 
 	const auto * b64token = get_if<authorization_value_t::token68_t>(
