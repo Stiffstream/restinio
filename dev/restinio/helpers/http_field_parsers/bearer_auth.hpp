@@ -71,6 +71,124 @@ enum class extraction_error_t
 	invalid_bearer_auth_param,
 };
 
+//
+// try_extract_params
+//
+/*!
+ * @brief Helper function for getting parameters of bearer authentification
+ * from an already parsed HTTP-field.
+ *
+ * @attention
+ * This function doesn't check the content of
+ * authorization_value_t::auth_scheme. It's expected that this field was
+ * checked earlier.
+ *
+ * Usage example:
+ * @code
+ * auto on_request(restinio::request_handle_t & req) {
+ * 	using namespace restinio::http_field_parsers;
+ *		const auto opt_field = req.header().opt_value_of(
+ * 			restinio::http_field::authorization);
+ * 	if(opt_field) {
+ * 		const auto parsed_field = authorization_value_t::try_parse(*opt_field);
+ * 		if(parsed_field) {
+ * 			if("basic" == parsed_field->auth_scheme) {
+ * 				... // Dealing with Basic authentification scheme.
+ * 			}
+ * 			else if("bearer" == parsed_field->auth_scheme) {
+ * 				using namespace restinio::http_field_parsers::bearer_auth;
+ * 				const auto bearer_params = try_extract_params(*parsed_field);
+ * 				if(bearer_params) {
+ * 					const std::string & token = auth_params->token;
+ * 					... // Do something with token.
+ * 				}
+ * 			}
+ * 			else {
+ * 				... // Other authentification schemes.
+ * 			}
+ * 		}
+ * 	}
+ * 	...
+ * }
+ * @endcode
+ *
+ * @since v.0.6.8
+ */
+RESTINIO_NODISCARD
+inline expected_t< params_t, extraction_error_t >
+try_extract_params(
+	const authorization_value_t & http_field )
+{
+	const auto * b64token = get_if<authorization_value_t::token68_t>(
+			&http_field.auth_param );
+	if( !b64token )
+		return make_unexpected( extraction_error_t::invalid_bearer_auth_param );
+
+	return params_t{ b64token->value };
+}
+
+/*!
+ * @brief Helper function for getting parameters of bearer authentification
+ * from an already parsed HTTP-field.
+ *
+ * @attention
+ * This function doesn't check the content of
+ * authorization_value_t::auth_scheme. It's expected that this field was
+ * checked earlier.
+ *
+ * @note
+ * This function can be used if one wants to avoid memory allocation
+ * and can reuse value of auth_params.
+ *
+ * Usage example (please note that `const` is not used in code when
+ * authorization HTTP-field is parsed):
+ * @code
+ * auto on_request(restinio::request_handle_t & req) {
+ * 	using namespace restinio::http_field_parsers;
+ *		const auto opt_field = req.header().opt_value_of(
+ * 			restinio::http_field::authorization);
+ * 	if(opt_field) {
+ * 		// parsed_field is a mutable object.
+ * 		// The content of parsed_field->auth_param can be moved out.
+ * 		auto parsed_field = authorization_value_t::try_parse(*opt_field);
+ * 		if(parsed_field) {
+ * 			if("basic" == parsed_field->auth_scheme) {
+ * 				... // Dealing with Basic authentification scheme.
+ * 			}
+ * 			else if("bearer" == parsed_field->auth_scheme) {
+ * 				using namespace restinio::http_field_parsers::bearer_auth;
+ * 				const auto bearer_params =
+ * 						// Please note the usage of std::move here.
+ * 						try_extract_params(std::move(*parsed_field));
+ * 				if(bearer_params) {
+ * 					const std::string & token = auth_params->token;
+ * 					... // Do something with token.
+ * 				}
+ * 			}
+ * 			else {
+ * 				... // Other authentification schemes.
+ * 			}
+ * 		}
+ * 	}
+ * 	...
+ * }
+ * @endcode
+ *
+ * @since v.0.6.8
+ */
+RESTINIO_NODISCARD
+inline expected_t< params_t, extraction_error_t >
+try_extract_params(
+	authorization_value_t && http_field )
+{
+	auto * b64token = get_if<authorization_value_t::token68_t>(
+			&http_field.auth_param );
+	if( !b64token )
+		return make_unexpected( extraction_error_t::invalid_bearer_auth_param );
+
+	return params_t{ std::move(b64token->value) };
+}
+
 namespace impl
 {
 
@@ -91,12 +209,7 @@ perform_extraction_attempt(
 	if( "bearer" != parsed_value.auth_scheme )
 		return make_unexpected( extraction_error_t::not_bearer_auth_scheme );
 
-	auto * b64token = get_if<authorization_value_t::token68_t>(
-			&parsed_value.auth_param );
-	if( !b64token )
-		return make_unexpected( extraction_error_t::invalid_bearer_auth_param );
-
-	return params_t{ std::move(b64token->value) };
+	return try_extract_params( std::move(parsed_value) );
 }
 
 } /* namespace impl */

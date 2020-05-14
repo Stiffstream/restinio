@@ -170,3 +170,40 @@ TEST_CASE( "Valid X-My-Authorization field", "[bearer_auth]" )
 	REQUIRE( result );
 	REQUIRE( "bXktdXNlcjpteS0xMjM0" == result->token );
 }
+
+TEST_CASE( "Extract from parsed authorization_value_t", "[bearer_auth]" )
+{
+	using namespace restinio::http_field_parsers;
+	using namespace restinio::http_field_parsers::bearer_auth;
+
+	restinio::http_request_header_t dummy_header{
+			restinio::http_method_post(),
+			"/"
+	};
+	dummy_header.set_field(
+			restinio::http_field::authorization,
+			"Bearer dXNlcjoxMjM0"s );
+	dummy_header.set_field(
+			"X-My-Authorization",
+			"Bearer bXktdXNlcjpteS0xMjM0"s );
+
+	auto req = std::make_shared< restinio::request_t >(
+			restinio::request_id_t{1},
+			std::move(dummy_header),
+			"Body"s,
+			dummy_connection_t::make(1u),
+			make_dummy_endpoint() );
+
+	const auto field = req->header().opt_value_of( "x-my-authorization" );
+	REQUIRE( field );
+
+	const auto field_parse_result = authorization_value_t::try_parse( *field );
+	REQUIRE( field_parse_result );
+	REQUIRE( "bearer" == field_parse_result->auth_scheme );
+
+	const auto result = try_extract_params( *field_parse_result );
+
+	REQUIRE( result );
+	REQUIRE( "bXktdXNlcjpteS0xMjM0" == result->token );
+}
+
