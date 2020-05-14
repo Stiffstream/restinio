@@ -13,8 +13,6 @@
 
 #include <restinio/helpers/http_field_parsers/authorization.hpp>
 
-#include <restinio/utils/base64.hpp>
-
 #include <restinio/http_headers.hpp>
 #include <restinio/request_handler.hpp>
 #include <restinio/expected.hpp>
@@ -84,23 +82,21 @@ perform_extraction_attempt(
 	if( !opt_field_value )
 		return make_unexpected( extraction_error_t::no_auth_http_field );
 
-	const auto field_value_parse_result = authorization_value_t::try_parse(
+	auto field_value_parse_result = authorization_value_t::try_parse(
 			*opt_field_value );
 	if( !field_value_parse_result )
 		return make_unexpected( extraction_error_t::illegal_http_field_value );
 
-	const auto & parsed_value = *field_value_parse_result;
+	auto & parsed_value = *field_value_parse_result;
 	if( "bearer" != parsed_value.auth_scheme )
 		return make_unexpected( extraction_error_t::not_bearer_auth_scheme );
 
-	const auto * b64token = get_if<authorization_value_t::token68_t>(
+	auto * b64token = get_if<authorization_value_t::token68_t>(
 			&parsed_value.auth_param );
 	if( !b64token )
 		return make_unexpected( extraction_error_t::invalid_bearer_auth_param );
 
-	return params_t{
-			b64token->value
-	};
+	return params_t{ std::move(b64token->value) };
 }
 
 } /* namespace impl */
@@ -152,9 +148,8 @@ try_extract_params(
  * 	const auto auth_params = try_extract_params(
  * 			*req, restinio::http_field::authorization);
  * 	if(auth_params) {
- * 		const std::string & id = auth_params->client_id;
- * 		const std::string & secret = auth_params->client_secret;
- * 		... // Do something with id and secret.
+ * 		const std::string & token = auth_params->token;
+ * 		... // Do something with token.
  * 	}
  * 	...
  * }
