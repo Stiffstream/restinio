@@ -1,0 +1,27 @@
+* text=auto !eol svneol=native#text/plain
+*.gitattributes text svneol=native#text/plain
+
+# Scripts formats
+*.sh         eol=lf svneol=LF#text/x-sh
+
+# Data formats
+*.pem          text svneol=native#text/plain
+*.cer          text svneol=native#text/plain
+*.key          text svneol=native#text/plain
+
+# Code formats
+*.c            text svneol=native#text/plain
+*.h            text svneol=native#text/plain
+*.hpp          text svneol=native#text/plain
+*.cpp          text svneol=native#text/plain
+*.ipp          text svneol=native#text/plain
+*.rb           text svneol=native#text/plain
+*.cmake        text svneol=native#text/plain
+*.cmake.in     text svneol=native#text/plain
+CMakeLists.txt text svneol=native#text/plain
+Doxyfile       text svneol=native#text/plain
+
+# Text formats
+LICENSE.*    text svneol=native#text/plain
+README.md    text svneol=native#text/plain
+
