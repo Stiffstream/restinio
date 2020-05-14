@@ -5,6 +5,7 @@
 #include <catch2/catch.hpp>
 
 #include <restinio/helpers/http_field_parsers/basic_auth.hpp>
+#include <restinio/helpers/http_field_parsers/try_parse_field.hpp>
 
 #include <test/common/dummy_connection.hpp>
 
@@ -283,6 +284,82 @@ TEST_CASE( "Extract from parsed authorization_value_t", "[basic_auth]" )
 	REQUIRE( "basic" == field_parse_result->auth_scheme );
 
 	const auto result = try_extract_params( *field_parse_result );
+
+	REQUIRE( result );
+	REQUIRE( "my-user" == result->username );
+	REQUIRE( "my-1234" == result->password );
+}
+
+TEST_CASE( "Extract from parsed authorization_value_t "
+		"(via try_parse_field(id))",
+		"[basic_auth][try_parse_field]" )
+{
+	using namespace restinio::http_field_parsers;
+	using namespace restinio::http_field_parsers::basic_auth;
+
+	restinio::http_request_header_t dummy_header{
+			restinio::http_method_post(),
+			"/"
+	};
+	dummy_header.set_field(
+			restinio::http_field::authorization,
+			"Basic bXktdXNlcjpteS0xMjM0"s );
+
+	auto req = std::make_shared< restinio::request_t >(
+			restinio::request_id_t{1},
+			std::move(dummy_header),
+			"Body"s,
+			dummy_connection_t::make(1u),
+			make_dummy_endpoint() );
+
+	const auto field_parse_result = try_parse_field< authorization_value_t >(
+			*req,
+			restinio::http_field::authorization );
+
+	REQUIRE( 0 == field_parse_result.index() );
+	const auto & auth = restinio::get< authorization_value_t >(
+			field_parse_result );
+	REQUIRE( "basic" == auth.auth_scheme );
+
+	const auto result = try_extract_params( auth );
+
+	REQUIRE( result );
+	REQUIRE( "my-user" == result->username );
+	REQUIRE( "my-1234" == result->password );
+}
+
+TEST_CASE( "Extract from parsed authorization_value_t "
+		"(via try_parse_field(name))",
+		"[basic_auth][try_parse_field]" )
+{
+	using namespace restinio::http_field_parsers;
+	using namespace restinio::http_field_parsers::basic_auth;
+
+	restinio::http_request_header_t dummy_header{
+			restinio::http_method_post(),
+			"/"
+	};
+	dummy_header.set_field(
+			"X-My-Authorization",
+			"Basic bXktdXNlcjpteS0xMjM0"s );
+
+	auto req = std::make_shared< restinio::request_t >(
+			restinio::request_id_t{1},
+			std::move(dummy_header),
+			"Body"s,
+			dummy_connection_t::make(1u),
+			make_dummy_endpoint() );
+
+	const auto field_parse_result = try_parse_field< authorization_value_t >(
+			*req,
+			"x-my-authorization" );
+
+	REQUIRE( 0 == field_parse_result.index() );
+	const auto & auth = restinio::get< authorization_value_t >(
+			field_parse_result );
+	REQUIRE( "basic" == auth.auth_scheme );
+
+	const auto result = try_extract_params( auth );
 
 	REQUIRE( result );
 	REQUIRE( "my-user" == result->username );
