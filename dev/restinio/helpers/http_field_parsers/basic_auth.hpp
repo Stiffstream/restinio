@@ -89,28 +89,57 @@ enum class extraction_error_t
 	empty_username,
 };
 
-namespace impl
-{
-
+//
+// try_extract_params
+//
+/*!
+ * @brief Helper function for getting parameters of basic authentification
+ * from an already parsed HTTP-field.
+ *
+ * @attention
+ * This function doesn't check the content of
+ * authorization_value_t::auth_scheme. It's expected that this field was
+ * checked earlier.
+ *
+ * Usage example:
+ * @code
+ * auto on_request(restinio::request_handle_t & req) {
+ * 	using namespace restinio::http_field_parsers;
+ *		const auto opt_field = req.header().opt_value_of(
+ * 			restinio::http_field::authorization);
+ * 	if(opt_field) {
+ * 		const auto parsed_field = authorization_value_t::try_parse(*opt_field);
+ * 		if(parsed_field) {
+ * 			if("basic" == parsed_field->auth_scheme) {
+ * 				using namespace restinio::http_field_parsers::basic_auth;
+ * 				const auto basic_params = try_extract_params(*parsed_field);
+ * 				if(basic_params) {
+ * 					const std::string & username = auth_params->username;
+ * 					const std::string & password = auth_params->password;
+ * 					... // Do something with username and password.
+ * 				}
+ * 			}
+ * 			else if("bearer" == parsed_field->auth_scheme) {
+ * 				... // Dealing with bearer authentification.
+ * 			}
+ * 			else {
+ * 				... // Other authentification schemes.
+ * 			}
+ * 		}
+ * 	}
+ * 	...
+ * }
+ * @endcode
+ *
+ * @since v.0.6.8
+ */
 RESTINIO_NODISCARD
 inline expected_t< params_t, extraction_error_t >
-perform_extraction_attempt(
-	const optional_t< string_view_t > opt_field_value )
+try_extract_params(
+	const authorization_value_t & http_field )
 {
-	if( !opt_field_value )
-		return make_unexpected( extraction_error_t::no_auth_http_field );
-
-	const auto field_value_parse_result = authorization_value_t::try_parse(
-			*opt_field_value );
-	if( !field_value_parse_result )
-		return make_unexpected( extraction_error_t::illegal_http_field_value );
-
-	const auto & parsed_value = *field_value_parse_result;
-	if( "basic" != parsed_value.auth_scheme )
-		return make_unexpected( extraction_error_t::not_basic_auth_scheme );
-
 	const auto * token68 = get_if<authorization_value_t::token68_t>(
-			&parsed_value.auth_param );
+			&http_field.auth_param );
 	if( !token68 )
 		return make_unexpected( extraction_error_t::invalid_basic_auth_param );
 
@@ -131,6 +160,29 @@ perform_extraction_attempt(
 			username_password.substr( 0u, first_colon ),
 			username_password.substr( first_colon + 1u )
 	};
+}
+
+namespace impl
+{
+
+RESTINIO_NODISCARD
+inline expected_t< params_t, extraction_error_t >
+perform_extraction_attempt(
+	const optional_t< string_view_t > opt_field_value )
+{
+	if( !opt_field_value )
+		return make_unexpected( extraction_error_t::no_auth_http_field );
+
+	const auto field_value_parse_result = authorization_value_t::try_parse(
+			*opt_field_value );
+	if( !field_value_parse_result )
+		return make_unexpected( extraction_error_t::illegal_http_field_value );
+
+	const auto & parsed_value = *field_value_parse_result;
+	if( "basic" != parsed_value.auth_scheme )
+		return make_unexpected( extraction_error_t::not_basic_auth_scheme );
+
+	return try_extract_params( parsed_value );
 }
 
 } /* namespace impl */

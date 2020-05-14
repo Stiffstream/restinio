@@ -252,3 +252,40 @@ TEST_CASE( "Valid X-My-Authorization field", "[basic_auth]" )
 	REQUIRE( "my-1234" == result->password );
 }
 
+TEST_CASE( "Extract from parsed authorization_value_t", "[basic_auth]" )
+{
+	using namespace restinio::http_field_parsers;
+	using namespace restinio::http_field_parsers::basic_auth;
+
+	restinio::http_request_header_t dummy_header{
+			restinio::http_method_post(),
+			"/"
+	};
+	dummy_header.set_field(
+			restinio::http_field::authorization,
+			"Basic dXNlcjoxMjM0"s );
+	dummy_header.set_field(
+			"X-My-Authorization",
+			"Basic bXktdXNlcjpteS0xMjM0"s );
+
+	auto req = std::make_shared< restinio::request_t >(
+			restinio::request_id_t{1},
+			std::move(dummy_header),
+			"Body"s,
+			dummy_connection_t::make(1u),
+			make_dummy_endpoint() );
+
+	const auto field = req->header().opt_value_of( "x-my-authorization" );
+	REQUIRE( field );
+
+	const auto field_parse_result = authorization_value_t::try_parse( *field );
+	REQUIRE( field_parse_result );
+	REQUIRE( "basic" == field_parse_result->auth_scheme );
+
+	const auto result = try_extract_params( *field_parse_result );
+
+	REQUIRE( result );
+	REQUIRE( "my-user" == result->username );
+	REQUIRE( "my-1234" == result->password );
+}
+
