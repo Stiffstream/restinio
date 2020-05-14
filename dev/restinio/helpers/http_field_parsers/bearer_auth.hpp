@@ -40,17 +40,11 @@ namespace bearer_auth
  */
 struct params_t
 {
-	//! Unique ID for a client.
+	//! Access Token.
 	/*!
 	 * Can't be empty.
 	 */
-	std::string client_id;
-
-	//! Very Secret secret of a client.
-	/*!
-	 * Can't be empty.
-	 */
-	std::string client_secret;
+	std::string token;
 };
 
 //
@@ -66,7 +60,7 @@ enum class extraction_error_t
 {
 	//! There is no HTTP field with authentification parameters.
 	no_auth_http_field,
-	
+
 	//! The HTTP field with authentification parameters can't be parsed.
 	illegal_http_field_value,
 
@@ -78,18 +72,8 @@ enum class extraction_error_t
 	//! The single parameter in the form of b64token is expected.
 	invalid_bearer_auth_param,
 
-	//! Value of b64token parameter for bearer authentification can't be decoded.
-	b64token_decode_error,
-
-	//! Wrong format for id:secret in decoded parameter.
-	//! Maybe there is no colon symbol.
-	invalid_id_secret_pair,
-
-	//! Empty id in id:secret pair.
-	empty_id,
-
-	//! Empty secret in id:secret pair.
-	empty_secret,
+	//! Empty token.
+	empty_token,
 };
 
 namespace impl
@@ -109,7 +93,7 @@ perform_extraction_attempt(
 		return make_unexpected( extraction_error_t::illegal_http_field_value );
 
 	const auto & parsed_value = *field_value_parse_result;
-	if( "bearer" != parsed_value.auth_scheme )
+	if( "Bearer" != parsed_value.auth_scheme )
 		return make_unexpected( extraction_error_t::not_bearer_auth_scheme );
 
 	const auto * b64token = get_if<authorization_value_t::token68_t>(
@@ -117,25 +101,8 @@ perform_extraction_attempt(
 	if( !b64token )
 		return make_unexpected( extraction_error_t::invalid_bearer_auth_param );
 
-	const auto unbase64_result =
-			restinio::utils::base64::try_decode( b64token->value );
-	if( !unbase64_result )
-		return make_unexpected( extraction_error_t::b64token_decode_error );
-
-	const std::string & id_secret = *unbase64_result;
-
-	const auto first_colon = id_secret.find( ':' );
-	if( std::string::npos == first_colon )
-		return make_unexpected(
-				extraction_error_t::invalid_id_secret_pair );
-	if( 0u == first_colon )
-		return make_unexpected( extraction_error_t::empty_id );
-	if( id_secret.length() == first_colon + 1u )
-		return make_unexpected( extraction_error_t::empty_secret );
-
 	return params_t{
-			id_secret.substr( 0u, first_colon ),
-			id_secret.substr( first_colon + 1u )
+			b64token->value
 	};
 }
 
@@ -155,9 +122,8 @@ perform_extraction_attempt(
  * 	using namespace restinio::http_field_parsers::bearer_auth;
  * 	const auto auth_params = try_extract_params(*req, "X-My-Authorization");
  * 	if(auth_params) {
- * 		const std::string & id = auth_params->client_id;
- * 		const std::string & secret = auth_params->client_secret;
- * 		... // Do something with id and secret.
+ * 		const std::string & token = auth_params->token;
+ * 		... // Do something with token.
  * 	}
  * 	...
  * }
@@ -217,4 +183,3 @@ try_extract_params(
 } /* namespace http_field_parsers */
 
 } /* namespace restinio */
-
