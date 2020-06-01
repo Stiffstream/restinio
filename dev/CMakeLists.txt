@@ -52,6 +52,7 @@ IF (RESTINIO_MASTER_PROJECT)
 
 	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 	include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/link_threads_if_necessary.cmake")
+	include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/link_atomic_if_necessary.cmake")
 
 	# ------------------------------------------------------------------------------
 	# RESTinio dependencies:
