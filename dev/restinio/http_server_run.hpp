@@ -728,6 +728,7 @@ initiate_shutdown( http_server_t<Traits> & server )
  * 		16,
  * 		server
  * };
+ * runner.start();
  *
  * ... // Some application specific code here.
  *
