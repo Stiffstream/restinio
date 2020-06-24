@@ -1854,7 +1854,7 @@ public :
 	expected_t< Target_Type, parse_error_t >
 	try_parse( source_t & from )
 	{
-		typename value_wrapper_t::wrapped_type tmp_value;
+		typename value_wrapper_t::wrapped_type tmp_value{};
 		optional_t< parse_error_t > error;
 
 		const bool success = restinio::utils::tuple_algorithms::all_of(
