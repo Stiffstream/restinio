@@ -1069,7 +1069,7 @@ operator>>(
 	using transformator_type = transformed_value_producer_t< P, T >;
 
 	return transformator_type{ std::move(producer), std::move(transformer) };
-};
+}
 
 //
 // transformer_proxy_tag
@@ -1147,7 +1147,7 @@ operator>>(
 	using producer_type = transformed_value_producer_t< P, transformator_type >;
 
 	return producer_type{ std::move(producer), std::move(real_transformer) };
-};
+}
 
 //
 // consumer_tag
