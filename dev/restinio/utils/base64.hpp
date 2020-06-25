@@ -247,7 +247,7 @@ try_decode( string_view_t str )
 namespace impl
 {
 
-void
+inline void
 throw_exception_on_invalid_base64_string( string_view_t str )
 {
 	constexpr size_t max_allowed_len = 32u;

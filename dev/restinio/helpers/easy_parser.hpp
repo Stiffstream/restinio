@@ -1069,7 +1069,7 @@ operator>>(
 	using transformator_type = transformed_value_producer_t< P, T >;
 
 	return transformator_type{ std::move(producer), std::move(transformer) };
-};
+}
 
 //
 // transformer_proxy_tag
@@ -1147,7 +1147,7 @@ operator>>(
 	using producer_type = transformed_value_producer_t< P, transformator_type >;
 
 	return producer_type{ std::move(producer), std::move(real_transformer) };
-};
+}
 
 //
 // consumer_tag
@@ -1854,7 +1854,7 @@ public :
 	expected_t< Target_Type, parse_error_t >
 	try_parse( source_t & from )
 	{
-		typename value_wrapper_t::wrapped_type tmp_value;
+		typename value_wrapper_t::wrapped_type tmp_value{};
 		optional_t< parse_error_t > error;
 
 		const bool success = restinio::utils::tuple_algorithms::all_of(
