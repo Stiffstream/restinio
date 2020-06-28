@@ -71,6 +71,39 @@ enum class extraction_error_t
 	invalid_bearer_auth_param,
 };
 
+/*!
+ * @brief Helper function to get a string name of extraction_error enum.
+ *
+ * @since v.0.6.9
+ */
+RESTINIO_NODISCARD
+inline string_view_t
+to_string_view( extraction_error_t what ) noexcept
+{
+	string_view_t result{ "<unknown>" };
+
+	switch( what )
+	{
+	case extraction_error_t::no_auth_http_field:
+		result = string_view_t{ "no_auth_http_field" };
+	break;
+	
+	case extraction_error_t::illegal_http_field_value:
+		result = string_view_t{ "illegal_http_field_value" };
+	break;
+
+	case extraction_error_t::not_bearer_auth_scheme:
+		result = string_view_t{ "not_bearer_auth_scheme" };
+	break;
+
+	case extraction_error_t::invalid_bearer_auth_param:
+		result = string_view_t{ "invalid_bearer_auth_param" };
+	break;
+	}
+
+	return result;
+}
+
 //
 // try_extract_params
 //
@@ -219,6 +252,38 @@ perform_extraction_attempt(
 //
 /*!
  * @brief Helper function for getting parameters of bearer authentification
+ * from a set of HTTP-fields.
+ *
+ * This helper function is intended to be used for cases when authentification
+ * parameters are stored inside a HTTP-field with a custom name. For example:
+ * @code
+ * auto check_authorization(const restinio::http_header_fields_t & fields) {
+ * 	using namespace restinio::http_field_parsers::bearer_auth;
+ * 	const auto auth_params = try_extract_params(fields, "X-My-Authorization");
+ * 	if(auth_params) {
+ * 		const std::string & token = auth_params->token;
+ * 		... // Do something with token.
+ * 	}
+ * 	...
+ * }
+ * @endcode
+ *
+ * @since v.0.6.9
+ */
+RESTINIO_NODISCARD
+inline expected_t< params_t, extraction_error_t >
+try_extract_params(
+	//! A set of HTTP-fields.
+	const http_header_fields_t & fields,
+	//! The name of a HTTP-field with authentification parameters.
+	string_view_t auth_field_name )
+{
+	return impl::perform_extraction_attempt(
+			fields.opt_value_of( auth_field_name ) );
+}
+
+/*!
+ * @brief Helper function for getting parameters of bearer authentification
  * from a request.
  *
  * This helper function is intended to be used for cases when authentification
@@ -246,8 +311,39 @@ try_extract_params(
 	//! The name of a HTTP-field with authentification parameters.
 	string_view_t auth_field_name )
 {
+	return try_extract_params( req.header(), auth_field_name );
+}
+
+/*!
+ * @brief Helper function for getting parameters of bearer authentification
+ * from a set of HTTP-fields.
+ *
+ * Usage example:
+ * @code
+ * auto check_authorization(const restinio::http_header_fields_t & fields) {
+ * 	using namespace restinio::http_field_parsers::bearer_auth;
+ * 	const auto auth_params = try_extract_params(
+ * 			fields, restinio::http_field::authorization);
+ * 	if(auth_params) {
+ * 		const std::string & token = auth_params->token;
+ * 		... // Do something with token.
+ * 	}
+ * 	...
+ * }
+ * @endcode
+ *
+ * @since v.0.6.9
+ */
+RESTINIO_NODISCARD
+inline expected_t< params_t, extraction_error_t >
+try_extract_params(
+	//! A set of HTTP-fields.
+	const http_header_fields_t & fields,
+	//! The ID of a HTTP-field with authentification parameters.
+	http_field_t auth_field_id )
+{
 	return impl::perform_extraction_attempt(
-			req.header().opt_value_of( auth_field_name ) );
+			fields.opt_value_of( auth_field_id ) );
 }
 
 /*!
@@ -279,8 +375,7 @@ try_extract_params(
 	//! The ID of a HTTP-field with authentification parameters.
 	http_field_t auth_field_id )
 {
-	return impl::perform_extraction_attempt(
-			req.header().opt_value_of( auth_field_id ) );
+	return try_extract_params( req.header(), auth_field_id );
 }
 
 } /* namespace bearer_auth */
@@ -288,3 +383,4 @@ try_extract_params(
 } /* namespace http_field_parsers */
 
 } /* namespace restinio */
+
