@@ -68,7 +68,7 @@ restinio_header_value_cb( http_parser * parser, const char *at, size_t length )
 
 		if( !ctx->m_last_was_value )
 		{
-			ctx->m_header.set_field(
+			ctx->m_header.add_field(
 				std::move( ctx->m_current_field_name ),
 				std::string{ at, length } );
 

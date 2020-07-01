@@ -100,7 +100,7 @@ class base_response_builder_t
 			std::string field_name,
 			std::string field_value ) &
 		{
-			m_header.set_field(
+			m_header.add_field(
 				std::move( field_name ),
 				std::move( field_value ) );
 			return upcast_reference();
@@ -121,7 +121,7 @@ class base_response_builder_t
 		Response_Builder &
 		append_header( http_header_field_t http_header_field ) &
 		{
-			m_header.set_field( std::move( http_header_field ) );
+			m_header.add_field( std::move( http_header_field ) );
 			return upcast_reference();
 		}
 
@@ -139,7 +139,7 @@ class base_response_builder_t
 			http_field_t field_id,
 			std::string field_value ) &
 		{
-			m_header.set_field(
+			m_header.add_field(
 				field_id,
 				std::move( field_value ) );
 			return upcast_reference();
@@ -768,7 +768,7 @@ class response_builder_t< chunked_output_t > final
 			constexpr const char value[] = "chunked";
 			if( !m_header.has_field( restinio::http_field::transfer_encoding ) )
 			{
-				m_header.set_field(
+				m_header.add_field(
 					restinio::http_field::transfer_encoding,
 					std::string{ value, impl::ct_string_len( value ) } );
 			}

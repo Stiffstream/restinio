@@ -272,7 +272,7 @@ make_parser()
 						symbol(CR), symbol(LF)
 					) >> custom_consumer(
 							[](auto & to, http_header_field_t && v) {
-								to.set_field( std::move(v) );
+								to.add_field( std::move(v) );
 							} )
 				)
 			) >> &parsed_part_t::fields,
