@@ -441,7 +441,7 @@ TEST_CASE( "Enumeration of fields" , "[header][fields][for_each]" )
 
 TEST_CASE( "Enumeration of field's values" , "[header][fields][for_each_value_of]" )
 {
-	SECTION( "By name" )
+	SECTION( "By name (single value)" )
 	{
 		http_header_fields_t fields;
 
@@ -462,7 +462,31 @@ TEST_CASE( "Enumeration of field's values" , "[header][fields][for_each_value_of
 		REQUIRE( "text/plain" == expected_content );
 	}
 
-	SECTION( "By Id" )
+	SECTION( "By name (multiple values)" )
+	{
+		http_header_fields_t fields;
+
+		fields.add_field( "Content-Language", "en" );
+		fields.add_field( "Accept-Encoding", "utf-8" );
+		fields.add_field( "Server", "Unknown" );
+		fields.add_field( "Content-Language", "ru-RU" );
+
+		REQUIRE( 4 == fields.fields_count() );
+
+		std::string expected_content;
+
+		fields.for_each_value_of( "Content-Language",
+			[&](const auto & value) {
+				if( !expected_content.empty() )
+					expected_content += ", ";
+				expected_content.append( value.data(), value.size() );
+				return http_header_fields_t::continue_enumeration;
+			} );
+
+		REQUIRE( "en, ru-RU" == expected_content );
+	}
+
+	SECTION( "By Id (single value)" )
 	{
 		http_header_fields_t fields;
 
@@ -483,6 +507,29 @@ TEST_CASE( "Enumeration of field's values" , "[header][fields][for_each_value_of
 		REQUIRE( "text/html" == expected_content );
 	}
 
+	SECTION( "By name (multiple values)" )
+	{
+		http_header_fields_t fields;
+
+		fields.add_field( http_field_t::content_language, "en" );
+		fields.add_field( http_field_t::accept_encoding, "utf-8" );
+		fields.add_field( http_field_t::server, "Unknown" );
+		fields.add_field( http_field_t::content_language, "ru-RU" );
+
+		REQUIRE( 4 == fields.fields_count() );
+
+		std::string expected_content;
+
+		fields.for_each_value_of( http_field_t::content_language,
+			[&](const auto & value) {
+				if( !expected_content.empty() )
+					expected_content += ", ";
+				expected_content.append( value.data(), value.size() );
+				return http_header_fields_t::continue_enumeration;
+			} );
+
+		REQUIRE( "en, ru-RU" == expected_content );
+	}
 	SECTION( "Mixed case (name/id)" )
 	{
 		http_header_fields_t fields;

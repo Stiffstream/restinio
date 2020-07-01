@@ -843,6 +843,65 @@ class http_header_fields_t
 			}
 		}
 
+		/*!
+		 * @brief Add a field in the form of id-value pair.
+		 *
+		 * If `field_id=http_field_t::field_unspecified` then function
+		 * does nothing.
+		 *
+		 * @note
+		 * This method doesn't check the presence of the field.
+		 * So it can be used for storing of several values of HTTP-field.
+		 *
+		 * @since v.0.6.9
+		 */
+		void
+		add_field(
+			http_field_t field_id,
+			std::string field_value )
+		{
+			if( http_field_t::field_unspecified != field_id )
+			{
+				m_fields.emplace_back(
+					field_id,
+					std::move( field_value ) );
+			}
+		}
+
+		/*!
+		 * @brief Add a field in the form of name-value pair.
+		 *
+		 * @note
+		 * This method doesn't check the presence of the field.
+		 * So it can be used for storing of several values of HTTP-field.
+		 *
+		 * @since v.0.6.9
+		 */
+		void
+		add_field(
+			std::string field_name,
+			std::string field_value )
+		{
+			m_fields.emplace_back(
+				std::move( field_name ),
+				std::move( field_value ) );
+		}
+
+		/*!
+		 * @brief Add a field in the form of http_header_field object.
+		 *
+		 * @note
+		 * This method doesn't check the presence of the field.
+		 * So it can be used for storing of several values of HTTP-field.
+		 *
+		 * @since v.0.6.9
+		 */
+		void
+		add_field( http_header_field_t http_header_field )
+		{
+			m_fields.push_back( std::move(http_header_field) );
+		}
+
 		//! Append field with name.
 		void
 		append_field(
