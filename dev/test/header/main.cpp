@@ -439,6 +439,93 @@ TEST_CASE( "Enumeration of fields" , "[header][fields][for_each]" )
 		} );
 }
 
+TEST_CASE( "Enumeration of field's values" , "[header][fields][for_each_value_of]" )
+{
+	SECTION( "By name" )
+	{
+		http_header_fields_t fields;
+
+		fields.set_field( "Content-Type", "text/plain" );
+		fields.set_field( "Accept-Encoding", "utf-8" );
+		fields.set_field( "Server", "Unknown" );
+
+		REQUIRE( 3 == fields.fields_count() );
+
+		std::string expected_content;
+
+		fields.for_each_value_of( "Content-Type",
+			[&](const auto & value) {
+				expected_content.append( value.data(), value.size() );
+				return http_header_fields_t::continue_enumeration;
+			} );
+
+		REQUIRE( "text/plain" == expected_content );
+	}
+
+	SECTION( "By Id" )
+	{
+		http_header_fields_t fields;
+
+		fields.set_field( http_field_t::content_type, "text/html" );
+		fields.set_field( http_field_t::accept_encoding, "utf-8" );
+		fields.set_field( http_field_t::server, "Unknown" );
+
+		REQUIRE( 3 == fields.fields_count() );
+
+		std::string expected_content;
+
+		fields.for_each_value_of( http_field_t::content_type,
+			[&](const auto & value) {
+				expected_content.append( value.data(), value.size() );
+				return http_header_fields_t::continue_enumeration;
+			} );
+
+		REQUIRE( "text/html" == expected_content );
+	}
+
+	SECTION( "Mixed case (name/id)" )
+	{
+		http_header_fields_t fields;
+
+		fields.set_field( "Content-Type", "text/plain" );
+		fields.set_field( "Accept-Encoding", "utf-8" );
+		fields.set_field( "Server", "Unknown" );
+
+		REQUIRE( 3 == fields.fields_count() );
+
+		std::string expected_content;
+
+		fields.for_each_value_of( http_field_t::content_type,
+			[&](const auto & value) {
+				expected_content.append( value.data(), value.size() );
+				return http_header_fields_t::continue_enumeration;
+			} );
+
+		REQUIRE( "text/plain" == expected_content );
+	}
+
+	SECTION( "Mixed case (id/name)" )
+	{
+		http_header_fields_t fields;
+
+		fields.set_field( http_field_t::content_type, "text/html" );
+		fields.set_field( http_field_t::accept_encoding, "utf-8" );
+		fields.set_field( http_field_t::server, "Unknown" );
+
+		REQUIRE( 3 == fields.fields_count() );
+
+		std::string expected_content;
+
+		fields.for_each_value_of( "content-type",
+			[&](const auto & value) {
+				expected_content.append( value.data(), value.size() );
+				return http_header_fields_t::continue_enumeration;
+			} );
+
+		REQUIRE( "text/html" == expected_content );
+	}
+}
+
 TEST_CASE( "Working with common header" , "[header][common]" )
 {
 	SECTION( "http version" )

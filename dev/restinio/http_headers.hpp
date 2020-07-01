@@ -710,6 +710,27 @@ class http_header_fields_t
 		//! Type of const_iterator for enumeration of fields.
 		using const_iterator = fields_container_t::const_iterator;
 
+		//! The result of handling yet another field value.
+		/*!
+		 * A value of that enumeration should be returned by a lambda-function
+		 * passed to for_each_value_of() method.
+		 *
+		 * @since v.0.6.9
+		 */
+		enum class handling_result_t
+		{
+			//! Next value of field should be found and passed to the next
+			//! invocation of handler.
+			continue_enumeration,
+			//! The loop on field values should be stopped.
+			stop_enumeration
+		};
+
+		constexpr static handling_result_t continue_enumeration =
+				handling_result_t::continue_enumeration;
+		constexpr static handling_result_t stop_enumeration =
+				handling_result_t::stop_enumeration;
+
 		http_header_fields_t()
 		{
 			m_fields.reserve( RESTINIO_HEADER_FIELDS_DEFAULT_RESERVE_COUNT );
@@ -1208,6 +1229,104 @@ class http_header_fields_t
 		{
 			for( const auto & f : m_fields )
 				lambda( f );
+		}
+
+		//! Enumeration of each value of a field.
+		/*!
+		 * Calls @a lambda for each value of a field @a field_id.
+		 *
+		 * Lambda should has one of the following formats:
+		 * @code
+		 * restinio::http_header_fields_t::handling_result_t
+		 * (const restinio::string_view_t &);
+		 *
+		 * restinio::http_header_fields_t::handling_result_t
+		 * (restinio::string_view_t);
+		 * @endcode
+		 *
+		 * @note
+		 * The @a lambda can throw.
+		 *
+		 * @attention
+		 * The content of this http_header_fields_t shouldn't be changed
+		 * during the enumeration (it means that fields can't be removed and
+		 * new fields can't be added).
+		 *
+		 * Usage example:
+		 * @code
+		 * headers().for_each_value_of(restinio::http_field_t::transfer_encoding,
+		 * 		[](auto value) {
+		 * 			std::cout << "encoding: " << value << std::endl;
+		 * 			return restinio::http_header_fields_t::continue_enumeration;
+		 * 		} );
+		 * @endcode
+		 */
+		template< typename Lambda >
+		void
+		for_each_value_of(
+			http_field_t field_id,
+			Lambda && lambda ) const
+				noexcept(noexcept(lambda(
+						std::declval<const string_view_t &>())))
+		{
+			for( const auto & f : m_fields )
+			{
+				if( field_id == f.field_id() )
+				{
+					const handling_result_t r = lambda( f.value() );
+					if( stop_enumeration == r )
+						break;
+				}
+			}
+		}
+
+		//! Enumeration of each value of a field.
+		/*!
+		 * Calls @a lambda for each value of a field @a field_name.
+		 *
+		 * Lambda should has one of the following formats:
+		 * @code
+		 * restinio::http_header_fields_t::handling_result_t
+		 * (const restinio::string_view_t &);
+		 *
+		 * restinio::http_header_fields_t::handling_result_t
+		 * (restinio::string_view_t);
+		 * @endcode
+		 *
+		 * @note
+		 * The @a lambda can throw.
+		 *
+		 * @attention
+		 * The content of this http_header_fields_t shouldn't be changed
+		 * during the enumeration (it means that fields can't be removed and
+		 * new fields can't be added).
+		 *
+		 * Usage example:
+		 * @code
+		 * headers().for_each_value_of("Transfer-Encoding",
+		 * 		[](auto value) {
+		 * 			std::cout << "encoding: " << value << std::endl;
+		 * 			return restinio::http_header_fields_t::continue_enumeration;
+		 * 		} );
+		 * @endcode
+		 */
+		template< typename Lambda >
+		void
+		for_each_value_of(
+			string_view_t field_name,
+			Lambda && lambda ) const
+				noexcept(noexcept(lambda(
+						std::declval<const string_view_t &>())))
+		{
+			for( const auto & f : m_fields )
+			{
+				if( impl::is_equal_caseless( f.name(), field_name ) )
+				{
+					const handling_result_t r = lambda( f.value() );
+					if( stop_enumeration == r )
+						break;
+				}
+			}
 		}
 
 		const_iterator
