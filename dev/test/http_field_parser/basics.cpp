@@ -624,20 +624,34 @@ TEST_CASE( "just_result (string case)", "[just_result]" )
 
 	auto parser = produce<std::string>(
 			alternatives(
-				caseless_symbol_p('f') >> just_result("Female"s),
-				caseless_symbol_p('m') >> just_result("Male"s)
+				caseless_exact_p("Fem") >> just_result("Female"s),
+				caseless_exact_p("Mal") >> just_result("Male"s)
 			)
 		);
 
 	{
-		const auto result = try_parse( "f", parser );
+		const auto result = try_parse( "fem", parser );
 
 		REQUIRE( result );
 		REQUIRE( "Female"s == *result );
 	}
 
 	{
-		const auto result = try_parse( "m", parser );
+		const auto result = try_parse( "FEM", parser );
+
+		REQUIRE( result );
+		REQUIRE( "Female"s == *result );
+	}
+
+	{
+		const auto result = try_parse( "mal", parser );
+
+		REQUIRE( result );
+		REQUIRE( "Male"s == *result );
+	}
+
+	{
+		const auto result = try_parse( "MAL", parser );
 
 		REQUIRE( result );
 		REQUIRE( "Male"s == *result );

@@ -3136,6 +3136,126 @@ public:
 	}
 };
 
+//
+// try_parse_caseless_exact_fragment
+//
+
+// Requires that begin is not equal to end.
+// It assumes that content in [begin, end) is already in lower case.
+template< typename It >
+RESTINIO_NODISCARD
+expected_t< bool, parse_error_t >
+try_parse_caseless_exact_fragment( source_t & from, It begin, It end )
+{
+	assert( begin != end );
+
+	source_t::content_consumer_t consumer{ from };
+
+	for( auto ch = from.getch(); !ch.m_eof; ch = from.getch() )
+	{
+		if( restinio::impl::to_lower_case(ch.m_ch) != *begin )
+			return make_unexpected( parse_error_t{
+					consumer.started_at(),
+					error_reason_t::pattern_not_found
+				} );
+		if( ++begin == end )
+			break;
+	}
+
+	if( begin != end )
+		return make_unexpected( parse_error_t{
+				consumer.started_at(),
+				error_reason_t::unexpected_eof
+			} );
+
+	consumer.commit();
+
+	return true;
+}
+
+//
+// caseless_exact_fixed_size_fragment_producer_t
+//
+/*!
+ * @brief A producer that expects a fragment in the input and
+ * produces boolean value if that fragment is found.
+ *
+ * The comparison is performed in case-insensitive manner.
+ *
+ * This class is indended for working with fixed-size string literals
+ * with terminating null-symbol.
+ *
+ * @since v.0.6.9
+ */
+template< std::size_t Size >
+class caseless_exact_fixed_size_fragment_producer_t
+	:	public producer_tag< bool >
+{
+	static_assert( 1u < Size, "Size is expected to greater that 1" );
+
+	// NOTE: there is no space for last zero-byte.
+	std::array< char, Size-1u > m_fragment;
+
+public:
+	caseless_exact_fixed_size_fragment_producer_t( const char (&f)[Size] )
+	{
+		// Content should be converted to lower-case.
+		// NOTE: last zero-byte is discarded.
+		std::transform(
+				&f[ 0 ], &f[ m_fragment.size() ],
+				m_fragment.data(),
+				[]( const char src ) {
+					return restinio::impl::to_lower_case( src );
+				} );
+	}
+
+	RESTINIO_NODISCARD
+	expected_t< bool, parse_error_t >
+	try_parse( source_t & from )
+	{
+		return try_parse_caseless_exact_fragment( from,
+				m_fragment.begin(), m_fragment.end() );
+	}
+};
+
+//
+// caseless_exact_fragment_producer_t
+//
+/*!
+ * @brief A producer that expects a fragment in the input and
+ * produces boolean value if that fragment is found.
+ *
+ * The comparison is performed in case-insensitive manner.
+ *
+ * @since v.0.6.9
+ */
+class caseless_exact_fragment_producer_t
+	:	public producer_tag< bool >
+{
+	std::string m_fragment;
+
+public:
+	caseless_exact_fragment_producer_t( std::string fragment )
+		:	m_fragment{ std::move(fragment) }
+	{
+		if( m_fragment.empty() )
+			throw exception_t( "'fragment' value for exact_fragment_producer_t "
+					"can't be empty!" );
+
+		// Content should be converted to lower-case.
+		for( auto & ch : m_fragment )
+			ch = restinio::impl::to_lower_case( ch );
+	}
+
+	RESTINIO_NODISCARD
+	expected_t< bool, parse_error_t >
+	try_parse( source_t & from )
+	{
+		return try_parse_caseless_exact_fragment( from,
+				m_fragment.begin(), m_fragment.end() );
+	}
+};
+
 } /* namespace impl */
 
 //
@@ -4408,6 +4528,135 @@ auto
 exact( const char (&fragment)[Size] )
 {
 	return impl::exact_fixed_size_fragment_producer_t<Size>{ fragment } >> skip();
+}
+
+//
+// caseless_exact_p
+//
+/*!
+ * @brief A factory function that creates an instance of
+ * caseless_exact_fragment_producer.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(
+ * 	alternatives(
+ * 		caseless_exact_p("pro") >> just_result("Professional"),
+ * 		caseless_exact_p("con") >> just_result("Consumer")
+ * 	)
+ * );
+ * @endcode
+ *
+ * @since v.0.6.9
+ */
+RESTINIO_NODISCARD
+inline auto
+caseless_exact_p( string_view_t fragment )
+{
+	return impl::caseless_exact_fragment_producer_t{
+			std::string{ fragment.data(), fragment.size() }
+		};
+}
+
+/*!
+ * @brief A factory function that creates an instance of
+ * caseless_exact_fragment_producer.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(
+ * 	alternatives(
+ * 		caseless_exact_p("pro") >> just_result("Professional"),
+ * 		caseless_exact_p("con") >> just_result("Consumer")
+ * 	)
+ * );
+ * @endcode
+ *
+ * @attention
+ * This version is dedicated to be used with string literals.
+ * Because of that the last byte from a literal will be ignored (it's
+ * assumed that this byte contains zero).
+ * But this behavior would lead to unexpected results in such cases:
+ * @code
+ * const char prefix[]{ 'h', 'e', 'l', 'l', 'o' };
+ *
+ * produce<std::string>(caseless_exact_p(prefix) >> just_result("Hi!"));
+ * @endcode
+ * because the last byte with value 'o' will be ignored by
+ * exact_producer. To avoid such behavior string_view_t should be
+ * used explicitely:
+ * @code
+ * produce<std::string>(caseless_exact_p(string_view_t{prefix})
+ * 		>> just_result("Hi!"));
+ * @endcode
+ *
+ * @since v.0.6.9
+ */
+template< std::size_t Size >
+RESTINIO_NODISCARD
+auto
+caseless_exact_p( const char (&fragment)[Size] )
+{
+	return impl::caseless_exact_fixed_size_fragment_producer_t<Size>{ fragment };
+}
+
+//
+// caseless_exact
+//
+/*!
+ * @brief A factory function that creates an instance of
+ * caseless_exact_fragment clause.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(caseless_exact("version="), token() >> as_result());
+ * @endcode
+ *
+ * @since v.0.6.9
+ */
+RESTINIO_NODISCARD
+inline auto
+caseless_exact( string_view_t fragment )
+{
+	return impl::caseless_exact_fragment_producer_t{
+			std::string{ fragment.data(), fragment.size() }
+		} >> skip();
+}
+
+/*!
+ * @brief A factory function that creates an instance of
+ * caseless_exact_fragment clause.
+ *
+ * Usage example:
+ * @code
+ * produce<std::string>(caseless_exact("version="), token() >> as_result());
+ * @endcode
+ *
+ * @attention
+ * This version is dedicated to be used with string literals.
+ * Because of that the last byte from a literal will be ignored (it's
+ * assumed that this byte contains zero).
+ * But this behavior would lead to unexpected results in such cases:
+ * @code
+ * const char prefix[]{ 'v', 'e', 'r', 's', 'i', 'o', 'n', '=' };
+ *
+ * produce<std::string>(caseless_exact(prefix), token() >> as_result());
+ * @endcode
+ * because the last byte with value '=' will be ignored by
+ * exact_producer. To avoid such behavior string_view_t should be
+ * used explicitely:
+ * @code
+ * produce<std::string>(caseless_exact(string_view_t{prefix}),	token() >> as_result());
+ * @endcode
+ * 
+ * @since v.0.6.9
+ */
+template< std::size_t Size >
+RESTINIO_NODISCARD
+auto
+caseless_exact( const char (&fragment)[Size] )
+{
+	return impl::caseless_exact_fixed_size_fragment_producer_t<Size>{ fragment } >> skip();
 }
 
 //
