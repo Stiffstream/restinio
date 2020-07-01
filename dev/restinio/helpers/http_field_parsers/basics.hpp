@@ -1547,8 +1547,8 @@ T := *( OWS ';' OWS token '=' OWS (token / quoted_string))
  * 	parameter_with_mandatory_value_container_t params;
  * };
  * produce<my_field>(
- * 	token_p() >> to_lower() >> &my_field,
- * 	params_with_value_p() >> &my_field
+ * 	token_p() >> to_lower() >> &my_field::value,
+ * 	params_with_value_p() >> &my_field::params
  * );
  * @endcode
  *
@@ -1725,8 +1725,8 @@ T := *( OWS ';' OWS token ['=' OWS (token / quoted_string)] )
  * 	parameter_with_optional_value_container_t params;
  * };
  * produce<my_field>(
- * 	token_p() >> to_lower() >> &my_field,
- * 	params_with_opt_value_p() >> &my_field
+ * 	token_p() >> to_lower() >> &my_field::value,
+ * 	params_with_opt_value_p() >> &my_field::params
  * );
  * @endcode
  *
