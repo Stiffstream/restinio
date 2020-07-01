@@ -427,6 +427,45 @@ struct is_ctext_predicate_t
 };
 
 //
+// is_token_char_predicate_t
+//
+/*!
+ * @brief A predicate for symbol_producer_template that checks that
+ * a symbol can be used inside a token.
+ */
+struct is_token_char_predicate_t
+{
+	RESTINIO_NODISCARD
+	static constexpr bool
+	is_token_char( const char ch ) noexcept
+	{
+		return is_alpha(ch) || is_digit(ch) ||
+				ch == '!' ||
+				ch == '#' ||
+				ch == '$' ||
+				ch == '%' ||
+				ch == '&' ||
+				ch == '\'' ||
+				ch == '*' ||
+				ch == '+' ||
+				ch == '-' ||
+				ch == '.' ||
+				ch == '^' ||
+				ch == '_' ||
+				ch == '`' ||
+				ch == '|' ||
+				ch == '~';
+	}
+
+	RESTINIO_NODISCARD
+	bool
+	operator()( const char actual ) const noexcept
+	{
+		return is_token_char(actual);
+	}
+};
+
+//
 // ows_producer_t
 //
 /*!
@@ -520,22 +559,7 @@ class token_producer_t : public producer_tag< std::string >
 	static constexpr bool
 	is_token_char( const char ch ) noexcept
 	{
-		return is_alpha(ch) || is_digit(ch) ||
-				ch == '!' ||
-				ch == '#' ||
-				ch == '$' ||
-				ch == '%' ||
-				ch == '&' ||
-				ch == '\'' ||
-				ch == '*' ||
-				ch == '+' ||
-				ch == '-' ||
-				ch == '.' ||
-				ch == '^' ||
-				ch == '_' ||
-				ch == '`' ||
-				ch == '|' ||
-				ch == '~';
+		return is_token_char_predicate_t::is_token_char( ch );
 	}
 
 public :
@@ -915,6 +939,28 @@ inline auto
 ows() noexcept { return ows_p() >> skip(); }
 
 //
+// token_symbol_producer
+//
+/*!
+ * @brief A factory for producer of symbols than can be used in tokens.
+ *
+ * Usage example:
+ * @code
+	produce<std::string>(
+		repeat(1, 20, token_symbol_p() >> to_container());
+ * @endcode
+ *
+ * @since v.0.6.9
+ */
+RESTINIO_NODISCARD
+inline auto
+token_symbol_p() noexcept
+{
+	return restinio::easy_parser::impl::symbol_producer_template_t<
+			impl::is_token_char_predicate_t >{};
+}
+
+//
 // token_producer
 //
 /*!
@@ -992,6 +1038,32 @@ inline auto
 quoted_pair_p() noexcept
 {
 	return impl::quoted_pair_producer_t{};
+}
+
+//
+// expected_token_p
+//
+//FIXME: document this!
+RESTINIO_NODISCARD
+inline auto
+expected_token_p( string_view_t token )
+{
+	return produce< bool >(
+			exact_p( token ) >> as_result(),
+			not_clause( token_symbol_p() >> skip() ) );
+}
+
+//
+// expected_caseless_token_p
+//
+//FIXME: document this!
+RESTINIO_NODISCARD
+inline auto
+expected_caseless_token_p( string_view_t token )
+{
+	return produce< bool >(
+			caseless_exact_p( token ) >> as_result(),
+			not_clause( token_symbol_p() >> skip() ) );
 }
 
 namespace impl

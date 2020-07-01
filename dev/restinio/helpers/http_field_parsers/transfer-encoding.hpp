@@ -48,7 +48,7 @@ transfer-parameter = token BWS "=" BWS ( token / quoted-string )
 struct transfer_encoding_value_t
 {
 	//! Enumeration for transfer-coding values from RFC7230.
-	enum class known_transfer_conding_t
+	enum class known_transfer_coding_t
 	{
 		chunked,
 		compress,
@@ -56,14 +56,14 @@ struct transfer_encoding_value_t
 		gzip,
 	};
 
-	static constexpr known_transfer_conding_t chunked =
-			known_transfer_conding_t::chunked;
-	static constexpr known_transfer_conding_t compress =
-			known_transfer_conding_t::compress;
-	static constexpr known_transfer_conding_t deflate =
-			known_transfer_conding_t::deflate;
-	static constexpr known_transfer_conding_t gzip =
-			known_transfer_conding_t::gzip;
+	static constexpr known_transfer_coding_t chunked =
+			known_transfer_coding_t::chunked;
+	static constexpr known_transfer_coding_t compress =
+			known_transfer_coding_t::compress;
+	static constexpr known_transfer_coding_t deflate =
+			known_transfer_coding_t::deflate;
+	static constexpr known_transfer_coding_t gzip =
+			known_transfer_coding_t::gzip;
 
 	//! Description of transfer-extension.
 	struct transfer_extension_t
@@ -82,7 +82,7 @@ struct transfer_encoding_value_t
 
 	//! Type for one value from Transfer-Encoding HTTP-field.
 	using value_t = variant_t<
-			known_transfer_conding_t,
+			known_transfer_coding_t,
 			transfer_extension_t
 		>;
 
@@ -103,11 +103,16 @@ struct transfer_encoding_value_t
 			non_empty_comma_separated_list_p< value_container_t >(
 				produce< value_t >(
 					alternatives(
-						caseless_exact_p("chunked") >> just_result(chunked),
-						caseless_exact_p("compress") >> just_result(compress),
-						caseless_exact_p("deflate") >> just_result(deflate),
-						caseless_exact_p("gzip") >> just_result(gzip),
-						caseless_exact_p("x-gzip") >> just_result(gzip),
+						expected_caseless_token_p("chunked")
+							>> just_result(chunked),
+						expected_caseless_token_p("compress")
+							>> just_result(compress),
+						expected_caseless_token_p("deflate")
+							>> just_result(deflate),
+						expected_caseless_token_p("gzip")
+							>> just_result(gzip),
+						expected_caseless_token_p("x-gzip")
+							>> just_result(gzip),
 						produce< transfer_extension_t >(
 							token_p() >> to_lower() >> &transfer_extension_t::token,
 							params_with_value_p()
