@@ -1043,7 +1043,31 @@ quoted_pair_p() noexcept
 //
 // expected_token_p
 //
-//FIXME: document this!
+/*!
+ * @brief A factory function to create a producer that expect a
+ * token with specific value.
+ *
+ * If the expected token is successfully parsed then boolean value
+ * is produced.
+ *
+ * Usage example:
+ * @code
+ * enum class compression { zlib, bz2, xz };
+ * produce<compression>(
+ * 	expected_token_p("compression") >> skip(),
+ * 	ows(),
+ * 	symbol('='),
+ * 	ows(),
+ * 	alternatives(
+ * 		expected_token_p("zlib") >> just_result(compression::zlib),
+ * 		expected_token_p("bz2") >> just_result(compression::bz2),
+ * 		expected_token_p("xz") >> just_result(compression::xz)
+ * 	)
+ * );
+ * @endcode
+ *
+ * @since v.0.6.9
+ */
 RESTINIO_NODISCARD
 inline auto
 expected_token_p( string_view_t token )
@@ -1056,7 +1080,33 @@ expected_token_p( string_view_t token )
 //
 // expected_caseless_token_p
 //
-//FIXME: document this!
+/*!
+ * @brief A factory function to create a producer that expect a
+ * token with specific value.
+ *
+ * This processer uses case-insensitive comparison.
+ *
+ * If the expected token is successfully parsed then boolean value
+ * is produced.
+ *
+ * Usage example:
+ * @code
+ * enum class compression { zlib, bz2, xz };
+ * produce<compression>(
+ * 	caseless_expected_token_p("Compression") >> skip(),
+ * 	ows(),
+ * 	symbol('='),
+ * 	ows(),
+ * 	alternatives(
+ * 		caseless_expected_token_p("ZLib") >> just_result(compression::zlib),
+ * 		caseless_expected_token_p("BZ2") >> just_result(compression::bz2),
+ * 		caseless_expected_token_p("xz") >> just_result(compression::xz)
+ * 	)
+ * );
+ * @endcode
+ *
+ * @since v.0.6.9
+ */
 RESTINIO_NODISCARD
 inline auto
 expected_caseless_token_p( string_view_t token )
