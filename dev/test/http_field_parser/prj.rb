@@ -11,6 +11,7 @@ MxxRu::Cpp::exe_target {
 	cpp_source( "media-type.cpp" )
 	cpp_source( "content-type.cpp" )
 	cpp_source( "cache-control.cpp" )
+	cpp_source( "connection.cpp" )
 	cpp_source( "content-encoding.cpp" )
 	cpp_source( "accept.cpp" )
 	cpp_source( "accept-charset.cpp" )

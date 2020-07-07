@@ -4,6 +4,7 @@ set(UNITTEST_SRCFILES
 	media-type.cpp
 	content-type.cpp
 	cache-control.cpp
+	connection.cpp
 	content-encoding.cpp
 	accept.cpp
 	accept-charset.cpp
