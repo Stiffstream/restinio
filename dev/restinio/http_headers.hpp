@@ -1160,7 +1160,16 @@ class http_header_fields_t
 		}
 
 		//! Remove field by name.
-		void
+		/*!
+		 * If there are several occurences of @a field_name only the first
+		 * one will be removed.
+		 *
+		 * @note
+		 * Since v.0.6.9 returns `true` if an occurence of a field
+		 * with name @a field_name has been removed. The value `false`
+		 * returned if there is no field with name @a field_name.
+		 */
+		bool
 		remove_field( string_view_t field_name )
 		{
 			const auto it = find( field_name );
@@ -1168,11 +1177,23 @@ class http_header_fields_t
 			if( m_fields.end() != it )
 			{
 				m_fields.erase( it );
+				return true;
 			}
+
+			return false;
 		}
 
 		//! Remove field by id.
-		void
+		/*!
+		 * If there are several occurences of @a field_id only the first
+		 * one will be removed.
+		 *
+		 * @note
+		 * Since v.0.6.9 returns `true` if an occurence of a field
+		 * with id @a field_id has been removed. The value `false`
+		 * returned if there is no field with id @a field_id.
+		 */
+		bool
 		remove_field( http_field_t field_id )
 		{
 			if( http_field_t::field_unspecified != field_id )
@@ -1182,8 +1203,62 @@ class http_header_fields_t
 				if( m_fields.end() != it )
 				{
 					m_fields.erase( it );
+					return true;
 				}
 			}
+
+			return false;
+		}
+
+		//! Remove all occurences of a field with specified name.
+		/*!
+		 * @return the count of removed occurences.
+		 *
+		 * @since v.0.6.9
+		 */
+		std::size_t
+		remove_all_of( string_view_t field_name )
+		{
+			std::size_t count{};
+			for( auto it = m_fields.begin(); it != m_fields.end(); )
+			{
+				if( impl::is_equal_caseless( it->name(), field_name ) )
+				{
+					it = m_fields.erase( it );
+					++count;
+				}
+				else
+					++it;
+			}
+
+			return count;
+		}
+
+		//! Remove all occurences of a field with specified id.
+		/*!
+		 * @return the count of removed occurences.
+		 *
+		 * @since v.0.6.9
+		 */
+		std::size_t
+		remove_all_of( http_field_t field_id )
+		{
+			std::size_t count{};
+			if( http_field_t::field_unspecified != field_id )
+			{
+				for( auto it = m_fields.begin(); it != m_fields.end(); )
+				{
+					if( it->field_id() == field_id )
+					{
+						it = m_fields.erase( it );
+						++count;
+					}
+					else
+						++it;
+				}
+			}
+
+			return count;
 		}
 
 		/*!

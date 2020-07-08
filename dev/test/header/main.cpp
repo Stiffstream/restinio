@@ -103,13 +103,13 @@ TEST_CASE( "Working with fields (by name)" , "[header][fields][by_name]" )
 	REQUIRE_THROWS( fields.get_field( "Kontent-typo" ) );
 	REQUIRE_THROWS( fields.get_field( "Zerver" ) );
 
-	fields.remove_field( "Kontent-typo" );
-	fields.remove_field( "Zerver" );
+	REQUIRE( !fields.remove_field( "Kontent-typo" ) );
+	REQUIRE( !fields.remove_field( "Zerver" ) );
 	REQUIRE( 2 == fields.fields_count() );
 
-	fields.remove_field( "Content-TYPE" );
+	REQUIRE( fields.remove_field( "Content-TYPE" ) );
 	REQUIRE( 1 == fields.fields_count() );
-	fields.remove_field( "ServeR" );
+	REQUIRE( fields.remove_field( "ServeR" ) );
 	REQUIRE( 0 == fields.fields_count() );
 }
 
@@ -437,6 +437,85 @@ TEST_CASE( "Enumeration of fields" , "[header][fields][for_each]" )
 	REQUIRE( values == std::set< std::string >{
 			"text/plain", "utf-8", "Unknown"
 		} );
+}
+
+TEST_CASE( "Removement of fields" , "[header][fields][remove_field][remove_all_of]" )
+{
+	SECTION( "Remove first (by name)" )
+	{
+		http_header_fields_t fields;
+
+		fields.add_field( "Content-Type", "text/plain" );
+		fields.add_field( "Accept-Encoding", "utf-8" );
+		fields.add_field( "Transfer-Encoding", "gzip" );
+		fields.add_field( "Server", "Unknown" );
+		fields.add_field( "Transfer-Encoding", "chunked" );
+
+		REQUIRE( 5 == fields.fields_count() );
+		
+		REQUIRE( fields.remove_field( "Transfer-Encoding" ) );
+
+		REQUIRE( 4 == fields.fields_count() );
+
+		REQUIRE( "chunked" == fields.get_field( "Transfer-Encoding" ) );
+	}
+
+	SECTION( "Remove first (by id)" )
+	{
+		http_header_fields_t fields;
+
+		fields.add_field( "Content-Type", "text/plain" );
+		fields.add_field( "Accept-Encoding", "utf-8" );
+		fields.add_field( "Transfer-Encoding", "gzip" );
+		fields.add_field( "Server", "Unknown" );
+		fields.add_field( "Transfer-Encoding", "chunked" );
+
+		REQUIRE( 5 == fields.fields_count() );
+		
+		REQUIRE( fields.remove_field( http_field_t::transfer_encoding ) );
+
+		REQUIRE( 4 == fields.fields_count() );
+
+		REQUIRE( "chunked" == fields.get_field( http_field_t::transfer_encoding ) );
+	}
+
+	SECTION( "Remove all of (by name)" )
+	{
+		http_header_fields_t fields;
+
+		fields.add_field( "Content-Type", "text/plain" );
+		fields.add_field( "Accept-Encoding", "utf-8" );
+		fields.add_field( "Transfer-Encoding", "gzip" );
+		fields.add_field( "Server", "Unknown" );
+		fields.add_field( "Transfer-Encoding", "chunked" );
+
+		REQUIRE( 5 == fields.fields_count() );
+		
+		REQUIRE( 2u == fields.remove_all_of( "Transfer-Encoding" ) );
+
+		REQUIRE( 3 == fields.fields_count() );
+
+		REQUIRE( !fields.has_field( "Transfer-Encoding" ) );
+	}
+
+	SECTION( "Remove first (by id)" )
+	{
+		http_header_fields_t fields;
+
+		fields.add_field( "Content-Type", "text/plain" );
+		fields.add_field( "Accept-Encoding", "utf-8" );
+		fields.add_field( "Transfer-Encoding", "gzip" );
+		fields.add_field( "Server", "Unknown" );
+		fields.add_field( "Transfer-Encoding", "chunked" );
+
+		REQUIRE( 5 == fields.fields_count() );
+		
+		REQUIRE( 2u == fields.remove_all_of( http_field_t::transfer_encoding ) );
+
+		REQUIRE( 3 == fields.fields_count() );
+
+		REQUIRE( !fields.has_field( http_field_t::transfer_encoding ) );
+	}
 }
 
 TEST_CASE( "Enumeration of field's values" , "[header][fields][for_each_value_of]" )
