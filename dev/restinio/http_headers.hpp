@@ -1403,6 +1403,13 @@ class http_header_fields_t
 				noexcept(noexcept(lambda(
 						std::declval<const string_view_t &>())))
 		{
+			static_assert(
+				std::is_same<
+					handling_result_t,
+					decltype(lambda(std::declval<const string_view_t &>()))
+				>::value,
+				"lambda should return restinio::http_header_fields_t::handling_result_t" );
+
 			for( const auto & f : m_fields )
 			{
 				if( field_id == f.field_id() )
@@ -1452,6 +1459,13 @@ class http_header_fields_t
 				noexcept(noexcept(lambda(
 						std::declval<const string_view_t &>())))
 		{
+			static_assert(
+				std::is_same<
+					handling_result_t,
+					decltype(lambda(std::declval<const string_view_t &>()))
+				>::value,
+				"lambda should return restinio::http_header_fields_t::handling_result_t" );
+
 			for( const auto & f : m_fields )
 			{
 				if( impl::is_equal_caseless( f.name(), field_name ) )
