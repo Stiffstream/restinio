@@ -369,6 +369,25 @@ struct result_value_wrapper< std::basic_string< Char, Args... > >
 		to.push_back( what );
 	}
 
+	/*!
+	 * @brief Special overload for the case when std::string should
+	 * be added to another std::string.
+	 *
+	 * For example, in cases like:
+	 * @code
+	 * produce< std::string >(
+	 * 	produce< std::string >(...) >> to_container(),
+	 * 	produce< std::string >(...) >> to_container(),
+	 * 	...
+	 * )
+	 * @endcode
+	 */
+	static void
+	to_container( wrapped_type & to, wrapped_type && what )
+	{
+		to.append( what );
+	}
+
 	RESTINIO_NODISCARD
 	static result_type &&
 	unwrap_value( wrapped_type & v )

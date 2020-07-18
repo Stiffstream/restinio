@@ -22,5 +22,6 @@ MxxRu::Cpp::exe_target {
 	cpp_source( "range.cpp" )
 	cpp_source( "user-agent.cpp" )
 	cpp_source( "transfer-encoding.cpp" )
+	cpp_source( "host.cpp" )
 }
 

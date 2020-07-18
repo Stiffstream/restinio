@@ -15,6 +15,7 @@ set(UNITTEST_SRCFILES
 	range.cpp
 	user-agent.cpp
 	transfer-encoding.cpp
+	host.cpp
 )
 include(${CMAKE_SOURCE_DIR}/cmake/unittest.cmake)
 
