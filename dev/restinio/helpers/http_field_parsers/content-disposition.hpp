@@ -13,6 +13,8 @@
 
 #include <restinio/helpers/http_field_parsers/basics.hpp>
 
+#include <restinio/helpers/http_field_parsers/details/pct_encoded_symbols.hpp>
+
 namespace restinio
 {
 
@@ -24,6 +26,7 @@ namespace content_disposition_details
 
 namespace ep_impl = restinio::easy_parser::impl;
 namespace hfp_impl = restinio::http_field_parsers::impl;
+namespace hfp_details = restinio::http_field_parsers::details;
 
 //
 // regular_token_producer_t
@@ -259,59 +262,6 @@ attr_char_symbol_p()
 }
 
 //
-// pct_encoded_result_type_t
-//
-/*!
- * @brief A type for representing extraction of percent-encoded char
- * from the input stream.
- *
- * Exactly three symbols are extracted: `% HEXDIGIT HEXDIGIT`
- *
- * @since v.0.6.1
- */
-using pct_encoded_result_type_t = std::array< char, 3 >;
-
-//
-// pct_encoded_symbols_producer
-//
-/*!
- * @brief A producer that extract a sequence of symbols represented
- * a percent-encoded character.
- *
- * This producer returns instances of pct_encoded_result_type_t.
- *
- * @since v.0.6.1
- */
-RESTINIO_NODISCARD
-auto
-pct_encoded_symbols_p()
-{
-	return produce< pct_encoded_result_type_t >(
-			symbol_p( '%' ) >> to_container(),
-			hexdigit_p() >> to_container(),
-			hexdigit_p() >> to_container()
-		);
-}
-
-//
-// pct_encoded_symbols_consumer_t
-//
-/*!
- * @brief A special consumer that inserts an extracted sequence
- * of symbols into the result string.
- *
- * @since v.0.6.1
- */
-struct pct_encoded_symbols_consumer_t : public ep_impl::consumer_tag
-{
-	void
-	consume( std::string & to, pct_encoded_result_type_t && from ) const
-	{
-		to.append( &from[0], from.size() );
-	}
-};
-
-//
 // ext_parameter_value_producer
 //
 /*!
@@ -356,8 +306,8 @@ ext_parameter_value_p()
 			repeat( 0, N,
 				alternatives(
 					attr_char_symbol_p() >> to_container(),
-					pct_encoded_symbols_p() >>
-							pct_encoded_symbols_consumer_t{} )
+					hfp_details::pct_encoded_symbols_p() >>
+							hfp_details::pct_encoded_symbols_consumer_t{} )
 			)
 		);
 }
