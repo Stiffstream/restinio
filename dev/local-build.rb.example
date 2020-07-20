@@ -18,6 +18,7 @@ MxxRu::Cpp::composite_target do
   if 'gcc' == toolset.name
     global_compiler_option '-Wextra'
     global_compiler_option '-Wall'
+    global_compiler_option '-Wno-noexcept-type'
     global_linker_option "-Wl,-rpath='$ORIGIN'"
   end
 

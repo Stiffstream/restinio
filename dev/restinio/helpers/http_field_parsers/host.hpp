@@ -413,7 +413,7 @@ struct raw_host_value_t
 
 		RESTINIO_NODISCARD
 		static reg_name_t
-		from_string( std::string v )noexcept
+		from_string( std::string v ) noexcept
 		{
 			return reg_name_t{ std::move(v) };
 		}
