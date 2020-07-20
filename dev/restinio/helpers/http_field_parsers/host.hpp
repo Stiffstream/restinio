@@ -153,24 +153,11 @@ ipv4_address_p()
 				sequence(
 					symbol_p('2') >> to_container(),
 					symbol_p('5') >> to_container(),
-					alternatives(
-						symbol_p('0') >> to_container(),
-						symbol_p('1') >> to_container(),
-						symbol_p('2') >> to_container(),
-						symbol_p('3') >> to_container(),
-						symbol_p('4') >> to_container(),
-						symbol_p('5') >> to_container()
-					)
+					symbol_from_range_p('0', '5') >> to_container()
 				),
 				sequence(
 					symbol_p('2') >> to_container(),
-					alternatives(
-						symbol_p('0') >> to_container(),
-						symbol_p('1') >> to_container(),
-						symbol_p('2') >> to_container(),
-						symbol_p('3') >> to_container(),
-						symbol_p('4') >> to_container()
-					),
+					symbol_from_range_p('0', '4') >> to_container(),
 					digit_p() >> to_container()
 				),
 				sequence(
@@ -179,17 +166,7 @@ ipv4_address_p()
 					digit_p() >> to_container()
 				),
 				sequence(
-					alternatives(
-						symbol_p('1') >> to_container(),
-						symbol_p('2') >> to_container(),
-						symbol_p('3') >> to_container(),
-						symbol_p('4') >> to_container(),
-						symbol_p('5') >> to_container(),
-						symbol_p('6') >> to_container(),
-						symbol_p('7') >> to_container(),
-						symbol_p('8') >> to_container(),
-						symbol_p('9') >> to_container()
-					),
+					symbol_from_range_p('1', '9') >> to_container(),
 					digit_p() >> to_container()
 				),
 				digit_p() >> to_container()

@@ -2104,6 +2104,30 @@ struct caseless_particular_symbol_predicate_t
 };
 
 //
+// symbol_from_range_predicate_t
+//
+/*!
+ * @brief A predicate for cases where a symbol should belong
+ * to specified range.
+ *
+ * Range is inclusive. It means that `(ch >= left && ch <= right)`.
+ *
+ * @since v.0.6.9
+ */
+struct symbol_from_range_predicate_t
+{
+	char m_left;
+	char m_right;
+
+	RESTINIO_NODISCARD
+	bool
+	operator()( const char actual ) const noexcept
+	{
+		return ( actual >= m_left && actual <= m_right );
+	}
+};
+
+//
 // symbol_producer_t
 //
 /*!
@@ -2172,6 +2196,29 @@ class caseless_symbol_producer_t
 public:
 	caseless_symbol_producer_t( char expected )
 		:	base_type_t{ caseless_particular_symbol_predicate_t{expected} }
+	{}
+};
+
+//
+// symbol_from_range_producer_t
+//
+/*!
+ * @brief A producer for the case when a symbol should belong
+ * to specified range.
+ *
+ * Range is inclusive. It means that `(ch >= left && ch <= right)`.
+ *
+ * @since v.0.6.9
+ */
+class symbol_from_range_producer_t
+	: public symbol_producer_template_t< symbol_from_range_predicate_t >
+{
+	using base_type_t =
+		symbol_producer_template_t< symbol_from_range_predicate_t >;
+
+public:
+	symbol_from_range_producer_t( char left, char right )
+		:	base_type_t{ symbol_from_range_predicate_t{left, right} }
 	{}
 };
 
@@ -3744,6 +3791,24 @@ caseless_symbol_p( char expected ) noexcept
 }
 
 //
+// symbol_from_range_p
+//
+/*!
+ * @brief A factory function to create a symbol_from_range_producer.
+ *
+ * @return a producer that expects a symbol from `[left, right]` range in the
+ * input stream and returns it if that character is found.
+ * 
+ * @since v.0.6.9
+ */
+RESTINIO_NODISCARD
+inline auto
+symbol_from_range_p( char left, char right ) noexcept
+{
+	return impl::symbol_from_range_producer_t{left, right};
+}
+
+//
 // symbol
 //
 /*!
@@ -3785,6 +3850,27 @@ inline auto
 caseless_symbol( char expected ) noexcept
 {
 	return caseless_symbol_p(expected) >> skip();
+}
+
+//
+// symbol_from_range
+//
+/*!
+ * @brief A factory function to create a clause that expects a symbol
+ * from specified range, extracts it and then skips it.
+ *
+ * The call to `symbol_from_range('a', 'z')` function is an equivalent of:
+ * @code
+ * symbol_from_range_p('a', 'z') >> skip()
+ * @endcode
+ * 
+ * @since v.0.6.9
+ */
+RESTINIO_NODISCARD
+inline auto
+symbol_from_range( char left, char right ) noexcept
+{
+	return symbol_from_range_p(left, right) >> skip();
 }
 
 //
