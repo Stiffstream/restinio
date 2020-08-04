@@ -25,7 +25,7 @@ template <
 		typename Timer_Manager,
 		typename Logger,
 		typename Request_Handler = default_request_handler_t,
-		typename Strand = asio_ns::strand< asio_ns::executor >,
+		typename Strand = asio_ns::strand< default_asio_executor >,
 		typename Socket = asio_ns::ip::tcp::socket >
 struct traits_t
 {
@@ -137,7 +137,7 @@ struct traits_t
 	using stream_socket_t = Socket;
 };
 
-using noop_strand_t = asio_ns::executor;
+using noop_strand_t = default_asio_executor;
 
 //
 // single_thread_traits_t

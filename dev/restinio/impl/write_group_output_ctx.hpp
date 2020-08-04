@@ -164,7 +164,7 @@ class write_group_output_ctx_t
 				template< typename Socket, typename After_Write_CB >
 				void
 				start_sendfile_operation(
-					asio_ns::executor executor,
+					default_asio_executor executor,
 					Socket & socket,
 					After_Write_CB after_sendfile_cb )
 				{

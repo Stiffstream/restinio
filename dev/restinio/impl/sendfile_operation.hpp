@@ -53,7 +53,7 @@ class sendfile_operation_runner_base_t
 
 		sendfile_operation_runner_base_t(
 			const sendfile_t & sf,
-			asio_ns::executor executor,
+			default_asio_executor executor,
 			Socket & socket,
 			after_sendfile_cb_t after_sendfile_cb )
 			:	m_file_descriptor{ sf.file_descriptor() }
@@ -78,7 +78,7 @@ class sendfile_operation_runner_base_t
 
 		const std::chrono::steady_clock::time_point m_expires_after;
 
-		asio_ns::executor m_executor;
+		default_asio_executor m_executor;
 		Socket & m_socket;
 		after_sendfile_cb_t m_after_sendfile_cb;
 };

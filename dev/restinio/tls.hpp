@@ -135,7 +135,7 @@ template <
 		typename Timer_Factory,
 		typename Logger,
 		typename Request_Handler = default_request_handler_t,
-		typename Strand = asio_ns::strand< asio_ns::executor > >
+		typename Strand = asio_ns::strand< default_asio_executor > >
 using tls_traits_t = traits_t< Timer_Factory, Logger, Request_Handler, Strand, tls_socket_t >;
 
 //

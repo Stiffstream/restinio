@@ -212,4 +212,17 @@ make_asio_compaible_error( asio_convertible_error_t err ) noexcept
 	return asio_ns::error_code{ static_cast< int >( err ), restinio_err_category() };
 }
 
+// Since Asio 1.17 the usage of asio::executor requires
+// a special define ASIO_USE_TS_EXECUTOR_AS_DEFAULT (otherwise the
+// code won't compile).
+// A new name any_io_executor is introduced in Asio 1.17.
+// We'll use that name for Asio 1.17 or newer.
+// Old name asio::executor will be used for older versions of Asio.
+#if RESTINIO_ASIO_VERSION >= 101700
+	using default_asio_executor = asio_ns::any_io_executor;
+#else
+	using default_asio_executor = asio_ns::executor;
+#endif
+
 } /* namespace restinio */
+

@@ -483,7 +483,7 @@ class acceptor_t final
 		//! \}
 
 		//! Asio executor.
-		asio_ns::executor m_executor;
+		default_asio_executor m_executor;
 		strand_t m_open_close_operations_executor;
 
 		//! Do separate an accept operation and connection instantiation.
