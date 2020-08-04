@@ -159,7 +159,7 @@ struct mime_charsetc_predicate_t
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 mime_charsetc_symbol_p()
 {
 	return ep_impl::symbol_producer_template_t< mime_charsetc_predicate_t >{};
@@ -203,7 +203,7 @@ struct language_predicate_t
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 language_symbol_p()
 {
 	return ep_impl::symbol_producer_template_t< language_predicate_t >{};
@@ -255,7 +255,7 @@ struct attr_char_predicate_t
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 attr_char_symbol_p()
 {
 	return ep_impl::symbol_producer_template_t< attr_char_predicate_t >{};
@@ -295,7 +295,7 @@ attr-char     = ALPHA / DIGIT
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-auto
+inline auto
 ext_parameter_value_p()
 {
 	return produce< std::string >(
