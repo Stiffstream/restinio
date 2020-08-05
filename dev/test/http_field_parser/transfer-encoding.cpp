@@ -32,7 +32,7 @@ TEST_CASE( "Transfer-Encoding", "[transfer-encoding]" )
 		REQUIRE( result );
 
 		const transfer_encoding_value_t::value_container_t expected{
-			{ transfer_encoding_value_t::compress }
+			{ transfer_encoding_value_t::compress() }
 		};
 
 		REQUIRE( expected == result->values );
@@ -45,7 +45,7 @@ TEST_CASE( "Transfer-Encoding", "[transfer-encoding]" )
 		REQUIRE( result );
 
 		const transfer_encoding_value_t::value_container_t expected{
-			{ transfer_encoding_value_t::compress }
+			{ transfer_encoding_value_t::compress() }
 		};
 
 		REQUIRE( expected == result->values );
@@ -58,7 +58,7 @@ TEST_CASE( "Transfer-Encoding", "[transfer-encoding]" )
 		REQUIRE( result );
 
 		const transfer_encoding_value_t::value_container_t expected{
-			{ transfer_encoding_value_t::gzip }
+			{ transfer_encoding_value_t::gzip() }
 		};
 
 		REQUIRE( expected == result->values );
@@ -107,14 +107,14 @@ TEST_CASE( "Transfer-Encoding", "[transfer-encoding]" )
 		REQUIRE( result );
 
 		const transfer_encoding_value_t::value_container_t expected{
-			{ transfer_encoding_value_t::gzip },
+			{ transfer_encoding_value_t::gzip() },
 			{
 				transfer_encoding_value_t::transfer_extension_t{
 					"x-compress"s,
 					parameter_with_mandatory_value_container_t{}
 				}
 			},
-			{ transfer_encoding_value_t::deflate }
+			{ transfer_encoding_value_t::deflate() }
 		};
 
 		REQUIRE( expected == result->values );
@@ -127,7 +127,7 @@ TEST_CASE( "Transfer-Encoding", "[transfer-encoding]" )
 		REQUIRE( result );
 
 		const transfer_encoding_value_t::value_container_t expected{
-			{ transfer_encoding_value_t::gzip },
+			{ transfer_encoding_value_t::gzip() },
 			{
 				transfer_encoding_value_t::transfer_extension_t{
 					"x-compress"s,
@@ -143,7 +143,7 @@ TEST_CASE( "Transfer-Encoding", "[transfer-encoding]" )
 					parameter_with_mandatory_value_container_t{}
 				}
 			},
-			{ transfer_encoding_value_t::chunked }
+			{ transfer_encoding_value_t::chunked() }
 		};
 
 		REQUIRE( expected == result->values );

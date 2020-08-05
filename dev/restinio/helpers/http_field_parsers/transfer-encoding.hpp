@@ -56,14 +56,21 @@ struct transfer_encoding_value_t
 		gzip,
 	};
 
-	static constexpr known_transfer_coding_t chunked =
-			known_transfer_coding_t::chunked;
-	static constexpr known_transfer_coding_t compress =
-			known_transfer_coding_t::compress;
-	static constexpr known_transfer_coding_t deflate =
-			known_transfer_coding_t::deflate;
-	static constexpr known_transfer_coding_t gzip =
-			known_transfer_coding_t::gzip;
+	RESTINIO_NODISCARD
+	static constexpr known_transfer_coding_t chunked() noexcept
+	{ return known_transfer_coding_t::chunked; }
+
+	RESTINIO_NODISCARD
+	static constexpr known_transfer_coding_t compress() noexcept
+	{ return known_transfer_coding_t::compress; }
+
+	RESTINIO_NODISCARD
+	static constexpr known_transfer_coding_t deflate() noexcept
+	{ return known_transfer_coding_t::deflate; }
+
+	RESTINIO_NODISCARD
+	static constexpr known_transfer_coding_t gzip() noexcept
+	{ return known_transfer_coding_t::gzip; }
 
 	//! Description of transfer-extension.
 	struct transfer_extension_t
@@ -104,15 +111,15 @@ struct transfer_encoding_value_t
 				produce< value_t >(
 					alternatives(
 						expected_caseless_token_p("chunked")
-							>> just_result(chunked),
+							>> just_result( chunked() ),
 						expected_caseless_token_p("compress")
-							>> just_result(compress),
+							>> just_result( compress() ),
 						expected_caseless_token_p("deflate")
-							>> just_result(deflate),
+							>> just_result( deflate() ),
 						expected_caseless_token_p("gzip")
-							>> just_result(gzip),
+							>> just_result( gzip() ),
 						expected_caseless_token_p("x-gzip")
-							>> just_result(gzip),
+							>> just_result( gzip() ),
 						produce< transfer_extension_t >(
 							token_p() >> to_lower() >> &transfer_extension_t::token,
 							params_with_value_p()
