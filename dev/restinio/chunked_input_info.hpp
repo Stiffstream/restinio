@@ -77,10 +77,10 @@ namespace impl
 {
 
 //
-// chunked_encoding_info_block_t
+// chunked_input_info_block_t
 //
 //FIXME: document this!
-struct chunked_encoding_info_block_t
+struct chunked_input_info_block_t
 {
 	std::vector< chunk_info_t > m_chunks;
 
@@ -90,18 +90,18 @@ struct chunked_encoding_info_block_t
 } /* namespace impl */
 
 //
-// chunked_encoding_info_t
+// chunked_input_info_t
 //
 //FIXME: document this!
-class chunked_encoding_info_t
+class chunked_input_info_t
 {
 	//! Actual data.
-	impl::chunked_encoding_info_block_t m_info;
+	impl::chunked_input_info_block_t m_info;
 
 public:
-	chunked_encoding_info_t() = default;
-	chunked_encoding_info_t(
-		impl::chunked_encoding_info_block_t info )
+	chunked_input_info_t() = default;
+	chunked_input_info_t(
+		impl::chunked_input_info_block_t info )
 		:	m_info{ std::move(info) }
 	{}
 
@@ -139,15 +139,15 @@ public:
 };
 
 //
-// chunked_encoding_info_unique_ptr_t
+// chunked_input_info_unique_ptr_t
 //
 /*!
- * @brief Alias of unique_ptr for chunked_encoding_info.
+ * @brief Alias of unique_ptr for chunked_input_info.
  *
  * @since v.0.6.9
  */
-using chunked_encoding_info_unique_ptr_t =
-	std::unique_ptr< chunked_encoding_info_t >;
+using chunked_input_info_unique_ptr_t =
+	std::unique_ptr< chunked_input_info_t >;
 
 } /* namespace restinio */
 

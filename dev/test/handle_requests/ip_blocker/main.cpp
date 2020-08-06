@@ -18,7 +18,7 @@ class blocker_t
 public :
 
 	auto inspect(
-		const restinio::ip_blocker::incoming_info_t & info ) noexcept
+		const restinio::ip_blocker::incoming_info_t & /*info*/ ) noexcept
 	{
 		std::lock_guard< std::mutex > l{ m_lock };
 		auto result = (0 == (m_ordinal & 1)) ?

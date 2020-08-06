@@ -14,7 +14,7 @@
 #include <restinio/exception.hpp>
 #include <restinio/http_headers.hpp>
 #include <restinio/message_builders.hpp>
-#include <restinio/chunked_encoding_info.hpp>
+#include <restinio/chunked_input_info.hpp>
 #include <restinio/impl/connection_base.hpp>
 
 namespace restinio
@@ -48,7 +48,7 @@ class request_t final
 	public:
 		//! Old-format initializing constructor.
 		/*!
-		 * Can be used in cases where chunked_encoding_info_t is not
+		 * Can be used in cases where chunked_input_info_t is not
 		 * available (or needed).
 		 */
 		request_t(
@@ -61,7 +61,7 @@ class request_t final
 					request_id,
 					std::move( header ),
 					std::move( body ),
-					chunked_encoding_info_unique_ptr_t{},
+					chunked_input_info_unique_ptr_t{},
 					std::move( connection ),
 					std::move( remote_endpoint )
 				}
@@ -75,13 +75,13 @@ class request_t final
 			request_id_t request_id,
 			http_request_header_t header,
 			std::string body,
-			chunked_encoding_info_unique_ptr_t chunked_encoding_info,
+			chunked_input_info_unique_ptr_t chunked_input_info,
 			impl::connection_handle_t connection,
 			endpoint_t remote_endpoint )
 			:	m_request_id{ request_id }
 			,	m_header{ std::move( header ) }
 			,	m_body{ std::move( body ) }
-			,	m_chunked_encoding_info{ std::move( chunked_encoding_info ) }
+			,	m_chunked_input_info{ std::move( chunked_input_info ) }
 			,	m_connection{ std::move( connection ) }
 			,	m_connection_id{ m_connection->connection_id() }
 			,	m_remote_endpoint{ std::move( remote_endpoint ) }
@@ -131,10 +131,10 @@ class request_t final
 		 *
 		 * @since v.0.6.9
 		 */
-		nullable_pointer_t< const chunked_encoding_info_t >
+		nullable_pointer_t< const chunked_input_info_t >
 		chunked_input_info() const noexcept
 		{
-			return m_chunked_encoding_info.get();
+			return m_chunked_input_info.get();
 		}
 
 	private:
@@ -158,7 +158,7 @@ class request_t final
 		 *
 		 * @since v.0.6.9
 		 */
-		const chunked_encoding_info_unique_ptr_t m_chunked_encoding_info;
+		const chunked_input_info_unique_ptr_t m_chunked_input_info;
 
 		impl::connection_handle_t m_connection;
 		const connection_id_t m_connection_id;

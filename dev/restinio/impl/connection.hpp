@@ -60,7 +60,7 @@ struct http_parser_ctx_t
 	/*!
 	 * @since v.0.6.9
 	 */
-	chunked_encoding_info_block_t m_chunked_info_block;
+	chunked_input_info_block_t m_chunked_info_block;
 	//! \}
 
 	//! Flag: is http message parsed completely.
@@ -77,21 +77,21 @@ struct http_parser_ctx_t
 		m_message_complete = false;
 	}
 
-	//! Creates an instance of chunked_encoding_info if there is an info
+	//! Creates an instance of chunked_input_info if there is an info
 	//! about chunks in the body.
 	/*!
 	 * @since v.0.6.9
 	 */
 	RESTINIO_NODISCARD
-	chunked_encoding_info_unique_ptr_t
-	make_chunked_encoding_info_if_necessary()
+	chunked_input_info_unique_ptr_t
+	make_chunked_input_info_if_necessary()
 	{
-		chunked_encoding_info_unique_ptr_t result;
+		chunked_input_info_unique_ptr_t result;
 
 		if( !m_chunked_info_block.m_chunks.empty() ||
 				0u != m_chunked_info_block.m_trailing_fields.fields_count() )
 		{
-			result = std::make_unique< chunked_encoding_info_t >(
+			result = std::make_unique< chunked_input_info_t >(
 					std::move( m_chunked_info_block ) );
 		}
 
@@ -615,7 +615,7 @@ class connection_t final
 								request_id,
 								std::move( parser_ctx.m_header ),
 								std::move( parser_ctx.m_body ),
-								parser_ctx.make_chunked_encoding_info_if_necessary(),
+								parser_ctx.make_chunked_input_info_if_necessary(),
 								shared_from_concrete< connection_base_t >(),
 								m_remote_endpoint ) ) )
 					{
@@ -726,7 +726,7 @@ class connection_t final
 						request_id,
 						std::move( parser_ctx.m_header ),
 						std::move( parser_ctx.m_body ),
-						parser_ctx.make_chunked_encoding_info_if_necessary(),
+						parser_ctx.make_chunked_input_info_if_necessary(),
 						shared_from_concrete< connection_base_t >(),
 						m_remote_endpoint) ) )
 			{
