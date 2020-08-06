@@ -137,19 +137,24 @@ restinio_chunk_header_cb( http_parser * parser )
 {
 	try
 	{
-		auto * ctx =
-			reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
-				parser->data );
-
 		// In on_chunk_header callback parser->content_length contains
 		// the size of the next chunk.
-		// Store an info about the new chunk.
-		// If there will be an error at the next stage of parsing
-		// the incoming request the whole request's data will be dropped.
-		// So there is no need to care about that new item in m_chunks.
-		ctx->m_chunked_info_block.m_chunks.emplace_back(
-			ctx->m_body.size(),
-			std::size_t{ parser->content_length } );
+		// If that size is 0 then it is the last chunk and it should be
+		// ignored.
+		if( 0u != parser->content_length )
+		{
+			auto * ctx =
+				reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
+					parser->data );
+
+			// Store an info about the new chunk.
+			// If there will be an error at the next stage of parsing
+			// the incoming request the whole request's data will be dropped.
+			// So there is no need to care about that new item in m_chunks.
+			ctx->m_chunked_info_block.m_chunks.emplace_back(
+				ctx->m_body.size(),
+				std::size_t{ parser->content_length } );
+		}
 	}
 	catch( const std::exception & )
 	{

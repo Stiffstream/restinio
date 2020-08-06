@@ -123,6 +123,20 @@ class request_t final
 		//! Get the remote endpoint of the underlying connection.
 		const endpoint_t & remote_endpoint() const noexcept { return m_remote_endpoint; }
 
+		//! Get optional info about chunked input.
+		/*!
+		 * @note
+		 * nullptr will be returned if chunked-encoding wasn't used in
+		 * the incoming request.
+		 *
+		 * @since v.0.6.9
+		 */
+		nullable_pointer_t< const chunked_encoding_info_t >
+		chunked_input_info() const noexcept
+		{
+			return m_chunked_encoding_info.get();
+		}
+
 	private:
 		void
 		check_connection()

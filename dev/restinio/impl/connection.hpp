@@ -88,7 +88,7 @@ struct http_parser_ctx_t
 	{
 		chunked_encoding_info_unique_ptr_t result;
 
-		if( !m_chunked_info_block.m_chunks.size() ||
+		if( !m_chunked_info_block.m_chunks.empty() ||
 				0u != m_chunked_info_block.m_trailing_fields.fields_count() )
 		{
 			result = std::make_unique< chunked_encoding_info_t >(

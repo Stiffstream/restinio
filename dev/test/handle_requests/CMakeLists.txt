@@ -13,3 +13,5 @@ add_subdirectory(ip_blocker)
 
 add_subdirectory(upgrade)
 
+add_subdirectory(chunked_input)
+
