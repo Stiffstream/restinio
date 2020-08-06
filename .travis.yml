@@ -5,6 +5,7 @@ branches:
   only:
     - master
     - 0.6-dev
+    - 0.6-fix-libatomic-issue-98
 git:
   depth: 1
 
@@ -132,7 +133,7 @@ matrix:
               key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
       env:
         - MATRIX_EVAL="CXX_COMPILER=clang++-9 C_COMPILER=clang-9"
- 
+
     - os: linux
       compiler: clang
       addons:

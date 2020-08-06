@@ -16,10 +16,18 @@ add_subdirectory(try_parse_query_string)
 add_subdirectory(websocket)
 add_subdirectory(websocket_detailed)
 add_subdirectory(using_external_io_context)
-add_subdirectory(async_handling_with_sobjectizer)
+
+if ( RESTINIO_ALLOW_SOBJECTIZER )
+	add_subdirectory(async_handling_with_sobjectizer)
+endif()
+
 add_subdirectory(compression)
 add_subdirectory(decompression)
-add_subdirectory(notificators)
+
+if ( RESTINIO_ALLOW_SOBJECTIZER )
+	add_subdirectory(notificators)
+endif()
+
 add_subdirectory(custom_buffer)
 add_subdirectory(connection_state)
 add_subdirectory(ip_blocker)
@@ -35,3 +43,4 @@ endif ()
 if( WIN32 )
 	add_subdirectory(hello_world_sendfile_w32_unicode)
 endif()
+

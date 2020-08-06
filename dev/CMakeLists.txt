@@ -43,17 +43,13 @@ set_property(CACHE RESTINIO_USE_BOOST_ASIO PROPERTY STRINGS ${RESTINIO_USE_BOOST
 
 project(RESTinioRootProject CXX)
 
-IF ((RESTINIO_TEST OR RESTINIO_SAMPLE OR RESTINIO_BENCH)
-		AND (NOT RESTINIO_ALLOW_SOBJECTIZER))
-	message(FATAL_ERROR "RESTINIO_ALLOW_SOBJECTIZER can't be OFF if RESTINIO_TEST or RESTINIO_SAMPLE or RESTINIO_BENCH is used")
-ENDIF ()
-
 IF (RESTINIO_MASTER_PROJECT)
 	# RESTinio is a main project (not subproject)
 	# Do regular stuff here.
 
 	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 	include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/link_threads_if_necessary.cmake")
+	include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/link_atomic_if_necessary.cmake")
 
 	# ------------------------------------------------------------------------------
 	# RESTinio dependencies:
