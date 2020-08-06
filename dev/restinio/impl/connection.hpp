@@ -60,6 +60,11 @@ struct http_parser_ctx_t
 	/*!
 	 * @since v.0.6.9
 	 */
+	bool m_leading_headers_completed{ false };
+
+	/*!
+	 * @since v.0.6.9
+	 */
 	chunked_input_info_block_t m_chunked_info_block;
 	//! \}
 
@@ -74,6 +79,7 @@ struct http_parser_ctx_t
 		m_body.clear();
 		m_current_field_name.clear();
 		m_last_was_value = true;
+		m_leading_headers_completed = false;
 		m_message_complete = false;
 	}
 

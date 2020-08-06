@@ -27,6 +27,8 @@ format_chunked_input_info(
 					ch.started_at(), ch.size() );
 		fmt::format_to( resp_body, ";trailing_fields:{};",
 				chunked_input->trailing_fields().fields_count() );
+		for( const auto & f : chunked_input->trailing_fields() )
+			fmt::format_to( resp_body, "('{}':'{}')", f.name(), f.value() );
 	}
 
 	return resp_body;
@@ -117,6 +119,67 @@ TEST_CASE( "Simple incoming request" , "[chunked-input][simple]" )
 		REQUIRE_THAT( response,
 				Catch::Matchers::EndsWith(
 						"chunks:3;[0,6][6,1][7,6];trailing_fields:0;") );
+	}
+
+	SECTION( "three chunks with trailing headers" )
+	{
+		std::string request{
+			"POST /data HTTP/1.0\r\n"
+			"From: unit-test\r\n"
+			"User-Agent: unit-test\r\n"
+			"Content-Type: text/plain\r\n"
+			"Transfer-Encoding: chunked\r\n"
+			"Connection: close\r\n"
+			"\r\n"
+			"6\r\n"
+			"Hello,\r\n"
+			"1\r\n"
+			" \r\n"
+			"6\r\n"
+			"World!\r\n"
+			"0\r\n"
+			"Header-1: Value-1\r\n"
+			"Header-2: Value-2\r\n"
+			"\r\n"
+		};
+
+		std::string response;
+		REQUIRE_NOTHROW( response = do_request( request ) );
+
+		REQUIRE_THAT( response,
+				Catch::Matchers::EndsWith(
+						"chunks:3;[0,6][6,1][7,6];trailing_fields:2;"
+						"('Header-1':'Value-1')('Header-2':'Value-2')" ) );
+	}
+
+	SECTION( "three chunks with trailing field without value" )
+	{
+		std::string request{
+			"POST /data HTTP/1.0\r\n"
+			"From: unit-test\r\n"
+			"User-Agent: unit-test\r\n"
+			"Content-Type: text/plain\r\n"
+			"Transfer-Encoding: chunked\r\n"
+			"Connection: close\r\n"
+			"\r\n"
+			"6\r\n"
+			"Hello,\r\n"
+			"1\r\n"
+			" \r\n"
+			"6\r\n"
+			"World!\r\n"
+			"0\r\n"
+			"Header-1:\r\n"
+			"\r\n"
+		};
+
+		std::string response;
+		REQUIRE_NOTHROW( response = do_request( request ) );
+
+		REQUIRE_THAT( response,
+				Catch::Matchers::EndsWith(
+						"chunks:3;[0,6][6,1][7,6];trailing_fields:1;"
+						"('Header-1':'')" ) );
 	}
 
 	SECTION( "two chunks with chunk-ext" )
