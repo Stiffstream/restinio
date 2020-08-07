@@ -21,6 +21,8 @@ option(RESTINIO_FMT_HEADER_ONLY "Include fmt library as header-only." ON)
 
 option(RESTINIO_ALLOW_SOBJECTIZER "Allow add_subdirectory(so_5) in the main RESTinio CMakeLists.txt" ${RESTINIO_MASTER_PROJECT})
 
+option(RESTINIO_USE_EXTERNAL_SOBJECTIZER "Allow add_subdirectory(so_5) in the main RESTinio CMakeLists.txt" OFF)
+
 # Since v.0.6.5 a user can force usage of already installed http-parser
 # library.
 option(RESTINIO_USE_EXTERNAL_HTTP_PARSER "Use already installed http-parser library" OFF)
@@ -42,6 +44,14 @@ SET(RESTINIO_USE_BOOST_ASIO_VALUES "none;static;shared")
 set_property(CACHE RESTINIO_USE_BOOST_ASIO PROPERTY STRINGS ${RESTINIO_USE_BOOST_ASIO_VALUES})
 
 project(RESTinioRootProject CXX)
+
+IF (RESTINIO_ALLOW_SOBJECTIZER AND RESTINIO_USE_EXTERNAL_SOBJECTIZER)
+	message(FATAL_ERROR "RESTINIO_ALLOW_SOBJECTIZER can't be used together with RESTINIO_USE_EXTERNAL_SOBJECTIZER")
+ENDIF()
+
+IF (RESTINIO_ALLOW_SOBJECTIZER OR RESTINIO_USE_EXTERNAL_SOBJECTIZER)
+	SET(RESTINIO_SOBJECTIZER_ENABLED ON)
+ENDIF()
 
 IF (RESTINIO_MASTER_PROJECT)
 	# RESTinio is a main project (not subproject)
@@ -157,11 +167,16 @@ IF (RESTINIO_MASTER_PROJECT)
 
 	# ------------------------------------------------------------------------------
 	# SObjectizer
-	IF (RESTINIO_ALLOW_SOBJECTIZER)
-		SET(SOBJECTIZER_BUILD_STATIC ON)
+	IF (RESTINIO_SOBJECTIZER_ENABLED)
+		IF (RESTINIO_ALLOW_SOBJECTIZER)
+			SET(SOBJECTIZER_BUILD_STATIC ON)
+			add_subdirectory(so_5)
+		ELSEIF (RESTINIO_USE_EXTERNAL_SOBJECTIZER)
+			find_package(sobjectizer)
+		ENDIF ()
 		SET(SOBJECTIZER_LIBS sobjectizer::StaticLib)
-		add_subdirectory(so_5)
-	ENDIF ()
+	ENDIF()
+
 
 	# ------------------------------------------------------------------------------
 	# Zlib

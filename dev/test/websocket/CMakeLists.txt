@@ -1,7 +1,7 @@
 add_subdirectory(parser)
 add_subdirectory(validators)
 
-if ( RESTINIO_ALLOW_SOBJECTIZER )
+if ( RESTINIO_SOBJECTIZER_ENABLED )
 	add_subdirectory(ws_connection)
 endif()
 

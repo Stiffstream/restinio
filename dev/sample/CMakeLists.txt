@@ -17,14 +17,14 @@ add_subdirectory(websocket)
 add_subdirectory(websocket_detailed)
 add_subdirectory(using_external_io_context)
 
-if ( RESTINIO_ALLOW_SOBJECTIZER )
+if ( RESTINIO_SOBJECTIZER_ENABLED )
 	add_subdirectory(async_handling_with_sobjectizer)
 endif()
 
 add_subdirectory(compression)
 add_subdirectory(decompression)
 
-if ( RESTINIO_ALLOW_SOBJECTIZER )
+if ( RESTINIO_SOBJECTIZER_ENABLED )
 	add_subdirectory(notificators)
 endif()
 
