@@ -1171,7 +1171,7 @@ class http_header_fields_t
 		 * returned if there is no field with name @a field_name.
 		 */
 		bool
-		remove_field( string_view_t field_name )
+		remove_field( string_view_t field_name ) noexcept
 		{
 			const auto it = find( field_name );
 
@@ -1195,7 +1195,7 @@ class http_header_fields_t
 		 * returned if there is no field with id @a field_id.
 		 */
 		bool
-		remove_field( http_field_t field_id )
+		remove_field( http_field_t field_id ) noexcept
 		{
 			if( http_field_t::field_unspecified != field_id )
 			{
@@ -1218,7 +1218,7 @@ class http_header_fields_t
 		 * @since v.0.6.9
 		 */
 		std::size_t
-		remove_all_of( string_view_t field_name )
+		remove_all_of( string_view_t field_name ) noexcept
 		{
 			std::size_t count{};
 			for( auto it = m_fields.begin(); it != m_fields.end(); )
@@ -1242,7 +1242,7 @@ class http_header_fields_t
 		 * @since v.0.6.9
 		 */
 		std::size_t
-		remove_all_of( http_field_t field_id )
+		remove_all_of( http_field_t field_id ) noexcept
 		{
 			std::size_t count{};
 			if( http_field_t::field_unspecified != field_id )
