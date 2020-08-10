@@ -535,7 +535,7 @@ TEST_CASE( "Enumeration of field's values" , "[header][fields][for_each_value_of
 		fields.for_each_value_of( "Content-Type",
 			[&](const auto & value) {
 				expected_content.append( value.data(), value.size() );
-				return http_header_fields_t::continue_enumeration;
+				return http_header_fields_t::continue_enumeration();
 			} );
 
 		REQUIRE( "text/plain" == expected_content );
@@ -559,7 +559,7 @@ TEST_CASE( "Enumeration of field's values" , "[header][fields][for_each_value_of
 				if( !expected_content.empty() )
 					expected_content += ", ";
 				expected_content.append( value.data(), value.size() );
-				return http_header_fields_t::continue_enumeration;
+				return http_header_fields_t::continue_enumeration();
 			} );
 
 		REQUIRE( "en, ru-RU" == expected_content );
@@ -580,7 +580,7 @@ TEST_CASE( "Enumeration of field's values" , "[header][fields][for_each_value_of
 		fields.for_each_value_of( http_field_t::content_type,
 			[&](const auto & value) {
 				expected_content.append( value.data(), value.size() );
-				return http_header_fields_t::continue_enumeration;
+				return http_header_fields_t::continue_enumeration();
 			} );
 
 		REQUIRE( "text/html" == expected_content );
@@ -604,7 +604,7 @@ TEST_CASE( "Enumeration of field's values" , "[header][fields][for_each_value_of
 				if( !expected_content.empty() )
 					expected_content += ", ";
 				expected_content.append( value.data(), value.size() );
-				return http_header_fields_t::continue_enumeration;
+				return http_header_fields_t::continue_enumeration();
 			} );
 
 		REQUIRE( "en, ru-RU" == expected_content );
@@ -624,7 +624,7 @@ TEST_CASE( "Enumeration of field's values" , "[header][fields][for_each_value_of
 		fields.for_each_value_of( http_field_t::content_type,
 			[&](const auto & value) {
 				expected_content.append( value.data(), value.size() );
-				return http_header_fields_t::continue_enumeration;
+				return http_header_fields_t::continue_enumeration();
 			} );
 
 		REQUIRE( "text/plain" == expected_content );
@@ -645,7 +645,7 @@ TEST_CASE( "Enumeration of field's values" , "[header][fields][for_each_value_of
 		fields.for_each_value_of( "content-type",
 			[&](const auto & value) {
 				expected_content.append( value.data(), value.size() );
-				return http_header_fields_t::continue_enumeration;
+				return http_header_fields_t::continue_enumeration();
 			} );
 
 		REQUIRE( "text/html" == expected_content );

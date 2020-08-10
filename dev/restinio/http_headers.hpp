@@ -726,10 +726,11 @@ class http_header_fields_t
 			stop_enumeration
 		};
 
-		constexpr static handling_result_t continue_enumeration =
-				handling_result_t::continue_enumeration;
-		constexpr static handling_result_t stop_enumeration =
-				handling_result_t::stop_enumeration;
+		constexpr static handling_result_t continue_enumeration() noexcept
+		{ return handling_result_t::continue_enumeration; }
+
+		constexpr static handling_result_t stop_enumeration() noexcept
+		{ return handling_result_t::stop_enumeration; }
 
 		http_header_fields_t()
 		{
@@ -1391,7 +1392,7 @@ class http_header_fields_t
 		 * headers().for_each_value_of(restinio::http_field_t::transfer_encoding,
 		 * 		[](auto value) {
 		 * 			std::cout << "encoding: " << value << std::endl;
-		 * 			return restinio::http_header_fields_t::continue_enumeration;
+		 * 			return restinio::http_header_fields_t::continue_enumeration();
 		 * 		} );
 		 * @endcode
 		 */
@@ -1415,7 +1416,7 @@ class http_header_fields_t
 				if( field_id == f.field_id() )
 				{
 					const handling_result_t r = lambda( f.value() );
-					if( stop_enumeration == r )
+					if( stop_enumeration() == r )
 						break;
 				}
 			}
@@ -1447,7 +1448,7 @@ class http_header_fields_t
 		 * headers().for_each_value_of("Transfer-Encoding",
 		 * 		[](auto value) {
 		 * 			std::cout << "encoding: " << value << std::endl;
-		 * 			return restinio::http_header_fields_t::continue_enumeration;
+		 * 			return restinio::http_header_fields_t::continue_enumeration();
 		 * 		} );
 		 * @endcode
 		 */
@@ -1471,7 +1472,7 @@ class http_header_fields_t
 				if( impl::is_equal_caseless( f.name(), field_name ) )
 				{
 					const handling_result_t r = lambda( f.value() );
-					if( stop_enumeration == r )
+					if( stop_enumeration() == r )
 						break;
 				}
 			}
