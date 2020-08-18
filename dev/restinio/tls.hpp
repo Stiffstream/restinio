@@ -200,7 +200,8 @@ public:
 		tls_context(
 			asio_ns::ssl::context context ) &
 		{
-			m_tls_context = std::move( context );
+			m_tls_context = std::make_shared< asio_ns::ssl::context >(
+					std::move( context ) );
 			return upcast_reference();
 		}
 
@@ -211,10 +212,44 @@ public:
 			return std::move( this->tls_context( std::move( context ) ) );
 		}
 
+		//FIXME: document this!
+		Settings &
+		tls_context(
+			std::shared_ptr< asio_ns::ssl::context > shared_context ) &
+		{
+			m_tls_context = std::move( shared_context );
+			return upcast_reference();
+		}
+
+		//FIXME: document this!
+		Settings &
+		tls_context(
+			std::shared_ptr< asio_ns::ssl::context > shared_context ) &&
+		{
+			return std::move( this->tls_context( std::move(shared_context) ) );
+		}
+
+		//FIXME: should be removed in v.0.7.
+		/*!
+		 * @deprecated
+		 * This method is going to be removed in v.0.7.
+		 * giveaway_tls_context() should be used instead.
+		 */
+		[[deprecated]]
 		asio_ns::ssl::context
 		tls_context()
 		{
-			return asio_ns::ssl::context{ std::move( m_tls_context ) };
+			asio_ns::ssl::context result{ std::move( *m_tls_context ) };
+			m_tls_context.reset();
+
+			return result;
+		}
+
+		//FIXME: document this!
+		std::shared_ptr< asio_ns::ssl::context >
+		giveaway_tls_context()
+		{
+			return std::move(m_tls_context);
 		}
 
 	private:
@@ -224,7 +259,10 @@ public:
 			return static_cast< Settings & >( *this );
 		}
 
-		asio_ns::ssl::context m_tls_context{ asio_ns::ssl::context::sslv23 };
+		std::shared_ptr< asio_ns::ssl::context > m_tls_context{
+				std::make_shared< asio_ns::ssl::context >(
+						asio_ns::ssl::context::sslv23 )
+			};
 };
 
 namespace impl
@@ -251,7 +289,7 @@ class socket_supplier_t< tls_socket_t >
 		socket_supplier_t(
 			Settings & settings,
 			asio_ns::io_context & io_context )
-			:	m_tls_context{ std::make_shared< asio_ns::ssl::context >( settings.tls_context() ) }
+			:	m_tls_context{ settings.giveaway_tls_context() }
 			,	m_io_context{ io_context }
 		{
 			m_sockets.reserve( settings.concurrent_accepts_count() );
