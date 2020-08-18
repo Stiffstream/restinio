@@ -35,6 +35,7 @@ add_subdirectory(file_upload)
 
 if ( OPENSSL_FOUND )
 	add_subdirectory(hello_world_https)
+	add_subdirectory(shared_tls_context)
 	add_subdirectory(hello_world_sendfile_https)
 	add_subdirectory(websocket_wss)
 	add_subdirectory(tls_inspector)

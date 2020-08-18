@@ -222,7 +222,7 @@ public:
 		}
 
 		//FIXME: document this!
-		Settings &
+		Settings &&
 		tls_context(
 			std::shared_ptr< asio_ns::ssl::context > shared_context ) &&
 		{

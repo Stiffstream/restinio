@@ -34,6 +34,7 @@ MxxRu::Cpp::composite_target {
 
 	if RestinioOpenSSLFind.has_openssl(toolset)
 		required_prj 'sample/hello_world_https/prj.rb'
+		required_prj 'sample/shared_tls_context/prj.rb'
 		required_prj 'sample/hello_world_sendfile_https/prj.rb'
 		required_prj 'sample/websocket_wss/prj.rb'
       required_prj 'sample/tls_inspector/prj.rb'
