@@ -196,6 +196,7 @@ public:
 		socket_type_dependent_settings_t(
 			socket_type_dependent_settings_t && ) = default;
 
+		//! Setup an exclusive TLS-context for server's settings.
 		Settings &
 		tls_context(
 			asio_ns::ssl::context context ) &
@@ -205,6 +206,7 @@ public:
 			return upcast_reference();
 		}
 
+		//! Setup an exclusive TLS-context for server's settings.
 		Settings &&
 		tls_context(
 			asio_ns::ssl::context context ) &&
@@ -212,7 +214,35 @@ public:
 			return std::move( this->tls_context( std::move( context ) ) );
 		}
 
-		//FIXME: document this!
+		//! Setup a shared TLS-context for server's settings.
+		/*!
+		 * This method can be used when several servers should share
+		 * the same TLS context. Or if TLS should be shared with some
+		 * other entity in an application.
+		 *
+		 * Example:
+		 * @code
+		 * using traits_t = restinio::default_tls_traits_t;
+		 *
+		 * auto tls_context = std::make_shared< asio::ssl::context >(
+		 * 		asio::ssl::context::sslv23 );
+		 * ... // Tuning of tls_context.
+		 *
+		 * restinio::server_settings_t< traits_t > first_settings;
+		 * first_settings.address( "localhost" );
+		 * first_settings.port( 443 );
+		 * first_settings.tls_context( tls_context );
+		 * ...
+		 *
+		 * restinio::server_settings_t< traits_t > second_settings;
+		 * second_settings.address( "localhost" );
+		 * second_settings.port( 5553 );
+		 * second_settings.tls_context( tls_context );
+		 * ...
+		 * @endcode
+		 *
+		 * @since v.0.6.10
+		 */
 		Settings &
 		tls_context(
 			std::shared_ptr< asio_ns::ssl::context > shared_context ) &
@@ -221,7 +251,39 @@ public:
 			return upcast_reference();
 		}
 
-		//FIXME: document this!
+		//! Setup a shared TLS-context for server's settings.
+		/*!
+		 * This method can be used when several servers should share
+		 * the same TLS context. Or if TLS should be shared with some
+		 * other entity in an application.
+		 *
+		 * Example:
+		 * @code
+		 * using traits_t = restinio::default_tls_traits_t;
+		 *
+		 * auto tls_context = std::make_shared< asio::ssl::context >(
+		 * 		asio::ssl::context::sslv23 );
+		 * ... // Tuning of tls_context.
+		 *
+		 * auto first_server = restinio::run_async< traits_t >(
+		 * 	restinio::own_io_context(),
+		 * 	restinio::server_settings_t< traits_t >{}
+		 * 		.address( "localhost" )
+		 * 		.port( 443 )
+		 * 		.tls_context( tls_context ),
+		 * 	4u );
+		 *
+		 * auto second_server = restinio::run_async< traits_t >(
+		 * 	restinio::own_io_context(),
+		 * 	restinio::server_settings_t< traits_t >{}
+		 * 		.address( "localhost" )
+		 * 		.port( 5553 )
+		 * 		.tls_context( tls_context ),
+		 * 	4u );
+		 * @endcode
+		 *
+		 * @since v.0.6.10
+		 */
 		Settings &&
 		tls_context(
 			std::shared_ptr< asio_ns::ssl::context > shared_context ) &&
@@ -245,7 +307,13 @@ public:
 			return result;
 		}
 
-		//FIXME: document this!
+		//! Get away the TLS-context from settings.
+		/*!
+		 * @note
+		 * This method is intended to be used by RESTinio's internals.
+		 *
+		 * @since v.0.6.10
+		 */
 		std::shared_ptr< asio_ns::ssl::context >
 		giveaway_tls_context()
 		{
