@@ -12,6 +12,7 @@
  * \example sample/hello_world_delayed/main.cpp
  *
  * \example sample/hello_world_https/main.cpp
+ * \example sample/shared_tls_context/main.cpp
  *
  * \example sample/hello_world_minimal/main.cpp
  *
