@@ -10,6 +10,8 @@
 
 #include <cstdio>
 
+#include <restinio/utils/impl/safe_uint_truncate.hpp>
+
 namespace restinio
 {
 
@@ -333,7 +335,11 @@ class sendfile_operation_runner_t < asio_ns::ip::tcp::socket > final
 		}
 
 	private:
-		std::unique_ptr< char[] > m_buffer{ new char [ m_chunk_size ] };
+		std::unique_ptr< char[] > m_buffer{
+			std::make_unique< char[] >(
+					::restinio::utils::impl::uint64_to_size_t(
+							m_chunk_size ) )
+		};
 		asio_ns::windows::random_access_handle m_file_handle{
 				asio_details::executor_or_context_from_socket(m_socket),
 				m_file_descriptor

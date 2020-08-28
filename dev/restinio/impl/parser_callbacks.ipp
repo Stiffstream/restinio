@@ -160,7 +160,7 @@ restinio_chunk_header_cb( http_parser * parser )
 			// So there is no need to care about that new item in m_chunks.
 			ctx->m_chunked_info_block.m_chunks.emplace_back(
 				ctx->m_body.size(),
-				std::size_t{ parser->content_length } );
+				::restinio::utils::impl::uint64_to_size_t(parser->content_length) );
 		}
 	}
 	catch( const std::exception & )
