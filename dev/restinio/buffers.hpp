@@ -20,6 +20,7 @@
 
 #include <restinio/compiler_features.hpp>
 #include <restinio/utils/suppress_exceptions.hpp>
+#include <restinio/utils/impl/safe_uint_truncate.hpp>
 
 #include <restinio/impl/include_fmtlib.hpp>
 
@@ -349,7 +350,10 @@ struct sendfile_write_operation_t : public writable_base_t
 
 		virtual std::size_t size() const override
 		{
-			return m_sendfile_options ? m_sendfile_options->size() : 0;
+			return m_sendfile_options
+				? ::restinio::utils::impl::uint64_to_size_t(
+						m_sendfile_options->size())
+				: std::size_t{ 0 };
 		}
 		///@}
 

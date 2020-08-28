@@ -84,7 +84,8 @@ class write_group_output_ctx_t
 	max_iov_len() noexcept
 	{
 		using len_t = decltype( asio_ns::detail::max_iov_len );
-		return std::min< len_t >( asio_ns::detail::max_iov_len, 64 );
+		return static_cast< asio_bufs_container_t::size_type >(
+				std::min< len_t >( asio_ns::detail::max_iov_len, 64 ) );
 	}
 
 	public:
