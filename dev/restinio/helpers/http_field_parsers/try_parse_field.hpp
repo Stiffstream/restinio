@@ -121,7 +121,7 @@ try_extract_field_value_from(
  *
  * 	const auto auth_field = try_parse_field< authorization_value_t >(
  * 			req, "X-My-Authorization");
- * 	if(auto * auth = restinio::get_it<authorization_value_t>(&auth_field)) {
+ * 	if(auto * auth = restinio::get_if<authorization_value_t>(&auth_field)) {
  * 		// X-My-Authorization is successfully parsed.
  * 		if("basic" == auth->auth_scheme) {
  * 			... // Dealing with basic authentification.
@@ -175,7 +175,7 @@ try_parse_field(
  *
  * 	const auto auth_field = try_parse_field< authorization_value_t >(
  * 			req, restinio::http_field::authorization);
- * 	if(auto * auth = restinio::get_it<authorization_value_t>(&auth_field)) {
+ * 	if(auto * auth = restinio::get_if<authorization_value_t>(&auth_field)) {
  * 		// Authorization is successfully parsed.
  * 		if("basic" == auth->auth_scheme) {
  * 			... // Dealing with basic authentification.
