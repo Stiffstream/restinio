@@ -419,6 +419,13 @@ struct ip_blocker_holder_t< ip_blocker::noop_ip_blocker_t >
 };
 
 //
+// acceptor_post_bind_hook_t
+//
+//FIXME: document this!
+using acceptor_post_bind_hook_t = std::function<
+		void(asio_ns::ip::tcp::acceptor &) >;
+
+//
 // basic_server_settings_t
 //
 
@@ -1111,6 +1118,34 @@ class basic_server_settings_t
 			this->check_valid_ip_blocker_pointer();
 		}
 
+		//! Acceptor post-bind hook.
+		//! \{
+		//FIXME: document this!
+		Derived &
+		acceptor_post_bind_hook( acceptor_post_bind_hook_t hook ) &
+		{
+			if( !hook )
+				throw exception_t{ "acceptor_post_bind_hook cannot be empty" };
+
+			m_acceptor_post_bind_hook = std::move(hook);
+			return reference_to_derived();
+		}
+
+		//FIXME: document this!
+		Derived &&
+		acceptor_post_bind_hook( acceptor_post_bind_hook_t hook ) &&
+		{
+			return std::move(this->acceptor_post_bind_hook( std::move(hook) ));
+		}
+
+		//FIXME: document this!
+		acceptor_post_bind_hook_t
+		giveaway_acceptor_post_bind_hook()
+		{
+			return std::move(m_acceptor_post_bind_hook);
+		}
+		//! \}
+
 	private:
 		Derived &
 		reference_to_derived()
@@ -1176,6 +1211,16 @@ class basic_server_settings_t
 
 		//! Acceptor options setter.
 		std::unique_ptr< acceptor_options_setter_t > m_acceptor_options_setter;
+
+		//! A hook to be called just after a successful call to bind for acceptor.
+		/*!
+		 * An empty lambda is used by default.
+		 *
+		 * @since v.0.6.11
+		 */
+		acceptor_post_bind_hook_t m_acceptor_post_bind_hook{
+				[](asio_ns::ip::tcp::acceptor &) {}
+			};
 
 		//! Socket options setter.
 		std::unique_ptr< socket_options_setter_t > m_socket_options_setter;

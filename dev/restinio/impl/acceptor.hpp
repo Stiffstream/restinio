@@ -190,6 +190,7 @@ class acceptor_t final
 			,	m_address{ settings.address() }
 			,	m_acceptor_options_setter{ settings.acceptor_options_setter() }
 			,	m_acceptor{ io_context }
+			,	m_acceptor_post_bind_hook{ settings.giveaway_acceptor_post_bind_hook() }
 			,	m_executor{ io_context.get_executor() }
 			,	m_open_close_operations_executor{ io_context.get_executor() }
 			,	m_separate_accept_and_create_connect{ settings.separate_accept_and_create_connect() }
@@ -239,6 +240,10 @@ class acceptor_t final
 				}
 
 				m_acceptor.bind( ep );
+				// Since v.0.6.11 the post-bind hook should be invoked.
+				m_acceptor_post_bind_hook( m_acceptor );
+
+				// Now we can switch acceptor to listen state.
 				m_acceptor.listen( asio_ns::socket_base::max_connections );
 
 				// Call accept connections routine.
@@ -480,6 +485,12 @@ class acceptor_t final
 		//! \{
 		std::unique_ptr< acceptor_options_setter_t > m_acceptor_options_setter;
 		asio_ns::ip::tcp::acceptor m_acceptor;
+
+		//! A hook to be called just after a successful call to bind for acceptor.
+		/*!
+		 * @since v.0.6.11
+		 */
+		acceptor_post_bind_hook_t m_acceptor_post_bind_hook;
 		//! \}
 
 		//! Asio executor.

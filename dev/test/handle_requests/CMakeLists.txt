@@ -15,3 +15,5 @@ add_subdirectory(upgrade)
 
 add_subdirectory(chunked_input)
 
+add_subdirectory(acceptor_post_bind_hook)
+
