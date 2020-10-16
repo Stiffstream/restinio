@@ -242,6 +242,10 @@ class acceptor_t final
 				m_acceptor.bind( ep );
 				// Since v.0.6.11 the post-bind hook should be invoked.
 				m_acceptor_post_bind_hook( m_acceptor );
+				// server end-point can be replaced if port is allocated by
+				// the operating system (e.g. zero is specified as port number
+				// by a user).
+				ep = m_acceptor.local_endpoint();
 
 				// Now we can switch acceptor to listen state.
 				m_acceptor.listen( asio_ns::socket_base::max_connections );
