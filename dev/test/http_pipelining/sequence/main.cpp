@@ -253,7 +253,7 @@ TEST_CASE( "Long sequesnces HTTP piplining" , "[long_sequences]" )
 		const auto resp_seq = get_response_sequence( response );
 		REQUIRE( 128 == resp_seq.size() );
 
-		for( auto i = 0; i < 128; ++i )
+		for( auto i = 0u; i < 128u; ++i )
 		{
 			REQUIRE( i == resp_seq[ i ] );
 		}
@@ -335,7 +335,7 @@ TEST_CASE( "Interrupt sequesnces HTTP piplining" , "[long_sequences][interrupt]"
 	const auto resp_seq = get_response_sequence( response );
 	REQUIRE( 10 == resp_seq.size() );
 
-	for( auto i = 0; i < 10; ++i )
+	for( auto i = 0u; i < 10u; ++i )
 	{
 		REQUIRE( i == resp_seq[ i ] );
 	}
