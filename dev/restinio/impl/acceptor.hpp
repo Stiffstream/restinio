@@ -80,7 +80,7 @@ class socket_supplier_t
 		//! The number of sockets that can be used for
 		//! cuncurrent accept operations.
 		auto
-		cuncurrent_accept_sockets_count() const noexcept
+		concurrent_accept_sockets_count() const noexcept
 		{
 			return m_sockets.size();
 		}
@@ -242,7 +242,7 @@ class acceptor_t final
 				m_acceptor.listen( asio_ns::socket_base::max_connections );
 
 				// Call accept connections routine.
-				for( std::size_t i = 0; i< this->cuncurrent_accept_sockets_count(); ++i )
+				for( std::size_t i = 0; i< this->concurrent_accept_sockets_count(); ++i )
 				{
 					m_logger.info( [&]{
 						return fmt::format( "init accept #{}", i );

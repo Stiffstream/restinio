@@ -391,7 +391,7 @@ class socket_supplier_t< tls_socket_t >
 		//! The number of sockets that can be used for
 		//! cuncurrent accept operations.
 		auto
-		cuncurrent_accept_sockets_count() const
+		concurrent_accept_sockets_count() const
 		{
 			return m_sockets.size();
 		}
