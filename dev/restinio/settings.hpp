@@ -421,7 +421,12 @@ struct ip_blocker_holder_t< ip_blocker::noop_ip_blocker_t >
 //
 // acceptor_post_bind_hook_t
 //
-//FIXME: document this!
+/*!
+ * @brief A type of callback to be called after a successful invocation
+ * of bind() function for the acceptor.
+ *
+ * @since v.0.6.11
+ */
 using acceptor_post_bind_hook_t = std::function<
 		void(asio_ns::ip::tcp::acceptor &) >;
 
@@ -879,6 +884,12 @@ class basic_server_settings_t
 			return std::move(this->cleanup_func( std::forward<Func>(func) ));
 		}
 
+		/*!
+		 * @note
+		 * This method is intended to be used by RESTinio and it can be
+		 * changed or removed in future versions of RESTinio without any
+		 * notice.
+		 */
 		cleanup_functor_t
 		giveaway_cleanup_func()
 		{
@@ -1118,9 +1129,30 @@ class basic_server_settings_t
 			this->check_valid_ip_blocker_pointer();
 		}
 
-		//! Acceptor post-bind hook.
-		//! \{
-		//FIXME: document this!
+		// Acceptor post-bind hook.
+		/*!
+		 * @brief A setter for post-bind callback.
+		 *
+		 * Usage example:
+		 * @code
+		 * using my_server_t = restinio::http_server_t< my_server_traits_t >;
+		 * my_server_t server{
+		 * 	restinio::own_io_context(),
+		 * 	[](auto & settings) {
+		 * 		settings.port(...);
+		 * 		settings.address(...);
+		 * 		settings.acceptor_post_bind_hook(
+		 * 			[](asio::ip::tcp::acceptor & acceptor) {
+		 * 				...
+		 * 			})
+		 * 		settings.request_handler(...);
+		 * 		...
+		 * 	}
+		 * };
+		 * @endcode
+		 *
+		 * @since v.0.6.11
+		 */
 		Derived &
 		acceptor_post_bind_hook( acceptor_post_bind_hook_t hook ) &
 		{
@@ -1131,20 +1163,46 @@ class basic_server_settings_t
 			return reference_to_derived();
 		}
 
-		//FIXME: document this!
+		/*!
+		 * @brief A setter for post-bind callback.
+		 *
+		 * Usage example:
+		 * @code
+		 * restinio::run(
+		 * 	restinio::on_this_thread()
+		 * 		.port(...)
+		 * 		.address(...)
+		 * 		.acceptor_post_bind_hook(
+		 * 			[](asio::ip::tcp::acceptor & acceptor) {
+		 * 				...
+		 * 			})
+		 * 		settings.request_handler(...)
+		 * 	);
+		 * @endcode
+		 *
+		 * @since v.0.6.11
+		 */
 		Derived &&
 		acceptor_post_bind_hook( acceptor_post_bind_hook_t hook ) &&
 		{
 			return std::move(this->acceptor_post_bind_hook( std::move(hook) ));
 		}
 
-		//FIXME: document this!
+		/*!
+		 * @brief A getter for post-bind callback.
+		 *
+		 * @note
+		 * This method is intended to be used by RESTinio and it can be
+		 * changed or removed in future versions of RESTinio without any
+		 * notice.
+		 *
+		 * @since v.0.6.11
+		 */
 		acceptor_post_bind_hook_t
 		giveaway_acceptor_post_bind_hook()
 		{
 			return std::move(m_acceptor_post_bind_hook);
 		}
-		//! \}
 
 	private:
 		Derived &
