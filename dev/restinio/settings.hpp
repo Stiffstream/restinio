@@ -996,13 +996,13 @@ class basic_server_settings_t
 			return std::move(this->cleanup_func( std::forward<Func>(func) ));
 		}
 
-		//FIXME: this method should be marked as nodiscard.
 		/*!
 		 * @note
 		 * This method is intended to be used by RESTinio and it can be
 		 * changed or removed in future versions of RESTinio without any
 		 * notice.
 		 */
+		RESTINIO_NODISCARD
 		cleanup_functor_t
 		giveaway_cleanup_func()
 		{
@@ -1301,7 +1301,6 @@ class basic_server_settings_t
 			return std::move(this->acceptor_post_bind_hook( std::move(hook) ));
 		}
 
-		//FIXME: this method should be marked as nodiscard.
 		/*!
 		 * @brief A getter for post-bind callback.
 		 *
@@ -1312,6 +1311,7 @@ class basic_server_settings_t
 		 *
 		 * @since v.0.6.11
 		 */
+		RESTINIO_NODISCARD
 		acceptor_post_bind_hook_t
 		giveaway_acceptor_post_bind_hook()
 		{
