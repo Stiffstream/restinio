@@ -18,6 +18,8 @@
 #include <restinio/request_handler.hpp>
 #include <restinio/traits.hpp>
 
+#include <restinio/variant.hpp>
+
 namespace restinio
 {
 
@@ -430,6 +432,36 @@ struct ip_blocker_holder_t< ip_blocker::noop_ip_blocker_t >
 using acceptor_post_bind_hook_t = std::function<
 		void(asio_ns::ip::tcp::acceptor &) >;
 
+namespace details
+{
+
+//
+// no_address_specified_t
+//
+/*!
+ * @brief A special indicator for the case when IP address for a server
+ * is not set explicitly.
+ *
+ * @since v.0.6.11
+ */
+struct no_address_specified_t {};
+
+//
+// address_variant_t
+//
+/*!
+ * @brief A type of variant for holding IP address for a server in
+ * various representations.
+ *
+ * @since v.0.6.11
+ */
+using address_variant_t = variant_t<
+		no_address_specified_t,
+		std::string,
+		asio_ns::ip::address >;
+
+} /* namespace details */
+
 //
 // basic_server_settings_t
 //
@@ -487,6 +519,7 @@ class basic_server_settings_t
 			return std::move( this->port( p ) );
 		}
 
+		RESTINIO_NODISCARD
 		std::uint16_t
 		port() const
 		{
@@ -506,12 +539,30 @@ class basic_server_settings_t
 			return std::move( this->protocol( p ) );
 		}
 
+		RESTINIO_NODISCARD
 		asio_ns::ip::tcp
 		protocol() const
 		{
 			return m_protocol;
 		}
 
+		/*!
+		 * Sets the IP address for a server in textual form.
+		 *
+		 * Usage example:
+		 * @code
+		 * using my_server_t = restinio::http_server_t< my_server_traits_t >;
+		 * my_server_t server{
+		 * 	restinio::own_io_context(),
+		 * 	[](auto & settings) {
+		 * 		settings.port(8080);
+		 * 		settings.address("192.168.1.1");
+		 * 		settings.request_handler(...);
+		 * 		...
+		 * 	}
+		 * };
+		 * @endcode
+		 */
 		Derived &
 		address( std::string addr ) &
 		{
@@ -519,13 +570,74 @@ class basic_server_settings_t
 			return reference_to_derived();
 		}
 
+		/*!
+		 * Sets the IP address for a server in textual form.
+		 *
+		 * Usage example:
+		 * @code
+		 * restinio::run(
+		 * 	restinio::on_this_thread()
+		 * 		.port(...)
+		 * 		.address("192.168.1.1")
+		 * 		.request_handler(...)
+		 * 	);
+		 * @endcode
+		 */
 		Derived &&
 		address( std::string addr ) &&
 		{
 			return std::move( this->address( std::move( addr ) ) );
 		}
 
-		const std::string &
+		/*!
+		 * Sets the IP address for a server in binary form.
+		 *
+		 * Usage example:
+		 * @code
+		 * auto actual_ip = asio::ip::address::from_string(app.config().ip_addr());
+		 * ...
+		 * using my_server_t = restinio::http_server_t< my_server_traits_t >;
+		 * my_server_t server{
+		 * 	restinio::own_io_context(),
+		 * 	[actual_ip](auto & settings) {
+		 * 		settings.port(8080);
+		 * 		settings.address(actual_ip);
+		 * 		settings.request_handler(...);
+		 * 		...
+		 * 	}
+		 * };
+		 * @endcode
+		 */
+		Derived &
+		address( asio_ns::ip::address addr ) &
+		{
+			m_address = addr;
+			return reference_to_derived();
+		}
+
+		/*!
+		 * Sets the IP address for a server in binary form.
+		 *
+		 * Usage example:
+		 * @code
+		 * auto actual_ip = asio::ip::address::from_string(app.config().ip_addr());
+		 * ...
+		 * restinio::run(
+		 * 	restinio::on_this_thread()
+		 * 		.port(...)
+		 * 		.address(actual_ip)
+		 * 		.request_handler(...)
+		 * 	);
+		 * @endcode
+		 */
+		Derived &&
+		address( asio_ns::ip::address addr ) &&
+		{
+			return std::move( this->address( addr ) );
+		}
+
+		RESTINIO_NODISCARD
+		const details::address_variant_t &
 		address() const
 		{
 			return m_address;
@@ -884,6 +996,7 @@ class basic_server_settings_t
 			return std::move(this->cleanup_func( std::forward<Func>(func) ));
 		}
 
+		//FIXME: this method should be marked as nodiscard.
 		/*!
 		 * @note
 		 * This method is intended to be used by RESTinio and it can be
@@ -1176,7 +1289,7 @@ class basic_server_settings_t
 		 * 			[](asio::ip::tcp::acceptor & acceptor) {
 		 * 				...
 		 * 			})
-		 * 		settings.request_handler(...)
+		 * 		.request_handler(...)
 		 * 	);
 		 * @endcode
 		 *
@@ -1188,6 +1301,7 @@ class basic_server_settings_t
 			return std::move(this->acceptor_post_bind_hook( std::move(hook) ));
 		}
 
+		//FIXME: this method should be marked as nodiscard.
 		/*!
 		 * @brief A getter for post-bind callback.
 		 *
@@ -1237,7 +1351,11 @@ class basic_server_settings_t
 		//! \{
 		std::uint16_t m_port;
 		asio_ns::ip::tcp m_protocol;
-		std::string m_address;
+		/*!
+		 * @note
+		 * This member has type address_variant_t since v.0.6.11
+		 */
+		details::address_variant_t m_address;
 		//! \}
 
 		//! Size of buffer for io operations.

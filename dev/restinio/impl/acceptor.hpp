@@ -213,16 +213,10 @@ class acceptor_t final
 
 			asio_ns::ip::tcp::endpoint ep{ m_protocol, m_port };
 
-			if( !m_address.empty() )
-			{
-				auto addr = m_address;
-				if( addr == "localhost" )
-					addr = "127.0.0.1";
-				else if( addr == "ip6-localhost" )
-					addr = "::1";
-
-				ep.address( asio_ns::ip::address::from_string( addr ) );
-			}
+			const auto actual_address = try_extract_actual_address_from_variant(
+					m_address );
+			if( actual_address )
+				ep.address( *actual_address );
 
 			try
 			{
@@ -482,7 +476,7 @@ class acceptor_t final
 		//! \{
 		const std::uint16_t m_port;
 		const asio_ns::ip::tcp m_protocol;
-		const std::string m_address;
+		const restinio::details::address_variant_t m_address;
 		//! \}
 
 		//! Server port listener and connection receiver routine.
@@ -508,6 +502,39 @@ class acceptor_t final
 		connection_factory_shared_ptr_t m_connection_factory;
 
 		logger_t & m_logger;
+
+		/*!
+		 * @brief Helper for extraction of an actual IP-address from an
+		 * instance of address_variant.
+		 *
+		 * Returns an empty value if there is no address inside @a from.
+		 *
+		 * @since v.0.6.11
+		 */
+		RESTINIO_NODISCARD
+		static optional_t< asio_ns::ip::address >
+		try_extract_actual_address_from_variant(
+			const restinio::details::address_variant_t & from )
+		{
+			optional_t< asio_ns::ip::address > result;
+
+			if( auto * str_v = get_if<std::string>( &from ) )
+			{
+				auto str_addr = *str_v;
+				if( str_addr == "localhost" )
+					str_addr = "127.0.0.1";
+				else if( str_addr == "ip6-localhost" )
+					str_addr = "::1";
+
+				result = asio_ns::ip::address::from_string( str_addr );
+			}
+			else if( auto * addr_v = get_if<asio_ns::ip::address>( &from ) )
+			{
+				result = *addr_v;
+			}
+
+			return result;
+		}
 };
 
 } /* namespace impl */
