@@ -1023,6 +1023,91 @@ struct is_transformer< T, meta::void_t< decltype(T::entity_type) > >
 template< typename T >
 constexpr bool is_transformer_v = is_transformer<T>::value;
 
+//FIXME: document this!
+template< typename Result_Type >
+struct transformer_invoker
+{
+	template< typename Transformer, typename Input_Type >
+	RESTINIO_NODISCARD
+	static Result_Type
+	invoke(
+		source_t &,
+		Transformer & transformer,
+		expected_t< Input_Type, parse_error_t > && input )
+	{
+		return transformer.transform( std::move(*input) );
+	}
+};
+
+template< typename Result_Type >
+struct transformer_invoker< expected_t< Result_Type, error_reason_t > >
+{
+	template< typename Transformer, typename Input_Type >
+	RESTINIO_NODISCARD
+	static expected_t< Result_Type, parse_error_t >
+	invoke(
+		// source_t is necessary to get the position in the case of an error.
+		source_t & source,
+		Transformer & transformer,
+		expected_t< Input_Type, parse_error_t > && input )
+	{
+		auto result = transformer.transform( std::move(*input) );
+		if( result )
+			return *result;
+		else
+			return make_unexpected( parse_error_t{
+					source.current_position(),
+					result.error()
+				} );
+	}
+};
+
+//FIXME: document this!
+template< typename Result_Type >
+struct is_appropriate_transformer_result_type
+{
+	static constexpr bool value = true;
+};
+
+template< typename Result_Type >
+struct is_appropriate_transformer_result_type<
+		expected_t< Result_Type, error_reason_t > >
+{
+	static constexpr bool value = true;
+};
+
+template< typename Result_Type >
+struct is_appropriate_transformer_result_type<
+		expected_t< Result_Type, parse_error_t > >
+{
+	static constexpr bool value = false;
+};
+
+//FIXME: document this!
+template< typename Producer, typename Transformer >
+struct transformed_value_producer_traits_checker
+{
+	static_assert( is_producer_v<Producer>,
+			"Producer should be a producer type" );
+	static_assert( is_transformer_v<Transformer>,
+			"Transformer should be a transformer type" );
+
+	using producer_result_t = std::decay_t< decltype( 
+			std::declval<Producer &>().try_parse(
+					std::declval<source_t &>() )
+		) >;
+
+	using transformation_result_t = std::decay_t< decltype(
+			std::declval<Transformer &>().transform(
+					std::move(*(std::declval<producer_result_t>())) )
+		) >;
+
+	using expected_result_t = typename Transformer::result_type;
+
+	static constexpr bool is_valid_transformation_result_type =
+			is_appropriate_transformer_result_type< expected_result_t >::value;
+};
+
 //
 // transformed_value_producer_t
 //
@@ -1044,6 +1129,14 @@ class transformed_value_producer_t
 	static_assert( is_transformer_v<Transformer>,
 			"Transformer should be a transformer type" );
 
+	using traits_checker = transformed_value_producer_traits_checker<
+			Producer, Transformer >;
+
+	static_assert(
+			traits_checker::is_valid_transformation_result_type,
+			"transformation result should be either T or "
+			"expected_t<T, error_reson_t>, not expected_t<T, parse_error_t>" );
+
 	Producer m_producer;
 	Transformer m_transformer;
 
@@ -1064,7 +1157,14 @@ public :
 		auto producer_result = m_producer.try_parse( source );
 		if( producer_result )
 		{
-			return m_transformer.transform( std::move(*producer_result) );
+			//FIXME: document this!
+			using transformation_result_t =
+					typename traits_checker::transformation_result_t;
+
+			return transformer_invoker< transformation_result_t >::invoke(
+					source,
+					m_transformer,
+					std::move(producer_result) );
 		}
 		else
 			return make_unexpected( producer_result.error() );
@@ -3032,15 +3132,33 @@ public :
 		: m_converter{ std::forward<Convert_Arg>(converter) }
 	{}
 
+//FIXME: document the change of the result to `auto`.
 	template< typename Input >
 	RESTINIO_NODISCARD
-	Output_Type
+	auto
 	transform( Input && input ) const
 		noexcept(noexcept(m_converter(std::forward<Input>(input))))
 	{
 		return m_converter(std::forward<Input>(input));
 	}
 };
+
+//FIXME: document this!
+template< typename Result_Type >
+struct conversion_result_type_detector
+{
+	using type = Result_Type;
+};
+
+template< typename Result_Type >
+struct conversion_result_type_detector< expected_t< Result_Type, error_reason_t > >
+{
+	using type = Result_Type;
+};
+
+template< typename Result_Type >
+using conversion_result_type_detector_t =
+		typename conversion_result_type_detector<Result_Type>::type;
 
 //
 // convert_transformer_proxy_t
@@ -3076,8 +3194,10 @@ public :
 	make_transformer() const &
 		noexcept(noexcept(Converter{m_converter}))
 	{
-		using output_type = std::decay_t<
-				decltype(m_converter(std::declval<Input_Type&&>())) >;
+		using output_type = conversion_result_type_detector_t<
+				std::decay_t<
+						decltype(m_converter(std::declval<Input_Type&&>())) >
+			>;
 
 		return convert_transformer_t< output_type, Converter >{ m_converter };
 	}

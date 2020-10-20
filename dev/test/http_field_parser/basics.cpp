@@ -687,6 +687,43 @@ TEST_CASE( "convert", "[convert_transformer]" )
 	}
 }
 
+TEST_CASE( "convert with failures", "[convert_transformer]" )
+{
+	using namespace restinio::easy_parser;
+	using namespace std::string_literals;
+
+	const auto parser = produce<std::string>(
+			any_symbol_p()
+				>> convert([](char c) ->
+						restinio::expected_t< std::string, error_reason_t >
+					{
+						if( 'f' == c || 'm' == c )
+							return std::string(1u, c);
+						else
+							return restinio::make_unexpected(
+									error_reason_t::unexpected_character );
+					})
+				>> as_result()
+		);
+
+	{
+		const auto r = try_parse( "f", parser );
+		REQUIRE( r );
+		REQUIRE( "f"s == *r );
+	}
+
+	{
+		const auto r = try_parse( "m", parser );
+		REQUIRE( r );
+		REQUIRE( "m"s == *r );
+	}
+
+	{
+		const auto r = try_parse( "z", parser );
+		REQUIRE( !r );
+	}
+}
+
 TEST_CASE( "convert generic case", "[convert_transformer]" )
 {
 	using namespace restinio::easy_parser;
@@ -2454,4 +2491,3 @@ TEST_CASE( "comment producer", "[comment_producer]" )
 		REQUIRE( "abcdef" == *result );
 	}
 }
-
