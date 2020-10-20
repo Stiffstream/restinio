@@ -1023,7 +1023,26 @@ struct is_transformer< T, meta::void_t< decltype(T::entity_type) > >
 template< typename T >
 constexpr bool is_transformer_v = is_transformer<T>::value;
 
-//FIXME: document this!
+//
+// transformer_invoker
+//
+/*!
+ * @brief A helper template for calling transformation function.
+ *
+ * The transformer_invoker class is intended to wrap a call to
+ * @a Transformer::transform method. That method can return
+ * a value of type T or a value of type expected_t<T, error_reason_t>.
+ *
+ * In the case of return value of type T the returned value of T
+ * should be used directly.
+ *
+ * In the case of return value of type expected_t<T, error_reason_t>
+ * the return value should be checked for the presence of an error.
+ * In the case of an error expected_t<T, error_reason_t> should be
+ * converted into expected_t<T, parser_error_t>.
+ *
+ * @since v.0.6.11
+ */
 template< typename Result_Type >
 struct transformer_invoker
 {
@@ -1039,6 +1058,12 @@ struct transformer_invoker
 	}
 };
 
+/*!
+ * This specialization of transformer_invoker handles a case when
+ * transformation method returns expected_t<T, error_reason_t>.
+ *
+ * @since v.0.6.11
+ */
 template< typename Result_Type >
 struct transformer_invoker< expected_t< Result_Type, error_reason_t > >
 {
@@ -1062,7 +1087,25 @@ struct transformer_invoker< expected_t< Result_Type, error_reason_t > >
 	}
 };
 
-//FIXME: document this!
+//
+// is_appropriate_transformer_result_type
+//
+/*!
+ * @brief A metafunction that checks is Result_Type can be used as
+ * the result of transformation method.
+ *
+ * A transformation method can return a value of type T or a value
+ * of type expected_t<T, error_reason_t>. But a user can define
+ * transformation method that returns an expected_t<T, parse_error_t>
+ * just by a mistake. That mistake should be detected.
+ *
+ * Metafunction is_appropriate_transformer_result_type serves that
+ * purpose: it defines @a value to `true` if transformation method
+ * returns T or expected_t<T, error_reason_t>. In the case of
+ * expected_t<T, parse_error_t> @a value will be set to `false.
+ *
+ * @since v.0.6.11
+ */
 template< typename Result_Type >
 struct is_appropriate_transformer_result_type
 {
@@ -1083,7 +1126,20 @@ struct is_appropriate_transformer_result_type<
 	static constexpr bool value = false;
 };
 
-//FIXME: document this!
+//
+// transformed_value_producer_traits_checker
+//
+/*!
+ * @brief A helper template for checking a possibility to connect
+ * a producer with a transformer.
+ *
+ * This helper can be seen as a metafunction that defines a boolean
+ * value is_valid_transformation_result_type. If that value is `true`
+ * then @a Transformer::transform method returns allowed type
+ * (T or expected_t<T, error_reson_t>).
+ *
+ * @since v.0.6.11
+ */
 template< typename Producer, typename Transformer >
 struct transformed_value_producer_traits_checker
 {
@@ -1093,8 +1149,7 @@ struct transformed_value_producer_traits_checker
 			"Transformer should be a transformer type" );
 
 	using producer_result_t = std::decay_t< decltype( 
-			std::declval<Producer &>().try_parse(
-					std::declval<source_t &>() )
+			std::declval<Producer &>().try_parse( std::declval<source_t &>() )
 		) >;
 
 	using transformation_result_t = std::decay_t< decltype(
@@ -1124,11 +1179,6 @@ template< typename Producer, typename Transformer >
 class transformed_value_producer_t
 	:	public producer_tag< typename Transformer::result_type >
 {
-	static_assert( is_producer_v<Producer>,
-			"Producer should be a producer type" );
-	static_assert( is_transformer_v<Transformer>,
-			"Transformer should be a transformer type" );
-
 	using traits_checker = transformed_value_producer_traits_checker<
 			Producer, Transformer >;
 
@@ -1157,7 +1207,6 @@ public :
 		auto producer_result = m_producer.try_parse( source );
 		if( producer_result )
 		{
-			//FIXME: document this!
 			using transformation_result_t =
 					typename traits_checker::transformation_result_t;
 
@@ -3132,18 +3181,46 @@ public :
 		: m_converter{ std::forward<Convert_Arg>(converter) }
 	{}
 
-//FIXME: document the change of the result to `auto`.
+	/*!
+	 * @brief Performs the transformation by calling the converter.
+	 *
+	 * @note
+	 * Since v.0.6.11 the result type changed from Output_Type to `auto`.
+	 * That allows to use converters that returns
+	 * expected_t<Output_Type, error_reason_t>.
+	 */
 	template< typename Input >
 	RESTINIO_NODISCARD
 	auto
 	transform( Input && input ) const
 		noexcept(noexcept(m_converter(std::forward<Input>(input))))
 	{
+		using actual_result_t = std::decay_t< decltype(
+				m_converter(std::forward<Input>(input))
+			) >;
+
+		static_assert(
+				is_appropriate_transformer_result_type<actual_result_t>::value,
+				"the return value of converter should be either Output_Type or "
+				"expected_t<Output_Type, error_reason_t>" );
+
 		return m_converter(std::forward<Input>(input));
 	}
 };
 
-//FIXME: document this!
+//
+// conversion_result_type_detector
+//
+/*!
+ * @brief A helper template for the detection of type to be produced
+ * as conversion procedure.
+ *
+ * A conversion procedure can produce either T or expected_t<T, error_reason_t>.
+ * In the case of expected_t<T, error_reason_t> it is necessary to know T.
+ * This helper template allows to detect T in both cases.
+ *
+ * @since v.0.6.11
+ */
 template< typename Result_Type >
 struct conversion_result_type_detector
 {
@@ -3156,6 +3233,11 @@ struct conversion_result_type_detector< expected_t< Result_Type, error_reason_t 
 	using type = Result_Type;
 };
 
+/*!
+ * A helper for simplification of usage of conversion_result_type_detector<R>.
+ *
+ * @since v.0.6.11
+ */
 template< typename Result_Type >
 using conversion_result_type_detector_t =
 		typename conversion_result_type_detector<Result_Type>::type;
@@ -3179,6 +3261,13 @@ using conversion_result_type_detector_t =
 template< typename Converter >
 class convert_transformer_proxy_t : public transformer_proxy_tag
 {
+	template< typename Input_Type >
+	using output = conversion_result_type_detector_t<
+				std::decay_t< decltype(
+						std::declval<Converter &>()(std::declval<Input_Type&&>())
+					) >
+			>;
+
 	Converter m_converter;
 
 public :
@@ -3194,12 +3283,9 @@ public :
 	make_transformer() const &
 		noexcept(noexcept(Converter{m_converter}))
 	{
-		using output_type = conversion_result_type_detector_t<
-				std::decay_t<
-						decltype(m_converter(std::declval<Input_Type&&>())) >
-			>;
+		using output_t = output<Input_Type>;
 
-		return convert_transformer_t< output_type, Converter >{ m_converter };
+		return convert_transformer_t< output_t, Converter >{ m_converter };
 	}
 
 	template< typename Input_Type >
@@ -3208,10 +3294,9 @@ public :
 	make_transformer() &&
 		noexcept(noexcept(Converter{std::move(m_converter)}))
 	{
-		using output_type = std::decay_t<
-				decltype(m_converter(std::declval<Input_Type&&>())) >;
+		using output_t = output<Input_Type>;
 
-		return convert_transformer_t< output_type, Converter >{
+		return convert_transformer_t< output_t, Converter >{
 				std::move(m_converter)
 		};
 	}
