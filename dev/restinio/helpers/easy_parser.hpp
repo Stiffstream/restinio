@@ -4361,8 +4361,8 @@ hexadecimal_number_p( digits_to_consume_t digits_limit ) noexcept
  *
  * Parses numbers in the form:
 @verbatim
-number = [sign] DIGIT+
-sign = '-' | '+'
+number := [sign] DIGIT+
+sign   := '-' | '+'
 @endverbatim
  *
  * @note
@@ -4400,8 +4400,8 @@ decimal_number_p() noexcept
  *
  * Parses numbers in the form:
 @verbatim
-number = [sign] DIGIT+
-sign = '-' | '+'
+number := [sign] DIGIT+
+sign   := '-' | '+'
 @endverbatim
  *
  * @note
@@ -4675,11 +4675,13 @@ just_result( T value )
  *
  * Usage example:
  * @code
+ * // Parser for:
+ * // size       := DIGIT+ [multiplier]
+ * // multiplier := ('b'|'B') | ('k'|'K') | ('m'|'M')
  * struct tmp_size { std::uint32_t c_{1u}; std::uint32_t m_{1u}; };
  * auto size_producer = produce<std::uint64_t>(
  * 	produce<tmp_size>(
- * 		non_negative_decimal_number_p<std::uint32_t>()
- * 				>> &tmp_size::c_,
+ * 		non_negative_decimal_number_p<std::uint32_t>() >> &tmp_size::c_,
  * 		maybe(
  * 			produce<std::uint32_t>(
  * 				alternatives(
@@ -4689,11 +4691,42 @@ just_result( T value )
  * 				)
  * 			) >> &tmp_size::m_
  * 		)
- * 	) >> convert( [](const tmp_size & ts) {
- * 				return std::uint64_t{ts.c_} * ts.m_;
- * 			} )
- * 		>> as_result()
+ * 	)
+ * 	>> convert( [](const tmp_size & ts) { return std::uint64_t{ts.c_} * ts.m_; } )
+ * 	>> as_result()
  * );
+ * @endcode
+ *
+ * @note
+ * Since v.0.6.11 a conversion function can have two formats. The first one is:
+ * @code
+ * result_type fn(input_type source_val);
+ * @endcode
+ * for example:
+ * @code
+ * convert([](const std::string & from) -> int {...})
+ * @endcode
+ * in that case a conversion error can only be reported via an exception.
+ * The second one is:
+ * @code
+ * expected_t<result_type, error_reason_t> fn(input_type source_val);
+ * @endcode
+ * for example:
+ * @code
+ * convert([](const std::string & from) -> expected_t<int, error_reason_t> {...})
+ * @endcode
+ * in that case a converion error can be reported also via returning value.
+ * For example, let's assume that in the code snippet shown above the result
+ * value should be greater than 0. It can be checked in the conversion
+ * function that way:
+ * @code
+ * convert([](const tmp_size & ts) -> expected_t<std::uint64_t, error_reason_t> {
+ * 	const auto r = std::uint64_t{ts.c_} * ts.m_;
+ * 	if( r )
+ * 		return r;
+ * 	else
+ * 		return make_unexpected(error_reason_t::illegal_value_found);
+ * }
  * @endcode
  *
  * @since v.0.6.6
