@@ -1,3 +1,5 @@
+#include <restinio/compiler_features.hpp>
+
 #include "route_parser.hpp"
 
 namespace /* anonymous */
@@ -115,6 +117,8 @@ parse_route( const std::string & request_target )
 				// Here: digits only.
 				// Fallthrough.
 				parser_internal_state = parser_state_t::wait_for_entity_id;
+
+				RESTINIO_FALLTHROUGH;
 
 			case parser_state_t::wait_for_entity_id:
 				if( '0' <= c && '9' >= c )

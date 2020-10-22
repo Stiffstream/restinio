@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include <utility>
+
 // Try to use __has_cpp_attribute if it is supported.
 #if defined(__has_cpp_attribute)
 	// clang-4 and clang-5 produce warnings when [[nodiscard]]
@@ -19,11 +21,20 @@
 			!(defined(__clang__) && __cplusplus < 201703L)
 		#define RESTINIO_NODISCARD [[nodiscard]]
 	#endif
+
+	#if __has_cpp_attribute(fallthrough) && \
+			!(defined(__clang__) && __cplusplus < 201703L)
+		#define RESTINIO_FALLTHROUGH [[fallthrough]]
+	#endif
 #endif
 
 // Handle the result of __has_cpp_attribute.
 #if !defined( RESTINIO_NODISCARD )
 	#define RESTINIO_NODISCARD
+#endif
+
+#if !defined( RESTINIO_FALLTHROUGH )
+	#define RESTINIO_FALLTHROUGH
 #endif
 
 /*!

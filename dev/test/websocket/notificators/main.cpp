@@ -221,16 +221,25 @@ class sobj_t
 		init( so_5::environment_t & env, std::promise< void > & p )
 		{
 			auto server_started_mchain = so_5::create_mchain(env);
+			const auto binder_maker = [](auto & env) {
+#if !defined(SO_5_VERSION) || SO_5_VERSION < SO_5_VERSION_MAKE(6ull, 0ull, 0ull)
+				return so_5::disp::active_obj::create_private_disp(env)->binder();
+#else
+				return so_5::disp::active_obj::make_dispatcher(env).binder();
+#endif
+			};
+
 			// Launch server as separate coop.
 			env.introduce_coop(
-				so_5::disp::active_obj::create_private_disp(env)->binder(),
+				binder_maker(env),
 				[&]( so_5::coop_t & coop ) {
 					coop.make_agent< a_server_t >( server_started_mchain, p );
 				} );
 			// Wait acknowledgement about successful server start.
 			so_5::receive(
-					server_started_mchain,
-					std::chrono::seconds(5),
+					from(server_started_mchain)
+						.handle_n(1u)
+						.empty_timeout(std::chrono::seconds(5)),
 					[](so_5::mhood_t<server_started_t>) {});
 		}
 

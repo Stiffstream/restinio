@@ -101,6 +101,17 @@ class a_req_handler_t final : public so_5::agent_t
 		resp_parts_container_t::const_iterator m_part_it;
 };
 
+template< typename Agent >
+void register_agent_as_coop( std::unique_ptr<Agent> a )
+{
+	auto & env = a->so_environment();
+#if !defined(SO_5_VERSION) || SO_5_VERSION < SO_5_VERSION_MAKE(6ull, 0ull, 0ull)
+	env.register_agent_as_coop( so_5::autoname, std::move(a) );
+#else
+	env.register_agent_as_coop( std::move(a) );
+#endif
+}
+
 int main()
 {
 	try
@@ -112,13 +123,9 @@ int main()
 				.port( 8080 )
 				.address( "localhost" )
 				.max_pipelined_requests( 4 )
-				.request_handler( [&]( const restinio::request_handle_t& req ){
-					sobj.environment()
-						.register_agent_as_coop(
-							so_5::autoname,
-							std::make_unique< a_req_handler_t >(
-								sobj.environment(),
-								req ) );
+				.request_handler( [&]( const restinio::request_handle_t& req ) {
+					register_agent_as_coop(
+							sobj.environment().make_agent< a_req_handler_t >(req) );
 
 					return restinio::request_accepted();
 				} ) );

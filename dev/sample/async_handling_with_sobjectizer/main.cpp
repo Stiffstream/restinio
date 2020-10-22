@@ -4,6 +4,32 @@
 
 #include <random>
 
+#if !defined(SO_5_VERSION) || SO_5_VERSION < SO_5_VERSION_MAKE(6ull, 0ull, 0ull)
+decltype(auto) from_all()
+{
+	return so_5::from_all();
+}
+#else
+decltype(auto) from_all()
+{
+	return so_5::from_all().handle_all();
+}
+#endif
+
+#if !defined(SO_5_VERSION) || SO_5_VERSION < SO_5_VERSION_MAKE(7ull, 0ull, 0ull)
+template< typename Handler >
+decltype(auto) read_case( so_5::mchain_t chain, Handler && handler )
+{
+	return so_5::case_( std::move(chain), std::forward<Handler>(handler) );
+}
+#else
+template< typename Handler >
+decltype(auto) read_case( so_5::mchain_t chain, Handler && handler )
+{
+	return so_5::receive_case( std::move(chain), std::forward<Handler>(handler) );
+}
+#endif
+
 // Message for transfer requests from RESTinio's thread to processing thread.
 struct handle_request
 {
@@ -30,14 +56,14 @@ void processing_thread_func(const so_5::mchain_t& req_ch)
 	// This flag will be set to 'true' when some of channels will be closed.
 	bool stop = false;
 	select(
-		so_5::from_all()
+		from_all()
 			// If some channel become closed we should set out 'stop' flag.
 			.on_close([&stop](const auto &) { stop = true; })
 			// A predicate for stopping select() function.
 			.stop_on([&stop]{ return stop; }),
 
 		// Read and handle handle_request messages from req_ch.
-		case_(req_ch,
+		read_case(req_ch,
 			[&](const handle_request& cmd) {
 				// Generate a random pause for processing of that request.
 				const std::chrono::milliseconds pause{pause_generator(generator)};
@@ -53,7 +79,7 @@ void processing_thread_func(const so_5::mchain_t& req_ch)
 			}),
 
 		// Read and handle timeout_elapsed messages from delayed_ch.
-		case_(delayed_ch,
+		read_case(delayed_ch,
 			[](const timeout_elapsed& cmd) {
 				// Now we can create an actual response to the request.
 				cmd.m_req->create_response()
