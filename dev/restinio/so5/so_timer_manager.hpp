@@ -20,13 +20,13 @@ namespace so5
 {
 
 //
-// msg_ckeck_timer_t
+// msg_check_timer_t
 //
 
 //! Check timer.
-struct msg_ckeck_timer_t final : public so_5::message_t
+struct msg_check_timer_t final : public so_5::message_t
 {
-	msg_ckeck_timer_t( tcp_connection_ctx_weak_handle_t weak_handle )
+	msg_check_timer_t( tcp_connection_ctx_weak_handle_t weak_handle )
 		:	m_weak_handle{ std::move( weak_handle ) }
 	{}
 
@@ -70,14 +70,15 @@ class so_timer_manager_t final
 					if( !m_current_op_timer.is_active() )
 					{
 						auto msg =
-							std::make_unique< msg_ckeck_timer_t >( std::move( weak_handle ) );
+							std::make_unique< msg_check_timer_t >( std::move( weak_handle ) );
 
-						m_current_op_timer =
-							m_env.schedule_timer(
-								std::move( msg ),
+						m_current_op_timer = so_5::send_periodic< msg_check_timer_t >(
+								m_env,
 								m_mbox,
 								m_check_period,
-								m_check_period );
+								m_check_period,
+								std::move(weak_handle) );
+
 					}
 				}
 
@@ -158,7 +159,7 @@ class a_timeout_handler_t final
 		{
 			so_subscribe_self()
 				.event(
-					[]( const msg_ckeck_timer_t & msg ){
+					[]( const msg_check_timer_t & msg ){
 						if( auto h = msg.m_weak_handle.lock() )
 							h->check_timeout( h );
 					} );
