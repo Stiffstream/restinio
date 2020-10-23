@@ -124,7 +124,7 @@ parse_route( const std::string & request_target )
 				if( '0' <= c && '9' >= c )
 				{
 					result.m_id *= 10;
-					result.m_id += c - '0';
+					result.m_id += static_cast<unsigned int>(c - '0');
 				}
 				else if( '/' == c )
 				{
