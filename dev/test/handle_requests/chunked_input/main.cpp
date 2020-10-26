@@ -210,3 +210,240 @@ TEST_CASE( "Simple incoming request" , "[chunked-input][simple]" )
 
 	other_thread.stop_and_join();
 }
+
+TEST_CASE( "Limit violations" , "[chunked-input][simple][limits]" )
+{
+	using http_server_t =
+		restinio::http_server_t<
+			restinio::traits_t<
+				restinio::asio_timer_manager_t,
+				utest_logger_t > >;
+
+	http_server_t http_server{
+		restinio::own_io_context(),
+		[]( auto & settings ){
+			settings
+				.port( utest_default_port() )
+				.address( "127.0.0.1" )
+				.incoming_http_msg_limits(
+						restinio::incoming_http_msg_limits_t{}
+							.max_field_count( 16 ) 
+					)
+				.request_handler(
+					[]( auto req ){
+						if( restinio::http_method_post() == req->header().method() )
+						{
+							restinio::fmt_minimal_memory_buffer_t resp_body =
+								format_chunked_input_info( *req );
+
+							req->create_response()
+								.append_header( "Server", "RESTinio utest server" )
+								.append_header_date_field()
+								.append_header( "Content-Type", "text/plain; charset=utf-8" )
+								.set_body( std::move(resp_body) )
+								.done();
+							return restinio::request_accepted();
+						}
+
+						return restinio::request_rejected();
+					} );
+		}
+	};
+
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
+
+	SECTION( "allowed count of leading fields" )
+	{
+		std::string request{
+			"POST /data HTTP/1.0\r\n"
+			"From: unit-test\r\n"
+			"User-Agent: unit-test\r\n"
+			"Content-Type: text/plain\r\n"
+			"Transfer-Encoding: chunked\r\n"
+			"Connection: close\r\n"
+			"My-Header-01: bla-bla-bla\r\n"
+			"My-Header-02: bla-bla-bla\r\n"
+			"My-Header-03: bla-bla-bla\r\n"
+			"My-Header-04: bla-bla-bla\r\n"
+			"My-Header-05: bla-bla-bla\r\n"
+			"My-Header-06: bla-bla-bla\r\n"
+			"My-Header-07: bla-bla-bla\r\n"
+			"My-Header-08: bla-bla-bla\r\n"
+			"My-Header-09: bla-bla-bla\r\n"
+			"My-Header-10: bla-bla-bla\r\n"
+			"My-Header-11: bla-bla-bla\r\n"
+			"\r\n"
+			"6\r\n"
+			"Hello,\r\n"
+			"1\r\n"
+			" \r\n"
+			"6\r\n"
+			"World!\r\n"
+			"0\r\n"
+			"\r\n"
+		};
+
+		std::string response;
+		REQUIRE_NOTHROW( response = do_request( request ) );
+
+		REQUIRE_THAT( response,
+				Catch::Matchers::EndsWith(
+						"chunks:3;[0,6][6,1][7,6];trailing_fields:0;") );
+	}
+	SECTION( "too many leading fields" )
+	{
+		std::string request{
+			"POST /data HTTP/1.0\r\n"
+			"From: unit-test\r\n"
+			"User-Agent: unit-test\r\n"
+			"Content-Type: text/plain\r\n"
+			"Transfer-Encoding: chunked\r\n"
+			"Connection: close\r\n"
+			"My-Header-01: bla-bla-bla\r\n"
+			"My-Header-02: bla-bla-bla\r\n"
+			"My-Header-03: bla-bla-bla\r\n"
+			"My-Header-04: bla-bla-bla\r\n"
+			"My-Header-05: bla-bla-bla\r\n"
+			"My-Header-06: bla-bla-bla\r\n"
+			"My-Header-07: bla-bla-bla\r\n"
+			"My-Header-08: bla-bla-bla\r\n"
+			"My-Header-09: bla-bla-bla\r\n"
+			"My-Header-10: bla-bla-bla\r\n"
+			"My-Header-11: bla-bla-bla\r\n"
+			"My-Header-12: bla-bla-bla\r\n"
+			"\r\n"
+			"6\r\n"
+			"Hello,\r\n"
+			"1\r\n"
+			" \r\n"
+			"6\r\n"
+			"World!\r\n"
+			"0\r\n"
+			"\r\n"
+		};
+
+		std::string response;
+		REQUIRE_THROWS( response = do_request( request ) );
+	}
+
+	SECTION( "three chunks with allowed number of trailing headers" )
+	{
+		std::string request{
+			"POST /data HTTP/1.0\r\n"
+			"From: unit-test\r\n"
+			"User-Agent: unit-test\r\n"
+			"Content-Type: text/plain\r\n"
+			"Transfer-Encoding: chunked\r\n"
+			"Connection: close\r\n"
+			"\r\n"
+			"6\r\n"
+			"Hello,\r\n"
+			"1\r\n"
+			" \r\n"
+			"6\r\n"
+			"World!\r\n"
+			"0\r\n"
+			"Header-01: Value\r\n"
+			"Header-02: Value\r\n"
+			"Header-03: Value\r\n"
+			"Header-04: Value\r\n"
+			"Header-05: Value\r\n"
+			"Header-06: Value\r\n"
+			"Header-07: Value\r\n"
+			"Header-08: Value\r\n"
+			"Header-09: Value\r\n"
+			"Header-10: Value\r\n"
+			"Header-11: Value\r\n"
+			"\r\n"
+		};
+
+		std::string response;
+		REQUIRE_NOTHROW( response = do_request( request ) );
+
+		REQUIRE_THAT( response,
+				Catch::Matchers::EndsWith(
+						"chunks:3;[0,6][6,1][7,6];trailing_fields:11;"
+						"('Header-01':'Value')('Header-02':'Value')"
+						"('Header-03':'Value')('Header-04':'Value')"
+						"('Header-05':'Value')('Header-06':'Value')"
+						"('Header-07':'Value')('Header-08':'Value')"
+						"('Header-09':'Value')('Header-10':'Value')"
+						"('Header-11':'Value')"
+			) );
+	}
+
+	SECTION( "three chunks with disallowed number of trailing headers" )
+	{
+		std::string request{
+			"POST /data HTTP/1.0\r\n"
+			"From: unit-test\r\n"
+			"User-Agent: unit-test\r\n"
+			"Content-Type: text/plain\r\n"
+			"Transfer-Encoding: chunked\r\n"
+			"Connection: close\r\n"
+			"\r\n"
+			"6\r\n"
+			"Hello,\r\n"
+			"1\r\n"
+			" \r\n"
+			"6\r\n"
+			"World!\r\n"
+			"0\r\n"
+			"Header-01: Value\r\n"
+			"Header-02: Value\r\n"
+			"Header-03: Value\r\n"
+			"Header-04: Value\r\n"
+			"Header-05: Value\r\n"
+			"Header-06: Value\r\n"
+			"Header-07: Value\r\n"
+			"Header-08: Value\r\n"
+			"Header-09: Value\r\n"
+			"Header-10: Value\r\n"
+			"Header-11: Value\r\n"
+			"Header-12: Value\r\n"
+			"\r\n"
+		};
+
+		std::string response;
+		REQUIRE_THROWS( response = do_request( request ) );
+	}
+
+	SECTION( "three chunks with trailing field without value" )
+	{
+		std::string request{
+			"POST /data HTTP/1.0\r\n"
+			"From: unit-test\r\n"
+			"User-Agent: unit-test\r\n"
+			"Content-Type: text/plain\r\n"
+			"Transfer-Encoding: chunked\r\n"
+			"Connection: close\r\n"
+			"\r\n"
+			"6\r\n"
+			"Hello,\r\n"
+			"1\r\n"
+			" \r\n"
+			"6\r\n"
+			"World!\r\n"
+			"0\r\n"
+			"Header-01: Value\r\n"
+			"Header-02: Value\r\n"
+			"Header-03: Value\r\n"
+			"Header-04: Value\r\n"
+			"Header-05: Value\r\n"
+			"Header-06: Value\r\n"
+			"Header-07: Value\r\n"
+			"Header-08: Value\r\n"
+			"Header-09: Value\r\n"
+			"Header-10: Value\r\n"
+			"Header-11: Value\r\n"
+			"Header-1:\r\n"
+			"\r\n"
+		};
+
+		std::string response;
+		REQUIRE_THROWS( response = do_request( request ) );
+	}
+
+	other_thread.stop_and_join();
+}

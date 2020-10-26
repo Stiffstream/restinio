@@ -16,6 +16,12 @@ restinio_url_cb( http_parser * parser, const char * at, size_t length )
 				parser->data );
 
 		ctx->m_header.append_request_target( at, length );
+
+		if( ctx->m_header.request_target().length() >
+				ctx->m_limits.max_url_size() )
+		{
+			return 1;
+		}
 	}
 	catch( const std::exception & )
 	{
@@ -36,12 +42,24 @@ restinio_header_field_cb( http_parser * parser, const char *at, size_t length )
 
 		if( ctx->m_last_was_value )
 		{
+			// Maybe there are too many fields?
+			if( ctx->m_total_field_count == ctx->m_limits.max_field_count() )
+			{
+				return 1;
+			}
+
 			ctx->m_current_field_name.assign( at, length );
 			ctx->m_last_was_value = false;
 		}
 		else
 		{
 			ctx->m_current_field_name.append( at, length );
+		}
+
+		if( ctx->m_current_field_name.size() >
+				ctx->m_limits.max_field_name_size() )
+		{
+			return 1;
 		}
 	}
 	catch( const std::exception & )
@@ -76,11 +94,22 @@ restinio_header_value_cb( http_parser * parser, const char *at, size_t length )
 				std::move( ctx->m_current_field_name ),
 				std::string{ at, length } );
 
+			ctx->m_last_value_total_size = length;
 			ctx->m_last_was_value = true;
+
+			// At this point the number of parsed fields can be incremented.
+			ctx->m_total_field_count += 1u;
 		}
 		else
 		{
 			append_last_field_accessor( fields, std::string{ at, length } );
+			ctx->m_last_value_total_size += length;
+		}
+
+		if( ctx->m_last_value_total_size >=
+				ctx->m_limits.max_field_value_size() )
+		{
+			return 1;
 		}
 	}
 	catch( const std::exception & )

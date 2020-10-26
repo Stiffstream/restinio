@@ -8,14 +8,15 @@
 
 #pragma once
 
-#include <memory>
-#include <chrono>
-
 #include <http_parser.h>
 
 #include <restinio/connection_state_listener.hpp>
+#include <restinio/incoming_http_msg_limits.hpp>
 
 #include <restinio/utils/suppress_exceptions.hpp>
+
+#include <memory>
+#include <chrono>
 
 namespace restinio
 {
@@ -134,6 +135,7 @@ struct connection_settings_t final
 		,	m_request_handler{ settings.request_handler() }
 		,	m_parser_settings{ parser_settings }
 		,	m_buffer_size{ settings.buffer_size() }
+		,	m_incoming_http_msg_limits{ settings.incoming_http_msg_limits() }
 		,	m_read_next_http_message_timelimit{
 				settings.read_next_http_message_timelimit() }
 		,	m_write_http_response_timelimit{
@@ -160,6 +162,11 @@ struct connection_settings_t final
 	//! Params from server_settings_t.
 	//! \{
 	std::size_t m_buffer_size;
+
+	/*!
+	 * @since v.0.6.12
+	 */
+	const incoming_http_msg_limits_t m_incoming_http_msg_limits;
 
 	std::chrono::steady_clock::duration
 		m_read_next_http_message_timelimit{ std::chrono::seconds( 60 ) };

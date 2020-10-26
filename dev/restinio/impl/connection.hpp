@@ -55,6 +55,7 @@ struct http_parser_ctx_t
 	//! Parser context temp values and flags.
 	//! \{
 	std::string m_current_field_name;
+	std::size_t m_last_value_total_size{ 0u };
 	bool m_last_was_value{ true };
 
 	/*!
@@ -71,6 +72,33 @@ struct http_parser_ctx_t
 	//! Flag: is http message parsed completely.
 	bool m_message_complete{ false };
 
+	/*!
+	 * @brief Total number of parsed HTTP-fields.
+	 *
+	 * This number includes the number of leading HTTP-fields and the number
+	 * of trailing HTTP-fields (in the case of chunked encoding).
+	 *
+	 * @since v.0.6.12
+	 */
+	std::size_t m_total_field_count{ 0u };
+
+	/*!
+	 * @brief Limits for the incoming message.
+	 *
+	 * @since v.0.6.12
+	 */
+	const incoming_http_msg_limits_t m_limits;
+
+	/*!
+	 * @brief The main constructor.
+	 *
+	 * @since v.0.6.12
+	 */
+	http_parser_ctx_t(
+		incoming_http_msg_limits_t limits )
+		:	m_limits{ limits }
+	{}
+
 	//! Prepare context to handle new request.
 	void
 	reset()
@@ -78,9 +106,11 @@ struct http_parser_ctx_t
 		m_header = http_request_header_t{};
 		m_body.clear();
 		m_current_field_name.clear();
+		m_last_value_total_size = 0u;
 		m_last_was_value = true;
 		m_leading_headers_completed = false;
 		m_message_complete = false;
+		m_total_field_count = 0u;
 	}
 
 	//! Creates an instance of chunked_input_info if there is an info
@@ -193,8 +223,11 @@ enum class connection_upgrade_stage_t : std::uint8_t
 //! Data associated with connection read routine.
 struct connection_input_t
 {
-	connection_input_t( std::size_t buffer_size )
-		:	m_buf{ buffer_size }
+	connection_input_t(
+		std::size_t buffer_size,
+		incoming_http_msg_limits_t limits )
+		:	m_parser_ctx{ limits }
+		,	m_buf{ buffer_size }
 	{}
 
 	//! HTTP-parser.
@@ -294,7 +327,10 @@ class connection_t final
 			,	m_socket{ std::move( socket ) }
 			,	m_settings{ std::move( settings ) }
 			,	m_remote_endpoint{ std::move( remote_endpoint ) }
-			,	m_input{ m_settings->m_buffer_size }
+			,	m_input{
+					m_settings->m_buffer_size,
+					m_settings->m_incoming_http_msg_limits
+				}
 			,	m_response_coordinator{ m_settings->m_max_pipelined_requests }
 			,	m_timer_guard{ m_settings->create_timer_guard() }
 			,	m_request_handler{ *( m_settings->m_request_handler ) }

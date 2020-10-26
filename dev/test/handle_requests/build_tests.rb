@@ -19,6 +19,7 @@ MxxRu::Cpp::composite_target {
 		user_controlled_output
 		chunked_input
       acceptor_post_bind_hook
+      incoming_msg_limits
 	].each do |name|
 		required_prj "test/handle_requests/#{name}/prj.ut.rb"
 	end

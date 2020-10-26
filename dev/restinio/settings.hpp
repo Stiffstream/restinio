@@ -8,17 +8,19 @@
 
 #pragma once
 
-#include <chrono>
-#include <tuple>
-#include <utility>
-
 #include <restinio/asio_include.hpp>
 
 #include <restinio/exception.hpp>
 #include <restinio/request_handler.hpp>
 #include <restinio/traits.hpp>
 
+#include <restinio/incoming_http_msg_limits.hpp>
+
 #include <restinio/variant.hpp>
+
+#include <chrono>
+#include <tuple>
+#include <utility>
 
 namespace restinio
 {
@@ -1318,6 +1320,29 @@ class basic_server_settings_t
 			return std::move(m_acceptor_post_bind_hook);
 		}
 
+		//FIXME: document this!
+		RESTINIO_NODISCARD
+		const incoming_http_msg_limits_t &
+		incoming_http_msg_limits() const noexcept
+		{
+			return m_incoming_http_msg_limits;
+		}
+
+		Derived &
+		incoming_http_msg_limits(
+			const incoming_http_msg_limits_t & limits ) & noexcept
+		{
+			m_incoming_http_msg_limits = limits;
+			return reference_to_derived();
+		}
+
+		Derived &&
+		incoming_http_msg_limits(
+			const incoming_http_msg_limits_t & limits ) && noexcept
+		{
+			return std::move(this->incoming_http_msg_limits(limits));
+		}
+
 	private:
 		Derived &
 		reference_to_derived()
@@ -1408,6 +1433,9 @@ class basic_server_settings_t
 
 		//! Optional cleanup functor.
 		cleanup_functor_t m_cleanup_functor;
+
+		//FIXME: document this!
+		incoming_http_msg_limits_t m_incoming_http_msg_limits;
 };
 
 //
