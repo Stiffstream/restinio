@@ -1320,7 +1320,19 @@ class basic_server_settings_t
 			return std::move(m_acceptor_post_bind_hook);
 		}
 
-		//FIXME: document this!
+		/*!
+		 * @brief Getter of optional limits for incoming HTTP messages.
+		 *
+		 * In v.0.6.12 if the limits for incoming HTTP messages are not
+		 * set explicitely then a defaultly constructed instance of
+		 * incoming_http_msg_limits_t is used. This means the absence of
+		 * any limits.
+		 *
+		 * But if the limits were set by using appropriate setters then
+		 * a reference to an instance with user-defined limits is returned.
+		 *
+		 * @since v.0.6.12
+		 */
 		RESTINIO_NODISCARD
 		const incoming_http_msg_limits_t &
 		incoming_http_msg_limits() const noexcept
@@ -1328,6 +1340,28 @@ class basic_server_settings_t
 			return m_incoming_http_msg_limits;
 		}
 
+		/*!
+		 * @brief Setter of optional limits for incoming HTTP messages.
+		 *
+		 * Usage example:
+		 * @code
+		 * struct my_traits : public restinio::default_traits_t { ... };
+		 * restinio::server_settings_t<my_traits> settings;
+		 * settings.incoming_http_msg_limits(
+		 * 	restinio::incoming_http_msg_limits_t{}
+		 * 		.max_url_size(8000u)
+		 * 		.max_field_name_size(2048u)
+		 * 		.max_field_value_size(4096u)
+		 * );
+		 * ...
+		 * auto server = restinio::run_async(
+		 * 	restinio::own_io_context(),
+		 * 	std::move(settings),
+		 * 	std::thread::hardware_concurrency());
+		 * @endcode
+		 *
+		 * @since v.0.6.12
+		 */
 		Derived &
 		incoming_http_msg_limits(
 			const incoming_http_msg_limits_t & limits ) & noexcept
@@ -1336,6 +1370,28 @@ class basic_server_settings_t
 			return reference_to_derived();
 		}
 
+		/*!
+		 * @brief Setter of optional limits for incoming HTTP messages.
+		 *
+		 * Usage example:
+		 * @code
+		 * struct my_traits : public restinio::default_traits_t { ... };
+		 * ...
+		 * auto server = restinio::run_async(
+		 * 	restinio::own_io_context(),
+		 * 	restinio::server_settings_t<my_traits>{}
+		 * 		...
+		 * 		incoming_http_msg_limits(
+		 * 			restinio::incoming_http_msg_limits_t{}
+		 * 				.max_url_size(8000u)
+		 * 				.max_field_name_size(2048u)
+		 * 				.max_field_value_size(4096u)
+		 * 		),
+		 * 	std::thread::hardware_concurrency());
+		 * @endcode
+		 *
+		 * @since v.0.6.12
+		 */
 		Derived &&
 		incoming_http_msg_limits(
 			const incoming_http_msg_limits_t & limits ) && noexcept
@@ -1434,7 +1490,11 @@ class basic_server_settings_t
 		//! Optional cleanup functor.
 		cleanup_functor_t m_cleanup_functor;
 
-		//FIXME: document this!
+		/*!
+		 * @brief Limits for incoming HTTP messages.
+		 *
+		 * @since v.0.6.12
+		 */
 		incoming_http_msg_limits_t m_incoming_http_msg_limits;
 };
 
