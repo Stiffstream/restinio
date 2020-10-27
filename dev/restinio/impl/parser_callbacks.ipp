@@ -20,12 +20,12 @@ restinio_url_cb( http_parser * parser, const char * at, size_t length )
 		if( ctx->m_header.request_target().length() >
 				ctx->m_limits.max_url_size() )
 		{
-			return 1;
+			return -1;
 		}
 	}
 	catch( const std::exception & )
 	{
-		return 1;
+		return -1;
 	}
 
 	return 0;
@@ -45,7 +45,7 @@ restinio_header_field_cb( http_parser * parser, const char *at, size_t length )
 			// Maybe there are too many fields?
 			if( ctx->m_total_field_count == ctx->m_limits.max_field_count() )
 			{
-				return 1;
+				return -1;
 			}
 
 			ctx->m_current_field_name.assign( at, length );
@@ -59,12 +59,12 @@ restinio_header_field_cb( http_parser * parser, const char *at, size_t length )
 		if( ctx->m_current_field_name.size() >
 				ctx->m_limits.max_field_name_size() )
 		{
-			return 1;
+			return -1;
 		}
 	}
 	catch( const std::exception & )
 	{
-		return 1;
+		return -1;
 	}
 
 	return 0;
@@ -109,12 +109,12 @@ restinio_header_value_cb( http_parser * parser, const char *at, size_t length )
 		if( ctx->m_last_value_total_size >=
 				ctx->m_limits.max_field_value_size() )
 		{
-			return 1;
+			return -1;
 		}
 	}
 	catch( const std::exception & )
 	{
-		return 1;
+		return -1;
 	}
 
 	return 0;
@@ -133,6 +133,12 @@ restinio_headers_complete_cb( http_parser * parser )
 	if( ULLONG_MAX != parser->content_length &&
 		0 < parser->content_length )
 	{
+		// Maximum body size can be checked right now.
+		if( parser->content_length > ctx->m_limits.max_body_size() )
+		{
+			return -1;
+		}
+
 		try
 		{
 			ctx->m_body.reserve(
@@ -141,7 +147,7 @@ restinio_headers_complete_cb( http_parser * parser )
 		}
 		catch( const std::exception & )
 		{
-			return 1;
+			return -1;
 		}
 	}
 
@@ -158,11 +164,19 @@ restinio_body_cb( http_parser * parser, const char *at, size_t length )
 			reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
 				parser->data );
 
+		// The total size of the body should be checked.
+		const auto total_length = static_cast<std::uint64_t>(
+				ctx->m_body.size() ) + length;
+		if( total_length > ctx->m_limits.max_body_size() )
+		{
+			return -1;
+		}
+
 		ctx->m_body.append( at, length );
 	}
 	catch( const std::exception & )
 	{
-		return 1;
+		return -1;
 	}
 
 	return 0;
@@ -194,7 +208,7 @@ restinio_chunk_header_cb( http_parser * parser )
 	}
 	catch( const std::exception & )
 	{
-		return 1;
+		return -1;
 	}
 
 	return 0;

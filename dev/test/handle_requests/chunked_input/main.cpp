@@ -228,6 +228,7 @@ TEST_CASE( "Limit violations" , "[chunked-input][simple][limits]" )
 				.incoming_http_msg_limits(
 						restinio::incoming_http_msg_limits_t{}
 							.max_field_count( 16 ) 
+							.max_body_size( 100 )
 					)
 				.request_handler(
 					[]( auto req ){
@@ -438,6 +439,46 @@ TEST_CASE( "Limit violations" , "[chunked-input][simple][limits]" )
 			"Header-10: Value\r\n"
 			"Header-11: Value\r\n"
 			"Header-1:\r\n"
+			"\r\n"
+		};
+
+		std::string response;
+		REQUIRE_THROWS( response = do_request( request ) );
+	}
+
+	SECTION( "total body length to long" )
+	{
+		std::string request{
+			"POST /data HTTP/1.0\r\n"
+			"From: unit-test\r\n"
+			"User-Agent: unit-test\r\n"
+			"Content-Type: text/plain\r\n"
+			"Transfer-Encoding: chunked\r\n"
+			"Connection: close\r\n"
+			"\r\n"
+			"a\r\n"
+			"0123456789\r\n"
+			"a\r\n"
+			"0123456789\r\n"
+			"a\r\n"
+			"0123456789\r\n"
+			"a\r\n"
+			"0123456789\r\n"
+			"a\r\n"
+			"0123456789\r\n"
+			"a\r\n"
+			"0123456789\r\n"
+			"a\r\n"
+			"0123456789\r\n"
+			"a\r\n"
+			"0123456789\r\n"
+			"a\r\n"
+			"0123456789\r\n"
+			"a\r\n"
+			"0123456789\r\n"
+			"1\r\n"
+			"0\r\n"
+			"0\r\n"
 			"\r\n"
 		};
 

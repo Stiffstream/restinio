@@ -13,6 +13,7 @@
 
 #include <restinio/compiler_features.hpp>
 
+#include <cstdint>
 #include <limits>
 
 namespace restinio
@@ -28,6 +29,7 @@ class incoming_http_msg_limits_t
 	std::size_t m_max_field_name_size{ std::numeric_limits<std::size_t>::max() };
 	std::size_t m_max_field_value_size{ std::numeric_limits<std::size_t>::max() };
 	std::size_t m_max_field_count{ std::numeric_limits<std::size_t>::max() };
+	std::uint64_t m_max_body_size{ std::numeric_limits<std::uint64_t>::max() };
 
 public:
 	incoming_http_msg_limits_t() noexcept = default;
@@ -98,6 +100,23 @@ public:
 	max_field_count( std::size_t value ) && noexcept
 	{
 		return std::move(max_field_count(value));
+	}
+
+	RESTINIO_NODISCARD
+	std::uint64_t
+	max_body_size() const noexcept { return m_max_body_size; }
+
+	incoming_http_msg_limits_t &
+	max_body_size( std::uint64_t value ) & noexcept
+	{
+		m_max_body_size = value;
+		return *this;
+	}
+
+	incoming_http_msg_limits_t &&
+	max_body_size( std::uint64_t value ) && noexcept
+	{
+		return std::move(max_body_size(value));
 	}
 };
 

@@ -33,9 +33,11 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 							.max_field_name_size( 30 )
 							.max_field_value_size( 40 )
 							.max_field_count( 16 ) 
+							.max_body_size( 40 )
 					)
 				.request_handler(
 					[]( auto req ){
+						std::cout << "### BODY: '" << req->body() << "'" << std::endl;
 						return req->create_response()
 							.append_header( "Server", "RESTinio utest server" )
 							.append_header_date_field()
@@ -151,6 +153,44 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 			"123456789-123456789-1234567890: "
 				"123456789-123456789-123456789-123456789-\r\n"
 			"\r\n"
+		};
+
+		std::string response;
+		REQUIRE_THROWS( response = do_request( request ) );
+	}
+
+	SECTION( "small body with Content-Length" )
+	{
+		std::string request{
+			"POST /123456789/123456789 HTTP/1.1\r\n"
+			"From: unit-test\r\n"
+			"User-Agent: unit-test\r\n"
+			"Content-Type: text/plain\r\n"
+			"Content-Length: 40\r\n"
+			"Connection: close\r\n"
+			"\r\n"
+			"123456789-123456789-1234567890-1234567890"
+		};
+
+		std::string response;
+		REQUIRE_NOTHROW( response = do_request( request ) );
+
+		REQUIRE_THAT( response,
+				Catch::Matchers::EndsWith(
+						"Ok") );
+	}
+
+	SECTION( "large body with Content-Length" )
+	{
+		std::string request{
+			"POST /123456789/222222222 HTTP/1.1\r\n"
+			"From: unit-test\r\n"
+			"User-Agent: unit-test\r\n"
+			"Content-Type: text/plain\r\n"
+			"Content-Length: 41\r\n"
+			"Connection: close\r\n"
+			"\r\n"
+			"123456789-123456789-1234567890-123456789-1"
 		};
 
 		std::string response;
