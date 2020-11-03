@@ -8,29 +8,17 @@
 
 #pragma once
 
+#include <restinio/null_mutex.hpp>
+
+#include <restinio/impl/include_fmtlib.hpp>
+
 #include <string>
 #include <iostream>
 #include <chrono>
 #include <mutex>
 
-#include <restinio/impl/include_fmtlib.hpp>
-
 namespace restinio
 {
-
-//
-// null_lock_t
-//
-
-//! Fake lock.
-struct null_lock_t
-{
-	constexpr void lock() const noexcept {}
-
-	constexpr bool try_lock() const noexcept { return true; }
-
-	constexpr void unlock() const noexcept {}
-};
 
 //
 // ostream_logger_t
@@ -87,7 +75,7 @@ class ostream_logger_t
 		void
 		log_message( const char * tag, const std::string & msg )
 		{
-			std::unique_lock< Lock > lock{ m_lock };
+			std::lock_guard< Lock > lock{ m_lock };
 
 			namespace stdchrono = std::chrono;
 
@@ -111,7 +99,7 @@ class ostream_logger_t
 		std::ostream * m_out;
 };
 
-using single_threaded_ostream_logger_t = ostream_logger_t< null_lock_t >;
+using single_threaded_ostream_logger_t = ostream_logger_t< null_mutex_t >;
 using shared_ostream_logger_t = ostream_logger_t< std::mutex >;
 
 } /* namespace restinio */
