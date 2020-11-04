@@ -134,6 +134,8 @@ class ws_connection_t final
 		using logger_t = typename Traits::logger_t;
 		using strand_t = typename Traits::strand_t;
 		using stream_socket_t = typename Traits::stream_socket_t;
+		using lifetime_monitor_t =
+			typename connection_count_limit_types<Traits>::lifetime_monitor_t;
 
 		using ws_weak_handle_t = std::weak_ptr< ws_t >;
 
@@ -144,12 +146,14 @@ class ws_connection_t final
 			//! \{
 			restinio::impl::connection_settings_handle_t< Traits > settings,
 			stream_socket_t socket,
+			lifetime_monitor_t lifetime_monitor,
 			//! \}
 			message_handler_t msg_handler )
 			:	ws_connection_base_t{ conn_id }
 			,	executor_wrapper_base_t{ socket.get_executor() }
 			,	m_settings{ std::move( settings ) }
 			,	m_socket{ std::move( socket ) }
+			,	m_lifetime_monitor{ std::move( lifetime_monitor ) }
 			,	m_timer_guard{ m_settings->create_timer_guard() }
 			,	m_input{ websocket_header_max_size() }
 			,	m_msg_handler{ std::move( msg_handler ) }
@@ -1247,6 +1251,13 @@ class ws_connection_t final
 
 		//! Connection.
 		stream_socket_t m_socket;
+
+		/*!
+		 * @brief Monitor of the connection lifetime.
+		 *
+		 * @since v.0.6.12
+		 */
+		lifetime_monitor_t m_lifetime_monitor;
 
 		//! Timers.
 		//! \{

@@ -17,6 +17,7 @@
 #include <restinio/exception.hpp>
 #include <restinio/http_headers.hpp>
 #include <restinio/request_handler.hpp>
+#include <restinio/connection_count_limiter.hpp>
 #include <restinio/impl/connection_base.hpp>
 #include <restinio/impl/header_helpers.hpp>
 #include <restinio/impl/response_coordinator.hpp>
@@ -312,6 +313,8 @@ class connection_t final
 		using logger_t = typename Traits::logger_t;
 		using strand_t = typename Traits::strand_t;
 		using stream_socket_t = typename Traits::stream_socket_t;
+		using lifetime_monitor_t =
+				typename connection_count_limit_types<Traits>::lifetime_monitor_t;
 
 		connection_t(
 			//! Connection id.
@@ -321,7 +324,9 @@ class connection_t final
 			//! Settings that are common for connections.
 			connection_settings_handle_t< Traits > settings,
 			//! Remote endpoint for that connection.
-			endpoint_t remote_endpoint )
+			endpoint_t remote_endpoint,
+			//! Lifetime monitor to be used for handling connection count.
+			lifetime_monitor_t lifetime_monitor )
 			:	connection_base_t{ conn_id }
 			,	executor_wrapper_base_t{ socket.get_executor() }
 			,	m_socket{ std::move( socket ) }
@@ -335,6 +340,7 @@ class connection_t final
 			,	m_timer_guard{ m_settings->create_timer_guard() }
 			,	m_request_handler{ *( m_settings->m_request_handler ) }
 			,	m_logger{ *( m_settings->m_logger ) }
+			,	m_lifetime_monitor{ std::move(lifetime_monitor) }
 		{
 			// Notify of a new connection instance.
 			m_logger.trace( [&]{
@@ -438,13 +444,16 @@ class connection_t final
 
 			upgrade_internals_t(
 				connection_settings_handle_t< Traits > settings,
-				stream_socket_t socket )
-				:	m_settings{ std::move( settings ) }
+				stream_socket_t socket,
+				lifetime_monitor_t lifetime_monitor )
+				:	m_settings{ std::move(settings) }
 				,	m_socket{ std::move( socket ) }
+				,	m_lifetime_monitor{ std::move(lifetime_monitor) }
 			{}
 
 			connection_settings_handle_t< Traits > m_settings;
 			stream_socket_t m_socket;
+			lifetime_monitor_t m_lifetime_monitor;
 		};
 
 		//! Move socket out of connection.
@@ -453,7 +462,9 @@ class connection_t final
 		{
 			return upgrade_internals_t{
 				m_settings,
-				std::move( m_socket ) };
+				std::move(m_socket),
+				std::move(m_lifetime_monitor)
+			};
 		}
 
 	private:
@@ -1658,6 +1669,16 @@ class connection_t final
 
 		//! Logger for operation
 		logger_t & m_logger;
+
+		/*!
+		 * @brief Monitor of the connection lifetime.
+		 *
+		 * It's required for controlling the count of active parallel
+		 * connections.
+		 *
+		 * @since v.0.6.12
+		 */
+		lifetime_monitor_t m_lifetime_monitor;
 };
 
 //
@@ -1671,6 +1692,8 @@ class connection_factory_t
 	public:
 		using logger_t = typename Traits::logger_t;
 		using stream_socket_t = typename Traits::stream_socket_t;
+		using lifetime_monitor_t =
+			typename connection_count_limit_types<Traits>::lifetime_monitor_t;
 
 		connection_factory_t(
 			connection_settings_handle_t< Traits > connection_settings,
@@ -1681,12 +1704,14 @@ class connection_factory_t
 		{}
 
 		// NOTE: since v.0.6.3 it returns non-empty
-		// shared_ptr<connection_t<Traits>> or anexception is thrown in
+		// shared_ptr<connection_t<Traits>> or an exception is thrown in
 		// the case of an error.
+		// NOTE: since v.0.6.12 it accepts yet another parameter: lifetime_monitor.
 		auto
 		create_new_connection(
 			stream_socket_t socket,
-			endpoint_t remote_endpoint )
+			endpoint_t remote_endpoint,
+			lifetime_monitor_t lifetime_monitor )
 		{
 			using connection_type_t = connection_t< Traits >;
 
@@ -1699,7 +1724,8 @@ class connection_factory_t
 				m_connection_id_counter++,
 				std::move( socket ),
 				m_connection_settings,
-				std::move( remote_endpoint ) );
+				std::move( remote_endpoint ),
+				std::move( lifetime_monitor ) );
 		}
 
 	private:

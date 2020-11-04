@@ -15,14 +15,11 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
-TEST_CASE( "Upgrade" , "[upgrade]" )
+template< typename Traits >
+void
+perform_test()
 {
-	using traits_t =
-		restinio::traits_t<
-			restinio::asio_timer_manager_t,
-			utest_logger_t >;
-
-	using http_server_t = restinio::http_server_t< traits_t >;
+	using http_server_t = restinio::http_server_t< Traits >;
 	namespace rws = restinio::websocket;
 
 	http_server_t http_server{
@@ -39,7 +36,7 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 							{
 								namespace rws = restinio::websocket::basic;
 								auto ws =
-									rws::upgrade< traits_t >(
+									rws::upgrade< Traits >(
 										*req,
 										rws::activation_t::immediate,
 										[]( rws::ws_handle_t,
@@ -84,3 +81,37 @@ TEST_CASE( "Upgrade" , "[upgrade]" )
 
 	other_thread.stop_and_join();
 }
+
+struct no_connection_limiter_traits_t : public restinio::default_traits_t {
+	using logger_t = utest_logger_t;
+};
+
+TEST_CASE( "Upgrade (noop_connection_limiter)" , "[upgrade]" )
+{
+	perform_test< no_connection_limiter_traits_t >();
+}
+
+struct thread_safe_connection_limiter_traits_t : public restinio::default_traits_t {
+	using logger_t = utest_logger_t;
+
+	template< typename Strand >
+	using connection_count_limiter_t = restinio::connection_count_limiter_t<Strand>;
+};
+
+TEST_CASE( "Upgrade (thread_safe_connection_limiter)" , "[upgrade]" )
+{
+	perform_test< thread_safe_connection_limiter_traits_t >();
+}
+
+struct single_thread_connection_limiter_traits_t : public restinio::default_single_thread_traits_t {
+	using logger_t = utest_logger_t;
+
+	template< typename Strand >
+	using connection_count_limiter_t = restinio::connection_count_limiter_t<Strand>;
+};
+
+TEST_CASE( "Upgrade (single_thread_connection_limiter)" , "[upgrade]" )
+{
+	perform_test< single_thread_connection_limiter_traits_t >();
+}
+

@@ -10,6 +10,8 @@
 
 #include <memory>
 
+#include <restinio/connection_count_limiter.hpp>
+
 #include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/impl/connection.hpp>
@@ -161,9 +163,15 @@ class acceptor_t final
 	:	public std::enable_shared_from_this< acceptor_t< Traits > >
 	,	protected socket_supplier_t< typename Traits::stream_socket_t >
 	,	protected acceptor_details::ip_blocker_holder_t< typename Traits::ip_blocker_t >
+	,	protected ::restinio::connection_count_limits::impl::acceptor_callback_iface_t
 {
 		using ip_blocker_base_t = acceptor_details::ip_blocker_holder_t<
 				typename Traits::ip_blocker_t >;
+
+		using connection_count_limiter_t =
+				typename connection_count_limit_types< Traits >::limiter_t;
+		using connection_lifetime_monitor_t =
+				typename connection_count_limit_types< Traits >::lifetime_monitor_t;
 
 	public:
 		using connection_factory_t = impl::connection_factory_t< Traits >;
@@ -196,6 +204,11 @@ class acceptor_t final
 			,	m_separate_accept_and_create_connect{ settings.separate_accept_and_create_connect() }
 			,	m_connection_factory{ std::move( connection_factory ) }
 			,	m_logger{ logger }
+			,	m_connection_count_limiter{
+					self_as_acceptor_callback(),
+					settings.max_active_connections(),
+					settings.concurrent_accepts_count()
+				}
 		{}
 
 		//! Start listen on port specified in ctor.
@@ -301,6 +314,55 @@ class acceptor_t final
 		//! Get executor for acceptor.
 		auto & get_executor() noexcept { return m_executor; }
 
+		// Begin of implementation of acceptor_callback_iface_t.
+		/*!
+		 * @since v.0.6.12
+		 */
+		void
+		try_accept_next_now( std::size_t index ) noexcept
+		{
+			m_acceptor.async_accept(
+				this->socket( index ).lowest_layer(),
+				asio_ns::bind_executor(
+					get_executor(),
+					[index, ctx = this->shared_from_this()]
+					( const auto & ec ) noexcept
+					{
+						if( !ec )
+						{
+							ctx->accept_current_connection( index, ec );
+						}
+					} ) );
+		}
+
+		/*!
+		 * @since v.0.6.12
+		 */
+		void
+		schedule_try_accept_next( std::size_t index ) noexcept
+		{
+			asio_ns::post(
+				asio_ns::bind_executor(
+					get_executor(),
+					[index, ctx = this->shared_from_this()]() noexcept
+					{
+						ctx->try_accept_next_now( index );
+					} ) );
+		}
+
+		/*!
+		 * @brief Helper for suppressing warnings of using `this` in
+		 * initilizer list.
+		 *
+		 * @since v.0.6.12
+		 */
+		::restinio::connection_count_limits::impl::acceptor_callback_iface_t *
+		self_as_acceptor_callback() noexcept
+		{
+			return this;
+		}
+		// End of implementation of acceptor_callback_iface_t.
+
 		//! Set a callback for a new connection.
 		/*!
 		 * @note
@@ -314,16 +376,7 @@ class acceptor_t final
 		void
 		accept_next( std::size_t i ) noexcept
 		{
-			m_acceptor.async_accept(
-				this->socket( i ).lowest_layer(),
-				asio_ns::bind_executor(
-					get_executor(),
-					[i, ctx = this->shared_from_this()]( const auto & ec ) noexcept {
-						if( !ec )
-						{
-							ctx->accept_current_connection( i, ec );
-						}
-					} ) );
+			m_connection_count_limiter.accept_next( i );
 		}
 
 		//! Accept current connection.
@@ -422,7 +475,12 @@ class acceptor_t final
 				[sock = std::move(incoming_socket),
 				factory = m_connection_factory,
 				ep = std::move(remote_endpoint),
-				logger = &m_logger]() mutable noexcept {
+				lifetime_monitor = connection_lifetime_monitor_t{
+						&m_connection_count_limiter
+					},
+				logger = &m_logger]
+				() mutable noexcept
+				{
 					// NOTE: this code block shouldn't throw!
 					restinio::utils::suppress_exceptions(
 							*logger,
@@ -433,7 +491,9 @@ class acceptor_t final
 								// the case of an error. Because of that there is
 								// no need to check the value returned.
 								auto conn = factory->create_new_connection(
-										std::move(sock), std::move(ep) );
+										std::move(sock),
+										std::move(ep),
+										std::move(lifetime_monitor) );
 
 								// Start waiting for request message.
 								conn->init();
@@ -502,6 +562,13 @@ class acceptor_t final
 		connection_factory_shared_ptr_t m_connection_factory;
 
 		logger_t & m_logger;
+
+		/*!
+		 * @brief Actual limiter of active parallel connections.
+		 *
+		 * @since v.0.6.12
+		 */
+		connection_count_limiter_t m_connection_count_limiter;
 
 		/*!
 		 * @brief Helper for extraction of an actual IP-address from an

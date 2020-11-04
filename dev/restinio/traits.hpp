@@ -13,6 +13,8 @@
 #include <restinio/null_logger.hpp>
 #include <restinio/connection_state_listener.hpp>
 #include <restinio/ip_blocker.hpp>
+#include <restinio/default_strands.hpp>
+#include <restinio/connection_count_limiter.hpp>
 
 namespace restinio
 {
@@ -25,7 +27,7 @@ template <
 		typename Timer_Manager,
 		typename Logger,
 		typename Request_Handler = default_request_handler_t,
-		typename Strand = asio_ns::strand< default_asio_executor >,
+		typename Strand = default_strand_t,
 		typename Socket = asio_ns::ip::tcp::socket >
 struct traits_t
 {
@@ -135,9 +137,11 @@ struct traits_t
 	using request_handler_t = Request_Handler;
 	using strand_t = Strand;
 	using stream_socket_t = Socket;
-};
 
-using noop_strand_t = default_asio_executor;
+	//FIXME: document this!
+	template< typename Strand_Type >
+	using connection_count_limiter_t = noop_connection_count_limiter_t< Strand_Type >;
+};
 
 //
 // single_thread_traits_t

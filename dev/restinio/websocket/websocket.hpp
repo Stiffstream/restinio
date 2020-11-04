@@ -253,6 +253,7 @@ upgrade(
 			con.connection_id(),
 			std::move( upgrade_internals.m_settings ),
 			std::move( upgrade_internals.m_socket ),
+			std::move( upgrade_internals.m_lifetime_monitor ),
 			std::move( ws_message_handler ) );
 
 	writable_items_container_t upgrade_response_bufs;

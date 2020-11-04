@@ -462,6 +462,45 @@ using address_variant_t = variant_t<
 		std::string,
 		asio_ns::ip::address >;
 
+//
+// max_active_connections_holder_t
+//
+//FIXME: document this!
+template< typename Count_Limiter >
+struct max_active_connections_holder_t
+{
+	static constexpr bool has_actual_max_active_connections = true;
+
+	std::size_t m_max_active_connections{
+			std::numeric_limits<std::size_t>::max()
+		};
+
+	std::size_t
+	max_active_connections() const noexcept
+	{
+		return m_max_active_connections;
+	}
+
+	void
+	set_max_active_connections( std::size_t v ) noexcept
+	{
+		m_max_active_connections = v;
+	}
+};
+
+template< typename Strand_Type >
+struct max_active_connections_holder_t<
+		noop_connection_count_limiter_t< Strand_Type > >
+{
+	static constexpr bool has_actual_max_active_connections = false;
+
+	std::size_t
+	max_active_connections() const noexcept
+	{
+		return std::numeric_limits<std::size_t>::max();
+	}
+};
+
 } /* namespace details */
 
 //
@@ -485,9 +524,15 @@ class basic_server_settings_t
 	,	protected connection_state_listener_holder_t<
 			typename Traits::connection_state_listener_t >
 	,	protected ip_blocker_holder_t< typename Traits::ip_blocker_t >
+	,	protected details::max_active_connections_holder_t<
+			typename connection_count_limit_types<Traits>::limiter_t >
 {
 		using base_type_t = socket_type_dependent_settings_t<
 				Derived, typename Traits::stream_socket_t>;
+
+		using max_active_connections_holder_base_t =
+				details::max_active_connections_holder_t<
+						typename connection_count_limit_types<Traits>::limiter_t >;
 
 		using connection_state_listener_holder_t<
 						typename Traits::connection_state_listener_t
@@ -496,6 +541,8 @@ class basic_server_settings_t
 		using ip_blocker_holder_t<
 						typename Traits::ip_blocker_t
 					>::has_actual_ip_blocker;
+
+		using max_active_connections_holder_base_t::has_actual_max_active_connections;
 
 	public:
 		basic_server_settings_t(
@@ -1398,6 +1445,34 @@ class basic_server_settings_t
 		{
 			return std::move(this->incoming_http_msg_limits(limits));
 		}
+
+		//FIXME: document this!
+		/*!
+		 * @since v.0.6.12
+		 */
+		Derived &
+		max_active_connections( std::size_t value ) & noexcept
+		{
+			static_assert(
+					basic_server_settings_t::has_actual_max_active_connections,
+					"max_active_connections(value) can't be used "
+					"for the noop_connection_count_limiter_t" );
+
+			this->set_max_active_connections( value );
+			return reference_to_derived();
+		}
+
+		//FIXME: document this!
+		/*!
+		 * @since v.0.6.12
+		 */
+		Derived &&
+		max_active_connections( std::size_t value ) && noexcept 
+		{
+			return std::move(this->max_active_connections( value ));
+		}
+
+		using max_active_connections_holder_base_t::max_active_connections;
 
 	private:
 		Derived &

@@ -13,13 +13,11 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
-TEST_CASE( "HTTP echo server" , "[echo]" )
+template< typename Traits >
+void
+perform_test()
 {
-	using http_server_t =
-		restinio::http_server_t<
-			restinio::traits_t<
-				restinio::asio_timer_manager_t,
-				utest_logger_t > >;
+	using http_server_t = restinio::http_server_t< Traits >;
 
 	const auto perform_checks = []() {
 		std::string response;
@@ -130,5 +128,38 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 
 		other_thread.stop_and_join();
 	}
+}
+
+struct no_connection_limiter_traits_t : public restinio::default_traits_t {
+	using logger_t = utest_logger_t;
+};
+
+TEST_CASE( "HTTP echo server (noop_connection_limiter)" , "[echo]" )
+{
+	perform_test< no_connection_limiter_traits_t >();
+}
+
+struct thread_safe_connection_limiter_traits_t : public restinio::default_traits_t {
+	using logger_t = utest_logger_t;
+
+	template< typename Strand >
+	using connection_count_limiter_t = restinio::connection_count_limiter_t<Strand>;
+};
+
+TEST_CASE( "HTTP echo server (thread_safe_connection_limiter)" , "[echo]" )
+{
+	perform_test< thread_safe_connection_limiter_traits_t >();
+}
+
+struct single_thread_connection_limiter_traits_t : public restinio::default_single_thread_traits_t {
+	using logger_t = utest_logger_t;
+
+	template< typename Strand >
+	using connection_count_limiter_t = restinio::connection_count_limiter_t<Strand>;
+};
+
+TEST_CASE( "HTTP echo server (single_thread_connection_limiter)" , "[echo]" )
+{
+	perform_test< single_thread_connection_limiter_traits_t >();
 }
 
