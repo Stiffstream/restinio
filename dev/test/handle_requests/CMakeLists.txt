@@ -19,3 +19,4 @@ add_subdirectory(acceptor_post_bind_hook)
 
 add_subdirectory(incoming_msg_limits)
 
+add_subdirectory(connection_count_limit)

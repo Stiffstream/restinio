@@ -81,6 +81,7 @@ public:
 
 			// Expects that m_connections is always greater than 0.
 			--m_connections;
+
 			if( m_connections < m_max_active_connections &&
 					!m_pending_indexes.empty() )
 			{
