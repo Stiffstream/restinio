@@ -1009,20 +1009,20 @@ class basic_server_settings_t
 		*/
 		//! \{
 		Derived &
-		separate_accept_and_create_connect( bool do_separate ) &
+		separate_accept_and_create_connect( bool do_separate ) & noexcept
 		{
 			m_separate_accept_and_create_connect = do_separate;
 			return reference_to_derived();
 		}
 
 		Derived &&
-		separate_accept_and_create_connect( bool do_separate ) &&
+		separate_accept_and_create_connect( bool do_separate ) && noexcept
 		{
 			return std::move( this->separate_accept_and_create_connect( do_separate ) );
 		}
 
 		bool
-		separate_accept_and_create_connect() const
+		separate_accept_and_create_connect() const noexcept
 		{
 			return m_separate_accept_and_create_connect;
 		}

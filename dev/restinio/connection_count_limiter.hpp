@@ -30,10 +30,10 @@ class acceptor_callback_iface_t
 {
 public:
 	virtual void
-	try_accept_next_now( std::size_t index ) noexcept = 0;
+	call_accept_now( std::size_t index ) noexcept = 0;
 
 	virtual void
-	schedule_try_accept_next( std::size_t index ) noexcept = 0;
+	schedule_next_accept_attempt( std::size_t index ) noexcept = 0;
 };
 
 //FIXME: document this!
@@ -42,9 +42,18 @@ class actual_limiter_t
 {
 	Mutex_Type m_lock;
 	acceptor_callback_iface_t * m_acceptor;
+
+	std::size_t m_active_accepts{ 0u };
 	std::size_t m_connections{ 0u };
+
 	const std::size_t m_max_active_connections;
 	std::vector< std::size_t > m_pending_indexes;
+
+	bool
+	has_free_slots() const noexcept
+	{
+		return (m_active_accepts + m_connections) < m_max_active_connections;
+	}
 
 public:
 	actual_limiter_t(
@@ -64,6 +73,7 @@ public:
 	increment_active_connections() noexcept
 	{
 		std::lock_guard< Mutex_Type > lock{ m_lock };
+		--m_active_accepts;
 		++m_connections;
 	}
 
@@ -82,8 +92,7 @@ public:
 			// Expects that m_connections is always greater than 0.
 			--m_connections;
 
-			if( m_connections < m_max_active_connections &&
-					!m_pending_indexes.empty() )
+			if( has_free_slots() && !m_pending_indexes.empty() )
 			{
 				std::size_t pending_index = m_pending_indexes.back();
 				m_pending_indexes.pop_back();
@@ -95,7 +104,7 @@ public:
 
 		if( index_to_activate )
 		{
-			m_acceptor->schedule_try_accept_next( *index_to_activate );
+			m_acceptor->schedule_next_accept_attempt( *index_to_activate );
 		}
 	}
 
@@ -107,8 +116,11 @@ public:
 		const bool accept_now = [this, index]() -> bool {
 			std::lock_guard< Mutex_Type > lock{ m_lock };
 
-			if( m_connections < m_max_active_connections )
+			if( has_free_slots() )
+			{
+				++m_active_accepts;
 				return true;
+			}
 			else
 			{
 				m_pending_indexes.push_back( index );
@@ -118,7 +130,7 @@ public:
 
 		if( accept_now )
 		{
-			m_acceptor->try_accept_next_now( index );
+			m_acceptor->call_accept_now( index );
 		}
 	}
 };
@@ -151,7 +163,7 @@ public:
 	void
 	accept_next( std::size_t index ) noexcept
 	{
-		m_acceptor->try_accept_next_now( index );
+		m_acceptor->call_accept_now( index );
 	}
 };
 

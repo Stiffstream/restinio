@@ -10,6 +10,8 @@
 
 #include <restinio/all.hpp>
 
+#include <restinio/helpers/string_algo.hpp>
+
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
@@ -63,10 +65,23 @@ struct client_load_t
 
 } /* namespace details */
 
+void
+ensure_or_die( bool condition, const char * description )
+{
+	if( !condition )
+	{
+		std::cerr << "FAILURE: " << description << std::endl;
+		std::abort();
+	}
+}
+
+#define MY_REQUIRE(statement) ensure_or_die( (statement), #statement )
+
 template< typename Traits >
 void
 perform_test(
 	std::size_t max_active_connections,
+	bool separate_accept_and_create_connection,
 	std::size_t server_threads_count,
 	details::client_load_t client_load )
 {
@@ -84,17 +99,16 @@ perform_test(
 				body;
 		};
 
+		using namespace restinio::string_algo;
 		for( std::size_t i = 0; i != iterations; ++i )
 		{
 			{
 				const std::string body = "01234567890123456789";
-				REQUIRE_NOTHROW( response = do_request( create_request( body ) ) );
+				response = do_request( create_request( body ) );
 
-				REQUIRE_THAT(
-					response,
-					Catch::Matchers::Contains(
+				MY_REQUIRE( std::string::npos != response.find(
 						"Content-Length: " + std::to_string( body.size() ) ) );
-				REQUIRE_THAT( response, Catch::Matchers::EndsWith( body ) );
+				MY_REQUIRE( ends_with( response, body ) );
 			}
 
 			{
@@ -104,25 +118,21 @@ perform_test(
 					"abcdefghijklmnopqrstuvwxyz\r\n"
 					"~!@#$%^&*()_+";
 
-				REQUIRE_NOTHROW( response = do_request( create_request( body ) ) );
+				response = do_request( create_request( body ) );
 
-				REQUIRE_THAT(
-					response,
-					Catch::Matchers::Contains(
+				MY_REQUIRE( std::string::npos != response.find(
 						"Content-Length: " + std::to_string( body.size() ) ) );
-				REQUIRE_THAT( response, Catch::Matchers::EndsWith( body ) );
+				MY_REQUIRE( ends_with( response, body ) );
 			}
 
 			{
 				const std::string body( 2048, 'a' );
 
-				REQUIRE_NOTHROW( response = do_request( create_request( body ) ) );
+				response = do_request( create_request( body ) );
 
-				REQUIRE_THAT(
-					response,
-					Catch::Matchers::Contains(
+				MY_REQUIRE( std::string::npos != response.find(
 						"Content-Length: " + std::to_string( body.size() ) ) );
-				REQUIRE_THAT( response, Catch::Matchers::EndsWith( body ) );
+				MY_REQUIRE( ends_with( response, body ) );
 			}
 		}
 	};
@@ -139,6 +149,12 @@ perform_test(
 		auto timer = std::make_shared<restinio::asio_ns::steady_timer>( ioctx );
 		timer->expires_after( std::chrono::milliseconds(25) );
 		timer->async_wait( [&counter, timer, req](const auto & ec) {
+				// Call decrement right now because if we call it
+				// after create_response()...done() chain then there could
+				// be a possibility that the connection will be dropped
+				// just before a call to dec().
+				counter.dec();
+
 				if( !ec ) {
 					req->create_response()
 						.append_header( "Server", "RESTinio utest server" )
@@ -147,8 +163,6 @@ perform_test(
 						.set_body( req->body() )
 						.done();
 				}
-
-				counter.dec();
 			} );
 
 		return restinio::request_accepted();
@@ -161,6 +175,8 @@ perform_test(
 					.address( "127.0.0.1" )
 					.request_handler( request_handler )
 					.concurrent_accepts_count( server_threads_count )
+					.separate_accept_and_create_connect(
+							separate_accept_and_create_connection )
 					.max_active_connections( max_active_connections ),
 			server_threads_count );
 
@@ -187,12 +203,22 @@ struct thread_safe_connection_limiter_traits_t : public restinio::default_traits
 	using connection_count_limiter_t = restinio::connection_count_limiter_t<Strand>;
 };
 
-TEST_CASE( "HTTP echo server (thread_safe_connection_limiter)" , "[echo]" )
+TEST_CASE( "thread_safe_connection_limiter, no accept-connect separation" , "[thread_safe][no_separate_accept]" )
 {
 	perform_test< thread_safe_connection_limiter_traits_t >(
 			8,
-			3,
-			details::client_load_t{ 10, 40 } );
+			false,
+			5,
+			details::client_load_t{ 16, 40 } );
+}
+
+TEST_CASE( "thread_safe_connection_limiter, accept-connect separation" , "[thread_safe][separate_accept]" )
+{
+	perform_test< thread_safe_connection_limiter_traits_t >(
+			8,
+			true,
+			5,
+			details::client_load_t{ 16, 40 } );
 }
 
 struct single_thread_connection_limiter_traits_t : public restinio::default_single_thread_traits_t {
@@ -200,10 +226,20 @@ struct single_thread_connection_limiter_traits_t : public restinio::default_sing
 	using connection_count_limiter_t = restinio::connection_count_limiter_t<Strand>;
 };
 
-TEST_CASE( "HTTP echo server (single_thread_connection_limiter)" , "[echo]" )
+TEST_CASE( "single_thread_connection_limiter, no accept-connect separation" , "[single_thread][no_separate_accept]" )
 {
 	perform_test< single_thread_connection_limiter_traits_t >(
 			8,
+			false,
+			1,
+			details::client_load_t{ 10, 40 } );
+}
+
+TEST_CASE( "single_thread_connection_limiter, accept-connect separation" , "[single_thread][separate_accept]" )
+{
+	perform_test< single_thread_connection_limiter_traits_t >(
+			8,
+			false,
 			1,
 			details::client_load_t{ 10, 40 } );
 }

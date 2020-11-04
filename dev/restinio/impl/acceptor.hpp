@@ -319,7 +319,7 @@ class acceptor_t final
 		 * @since v.0.6.12
 		 */
 		void
-		try_accept_next_now( std::size_t index ) noexcept
+		call_accept_now( std::size_t index ) noexcept
 		{
 			m_acceptor.async_accept(
 				this->socket( index ).lowest_layer(),
@@ -339,14 +339,14 @@ class acceptor_t final
 		 * @since v.0.6.12
 		 */
 		void
-		schedule_try_accept_next( std::size_t index ) noexcept
+		schedule_next_accept_attempt( std::size_t index ) noexcept
 		{
 			asio_ns::post(
 				asio_ns::bind_executor(
 					get_executor(),
 					[index, ctx = this->shared_from_this()]() noexcept
 					{
-						ctx->try_accept_next_now( index );
+						ctx->accept_next( index );
 					} ) );
 		}
 
