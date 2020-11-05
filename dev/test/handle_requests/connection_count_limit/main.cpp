@@ -199,8 +199,7 @@ perform_test(
 }
 
 struct thread_safe_connection_limiter_traits_t : public restinio::default_traits_t {
-	template< typename Strand >
-	using connection_count_limiter_t = restinio::connection_count_limiter_t<Strand>;
+	static constexpr bool use_connection_count_limiter = true;
 };
 
 TEST_CASE( "thread_safe_connection_limiter, no accept-connect separation" , "[thread_safe][no_separate_accept]" )
@@ -222,8 +221,7 @@ TEST_CASE( "thread_safe_connection_limiter, accept-connect separation" , "[threa
 }
 
 struct single_thread_connection_limiter_traits_t : public restinio::default_single_thread_traits_t {
-	template< typename Strand >
-	using connection_count_limiter_t = restinio::connection_count_limiter_t<Strand>;
+	static constexpr bool use_connection_count_limiter = true;
 };
 
 TEST_CASE( "single_thread_connection_limiter, no accept-connect separation" , "[single_thread][no_separate_accept]" )

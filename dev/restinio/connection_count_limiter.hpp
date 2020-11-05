@@ -11,6 +11,7 @@
 #pragma once
 
 #include <restinio/null_mutex.hpp>
+#include <restinio/default_strands.hpp>
 
 #include <cstdint>
 #include <mutex>
@@ -137,10 +138,7 @@ public:
 
 } /* namespace impl */
 
-} /* namespace connection_count_limits */
-
 //FIXME: document this!
-template< typename Strand >
 class noop_connection_count_limiter_t
 {
 	connection_count_limits::impl::acceptor_callback_iface_t * m_acceptor;
@@ -170,8 +168,6 @@ public:
 template< typename Strand >
 class connection_count_limiter_t;
 
-//FIXME: noop_strand_t and default_strand_t should be defined in
-//a separate header file.
 template<>
 class connection_count_limiter_t< noop_strand_t >
 	:	public connection_count_limits::impl::actual_limiter_t< null_mutex_t >
@@ -191,9 +187,6 @@ class connection_count_limiter_t< default_strand_t >
 public:
 	using base_t::base_t;
 };
-
-namespace connection_count_limits
-{
 
 //FIXME: document this!
 template< typename Count_Manager >
@@ -250,12 +243,12 @@ public:
 	}
 };
 
-template< typename Strand >
-class connection_lifetime_monitor_t< noop_connection_count_limiter_t<Strand> >
+template<>
+class connection_lifetime_monitor_t< noop_connection_count_limiter_t >
 {
 public:
 	connection_lifetime_monitor_t(
-		noop_connection_count_limiter_t<Strand> * ) noexcept
+		noop_connection_count_limiter_t * ) noexcept
 	{}
 };
 
@@ -265,8 +258,13 @@ public:
 template< typename Traits >
 struct connection_count_limit_types
 {
-	using limiter_t = typename Traits::template connection_count_limiter_t<
-			typename Traits::strand_t >;
+	using limiter_t = typename std::conditional
+		<
+			Traits::use_connection_count_limiter,
+			connection_count_limits::connection_count_limiter_t<
+					typename Traits::strand_t >,
+			connection_count_limits::noop_connection_count_limiter_t
+		>::type;
 
 	using lifetime_monitor_t =
 			connection_count_limits::connection_lifetime_monitor_t< limiter_t >;

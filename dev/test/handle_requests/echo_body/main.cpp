@@ -142,8 +142,7 @@ TEST_CASE( "HTTP echo server (noop_connection_limiter)" , "[echo]" )
 struct thread_safe_connection_limiter_traits_t : public restinio::default_traits_t {
 	using logger_t = utest_logger_t;
 
-	template< typename Strand >
-	using connection_count_limiter_t = restinio::connection_count_limiter_t<Strand>;
+	static constexpr bool use_connection_count_limiter = true;
 };
 
 TEST_CASE( "HTTP echo server (thread_safe_connection_limiter)" , "[echo]" )
@@ -154,8 +153,7 @@ TEST_CASE( "HTTP echo server (thread_safe_connection_limiter)" , "[echo]" )
 struct single_thread_connection_limiter_traits_t : public restinio::default_single_thread_traits_t {
 	using logger_t = utest_logger_t;
 
-	template< typename Strand >
-	using connection_count_limiter_t = restinio::connection_count_limiter_t<Strand>;
+	static constexpr bool use_connection_count_limiter = true;
 };
 
 TEST_CASE( "HTTP echo server (single_thread_connection_limiter)" , "[echo]" )

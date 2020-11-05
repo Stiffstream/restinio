@@ -94,8 +94,7 @@ TEST_CASE( "Upgrade (noop_connection_limiter)" , "[upgrade]" )
 struct thread_safe_connection_limiter_traits_t : public restinio::default_traits_t {
 	using logger_t = utest_logger_t;
 
-	template< typename Strand >
-	using connection_count_limiter_t = restinio::connection_count_limiter_t<Strand>;
+	static constexpr bool use_connection_count_limiter = true;
 };
 
 TEST_CASE( "Upgrade (thread_safe_connection_limiter)" , "[upgrade]" )
@@ -106,8 +105,7 @@ TEST_CASE( "Upgrade (thread_safe_connection_limiter)" , "[upgrade]" )
 struct single_thread_connection_limiter_traits_t : public restinio::default_single_thread_traits_t {
 	using logger_t = utest_logger_t;
 
-	template< typename Strand >
-	using connection_count_limiter_t = restinio::connection_count_limiter_t<Strand>;
+	static constexpr bool use_connection_count_limiter = true;
 };
 
 TEST_CASE( "Upgrade (single_thread_connection_limiter)" , "[upgrade]" )

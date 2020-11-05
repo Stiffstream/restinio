@@ -488,9 +488,9 @@ struct max_active_connections_holder_t
 	}
 };
 
-template< typename Strand_Type >
+template<>
 struct max_active_connections_holder_t<
-		noop_connection_count_limiter_t< Strand_Type > >
+		::restinio::connection_count_limits::noop_connection_count_limiter_t >
 {
 	static constexpr bool has_actual_max_active_connections = false;
 

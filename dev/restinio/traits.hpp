@@ -139,8 +139,7 @@ struct traits_t
 	using stream_socket_t = Socket;
 
 	//FIXME: document this!
-	template< typename Strand_Type >
-	using connection_count_limiter_t = noop_connection_count_limiter_t< Strand_Type >;
+	static constexpr bool use_connection_count_limiter = false;
 };
 
 //
