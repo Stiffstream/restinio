@@ -31,20 +31,90 @@ struct req_handler_t
 	}
 };
 
-template < typename TRAITS >
-void run_app( const app_args_t args )
+template< typename Settings >
+void
+setup_common_values(
+	const app_args_t & args,
+	Settings & settings )
 {
 	using namespace std::chrono;
-	restinio::run(
-		restinio::on_thread_pool< TRAITS >( args.m_pool_size )
-			.address( "localhost" )
-			.port( args.m_port )
-			.buffer_size( 1024 )
-			.read_next_http_message_timelimit( 5s )
-			.write_http_response_timelimit( 5s )
-			.handle_request_timeout( 5s )
-			.max_pipelined_requests( 4 ) );
+
+	settings
+		.address( "localhost" )
+		.port( args.m_port )
+		.buffer_size( 1024u )
+		.read_next_http_message_timelimit( 5s )
+		.write_http_response_timelimit( 5s )
+		.handle_request_timeout( 5s )
+		.max_pipelined_requests( 4u );
 }
+
+template< bool Use_Connection_Limits >
+struct settings_tunner;
+
+template<>
+struct settings_tunner< false >
+{
+	template< typename Settings >
+	static void
+	tune( const app_args_t & args, Settings & settings )
+	{
+		setup_common_values( args, settings );
+	}
+};
+
+template<>
+struct settings_tunner< true >
+{
+	template< typename Settings >
+	static void
+	tune( const app_args_t & args, Settings & settings )
+	{
+		setup_common_values( args, settings );
+		settings.max_active_connections( args.m_max_active_connections );
+
+		std::cout << "connection_count_limit: " <<
+				args.m_max_active_connections << std::endl;
+	}
+};
+
+template < typename Traits >
+void run_app( const app_args_t args )
+{
+	auto settings = restinio::on_thread_pool< Traits >( args.m_pool_size );
+	settings_tunner< Traits::use_connection_count_limiter >::tune(
+			args, settings );
+
+	restinio::run( std::move(settings) );
+}
+
+struct multi_thread_no_limit_traits_t : public restinio::traits_t<
+		restinio::asio_timer_manager_t,
+		restinio::null_logger_t,
+		req_handler_t >
+{};
+
+struct multi_thread_with_limit_traits_t : public restinio::traits_t<
+		restinio::asio_timer_manager_t,
+		restinio::null_logger_t,
+		req_handler_t >
+{
+	static constexpr bool use_connection_count_limiter = true;
+};
+
+struct single_thread_no_limit_traits_t : public restinio::single_thread_traits_t<
+		restinio::asio_timer_manager_t,
+		restinio::null_logger_t,
+		req_handler_t >
+{};
+
+struct single_thread_with_limit_traits_t : public restinio::single_thread_traits_t<
+		restinio::asio_timer_manager_t,
+		restinio::null_logger_t,
+		req_handler_t >
+{
+	static constexpr bool use_connection_count_limiter = true;
+};
 
 int main(int argc, const char *argv[])
 {
@@ -58,23 +128,25 @@ int main(int argc, const char *argv[])
 
 			if( 1 < args.m_pool_size )
 			{
-				using traits_t =
-					restinio::traits_t<
-						restinio::asio_timer_manager_t,
-						restinio::null_logger_t,
-						req_handler_t >;
-
-				run_app< traits_t >( args );
+				if( 0u == args.m_max_active_connections )
+				{
+					run_app< multi_thread_no_limit_traits_t >( args );
+				}
+				else
+				{
+					run_app< multi_thread_with_limit_traits_t >( args );
+				}
 			}
 			else if( 1 == args.m_pool_size )
 			{
-				using traits_t =
-					restinio::single_thread_traits_t<
-						restinio::asio_timer_manager_t,
-						restinio::null_logger_t,
-						req_handler_t >;
-
-				run_app< traits_t >( args );
+				if( 0u == args.m_max_active_connections )
+				{
+					run_app< single_thread_no_limit_traits_t >( args );
+				}
+				else
+				{
+					run_app< single_thread_with_limit_traits_t >( args );
+				}
 			}
 			else
 			{
