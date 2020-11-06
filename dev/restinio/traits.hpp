@@ -138,7 +138,29 @@ struct traits_t
 	using strand_t = Strand;
 	using stream_socket_t = Socket;
 
-	//FIXME: document this!
+	/*!
+	 * @brief A flag that enables or disables the usage of connection count
+	 * limiter.
+	 *
+	 * Since v.0.6.12 RESTinio allows to limit the number of active
+	 * parallel connections to a server. But the usage of this limit
+	 * should be turned on explicitly. For example:
+	 * @code
+	 * struct my_traits : public restinio::default_traits_t {
+	 * 	static constexpr bool use_connection_count_limiter = true;
+	 * };
+	 * @endcode
+	 * In that case there will be `max_active_connections` method
+	 * in server_settings_t type. That method should be explicitly
+	 * called to set a specific limit (by the default there is no
+	 * limit at all):
+	 * @code
+	 * restinio::server_settings_t<my_traits> settings;
+	 * settings.max_active_connections(1000u);
+	 * @endcode
+	 *
+	 * @since v.0.6.12
+	 */
 	static constexpr bool use_connection_count_limiter = false;
 };
 

@@ -465,12 +465,28 @@ using address_variant_t = variant_t<
 //
 // max_active_connections_holder_t
 //
-//FIXME: document this!
+/*!
+ * @brief A special type for holding the value of maximum allowed
+ * count of parallel connections.
+ *
+ * This type is intended to be used as a mixin for
+ * server_settings_t type.
+ *
+ * Holds the value and provides the actual implementations for
+ * getter and setter of that value.
+ *
+ * @since v.0.6.12
+ */
 template< typename Count_Limiter >
 struct max_active_connections_holder_t
 {
 	static constexpr bool has_actual_max_active_connections = true;
 
+	/*!
+	 * @brief Actual value of the limit.
+	 *
+	 * By the default the count of parallel connection is not limited.
+	 */
 	std::size_t m_max_active_connections{
 			std::numeric_limits<std::size_t>::max()
 		};
@@ -488,6 +504,17 @@ struct max_active_connections_holder_t
 	}
 };
 
+/*!
+ * @brief A specialization of max_active_connections_holder for the case
+ * when connection count isn't limited.
+ *
+ * Doesn't hold anything. Hasn't a setter.
+ *
+ * The getter returns a value that means that there is no connection
+ * count limit at all.
+ *
+ * @since v.0.6.12
+ */
 template<>
 struct max_active_connections_holder_t<
 		::restinio::connection_count_limits::noop_connection_count_limiter_t >
@@ -1428,7 +1455,7 @@ class basic_server_settings_t
 		 * 	restinio::own_io_context(),
 		 * 	restinio::server_settings_t<my_traits>{}
 		 * 		...
-		 * 		incoming_http_msg_limits(
+		 * 		.incoming_http_msg_limits(
 		 * 			restinio::incoming_http_msg_limits_t{}
 		 * 				.max_url_size(8000u)
 		 * 				.max_field_name_size(2048u)
@@ -1446,8 +1473,28 @@ class basic_server_settings_t
 			return std::move(this->incoming_http_msg_limits(limits));
 		}
 
-		//FIXME: document this!
 		/*!
+		 * @brief Setter for connection count limit.
+		 *
+		 * @note
+		 * This setter can be called only if the usage of connection
+		 * count limit is turned on explicitly.
+		 *
+		 * Usage example:
+		 * @code
+		 * struct my_traits : public restinio::default_traits_t {
+		 * 	static constexpr bool use_connection_count_limiter = true;
+		 * };
+		 * ...
+		 * restinio::server_settings_t<my_traits> settings;
+		 * settings.max_active_connections( 1000u );
+		 * ...
+		 * auto server = restinio::run_async(
+		 * 	restinio::own_io_context(),
+		 * 	std::move(settings),
+		 * 	std::thread::hardware_concurrency());
+		 * @endcode
+		 *
 		 * @since v.0.6.12
 		 */
 		Derived &
@@ -1462,8 +1509,27 @@ class basic_server_settings_t
 			return reference_to_derived();
 		}
 
-		//FIXME: document this!
 		/*!
+		 * @brief Setter for connection count limit.
+		 *
+		 * @note
+		 * This setter can be called only if the usage of connection
+		 * count limit is turned on explicitly.
+		 *
+		 * Usage example:
+		 * @code
+		 * struct my_traits : public restinio::default_traits_t {
+		 * 	static constexpr bool use_connection_count_limiter = true;
+		 * };
+		 * ...
+		 * auto server = restinio::run_async(
+		 * 	restinio::own_io_context(),
+		 * 	restinio::server_settings_t<my_traits>{}
+		 * 		...
+		 * 		.max_active_connections(1000u),
+		 * 	std::thread::hardware_concurrency());
+		 * @endcode
+		 *
 		 * @since v.0.6.12
 		 */
 		Derived &&
