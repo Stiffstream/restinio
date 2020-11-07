@@ -13,6 +13,8 @@
 #include <restinio/null_mutex.hpp>
 #include <restinio/default_strands.hpp>
 
+#include <restinio/utils/tagged_scalar.hpp>
+
 #include <cstdint>
 #include <mutex>
 #include <utility>
@@ -22,6 +24,32 @@ namespace restinio
 
 namespace connection_count_limits
 {
+
+//
+// max_active_connections_t
+//
+struct max_active_connections_tag {};
+
+/*!
+ * @brief A kind of strict typedef for maximum count of active connections.
+ *
+ * @since v.0.6.12
+ */
+using max_active_connections_t = restinio::utils::tagged_scalar_t<
+		std::size_t, max_active_connections_tag >;
+
+//
+// max_active_accepts_t
+//
+struct max_active_accepts_tag {};
+
+/*!
+ * @brief A kind of strict typedef for maximum count of active accepts.
+ *
+ * @since v.0.6.12
+ */
+using max_active_accepts_t = restinio::utils::tagged_scalar_t<
+		std::size_t, max_active_accepts_tag >;
 
 namespace impl
 {
@@ -146,12 +174,12 @@ class actual_limiter_t
 public:
 	actual_limiter_t(
 		not_null_pointer_t< acceptor_callback_iface_t > acceptor,
-		std::size_t max_active_connections,
-		std::size_t max_pending_indexes )
+		max_active_connections_t max_active_connections,
+		max_active_accepts_t max_pending_indexes )
 		:	m_acceptor{ acceptor }
-		,	m_max_active_connections{ max_active_connections }
+		,	m_max_active_connections{ max_active_connections.value() }
 	{
-		m_pending_indexes.reserve( max_pending_indexes );
+		m_pending_indexes.reserve( max_pending_indexes.value() );
 	}
 
 	actual_limiter_t( const actual_limiter_t & ) = delete;
@@ -246,8 +274,8 @@ class noop_connection_count_limiter_t
 public:
 	noop_connection_count_limiter_t(
 		not_null_pointer_t< connection_count_limits::impl::acceptor_callback_iface_t > acceptor,
-		std::size_t /*max_active_connections*/,
-		std::size_t /*max_pending_indexes*/ )
+		max_active_connections_t /*max_active_connections*/,
+		max_active_accepts_t /*max_pending_indexes*/ )
 		:	m_acceptor{ acceptor }
 	{
 	}

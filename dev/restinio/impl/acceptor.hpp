@@ -163,7 +163,7 @@ class acceptor_t final
 	:	public std::enable_shared_from_this< acceptor_t< Traits > >
 	,	protected socket_supplier_t< typename Traits::stream_socket_t >
 	,	protected acceptor_details::ip_blocker_holder_t< typename Traits::ip_blocker_t >
-	,	protected ::restinio::connection_count_limits::impl::acceptor_callback_iface_t
+	,	protected restinio::connection_count_limits::impl::acceptor_callback_iface_t
 {
 		using ip_blocker_base_t = acceptor_details::ip_blocker_holder_t<
 				typename Traits::ip_blocker_t >;
@@ -206,8 +206,12 @@ class acceptor_t final
 			,	m_logger{ logger }
 			,	m_connection_count_limiter{
 					self_as_acceptor_callback(),
-					settings.max_active_connections(),
-					settings.concurrent_accepts_count()
+					restinio::connection_count_limits::max_active_connections_t{
+							settings.max_active_connections()
+						},
+					restinio::connection_count_limits::max_active_accepts_t{
+							settings.concurrent_accepts_count()
+						}
 				}
 		{}
 
