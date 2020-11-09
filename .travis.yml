@@ -3,9 +3,7 @@ sudo: false
 language: cpp
 branches:
   only:
-    - master
     - 0.6-dev
-    - 0.6-fix-libatomic-issue-98
 git:
   depth: 1
 
