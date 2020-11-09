@@ -80,7 +80,7 @@ ensure_or_die( bool condition, const char * description )
 template< typename Traits >
 void
 perform_test(
-	std::size_t max_active_connections,
+	std::size_t max_parallel_connections,
 	bool separate_accept_and_create_connection,
 	std::size_t server_threads_count,
 	details::client_load_t client_load )
@@ -177,7 +177,7 @@ perform_test(
 					.concurrent_accepts_count( server_threads_count )
 					.separate_accept_and_create_connect(
 							separate_accept_and_create_connection )
-					.max_active_connections( max_active_connections ),
+					.max_parallel_connections( max_parallel_connections ),
 			server_threads_count );
 
 	std::vector< std::thread > clients;
@@ -195,7 +195,7 @@ perform_test(
 	server->stop();
 	server->wait();
 
-	REQUIRE( counter.result() <= max_active_connections );
+	REQUIRE( counter.result() <= max_parallel_connections );
 }
 
 struct thread_safe_connection_limiter_traits_t : public restinio::default_traits_t {

@@ -29,9 +29,9 @@ namespace utils
  *
  * Usage example:
  * @code
- * struct max_active_connections_tag {};
- * using max_active_connections_t = tagged_scalar_t<
- * 		std::size_t, max_active_connections_tag >;
+ * struct max_parallel_connections_tag {};
+ * using max_parallel_connections_t = tagged_scalar_t<
+ * 		std::size_t, max_parallel_connections_tag >;
  *
  * struct max_active_accepts_tag {};
  * using max_active_accepts_t = tagged_scalar_t<
@@ -41,7 +41,7 @@ namespace utils
  * {
  * public:
  * 	limiter_t(
- * 		max_active_connections_t active_connections,
+ * 		max_parallel_connections_t parallel_connections,
  * 		max_active_accepts_t active_accepts);
  * 	...
  * };

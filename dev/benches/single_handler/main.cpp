@@ -71,10 +71,10 @@ struct settings_tunner< true >
 	tune( const app_args_t & args, Settings & settings )
 	{
 		setup_common_values( args, settings );
-		settings.max_active_connections( args.m_max_active_connections );
+		settings.max_parallel_connections( args.m_max_parallel_connections );
 
 		std::cout << "connection_count_limit: " <<
-				args.m_max_active_connections << std::endl;
+				args.m_max_parallel_connections << std::endl;
 	}
 };
 
@@ -128,7 +128,7 @@ int main(int argc, const char *argv[])
 
 			if( 1 < args.m_pool_size )
 			{
-				if( 0u == args.m_max_active_connections )
+				if( 0u == args.m_max_parallel_connections )
 				{
 					run_app< multi_thread_no_limit_traits_t >( args );
 				}
@@ -139,7 +139,7 @@ int main(int argc, const char *argv[])
 			}
 			else if( 1 == args.m_pool_size )
 			{
-				if( 0u == args.m_max_active_connections )
+				if( 0u == args.m_max_parallel_connections )
 				{
 					run_app< single_thread_no_limit_traits_t >( args );
 				}

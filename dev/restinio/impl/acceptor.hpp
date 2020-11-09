@@ -206,8 +206,8 @@ class acceptor_t final
 			,	m_logger{ logger }
 			,	m_connection_count_limiter{
 					self_as_acceptor_callback(),
-					restinio::connection_count_limits::max_active_connections_t{
-							settings.max_active_connections()
+					restinio::connection_count_limits::max_parallel_connections_t{
+							settings.max_parallel_connections()
 						},
 					restinio::connection_count_limits::max_active_accepts_t{
 							settings.concurrent_accepts_count()

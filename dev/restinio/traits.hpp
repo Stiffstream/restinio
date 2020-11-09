@@ -150,13 +150,13 @@ struct traits_t
 	 * 	static constexpr bool use_connection_count_limiter = true;
 	 * };
 	 * @endcode
-	 * In that case there will be `max_active_connections` method
+	 * In that case there will be `max_parallel_connections` method
 	 * in server_settings_t type. That method should be explicitly
 	 * called to set a specific limit (by the default there is no
 	 * limit at all):
 	 * @code
 	 * restinio::server_settings_t<my_traits> settings;
-	 * settings.max_active_connections(1000u);
+	 * settings.max_parallel_connections(1000u);
 	 * @endcode
 	 *
 	 * @since v.0.6.12

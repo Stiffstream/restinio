@@ -463,7 +463,7 @@ using address_variant_t = variant_t<
 		asio_ns::ip::address >;
 
 //
-// max_active_connections_holder_t
+// max_parallel_connections_holder_t
 //
 /*!
  * @brief A special type for holding the value of maximum allowed
@@ -478,34 +478,34 @@ using address_variant_t = variant_t<
  * @since v.0.6.12
  */
 template< typename Count_Limiter >
-struct max_active_connections_holder_t
+struct max_parallel_connections_holder_t
 {
-	static constexpr bool has_actual_max_active_connections = true;
+	static constexpr bool has_actual_max_parallel_connections = true;
 
 	/*!
 	 * @brief Actual value of the limit.
 	 *
 	 * By the default the count of parallel connection is not limited.
 	 */
-	std::size_t m_max_active_connections{
+	std::size_t m_max_parallel_connections{
 			std::numeric_limits<std::size_t>::max()
 		};
 
 	std::size_t
-	max_active_connections() const noexcept
+	max_parallel_connections() const noexcept
 	{
-		return m_max_active_connections;
+		return m_max_parallel_connections;
 	}
 
 	void
-	set_max_active_connections( std::size_t v ) noexcept
+	set_max_parallel_connections( std::size_t v ) noexcept
 	{
-		m_max_active_connections = v;
+		m_max_parallel_connections = v;
 	}
 };
 
 /*!
- * @brief A specialization of max_active_connections_holder for the case
+ * @brief A specialization of max_parallel_connections_holder for the case
  * when connection count isn't limited.
  *
  * Doesn't hold anything. Hasn't a setter.
@@ -516,13 +516,13 @@ struct max_active_connections_holder_t
  * @since v.0.6.12
  */
 template<>
-struct max_active_connections_holder_t<
+struct max_parallel_connections_holder_t<
 		::restinio::connection_count_limits::noop_connection_count_limiter_t >
 {
-	static constexpr bool has_actual_max_active_connections = false;
+	static constexpr bool has_actual_max_parallel_connections = false;
 
 	std::size_t
-	max_active_connections() const noexcept
+	max_parallel_connections() const noexcept
 	{
 		return std::numeric_limits<std::size_t>::max();
 	}
@@ -551,14 +551,14 @@ class basic_server_settings_t
 	,	protected connection_state_listener_holder_t<
 			typename Traits::connection_state_listener_t >
 	,	protected ip_blocker_holder_t< typename Traits::ip_blocker_t >
-	,	protected details::max_active_connections_holder_t<
+	,	protected details::max_parallel_connections_holder_t<
 			typename connection_count_limit_types<Traits>::limiter_t >
 {
 		using base_type_t = socket_type_dependent_settings_t<
 				Derived, typename Traits::stream_socket_t>;
 
-		using max_active_connections_holder_base_t =
-				details::max_active_connections_holder_t<
+		using max_parallel_connections_holder_base_t =
+				details::max_parallel_connections_holder_t<
 						typename connection_count_limit_types<Traits>::limiter_t >;
 
 		using connection_state_listener_holder_t<
@@ -569,7 +569,7 @@ class basic_server_settings_t
 						typename Traits::ip_blocker_t
 					>::has_actual_ip_blocker;
 
-		using max_active_connections_holder_base_t::has_actual_max_active_connections;
+		using max_parallel_connections_holder_base_t::has_actual_max_parallel_connections;
 
 	public:
 		basic_server_settings_t(
@@ -1487,7 +1487,7 @@ class basic_server_settings_t
 		 * };
 		 * ...
 		 * restinio::server_settings_t<my_traits> settings;
-		 * settings.max_active_connections( 1000u );
+		 * settings.max_parallel_connections( 1000u );
 		 * ...
 		 * auto server = restinio::run_async(
 		 * 	restinio::own_io_context(),
@@ -1498,14 +1498,14 @@ class basic_server_settings_t
 		 * @since v.0.6.12
 		 */
 		Derived &
-		max_active_connections( std::size_t value ) & noexcept
+		max_parallel_connections( std::size_t value ) & noexcept
 		{
 			static_assert(
-					basic_server_settings_t::has_actual_max_active_connections,
-					"max_active_connections(value) can't be used "
+					basic_server_settings_t::has_actual_max_parallel_connections,
+					"max_parallel_connections(value) can't be used "
 					"for the noop_connection_count_limiter_t" );
 
-			this->set_max_active_connections( value );
+			this->set_max_parallel_connections( value );
 			return reference_to_derived();
 		}
 
@@ -1526,19 +1526,19 @@ class basic_server_settings_t
 		 * 	restinio::own_io_context(),
 		 * 	restinio::server_settings_t<my_traits>{}
 		 * 		...
-		 * 		.max_active_connections(1000u),
+		 * 		.max_parallel_connections(1000u),
 		 * 	std::thread::hardware_concurrency());
 		 * @endcode
 		 *
 		 * @since v.0.6.12
 		 */
 		Derived &&
-		max_active_connections( std::size_t value ) && noexcept 
+		max_parallel_connections( std::size_t value ) && noexcept 
 		{
-			return std::move(this->max_active_connections( value ));
+			return std::move(this->max_parallel_connections( value ));
 		}
 
-		using max_active_connections_holder_base_t::max_active_connections;
+		using max_parallel_connections_holder_base_t::max_parallel_connections;
 
 	private:
 		Derived &

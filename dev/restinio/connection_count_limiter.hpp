@@ -26,17 +26,17 @@ namespace connection_count_limits
 {
 
 //
-// max_active_connections_t
+// max_parallel_connections_t
 //
-struct max_active_connections_tag {};
+struct max_parallel_connections_tag {};
 
 /*!
  * @brief A kind of strict typedef for maximum count of active connections.
  *
  * @since v.0.6.12
  */
-using max_active_connections_t = restinio::utils::tagged_scalar_t<
-		std::size_t, max_active_connections_tag >;
+using max_parallel_connections_t = restinio::utils::tagged_scalar_t<
+		std::size_t, max_parallel_connections_tag >;
 
 //
 // max_active_accepts_t
@@ -124,15 +124,15 @@ class actual_limiter_t
 	 * @brief The counter of active accept() operations.
 	 *
 	 * Incremented every time the acceptor_callback_iface_t::call_accept_now()
-	 * is invoked. Decremented in increment_active_connections().
+	 * is invoked. Decremented in increment_parallel_connections().
 	 *
 	 * @attention
 	 * It seems to be a fragile scheme because if there won't be a call to
-	 * increment_active_connections() after the invocation of
+	 * increment_parallel_connections() after the invocation of
 	 * acceptor_callback_iface_t::call_accept_now() the value of
 	 * m_active_accepts will be incorrect. But it is hard to invent a more
 	 * bulletproof solution and it seems that the missing call to
-	 * increment_active_connections() could be only on the shutdown of the
+	 * increment_parallel_connections() could be only on the shutdown of the
 	 * acceptor.
 	 */
 	std::size_t m_active_accepts{ 0u };
@@ -140,13 +140,13 @@ class actual_limiter_t
 	/*!
 	 * @brief The counter of active connections.
 	 *
-	 * This value is incremented in increment_active_connections()
-	 * and decremented in decrement_active_connections().
+	 * This value is incremented in increment_parallel_connections()
+	 * and decremented in decrement_parallel_connections().
 	 */
 	std::size_t m_connections{ 0u };
 
 	//! The limit for parallel connections.
-	const std::size_t m_max_active_connections;
+	const std::size_t m_max_parallel_connections;
 
 	/*!
 	 * @brief The storage for holding pending socket's slots.
@@ -168,16 +168,16 @@ class actual_limiter_t
 	bool
 	has_free_slots() const noexcept
 	{
-		return (m_active_accepts + m_connections) < m_max_active_connections;
+		return (m_active_accepts + m_connections) < m_max_parallel_connections;
 	}
 
 public:
 	actual_limiter_t(
 		not_null_pointer_t< acceptor_callback_iface_t > acceptor,
-		max_active_connections_t max_active_connections,
+		max_parallel_connections_t max_parallel_connections,
 		max_active_accepts_t max_pending_indexes )
 		:	m_acceptor{ acceptor }
-		,	m_max_active_connections{ max_active_connections.value() }
+		,	m_max_parallel_connections{ max_parallel_connections.value() }
 	{
 		m_pending_indexes.reserve( max_pending_indexes.value() );
 	}
@@ -186,7 +186,7 @@ public:
 	actual_limiter_t( actual_limiter_t && ) = delete;
 
 	void
-	increment_active_connections() noexcept
+	increment_parallel_connections() noexcept
 	{
 		std::lock_guard< Mutex_Type > lock{ m_lock };
 
@@ -199,7 +199,7 @@ public:
 	// Note: this method is noexcept because it can be called from
 	// destructors.
 	void
-	decrement_active_connections() noexcept
+	decrement_parallel_connections() noexcept
 	{
 		// Decrement active connections under acquired lock.
 		// If the count of connections drops below the limit and
@@ -274,17 +274,17 @@ class noop_connection_count_limiter_t
 public:
 	noop_connection_count_limiter_t(
 		not_null_pointer_t< connection_count_limits::impl::acceptor_callback_iface_t > acceptor,
-		max_active_connections_t /*max_active_connections*/,
+		max_parallel_connections_t /*max_parallel_connections*/,
 		max_active_accepts_t /*max_pending_indexes*/ )
 		:	m_acceptor{ acceptor }
 	{
 	}
 
 	void
-	increment_active_connections() noexcept { /* Nothing to do */ }
+	increment_parallel_connections() noexcept { /* Nothing to do */ }
 
 	void
-	decrement_active_connections() noexcept { /* Nothing to do */ }
+	decrement_parallel_connections() noexcept { /* Nothing to do */ }
 
 	/*!
 	 * Calls acceptor_callback_iface_t::call_accept_now() directly.
@@ -380,13 +380,13 @@ public:
 		not_null_pointer_t< Count_Manager > manager ) noexcept
 		:	m_manager{ manager }
 	{
-		m_manager->increment_active_connections();
+		m_manager->increment_parallel_connections();
 	}
 
 	~connection_lifetime_monitor_t()
 	{
 		if( m_manager )
-			m_manager->decrement_active_connections();
+			m_manager->decrement_parallel_connections();
 	}
 
 	connection_lifetime_monitor_t(

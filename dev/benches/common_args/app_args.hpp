@@ -16,7 +16,7 @@ struct app_args_t
 	std::uint16_t m_port{ 8080 };
 	std::size_t m_pool_size{ 1 };
 
-	std::size_t m_max_active_connections{ 0u };
+	std::size_t m_max_parallel_connections{ 0u };
 
 	static app_args_t
 	parse( int argc, const char * argv[] )
@@ -37,13 +37,13 @@ struct app_args_t
 					( fmt::format(
 						"The size of a thread pool to run server (default: {})",
 						result.m_pool_size ) )
-			| Opt( result.m_max_active_connections, "max active connections" )
-					[ "-m" ][ "--max-active-connections" ]
+			| Opt( result.m_max_parallel_connections, "max parallel connections" )
+					[ "-m" ][ "--max-parallel-connections" ]
 					( fmt::format(
-						"The max count of active parallel connections. "
+						"The max count of parallel connections. "
 						"Zero means that connection count limits is not used. "
 						"(default: {})",
-						result.m_max_active_connections )
+						result.m_max_parallel_connections )
 					)
 			| Help(result.m_help);
 
