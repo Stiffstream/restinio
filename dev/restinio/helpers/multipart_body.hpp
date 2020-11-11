@@ -228,7 +228,7 @@ struct field_value_producer_t
 		// CR or LF symbol should be returned back.
 		from.putback();
 
-		return std::move(accumulator);
+		return { std::move(accumulator) };
 	}
 };
 
@@ -548,7 +548,7 @@ detect_boundary_for_multipart_body(
 	actual_boundary_mark.append( "--" );
 	actual_boundary_mark.append( boundary->data(), boundary->size() );
 
-	return std::move(actual_boundary_mark);
+	return { std::move(actual_boundary_mark) };
 }
 
 namespace impl

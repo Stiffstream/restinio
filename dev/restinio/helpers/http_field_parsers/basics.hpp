@@ -570,7 +570,7 @@ public :
 		std::string value;
 		const auto try_result = try_parse_value( from, value );
 		if( !try_result )
-			return std::move(value);
+			return { std::move(value) };
 		else
 			return make_unexpected( *try_result );
 	}
@@ -664,7 +664,7 @@ public :
 				if( !try_result )
 				{
 					consumer.commit();
-					return std::move(value);
+					return { std::move(value) };
 				}
 				else
 					return make_unexpected( *try_result );
@@ -1347,7 +1347,7 @@ public :
 			).try_process( from, tmp_value );
 
 		if( !process_result )
-			return std::move(tmp_value);
+			return { std::move(tmp_value) };
 		else
 			return make_unexpected( *process_result );
 	}
@@ -1410,7 +1410,7 @@ public :
 			).try_process( from, tmp_value );
 
 		if( !process_result )
-			return std::move(tmp_value);
+			return { std::move(tmp_value) };
 		else
 			return make_unexpected( *process_result );
 	}
