@@ -13,7 +13,7 @@ MxxRu::arch_externals :so5 do |e|
 end
 
 MxxRu::arch_externals :asio do |e|
-  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-16-1.tar.gz'
+  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-18-0.tar.gz'
 
   e.map_dir 'asio/include' => 'dev/asio'
 end
@@ -38,7 +38,7 @@ MxxRu::arch_externals :nodejs_http_parser_mxxru do |e|
 end
 
 MxxRu::arch_externals :fmt do |e|
-  e.url 'https://github.com/fmtlib/fmt/archive/7.0.3.zip'
+  e.url 'https://github.com/fmtlib/fmt/archive/7.1.2.zip'
 
   e.map_dir 'include' => 'dev/fmt'
   e.map_dir 'src' => 'dev/fmt'
@@ -67,7 +67,7 @@ MxxRu::arch_externals :rapidjson_mxxru do |e|
 end
 
 MxxRu::arch_externals :json_dto do |e|
-  e.url 'https://github.com/Stiffstream/json_dto/archive/v.0.2.9.2.tar.gz'
+  e.url 'https://github.com/Stiffstream/json_dto/archive/v.0.2.11.tar.gz'
 
   e.map_dir 'dev/json_dto' => 'dev'
 end
@@ -79,7 +79,7 @@ MxxRu::arch_externals :clara do |e|
 end
 
 MxxRu::arch_externals :catch do |e|
-  e.url 'https://github.com/catchorg/Catch2/archive/v2.13.0.tar.gz'
+  e.url 'https://github.com/catchorg/Catch2/archive/v2.13.3.tar.gz'
 
   e.map_dir 'single_include/catch2' => 'dev'
 end
