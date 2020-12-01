@@ -2491,3 +2491,60 @@ TEST_CASE( "comment producer", "[comment_producer]" )
 		REQUIRE( "abcdef" == *result );
 	}
 }
+
+TEST_CASE( "IPv4 parser", "[non_negative_decimal_number_p]" )
+{
+	namespace ep = restinio::easy_parser;
+
+	const auto one_group = ep::non_negative_decimal_number_p<std::uint8_t>();
+
+	const auto rule = ep::produce<std::uint32_t>(
+			ep::produce< std::array<std::uint8_t, 4> >(
+				ep::repeat(3u, 3u,
+					one_group >> ep::to_container(),
+					ep::symbol('.')),
+				one_group >> ep::to_container()
+			)
+			>> ep::convert( [](const auto & arr) {
+					std::uint32_t result{};
+					for(const auto o : arr) {
+						result <<= 8;
+						result |= o;
+					}
+					return result;
+				} )
+			>> ep::as_result()
+		);
+
+	{
+		const auto result = ep::try_parse( "", rule );
+		REQUIRE( !result );
+	}
+
+	{
+		const auto result = ep::try_parse( "127.0.0.1", rule );
+		REQUIRE( result );
+		REQUIRE( 0x7F000001u == *result );
+	}
+
+	{
+		const auto result = ep::try_parse( "192.168.1.1", rule );
+
+		REQUIRE( result );
+		REQUIRE( 0xC0A80101u == *result );
+	}
+
+	{
+		const auto result = ep::try_parse( "192 168.1.1", rule );
+
+		REQUIRE( !result );
+	}
+
+
+	{
+		const auto result = ep::try_parse( "192.168.1.1.", rule );
+
+		REQUIRE( !result );
+	}
+
+}
