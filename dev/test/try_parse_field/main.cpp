@@ -25,12 +25,14 @@ TEST_CASE( "No Content-Encoding field", "[try_parse_field]" )
 {
 	using namespace restinio::http_field_parsers;
 
+	restinio::no_user_data_factory_t user_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			restinio::http_request_header_t{},
 			"Body"s,
 			dummy_connection_t::make(1u),
-			make_dummy_endpoint() );
+			make_dummy_endpoint(),
+			user_data_factory );
 
 	struct handler_t
 	{
@@ -65,12 +67,14 @@ TEST_CASE( "Empty Content-Encoding field", "[try_parse_field]" )
 			restinio::http_field::content_encoding,
 			""s );
 
+	restinio::no_user_data_factory_t user_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
-			make_dummy_endpoint() );
+			make_dummy_endpoint(),
+			user_data_factory );
 
 	struct handler_t
 	{
@@ -106,12 +110,14 @@ TEST_CASE( "Normal Content-Encoding field", "[try_parse_field]" )
 			restinio::http_field::content_encoding,
 			"UTF-8"s );
 
+	restinio::no_user_data_factory_t user_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
-			make_dummy_endpoint() );
+			make_dummy_endpoint(),
+			user_data_factory );
 
 	struct handler_t
 	{
@@ -142,12 +148,14 @@ TEST_CASE( "Default value for Content-Encoding", "[try_parse_field]" )
 			restinio::http_method_post(),
 			"/"
 	};
+	restinio::no_user_data_factory_t user_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
-			make_dummy_endpoint() );
+			make_dummy_endpoint(),
+			user_data_factory );
 
 	struct handler_t
 	{
@@ -183,12 +191,14 @@ TEST_CASE( "Normal Content-Encoding field with custom name", "[try_parse_field]"
 			"My-Content-Encoding",
 			"UTF-8"s );
 
+	restinio::no_user_data_factory_t user_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
-			make_dummy_endpoint() );
+			make_dummy_endpoint(),
+			user_data_factory );
 
 	struct handler_t
 	{
@@ -219,12 +229,14 @@ TEST_CASE( "Default value for Content-Encoding with custom name", "[try_parse_fi
 			restinio::http_method_post(),
 			"/"
 	};
+	restinio::no_user_data_factory_t user_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
-			make_dummy_endpoint() );
+			make_dummy_endpoint(),
+			user_data_factory );
 
 	struct handler_t
 	{
@@ -260,12 +272,14 @@ TEST_CASE( "Normal Content-Encoding field with get_if", "[try_parse_field]" )
 			restinio::http_field::content_encoding,
 			"UTF-8"s );
 
+	restinio::no_user_data_factory_t user_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
-			make_dummy_endpoint() );
+			make_dummy_endpoint(),
+			user_data_factory );
 
 	const auto parse_result = try_parse_field< content_encoding_value_t >(
 			*req,

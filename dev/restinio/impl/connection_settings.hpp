@@ -121,6 +121,10 @@ struct connection_settings_t final
 			connection_settings_details::state_listener_holder_t<
 					typename Traits::connection_state_listener_t >;
 
+	//FIXME: document this!
+	using user_data_factory_handle_t =
+			std::shared_ptr< typename Traits::user_data_factory_t >;
+
 	connection_settings_t( const connection_settings_t & ) = delete;
 	connection_settings_t( const connection_settings_t && ) = delete;
 	connection_settings_t & operator = ( const connection_settings_t & ) = delete;
@@ -145,9 +149,13 @@ struct connection_settings_t final
 		,	m_max_pipelined_requests{ settings.max_pipelined_requests() }
 		,	m_logger{ settings.logger() }
 		,	m_timer_manager{ std::move( timer_manager ) }
+		,	m_user_data_factory{ settings.giveaway_user_data_factory() }
 	{
 		if( !m_timer_manager )
 			throw exception_t{ "timer manager not set" };
+
+		if( !m_user_data_factory )
+			throw exception_t{ "user_data_factory is nullptr" };
 	}
 
 	//! Request handler factory.
@@ -189,9 +197,20 @@ struct connection_settings_t final
 		return m_timer_manager->create_timer_guard();
 	}
 
+	//FIXME: document this!
+	RESTINIO_NODISCARD
+	auto &
+	user_data_factory() const noexcept
+	{
+		return *m_user_data_factory;
+	}
+
 private:
 	//! Timer factory for timout guards.
 	timer_manager_handle_t m_timer_manager;
+
+	//FIXME: document this!
+	user_data_factory_handle_t m_user_data_factory;
 };
 
 template < typename Traits >

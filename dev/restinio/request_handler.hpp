@@ -8,42 +8,95 @@
 
 #pragma once
 
-#include <functional>
-#include <iosfwd>
-
 #include <restinio/exception.hpp>
 #include <restinio/http_headers.hpp>
 #include <restinio/message_builders.hpp>
 #include <restinio/chunked_input_info.hpp>
 #include <restinio/impl/connection_base.hpp>
 
+#include <array>
+#include <functional>
+#include <iosfwd>
+
 namespace restinio
 {
 
-class request_t;
+//FIXME: document this!
+struct no_user_data_factory_t
+{
+	//FIXME: document this!
+	struct data_t {};
+
+	void
+	make_within( void * buffer ) noexcept
+	{
+		new(buffer) data_t{};
+	}
+};
+
+template< typename User_Data >
+class incoming_request_t;
 
 namespace impl
 {
 
+template< typename User_Data >
 connection_handle_t &
-access_req_connection( request_t & ) noexcept;
+access_req_connection( incoming_request_t<User_Data> & ) noexcept;
+
+//FIXME: document this!
+template< typename User_Data >
+class incoming_request_user_data_holder_t
+{
+	alignas(User_Data) std::array<char, sizeof(User_Data)> m_data;
+
+public:
+	template< typename Factory >
+	incoming_request_user_data_holder_t(
+		Factory & factory )
+	{
+		factory.make_within( m_data.data() );
+	}
+
+	~incoming_request_user_data_holder_t() noexcept
+	{
+		get_ptr()->~User_Data();
+	}
+
+	RESTINIO_NODISCARD
+	User_Data *
+	get_ptr() noexcept
+	{
+		return reinterpret_cast<User_Data *>(m_data.data());
+	}
+
+	RESTINIO_NODISCARD
+	const User_Data *
+	get_ptr() const noexcept
+	{
+		return reinterpret_cast<const User_Data *>(m_data.data());
+	}
+};
 
 } /* namespace impl */
 
 //
-// request_t
+// incoming_request_t
 //
 
+//FIXME: document User_Data template parameter!
 //! HTTP Request data.
 /*!
 	Provides acces to header and body, and creates response builder
 	for a given request.
 */
-class request_t final
-	:	public std::enable_shared_from_this< request_t >
+template< typename User_Data >
+class incoming_request_t final
+	:	public std::enable_shared_from_this< incoming_request_t< User_Data > >
 {
+	template< typename UD >
 	friend impl::connection_handle_t &
-	impl::access_req_connection( request_t & ) noexcept;
+	impl::access_req_connection( incoming_request_t<UD> & ) noexcept;
 
 	public:
 		//! Old-format initializing constructor.
@@ -51,19 +104,22 @@ class request_t final
 		 * Can be used in cases where chunked_input_info_t is not
 		 * available (or needed).
 		 */
-		request_t(
+		template< typename User_Data_Factory >
+		incoming_request_t(
 			request_id_t request_id,
 			http_request_header_t header,
 			std::string body,
 			impl::connection_handle_t connection,
-			endpoint_t remote_endpoint )
-			:	request_t{
+			endpoint_t remote_endpoint,
+			User_Data_Factory & user_data_factory )
+			:	incoming_request_t{
 					request_id,
 					std::move( header ),
 					std::move( body ),
 					chunked_input_info_unique_ptr_t{},
 					std::move( connection ),
-					std::move( remote_endpoint )
+					std::move( remote_endpoint ),
+					user_data_factory
 				}
 		{}
 
@@ -71,13 +127,15 @@ class request_t final
 		/*!
 		 * @since v.0.6.9
 		 */
-		request_t(
+		template< typename User_Data_Factory >
+		incoming_request_t(
 			request_id_t request_id,
 			http_request_header_t header,
 			std::string body,
 			chunked_input_info_unique_ptr_t chunked_input_info,
 			impl::connection_handle_t connection,
-			endpoint_t remote_endpoint )
+			endpoint_t remote_endpoint,
+			User_Data_Factory & user_data_factory )
 			:	m_request_id{ request_id }
 			,	m_header{ std::move( header ) }
 			,	m_body{ std::move( body ) }
@@ -85,6 +143,7 @@ class request_t final
 			,	m_connection{ std::move( connection ) }
 			,	m_connection_id{ m_connection->connection_id() }
 			,	m_remote_endpoint{ std::move( remote_endpoint ) }
+			,	m_user_data_holder{ user_data_factory }
 		{}
 
 		//! Get request header.
@@ -137,6 +196,22 @@ class request_t final
 			return m_chunked_input_info.get();
 		}
 
+		//FIXME: document this!
+		RESTINIO_NODISCARD
+		User_Data &
+		user_data() noexcept
+		{
+			return *m_user_data_holder.get_ptr();
+		}
+
+		//FIXME: document this!
+		RESTINIO_NODISCARD
+		const User_Data &
+		user_data() const noexcept
+		{
+			return *m_user_data_holder.get_ptr();
+		}
+
 	private:
 		void
 		check_connection()
@@ -165,10 +240,16 @@ class request_t final
 
 		//! Remote endpoint for underlying connection.
 		const endpoint_t m_remote_endpoint;
+
+		//FIXME: document this!
+		impl::incoming_request_user_data_holder_t< User_Data > m_user_data_holder;
 };
 
-inline std::ostream &
-operator << ( std::ostream & o, const request_t & req )
+template< typename User_Data >
+std::ostream &
+operator<<(
+	std::ostream & o,
+	const incoming_request_t< User_Data > & req )
 {
 	o << "{req_id: " << req.request_id() << ", "
 		"conn_id: " << req.connection_id() << ", "
@@ -178,7 +259,25 @@ operator << ( std::ostream & o, const request_t & req )
 	return o;
 }
 
-//! Request handler, that is the type for calling request handlers.
+//! An alias for shared-pointer to incoming request.
+template< typename User_Data >
+using incoming_request_handle_t =
+		std::shared_ptr< incoming_request_t< User_Data > >;
+
+//! An alias for incoming request without additional user-data.
+/*!
+ * For compatibility with previous versions.
+ *
+ * @since v.0.6.13
+ */
+using request_t = incoming_request_t< no_user_data_factory_t::data_t >;
+
+//! An alias for handle for incoming request without additional user-data.
+/*!
+ * For compatibility with previous versions.
+ *
+ * @since v.0.6.13
+ */
 using request_handle_t = std::shared_ptr< request_t >;
 
 //
@@ -191,8 +290,9 @@ using default_request_handler_t =
 namespace impl
 {
 
-inline connection_handle_t &
-access_req_connection( request_t & req ) noexcept
+template< typename User_Data >
+connection_handle_t &
+access_req_connection( incoming_request_t<User_Data> & req ) noexcept
 {
 	return req.m_connection;
 }

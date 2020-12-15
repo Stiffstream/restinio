@@ -162,6 +162,9 @@ struct traits_t
 	 * @since v.0.6.12
 	 */
 	static constexpr bool use_connection_count_limiter = false;
+
+	//FIXME: document this!
+	using user_data_factory_t = no_user_data_factory_t;
 };
 
 //

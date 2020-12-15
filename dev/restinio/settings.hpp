@@ -1540,6 +1540,41 @@ class basic_server_settings_t
 
 		using max_parallel_connections_holder_base_t::max_parallel_connections;
 
+		//FIXME: document this!
+		/*!
+		 * @name User-data factory.
+		 * @{
+		 */
+		using user_data_factory_t = typename Traits::user_data_factory_t;
+		using user_data_factory_handle_t = std::shared_ptr< user_data_factory_t >;
+
+		Derived &
+		user_data_factory(
+			user_data_factory_handle_t factory ) &
+		{
+			this->m_user_data_factory = std::move(factory);
+			return reference_to_derived();
+		}
+
+		Derived &&
+		user_data_factory(
+			user_data_factory_handle_t factory ) &&
+		{
+			return std::move(this->user_data_factory( std::move(factory) ));
+		}
+
+		RESTINIO_NODISCARD
+		user_data_factory_handle_t
+		giveaway_user_data_factory() const noexcept
+		{
+			return ensure_created(
+					std::move(this->m_user_data_factory),
+					"user_data_factory is not set" );
+		}
+		/*!
+		 * @}
+		 */
+
 	private:
 		Derived &
 		reference_to_derived()
@@ -1637,6 +1672,9 @@ class basic_server_settings_t
 		 * @since v.0.6.12
 		 */
 		incoming_http_msg_limits_t m_incoming_http_msg_limits;
+
+		//FIXME: document this!
+		user_data_factory_handle_t m_user_data_factory;
 };
 
 //

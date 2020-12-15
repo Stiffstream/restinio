@@ -662,6 +662,7 @@ class connection_t final
 					// so it is possible to omit this timer scheduling.
 					guard_request_handling_operation();
 
+					//FIXME: condition should be changed here!
 					if( request_rejected() ==
 						m_request_handler(
 							std::make_shared< request_t >(
@@ -670,7 +671,8 @@ class connection_t final
 								std::move( parser_ctx.m_body ),
 								parser_ctx.make_chunked_input_info_if_necessary(),
 								shared_from_concrete< connection_base_t >(),
-								m_remote_endpoint ) ) )
+								m_remote_endpoint,
+								m_settings->user_data_factory() ) ) )
 					{
 						// If handler refused request, say not implemented.
 						write_response_parts_impl(
@@ -773,6 +775,7 @@ class connection_t final
 			m_input.m_connection_upgrade_stage =
 				connection_upgrade_stage_t::wait_for_upgrade_handling_result_or_nothing;
 
+			//FIXME: condition should be changed here!
 			if( request_rejected() ==
 				m_request_handler(
 					std::make_shared< request_t >(
@@ -781,7 +784,8 @@ class connection_t final
 						std::move( parser_ctx.m_body ),
 						parser_ctx.make_chunked_input_info_if_necessary(),
 						shared_from_concrete< connection_base_t >(),
-						m_remote_endpoint) ) )
+						m_remote_endpoint,
+						m_settings->user_data_factory() ) ) )
 			{
 				if( m_socket.is_open() )
 				{
