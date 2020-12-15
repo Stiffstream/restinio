@@ -1312,9 +1312,11 @@ identity_body_appender(
  * \endcode
  * @since v.0.4.4
 */
-template < typename Handler >
+template < typename User_Data, typename Handler >
 decltype(auto)
-handle_body( const request_t & req, Handler handler )
+handle_body(
+	const incoming_request_t<User_Data> & req,
+	Handler && handler )
 {
 	using restinio::impl::is_equal_caseless;
 
