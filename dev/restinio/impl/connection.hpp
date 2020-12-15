@@ -309,7 +309,8 @@ class connection_t final
 	public:
 		using timer_manager_t = typename Traits::timer_manager_t;
 		using timer_guard_t = typename timer_manager_t::timer_guard_t;
-		using request_handler_t = typename Traits::request_handler_t;
+		using request_handler_t = actual_request_handler_t< Traits >;
+		using incoming_request_t = actual_incoming_request_t< Traits >;
 		using logger_t = typename Traits::logger_t;
 		using strand_t = typename Traits::strand_t;
 		using stream_socket_t = typename Traits::stream_socket_t;
@@ -665,7 +666,7 @@ class connection_t final
 					//FIXME: condition should be changed here!
 					if( request_rejected() ==
 						m_request_handler(
-							std::make_shared< request_t >(
+							std::make_shared< incoming_request_t >(
 								request_id,
 								std::move( parser_ctx.m_header ),
 								std::move( parser_ctx.m_body ),
@@ -778,7 +779,7 @@ class connection_t final
 			//FIXME: condition should be changed here!
 			if( request_rejected() ==
 				m_request_handler(
-					std::make_shared< request_t >(
+					std::make_shared< incoming_request_t >(
 						request_id,
 						std::move( parser_ctx.m_header ),
 						std::move( parser_ctx.m_body ),

@@ -22,15 +22,29 @@ namespace restinio
 {
 
 //FIXME: document this!
+template< typename User_Data >
+class user_data_buffer_t
+{
+	void * m_buffer;
+
+public:
+	user_data_buffer_t( void * buffer ) : m_buffer{ buffer } {}
+
+	RESTINIO_NODISCARD
+	void *
+	get() const noexcept { return m_buffer; }
+};
+
+//FIXME: document this!
 struct no_user_data_factory_t
 {
 	//FIXME: document this!
 	struct data_t {};
 
 	void
-	make_within( void * buffer ) noexcept
+	make_within( user_data_buffer_t<data_t> buffer ) noexcept
 	{
-		new(buffer) data_t{};
+		new(buffer.get()) data_t{};
 	}
 };
 
@@ -55,7 +69,7 @@ public:
 	incoming_request_user_data_holder_t(
 		Factory & factory )
 	{
-		factory.make_within( m_data.data() );
+		factory.make_within( user_data_buffer_t<User_Data>{ m_data.data() } );
 	}
 
 	~incoming_request_user_data_holder_t() noexcept

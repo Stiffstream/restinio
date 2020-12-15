@@ -19,6 +19,48 @@
 namespace restinio
 {
 
+namespace details
+{
+
+//FIXME: document this!
+struct autodetect_request_handler_type {};
+
+//FIXME: document this!
+template<
+	typename Request_Handler,
+	typename User_Data_Factory >
+struct actual_request_handler_type_detector
+{
+//FIXME: there should be static_assert that checks that
+//Request_Handler is invocable with incoming_request_t<User_Data_Factory::data_t>.
+//	static_assert();
+
+	using request_handler_t = Request_Handler;
+};
+
+//FIXME: is this specialization really needed?
+#if 0
+template<>
+struct actual_request_handler_type_detector<
+		autodetect_request_handler_type,
+		no_user_data_factory_t >
+{
+	using request_handler_t = default_request_handler_t;
+};
+#endif
+
+template< typename User_Data_Factory >
+struct actual_request_handler_type_detector<
+		autodetect_request_handler_type,
+		User_Data_Factory >
+{
+	using request_handler_t = std::function<
+			request_handling_status_t(
+					incoming_request_handle_t<typename User_Data_Factory::data_t>) >;
+};
+
+} /* namespace details */
+
 //
 // traits_t
 //
@@ -26,7 +68,7 @@ namespace restinio
 template <
 		typename Timer_Manager,
 		typename Logger,
-		typename Request_Handler = default_request_handler_t,
+		typename Request_Handler = details::autodetect_request_handler_type,
 		typename Strand = default_strand_t,
 		typename Socket = asio_ns::ip::tcp::socket >
 struct traits_t
@@ -166,6 +208,19 @@ struct traits_t
 	//FIXME: document this!
 	using user_data_factory_t = no_user_data_factory_t;
 };
+
+//FIXME: document this!
+template< typename Traits >
+using actual_request_handler_t =
+	typename details::actual_request_handler_type_detector<
+			typename Traits::request_handler_t,
+			typename Traits::user_data_factory_t
+		>::request_handler_t;
+
+//FIXME: document this!
+template< typename Traits >
+using actual_incoming_request_t =
+	incoming_request_t< typename Traits::user_data_factory_t::data_t >;
 
 //
 // single_thread_traits_t

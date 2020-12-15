@@ -24,12 +24,14 @@ TEST_CASE( "No Content-Type field", "[content-type]" )
 {
 	using namespace restinio::file_upload;
 
+	restinio::no_user_data_factory_t user_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			restinio::http_request_header_t{},
 			"Body"s,
 			dummy_connection_t::make(1u),
-			make_dummy_endpoint() );
+			make_dummy_endpoint(),
+			user_data_factory );
 
 	REQUIRE( enumeration_error_t::content_type_field_not_found ==
 			enumerate_parts_with_files(
@@ -51,12 +53,14 @@ TEST_CASE( "Empty Content-Type field", "[content-type]" )
 			restinio::http_field::content_type,
 			""s );
 
+	restinio::no_user_data_factory_t user_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
-			make_dummy_endpoint() );
+			make_dummy_endpoint(),
+			user_data_factory );
 
 	REQUIRE( enumeration_error_t::content_type_field_parse_error ==
 			enumerate_parts_with_files(
@@ -87,12 +91,14 @@ TEST_CASE( "Inappropriate Content-Type media-type", "[content-type]" )
 				restinio::http_field::content_type,
 				t );
 
+		restinio::no_user_data_factory_t user_data_factory;
 		auto req = std::make_shared< restinio::request_t >(
 				restinio::request_id_t{1},
 				std::move(dummy_header),
 				"Body"s,
 				dummy_connection_t::make(1u),
-				make_dummy_endpoint() );
+				make_dummy_endpoint(),
+				user_data_factory );
 
 		REQUIRE( enumeration_error_t::content_type_field_inappropriate_value ==
 				enumerate_parts_with_files(
@@ -115,12 +121,14 @@ TEST_CASE( "Empty body", "[empty-body]" )
 			restinio::http_field::content_type,
 			"multipart/form-data; boundary=1234567890" );
 
+	restinio::no_user_data_factory_t user_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
-			make_dummy_endpoint() );
+			make_dummy_endpoint(),
+			user_data_factory );
 
 	REQUIRE( enumeration_error_t::no_parts_found ==
 			enumerate_parts_with_files(
@@ -142,6 +150,7 @@ TEST_CASE( "Just one part", "[body]" )
 			restinio::http_field::content_type,
 			"multipart/form-data; boundary=1234567890" );
 
+	restinio::no_user_data_factory_t user_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
@@ -151,7 +160,8 @@ TEST_CASE( "Just one part", "[body]" )
 			"Hello, World!\r\n"
 			"--1234567890--\r\n"s,
 			dummy_connection_t::make(1u),
-			make_dummy_endpoint() );
+			make_dummy_endpoint(),
+			user_data_factory );
 
 	const auto result = enumerate_parts_with_files(
 			*req,
@@ -180,6 +190,7 @@ TEST_CASE( "Several parts in the body", "[body]" )
 			restinio::http_field::content_type,
 			"multipart/form-data; boundary=1234567890" );
 
+	restinio::no_user_data_factory_t user_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
@@ -208,7 +219,8 @@ TEST_CASE( "Several parts in the body", "[body]" )
 			"Bye, Bye!\r\n"
 			"--1234567890--\r\n"s,
 			dummy_connection_t::make(1u),
-			make_dummy_endpoint() );
+			make_dummy_endpoint(),
+			user_data_factory );
 
 	int ordinal{0};
 	const auto result = enumerate_parts_with_files(
