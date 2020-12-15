@@ -16,11 +16,42 @@
 #include <restinio/default_strands.hpp>
 #include <restinio/connection_count_limiter.hpp>
 
+#include <restinio/utils/metaprogramming.hpp>
+
 namespace restinio
 {
 
 namespace details
 {
+
+namespace valid_request_handler_type_check
+{
+
+template< typename, typename, typename = restinio::utils::metaprogramming::void_t<> >
+struct valid_handler_type : public std::false_type {};
+
+template< typename Handler, typename User_Data_Factory >
+struct valid_handler_type<
+		Handler,
+		User_Data_Factory,
+		restinio::utils::metaprogramming::void_t<
+			std::enable_if_t<
+				std::is_same<
+					request_handling_status_t,
+					decltype(std::declval<Handler>()(
+							std::declval<
+									incoming_request_handle_t<
+											typename User_Data_Factory::data_t
+									>
+							>()))
+				>::value,
+				bool
+			>
+		>
+	> : public std::true_type
+{};
+
+} /* namespace valid_request_handler_type_check */
 
 //FIXME: document this!
 struct autodetect_request_handler_type {};
@@ -31,23 +62,16 @@ template<
 	typename User_Data_Factory >
 struct actual_request_handler_type_detector
 {
-//FIXME: there should be static_assert that checks that
-//Request_Handler is invocable with incoming_request_t<User_Data_Factory::data_t>.
-//	static_assert();
+	static_assert(
+			valid_request_handler_type_check::valid_handler_type<
+					Request_Handler,
+					User_Data_Factory
+				>::value,
+			"Request_Handler should be invocable with "
+			"incoming_request_handle_t<User_Data_Factory::data_t>" );
 
 	using request_handler_t = Request_Handler;
 };
-
-//FIXME: is this specialization really needed?
-#if 0
-template<>
-struct actual_request_handler_type_detector<
-		autodetect_request_handler_type,
-		no_user_data_factory_t >
-{
-	using request_handler_t = default_request_handler_t;
-};
-#endif
 
 template< typename User_Data_Factory >
 struct actual_request_handler_type_detector<
