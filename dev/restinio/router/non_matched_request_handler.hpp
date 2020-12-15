@@ -22,11 +22,22 @@ namespace router
 {
 
 //
-// unmatched_request_handler_t
+// generic_non_matched_request_handler_t
 //
-
+//FIXME: document this!
+template< typename User_Data >
+using generic_non_matched_request_handler_t =
+		std::function<
+				request_handling_status_t( incoming_request_handle_t<User_Data> )
+		>;
+//
+// non_matched_request_handler_t
+//
+//FIXME: document this!
 using non_matched_request_handler_t =
-		std::function< request_handling_status_t( request_handle_t ) >;
+		generic_non_matched_request_handler_t<
+				no_user_data_factory_t::data_t
+		>;
 
 } /* namespace router */
 

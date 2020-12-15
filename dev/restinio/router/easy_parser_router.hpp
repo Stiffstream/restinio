@@ -1042,7 +1042,9 @@ public:
 
 	//! Set handler for requests that don't match any route.
 	void
-	non_matched_request_handler( non_matched_request_handler_t nmrh )
+	non_matched_request_handler(
+		//FIXME: hardcoded parameter type!
+		non_matched_request_handler_t nmrh )
 	{
 		m_non_matched_request_handler= std::move( nmrh );
 	}
@@ -1054,6 +1056,7 @@ private:
 	entries_container_t m_entries;
 
 	//! Handler that is called for requests that don't match any route.
+	//FIXME: hardcoded parameter type!
 	non_matched_request_handler_t m_non_matched_request_handler;
 };
 
