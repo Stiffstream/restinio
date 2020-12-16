@@ -450,7 +450,10 @@ template<
 class express_route_entry_t
 {
 	public:
-		using request_handler_t = generic_express_request_handler_t<
+		using actual_request_handler_t = generic_express_request_handler_t<
+				typename User_Data_Factory::data_t
+			>;
+		using actual_request_handle_t = incoming_request_handle_t<
 				typename User_Data_Factory::data_t
 			>;
 
@@ -464,7 +467,7 @@ class express_route_entry_t
 		express_route_entry_t(
 			Method_Matcher && method_matcher,
 			matcher_init_data_t matcher_data,
-			request_handler_t handler )
+			actual_request_handler_t handler )
 			:	m_matcher{
 					std::forward<Method_Matcher>( method_matcher ),
 					std::move( matcher_data.m_regex ),
@@ -487,7 +490,7 @@ class express_route_entry_t
 			Method_Matcher && method_matcher,
 			string_view_t route_path,
 			const path2regex::options_t & options,
-			request_handler_t handler )
+			actual_request_handler_t handler )
 			:	express_route_entry_t{
 					std::forward<Method_Matcher>( method_matcher ),
 					path2regex::path2regex< impl::route_params_appender_t, Regex_Engine >(
@@ -500,7 +503,7 @@ class express_route_entry_t
 		express_route_entry_t(
 			Method_Matcher && method_matcher,
 			string_view_t route_path,
-			request_handler_t handler )
+			actual_request_handler_t handler )
 			:	express_route_entry_t{
 					std::forward<Method_Matcher>( method_matcher ),
 					route_path,
@@ -523,14 +526,14 @@ class express_route_entry_t
 		//! Calls a handler of given request with given params.
 		RESTINIO_NODISCARD
 		request_handling_status_t
-		handle( request_handle_t rh, route_params_t rp ) const
+		handle( actual_request_handle_t rh, route_params_t rp ) const
 		{
 			return m_handler( std::move( rh ), std::move( rp ) );
 		}
 
 	private:
 		impl::route_matcher_t< Regex_Engine > m_matcher;
-		request_handler_t m_handler;
+		actual_request_handler_t m_handler;
 };
 
 //
@@ -561,11 +564,11 @@ class express_router_t
 	public:
 		using actual_request_handle_t =
 				incoming_request_handle_t< typename User_Data_Factory::data_t >;
-		using request_handler_t =
+		using actual_request_handler_t =
 				typename express_route_entry_t<
 						Regex_Engine,
 						User_Data_Factory
-					>::request_handler_t;
+					>::actual_request_handler_t;
 		using non_matched_handler_t =
 				generic_non_matched_request_handler_t<
 						typename User_Data_Factory::data_t
@@ -607,7 +610,7 @@ class express_router_t
 		add_handler(
 			Method_Matcher && method_matcher,
 			string_view_t route_path,
-			request_handler_t handler )
+			actual_request_handler_t handler )
 		{
 			add_handler(
 				std::forward<Method_Matcher>(method_matcher),
@@ -622,7 +625,7 @@ class express_router_t
 			Method_Matcher && method_matcher,
 			string_view_t route_path,
 			const path2regex::options_t & options,
-			request_handler_t handler )
+			actual_request_handler_t handler )
 		{
 			m_handlers.emplace_back(
 					std::forward<Method_Matcher>(method_matcher),
@@ -634,7 +637,7 @@ class express_router_t
 		void
 		http_delete(
 			string_view_t route_path,
-			request_handler_t handler )
+			actual_request_handler_t handler )
 		{
 			add_handler(
 				http_method_delete(),
@@ -646,7 +649,7 @@ class express_router_t
 		http_delete(
 			string_view_t route_path,
 			const path2regex::options_t & options,
-			request_handler_t handler )
+			actual_request_handler_t handler )
 		{
 			add_handler(
 				http_method_delete(),
@@ -658,7 +661,7 @@ class express_router_t
 		void
 		http_get(
 			string_view_t route_path,
-			request_handler_t handler )
+			actual_request_handler_t handler )
 		{
 			add_handler(
 				http_method_get(),
@@ -670,7 +673,7 @@ class express_router_t
 		http_get(
 			string_view_t route_path,
 			const path2regex::options_t & options,
-			request_handler_t handler )
+			actual_request_handler_t handler )
 		{
 			add_handler(
 				http_method_get(),
@@ -682,7 +685,7 @@ class express_router_t
 		void
 		http_head(
 			string_view_t route_path,
-			request_handler_t handler )
+			actual_request_handler_t handler )
 		{
 			add_handler(
 				http_method_head(),
@@ -694,7 +697,7 @@ class express_router_t
 		http_head(
 			string_view_t route_path,
 			const path2regex::options_t & options,
-			request_handler_t handler )
+			actual_request_handler_t handler )
 		{
 			add_handler(
 				http_method_head(),
@@ -706,7 +709,7 @@ class express_router_t
 		void
 		http_post(
 			string_view_t route_path,
-			request_handler_t handler )
+			actual_request_handler_t handler )
 		{
 			add_handler(
 				http_method_post(),
@@ -718,7 +721,7 @@ class express_router_t
 		http_post(
 			string_view_t route_path,
 			const path2regex::options_t & options,
-			request_handler_t handler )
+			actual_request_handler_t handler )
 		{
 			add_handler(
 				http_method_post(),
@@ -730,7 +733,7 @@ class express_router_t
 		void
 		http_put(
 			string_view_t route_path,
-			request_handler_t handler )
+			actual_request_handler_t handler )
 		{
 			add_handler(
 				http_method_put(),
@@ -742,7 +745,7 @@ class express_router_t
 		http_put(
 			string_view_t route_path,
 			const path2regex::options_t & options,
-			request_handler_t handler )
+			actual_request_handler_t handler )
 		{
 			add_handler(
 				http_method_put(),
@@ -760,7 +763,10 @@ class express_router_t
 		}
 
 	private:
-		using route_entry_t = express_route_entry_t< Regex_Engine >;
+		using route_entry_t = express_route_entry_t<
+				Regex_Engine,
+				User_Data_Factory
+		>;
 
 		//! A list of existing routes.
 		std::vector< route_entry_t > m_handlers;

@@ -4,6 +4,7 @@ add_subdirectory(easy_parser_path_to_params)
 
 add_subdirectory(express)
 add_subdirectory(express_router)
+add_subdirectory(express_router_user_data_simple)
 
 if ( RESTINIO_BENCH )
 	add_subdirectory(express_router_bench)
