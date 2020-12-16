@@ -15,11 +15,18 @@ struct fake_connection_t : public restinio::impl::connection_base_t
 	{}
 };
 
-
-request_handle_t
-create_fake_request( std::string target, http_method_id_t method = http_method_get() )
+template< typename User_Data_Factory >
+auto
+create_fake_request(
+	restinio::router::generic_easy_parser_router_t< User_Data_Factory > &,
+	std::string target,
+	http_method_id_t method = http_method_get() )
 {
-	restinio::no_user_data_factory_t user_data_factory;
+	using request_t = restinio::incoming_request_t<
+			typename User_Data_Factory::data_t
+	>;
+
+	User_Data_Factory user_data_factory;
 	return std::make_shared< request_t >(
 			0,
 			http_request_header_t{ method, std::move( target ) },

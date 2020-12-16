@@ -15,12 +15,14 @@
 
 using namespace restinio;
 
-using router_t = restinio::router::easy_parser_router_t;
 namespace epr = restinio::router::easy_parser_router;
 
 #include "../fake_connection_and_request.ipp"
+#include "../test_user_data_factory.ipp"
 
-TEST_CASE( "one parameter" , "[path_to_tuple]" )
+template< typename Router >
+void
+tc_one_parameter()
 {
 	int last_handler_called = -1;
 
@@ -30,7 +32,7 @@ TEST_CASE( "one parameter" , "[path_to_tuple]" )
 		return result;
 	};
 
-	router_t router;
+	Router router;
 
 	auto check_route_params = []( const auto & tuple ) {
 			REQUIRE( 42 == std::get<0>(tuple) );
@@ -46,7 +48,6 @@ TEST_CASE( "one parameter" , "[path_to_tuple]" )
 			check_route_params( p );
 			return request_accepted();
 		} );
-
 
 	router.add_handler(
 		restinio::http_method_get(),
@@ -75,25 +76,44 @@ TEST_CASE( "one parameter" , "[path_to_tuple]" )
 			return request_accepted();
 		} );
 
-	REQUIRE( request_rejected() == router( create_fake_request( "/xxx" ) ) );
+	REQUIRE( request_rejected() == router(
+			create_fake_request( router, "/xxx" ) ) );
 	REQUIRE( -1 == extract_last_handler_called() );
 
-	REQUIRE( request_accepted() == router( create_fake_request( "/a-route/42" ) ) );
+	REQUIRE( request_accepted() == router(
+			create_fake_request( router, "/a-route/42" ) ) );
 	REQUIRE( 0 == extract_last_handler_called() );
 
-	REQUIRE( request_accepted() == router( create_fake_request( "/b-route/42" ) ) );
+	REQUIRE( request_accepted() == router(
+			create_fake_request( router, "/b-route/42" ) ) );
 	REQUIRE( 1 == extract_last_handler_called() );
 
-	REQUIRE( request_accepted() == router( create_fake_request( "/c-route/42" ) ) );
+	REQUIRE( request_accepted() == router(
+			create_fake_request( router, "/c-route/42" ) ) );
 	REQUIRE( 2 == extract_last_handler_called() );
 
-	REQUIRE( request_accepted() == router( create_fake_request( "/d-route/42" ) ) );
+	REQUIRE( request_accepted() == router(
+			create_fake_request( router, "/d-route/42" ) ) );
 	REQUIRE( 3 == extract_last_handler_called() );
 }
 
-TEST_CASE( "two parameters" , "[path_to_tuple]" )
+TEST_CASE( "one parameter (no_user_data)" , "[path_to_tuple][no_user_data]" )
 {
-	router_t router;
+	tc_one_parameter< restinio::router::easy_parser_router_t >();
+}
+
+TEST_CASE( "one parameter (test_user_data)" , "[path_to_tuple][test_user_data]" )
+{
+	tc_one_parameter< restinio::router::generic_easy_parser_router_t<
+			test::ud_factory_t
+	> >();
+}
+
+template< typename Router >
+void
+tc_two_parameters()
+{
+	Router router;
 
 	auto id_p = epr::non_negative_decimal_number_p<int>();
 
@@ -108,14 +128,28 @@ TEST_CASE( "two parameters" , "[path_to_tuple]" )
 		} );
 
 	REQUIRE( request_accepted() == router(
-			create_fake_request( "/api/v1/books/123/versions/4386" ) ) );
+			create_fake_request( router, "/api/v1/books/123/versions/4386" ) ) );
 	REQUIRE( request_accepted() == router(
-			create_fake_request( "/api/v1/books/123/versions/4386/" ) ) );
+			create_fake_request( router, "/api/v1/books/123/versions/4386/" ) ) );
 }
 
-TEST_CASE( "no parameters" , "[path_to_tuple]" )
+TEST_CASE( "two parameters (no_user_data)" , "[path_to_tuple][no_user_data]" )
 {
-	router_t router;
+	tc_two_parameters< restinio::router::easy_parser_router_t >();
+}
+
+TEST_CASE( "two parameters (test_user_data)" , "[path_to_tuple][test_user_data]" )
+{
+	tc_two_parameters< restinio::router::generic_easy_parser_router_t<
+			test::ud_factory_t
+	> >();
+}
+
+template< typename Router >
+void
+tc_no_parameters()
+{
+	Router router;
 
 	router.add_handler(
 		restinio::http_method_get(),
@@ -128,8 +162,20 @@ TEST_CASE( "no parameters" , "[path_to_tuple]" )
 		} );
 
 	REQUIRE( request_accepted() == router(
-			create_fake_request( "/api/v1/books" ) ) );
+			create_fake_request( router, "/api/v1/books" ) ) );
 	REQUIRE( request_accepted() == router(
-			create_fake_request( "/api/v1/books/" ) ) );
+			create_fake_request( router, "/api/v1/books/" ) ) );
+}
+
+TEST_CASE( "no parameters (no_user_data)" , "[path_to_tuple][no_user_data]" )
+{
+	tc_no_parameters< restinio::router::easy_parser_router_t >();
+}
+
+TEST_CASE( "no parameters (test_user_data)" , "[path_to_tuple][test_user_data]" )
+{
+	tc_no_parameters< restinio::router::generic_easy_parser_router_t<
+			test::ud_factory_t
+	> >();
 }
 

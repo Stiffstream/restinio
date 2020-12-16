@@ -558,12 +558,13 @@ namespace path_to_params_details
 
 template<
 	typename F,
+	typename User_Data,
 	typename Tuple,
 	std::size_t... Indexes >
 decltype(auto)
 call_with_tuple_impl(
 	F && what,
-	const request_handle_t & req,
+	const incoming_request_handle_t< User_Data > & req,
 	Tuple && params,
 	std::index_sequence<Indexes...> )
 {
@@ -582,11 +583,11 @@ call_with_tuple_impl(
  *
  * @since v.0.6.6
  */
-template< typename F, typename Tuple >
+template< typename F, typename User_Data, typename Tuple >
 decltype(auto)
 call_with_tuple(
 	F && what,
-	const request_handle_t & req,
+	const incoming_request_handle_t< User_Data > & req,
 	Tuple && params )
 {
 	return call_with_tuple_impl(
