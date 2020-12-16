@@ -16,7 +16,7 @@
 
 using namespace restinio;
 
-using express_router_t = restinio::router::express_router_t<
+using express_router_t = restinio::router::generic_express_router_t<
 		restinio::router::std_regex_engine_t,
 		test::ud_factory_t >;
 

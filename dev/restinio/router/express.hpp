@@ -435,7 +435,7 @@ using express_request_handler_t =
 		generic_express_request_handler_t< no_user_data_factory_t::data_t >;
 
 //
-// express_route_entry_t
+// generic_express_route_entry_t
 //
 
 //! A single express route entry.
@@ -445,9 +445,9 @@ using express_request_handler_t =
 	It gives the same help with route parameters.
 */
 template<
-	typename Regex_Engine = std_regex_engine_t,
-	typename User_Data_Factory = no_user_data_factory_t >
-class express_route_entry_t
+	typename Regex_Engine,
+	typename User_Data_Factory >
+class generic_express_route_entry_t
 {
 	public:
 		using actual_request_handler_t = generic_express_request_handler_t<
@@ -464,7 +464,7 @@ class express_route_entry_t
 					Regex_Engine >;
 
 		template< typename Method_Matcher >
-		express_route_entry_t(
+		generic_express_route_entry_t(
 			Method_Matcher && method_matcher,
 			matcher_init_data_t matcher_data,
 			actual_request_handler_t handler )
@@ -477,21 +477,25 @@ class express_route_entry_t
 		{}
 
 	public:
-		express_route_entry_t( const express_route_entry_t & ) = delete;
-		express_route_entry_t & operator = ( const express_route_entry_t & ) = delete;
+		generic_express_route_entry_t(
+				const generic_express_route_entry_t & ) = delete;
+		generic_express_route_entry_t & operator=(
+				const generic_express_route_entry_t & ) = delete;
 
-		express_route_entry_t() = default;
-		express_route_entry_t( express_route_entry_t && ) = default;
-		express_route_entry_t &
-		operator = ( express_route_entry_t && ) = default;
+		generic_express_route_entry_t() = default;
+		generic_express_route_entry_t(
+				generic_express_route_entry_t && ) = default;
+
+		generic_express_route_entry_t &
+		operator=( generic_express_route_entry_t && ) = default;
 
 		template< typename Method_Matcher >
-		express_route_entry_t(
+		generic_express_route_entry_t(
 			Method_Matcher && method_matcher,
 			string_view_t route_path,
 			const path2regex::options_t & options,
 			actual_request_handler_t handler )
-			:	express_route_entry_t{
+			:	generic_express_route_entry_t{
 					std::forward<Method_Matcher>( method_matcher ),
 					path2regex::path2regex< impl::route_params_appender_t, Regex_Engine >(
 						route_path,
@@ -500,11 +504,11 @@ class express_route_entry_t
 		{}
 
 		template< typename Method_Matcher >
-		express_route_entry_t(
+		generic_express_route_entry_t(
 			Method_Matcher && method_matcher,
 			string_view_t route_path,
 			actual_request_handler_t handler )
-			:	express_route_entry_t{
+			:	generic_express_route_entry_t{
 					std::forward<Method_Matcher>( method_matcher ),
 					route_path,
 					path2regex::options_t{},
@@ -537,9 +541,20 @@ class express_route_entry_t
 };
 
 //
-// express_router_t
+// express_route_entry_t
+//
+//FIXME: document this!
+template<
+	typename Regex_Engine = std_regex_engine_t >
+using express_route_entry_t = generic_express_route_entry_t<
+		Regex_Engine,
+		no_user_data_factory_t >;
+
+//
+// generic_express_router_t
 //
 
+//FIXME: fix the docs!
 //FIXME: template parameters should be described in Doxygen-comment.
 //! Express.js style router.
 /*
@@ -557,15 +572,15 @@ class express_route_entry_t
 	has an additional parameter -- a container with parameters extracted from URI (request target).
 */
 template<
-	typename Regex_Engine = std_regex_engine_t,
-	typename User_Data_Factory = no_user_data_factory_t >
-class express_router_t
+	typename Regex_Engine,
+	typename User_Data_Factory >
+class generic_express_router_t
 {
 	public:
 		using actual_request_handle_t =
 				incoming_request_handle_t< typename User_Data_Factory::data_t >;
 		using actual_request_handler_t =
-				typename express_route_entry_t<
+				typename generic_express_route_entry_t<
 						Regex_Engine,
 						User_Data_Factory
 					>::actual_request_handler_t;
@@ -574,8 +589,8 @@ class express_router_t
 						typename User_Data_Factory::data_t
 				>;
 
-		express_router_t() = default;
-		express_router_t( express_router_t && ) = default;
+		generic_express_router_t() = default;
+		generic_express_router_t( generic_express_router_t && ) = default;
 
 		RESTINIO_NODISCARD
 		request_handling_status_t
@@ -763,7 +778,7 @@ class express_router_t
 		}
 
 	private:
-		using route_entry_t = express_route_entry_t<
+		using route_entry_t = generic_express_route_entry_t<
 				Regex_Engine,
 				User_Data_Factory
 		>;
@@ -774,6 +789,16 @@ class express_router_t
 		//! Handler that is called for requests that don't match any route.
 		non_matched_handler_t m_non_matched_request_handler;
 };
+
+//
+// express_router_t
+//
+//FIXME: document this!
+template<
+	typename Regex_Engine = std_regex_engine_t >
+using express_router_t = generic_express_router_t<
+		Regex_Engine,
+		no_user_data_factory_t >;
 
 } /* namespace router */
 

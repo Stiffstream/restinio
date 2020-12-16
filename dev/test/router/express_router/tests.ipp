@@ -18,7 +18,7 @@ struct fake_connection_t : public restinio::impl::connection_base_t
 template< typename Regex_Engine, typename User_Data_Factory >
 auto
 create_fake_request(
-	const restinio::router::express_router_t<Regex_Engine, User_Data_Factory> &,
+	const restinio::router::generic_express_router_t<Regex_Engine, User_Data_Factory> &,
 	std::string target,
 	http_method_id_t method = http_method_get() )
 {
