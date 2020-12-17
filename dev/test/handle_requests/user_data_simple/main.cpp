@@ -14,18 +14,42 @@ namespace test
 
 class test_user_data_factory_t
 {
+	struct ctor_dtor_monitors_t
+	{
+		std::atomic<int> m_constructors{0};
+		std::atomic<int> m_destructors{0};
+	};
+
 	std::atomic<int> m_index_counter{0};
 
+	ctor_dtor_monitors_t m_ctor_dtor_monitors;
+
 public:
-	struct data_t
+	class data_t
 	{
+		ctor_dtor_monitors_t & m_monitors;
+
+	public:
+		data_t(
+			ctor_dtor_monitors_t & monitors,
+			int index )
+			:	m_monitors{ monitors }
+			,	m_index{ index }
+		{
+			++m_monitors.m_constructors;
+		}
+		~data_t()
+		{
+			++m_monitors.m_destructors;
+		}
+
 		int m_index;
 	};
 
 	void
 	make_within( restinio::user_data_buffer_t<data_t> buffer ) noexcept
 	{
-		new(buffer.get()) data_t{ ++m_index_counter };
+		new(buffer.get()) data_t{ m_ctor_dtor_monitors, ++m_index_counter };
 	}
 
 	RESTINIO_NODISCARD
@@ -33,6 +57,20 @@ public:
 	current_value() noexcept
 	{
 		return m_index_counter.load( std::memory_order_acquire );
+	}
+
+	RESTINIO_NODISCARD
+	int
+	constructors_called() noexcept
+	{
+		return m_ctor_dtor_monitors.m_constructors.load( std::memory_order_acquire );
+	}
+
+	RESTINIO_NODISCARD
+	int
+	destructors_called() noexcept
+	{
+		return m_ctor_dtor_monitors.m_destructors.load( std::memory_order_acquire );
 	}
 };
 
@@ -99,6 +137,8 @@ TEST_CASE( "remote_endpoint extraction" , "[remote_endpoint]" )
 
 	REQUIRE( !endpoint_value.empty() );
 	REQUIRE( 0 != user_data_factory->current_value() );
+	REQUIRE( 1 == user_data_factory->constructors_called() );
+	REQUIRE( 1 == user_data_factory->destructors_called() );
 	REQUIRE( 1 == index_value );
 }
 
