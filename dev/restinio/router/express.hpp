@@ -615,7 +615,7 @@ class generic_express_router_t
 				return m_non_matched_request_handler( std::move( req ) );
 			}
 
-			return request_rejected();
+			return request_not_handled();
 		}
 
 		//! Add handlers.

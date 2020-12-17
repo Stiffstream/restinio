@@ -968,7 +968,7 @@ public:
 			return m_non_matched_request_handler( std::move( req ) );
 		}
 
-		return request_rejected();
+		return request_not_handled();
 	}
 
 	template<

@@ -663,8 +663,7 @@ class connection_t final
 					// so it is possible to omit this timer scheduling.
 					guard_request_handling_operation();
 
-					//FIXME: condition should be changed here!
-					if( request_rejected() ==
+					const auto handling_result =
 						m_request_handler(
 							std::make_shared< incoming_request_t >(
 								request_id,
@@ -673,23 +672,31 @@ class connection_t final
 								parser_ctx.make_chunked_input_info_if_necessary(),
 								shared_from_concrete< connection_base_t >(),
 								m_remote_endpoint,
-								m_settings->user_data_factory() ) ) )
+								m_settings->user_data_factory() ) );
+
+					switch( handling_result )
 					{
-						// If handler refused request, say not implemented.
-						write_response_parts_impl(
-							request_id,
-							response_output_flags_t{
-								response_parts_attr_t::final_parts,
-								response_connection_attr_t::connection_close },
-							write_group_t{ create_not_implemented_resp() } );
-					}
-					else if( m_response_coordinator.is_able_to_get_more_messages() )
-					{
-						// Request was accepted,
-						// didn't create immediate response that closes connection after,
-						// and it is possible to receive more requests
-						// then start consuming yet another request.
-						wait_for_http_message();
+						case request_handling_status_t::not_handled:
+						case request_handling_status_t::rejected:
+							// If handler refused request, say not implemented.
+							write_response_parts_impl(
+								request_id,
+								response_output_flags_t{
+									response_parts_attr_t::final_parts,
+									response_connection_attr_t::connection_close },
+								write_group_t{ create_not_implemented_resp() } );
+							break;
+
+						case request_handling_status_t::accepted:
+							if( m_response_coordinator.is_able_to_get_more_messages() )
+							{
+								// Request was accepted,
+								// didn't create immediate response that closes connection after,
+								// and it is possible to receive more requests
+								// then start consuming yet another request.
+								wait_for_http_message();
+							}
+							break;
 					}
 				}
 				else
@@ -776,43 +783,49 @@ class connection_t final
 			m_input.m_connection_upgrade_stage =
 				connection_upgrade_stage_t::wait_for_upgrade_handling_result_or_nothing;
 
-			//FIXME: condition should be changed here!
-			if( request_rejected() ==
-				m_request_handler(
-					std::make_shared< incoming_request_t >(
-						request_id,
-						std::move( parser_ctx.m_header ),
-						std::move( parser_ctx.m_body ),
-						parser_ctx.make_chunked_input_info_if_necessary(),
-						shared_from_concrete< connection_base_t >(),
-						m_remote_endpoint,
-						m_settings->user_data_factory() ) ) )
+			const auto handling_result = m_request_handler(
+				std::make_shared< incoming_request_t >(
+					request_id,
+					std::move( parser_ctx.m_header ),
+					std::move( parser_ctx.m_body ),
+					parser_ctx.make_chunked_input_info_if_necessary(),
+					shared_from_concrete< connection_base_t >(),
+					m_remote_endpoint,
+					m_settings->user_data_factory() ) );
+			switch( handling_result )
 			{
-				if( m_socket.is_open() )
-				{
-					// Request is rejected, so our socket
-					// must not be moved out to websocket connection.
+				case request_handling_status_t::not_handled:
+				case request_handling_status_t::rejected:
+					if( m_socket.is_open() )
+					{
+						// Request is rejected, so our socket
+						// must not be moved out to websocket connection.
 
-					// If handler refused request, say not implemented.
-					write_response_parts_impl(
-						request_id,
-						response_output_flags_t{
-							response_parts_attr_t::final_parts,
-							response_connection_attr_t::connection_close },
-						write_group_t{ create_not_implemented_resp() } );
-				}
-				else
-				{
-					// Request is rejected, but the socket
-					// was moved out to somewhere else???
+						// If handler refused request, say not implemented.
+						write_response_parts_impl(
+							request_id,
+							response_output_flags_t{
+								response_parts_attr_t::final_parts,
+								response_connection_attr_t::connection_close },
+							write_group_t{ create_not_implemented_resp() } );
+					}
+					else
+					{
+						// Request is rejected, but the socket
+						// was moved out to somewhere else???
 
-					m_logger.error( [&]{
-						return fmt::format(
-								"[connection:{}] upgrade request handler rejects "
-								"request, but socket was moved out from connection",
-								connection_id() );
-					} );
-				}
+						m_logger.error( [&]{
+							return fmt::format(
+									"[connection:{}] upgrade request handler rejects "
+									"request, but socket was moved out from connection",
+									connection_id() );
+						} );
+					}
+					break;
+
+				case request_handling_status_t::accepted:
+					/* nothing to do */
+					break;
 			}
 
 			// Else 2 cases:

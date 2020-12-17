@@ -28,22 +28,41 @@ enum class request_handling_status_t : std::uint8_t
 	accepted,
 
 	//! Request wasn't accepted for handling.
-	rejected
+	rejected,
+
+	//! The request wasn't handled. If there is another handler to
+	//! be tried it should be tried. Otherwise the request has to
+	//! be rejected.
+	//!
+	//! @since v.0.6.13.
+	not_handled
 };
 
 //! @name Helper funcs for working with request_handling_status_t
 //! \see request_handling_status_t.
 ///@{
+RESTINIO_NODISCARD
 constexpr request_handling_status_t
 request_accepted() noexcept
 {
 	return request_handling_status_t::accepted;
 }
 
+RESTINIO_NODISCARD
 constexpr request_handling_status_t
 request_rejected() noexcept
 {
 	return request_handling_status_t::rejected;
+}
+
+/*!
+ * @since v.0.6.13
+ */
+RESTINIO_NODISCARD
+constexpr request_handling_status_t
+request_not_handled() noexcept
+{
+	return request_handling_status_t::not_handled;
 }
 ///@}
 

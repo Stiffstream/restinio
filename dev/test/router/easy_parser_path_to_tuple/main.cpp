@@ -76,7 +76,7 @@ tc_one_parameter()
 			return request_accepted();
 		} );
 
-	REQUIRE( request_rejected() == router(
+	REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/xxx" ) ) );
 	REQUIRE( -1 == extract_last_handler_called() );
 

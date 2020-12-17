@@ -105,7 +105,7 @@ TEST_CASE( "Simple named param" , "[express][simple][named_params]" )
 			return request_accepted();
 		} );
 
-	REQUIRE( request_rejected() == router(
+	REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/xxx" ) ) );
 	REQUIRE( -1 == extract_last_handler_called() );
 
@@ -187,7 +187,7 @@ TEST_CASE( "Simple indexed param" , "[express][simple][indexed_params]" )
 			return request_accepted();
 		} );
 
-	REQUIRE( request_rejected() == router(
+	REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/xxx" ) ) );
 	REQUIRE( -1 == extract_last_handler_called() );
 
@@ -259,15 +259,15 @@ TEST_CASE( "Http methods" , "[express][simple][http_methods]" )
 			return request_accepted();
 		} );
 
-	REQUIRE( request_rejected() == router(
+	REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/xxx", http_method_delete() ) ) );
-	REQUIRE( request_rejected() == router(
+	REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/xxx", http_method_get() ) ) );
-	REQUIRE( request_rejected() == router(
+	REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/xxx", http_method_head() ) ) );
-	REQUIRE( request_rejected() == router(
+	REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/xxx", http_method_post() ) ) );
-	REQUIRE( request_rejected() == router(
+	REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/xxx", http_method_put() ) ) );
 
 	REQUIRE( request_accepted() == router(
@@ -320,14 +320,14 @@ TEST_CASE( "Http method matchers" , "[express][http_method_matchers]" )
 			create_fake_request( router, "/user", http_method_get() ) ) );
 		REQUIRE( http_method_get() == extract_last_http_method() );
 
-		REQUIRE( request_rejected() == router(
+		REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/user", http_method_head() ) ) );
 
 		REQUIRE( request_accepted() == router(
 			create_fake_request( router, "/user", http_method_post() ) ) );
 		REQUIRE( http_method_post() == extract_last_http_method() );
 
-		REQUIRE( request_rejected() == router(
+		REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/user", http_method_put() ) ) );
 	}
 
@@ -373,9 +373,9 @@ TEST_CASE( "Http method matchers" , "[express][http_method_matchers]" )
 			create_fake_request( router, "/user", http_method_post() ) ) );
 		REQUIRE( http_method_post() == extract_last_http_method() );
 
-		REQUIRE( request_rejected() == router(
+		REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/user", http_method_put() ) ) );
-		REQUIRE( request_rejected() == router(
+		REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/user", http_method_copy() ) ) );
 
 		REQUIRE( request_accepted() == router(
@@ -394,9 +394,9 @@ TEST_CASE( "Http method matchers" , "[express][http_method_matchers]" )
 			create_fake_request( router, "/status", http_method_post() ) ) );
 		REQUIRE( http_method_post() == extract_last_http_method() );
 
-		REQUIRE( request_rejected() == router(
+		REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/status", http_method_put() ) ) );
-		REQUIRE( request_rejected() == router(
+		REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/status", http_method_copy() ) ) );
 	}
 
@@ -434,9 +434,9 @@ TEST_CASE( "Http method matchers" , "[express][http_method_matchers]" )
 			create_fake_request( router, "/user", http_method_post() ) ) );
 		REQUIRE( http_method_post() == extract_last_http_method() );
 
-		REQUIRE( request_rejected() == router(
+		REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/user", http_method_put() ) ) );
-		REQUIRE( request_rejected() == router(
+		REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/user", http_method_copy() ) ) );
 	}
 
@@ -458,17 +458,17 @@ TEST_CASE( "Http method matchers" , "[express][http_method_matchers]" )
 				return request_accepted();
 			} );
 
-		REQUIRE( request_rejected() == router(
+		REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/user", http_method_delete() ) ) );
 
-		REQUIRE( request_rejected() == router(
+		REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/user", http_method_get() ) ) );
 
 		REQUIRE( request_accepted() == router(
 			create_fake_request( router, "/user", http_method_head() ) ) );
 		REQUIRE( http_method_head() == extract_last_http_method() );
 
-		REQUIRE( request_rejected() == router(
+		REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/user", http_method_post() ) ) );
 
 		REQUIRE( request_accepted() == router(
@@ -494,17 +494,17 @@ TEST_CASE( "Http method matchers" , "[express][http_method_matchers]" )
 				return request_accepted();
 			} );
 
-		REQUIRE( request_rejected() == router(
+		REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/user", http_method_delete() ) ) );
 
-		REQUIRE( request_rejected() == router(
+		REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/user", http_method_get() ) ) );
 
 		REQUIRE( request_accepted() == router(
 			create_fake_request( router, "/user", http_method_head() ) ) );
 		REQUIRE( http_method_head() == extract_last_http_method() );
 
-		REQUIRE( request_rejected() == router(
+		REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/user", http_method_post() ) ) );
 
 		REQUIRE( request_accepted() == router(
@@ -530,17 +530,17 @@ TEST_CASE( "Http method matchers" , "[express][http_method_matchers]" )
 				return request_accepted();
 			} );
 
-		REQUIRE( request_rejected() == router(
+		REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/user", http_method_delete() ) ) );
 
-		REQUIRE( request_rejected() == router(
+		REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/user", http_method_get() ) ) );
 
 		REQUIRE( request_accepted() == router(
 			create_fake_request( router, "/user", http_method_head() ) ) );
 		REQUIRE( http_method_head() == extract_last_http_method() );
 
-		REQUIRE( request_rejected() == router(
+		REQUIRE( request_not_handled() == router(
 			create_fake_request( router, "/user", http_method_post() ) ) );
 
 		REQUIRE( request_accepted() == router(
