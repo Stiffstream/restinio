@@ -12,7 +12,7 @@
 
 #include <restinio/all.hpp>
 
-#include "../test_user_data_factory.ipp"
+#include "../../common/test_user_data_factory.ipp"
 
 using namespace restinio;
 

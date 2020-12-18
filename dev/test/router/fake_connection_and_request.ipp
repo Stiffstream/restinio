@@ -1,19 +1,4 @@
-struct fake_connection_t : public restinio::impl::connection_base_t
-{
-	fake_connection_t() : restinio::impl::connection_base_t{ 0 }
-	{}
-
-	virtual void
-	check_timeout( std::shared_ptr< tcp_connection_ctx_base_t > & ) override
-	{}
-
-	virtual void
-	write_response_parts(
-		request_id_t ,
-		response_output_flags_t ,
-		write_group_t ) override
-	{}
-};
+#include "../common/fake_connection.ipp"
 
 template< typename User_Data_Factory >
 auto

@@ -22,3 +22,5 @@ add_subdirectory(incoming_msg_limits)
 add_subdirectory(connection_count_limit)
 
 add_subdirectory(user_data_simple)
+
+add_subdirectory(chained_handlers)
