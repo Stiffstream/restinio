@@ -33,6 +33,8 @@ add_subdirectory(connection_state)
 add_subdirectory(ip_blocker)
 add_subdirectory(file_upload)
 
+add_subdirectory(chained_handlers)
+
 if ( OPENSSL_FOUND )
 	add_subdirectory(hello_world_https)
 	add_subdirectory(shared_tls_context)
