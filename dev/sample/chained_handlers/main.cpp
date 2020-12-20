@@ -2,7 +2,7 @@
 
 #include <restinio/all.hpp>
 
-#include <restinio/chained_handlers/fixed_size.hpp>
+#include <restinio/sync_chain/fixed_size.hpp>
 
 #include <restinio/helpers/http_field_parsers/basic_auth.hpp>
 #include <restinio/helpers/http_field_parsers/try_parse_field.hpp>
@@ -147,7 +147,7 @@ int main()
 			restinio::traits_t<
 				restinio::asio_timer_manager_t,
 				restinio::single_threaded_ostream_logger_t,
-				restinio::chained_handlers::fixed_size_chain_t<2> >;
+				restinio::sync_chain::fixed_size_chain_t<2> >;
 
 		restinio::run(
 			restinio::on_this_thread<traits_t>()

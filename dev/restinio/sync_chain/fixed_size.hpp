@@ -18,7 +18,7 @@
 namespace restinio
 {
 
-namespace chained_handlers
+namespace sync_chain
 {
 
 //
@@ -100,7 +100,7 @@ public:
 	}
 };
 
-} /* namespace chained_handlers */
+} /* namespace sync_chain */
 
 } /* namespace restinio */
 

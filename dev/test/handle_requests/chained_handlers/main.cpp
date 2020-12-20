@@ -5,8 +5,8 @@
 #include <catch2/catch.hpp>
 
 #include <restinio/all.hpp>
-#include <restinio/chained_handlers/fixed_size.hpp>
-#include <restinio/chained_handlers/growable_size.hpp>
+#include <restinio/sync_chain/fixed_size.hpp>
+#include <restinio/sync_chain/growable_size.hpp>
 
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
@@ -29,7 +29,7 @@ tc_fixed_size_chain()
 {
 	using http_server_t = restinio::http_server_t<
 			test_traits_t<
-					restinio::chained_handlers::fixed_size_chain_t<
+					restinio::sync_chain::fixed_size_chain_t<
 							4u, User_Data_Factory>,
 					User_Data_Factory >
 	>;
@@ -109,7 +109,7 @@ tc_fixed_size_chain_with_rejection()
 {
 	using http_server_t = restinio::http_server_t<
 			test_traits_t<
-					restinio::chained_handlers::fixed_size_chain_t<
+					restinio::sync_chain::fixed_size_chain_t<
 							4u, User_Data_Factory>,
 					User_Data_Factory >
 	>;
@@ -190,7 +190,7 @@ tc_fixed_size_chain_accept_in_middle()
 {
 	using http_server_t = restinio::http_server_t<
 			test_traits_t<
-					restinio::chained_handlers::fixed_size_chain_t<
+					restinio::sync_chain::fixed_size_chain_t<
 							4u, User_Data_Factory>,
 					User_Data_Factory >
 	>;
@@ -269,7 +269,7 @@ void
 tc_growable_size_chain()
 {
 	using request_handler_t = 
-			restinio::chained_handlers::growable_size_chain_t<
+			restinio::sync_chain::growable_size_chain_t<
 					User_Data_Factory
 			>;
 
@@ -358,7 +358,7 @@ void
 tc_growable_size_chain_with_rejection()
 {
 	using request_handler_t = 
-			restinio::chained_handlers::growable_size_chain_t<
+			restinio::sync_chain::growable_size_chain_t<
 					User_Data_Factory
 			>;
 
@@ -448,7 +448,7 @@ void
 tc_growable_size_chain_accept_in_middle()
 {
 	using request_handler_t = 
-			restinio::chained_handlers::growable_size_chain_t<
+			restinio::sync_chain::growable_size_chain_t<
 					User_Data_Factory
 			>;
 
