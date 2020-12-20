@@ -123,7 +123,11 @@ struct connection_settings_t final
 			connection_settings_details::state_listener_holder_t<
 					typename Traits::connection_state_listener_t >;
 
-	//FIXME: document this!
+	/*!
+	 * @brief An alias for shared-pointer to user-data-factory.
+	 *
+	 * @since v.0.6.13
+	 */
 	using user_data_factory_handle_t =
 			std::shared_ptr< typename Traits::user_data_factory_t >;
 
@@ -199,7 +203,11 @@ struct connection_settings_t final
 		return m_timer_manager->create_timer_guard();
 	}
 
-	//FIXME: document this!
+	/*!
+	 * @brief Get a reference to user-data-factory object.
+	 *
+	 * @since v.0.6.13
+	 */
 	RESTINIO_NODISCARD
 	auto &
 	user_data_factory() const noexcept
@@ -211,7 +219,14 @@ private:
 	//! Timer factory for timout guards.
 	timer_manager_handle_t m_timer_manager;
 
-	//FIXME: document this!
+	/*!
+	 * @brief A factory for instances of user-data incorporated into a request.
+	 *
+	 * @attention
+	 * This value is expected to be not-null.
+	 *
+	 * @since v.0.6.13
+	 */
 	user_data_factory_handle_t m_user_data_factory;
 };
 

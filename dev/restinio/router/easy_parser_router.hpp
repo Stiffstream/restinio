@@ -43,9 +43,11 @@ using target_path_holder_t = restinio::router::impl::target_path_holder_t;
  */
 struct no_match_t {};
 
-//FIXME: document the template parameter!
 /*!
  * @brief An interface for one entry of easy_parser-based router.
+ *
+ * @tparam User_Data The type of user-data incorporated into a request object.
+ * This type is added to router_entry_t in v.0.6.13.
  *
  * @since v.0.6.6
  */
@@ -72,9 +74,11 @@ public:
 		target_path_holder_t & target_path ) const = 0;
 };
 
-//FIXME: document the template parameter!
 /*!
  * @brief An alias for unique_ptr of router_entry.
+ *
+ * @tparam User_Data The type of user-data incorporated into a request object.
+ * This type is added to router_entry_unique_ptr_t in v.0.6.13.
  *
  * @since v.0.6.6
  */
@@ -85,12 +89,14 @@ using router_entry_unique_ptr_t =
 //
 // actual_router_entry_t
 //
-//FIXME: document User_Data parameter!
 /*!
  * @brief An actual implementation of router_entry interface.
  *
  * @tparam Producer A type of producer that parses a route and produces
  * a value to be used as argument(s) for request handler.
+ *
+ * @tparam User_Data The type of user-data incorporated into a request object.
+ * This type is added to actual_router_entry_t in v.0.6.13.
  *
  * @tparam Handle A type of request handler.
  *
@@ -861,16 +867,31 @@ unescape()
 } /* namespace easy_parser_router */
 
 //
-// easy_parser_router_t
+// generic_easy_parser_router_t
 //
-//FIXME: update the comment!
 /*!
- * @brief A request router that uses easy_parser for matching requests
+ * @brief A generic request router that uses easy_parser for matching requests
  * with handlers.
+ *
+ * @note
+ * That type is intended to be used when user-data-factory for server traits
+ * is not the default one. If your server uses the default user-data-factory
+ * then easy_parser_router_t should be used for the simplicity.
  *
  * Usage example:
  * @code
- * using router_t = restinio::router::easy_parser_router_t;
+ * struct my_user_data_factory {
+ * 	// Type of data to be incorporated into request object.
+ * 	struct data_t {...};
+ *
+ * 	// Factory function for data_t.
+ * 	void make_within( restinio::user_data_buffer_t<data_t> buf ) {
+ * 		new(buf.get()) data_t{...};
+ * 	}
+ * };
+ *
+ * using router_t = restinio::router::generic_easy_parser_router_t<
+ * 		my_user_data_factory >;
  * namespace epr = restinio::router::easy_parser_router;
  *
  * auto make_router(...) {
@@ -908,6 +929,7 @@ unescape()
  * }
  * ...
  * struct traits_t : public restinio::default_traits_t {
+ * 	using user_data_factory_t = my_user_data_factory;
  * 	using request_handler_t = router_t;
  * }
  * ...
@@ -918,7 +940,10 @@ unescape()
  * );
  * @endcode
  *
- * @since v.0.6.6
+ * @tparam User_Data_Factory The type of user-type-factory. This type should
+ * be the same as the `traits::user_type_factory_t` type for the server.
+ *
+ * @since v.0.6.6, v.0.6.13
  */
 template< typename User_Data_Factory >
 class generic_easy_parser_router_t
@@ -1085,7 +1110,66 @@ private:
 //
 // easy_parser_router_t
 //
-//FIXME: document this!
+/*!
+ * @brief A request router that uses easy_parser for matching requests
+ * with handlers.
+ *
+ * @note
+ * That type is intended to be used when the default user-data-factory is
+ * specified in you server's traits.
+ *
+ * Usage example:
+ * @code
+ * using router_t = restinio::router::easy_parser_router_t;
+ * namespace epr = restinio::router::easy_parser_router;
+ *
+ * auto make_router(...) {
+ * 	auto router = std::make_unique<router_t>();
+ * 	...
+ * 	router->http_get(epr::path_to_params(...),
+ * 		[](const auto & req, ...) {...});
+ * 	router->http_post(epr::path_to_params(...),
+ * 		[](const auto & req, ...) {...});
+ * 	router->http_delete(epr::path_to_params(...),
+ * 		[](const auto & req, ...) {...});
+ *
+ * 	router->add_handler(
+ * 		restinio::http_method_lock(),
+ * 		epr::path_to_params(...),
+ * 		[](const auto & req, ...) {...});
+ *
+ * 	router->add_handler(
+ * 		restinio::router::any_of_methods(
+ * 			restinio::http_method_get(),
+ * 			restinio::http_method_delete(),
+ * 			restinio::http_method_post()),
+ * 		epr::path_to_params(...),
+ * 		[](const auto & req, ...) {...});
+ *
+ * 	router->add_handler(
+ * 		restinio::router::none_of_methods(
+ * 			restinio::http_method_get(),
+ * 			restinio::http_method_delete(),
+ * 			restinio::http_method_post()),
+ * 		epr::path_to_params(...),
+ * 		[](const auto & req, ...) {...});
+ *
+ * 	return router;
+ * }
+ * ...
+ * struct traits_t : public restinio::default_traits_t {
+ * 	using request_handler_t = router_t;
+ * }
+ * ...
+ * restinio::run(
+ * 	restinio::on_this_thread<traits_t>()
+ * 		.request_handler(make_router)
+ * 		...
+ * );
+ * @endcode
+ *
+ * @since v.0.6.6
+ */
 using easy_parser_router_t =
 		generic_easy_parser_router_t< no_user_data_factory_t >;
 
