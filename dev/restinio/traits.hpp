@@ -277,11 +277,100 @@ struct traits_t
 	 */
 	static constexpr bool use_connection_count_limiter = false;
 
-	//FIXME: document this!
+	/*!
+	 * @brief The type of user-data-factory.
+	 *
+	 * By the default RESTinio doesn't hold any additional data for a
+	 * request object. But if a user has to store some user-specific
+	 * data inside a request object the user has to do the following
+	 * steps:
+	 *
+	 * The first one is the definition of factory type that should
+	 * look like:
+	 * @code
+	 * class some_user_data_factory {
+	 * public:
+	 * 	using data_t = ...;
+	 *
+	 * 	void make_within(restinio::user_data_buffer_t<data_t> buf);
+	 * };
+	 * @endcode
+	 * Where the name `data_t` should define a name of type to incorporated
+	 * into request object.
+	 * And the method `make_within` should call a placement new for
+	 * type `data_t` to construct a new object of `data_t` inside the
+	 * buffer `buf`:
+	 * @code
+	 * void some_user_data_factory::make_within(
+	 * 		restinio::user_data_buffer_t<data_t> buf) {
+	 * 	new(buf.get()) data_t{...};
+	 * }
+	 * @endcode
+	 *
+	 * The second step is the definition of user-data-factory in server's traits:
+	 * @code
+	 * struct my_traits : public restinio::default_traits_t {
+	 * 	using user_data_factory_t = some_user_data_factory;
+	 * };
+	 * @endcode
+	 *
+	 * The third step is the creation of the user-data-factory instance and
+	 * passing it to server settings:
+	 * @code
+	 * restino::run(on_thread_pool<my_traits>(16)
+	 * 	.port(...)
+	 * 	.address(...)
+	 * 	.user_data_factory(std::make_shared<some_user_data_factory>(..))
+	 * 	.request_handler(...)
+	 * 	...
+	 * );
+	 * @endcode
+	 * Please note that the third step is not necessary if user-data-factory
+	 * type is DefaultConstructible. In that case an instance of
+	 * user-data-factory will be created automatically.
+	 *
+	 * Please note that if RESTinio's server is used with express-like or
+	 * easy_parser-based routers then `request_handler_t` should be
+	 * defined with the respect to user-data-factory type:
+	 * @code
+	 * struct my_user_data_factory {
+	 * 	struct data_t {...};
+	 *
+	 * 	void make_within(restinio::user_data_buffer_t<data_t> buf) {
+	 * 		new(buf.get()) data_t{};
+	 * 	}
+	 * };
+	 *
+	 * using my_router = restinio::router::generic_express_router_t<
+	 * 		restinio::router::std_regex_engine_t,
+	 * 		my_user_data_factory
+	 * >;
+	 *
+	 * struct my_traits : public restinio::default_traits_t {
+	 * 	using user_data_factory_t = my_user_data_factory;
+	 * 	using request_handler_t = my_router;
+	 * };
+	 * @endcode
+	 *
+	 * @since v.0.6.13
+	 */
 	using user_data_factory_t = no_user_data_factory_t;
 };
 
-//FIXME: document this!
+//
+// request_handler_type_from_traits_t
+//
+/*!
+ * @brief A metafunction for extraction a request-handler type from
+ * server's traits.
+ *
+ * This metafunction is necessary because `request_handler_t` in
+ * Traits can be an alias for details::autodetect_request_handler_type.
+ * Because of that details::actual_request_handler_type_detector metafunction
+ * is invoked for the detection of request-handler type.
+ *
+ * @since v.0.6.13
+ */
 template< typename Traits >
 using request_handler_type_from_traits_t =
 	typename details::actual_request_handler_type_detector<
@@ -289,7 +378,19 @@ using request_handler_type_from_traits_t =
 			typename Traits::user_data_factory_t
 		>::request_handler_t;
 
-//FIXME: document this!
+//
+// incoming_request_type_from_traits_t
+//
+/*!
+ * @brief A metafunction for the detection of actual type of request-object
+ * from server's traits.
+ *
+ * The actual type of request-object depends from user-data-factory.
+ * This metafunction detect the actual type with the respect to the
+ * definition of `user_data_factory_t` inside Traits.
+ *
+ * @since v.0.6.13
+ */
 template< typename Traits >
 using incoming_request_type_from_traits_t =
 	incoming_request_t< typename Traits::user_data_factory_t::data_t >;

@@ -1545,9 +1545,21 @@ class basic_server_settings_t
 		 * @name User-data factory.
 		 * @{
 		 */
+		/*!
+		 * @brief The actual type of user-data-factory.
+		 * @since v.0.6.13
+		 */
 		using user_data_factory_t = typename Traits::user_data_factory_t;
+		/*!
+		 * @brief Type of shared-pointer to user-data-factory.
+		 * @since v.0.6.13
+		 */
 		using user_data_factory_handle_t = std::shared_ptr< user_data_factory_t >;
 
+		/*!
+		 * @brief Setter for user-data-factory.
+		 * @since v.0.6.13
+		 */
 		Derived &
 		user_data_factory(
 			user_data_factory_handle_t factory ) &
@@ -1556,6 +1568,10 @@ class basic_server_settings_t
 			return reference_to_derived();
 		}
 
+		/*!
+		 * @brief Setter for user-data-factory.
+		 * @since v.0.6.13
+		 */
 		Derived &&
 		user_data_factory(
 			user_data_factory_handle_t factory ) &&
@@ -1563,6 +1579,10 @@ class basic_server_settings_t
 			return std::move(this->user_data_factory( std::move(factory) ));
 		}
 
+		/*!
+		 * @brief Extractor for user-data-factory.
+		 * @since v.0.6.13
+		 */
 		RESTINIO_NODISCARD
 		user_data_factory_handle_t
 		giveaway_user_data_factory() const noexcept
@@ -1673,7 +1693,11 @@ class basic_server_settings_t
 		 */
 		incoming_http_msg_limits_t m_incoming_http_msg_limits;
 
-		//FIXME: document this!
+		/*!
+		 * @brief User-data-factory for server.
+		 *
+		 * @since v.0.6.13
+		 */
 		user_data_factory_handle_t m_user_data_factory;
 };
 
