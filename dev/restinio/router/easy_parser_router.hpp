@@ -106,7 +106,7 @@ template< typename User_Data, typename Producer, typename Handler >
 class actual_router_entry_t : public router_entry_t< User_Data >
 {
 	//FIXME: compatibility between User_Data and Handler should be
-	//checked by static_assert.
+	//checked by static_assert. If it's possible.
 
 	//! HTTP method to match.
 	restinio::router::impl::buffered_matcher_holder_t m_method_matcher;

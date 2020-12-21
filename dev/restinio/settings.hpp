@@ -842,7 +842,7 @@ class basic_server_settings_t
 
 		//! Request handler.
 		//! \{
-		using request_handler_t = actual_request_handler_t< Traits >;
+		using request_handler_t = request_handler_type_from_traits_t< Traits >;
 
 		Derived &
 		request_handler( std::unique_ptr< request_handler_t > handler ) &

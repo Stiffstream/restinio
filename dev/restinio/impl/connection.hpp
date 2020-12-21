@@ -309,8 +309,8 @@ class connection_t final
 	public:
 		using timer_manager_t = typename Traits::timer_manager_t;
 		using timer_guard_t = typename timer_manager_t::timer_guard_t;
-		using request_handler_t = actual_request_handler_t< Traits >;
-		using incoming_request_t = actual_incoming_request_t< Traits >;
+		using request_handler_t = request_handler_type_from_traits_t< Traits >;
+		using incoming_request_t = incoming_request_type_from_traits_t< Traits >;
 		using logger_t = typename Traits::logger_t;
 		using strand_t = typename Traits::strand_t;
 		using stream_socket_t = typename Traits::stream_socket_t;

@@ -214,7 +214,7 @@ template <
 ws_handle_t
 upgrade(
 	//! Upgrade request.
-	actual_incoming_request_t<Traits> & req,
+	incoming_request_type_from_traits_t<Traits> & req,
 	//! Activation policy.
 	activation_t activation_flag,
 	//! Response header fields.
@@ -292,7 +292,7 @@ template <
 		typename WS_Message_Handler >
 auto
 upgrade(
-	actual_incoming_request_t<Traits> & req,
+	incoming_request_type_from_traits_t<Traits> & req,
 	activation_t activation_flag,
 	std::string sec_websocket_accept_field_value,
 	WS_Message_Handler ws_message_handler )
@@ -315,7 +315,7 @@ template <
 		typename WS_Message_Handler >
 auto
 upgrade(
-	actual_incoming_request_t<Traits> & req,
+	incoming_request_type_from_traits_t<Traits> & req,
 	activation_t activation_flag,
 	std::string sec_websocket_accept_field_value,
 	std::string sec_websocket_protocol_field_value,
@@ -343,7 +343,7 @@ template <
 		typename WS_Message_Handler >
 auto
 upgrade(
-	actual_incoming_request_t<Traits> & req,
+	incoming_request_type_from_traits_t<Traits> & req,
 	activation_t activation_flag,
 	WS_Message_Handler ws_message_handler )
 {

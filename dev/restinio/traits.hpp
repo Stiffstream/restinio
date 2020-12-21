@@ -53,10 +53,52 @@ struct valid_handler_type<
 
 } /* namespace valid_request_handler_type_check */
 
-//FIXME: document this!
+//
+// autodetect_request_handler_type
+//
+/*!
+ * @brief A special type to be used as indicator that the type of
+ * a request handler should be automatically detected.
+ *
+ * In versions prior to 0.6.13 request-handlers in RESTinio have the
+ * same format. But since v.0.6.13 the actual type of request-handler
+ * is dependent on user-data-factory type. It means that if a user
+ * defines own user-data-factory for server's traits then user also
+ * has to define own request-handler type:
+ *
+ * @code
+ * struct my_user_data_factory {...};
+ *
+ * struct my_traits : public restinio::default_traits_t {
+ * 	using user_data_factory_t = my_user_data_factory;
+ * 	using request_handler_t = std::function<
+ * 		restinio::request_handling_status_t(
+ * 			restinio::incoming_request_handle_t<
+ * 				my_user_data_factory::data_t>)
+ * 	>;
+ * };
+ * @endcode
+ *
+ * But this is a boring and error-prone task. So RESTinio allows a user
+ * to specify only `user_data_factory_t` type and skip the definition
+ * of `request_handler_t`. That definition will be performed automatically.
+ *
+ * The actual detection of request-handler type is performed by
+ * using specialization of actual_request_handler_type_detector for
+ * autodetect_request_handler_type.
+ *
+ * @since v.0.6.13
+ */
 struct autodetect_request_handler_type {};
 
-//FIXME: document this!
+//
+// actual_request_handler_type_detector
+//
+/*!
+ * @brief A metafunction for the detection of type of a request-handler.
+ *
+ * @since v.0.6.13
+ */
 template<
 	typename Request_Handler,
 	typename User_Data_Factory >
@@ -73,6 +115,12 @@ struct actual_request_handler_type_detector
 	using request_handler_t = Request_Handler;
 };
 
+/*!
+ * @brief Special version of metafunction %actual_request_handler_type_detector
+ * for the case of %autodetect_request_handler_type.
+ *
+ * @since v.0.6.13
+ */
 template< typename User_Data_Factory >
 struct actual_request_handler_type_detector<
 		autodetect_request_handler_type,
@@ -235,7 +283,7 @@ struct traits_t
 
 //FIXME: document this!
 template< typename Traits >
-using actual_request_handler_t =
+using request_handler_type_from_traits_t =
 	typename details::actual_request_handler_type_detector<
 			typename Traits::request_handler_t,
 			typename Traits::user_data_factory_t
@@ -243,7 +291,7 @@ using actual_request_handler_t =
 
 //FIXME: document this!
 template< typename Traits >
-using actual_incoming_request_t =
+using incoming_request_type_from_traits_t =
 	incoming_request_t< typename Traits::user_data_factory_t::data_t >;
 
 //

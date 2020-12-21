@@ -115,7 +115,7 @@ struct connection_settings_t final
 	using timer_manager_t = typename Traits::timer_manager_t;
 	using timer_manager_handle_t = std::shared_ptr< timer_manager_t >;
 
-	using request_handler_t = actual_request_handler_t< Traits >;
+	using request_handler_t = request_handler_type_from_traits_t< Traits >;
 
 	using logger_t = typename Traits::logger_t;
 
