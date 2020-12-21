@@ -24,7 +24,20 @@ namespace router
 //
 // generic_non_matched_request_handler_t
 //
-//FIXME: document this!
+/*!
+ * @brief A generic type of handler for non-matched requests.
+ *
+ * Since v.0.6.13 some user-data can be incorporated into a request
+ * object. In that case request-handler receives a parameter of type
+ * `incoming_request_handle_t<User_Data>`. The name
+ * generic_non_matched_request_handler_t describes a type of
+ * generic handler that can be parametrized by a @a User_Type.
+ *
+ * @tparam User_Data The type of user-data incorporated into a
+ * request object.
+ *
+ * @since v.0.6.13
+ */
 template< typename User_Data >
 using generic_non_matched_request_handler_t =
 		std::function<
@@ -33,7 +46,13 @@ using generic_non_matched_request_handler_t =
 //
 // non_matched_request_handler_t
 //
-//FIXME: document this!
+/*!
+ * @brief A type of handler for non-matched requests for a case when
+ * default user-data-factory is specified in the server's traits.
+ *
+ * Since v.0.6.13 the name non_matched_request_handler_t is just
+ * an alias for generic_non_matched_request_handler_t.
+ */
 using non_matched_request_handler_t =
 		generic_non_matched_request_handler_t<
 				no_user_data_factory_t::data_t

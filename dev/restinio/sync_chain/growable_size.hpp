@@ -24,14 +24,162 @@ namespace sync_chain
 //
 // growable_size_chain_t
 //
-//FIXME: document this!
+/*!
+ * @brief A holder of variable-size chain of synchronous handlers.
+ *
+ * @note
+ * Once a list of handler is filled and an instance of growable_size_chain_t
+ * is created that instance can't be changed: a new handler can't be added, and
+ * an old handler can be removed. The creation of growable_size_chain_t
+ * instance is performed by the help of growable_size_chain_t::builder_t
+ * class.
+ *
+ * Usage example for the case when there is no user-data in a request object.
+ * @code
+ * struct my_traits : public restinio::default_traits_t {
+ * 	using request_handler_t = restinio::sync_chain::growable_size_chain_t;
+ * };
+ *
+ * // The first handler in the chain.
+ * restinio::request_handling_status_t headers_checker(
+ * 	const restinio::request_handle_t & req )
+ * {
+ * 	... // Checks values of HTTP-fields and rejects invalid requests.
+ * }
+ *
+ * // The second handler in the chain.
+ * restinio::request_handling_status_t authentificator(
+ * 	const restinio::request_handle_t & req )
+ * {
+ * 	... // Checks user's credentials and rejects requests from
+ * 	    // non-authentificated users.
+ * }
+ *
+ * // The last handler in the chain.
+ * restinio::request_handling_status_t actual_handler(
+ * 	const restinio::request_handle_t & req )
+ * {
+ * 	... // Actual processing.
+ * }
+ *
+ * // Building of a chain.
+ * restinio::sync_chain::growable_size_chain_t::builder_t builder;
+ * if(config.force_headers_checking())
+ * 	builder.add(headers_checker);
+ * if(config.force_user_authentification())
+ * 	builder.add(authentificator);
+ * builder.add(actual_handler);
+ *
+ * restinio::run(
+ * 	on_thread_pool<my_traits>(16)
+ * 		.address(...)
+ * 		.port(...)
+ * 		.request_handler(builder.release())
+ * );
+ * @endcode
+ *
+ * Usage example for the case when some user-data is incorporated into
+ * a request object.
+ * @code
+ * struct my_user_data_factory {
+ * 	// A data formed by checker of HTTP-fields.
+ * 	struct request_specific_fields_t {...};
+ *
+ * 	// A data formed by user-authentificator.
+ * 	struct user_info_t {...};
+ *
+ * 	// A data to be incorporated into a request object.
+ * 	using data_t = std::tuple<
+ * 			std::optional<request_specific_fields_t>,
+ * 			std::optional<user_info_t>>;
+ *
+ * 	void make_within(restinio::user_data_buffer_t<data_t> buf) {
+ * 		new(buf.get()) data_t{};
+ * 	}
+ * };
+ *
+ * struct my_traits : public restinio::default_traits_t {
+ * 	using user_data_factory_t = my_user_data_factory;
+ * 	using request_handler_t = restinio::sync_chain::growable_size_chain_t<
+ * 			user_data_factory>;
+ * };
+ *
+ * using my_request_handle_t =
+ * 	restinio::incoming_request_handle_t<my_user_data_factory::data_t>;
+ *
+ * // The first handler in the chain.
+ * restinio::request_handling_status_t headers_checker(
+ * 	const my_request_handle_t & req )
+ * {
+ * 	... // Checks values of HTTP-fields and rejects invalid requests.
+ * }
+ *
+ * // The second handler in the chain.
+ * restinio::request_handling_status_t authentificator(
+ * 	const my_request_handle_t & req )
+ * {
+ * 	... // Checks user's credentials and rejects requests from
+ * 	    // non-authentificated users.
+ * }
+ *
+ * // The last handler in the chain.
+ * restinio::request_handling_status_t actual_handler(
+ * 	const my_request_handle_t & req )
+ * {
+ * 	auto & field_values = std::get<
+ * 		std::optional<my_user_data_factory::request_specific_fields_t>>(req->user_data());
+ * 	auto & user_info = std::get<
+ * 		std::optional<my_user_data_factory::user_info_t>>(req->user_data());
+ * 	... // Actual processing.
+ * }
+ *
+ * // Building of a chain.
+ * restinio::sync_chain::growable_size_chain_t::builder_t builder;
+ * if(config.force_headers_checking())
+ * 	builder.add(headers_checker);
+ * if(config.force_user_authentification())
+ * 	builder.add(authentificator);
+ * builder.add(actual_handler);
+ *
+ * restinio::run(
+ * 	on_thread_pool<my_traits>(16)
+ * 		.address(...)
+ * 		.port(...)
+ * 		.request_handler(builder.release())
+ * );
+ * @endcode
+ *
+ * @tparam User_Data_Factory The type of user-data-factory specified in
+ * the server's traits.
+ *
+ * @since v.0.6.13
+ */
 template< typename User_Data_Factory = no_user_data_factory_t >
 class growable_size_chain_t
 {
+	// Helper class to allow the creation of growable_size_chain_t only
+	// for the friends of growable_size_chain_t.
 	struct creation_token_t {};
 
 public:
 	friend class builder_t;
+
+	/*!
+	 * @brief A builder of an instance of growable_size_chain.
+	 *
+	 * Creates an empty instance of growable_size_chain_t in the constructor.
+	 * That instance can be obtained by release() method.
+	 *
+	 * @note
+	 * New handlers can be added to the chain by add() method until
+	 * release() is called.
+	 *
+	 * @attention
+	 * An instance of builder works like an unique_ptr: it will hold
+	 * a nullptr after a call of release() method.
+	 *
+	 * @since v.0.6.13
+	 */
 	class builder_t
 	{
 	public:
@@ -39,6 +187,13 @@ public:
 			:	m_chain{ new growable_size_chain_t( creation_token_t{} ) }
 		{}
 
+		/*!
+		 * @brief Stop adding of new handlers and acquire the chain instance.
+		 *
+		 * @note
+		 * The builder object should not be used after the calling of
+		 * that method.
+		 */
 		RESTINIO_NODISCARD
 		std::unique_ptr< growable_size_chain_t >
 		release() noexcept
@@ -46,6 +201,9 @@ public:
 			return { std::move(m_chain) };
 		}
 
+		/*!
+		 * @brief Add a new handler to the chain.
+		 */
 		template< typename Handler >
 		void
 		add( Handler && handler )
@@ -75,11 +233,20 @@ private:
 
 	std::vector< handler_holder_t > m_handlers;
 
-	//FIXME: document this!
+	/*!
+	 * @brief The main constructor.
+	 *
+	 * It has that form because the default constructor is public and
+	 * marked as deleted.
+	 */
 	growable_size_chain_t( creation_token_t ) {}
 
 public:
-	//FIXME: document this!
+	/*!
+	 * @note
+	 * The default constructor is disable because an instance of
+	 * that class should be created and filled by using builder_t.
+	 */
 	growable_size_chain_t() = delete;
 
 	RESTINIO_NODISCARD

@@ -419,7 +419,22 @@ class route_matcher_t
 //
 // generic_express_request_handler_t
 //
-//FIXME: document this!
+/*!
+ * @brief Type of generic handler for one route.
+ *
+ * Since v.0.6.13 some user-data can be incorporated into request-object.
+ * In that case request-handler will have a different format in
+ * comparison with previous versions. The type generic_express_request_handler_t
+ * describes a request-handler when user-data of type @a User_Data is
+ * bound to request object.
+ *
+ * @note
+ * If the default user-data-factory in specified in server's traits
+ * then the old type express_request_handler_t can be used for
+ * the simplicity.
+ *
+ * @since v.0.6.13
+ */
 template< typename User_Data >
 using generic_express_request_handler_t = std::function<
 		request_handling_status_t(
@@ -430,7 +445,14 @@ using generic_express_request_handler_t = std::function<
 //
 // express_request_handler_t
 //
-//FIXME: document this!
+/*!
+ * @brief Type of a handler for one route in the case when there is
+ * no user-data in request object.
+ *
+ * Since v.0.6.13 it's just an alias for generic_express_request_handler_t
+ * for the case when the default user-data-factory is used in
+ * server's traits.
+ */
 using express_request_handler_t =
 		generic_express_request_handler_t< no_user_data_factory_t::data_t >;
 
@@ -438,7 +460,7 @@ using express_request_handler_t =
 // generic_express_route_entry_t
 //
 
-//! A single express route entry.
+//! A single generic express route entry.
 /*!
 	Might be helpful for use without express_router_t,
 	if only a single route is needed.
@@ -543,7 +565,12 @@ class generic_express_route_entry_t
 //
 // express_route_entry_t
 //
-//FIXME: document this!
+/*!
+ * @brief An alias for a single route entry in the case when the default
+ * user-data-factory is used in server's traits.
+ *
+ * Since v.0.6.13 this name is just an alias for generic_express_route_entry_t.
+ */
 template<
 	typename Regex_Engine = std_regex_engine_t >
 using express_route_entry_t = generic_express_route_entry_t<
@@ -554,22 +581,29 @@ using express_route_entry_t = generic_express_route_entry_t<
 // generic_express_router_t
 //
 
-//FIXME: fix the docs!
-//FIXME: template parameters should be described in Doxygen-comment.
-//! Express.js style router.
-/*
+//! Generic Express.js style router.
+/*!
 	Express routers acts as a request handler (it means it is a function-object
-	that can be called as a restinio request handler).
-	It aggregates several endpoint-handlers and picks one or none of them to handle the request.
-	The choice of the handler to execute depends on request target and HTTP method.
-	If router finds no handler matching the request then request is considered unmatched.
-	It is possible to set a handler for unmatched requests, otherwise router rejects the request and
-	RESTinio takes care of it.
+	that can be called as a restinio request handler).  It aggregates several
+	endpoint-handlers and picks one or none of them to handle the request.  The
+	choice of the handler to execute depends on request target and HTTP method.
 
-	There is a difference between ordinary restinio request handler
-	and the one that is used with experss router: express_request_handler_t.
-	The signature of a handlers that can be put in router
-	has an additional parameter -- a container with parameters extracted from URI (request target).
+	If router finds no handler matching the request then request is considered
+	unmatched.
+
+	It is possible to set a handler for unmatched requests, otherwise router
+	rejects the request and RESTinio takes care of it.
+
+	There is a difference between ordinary restinio request handler and the one
+	that is used with experss router: generic_express_request_handler_t.  The
+	signature of a handlers that can be put in router has an additional
+	parameter -- a container with parameters extracted from URI (request
+	target).
+
+	@tparam Regex_Engine Type of regex-engine to be used.
+
+	@tparam User_Data_Factory Type of user-data-factory specified in
+	server's traits.
 */
 template<
 	typename Regex_Engine,
@@ -793,7 +827,15 @@ class generic_express_router_t
 //
 // express_router_t
 //
-//FIXME: document this!
+/*!
+ * @brief A type of express-like router for the case when the default
+ * user-data-factory is specified in the server's traits.
+ *
+ * Since v.0.6.13 this type is just an alias for generic_express_router_t
+ * with the default user-data-factory type.
+ *
+ * @tparam Regex_Engine Type of regex-engine to be used.
+ */
 template<
 	typename Regex_Engine = std_regex_engine_t >
 using express_router_t = generic_express_router_t<
