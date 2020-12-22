@@ -402,7 +402,7 @@ using generic_request_type_from_traits_t =
 template <
 		typename Timer_Manager,
 		typename Logger,
-		typename Request_Handler = default_request_handler_t >
+		typename Request_Handler = details::autodetect_request_handler_type >
 using single_thread_traits_t =
 	traits_t< Timer_Manager, Logger, Request_Handler, noop_strand_t >;
 
