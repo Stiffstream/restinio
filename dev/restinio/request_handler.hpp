@@ -87,17 +87,17 @@ struct no_user_data_factory_t
 };
 
 template< typename User_Data >
-class incoming_request_t;
+class generic_request_t;
 
 namespace impl
 {
 
 template< typename User_Data >
 connection_handle_t &
-access_req_connection( incoming_request_t<User_Data> & ) noexcept;
+access_req_connection( generic_request_t<User_Data> & ) noexcept;
 
 //
-// incoming_request_user_data_holder_t
+// generic_request_user_data_holder_t
 //
 /*!
  * @brief Helper class for holding a buffer for user-data object to
@@ -110,19 +110,19 @@ access_req_connection( incoming_request_t<User_Data> & ) noexcept;
  * @since v.0.6.13
  */
 template< typename User_Data >
-class incoming_request_user_data_holder_t
+class generic_request_user_data_holder_t
 {
 	alignas(User_Data) std::array<char, sizeof(User_Data)> m_data;
 
 public:
 	template< typename Factory >
-	incoming_request_user_data_holder_t(
+	generic_request_user_data_holder_t(
 		Factory & factory )
 	{
 		factory.make_within( user_data_buffer_t<User_Data>{ m_data.data() } );
 	}
 
-	~incoming_request_user_data_holder_t() noexcept
+	~generic_request_user_data_holder_t() noexcept
 	{
 		get_ptr()->~User_Data();
 	}
@@ -145,7 +145,7 @@ public:
 } /* namespace impl */
 
 //
-// incoming_request_t
+// generic_request_t
 //
 
 //! HTTP Request data.
@@ -157,12 +157,12 @@ public:
 	a request object.
 */
 template< typename User_Data >
-class incoming_request_t final
-	:	public std::enable_shared_from_this< incoming_request_t< User_Data > >
+class generic_request_t final
+	:	public std::enable_shared_from_this< generic_request_t< User_Data > >
 {
 	template< typename UD >
 	friend impl::connection_handle_t &
-	impl::access_req_connection( incoming_request_t<UD> & ) noexcept;
+	impl::access_req_connection( generic_request_t<UD> & ) noexcept;
 
 	public:
 		//! Old-format initializing constructor.
@@ -171,14 +171,14 @@ class incoming_request_t final
 		 * available (or needed).
 		 */
 		template< typename User_Data_Factory >
-		incoming_request_t(
+		generic_request_t(
 			request_id_t request_id,
 			http_request_header_t header,
 			std::string body,
 			impl::connection_handle_t connection,
 			endpoint_t remote_endpoint,
 			User_Data_Factory & user_data_factory )
-			:	incoming_request_t{
+			:	generic_request_t{
 					request_id,
 					std::move( header ),
 					std::move( body ),
@@ -194,7 +194,7 @@ class incoming_request_t final
 		 * @since v.0.6.9
 		 */
 		template< typename User_Data_Factory >
-		incoming_request_t(
+		generic_request_t(
 			request_id_t request_id,
 			http_request_header_t header,
 			std::string body,
@@ -288,7 +288,7 @@ class incoming_request_t final
 		 * };
 		 *
 		 * restinio::request_handling_status_t authentificator(
-		 * 		const restinio::incoming_request_handle_t<my_user_data_factory::data_t> & req) {
+		 * 		const restinio::generic_request_handle_t<my_user_data_factory::data_t> & req) {
 		 * 	auto & ud = req->user_data();
 		 * 	...
 		 * 	ud.user_id_ = some_calculated_user_id;
@@ -330,7 +330,7 @@ class incoming_request_t final
 		 * };
 		 *
 		 * restinio::request_handling_status_t actual_handler(
-		 * 		const restinio::incoming_request_handle_t<my_user_data_factory::data_t> & req) {
+		 * 		const restinio::generic_request_handle_t<my_user_data_factory::data_t> & req) {
 		 * 	const auto & ud = req->user_data();
 		 * 	if(ud.user_id_.valid()) {
 		 * 		...
@@ -385,14 +385,14 @@ class incoming_request_t final
 		 *
 		 * @since v.0.6.13
 		 */
-		impl::incoming_request_user_data_holder_t< User_Data > m_user_data_holder;
+		impl::generic_request_user_data_holder_t< User_Data > m_user_data_holder;
 };
 
 template< typename User_Data >
 std::ostream &
 operator<<(
 	std::ostream & o,
-	const incoming_request_t< User_Data > & req )
+	const generic_request_t< User_Data > & req )
 {
 	o << "{req_id: " << req.request_id() << ", "
 		"conn_id: " << req.connection_id() << ", "
@@ -404,8 +404,8 @@ operator<<(
 
 //! An alias for shared-pointer to incoming request.
 template< typename User_Data >
-using incoming_request_handle_t =
-		std::shared_ptr< incoming_request_t< User_Data > >;
+using generic_request_handle_t =
+		std::shared_ptr< generic_request_t< User_Data > >;
 
 //! An alias for incoming request without additional user-data.
 /*!
@@ -413,7 +413,7 @@ using incoming_request_handle_t =
  *
  * @since v.0.6.13
  */
-using request_t = incoming_request_t< no_user_data_factory_t::data_t >;
+using request_t = generic_request_t< no_user_data_factory_t::data_t >;
 
 //! An alias for handle for incoming request without additional user-data.
 /*!
@@ -435,7 +435,7 @@ namespace impl
 
 template< typename User_Data >
 connection_handle_t &
-access_req_connection( incoming_request_t<User_Data> & req ) noexcept
+access_req_connection( generic_request_t<User_Data> & req ) noexcept
 {
 	return req.m_connection;
 }

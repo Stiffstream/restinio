@@ -495,7 +495,7 @@ template< typename User_Data >
 RESTINIO_NODISCARD
 expected_t< std::string, enumeration_error_t >
 detect_boundary_for_multipart_body(
-	const incoming_request_t< User_Data > & req,
+	const generic_request_t< User_Data > & req,
 	string_view_t expected_media_type,
 	optional_t< string_view_t > expected_media_subtype )
 {
@@ -685,7 +685,7 @@ RESTINIO_NODISCARD
 expected_t< std::size_t, enumeration_error_t >
 enumerate_parts(
 	//! The request to be handled.
-	const incoming_request_t< User_Type > & req,
+	const generic_request_t< User_Type > & req,
 	//! The handler to be called for every parsed part.
 	Handler && handler,
 	//! The expected value of 'type' part of 'media-type' from Content-Type.

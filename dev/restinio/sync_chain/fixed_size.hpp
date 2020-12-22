@@ -112,7 +112,7 @@ namespace sync_chain
  * };
  *
  * using my_request_handle_t =
- * 	restinio::incoming_request_handle_t<my_user_data_factory::data_t>;
+ * 	restinio::generic_request_handle_t<my_user_data_factory::data_t>;
  *
  * // The first handler in the chain.
  * restinio::request_handling_status_t headers_checker(
@@ -163,7 +163,7 @@ template<
 class fixed_size_chain_t
 {
 	using actual_request_handle_t =
-			incoming_request_handle_t< typename User_Data_Factory::data_t >;
+			generic_request_handle_t< typename User_Data_Factory::data_t >;
 
 	using handler_holder_t = std::function<
 			request_handling_status_t(const actual_request_handle_t &)

@@ -7,7 +7,7 @@ create_fake_request(
 	std::string target,
 	http_method_id_t method = http_method_get() )
 {
-	using request_t = restinio::incoming_request_t<
+	using request_t = restinio::generic_request_t<
 			typename User_Data_Factory::data_t
 	>;
 

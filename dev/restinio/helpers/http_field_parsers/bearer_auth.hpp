@@ -308,7 +308,7 @@ inline expected_t< params_t, extraction_error_t >
 try_extract_params(
 	//! A request that should hold a HTTP-field with authentification
 	//! parameters.
-	const incoming_request_t< User_Data > & req,
+	const generic_request_t< User_Data > & req,
 	//! The name of a HTTP-field with authentification parameters.
 	string_view_t auth_field_name )
 {
@@ -373,7 +373,7 @@ inline expected_t< params_t, extraction_error_t >
 try_extract_params(
 	//! A request that should hold a HTTP-field with authentification
 	//! parameters.
-	const incoming_request_t< User_Data > & req,
+	const generic_request_t< User_Data > & req,
 	//! The ID of a HTTP-field with authentification parameters.
 	http_field_t auth_field_id )
 {

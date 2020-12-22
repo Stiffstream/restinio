@@ -140,7 +140,7 @@ try_extract_field_value_from(
  * result of successful parse if the field is present.
  *
  * @tparam User_Data The type of user-data incorporated into an instance
- * of restinio::incoming_request_t. There is no need to specify that type,
+ * of restinio::generic_request_t. There is no need to specify that type,
  * it has to be detected automatically by the compiler.
  *
  * @since v.0.6.8
@@ -150,7 +150,7 @@ RESTINIO_NODISCARD
 auto 
 try_parse_field(
 	//! A request that should hold a HTTP-field.
-	const incoming_request_t< User_Data > & req,
+	const generic_request_t< User_Data > & req,
 	//! The name of HTTP-field to be extracted and parsed.
 	string_view_t field_name,
 	//! The default value to be used if HTTP-field is not found.
@@ -198,7 +198,7 @@ try_parse_field(
  * result of successful parse if the field is present.
  *
  * @tparam User_Data The type of user-data incorporated into an instance
- * of restinio::incoming_request_t. There is no need to specify that type,
+ * of restinio::generic_request_t. There is no need to specify that type,
  * it has to be detected automatically by the compiler.
  *
  * @since v.0.6.8
@@ -208,7 +208,7 @@ RESTINIO_NODISCARD
 auto 
 try_parse_field(
 	//! A request that should hold a HTTP-field.
-	const incoming_request_t< User_Data > & req,
+	const generic_request_t< User_Data > & req,
 	//! The ID of a HTTP-field to be extracted and parsed.
 	http_field_t field_id,
 	//! The default value to be used if HTTP-field is not found.

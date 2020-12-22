@@ -40,7 +40,7 @@ struct valid_handler_type<
 					request_handling_status_t,
 					decltype(std::declval<Handler>()(
 							std::declval<
-									incoming_request_handle_t<
+									generic_request_handle_t<
 											typename User_Data_Factory::data_t
 									>
 							>()))
@@ -73,7 +73,7 @@ struct valid_handler_type<
  * 	using user_data_factory_t = my_user_data_factory;
  * 	using request_handler_t = std::function<
  * 		restinio::request_handling_status_t(
- * 			restinio::incoming_request_handle_t<
+ * 			restinio::generic_request_handle_t<
  * 				my_user_data_factory::data_t>)
  * 	>;
  * };
@@ -110,7 +110,7 @@ struct actual_request_handler_type_detector
 					User_Data_Factory
 				>::value,
 			"Request_Handler should be invocable with "
-			"incoming_request_handle_t<User_Data_Factory::data_t>" );
+			"generic_request_handle_t<User_Data_Factory::data_t>" );
 
 	using request_handler_t = Request_Handler;
 };
@@ -128,7 +128,7 @@ struct actual_request_handler_type_detector<
 {
 	using request_handler_t = std::function<
 			request_handling_status_t(
-					incoming_request_handle_t<typename User_Data_Factory::data_t>) >;
+					generic_request_handle_t<typename User_Data_Factory::data_t>) >;
 };
 
 } /* namespace details */
@@ -379,7 +379,7 @@ using request_handler_type_from_traits_t =
 		>::request_handler_t;
 
 //
-// incoming_request_type_from_traits_t
+// generic_request_type_from_traits_t
 //
 /*!
  * @brief A metafunction for the detection of actual type of request-object
@@ -392,8 +392,8 @@ using request_handler_type_from_traits_t =
  * @since v.0.6.13
  */
 template< typename Traits >
-using incoming_request_type_from_traits_t =
-	incoming_request_t< typename Traits::user_data_factory_t::data_t >;
+using generic_request_type_from_traits_t =
+	generic_request_t< typename Traits::user_data_factory_t::data_t >;
 
 //
 // single_thread_traits_t

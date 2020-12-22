@@ -29,7 +29,7 @@ namespace router
  *
  * Since v.0.6.13 some user-data can be incorporated into a request
  * object. In that case request-handler receives a parameter of type
- * `incoming_request_handle_t<User_Data>`. The name
+ * `generic_request_handle_t<User_Data>`. The name
  * generic_non_matched_request_handler_t describes a type of
  * generic handler that can be parametrized by a @a User_Type.
  *
@@ -41,7 +41,7 @@ namespace router
 template< typename User_Data >
 using generic_non_matched_request_handler_t =
 		std::function<
-				request_handling_status_t( incoming_request_handle_t<User_Data> )
+				request_handling_status_t( generic_request_handle_t<User_Data> )
 		>;
 //
 // non_matched_request_handler_t

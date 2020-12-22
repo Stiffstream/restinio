@@ -55,7 +55,7 @@ template< typename User_Data >
 class router_entry_t
 {
 public:
-	using actual_request_handle_t = incoming_request_handle_t< User_Data >;
+	using actual_request_handle_t = generic_request_handle_t< User_Data >;
 
 	virtual ~router_entry_t() = default;
 
@@ -551,7 +551,7 @@ public:
 	RESTINIO_NODISCARD
 	static auto
 	invoke_handler(
-		const incoming_request_handle_t< User_Data > & req,
+		const generic_request_handle_t< User_Data > & req,
 		Handler && handler,
 		typename base_type_t::result_type & type )
 	{
@@ -570,7 +570,7 @@ template<
 decltype(auto)
 call_with_tuple_impl(
 	F && what,
-	const incoming_request_handle_t< User_Data > & req,
+	const generic_request_handle_t< User_Data > & req,
 	Tuple && params,
 	std::index_sequence<Indexes...> )
 {
@@ -593,7 +593,7 @@ template< typename F, typename User_Data, typename Tuple >
 decltype(auto)
 call_with_tuple(
 	F && what,
-	const incoming_request_handle_t< User_Data > & req,
+	const generic_request_handle_t< User_Data > & req,
 	Tuple && params )
 {
 	return call_with_tuple_impl(
@@ -634,7 +634,7 @@ public:
 	RESTINIO_NODISCARD
 	static auto
 	invoke_handler(
-		const incoming_request_handle_t< User_Type > & req,
+		const generic_request_handle_t< User_Type > & req,
 		Handler && handler,
 		typename base_type_t::result_type & type )
 	{
@@ -951,7 +951,7 @@ class generic_easy_parser_router_t
 	using user_data_t = typename User_Data_Factory::data_t;
 
 public:
-	using actual_request_handle_t = incoming_request_handle_t< user_data_t >;
+	using actual_request_handle_t = generic_request_handle_t< user_data_t >;
 
 	generic_easy_parser_router_t() = default;
 

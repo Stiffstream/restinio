@@ -359,7 +359,7 @@ template< typename User_Data, typename Handler >
 expected_t< std::size_t, enumeration_error_t >
 enumerate_parts_with_files(
 	//! Request to be processed.
-	const incoming_request_t< User_Data > & req,
+	const generic_request_t< User_Data > & req,
 	//! Handler to be called for every part with uploaded file.
 	Handler && handler,
 	//! The value of 'type' part of media-type in Content-Type field.

@@ -310,7 +310,7 @@ class connection_t final
 		using timer_manager_t = typename Traits::timer_manager_t;
 		using timer_guard_t = typename timer_manager_t::timer_guard_t;
 		using request_handler_t = request_handler_type_from_traits_t< Traits >;
-		using incoming_request_t = incoming_request_type_from_traits_t< Traits >;
+		using generic_request_t = generic_request_type_from_traits_t< Traits >;
 		using logger_t = typename Traits::logger_t;
 		using strand_t = typename Traits::strand_t;
 		using stream_socket_t = typename Traits::stream_socket_t;
@@ -665,7 +665,7 @@ class connection_t final
 
 					const auto handling_result =
 						m_request_handler(
-							std::make_shared< incoming_request_t >(
+							std::make_shared< generic_request_t >(
 								request_id,
 								std::move( parser_ctx.m_header ),
 								std::move( parser_ctx.m_body ),
@@ -784,7 +784,7 @@ class connection_t final
 				connection_upgrade_stage_t::wait_for_upgrade_handling_result_or_nothing;
 
 			const auto handling_result = m_request_handler(
-				std::make_shared< incoming_request_t >(
+				std::make_shared< generic_request_t >(
 					request_id,
 					std::move( parser_ctx.m_header ),
 					std::move( parser_ctx.m_body ),

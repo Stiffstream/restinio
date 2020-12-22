@@ -438,7 +438,7 @@ class route_matcher_t
 template< typename User_Data >
 using generic_express_request_handler_t = std::function<
 		request_handling_status_t(
-				incoming_request_handle_t<User_Data>,
+				generic_request_handle_t<User_Data>,
 				route_params_t )
 	>;
 
@@ -475,7 +475,7 @@ class generic_express_route_entry_t
 		using actual_request_handler_t = generic_express_request_handler_t<
 				typename User_Data_Factory::data_t
 			>;
-		using actual_request_handle_t = incoming_request_handle_t<
+		using actual_request_handle_t = generic_request_handle_t<
 				typename User_Data_Factory::data_t
 			>;
 
@@ -612,7 +612,7 @@ class generic_express_router_t
 {
 	public:
 		using actual_request_handle_t =
-				incoming_request_handle_t< typename User_Data_Factory::data_t >;
+				generic_request_handle_t< typename User_Data_Factory::data_t >;
 		using actual_request_handler_t =
 				typename generic_express_route_entry_t<
 						Regex_Engine,
