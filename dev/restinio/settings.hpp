@@ -1540,7 +1540,6 @@ class basic_server_settings_t
 
 		using max_parallel_connections_holder_base_t::max_parallel_connections;
 
-		//FIXME: document this!
 		/*!
 		 * @name User-data factory.
 		 * @{
@@ -1558,6 +1557,35 @@ class basic_server_settings_t
 
 		/*!
 		 * @brief Setter for user-data-factory.
+		 *
+		 * Usage example:
+		 * @code
+		 * class my_user_data_factory {
+		 * 	... // Some factory's data.
+		 * public:
+		 * 	struct data_t {...};
+		 *
+		 * 	my_user_data_factory(...) {...}
+		 *
+		 * 	void make_within(restinio::user_data_buffer_t<data_t> buf) {
+		 * 		new(buf.get()) data_t{...};
+		 * 	}
+		 * };
+		 *
+		 * struct my_traits : public restinio::default_traits_t {
+		 * 	using user_data_factory_t = my_user_data_factory;
+		 * };
+		 *
+		 * restinio::server_settings_t<my_traits> settings;
+		 * ...
+		 * settings.user_data_factory(std::make_shared<my_user_data_factory>(...));
+		 * ...
+		 * auto server = restinio::run_async(
+		 * 	restinio::own_io_context(),
+		 * 	std::move(settings),
+		 * 	std::thread::hardware_concurrency());
+		 * @endcode
+		 *
 		 * @since v.0.6.13
 		 */
 		Derived &
@@ -1570,6 +1598,34 @@ class basic_server_settings_t
 
 		/*!
 		 * @brief Setter for user-data-factory.
+		 *
+		 * Usage example:
+		 * @code
+		 * class my_user_data_factory {
+		 * 	... // Some factory's data.
+		 * public:
+		 * 	struct data_t {...};
+		 *
+		 * 	my_user_data_factory(...) {...}
+		 *
+		 * 	void make_within(restinio::user_data_buffer_t<data_t> buf) {
+		 * 		new(buf.get()) data_t{...};
+		 * 	}
+		 * };
+		 *
+		 * struct my_traits : public restinio::default_traits_t {
+		 * 	using user_data_factory_t = my_user_data_factory;
+		 * };
+		 *
+		 * auto server = restinio::run_async(
+		 * 	restinio::own_io_context(),
+		 * 	restinio::server_settings_t<my_traits>{}
+		 * 		.user_data_factory(std::make_shared<my_user_data_factory>(...))
+		 * 		...
+		 * 		,
+		 * 	std::thread::hardware_concurrency());
+		 * @endcode
+		 *
 		 * @since v.0.6.13
 		 */
 		Derived &&
