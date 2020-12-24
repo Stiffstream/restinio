@@ -40,6 +40,8 @@
  * \example sample/tls_inspector/main.cpp
  *
  * \example sample/file_upload/main.cpp
+
+ * \example sample/chained_handlers/main.cpp
  */
 
 // vim:ft=cpp.doxygen
