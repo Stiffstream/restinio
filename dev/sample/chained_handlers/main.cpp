@@ -91,15 +91,15 @@ auto create_request_handler()
 		"/html",
 		[]( const auto & req, const auto & ) {
 			init_resp( req->create_response() )
-					.append_header( restinio::http_field::content_type, "text/html; charset=utf-8" )
-					.set_body(
-						"<html>\r\n"
-						"  <head><title>Hello from RESTinio!</title></head>\r\n"
-						"  <body>\r\n"
-						"    <center><h1>Hello world</h1></center>\r\n"
-						"  </body>\r\n"
-						"</html>\r\n" )
-					.done();
+				.append_header( restinio::http_field::content_type, "text/html; charset=utf-8" )
+				.set_body(
+					"<html>\r\n"
+					"  <head><title>Hello from RESTinio!</title></head>\r\n"
+					"  <body>\r\n"
+					"    <center><h1>Hello world</h1></center>\r\n"
+					"  </body>\r\n"
+					"</html>\r\n" )
+				.done();
 
 			return restinio::request_accepted();
 		} );
