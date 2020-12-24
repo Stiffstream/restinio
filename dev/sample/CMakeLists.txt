@@ -34,6 +34,7 @@ add_subdirectory(ip_blocker)
 add_subdirectory(file_upload)
 
 add_subdirectory(chained_handlers)
+add_subdirectory(user_data_factory)
 
 if ( OPENSSL_FOUND )
 	add_subdirectory(hello_world_https)

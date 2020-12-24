@@ -29,6 +29,7 @@ MxxRu::Cpp::composite_target {
 	required_prj 'sample/websocket_detailed/prj.rb'
 
 	required_prj 'sample/chained_handlers/prj.rb'
+	required_prj 'sample/user_data_factory/prj.rb'
 
 	if "mswin" == toolset.tag( "target_os" )
 		required_prj 'sample/hello_world_sendfile_w32_unicode/prj.rb'
