@@ -128,8 +128,8 @@ struct connection_settings_t final
 	 *
 	 * @since v.0.6.13
 	 */
-	using user_data_factory_handle_t =
-			std::shared_ptr< typename Traits::user_data_factory_t >;
+	using extra_data_factory_handle_t =
+			std::shared_ptr< typename Traits::extra_data_factory_t >;
 
 	connection_settings_t( const connection_settings_t & ) = delete;
 	connection_settings_t( const connection_settings_t && ) = delete;
@@ -155,13 +155,13 @@ struct connection_settings_t final
 		,	m_max_pipelined_requests{ settings.max_pipelined_requests() }
 		,	m_logger{ settings.logger() }
 		,	m_timer_manager{ std::move( timer_manager ) }
-		,	m_user_data_factory{ settings.giveaway_user_data_factory() }
+		,	m_extra_data_factory{ settings.giveaway_extra_data_factory() }
 	{
 		if( !m_timer_manager )
 			throw exception_t{ "timer manager not set" };
 
-		if( !m_user_data_factory )
-			throw exception_t{ "user_data_factory is nullptr" };
+		if( !m_extra_data_factory )
+			throw exception_t{ "extra_data_factory is nullptr" };
 	}
 
 	//! Request handler factory.
@@ -210,9 +210,9 @@ struct connection_settings_t final
 	 */
 	RESTINIO_NODISCARD
 	auto &
-	user_data_factory() const noexcept
+	extra_data_factory() const noexcept
 	{
-		return *m_user_data_factory;
+		return *m_extra_data_factory;
 	}
 
 private:
@@ -227,7 +227,7 @@ private:
 	 *
 	 * @since v.0.6.13
 	 */
-	user_data_factory_handle_t m_user_data_factory;
+	extra_data_factory_handle_t m_extra_data_factory;
 };
 
 template < typename Traits >

@@ -30,10 +30,10 @@ namespace valid_request_handler_type_check
 template< typename, typename, typename = restinio::utils::metaprogramming::void_t<> >
 struct valid_handler_type : public std::false_type {};
 
-template< typename Handler, typename User_Data_Factory >
+template< typename Handler, typename Extra_Data_Factory >
 struct valid_handler_type<
 		Handler,
-		User_Data_Factory,
+		Extra_Data_Factory,
 		restinio::utils::metaprogramming::void_t<
 			std::enable_if_t<
 				std::is_same<
@@ -41,7 +41,7 @@ struct valid_handler_type<
 					decltype(std::declval<Handler>()(
 							std::declval<
 									generic_request_handle_t<
-											typename User_Data_Factory::data_t
+											typename Extra_Data_Factory::data_t
 									>
 							>()))
 				>::value,
@@ -67,20 +67,20 @@ struct valid_handler_type<
  * has to define own request-handler type:
  *
  * @code
- * struct my_user_data_factory {...};
+ * struct my_extra_data_factory {...};
  *
  * struct my_traits : public restinio::default_traits_t {
- * 	using user_data_factory_t = my_user_data_factory;
+ * 	using extra_data_factory_t = my_extra_data_factory;
  * 	using request_handler_t = std::function<
  * 		restinio::request_handling_status_t(
  * 			restinio::generic_request_handle_t<
- * 				my_user_data_factory::data_t>)
+ * 				my_extra_data_factory::data_t>)
  * 	>;
  * };
  * @endcode
  *
  * But this is a boring and error-prone task. So RESTinio allows a user
- * to specify only `user_data_factory_t` type and skip the definition
+ * to specify only `extra_data_factory_t` type and skip the definition
  * of `request_handler_t`. That definition will be performed automatically.
  *
  * The actual detection of request-handler type is performed by
@@ -101,16 +101,16 @@ struct autodetect_request_handler_type {};
  */
 template<
 	typename Request_Handler,
-	typename User_Data_Factory >
+	typename Extra_Data_Factory >
 struct actual_request_handler_type_detector
 {
 	static_assert(
 			valid_request_handler_type_check::valid_handler_type<
 					Request_Handler,
-					User_Data_Factory
+					Extra_Data_Factory
 				>::value,
 			"Request_Handler should be invocable with "
-			"generic_request_handle_t<User_Data_Factory::data_t>" );
+			"generic_request_handle_t<Extra_Data_Factory::data_t>" );
 
 	using request_handler_t = Request_Handler;
 };
@@ -121,14 +121,14 @@ struct actual_request_handler_type_detector
  *
  * @since v.0.6.13
  */
-template< typename User_Data_Factory >
+template< typename Extra_Data_Factory >
 struct actual_request_handler_type_detector<
 		autodetect_request_handler_type,
-		User_Data_Factory >
+		Extra_Data_Factory >
 {
 	using request_handler_t = std::function<
 			request_handling_status_t(
-					generic_request_handle_t<typename User_Data_Factory::data_t>) >;
+					generic_request_handle_t<typename Extra_Data_Factory::data_t>) >;
 };
 
 } /* namespace details */
@@ -288,11 +288,11 @@ struct traits_t
 	 * The first one is the definition of factory type that should
 	 * look like:
 	 * @code
-	 * class some_user_data_factory {
+	 * class some_extra_data_factory {
 	 * public:
 	 * 	using data_t = ...;
 	 *
-	 * 	void make_within(restinio::user_data_buffer_t<data_t> buf);
+	 * 	void make_within(restinio::extra_data_buffer_t<data_t> buf);
 	 * };
 	 * @endcode
 	 * Where the name `data_t` should define a name of type to incorporated
@@ -301,8 +301,8 @@ struct traits_t
 	 * type `data_t` to construct a new object of `data_t` inside the
 	 * buffer `buf`:
 	 * @code
-	 * void some_user_data_factory::make_within(
-	 * 		restinio::user_data_buffer_t<data_t> buf) {
+	 * void some_extra_data_factory::make_within(
+	 * 		restinio::extra_data_buffer_t<data_t> buf) {
 	 * 	new(buf.get()) data_t{...};
 	 * }
 	 * @endcode
@@ -310,7 +310,7 @@ struct traits_t
 	 * The second step is the definition of user-data-factory in server's traits:
 	 * @code
 	 * struct my_traits : public restinio::default_traits_t {
-	 * 	using user_data_factory_t = some_user_data_factory;
+	 * 	using extra_data_factory_t = some_extra_data_factory;
 	 * };
 	 * @endcode
 	 *
@@ -320,7 +320,7 @@ struct traits_t
 	 * restino::run(on_thread_pool<my_traits>(16)
 	 * 	.port(...)
 	 * 	.address(...)
-	 * 	.user_data_factory(std::make_shared<some_user_data_factory>(..))
+	 * 	.extra_data_factory(std::make_shared<some_extra_data_factory>(..))
 	 * 	.request_handler(...)
 	 * 	...
 	 * );
@@ -333,28 +333,28 @@ struct traits_t
 	 * easy_parser-based routers then `request_handler_t` should be
 	 * defined with the respect to user-data-factory type:
 	 * @code
-	 * struct my_user_data_factory {
+	 * struct my_extra_data_factory {
 	 * 	struct data_t {...};
 	 *
-	 * 	void make_within(restinio::user_data_buffer_t<data_t> buf) {
+	 * 	void make_within(restinio::extra_data_buffer_t<data_t> buf) {
 	 * 		new(buf.get()) data_t{};
 	 * 	}
 	 * };
 	 *
 	 * using my_router = restinio::router::generic_express_router_t<
 	 * 		restinio::router::std_regex_engine_t,
-	 * 		my_user_data_factory
+	 * 		my_extra_data_factory
 	 * >;
 	 *
 	 * struct my_traits : public restinio::default_traits_t {
-	 * 	using user_data_factory_t = my_user_data_factory;
+	 * 	using extra_data_factory_t = my_extra_data_factory;
 	 * 	using request_handler_t = my_router;
 	 * };
 	 * @endcode
 	 *
 	 * @since v.0.6.13
 	 */
-	using user_data_factory_t = no_user_data_factory_t;
+	using extra_data_factory_t = no_extra_data_factory_t;
 };
 
 //
@@ -375,7 +375,7 @@ template< typename Traits >
 using request_handler_type_from_traits_t =
 	typename details::actual_request_handler_type_detector<
 			typename Traits::request_handler_t,
-			typename Traits::user_data_factory_t
+			typename Traits::extra_data_factory_t
 		>::request_handler_t;
 
 //
@@ -387,13 +387,13 @@ using request_handler_type_from_traits_t =
  *
  * The actual type of request-object depends from user-data-factory.
  * This metafunction detect the actual type with the respect to the
- * definition of `user_data_factory_t` inside Traits.
+ * definition of `extra_data_factory_t` inside Traits.
  *
  * @since v.0.6.13
  */
 template< typename Traits >
 using generic_request_type_from_traits_t =
-	generic_request_t< typename Traits::user_data_factory_t::data_t >;
+	generic_request_t< typename Traits::extra_data_factory_t::data_t >;
 
 //
 // single_thread_traits_t

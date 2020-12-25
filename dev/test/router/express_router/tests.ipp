@@ -1,17 +1,17 @@
 #include "../../common/fake_connection.ipp"
 
-template< typename Regex_Engine, typename User_Data_Factory >
+template< typename Regex_Engine, typename Extra_Data_Factory >
 auto
 create_fake_request(
-	const restinio::router::generic_express_router_t<Regex_Engine, User_Data_Factory> &,
+	const restinio::router::generic_express_router_t<Regex_Engine, Extra_Data_Factory> &,
 	std::string target,
 	http_method_id_t method = http_method_get() )
 {
 	using request_t = restinio::generic_request_t<
-			typename User_Data_Factory::data_t
+			typename Extra_Data_Factory::data_t
 	>;
 
-	User_Data_Factory user_data_factory;
+	Extra_Data_Factory extra_data_factory;
 	return std::make_shared< request_t >(
 			0,
 			http_request_header_t{ method, std::move( target ) },
@@ -20,7 +20,7 @@ create_fake_request(
 			restinio::endpoint_t{
 				restinio::asio_ns::ip::make_address_v4("127.0.0.1"),
 				3000 },
-			user_data_factory );
+			extra_data_factory );
 }
 
 TEST_CASE( "Simple named param" , "[express][simple][named_params]" )

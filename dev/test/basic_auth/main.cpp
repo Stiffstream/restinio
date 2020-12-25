@@ -25,14 +25,14 @@ TEST_CASE( "No Authorization field", "[basic_auth]" )
 {
 	using namespace restinio::http_field_parsers::basic_auth;
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			restinio::http_request_header_t{},
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto result = try_extract_params( *req,
 			restinio::http_field::authorization );
@@ -53,14 +53,14 @@ TEST_CASE( "Empty Authorization field", "[basic_auth]" )
 			restinio::http_field::authorization,
 			""s );
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto result = try_extract_params( *req,
 			restinio::http_field::authorization );
@@ -81,14 +81,14 @@ TEST_CASE( "Different encoding scheme", "[basic_auth]" )
 			restinio::http_field::authorization,
 			"MyScheme param=value, anotherparam=anothervalue"s );
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto result = try_extract_params( *req,
 			restinio::http_field::authorization );
@@ -109,14 +109,14 @@ TEST_CASE( "Wrong Basic Authentification params", "[basic_auth]" )
 			restinio::http_field::authorization,
 			"Basic param=value, anotherparam=anothervalue"s );
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto result = try_extract_params( *req,
 			restinio::http_field::authorization );
@@ -137,14 +137,14 @@ TEST_CASE( "No semicolon in username:password pair", "[basic_auth]" )
 			restinio::http_field::authorization,
 			"Basic dXNlcnBhc3N3b3Jk"s );
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto result = try_extract_params( *req,
 			restinio::http_field::authorization );
@@ -165,14 +165,14 @@ TEST_CASE( "Empty username in username:password pair", "[basic_auth]" )
 			restinio::http_field::authorization,
 			"Basic OnBhc3N3b3Jk"s );
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto result = try_extract_params( *req,
 			restinio::http_field::authorization );
@@ -193,14 +193,14 @@ TEST_CASE( "Valid Authorization field", "[basic_auth]" )
 			restinio::http_field::authorization,
 			"Basic dXNlcjoxMjM0"s );
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto result = try_extract_params( *req,
 			restinio::http_field::authorization );
@@ -222,14 +222,14 @@ TEST_CASE( "Valid Authorization field with empty password", "[basic_auth]" )
 			restinio::http_field::authorization,
 			"Basic dXNlcjo="s );
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto result = try_extract_params( *req,
 			restinio::http_field::authorization );
@@ -254,14 +254,14 @@ TEST_CASE( "Valid X-My-Authorization field", "[basic_auth]" )
 			"X-My-Authorization",
 			"Basic bXktdXNlcjpteS0xMjM0"s );
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto result = try_extract_params( *req,
 			"x-my-authorization" );
@@ -287,14 +287,14 @@ TEST_CASE( "Extract from parsed authorization_value_t", "[basic_auth]" )
 			"X-My-Authorization",
 			"Basic bXktdXNlcjpteS0xMjM0"s );
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto field = req->header().opt_value_of( "x-my-authorization" );
 	REQUIRE( field );
@@ -325,14 +325,14 @@ TEST_CASE( "Extract from parsed authorization_value_t "
 			restinio::http_field::authorization,
 			"Basic bXktdXNlcjpteS0xMjM0"s );
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto field_parse_result = try_parse_field< authorization_value_t >(
 			*req,
@@ -365,14 +365,14 @@ TEST_CASE( "Extract from parsed authorization_value_t "
 			"X-My-Authorization",
 			"Basic bXktdXNlcjpteS0xMjM0"s );
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto field_parse_result = try_parse_field< authorization_value_t >(
 			*req,

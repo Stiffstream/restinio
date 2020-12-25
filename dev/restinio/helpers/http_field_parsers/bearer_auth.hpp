@@ -302,13 +302,13 @@ try_extract_params(
  *
  * @since v.0.6.7.1
  */
-template< typename User_Data >
+template< typename Extra_Data >
 RESTINIO_NODISCARD
 inline expected_t< params_t, extraction_error_t >
 try_extract_params(
 	//! A request that should hold a HTTP-field with authentification
 	//! parameters.
-	const generic_request_t< User_Data > & req,
+	const generic_request_t< Extra_Data > & req,
 	//! The name of a HTTP-field with authentification parameters.
 	string_view_t auth_field_name )
 {
@@ -367,13 +367,13 @@ try_extract_params(
  *
  * @since v.0.6.7.1
  */
-template< typename User_Data >
+template< typename Extra_Data >
 RESTINIO_NODISCARD
 inline expected_t< params_t, extraction_error_t >
 try_extract_params(
 	//! A request that should hold a HTTP-field with authentification
 	//! parameters.
-	const generic_request_t< User_Data > & req,
+	const generic_request_t< Extra_Data > & req,
 	//! The ID of a HTTP-field with authentification parameters.
 	http_field_t auth_field_id )
 {

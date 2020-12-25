@@ -11,27 +11,27 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
-#include "../../common/test_user_data_factory.ipp"
+#include "../../common/test_extra_data_factory.ipp"
 
 template<
 	typename Request_Handler,
-	typename User_Data_Factory >
+	typename Extra_Data_Factory >
 struct test_traits_t : public restinio::traits_t<
 	restinio::asio_timer_manager_t, utest_logger_t >
 {
 	using request_handler_t = Request_Handler;
-	using user_data_factory_t = User_Data_Factory;
+	using extra_data_factory_t = Extra_Data_Factory;
 };
 
-template< typename User_Data_Factory >
+template< typename Extra_Data_Factory >
 void
 tc_fixed_size_chain()
 {
 	using http_server_t = restinio::http_server_t<
 			test_traits_t<
 					restinio::sync_chain::fixed_size_chain_t<
-							4u, User_Data_Factory>,
-					User_Data_Factory >
+							4u, Extra_Data_Factory>,
+					Extra_Data_Factory >
 	>;
 
 	int stages_completed = 0;
@@ -94,7 +94,7 @@ tc_fixed_size_chain()
 TEST_CASE( "fixed_size_chain (no_user_data)" ,
 		"[fixed_size_chain][no_user_data]" )
 {
-	tc_fixed_size_chain< restinio::no_user_data_factory_t >();
+	tc_fixed_size_chain< restinio::no_extra_data_factory_t >();
 }
 
 TEST_CASE( "fixed_size_chain (test_user_data)" ,
@@ -103,15 +103,15 @@ TEST_CASE( "fixed_size_chain (test_user_data)" ,
 	tc_fixed_size_chain< test::ud_factory_t >();
 }
 
-template< typename User_Data_Factory >
+template< typename Extra_Data_Factory >
 void
 tc_fixed_size_chain_with_rejection()
 {
 	using http_server_t = restinio::http_server_t<
 			test_traits_t<
 					restinio::sync_chain::fixed_size_chain_t<
-							4u, User_Data_Factory>,
-					User_Data_Factory >
+							4u, Extra_Data_Factory>,
+					Extra_Data_Factory >
 	>;
 
 	int stages_completed = 0;
@@ -175,7 +175,7 @@ tc_fixed_size_chain_with_rejection()
 TEST_CASE( "fixed_size_chain_with_rejection (no_user_data)" ,
 		"[fixed_size_chain][no_user_data]" )
 {
-	tc_fixed_size_chain_with_rejection< restinio::no_user_data_factory_t >();
+	tc_fixed_size_chain_with_rejection< restinio::no_extra_data_factory_t >();
 }
 
 TEST_CASE( "fixed_size_chain_with_rejection (test_user_data)" ,
@@ -184,15 +184,15 @@ TEST_CASE( "fixed_size_chain_with_rejection (test_user_data)" ,
 	tc_fixed_size_chain_with_rejection< test::ud_factory_t >();
 }
 
-template< typename User_Data_Factory >
+template< typename Extra_Data_Factory >
 void
 tc_fixed_size_chain_accept_in_middle()
 {
 	using http_server_t = restinio::http_server_t<
 			test_traits_t<
 					restinio::sync_chain::fixed_size_chain_t<
-							4u, User_Data_Factory>,
-					User_Data_Factory >
+							4u, Extra_Data_Factory>,
+					Extra_Data_Factory >
 	>;
 
 	int stages_completed = 0;
@@ -255,7 +255,7 @@ tc_fixed_size_chain_accept_in_middle()
 TEST_CASE( "fixed_size_chain_accept_in_middle (no_user_data)" ,
 		"[fixed_size_chain][no_user_data]" )
 {
-	tc_fixed_size_chain_accept_in_middle< restinio::no_user_data_factory_t >();
+	tc_fixed_size_chain_accept_in_middle< restinio::no_extra_data_factory_t >();
 }
 
 TEST_CASE( "fixed_size_chain_accept_in_middle (test_user_data)" ,
@@ -264,17 +264,17 @@ TEST_CASE( "fixed_size_chain_accept_in_middle (test_user_data)" ,
 	tc_fixed_size_chain_accept_in_middle< test::ud_factory_t >();
 }
 
-template< typename User_Data_Factory >
+template< typename Extra_Data_Factory >
 void
 tc_growable_size_chain()
 {
 	using request_handler_t = 
 			restinio::sync_chain::growable_size_chain_t<
-					User_Data_Factory
+					Extra_Data_Factory
 			>;
 
 	using http_server_t = restinio::http_server_t<
-			test_traits_t< request_handler_t, User_Data_Factory >
+			test_traits_t< request_handler_t, Extra_Data_Factory >
 	>;
 
 	int stages_completed = 0;
@@ -344,7 +344,7 @@ tc_growable_size_chain()
 TEST_CASE( "growable_size_chain (no_user_data)" ,
 		"[growable_size_chain][no_user_data]" )
 {
-	tc_growable_size_chain< restinio::no_user_data_factory_t >();
+	tc_growable_size_chain< restinio::no_extra_data_factory_t >();
 }
 
 TEST_CASE( "growable_size_chain (test_user_data)" ,
@@ -353,17 +353,17 @@ TEST_CASE( "growable_size_chain (test_user_data)" ,
 	tc_growable_size_chain< test::ud_factory_t >();
 }
 
-template< typename User_Data_Factory >
+template< typename Extra_Data_Factory >
 void
 tc_growable_size_chain_with_rejection()
 {
 	using request_handler_t = 
 			restinio::sync_chain::growable_size_chain_t<
-					User_Data_Factory
+					Extra_Data_Factory
 			>;
 
 	using http_server_t = restinio::http_server_t<
-			test_traits_t< request_handler_t, User_Data_Factory >
+			test_traits_t< request_handler_t, Extra_Data_Factory >
 	>;
 
 	int stages_completed = 0;
@@ -434,7 +434,7 @@ tc_growable_size_chain_with_rejection()
 TEST_CASE( "growable_size_chain_with_rejection (no_user_data)" ,
 		"[growable_size_chain][no_user_data]" )
 {
-	tc_growable_size_chain_with_rejection< restinio::no_user_data_factory_t >();
+	tc_growable_size_chain_with_rejection< restinio::no_extra_data_factory_t >();
 }
 
 TEST_CASE( "growable_size_chain_with_rejection (test_user_data)" ,
@@ -443,17 +443,17 @@ TEST_CASE( "growable_size_chain_with_rejection (test_user_data)" ,
 	tc_growable_size_chain_with_rejection< test::ud_factory_t >();
 }
 
-template< typename User_Data_Factory >
+template< typename Extra_Data_Factory >
 void
 tc_growable_size_chain_accept_in_middle()
 {
 	using request_handler_t = 
 			restinio::sync_chain::growable_size_chain_t<
-					User_Data_Factory
+					Extra_Data_Factory
 			>;
 
 	using http_server_t = restinio::http_server_t<
-			test_traits_t< request_handler_t, User_Data_Factory >
+			test_traits_t< request_handler_t, Extra_Data_Factory >
 	>;
 
 	int stages_completed = 0;
@@ -523,7 +523,7 @@ tc_growable_size_chain_accept_in_middle()
 TEST_CASE( "growable_size_chain_accept_in_middle (no_user_data)" ,
 		"[growable_size_chain][no_user_data]" )
 {
-	tc_growable_size_chain_accept_in_middle< restinio::no_user_data_factory_t >();
+	tc_growable_size_chain_accept_in_middle< restinio::no_extra_data_factory_t >();
 }
 
 TEST_CASE( "growable_size_chain_accept_in_middle (test_user_data)" ,

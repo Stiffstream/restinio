@@ -672,7 +672,7 @@ class connection_t final
 								parser_ctx.make_chunked_input_info_if_necessary(),
 								shared_from_concrete< connection_base_t >(),
 								m_remote_endpoint,
-								m_settings->user_data_factory() ) );
+								m_settings->extra_data_factory() ) );
 
 					switch( handling_result )
 					{
@@ -791,7 +791,7 @@ class connection_t final
 					parser_ctx.make_chunked_input_info_if_necessary(),
 					shared_from_concrete< connection_base_t >(),
 					m_remote_endpoint,
-					m_settings->user_data_factory() ) );
+					m_settings->extra_data_factory() ) );
 			switch( handling_result )
 			{
 				case request_handling_status_t::not_handled:

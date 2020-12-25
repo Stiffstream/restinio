@@ -18,7 +18,7 @@ using namespace restinio;
 namespace epr = restinio::router::easy_parser_router;
 
 #include "../fake_connection_and_request.ipp"
-#include "../../common/test_user_data_factory.ipp"
+#include "../../common/test_extra_data_factory.ipp"
 
 template< typename Router >
 void

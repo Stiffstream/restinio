@@ -47,7 +47,7 @@ struct per_request_data_factory_t
 {
 	using data_t = per_request_data_t;
 
-	void make_within( restinio::user_data_buffer_t<data_t> buf )
+	void make_within( restinio::extra_data_buffer_t<data_t> buf )
 	{
 		new( buf.get() ) data_t{};
 	}
@@ -72,7 +72,7 @@ restinio::request_handling_status_t credentials_handler(
 	const restinio::generic_request_handle_t< per_request_data_t > & req )
 {
 	// Get a reference to additional data.
-	auto & ud = req->user_data();
+	auto & ud = req->extra_data();
 
 	// If Authorization header is present we should try to handle it.
 	if( req->header().has_field( restinio::http_field::authorization ) )
@@ -151,7 +151,7 @@ restinio::request_handling_status_t authorization_handler(
 	// Authorization required if user asks for '/admin' or '/stats'.
 	if( "/admin" == req->header().path() || "/stats" == req->header().path() )
 	{
-		const auto & ud = req->user_data();
+		const auto & ud = req->extra_data();
 		if( !ud.m_auth_result.m_credentials_provided )
 		{
 			// User should provide credentials.
@@ -251,7 +251,7 @@ auto create_request_handler()
 					restinio::http_field::content_type,
 					"text/plain; charset=utf-8" )
 				.set_body( fmt::format( "Stats data for user #{}",
-						req->user_data().m_auth_result.m_identity.m_id ) )
+						req->extra_data().m_auth_result.m_identity.m_id ) )
 				.done();
 
 			return restinio::request_accepted();
@@ -272,7 +272,7 @@ auto create_request_handler()
 						"    <center><h1>NOT IMPLEMENTED YET</h1></center>\r\n"
 						"  </body>\r\n"
 						"</html>\r\n",
-						req->user_data().m_auth_result.m_identity.m_id ) )
+						req->extra_data().m_auth_result.m_identity.m_id ) )
 				.done();
 
 			return restinio::request_accepted();
@@ -286,7 +286,7 @@ auto create_request_handler()
 struct server_traits_t : public restinio::default_single_thread_traits_t
 {
 	using logger_t = restinio::single_threaded_ostream_logger_t;
-	using user_data_factory_t = per_request_data_factory_t;
+	using extra_data_factory_t = per_request_data_factory_t;
 	using request_handler_t = restinio::sync_chain::growable_size_chain_t<
 		per_request_data_factory_t >;
 };

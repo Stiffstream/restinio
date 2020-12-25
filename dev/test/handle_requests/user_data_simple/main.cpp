@@ -12,7 +12,7 @@
 namespace test
 {
 
-class test_user_data_factory_t
+class test_extra_data_factory_t
 {
 	struct ctor_dtor_monitors_t
 	{
@@ -47,7 +47,7 @@ public:
 	};
 
 	void
-	make_within( restinio::user_data_buffer_t<data_t> buffer ) noexcept
+	make_within( restinio::extra_data_buffer_t<data_t> buffer ) noexcept
 	{
 		new(buffer.get()) data_t{ m_ctor_dtor_monitors, ++m_index_counter };
 	}
@@ -77,7 +77,7 @@ public:
 struct test_traits_t : public restinio::traits_t<
 	restinio::asio_timer_manager_t, utest_logger_t >
 {
-	using user_data_factory_t = test_user_data_factory_t;
+	using extra_data_factory_t = test_extra_data_factory_t;
 };
 
 } /* namespace test */
@@ -91,19 +91,19 @@ TEST_CASE( "remote_endpoint extraction" , "[remote_endpoint]" )
 	std::string endpoint_value;
 	int index_value;
 
-	auto user_data_factory = std::make_shared< test_user_data_factory_t >();
+	auto extra_data_factory = std::make_shared< test_extra_data_factory_t >();
 
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&endpoint_value, &index_value, user_data_factory]( auto & settings ){
+		[&endpoint_value, &index_value, extra_data_factory]( auto & settings ){
 			settings
 				.port( utest_default_port() )
 				.address( "127.0.0.1" )
-				.user_data_factory( user_data_factory )
+				.extra_data_factory( extra_data_factory )
 				.request_handler(
 					[&endpoint_value, &index_value]( auto req ){
 						endpoint_value = fmt::format( "{}", req->remote_endpoint() );
-						index_value = req->user_data().m_index;
+						index_value = req->extra_data().m_index;
 
 						req->create_response()
 							.append_header( "Server", "RESTinio utest server" )
@@ -136,9 +136,9 @@ TEST_CASE( "remote_endpoint extraction" , "[remote_endpoint]" )
 	other_thread.stop_and_join();
 
 	REQUIRE( !endpoint_value.empty() );
-	REQUIRE( 0 != user_data_factory->current_value() );
-	REQUIRE( 1 == user_data_factory->constructors_called() );
-	REQUIRE( 1 == user_data_factory->destructors_called() );
+	REQUIRE( 0 != extra_data_factory->current_value() );
+	REQUIRE( 1 == extra_data_factory->constructors_called() );
+	REQUIRE( 1 == extra_data_factory->destructors_called() );
 	REQUIRE( 1 == index_value );
 }
 

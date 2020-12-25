@@ -81,7 +81,7 @@ namespace sync_chain
  * Usage example for the case when some user-data is incorporated into
  * a request object.
  * @code
- * struct my_user_data_factory {
+ * struct my_extra_data_factory {
  * 	// A data formed by checker of HTTP-fields.
  * 	struct request_specific_fields_t {...};
  *
@@ -93,19 +93,19 @@ namespace sync_chain
  * 			std::optional<request_specific_fields_t>,
  * 			std::optional<user_info_t>>;
  *
- * 	void make_within(restinio::user_data_buffer_t<data_t> buf) {
+ * 	void make_within(restinio::extra_data_buffer_t<data_t> buf) {
  * 		new(buf.get()) data_t{};
  * 	}
  * };
  *
  * struct my_traits : public restinio::default_traits_t {
- * 	using user_data_factory_t = my_user_data_factory;
+ * 	using extra_data_factory_t = my_extra_data_factory;
  * 	using request_handler_t = restinio::sync_chain::growable_size_chain_t<
- * 			user_data_factory>;
+ * 			extra_data_factory>;
  * };
  *
  * using my_request_handle_t =
- * 	restinio::generic_request_handle_t<my_user_data_factory::data_t>;
+ * 	restinio::generic_request_handle_t<my_extra_data_factory::data_t>;
  *
  * // The first handler in the chain.
  * restinio::request_handling_status_t headers_checker(
@@ -127,9 +127,9 @@ namespace sync_chain
  * 	const my_request_handle_t & req )
  * {
  * 	auto & field_values = std::get<
- * 		std::optional<my_user_data_factory::request_specific_fields_t>>(req->user_data());
+ * 		std::optional<my_extra_data_factory::request_specific_fields_t>>(req->extra_data());
  * 	auto & user_info = std::get<
- * 		std::optional<my_user_data_factory::user_info_t>>(req->user_data());
+ * 		std::optional<my_extra_data_factory::user_info_t>>(req->extra_data());
  * 	... // Actual processing.
  * }
  *
@@ -149,12 +149,12 @@ namespace sync_chain
  * );
  * @endcode
  *
- * @tparam User_Data_Factory The type of user-data-factory specified in
+ * @tparam Extra_Data_Factory The type of user-data-factory specified in
  * the server's traits.
  *
  * @since v.0.6.13
  */
-template< typename User_Data_Factory = no_user_data_factory_t >
+template< typename Extra_Data_Factory = no_extra_data_factory_t >
 class growable_size_chain_t
 {
 	// Helper class to allow the creation of growable_size_chain_t only
@@ -225,7 +225,7 @@ public:
 
 private:
 	using actual_request_handle_t =
-			generic_request_handle_t< typename User_Data_Factory::data_t >;
+			generic_request_handle_t< typename Extra_Data_Factory::data_t >;
 
 	using handler_holder_t = std::function<
 			request_handling_status_t(const actual_request_handle_t &)

@@ -24,14 +24,14 @@ TEST_CASE( "No Authorization field", "[bearer_auth]" )
 {
 	using namespace restinio::http_field_parsers::bearer_auth;
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			restinio::http_request_header_t{},
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto result = try_extract_params( *req,
 			restinio::http_field::authorization );
@@ -52,14 +52,14 @@ TEST_CASE( "Empty Authorization field", "[bearer_auth]" )
 			restinio::http_field::authorization,
 			""s );
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto result = try_extract_params( *req,
 			restinio::http_field::authorization );
@@ -80,14 +80,14 @@ TEST_CASE( "Different encoding scheme", "[bearer_auth]" )
 			restinio::http_field::authorization,
 			"MyScheme param=value, anotherparam=anothervalue"s );
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto result = try_extract_params( *req,
 			restinio::http_field::authorization );
@@ -108,14 +108,14 @@ TEST_CASE( "Wrong Bearer Authentification params", "[bearer_auth]" )
 			restinio::http_field::authorization,
 			"Bearer param=value, anotherparam=anothervalue"s );
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto result = try_extract_params( *req,
 			restinio::http_field::authorization );
@@ -136,14 +136,14 @@ TEST_CASE( "Valid Authorization field", "[bearer_auth]" )
 			restinio::http_field::authorization,
 			"Bearer dXNlcjoxMjM0"s );
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto result = try_extract_params( *req,
 			restinio::http_field::authorization );
@@ -167,14 +167,14 @@ TEST_CASE( "Valid X-My-Authorization field", "[bearer_auth]" )
 			"X-My-Authorization",
 			"Bearer bXktdXNlcjpteS0xMjM0"s );
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto result = try_extract_params( *req,
 			"x-my-authorization" );
@@ -199,14 +199,14 @@ TEST_CASE( "Extract from parsed authorization_value_t", "[bearer_auth]" )
 			"X-My-Authorization",
 			"Bearer bXktdXNlcjpteS0xMjM0"s );
 
-	restinio::no_user_data_factory_t user_data_factory;
+	restinio::no_extra_data_factory_t extra_data_factory;
 	auto req = std::make_shared< restinio::request_t >(
 			restinio::request_id_t{1},
 			std::move(dummy_header),
 			"Body"s,
 			dummy_connection_t::make(1u),
 			make_dummy_endpoint(),
-			user_data_factory );
+			extra_data_factory );
 
 	const auto field = req->header().opt_value_of( "x-my-authorization" );
 	REQUIRE( field );

@@ -22,38 +22,38 @@ namespace restinio
 {
 
 //
-// user_data_buffer_t
+// extra_data_buffer_t
 //
 /*!
  * @brief Helper for holding a pointer to a buffer where a new
- * object of type User_Data should be constructed.
+ * object of type Extra_Data should be constructed.
  *
  * This class is intended to make the construction of new objects
- * of type User_Data inside a preallocated buffer more type-safe.
+ * of type Extra_Data inside a preallocated buffer more type-safe.
  *
- * An instance of User_Data is incorporated into a request object
+ * An instance of Extra_Data is incorporated into a request object
  * by holding a buffer of necessary capacity and alignment inside
  * request object. The `make_within` method of user-data-factory
- * is called for the construction of new instance of User_Data
+ * is called for the construction of new instance of Extra_Data
  * in that buffer. If raw void pointer will be passed to
  * `make_within` method then it would make possible a case when
  * wrong user-data-factory can be used.
  *
  * But if a pointer to the buffer for new instance will be wrapped
- * into user_data_buffer_t then it allows additional type checks
+ * into extra_data_buffer_t then it allows additional type checks
  * from the compiler. That is why a user-data-factory receives
- * user_data_buffer_t<User_Data> as a parameter to `make_within`
+ * extra_data_buffer_t<Extra_Data> as a parameter to `make_within`
  * instead of raw pointers.
  *
  * @since v.0.6.13
  */
-template< typename User_Data >
-class user_data_buffer_t
+template< typename Extra_Data >
+class extra_data_buffer_t
 {
 	void * m_buffer;
 
 public:
-	user_data_buffer_t( void * buffer ) : m_buffer{ buffer } {}
+	extra_data_buffer_t( void * buffer ) : m_buffer{ buffer } {}
 
 	RESTINIO_NODISCARD
 	void *
@@ -61,7 +61,7 @@ public:
 };
 
 //
-// no_user_data_factory_t
+// no_extra_data_factory_t
 //
 /*!
  * @brief The default user-data-factory to be used in server's traits if
@@ -71,7 +71,7 @@ public:
  *
  * @since v.0.6.13
  */
-struct no_user_data_factory_t
+struct no_extra_data_factory_t
 {
 	/*!
 	 * @brief A type of user-data to be incorporated into a request object
@@ -80,24 +80,24 @@ struct no_user_data_factory_t
 	struct data_t {};
 
 	void
-	make_within( user_data_buffer_t<data_t> buffer ) noexcept
+	make_within( extra_data_buffer_t<data_t> buffer ) noexcept
 	{
 		new(buffer.get()) data_t{};
 	}
 };
 
-template< typename User_Data >
+template< typename Extra_Data >
 class generic_request_t;
 
 namespace impl
 {
 
-template< typename User_Data >
+template< typename Extra_Data >
 connection_handle_t &
-access_req_connection( generic_request_t<User_Data> & ) noexcept;
+access_req_connection( generic_request_t<Extra_Data> & ) noexcept;
 
 //
-// generic_request_user_data_holder_t
+// generic_request_extra_data_holder_t
 //
 /*!
  * @brief Helper class for holding a buffer for user-data object to
@@ -109,36 +109,36 @@ access_req_connection( generic_request_t<User_Data> & ) noexcept;
  *
  * @since v.0.6.13
  */
-template< typename User_Data >
-class generic_request_user_data_holder_t
+template< typename Extra_Data >
+class generic_request_extra_data_holder_t
 {
-	alignas(User_Data) std::array<char, sizeof(User_Data)> m_data;
+	alignas(Extra_Data) std::array<char, sizeof(Extra_Data)> m_data;
 
 public:
 	template< typename Factory >
-	generic_request_user_data_holder_t(
+	generic_request_extra_data_holder_t(
 		Factory & factory )
 	{
-		factory.make_within( user_data_buffer_t<User_Data>{ m_data.data() } );
+		factory.make_within( extra_data_buffer_t<Extra_Data>{ m_data.data() } );
 	}
 
-	~generic_request_user_data_holder_t() noexcept
+	~generic_request_extra_data_holder_t() noexcept
 	{
-		get_ptr()->~User_Data();
+		get_ptr()->~Extra_Data();
 	}
 
 	RESTINIO_NODISCARD
-	User_Data *
+	Extra_Data *
 	get_ptr() noexcept
 	{
-		return reinterpret_cast<User_Data *>(m_data.data());
+		return reinterpret_cast<Extra_Data *>(m_data.data());
 	}
 
 	RESTINIO_NODISCARD
-	const User_Data *
+	const Extra_Data *
 	get_ptr() const noexcept
 	{
-		return reinterpret_cast<const User_Data *>(m_data.data());
+		return reinterpret_cast<const Extra_Data *>(m_data.data());
 	}
 };
 
@@ -153,12 +153,12 @@ public:
 	Provides acces to header and body, and creates response builder
 	for a given request.
 
-	@tparam User_Data The type of user-data to be incorporated into
+	@tparam Extra_Data The type of user-data to be incorporated into
 	a request object.
 */
-template< typename User_Data >
+template< typename Extra_Data >
 class generic_request_t final
-	:	public std::enable_shared_from_this< generic_request_t< User_Data > >
+	:	public std::enable_shared_from_this< generic_request_t< Extra_Data > >
 {
 	template< typename UD >
 	friend impl::connection_handle_t &
@@ -170,14 +170,14 @@ class generic_request_t final
 		 * Can be used in cases where chunked_input_info_t is not
 		 * available (or needed).
 		 */
-		template< typename User_Data_Factory >
+		template< typename Extra_Data_Factory >
 		generic_request_t(
 			request_id_t request_id,
 			http_request_header_t header,
 			std::string body,
 			impl::connection_handle_t connection,
 			endpoint_t remote_endpoint,
-			User_Data_Factory & user_data_factory )
+			Extra_Data_Factory & extra_data_factory )
 			:	generic_request_t{
 					request_id,
 					std::move( header ),
@@ -185,7 +185,7 @@ class generic_request_t final
 					chunked_input_info_unique_ptr_t{},
 					std::move( connection ),
 					std::move( remote_endpoint ),
-					user_data_factory
+					extra_data_factory
 				}
 		{}
 
@@ -193,7 +193,7 @@ class generic_request_t final
 		/*!
 		 * @since v.0.6.9
 		 */
-		template< typename User_Data_Factory >
+		template< typename Extra_Data_Factory >
 		generic_request_t(
 			request_id_t request_id,
 			http_request_header_t header,
@@ -201,7 +201,7 @@ class generic_request_t final
 			chunked_input_info_unique_ptr_t chunked_input_info,
 			impl::connection_handle_t connection,
 			endpoint_t remote_endpoint,
-			User_Data_Factory & user_data_factory )
+			Extra_Data_Factory & extra_data_factory )
 			:	m_request_id{ request_id }
 			,	m_header{ std::move( header ) }
 			,	m_body{ std::move( body ) }
@@ -209,7 +209,7 @@ class generic_request_t final
 			,	m_connection{ std::move( connection ) }
 			,	m_connection_id{ m_connection->connection_id() }
 			,	m_remote_endpoint{ std::move( remote_endpoint ) }
-			,	m_user_data_holder{ user_data_factory }
+			,	m_extra_data_holder{ extra_data_factory }
 		{}
 
 		//! Get request header.
@@ -268,28 +268,28 @@ class generic_request_t final
 		 *
 		 * @note
 		 * This method is present always but it has the sense only if
-		 * User_Data is not no_user_data_factory_t::data_t.
+		 * Extra_Data is not no_extra_data_factory_t::data_t.
 		 *
 		 * Usage example:
 		 * @code
-		 * struct my_user_data_factory {
+		 * struct my_extra_data_factory {
 		 * 	struct data_t {
 		 * 		user_identity user_id_;
 		 * 		...
 		 * 	};
 		 *
-		 * 	void make_within(restinio::user_data_buffer_t<data_t> buf) {
+		 * 	void make_within(restinio::extra_data_buffer_t<data_t> buf) {
 		 * 		new(buf.get()) data_t{};
 		 * 	}
 		 * };
 		 *
 		 * struct my_traits : public restinio::default_traits_t {
-		 * 	using user_data_factory_t = my_user_data_factory;
+		 * 	using extra_data_factory_t = my_extra_data_factory;
 		 * };
 		 *
 		 * restinio::request_handling_status_t authentificator(
-		 * 		const restinio::generic_request_handle_t<my_user_data_factory::data_t> & req) {
-		 * 	auto & ud = req->user_data();
+		 * 		const restinio::generic_request_handle_t<my_extra_data_factory::data_t> & req) {
+		 * 	auto & ud = req->extra_data();
 		 * 	...
 		 * 	ud.user_id_ = some_calculated_user_id;
 		 * }
@@ -298,10 +298,10 @@ class generic_request_t final
 		 * @since v.0.6.13
 		 */
 		RESTINIO_NODISCARD
-		User_Data &
-		user_data() noexcept
+		Extra_Data &
+		extra_data() noexcept
 		{
-			return *m_user_data_holder.get_ptr();
+			return *m_extra_data_holder.get_ptr();
 		}
 
 		/*!
@@ -310,28 +310,28 @@ class generic_request_t final
 		 *
 		 * @note
 		 * This method is present always but it has the sense only if
-		 * User_Data is not no_user_data_factory_t::data_t.
+		 * Extra_Data is not no_extra_data_factory_t::data_t.
 		 *
 		 * Usage example:
 		 * @code
-		 * struct my_user_data_factory {
+		 * struct my_extra_data_factory {
 		 * 	struct data_t {
 		 * 		user_identity user_id_;
 		 * 		...
 		 * 	};
 		 *
-		 * 	void make_within(restinio::user_data_buffer_t<data_t> buf) {
+		 * 	void make_within(restinio::extra_data_buffer_t<data_t> buf) {
 		 * 		new(buf.get()) data_t{};
 		 * 	}
 		 * };
 		 *
 		 * struct my_traits : public restinio::default_traits_t {
-		 * 	using user_data_factory_t = my_user_data_factory;
+		 * 	using extra_data_factory_t = my_extra_data_factory;
 		 * };
 		 *
 		 * restinio::request_handling_status_t actual_handler(
-		 * 		const restinio::generic_request_handle_t<my_user_data_factory::data_t> & req) {
-		 * 	const auto & ud = req->user_data();
+		 * 		const restinio::generic_request_handle_t<my_extra_data_factory::data_t> & req) {
+		 * 	const auto & ud = req->extra_data();
 		 * 	if(ud.user_id_.valid()) {
 		 * 		...
 		 * 	}
@@ -344,10 +344,10 @@ class generic_request_t final
 		 * @since v.0.6.13
 		 */
 		RESTINIO_NODISCARD
-		const User_Data &
-		user_data() const noexcept
+		const Extra_Data &
+		extra_data() const noexcept
 		{
-			return *m_user_data_holder.get_ptr();
+			return *m_extra_data_holder.get_ptr();
 		}
 
 	private:
@@ -385,14 +385,14 @@ class generic_request_t final
 		 *
 		 * @since v.0.6.13
 		 */
-		impl::generic_request_user_data_holder_t< User_Data > m_user_data_holder;
+		impl::generic_request_extra_data_holder_t< Extra_Data > m_extra_data_holder;
 };
 
-template< typename User_Data >
+template< typename Extra_Data >
 std::ostream &
 operator<<(
 	std::ostream & o,
-	const generic_request_t< User_Data > & req )
+	const generic_request_t< Extra_Data > & req )
 {
 	o << "{req_id: " << req.request_id() << ", "
 		"conn_id: " << req.connection_id() << ", "
@@ -403,9 +403,9 @@ operator<<(
 }
 
 //! An alias for shared-pointer to incoming request.
-template< typename User_Data >
+template< typename Extra_Data >
 using generic_request_handle_t =
-		std::shared_ptr< generic_request_t< User_Data > >;
+		std::shared_ptr< generic_request_t< Extra_Data > >;
 
 //! An alias for incoming request without additional user-data.
 /*!
@@ -413,7 +413,7 @@ using generic_request_handle_t =
  *
  * @since v.0.6.13
  */
-using request_t = generic_request_t< no_user_data_factory_t::data_t >;
+using request_t = generic_request_t< no_extra_data_factory_t::data_t >;
 
 //! An alias for handle for incoming request without additional user-data.
 /*!
@@ -433,9 +433,9 @@ using default_request_handler_t =
 namespace impl
 {
 
-template< typename User_Data >
+template< typename Extra_Data >
 connection_handle_t &
-access_req_connection( generic_request_t<User_Data> & req ) noexcept
+access_req_connection( generic_request_t<Extra_Data> & req ) noexcept
 {
 	return req.m_connection;
 }

@@ -1548,37 +1548,37 @@ class basic_server_settings_t
 		 * @brief The actual type of user-data-factory.
 		 * @since v.0.6.13
 		 */
-		using user_data_factory_t = typename Traits::user_data_factory_t;
+		using extra_data_factory_t = typename Traits::extra_data_factory_t;
 		/*!
 		 * @brief Type of shared-pointer to user-data-factory.
 		 * @since v.0.6.13
 		 */
-		using user_data_factory_handle_t = std::shared_ptr< user_data_factory_t >;
+		using extra_data_factory_handle_t = std::shared_ptr< extra_data_factory_t >;
 
 		/*!
 		 * @brief Setter for user-data-factory.
 		 *
 		 * Usage example:
 		 * @code
-		 * class my_user_data_factory {
+		 * class my_extra_data_factory {
 		 * 	... // Some factory's data.
 		 * public:
 		 * 	struct data_t {...};
 		 *
-		 * 	my_user_data_factory(...) {...}
+		 * 	my_extra_data_factory(...) {...}
 		 *
-		 * 	void make_within(restinio::user_data_buffer_t<data_t> buf) {
+		 * 	void make_within(restinio::extra_data_buffer_t<data_t> buf) {
 		 * 		new(buf.get()) data_t{...};
 		 * 	}
 		 * };
 		 *
 		 * struct my_traits : public restinio::default_traits_t {
-		 * 	using user_data_factory_t = my_user_data_factory;
+		 * 	using extra_data_factory_t = my_extra_data_factory;
 		 * };
 		 *
 		 * restinio::server_settings_t<my_traits> settings;
 		 * ...
-		 * settings.user_data_factory(std::make_shared<my_user_data_factory>(...));
+		 * settings.extra_data_factory(std::make_shared<my_extra_data_factory>(...));
 		 * ...
 		 * auto server = restinio::run_async(
 		 * 	restinio::own_io_context(),
@@ -1589,10 +1589,10 @@ class basic_server_settings_t
 		 * @since v.0.6.13
 		 */
 		Derived &
-		user_data_factory(
-			user_data_factory_handle_t factory ) &
+		extra_data_factory(
+			extra_data_factory_handle_t factory ) &
 		{
-			this->m_user_data_factory = std::move(factory);
+			this->m_extra_data_factory = std::move(factory);
 			return reference_to_derived();
 		}
 
@@ -1601,26 +1601,26 @@ class basic_server_settings_t
 		 *
 		 * Usage example:
 		 * @code
-		 * class my_user_data_factory {
+		 * class my_extra_data_factory {
 		 * 	... // Some factory's data.
 		 * public:
 		 * 	struct data_t {...};
 		 *
-		 * 	my_user_data_factory(...) {...}
+		 * 	my_extra_data_factory(...) {...}
 		 *
-		 * 	void make_within(restinio::user_data_buffer_t<data_t> buf) {
+		 * 	void make_within(restinio::extra_data_buffer_t<data_t> buf) {
 		 * 		new(buf.get()) data_t{...};
 		 * 	}
 		 * };
 		 *
 		 * struct my_traits : public restinio::default_traits_t {
-		 * 	using user_data_factory_t = my_user_data_factory;
+		 * 	using extra_data_factory_t = my_extra_data_factory;
 		 * };
 		 *
 		 * auto server = restinio::run_async(
 		 * 	restinio::own_io_context(),
 		 * 	restinio::server_settings_t<my_traits>{}
-		 * 		.user_data_factory(std::make_shared<my_user_data_factory>(...))
+		 * 		.extra_data_factory(std::make_shared<my_extra_data_factory>(...))
 		 * 		...
 		 * 		,
 		 * 	std::thread::hardware_concurrency());
@@ -1629,10 +1629,10 @@ class basic_server_settings_t
 		 * @since v.0.6.13
 		 */
 		Derived &&
-		user_data_factory(
-			user_data_factory_handle_t factory ) &&
+		extra_data_factory(
+			extra_data_factory_handle_t factory ) &&
 		{
-			return std::move(this->user_data_factory( std::move(factory) ));
+			return std::move(this->extra_data_factory( std::move(factory) ));
 		}
 
 		/*!
@@ -1640,12 +1640,12 @@ class basic_server_settings_t
 		 * @since v.0.6.13
 		 */
 		RESTINIO_NODISCARD
-		user_data_factory_handle_t
-		giveaway_user_data_factory() const noexcept
+		extra_data_factory_handle_t
+		giveaway_extra_data_factory() const noexcept
 		{
 			return ensure_created(
-					std::move(this->m_user_data_factory),
-					"user_data_factory is not set" );
+					std::move(this->m_extra_data_factory),
+					"extra_data_factory is not set" );
 		}
 		/*!
 		 * @}
@@ -1754,7 +1754,7 @@ class basic_server_settings_t
 		 *
 		 * @since v.0.6.13
 		 */
-		user_data_factory_handle_t m_user_data_factory;
+		extra_data_factory_handle_t m_extra_data_factory;
 };
 
 //

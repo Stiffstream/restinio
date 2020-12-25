@@ -425,7 +425,7 @@ class route_matcher_t
  * Since v.0.6.13 some user-data can be incorporated into request-object.
  * In that case request-handler will have a different format in
  * comparison with previous versions. The type generic_express_request_handler_t
- * describes a request-handler when user-data of type @a User_Data is
+ * describes a request-handler when user-data of type @a Extra_Data is
  * bound to request object.
  *
  * @note
@@ -435,10 +435,10 @@ class route_matcher_t
  *
  * @since v.0.6.13
  */
-template< typename User_Data >
+template< typename Extra_Data >
 using generic_express_request_handler_t = std::function<
 		request_handling_status_t(
-				generic_request_handle_t<User_Data>,
+				generic_request_handle_t<Extra_Data>,
 				route_params_t )
 	>;
 
@@ -454,7 +454,7 @@ using generic_express_request_handler_t = std::function<
  * server's traits.
  */
 using express_request_handler_t =
-		generic_express_request_handler_t< no_user_data_factory_t::data_t >;
+		generic_express_request_handler_t< no_extra_data_factory_t::data_t >;
 
 //
 // generic_express_route_entry_t
@@ -468,15 +468,15 @@ using express_request_handler_t =
 */
 template<
 	typename Regex_Engine,
-	typename User_Data_Factory >
+	typename Extra_Data_Factory >
 class generic_express_route_entry_t
 {
 	public:
 		using actual_request_handler_t = generic_express_request_handler_t<
-				typename User_Data_Factory::data_t
+				typename Extra_Data_Factory::data_t
 			>;
 		using actual_request_handle_t = generic_request_handle_t<
-				typename User_Data_Factory::data_t
+				typename Extra_Data_Factory::data_t
 			>;
 
 	private:
@@ -575,7 +575,7 @@ template<
 	typename Regex_Engine = std_regex_engine_t >
 using express_route_entry_t = generic_express_route_entry_t<
 		Regex_Engine,
-		no_user_data_factory_t >;
+		no_extra_data_factory_t >;
 
 //
 // generic_express_router_t
@@ -602,25 +602,25 @@ using express_route_entry_t = generic_express_route_entry_t<
 
 	@tparam Regex_Engine Type of regex-engine to be used.
 
-	@tparam User_Data_Factory Type of user-data-factory specified in
+	@tparam Extra_Data_Factory Type of user-data-factory specified in
 	server's traits.
 */
 template<
 	typename Regex_Engine,
-	typename User_Data_Factory >
+	typename Extra_Data_Factory >
 class generic_express_router_t
 {
 	public:
 		using actual_request_handle_t =
-				generic_request_handle_t< typename User_Data_Factory::data_t >;
+				generic_request_handle_t< typename Extra_Data_Factory::data_t >;
 		using actual_request_handler_t =
 				typename generic_express_route_entry_t<
 						Regex_Engine,
-						User_Data_Factory
+						Extra_Data_Factory
 					>::actual_request_handler_t;
 		using non_matched_handler_t =
 				generic_non_matched_request_handler_t<
-						typename User_Data_Factory::data_t
+						typename Extra_Data_Factory::data_t
 				>;
 
 		generic_express_router_t() = default;
@@ -814,7 +814,7 @@ class generic_express_router_t
 	private:
 		using route_entry_t = generic_express_route_entry_t<
 				Regex_Engine,
-				User_Data_Factory
+				Extra_Data_Factory
 		>;
 
 		//! A list of existing routes.
@@ -840,7 +840,7 @@ template<
 	typename Regex_Engine = std_regex_engine_t >
 using express_router_t = generic_express_router_t<
 		Regex_Engine,
-		no_user_data_factory_t >;
+		no_extra_data_factory_t >;
 
 } /* namespace router */
 

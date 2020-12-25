@@ -491,11 +491,11 @@ check_boundary_value( string_view_t value )
  *
  * @since v.0.6.1
  */
-template< typename User_Data >
+template< typename Extra_Data >
 RESTINIO_NODISCARD
 expected_t< std::string, enumeration_error_t >
 detect_boundary_for_multipart_body(
-	const generic_request_t< User_Data > & req,
+	const generic_request_t< Extra_Data > & req,
 	string_view_t expected_media_type,
 	optional_t< string_view_t > expected_media_subtype )
 {
