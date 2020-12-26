@@ -3,7 +3,7 @@ require 'restinio/asio_helper.rb'
 
 MxxRu::Cpp::exe_target {
 
-  target 'sample.user_data_factory'
+  target 'sample.extra_data_factory'
 
   RestinioAsioHelper.attach_propper_asio( self )
 
