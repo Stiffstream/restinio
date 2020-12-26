@@ -32,7 +32,7 @@ namespace sync_chain
  * at the creation time. After that new handlers can't be added to the chain,
  * and old handlers can't be removed from the chain.
  *
- * Usage example for the case when there is no user-data in a request object.
+ * Usage example for the case when there is no extra-data in a request object.
  * @code
  * struct my_traits : public restinio::default_traits_t {
  * 	using request_handler_t = restinio::sync_chain::fixed_size_chain_t<3>;
@@ -86,7 +86,7 @@ namespace sync_chain
  * );
  * @endcode
  *
- * Usage example for the case when some user-data is incorporated into
+ * Usage example for the case when some extra-data is incorporated into
  * a request object.
  * @code
  * struct my_extra_data_factory {
@@ -152,7 +152,7 @@ namespace sync_chain
  *
  * @tparam Size The exact number of handlers in the chain.
  *
- * @tparam Extra_Data_Factory The type of user-data-factory specified in
+ * @tparam Extra_Data_Factory The type of extra-data-factory specified in
  * the server's traits.
  *
  * @since v.0.6.13

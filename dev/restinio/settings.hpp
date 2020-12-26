@@ -1545,18 +1545,18 @@ class basic_server_settings_t
 		 * @{
 		 */
 		/*!
-		 * @brief The actual type of user-data-factory.
+		 * @brief The actual type of extra-data-factory.
 		 * @since v.0.6.13
 		 */
 		using extra_data_factory_t = typename Traits::extra_data_factory_t;
 		/*!
-		 * @brief Type of shared-pointer to user-data-factory.
+		 * @brief Type of shared-pointer to extra-data-factory.
 		 * @since v.0.6.13
 		 */
 		using extra_data_factory_handle_t = std::shared_ptr< extra_data_factory_t >;
 
 		/*!
-		 * @brief Setter for user-data-factory.
+		 * @brief Setter for extra-data-factory.
 		 *
 		 * Usage example:
 		 * @code
@@ -1597,7 +1597,7 @@ class basic_server_settings_t
 		}
 
 		/*!
-		 * @brief Setter for user-data-factory.
+		 * @brief Setter for extra-data-factory.
 		 *
 		 * Usage example:
 		 * @code
@@ -1636,7 +1636,7 @@ class basic_server_settings_t
 		}
 
 		/*!
-		 * @brief Extractor for user-data-factory.
+		 * @brief Extractor for extra-data-factory.
 		 * @since v.0.6.13
 		 */
 		RESTINIO_NODISCARD

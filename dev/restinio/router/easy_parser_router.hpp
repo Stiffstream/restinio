@@ -46,7 +46,7 @@ struct no_match_t {};
 /*!
  * @brief An interface for one entry of easy_parser-based router.
  *
- * @tparam Extra_Data The type of user-data incorporated into a request object.
+ * @tparam Extra_Data The type of extra-data incorporated into a request object.
  * This type is added to router_entry_t in v.0.6.13.
  *
  * @since v.0.6.6
@@ -77,7 +77,7 @@ public:
 /*!
  * @brief An alias for unique_ptr of router_entry.
  *
- * @tparam Extra_Data The type of user-data incorporated into a request object.
+ * @tparam Extra_Data The type of extra-data incorporated into a request object.
  * This type is added to router_entry_unique_ptr_t in v.0.6.13.
  *
  * @since v.0.6.6
@@ -95,7 +95,7 @@ using router_entry_unique_ptr_t =
  * @tparam Producer A type of producer that parses a route and produces
  * a value to be used as argument(s) for request handler.
  *
- * @tparam Extra_Data The type of user-data incorporated into a request object.
+ * @tparam Extra_Data The type of extra-data incorporated into a request object.
  * This type is added to actual_router_entry_t in v.0.6.13.
  *
  * @tparam Handle A type of request handler.
@@ -874,8 +874,8 @@ unescape()
  * with handlers.
  *
  * @note
- * That type is intended to be used when user-data-factory for server traits
- * is not the default one. If your server uses the default user-data-factory
+ * That type is intended to be used when extra-data-factory for server traits
+ * is not the default one. If your server uses the default extra-data-factory
  * then easy_parser_router_t should be used for the simplicity.
  *
  * Usage example:
@@ -1115,7 +1115,7 @@ private:
  * with handlers.
  *
  * @note
- * That type is intended to be used when the default user-data-factory is
+ * That type is intended to be used when the default extra-data-factory is
  * specified in you server's traits.
  *
  * Usage example:

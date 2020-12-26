@@ -139,7 +139,7 @@ try_extract_field_value_from(
  * @tparam Parsed_Field_Type The type of field value to be received as the
  * result of successful parse if the field is present.
  *
- * @tparam Extra_Data The type of user-data incorporated into an instance
+ * @tparam Extra_Data The type of extra-data incorporated into an instance
  * of restinio::generic_request_t. There is no need to specify that type,
  * it has to be detected automatically by the compiler.
  *
@@ -197,7 +197,7 @@ try_parse_field(
  * @tparam Parsed_Field_Type The type of field value to be received as the
  * result of successful parse if the field is present.
  *
- * @tparam Extra_Data The type of user-data incorporated into an instance
+ * @tparam Extra_Data The type of extra-data incorporated into an instance
  * of restinio::generic_request_t. There is no need to specify that type,
  * it has to be detected automatically by the compiler.
  *

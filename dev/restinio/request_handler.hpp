@@ -33,15 +33,15 @@ namespace restinio
  *
  * An instance of Extra_Data is incorporated into a request object
  * by holding a buffer of necessary capacity and alignment inside
- * request object. The `make_within` method of user-data-factory
+ * request object. The `make_within` method of extra-data-factory
  * is called for the construction of new instance of Extra_Data
  * in that buffer. If raw void pointer will be passed to
  * `make_within` method then it would make possible a case when
- * wrong user-data-factory can be used.
+ * wrong extra-data-factory can be used.
  *
  * But if a pointer to the buffer for new instance will be wrapped
  * into extra_data_buffer_t then it allows additional type checks
- * from the compiler. That is why a user-data-factory receives
+ * from the compiler. That is why a extra-data-factory receives
  * extra_data_buffer_t<Extra_Data> as a parameter to `make_within`
  * instead of raw pointers.
  *
@@ -64,7 +64,7 @@ public:
 // no_extra_data_factory_t
 //
 /*!
- * @brief The default user-data-factory to be used in server's traits if
+ * @brief The default extra-data-factory to be used in server's traits if
  * a user doesn't specify own one.
  *
  * This factory doesn't nothing. And holds an empty struct as `data_t` member.
@@ -74,7 +74,7 @@ public:
 struct no_extra_data_factory_t
 {
 	/*!
-	 * @brief A type of user-data to be incorporated into a request object
+	 * @brief A type of extra-data to be incorporated into a request object
 	 * by the default.
 	 */
 	struct data_t {};
@@ -139,11 +139,11 @@ access_req_connection( generic_request_t<Extra_Data> & ) noexcept;
 // generic_request_extra_data_holder_t
 //
 /*!
- * @brief Helper class for holding a buffer for user-data object to
+ * @brief Helper class for holding a buffer for extra-data object to
  * be incorporated into a request object.
  *
  * It constructs a new object inside internal buffer @a m_data in
- * the constructor and correctly destroys user-data object in the
+ * the constructor and correctly destroys extra-data object in the
  * destructor.
  *
  * @since v.0.6.13
@@ -192,7 +192,7 @@ public:
 	Provides acces to header and body, and creates response builder
 	for a given request.
 
-	@tparam Extra_Data The type of user-data to be incorporated into
+	@tparam Extra_Data The type of extra-data to be incorporated into
 	a request object.
 */
 template< typename Extra_Data >
@@ -302,7 +302,7 @@ class generic_request_t final
 		}
 
 		/*!
-		 * @brief Get writeable access to user-data object incorporated
+		 * @brief Get writeable access to extra-data object incorporated
 		 * into a request object.
 		 *
 		 * @note
@@ -344,7 +344,7 @@ class generic_request_t final
 		}
 
 		/*!
-		 * @brief Get readonly access to user-data object incorporated
+		 * @brief Get readonly access to extra-data object incorporated
 		 * into a request object.
 		 *
 		 * @note
@@ -419,7 +419,7 @@ class generic_request_t final
 		const endpoint_t m_remote_endpoint;
 
 		/*!
-		 * @brief An instance of user-data that is incorporated into
+		 * @brief An instance of extra-data that is incorporated into
 		 * a request object.
 		 *
 		 * @since v.0.6.13
@@ -446,7 +446,7 @@ template< typename Extra_Data >
 using generic_request_handle_t =
 		std::shared_ptr< generic_request_t< Extra_Data > >;
 
-//! An alias for incoming request without additional user-data.
+//! An alias for incoming request without additional extra-data.
 /*!
  * For compatibility with previous versions.
  *
@@ -454,7 +454,7 @@ using generic_request_handle_t =
  */
 using request_t = generic_request_t< no_extra_data_factory_t::data_t >;
 
-//! An alias for handle for incoming request without additional user-data.
+//! An alias for handle for incoming request without additional extra-data.
 /*!
  * For compatibility with previous versions.
  *

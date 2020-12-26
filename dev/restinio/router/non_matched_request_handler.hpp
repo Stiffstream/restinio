@@ -27,13 +27,13 @@ namespace router
 /*!
  * @brief A generic type of handler for non-matched requests.
  *
- * Since v.0.6.13 some user-data can be incorporated into a request
+ * Since v.0.6.13 some extra-data can be incorporated into a request
  * object. In that case request-handler receives a parameter of type
  * `generic_request_handle_t<Extra_Data>`. The name
  * generic_non_matched_request_handler_t describes a type of
  * generic handler that can be parametrized by a @a User_Type.
  *
- * @tparam Extra_Data The type of user-data incorporated into a
+ * @tparam Extra_Data The type of extra-data incorporated into a
  * request object.
  *
  * @since v.0.6.13
@@ -48,7 +48,7 @@ using generic_non_matched_request_handler_t =
 //
 /*!
  * @brief A type of handler for non-matched requests for a case when
- * default user-data-factory is specified in the server's traits.
+ * default extra-data-factory is specified in the server's traits.
  *
  * Since v.0.6.13 the name non_matched_request_handler_t is just
  * an alias for generic_non_matched_request_handler_t.

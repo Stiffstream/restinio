@@ -124,7 +124,7 @@ struct connection_settings_t final
 					typename Traits::connection_state_listener_t >;
 
 	/*!
-	 * @brief An alias for shared-pointer to user-data-factory.
+	 * @brief An alias for shared-pointer to extra-data-factory.
 	 *
 	 * @since v.0.6.13
 	 */
@@ -204,7 +204,7 @@ struct connection_settings_t final
 	}
 
 	/*!
-	 * @brief Get a reference to user-data-factory object.
+	 * @brief Get a reference to extra-data-factory object.
 	 *
 	 * @since v.0.6.13
 	 */
@@ -220,7 +220,7 @@ private:
 	timer_manager_handle_t m_timer_manager;
 
 	/*!
-	 * @brief A factory for instances of user-data incorporated into a request.
+	 * @brief A factory for instances of extra-data incorporated into a request.
 	 *
 	 * @attention
 	 * This value is expected to be not-null.

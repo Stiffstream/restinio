@@ -422,14 +422,14 @@ class route_matcher_t
 /*!
  * @brief Type of generic handler for one route.
  *
- * Since v.0.6.13 some user-data can be incorporated into request-object.
+ * Since v.0.6.13 some extra-data can be incorporated into request-object.
  * In that case request-handler will have a different format in
  * comparison with previous versions. The type generic_express_request_handler_t
- * describes a request-handler when user-data of type @a Extra_Data is
+ * describes a request-handler when extra-data of type @a Extra_Data is
  * bound to request object.
  *
  * @note
- * If the default user-data-factory in specified in server's traits
+ * If the default extra-data-factory in specified in server's traits
  * then the old type express_request_handler_t can be used for
  * the simplicity.
  *
@@ -447,10 +447,10 @@ using generic_express_request_handler_t = std::function<
 //
 /*!
  * @brief Type of a handler for one route in the case when there is
- * no user-data in request object.
+ * no extra-data in request object.
  *
  * Since v.0.6.13 it's just an alias for generic_express_request_handler_t
- * for the case when the default user-data-factory is used in
+ * for the case when the default extra-data-factory is used in
  * server's traits.
  */
 using express_request_handler_t =
@@ -567,7 +567,7 @@ class generic_express_route_entry_t
 //
 /*!
  * @brief An alias for a single route entry in the case when the default
- * user-data-factory is used in server's traits.
+ * extra-data-factory is used in server's traits.
  *
  * Since v.0.6.13 this name is just an alias for generic_express_route_entry_t.
  */
@@ -602,7 +602,7 @@ using express_route_entry_t = generic_express_route_entry_t<
 
 	@tparam Regex_Engine Type of regex-engine to be used.
 
-	@tparam Extra_Data_Factory Type of user-data-factory specified in
+	@tparam Extra_Data_Factory Type of extra-data-factory specified in
 	server's traits.
 */
 template<
@@ -829,10 +829,10 @@ class generic_express_router_t
 //
 /*!
  * @brief A type of express-like router for the case when the default
- * user-data-factory is specified in the server's traits.
+ * extra-data-factory is specified in the server's traits.
  *
  * Since v.0.6.13 this type is just an alias for generic_express_router_t
- * with the default user-data-factory type.
+ * with the default extra-data-factory type.
  *
  * @tparam Regex_Engine Type of regex-engine to be used.
  */

@@ -46,7 +46,7 @@ struct per_request_data_t
 using per_request_data_factory_t = restinio::simple_extra_data_factory_t<
 	per_request_data_t >;
 
-// Express router should be tuned to be used with user-data.
+// Express router should be tuned to be used with extra-data.
 using express_router_t = restinio::router::generic_express_router_t<
 		restinio::router::std_regex_engine_t,
 		per_request_data_factory_t >;

@@ -62,8 +62,8 @@ struct valid_handler_type<
  *
  * In versions prior to 0.6.13 request-handlers in RESTinio have the
  * same format. But since v.0.6.13 the actual type of request-handler
- * is dependent on user-data-factory type. It means that if a user
- * defines own user-data-factory for server's traits then user also
+ * is dependent on extra-data-factory type. It means that if a user
+ * defines own extra-data-factory for server's traits then user also
  * has to define own request-handler type:
  *
  * @code
@@ -278,7 +278,7 @@ struct traits_t
 	static constexpr bool use_connection_count_limiter = false;
 
 	/*!
-	 * @brief The type of user-data-factory.
+	 * @brief The type of extra-data-factory.
 	 *
 	 * By the default RESTinio doesn't hold any additional data for a
 	 * request object. But if a user has to store some user-specific
@@ -307,14 +307,14 @@ struct traits_t
 	 * }
 	 * @endcode
 	 *
-	 * The second step is the definition of user-data-factory in server's traits:
+	 * The second step is the definition of extra-data-factory in server's traits:
 	 * @code
 	 * struct my_traits : public restinio::default_traits_t {
 	 * 	using extra_data_factory_t = some_extra_data_factory;
 	 * };
 	 * @endcode
 	 *
-	 * The third step is the creation of the user-data-factory instance and
+	 * The third step is the creation of the extra-data-factory instance and
 	 * passing it to server settings:
 	 * @code
 	 * restino::run(on_thread_pool<my_traits>(16)
@@ -325,13 +325,13 @@ struct traits_t
 	 * 	...
 	 * );
 	 * @endcode
-	 * Please note that the third step is not necessary if user-data-factory
+	 * Please note that the third step is not necessary if extra-data-factory
 	 * type is DefaultConstructible. In that case an instance of
-	 * user-data-factory will be created automatically.
+	 * extra-data-factory will be created automatically.
 	 *
 	 * Please note that if RESTinio's server is used with express-like or
 	 * easy_parser-based routers then `request_handler_t` should be
-	 * defined with the respect to user-data-factory type:
+	 * defined with the respect to extra-data-factory type:
 	 * @code
 	 * struct my_extra_data_factory {
 	 * 	struct data_t {...};
@@ -385,7 +385,7 @@ using request_handler_type_from_traits_t =
  * @brief A metafunction for the detection of actual type of request-object
  * from server's traits.
  *
- * The actual type of request-object depends from user-data-factory.
+ * The actual type of request-object depends from extra-data-factory.
  * This metafunction detect the actual type with the respect to the
  * definition of `extra_data_factory_t` inside Traits.
  *
