@@ -86,6 +86,45 @@ struct no_extra_data_factory_t
 	}
 };
 
+//
+// simple_extra_data_factory_t
+//
+/*!
+ * @brief A helper template class for cases when extra-data-factory is
+ * just a simple stateless object.
+ *
+ * Usage example:
+ * @code
+ * struct first_stage_data { ... };
+ * struct second_stage_data { ... };
+ * struct third_stage_data { ... };
+ *
+ * using my_extra_data_factory = restinio::simple_extra_data_factory_t<
+ * 	std::tuple<first_stage_data, second_stage_data, third_stage_data> >;
+ *
+ * struct my_traits : public restinio::default_traits_t
+ * {
+ * 	using extra_data_factory_t = my_extra_data_factory;
+ * };
+ * @endcode
+ *
+ * @tparam Extra_Data Type of extra-data to be incorporated into request-objects.
+ *
+ * @since v.0.6.13
+ */
+template< typename Extra_Data >
+struct simple_extra_data_factory_t
+{
+	using data_t = Extra_Data;
+
+	void
+	make_within( extra_data_buffer_t<data_t> buffer )
+		noexcept( noexcept(new(buffer.get()) data_t{}) )
+	{
+		new(buffer.get()) data_t{};
+	}
+};
+
 template< typename Extra_Data >
 class generic_request_t;
 

@@ -43,15 +43,8 @@ struct per_request_data_t
 };
 
 // User-data-factory for this example.
-struct per_request_data_factory_t
-{
-	using data_t = per_request_data_t;
-
-	void make_within( restinio::extra_data_buffer_t<data_t> buf )
-	{
-		new( buf.get() ) data_t{};
-	}
-};
+using per_request_data_factory_t = restinio::simple_extra_data_factory_t<
+	per_request_data_t >;
 
 // Express router should be tuned to be used with user-data.
 using express_router_t = restinio::router::generic_express_router_t<
