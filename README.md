@@ -44,6 +44,7 @@ so you can apply a complex logic for handling requests.
   response builder for you (obviously it is not the only builder).
 * ExpressJS-like request routing (see an example below).
 * An experimental typesafe request router that allows avoiding problems of ExpressJS-like router with help of static checks from C++ compiler.
+* A possibility to chain several request-handlers (somewhat similar to ExpressJS's middleware).
 * Working with query string parameters.
 * Several ready-to-use helpers for working with HTTP headers (for example, the support for HTTP headers related to file uploading).
 * Supports sending files and its parts (with sendfile on linux/unix and TransmitFile on windows).
@@ -117,5 +118,6 @@ The full documentation for RESTinio can be found [here](https://stiffstream.com/
 
 * Issues and bugs:
 [Issue Tracker on GitHub](https://github.com/stiffstream/restinio/issues).
+* Discussion section [on GitHub](https://github.com/Stiffstream/restinio/discussions)
 * Discussion group: [restinio](https://groups.google.com/forum/#!forum/restinio).
 
