@@ -118,6 +118,6 @@ The full documentation for RESTinio can be found [here](https://stiffstream.com/
 
 * Issues and bugs:
 [Issue Tracker on GitHub](https://github.com/stiffstream/restinio/issues).
-* Discussion section [on GitHub](https://github.com/Stiffstream/restinio/discussions)
+* Discussion section [on GitHub](https://github.com/Stiffstream/restinio/discussions).
 * Discussion group: [restinio](https://groups.google.com/forum/#!forum/restinio).
 
