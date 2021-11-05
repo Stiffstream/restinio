@@ -814,16 +814,23 @@ class response_builder_t< chunked_output_t > final
 						impl::content_length_field_presence_t::skip_content_length ) );
 			}
 
-			const char * format_string = "{:X}\r\n";
+			bool first = true;
 			for( auto & chunk : m_chunks )
-			{
-				bufs.emplace_back(
-					fmt::format(
-						format_string,
-						asio_ns::buffer_size( chunk.buf() ) ) );
-
-				// Now include "\r\n"-ending for a previous chunk to format string.
-				format_string = "\r\n{:X}\r\n";
+			{	
+				if ( first ) 
+				{
+					bufs.emplace_back(
+						fmt::format(
+							"{:X}\r\n", 
+							asio_ns::buffer_size(chunk.buf() ) ) );
+                            		first = false;
+				} else {
+					// Now include "\r\n"-ending for a previous chunk to format string.
+					bufs.emplace_back(
+						fmt::format(
+							"\r\n{:X}\r\n", 
+							asio_ns::buffer_size(chunk.buf() ) ) );
+				}
 
 				bufs.emplace_back( std::move( chunk ) );
 
