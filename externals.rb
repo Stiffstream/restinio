@@ -68,7 +68,7 @@ MxxRu::arch_externals :rapidjson_mxxru do |e|
 end
 
 MxxRu::arch_externals :json_dto do |e|
-  e.url 'https://github.com/Stiffstream/json_dto/archive/v.0.2.11.tar.gz'
+  e.url 'https://github.com/Stiffstream/json_dto/archive/v.0.2.15.tar.gz'
 
   e.map_dir 'dev/json_dto' => 'dev'
 end
