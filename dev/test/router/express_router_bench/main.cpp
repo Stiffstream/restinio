@@ -40,7 +40,9 @@ struct app_args_t
 				const char * long_name, const char * description ) {
 
 				return Opt( val, name )[ short_name ][ long_name ]
-					( fmt::format( description, val ) );
+					( fmt::format(
+							restinio::fmtlib_tools::runtime_format_string(description),
+							val ) );
 		};
 
 		auto cli = make_opt(

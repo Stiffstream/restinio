@@ -37,6 +37,31 @@
 	#include <fmt/chrono.h>
 #endif
 
+// Workaround for absence of fmt::runtime in fmtlib prior to v8.0.0.
+namespace restinio
+{
+
+namespace fmtlib_tools
+{
+
+#if FMT_VERSION < 80000
+inline auto
+runtime_format_string( const char * fmt_string ) noexcept
+{
+	return fmt_string;
+}
+#else
+inline auto
+runtime_format_string( const char * fmt_string )
+{
+	return fmt::runtime( fmt_string );
+}
+#endif
+
+} /* namespace fmtlib_tools */
+
+} /* namespace restinio */
+
 #if defined(__GNUG__) || defined(__clang__)
 
 #pragma GCC diagnostic pop

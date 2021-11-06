@@ -814,19 +814,37 @@ class response_builder_t< chunked_output_t > final
 						impl::content_length_field_presence_t::skip_content_length ) );
 			}
 
-			const char * format_string = "{:X}\r\n";
-			for( auto & chunk : m_chunks )
+			// Since fmtlib-8.0.0 compile-time checks of format strings
+			// is enabled by default. If non-constexpr string has to be
+			// passed as format_string then fmt::runtime() function should
+			// be used. But there are some drawbacks:
+			// - fmt::runtime is added only in fmtlib-8.0.0, there is no
+			//   such a function in previous versions of fmtlib;
+			// - using fmt::runtime we lack a possibility to check
+			//   format_string in compile-time and can have some performance
+			//   penalty in run-time.
+			//
+			// Because of that, the following code was rewritten to have different
+			// code fragments for the first item in m_chunks and all successive
+			// items.
+			auto chunk_it = m_chunks.begin();
+			const auto chunk_end = m_chunks.end();
+			if( chunk_it != chunk_end )
 			{
 				bufs.emplace_back(
 					fmt::format(
-						format_string,
-						asio_ns::buffer_size( chunk.buf() ) ) );
+						"{:X}\r\n",
+						asio_ns::buffer_size( chunk_it->buf() ) ) );
+				bufs.emplace_back( std::move( *chunk_it ) );
 
-				// Now include "\r\n"-ending for a previous chunk to format string.
-				format_string = "\r\n{:X}\r\n";
-
-				bufs.emplace_back( std::move( chunk ) );
-
+				for( ++chunk_it; chunk_it != chunk_end; ++chunk_it )
+				{
+					bufs.emplace_back(
+						fmt::format(
+							"\r\n{:X}\r\n",
+							asio_ns::buffer_size( chunk_it->buf() ) ) );
+					bufs.emplace_back( std::move( *chunk_it ) );
+				}
 			}
 
 			const char * const ending_representation = "\r\n" "0\r\n\r\n";
