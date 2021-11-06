@@ -90,7 +90,12 @@ auto make_router()
 					// Decompress request body if necessary.
 					rtz::handle_body(
 						*req,
-						[]( std::string body_data ){ return body_data; } ) )
+						// NOTE: the specification of the return type is necessary
+						// for Visual Studio 2019 (16.11.5) and C++20.
+						[]( std::string body_data ) -> std::string
+						{
+							return body_data;
+						} ) )
 				.done();
 
 		} );

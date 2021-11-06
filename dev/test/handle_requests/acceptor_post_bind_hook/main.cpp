@@ -23,11 +23,11 @@ TEST_CASE( "zero as server port" , "[acceptor_post_bind_hook]" )
 	std::promise<unsigned short> server_port_promise;
 	auto server_port_future = server_port_promise.get_future();
 
-	namespace asio_ns = restinio::asio_ns;
-
 	http_server_t http_server{
 		restinio::own_io_context(),
 		[&server_port_promise]( auto & settings ){
+			namespace asio_ns = restinio::asio_ns;
+
 			settings
 				.port( 0u )
 				.address( "127.0.0.1" )
