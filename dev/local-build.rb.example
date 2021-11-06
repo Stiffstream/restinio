@@ -1,6 +1,16 @@
 MxxRu::Cpp::composite_target do
+  cpp_std = 'cpp14'
+
+  if 'cpp20' == cpp_std
+    toolset.force_cpp20
+  elsif 'cpp17' == cpp_std
+    toolset.force_cpp17
+  else
+    toolset.force_cpp14
+  end
+
   global_obj_placement MxxRu::Cpp::PrjAwareRuntimeSubdirObjPlacement.new(
-    'target', MxxRu::Cpp::PrjAwareRuntimeSubdirObjPlacement::USE_COMPILER_ID )
+    "target/#{cpp_std}", MxxRu::Cpp::PrjAwareRuntimeSubdirObjPlacement::USE_COMPILER_ID )
   default_runtime_mode( MxxRu::Cpp::RUNTIME_RELEASE )
   MxxRu::enable_show_brief
 
