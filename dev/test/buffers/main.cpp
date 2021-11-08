@@ -11,6 +11,8 @@
 
 #include <restinio/buffers.hpp>
 
+#include <iterator>
+
 using namespace restinio;
 
 std::size_t
@@ -93,7 +95,8 @@ TEST_CASE( "buffers on fmt::basic_memory_buffer<char,1>" ,
 		"[buffers][fmt::basic_memory_buffer]" )
 {
 	fmt::basic_memory_buffer<char, 1u> fmt_buf;
-	fmt::format_to( fmt_buf, "Hello, {}", "World!" );
+	fmt::format_to(
+			std::back_inserter(fmt_buf), "Hello, {}", "World!" );
 
 	writable_item_t bs{ std::move( fmt_buf ) };
 	REQUIRE( writable_item_type_t::trivial_write_operation == bs.write_type() );

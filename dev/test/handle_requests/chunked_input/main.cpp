@@ -9,26 +9,31 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+#include <iterator>
+
 RESTINIO_NODISCARD
 restinio::fmt_minimal_memory_buffer_t
 format_chunked_input_info(
 	const restinio::request_t & req )
 {
 	restinio::fmt_minimal_memory_buffer_t resp_body;
+	auto resp_body_inserter = std::back_inserter( resp_body );
 
 	const auto * chunked_input = req.chunked_input_info();
 	if( !chunked_input )
-		fmt::format_to( resp_body, "no chunked input" );
+		fmt::format_to( resp_body_inserter, "no chunked input" );
 	else
 	{
-		fmt::format_to( resp_body, "chunks:{};", chunked_input->chunk_count() );
+		fmt::format_to( resp_body_inserter,
+				"chunks:{};", chunked_input->chunk_count() );
 		for( const auto & ch : chunked_input->chunks() )
-			fmt::format_to( resp_body, "[{},{}]",
+			fmt::format_to( resp_body_inserter, "[{},{}]",
 					ch.started_at(), ch.size() );
-		fmt::format_to( resp_body, ";trailing_fields:{};",
+		fmt::format_to( resp_body_inserter, ";trailing_fields:{};",
 				chunked_input->trailing_fields().fields_count() );
 		for( const auto & f : chunked_input->trailing_fields() )
-			fmt::format_to( resp_body, "('{}':'{}')", f.name(), f.value() );
+			fmt::format_to(
+					resp_body_inserter, "('{}':'{}')", f.name(), f.value() );
 	}
 
 	return resp_body;
