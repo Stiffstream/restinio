@@ -13,7 +13,8 @@ MxxRu::arch_externals :so5 do |e|
 end
 
 MxxRu::arch_externals :asio do |e|
-  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-18-0.tar.gz'
+#  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-18-0.tar.gz'
+  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-21-0.tar.gz'
 
   e.map_dir 'asio/include' => 'dev/asio'
 end
