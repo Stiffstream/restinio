@@ -323,7 +323,7 @@ class acceptor_t final
 		 * @since v.0.6.12
 		 */
 		void
-		call_accept_now( std::size_t index ) noexcept
+		call_accept_now( std::size_t index ) noexcept override
 		{
 			m_acceptor.async_accept(
 				this->socket( index ).lowest_layer(),
@@ -343,7 +343,7 @@ class acceptor_t final
 		 * @since v.0.6.12
 		 */
 		void
-		schedule_next_accept_attempt( std::size_t index ) noexcept
+		schedule_next_accept_attempt( std::size_t index ) noexcept override
 		{
 			asio_ns::post(
 				asio_ns::bind_executor(
