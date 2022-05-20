@@ -53,8 +53,21 @@ IF (RESTINIO_FIND_DEPS)
 	IF (RESTINIO_FMT_HEADER_ONLY)
 		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE fmt::fmt-header-only)
 	ELSE ()
-		# NOTE: just for check a solution for #159.
-		# TARGET_LINK_LIBRARIES(${RESTINIO} PUBLIC fmt::fmt)
+		# eao197: the initial version of code at
+		# f234b785d7c4e055afb902a44ce464cf1690ebd2 (Mar 13, 2020) used INTERFACE
+		# for fmt::fmt. But I changed it to PUBLIC a month later at
+		# 0c46710980ab6141910ac7deb0a0462894dccd4d (Apr 13, 2020) because
+		# encounter a case when INTERFACE lead to inability to link to fmtlib.
+		# Unfortunately, I didn't fixed information about the case in that
+		# INTERFACE didn't work for me. And I can't reproduce that case working
+		# on fix for #159.
+		#
+		# It seems that INTERFACE should be used because CMake produces an
+		# error "INTERFACE library can only be used with the INTERFACE keyword of
+		# target_link_libraries".
+		#
+		# But if you found yourself in a case when INTERFACE lead to linker errors
+		# then open an issue with the description of your case.
 		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE fmt::fmt)
 	ENDIF ()
 
