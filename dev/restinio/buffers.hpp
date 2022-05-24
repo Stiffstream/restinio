@@ -491,6 +491,36 @@ enum class writable_item_type_t
 
 	Having such writable_item_t class, RESTinio  can store a sequence
 	of arbitrary buffers in `std::vector`.
+
+	@par An important note about use placement new, reinterpret_cast and std::launder
+
+	As described
+	[here](https://blog.panicsoftware.com/objects-their-lifetimes-and-pointers/)
+	(reserve
+	[URL](http://web.archive.org/web/20210723000232/https://blog.panicsoftware.com/objects-their-lifetimes-and-pointers/)) such code contains UB:
+
+	@code
+	alignas(T) char buffer[sizeof(T)];
+	new(buffer) T{}; // (1)
+	T * p = reinterpret_cast<T*>(buffer); // (2)
+	@endcode
+
+	The pointer `p` obtained at (2) is invalid because the lifetime of `buffer` ends
+	at point (1) and address of `buffer` can be used as an address of new object T.
+	The solution is to use std::launder function introduced in C++17:
+
+	@code
+	alignas(T) char buffer[sizeof(T)];
+	new(buffer) T{}; // (1)
+	T * p = std::launder(reinterpret_cast<T*>(buffer)); // (2)
+	@endcode
+
+	In that case `reinterpret_cast<T*>(buffer)` produces an invalid pointer that
+	contain a valid address of new object T. std::launder makes translates that
+	invalid pointer to a valid one and the resulting `p` can be used without UB.
+	Because RESTinio is a C++14 library, we use macro RESTINIO_STD_LAUNDER in
+	code. That macro is expanded to actual call of std::launder if C++17 or
+	latter is used.
 */
 class writable_item_t
 {
@@ -624,31 +654,36 @@ class writable_item_t
 		//! Access as writable_base_t item.
 		const impl::writable_base_t * get_writable_base() const noexcept
 		{
-			return reinterpret_cast< const impl::writable_base_t * >( m_storage.data() );
+			return RESTINIO_STD_LAUNDER(
+					reinterpret_cast< const impl::writable_base_t * >( m_storage.data() ) );
 		}
 
 		//! Access as writable_base_t item.
 		impl::writable_base_t * get_writable_base() noexcept
 		{
-			return reinterpret_cast< impl::writable_base_t * >( m_storage.data() );
+			return RESTINIO_STD_LAUNDER(
+					reinterpret_cast< impl::writable_base_t * >( m_storage.data() ) );
 		}
 
 		//! Access as trivial buf item.
 		const impl::buf_iface_t * get_buf() const noexcept
 		{
-			return reinterpret_cast< const impl::buf_iface_t * >( m_storage.data() );
+			return RESTINIO_STD_LAUNDER(
+					reinterpret_cast< const impl::buf_iface_t * >( m_storage.data() ) );
 		}
 
 		//! Access as trivial buf item.
 		impl::buf_iface_t * get_buf() noexcept
 		{
-			return reinterpret_cast< impl::buf_iface_t * >( m_storage.data() );
+			return RESTINIO_STD_LAUNDER(
+					reinterpret_cast< impl::buf_iface_t * >( m_storage.data() ) );
 		}
 
 		//! Access as sendfile_write_operation_t item.
 		impl::sendfile_write_operation_t * get_sfwo() noexcept
 		{
-			return reinterpret_cast< impl::sendfile_write_operation_t * >( m_storage.data() );
+			return RESTINIO_STD_LAUNDER(
+					reinterpret_cast< impl::sendfile_write_operation_t * >( m_storage.data() ) );
 		}
 		///@}
 

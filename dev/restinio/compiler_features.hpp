@@ -37,6 +37,14 @@
 	#define RESTINIO_FALLTHROUGH
 #endif
 
+// Handle the presence of std::launder.
+#if defined(__cpp_lib_launder)
+	#include <new>
+	#define RESTINIO_STD_LAUNDER(x) std::launder(x)
+#else
+	#define RESTINIO_STD_LAUNDER(x) x
+#endif
+
 /*!
  * @brief A wrapper around static_assert for checking that an expression
  * is noexcept and execution of that expression
