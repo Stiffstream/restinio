@@ -501,13 +501,13 @@ class writable_item_t
 		writable_item_t()
 			:	m_write_type{ writable_item_type_t::trivial_write_operation }
 		{
-			new( &m_storage ) impl::empty_buf_t{};
+			new( m_storage.data() ) impl::empty_buf_t{};
 		}
 
 		writable_item_t( const_buffer_t const_buf )
 			:	m_write_type{ writable_item_type_t::trivial_write_operation }
 		{
-			new( &m_storage ) impl::const_buf_t{ const_buf.m_str, const_buf.m_size };
+			new( m_storage.data() ) impl::const_buf_t{ const_buf.m_str, const_buf.m_size };
 		}
 
 		template <
@@ -524,7 +524,7 @@ class writable_item_t
 				sizeof( impl::datasizeable_buf_t< Datasizeable > ) <= impl::needed_storage_max_size,
 				"size of type is too big" );
 
-			new( &m_storage ) impl::datasizeable_buf_t< Datasizeable >{ std::move( ds ) };
+			new( m_storage.data() ) impl::datasizeable_buf_t< Datasizeable >{ std::move( ds ) };
 		}
 
 		writable_item_t( const char * str )
@@ -544,19 +544,19 @@ class writable_item_t
 			if( !sp )
 				throw exception_t{ "empty shared_ptr cannot be used as buffer" };
 
-			new( &m_storage ) impl::shared_datasizeable_buf_t< Datasizeable >{ std::move( sp ) };
+			new( m_storage.data() ) impl::shared_datasizeable_buf_t< Datasizeable >{ std::move( sp ) };
 		}
 
 		writable_item_t( sendfile_t sf_opts )
 			:	m_write_type{ writable_item_type_t::file_write_operation }
 		{
-			new( &m_storage ) impl::sendfile_write_operation_t{ std::move( sf_opts ) };
+			new( m_storage.data() ) impl::sendfile_write_operation_t{ std::move( sf_opts ) };
 		}
 
 		writable_item_t( writable_item_t && b )
 			:	m_write_type{ b.m_write_type }
 		{
-			b.get_writable_base()->relocate_to( &m_storage );
+			b.get_writable_base()->relocate_to( m_storage.data() );
 		}
 
 		writable_item_t &
@@ -566,7 +566,7 @@ class writable_item_t
 			{
 				destroy_stored_buffer();
 				m_write_type = b.m_write_type;
-				b.get_writable_base()->relocate_to( &m_storage );
+				b.get_writable_base()->relocate_to( m_storage.data() );
 			}
 
 			return *this;
@@ -624,41 +624,43 @@ class writable_item_t
 		//! Access as writable_base_t item.
 		const impl::writable_base_t * get_writable_base() const noexcept
 		{
-			return reinterpret_cast< const impl::writable_base_t * >( &m_storage );
+			return reinterpret_cast< const impl::writable_base_t * >( m_storage.data() );
 		}
 
 		//! Access as writable_base_t item.
 		impl::writable_base_t * get_writable_base() noexcept
 		{
-			return reinterpret_cast< impl::writable_base_t * >( &m_storage );
+			return reinterpret_cast< impl::writable_base_t * >( m_storage.data() );
 		}
 
 		//! Access as trivial buf item.
 		const impl::buf_iface_t * get_buf() const noexcept
 		{
-			return reinterpret_cast< const impl::buf_iface_t * >( &m_storage );
+			return reinterpret_cast< const impl::buf_iface_t * >( m_storage.data() );
 		}
 
 		//! Access as trivial buf item.
 		impl::buf_iface_t * get_buf() noexcept
 		{
-			return reinterpret_cast< impl::buf_iface_t * >( &m_storage );
+			return reinterpret_cast< impl::buf_iface_t * >( m_storage.data() );
 		}
 
 		//! Access as sendfile_write_operation_t item.
 		impl::sendfile_write_operation_t * get_sfwo() noexcept
 		{
-			return reinterpret_cast< impl::sendfile_write_operation_t * >( &m_storage );
+			return reinterpret_cast< impl::sendfile_write_operation_t * >( m_storage.data() );
 		}
 		///@}
 
-		using storage_t =
-			std::aligned_storage_t<
-				impl::needed_storage_max_size,
-				impl::buffer_storage_align >;
-
 		//! A storage for a buffer object of various types.
-		storage_t m_storage;
+		/*!
+		 * @note
+		 * Before 0.6.15 std::aligned_storage_t was used as type of this
+		 * buffer. But because std::aligned_storage_t is deprecated in C++23
+		 * the type is changed in v.0.6.15.
+		 */
+		alignas(impl::buffer_storage_align)
+		std::array< char, impl::needed_storage_max_size > m_storage;
 };
 
 //
