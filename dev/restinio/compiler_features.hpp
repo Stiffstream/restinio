@@ -13,6 +13,9 @@
 
 #include <utility>
 
+// It's necessary for __cpp_lib_launder and std::launder.
+#include <new>
+
 // Try to use __has_cpp_attribute if it is supported.
 #if defined(__has_cpp_attribute)
 	// clang-4 and clang-5 produce warnings when [[nodiscard]]
@@ -39,7 +42,6 @@
 
 // Handle the presence of std::launder.
 #if defined(__cpp_lib_launder)
-	#include <new>
 	#define RESTINIO_STD_LAUNDER(x) std::launder(x)
 #else
 	#define RESTINIO_STD_LAUNDER(x) x
