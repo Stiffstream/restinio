@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <restinio/compiler_features.hpp>
+
 #include <restinio/exception.hpp>
 #include <restinio/http_headers.hpp>
 #include <restinio/message_builders.hpp>
@@ -170,14 +172,20 @@ public:
 	Extra_Data *
 	get_ptr() noexcept
 	{
-		return reinterpret_cast<Extra_Data *>(m_data.data());
+		// Because the content of m_data.data() is rewritten by
+		// placement new we have to use std::launder to avoid UB.
+		return RESTINIO_STD_LAUNDER(
+				reinterpret_cast<Extra_Data *>(m_data.data()) );
 	}
 
 	RESTINIO_NODISCARD
 	const Extra_Data *
 	get_ptr() const noexcept
 	{
-		return reinterpret_cast<const Extra_Data *>(m_data.data());
+		// Because the content of m_data.data() is rewritten by
+		// placement new we have to use std::launder to avoid UB.
+		return RESTINIO_STD_LAUNDER(
+				reinterpret_cast<const Extra_Data *>(m_data.data()) );
 	}
 };
 
