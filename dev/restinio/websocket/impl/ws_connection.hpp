@@ -171,7 +171,7 @@ class ws_connection_t final
 					return fmt::format(
 						"[ws_connection:{}] start connection with {}",
 						connection_id(),
-						m_socket.remote_endpoint() );
+						fmtlib_tools::streamed( m_socket.remote_endpoint() ) );
 			} );
 
 			// Inform state listener if it used.

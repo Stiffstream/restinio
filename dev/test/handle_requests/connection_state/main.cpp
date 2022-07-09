@@ -224,7 +224,9 @@ TEST_CASE( "ordinary connection" , "[ordinary_connection]" )
 				.connection_state_listener( state_listener )
 				.request_handler(
 					[&endpoint_value]( auto req ){
-						endpoint_value = fmt::format( "{}", req->remote_endpoint() );
+						endpoint_value = fmt::format( "{}",
+								restinio::fmtlib_tools::streamed(
+										req->remote_endpoint() ) );
 
 						req->create_response()
 							.append_header( "Server", "RESTinio utest server" )
@@ -287,7 +289,9 @@ TEST_CASE( "connection state for WS" , "[connection_state][ws]" )
 				.connection_state_listener( state_listener )
 				.request_handler(
 					[&endpoint_value, &endpoint_value_ws]( auto req ){
-						endpoint_value = fmt::format( "{}", req->remote_endpoint() );
+						endpoint_value = fmt::format( "{}",
+								restinio::fmtlib_tools::streamed(
+										req->remote_endpoint() ) );
 
 						if( restinio::http_connection_header_t::upgrade == req->header().connection() )
 						{
@@ -302,7 +306,9 @@ TEST_CASE( "connection state for WS" , "[connection_state][ws]" )
 											rws::message_handle_t ){} );
 
 
-								endpoint_value_ws = fmt::format( "{}", ws->remote_endpoint() );
+								endpoint_value_ws = fmt::format( "{}",
+										restinio::fmtlib_tools::streamed(
+												ws->remote_endpoint() ) );
 
 								ws->kill();
 								
@@ -371,7 +377,9 @@ TEST_CASE( "listener throws on accept" , "[throws_on_accept]" )
 				.connection_state_listener( state_listener )
 				.request_handler(
 					[&endpoint_value]( auto req ){
-						endpoint_value = fmt::format( "{}", req->remote_endpoint() );
+						endpoint_value = fmt::format( "{}",
+								restinio::fmtlib_tools::streamed(
+										req->remote_endpoint() ) );
 
 						req->create_response()
 							.append_header( "Server", "RESTinio utest server" )
@@ -431,7 +439,9 @@ TEST_CASE( "listener throws on close" , "[throws_on_close]" )
 				.connection_state_listener( state_listener )
 				.request_handler(
 					[&endpoint_value]( auto req ){
-						endpoint_value = fmt::format( "{}", req->remote_endpoint() );
+						endpoint_value = fmt::format( "{}",
+								restinio::fmtlib_tools::streamed(
+										req->remote_endpoint() ) );
 
 						req->create_response()
 							.append_header( "Server", "RESTinio utest server" )
@@ -495,7 +505,9 @@ TEST_CASE( "listener throws on WS-upgrade" , "[throws_on_ws_upgrade]" )
 				.connection_state_listener( state_listener )
 				.request_handler(
 					[&endpoint_value, &ws_upgrade_failed]( auto req ){
-						endpoint_value = fmt::format( "{}", req->remote_endpoint() );
+						endpoint_value = fmt::format( "{}",
+								restinio::fmtlib_tools::streamed(
+										req->remote_endpoint() ) );
 
 						if( restinio::http_connection_header_t::upgrade == req->header().connection() )
 						{

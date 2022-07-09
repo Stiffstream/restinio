@@ -62,7 +62,9 @@ TEST_CASE( "on thread pool with break signals" , "[with_break_signal]" )
 				.address( "127.0.0.1" )
 				.request_handler(
 					[&endpoint_value]( auto req ){
-						endpoint_value = fmt::format( "{}", req->remote_endpoint() );
+						endpoint_value = fmt::format( "{}",
+								restinio::fmtlib_tools::streamed(
+										req->remote_endpoint() ) );
 
 						req->create_response()
 							.append_header( "Server", "RESTinio utest server" )
@@ -127,7 +129,9 @@ TEST_CASE( "on thread pool without break signals" , "[without_break_signal]" )
 				.address( "127.0.0.1" )
 				.request_handler(
 					[&endpoint_value]( auto req ){
-						endpoint_value = fmt::format( "{}", req->remote_endpoint() );
+						endpoint_value = fmt::format( "{}",
+								restinio::fmtlib_tools::streamed(
+										req->remote_endpoint() ) );
 
 						req->create_response()
 							.append_header( "Server", "RESTinio utest server" )
@@ -192,7 +196,9 @@ TEST_CASE( "server on thread pool runner" , "[on_pool_runner]" )
 				.address( "127.0.0.1" )
 				.request_handler(
 					[&endpoint_value]( auto req ){
-						endpoint_value = fmt::format( "{}", req->remote_endpoint() );
+						endpoint_value = fmt::format( "{}",
+								restinio::fmtlib_tools::streamed(
+										req->remote_endpoint() ) );
 
 						req->create_response()
 							.append_header( "Server", "RESTinio utest server" )
@@ -254,7 +260,9 @@ TEST_CASE( "run_async with manual stop/wait" , "[run_async]" )
 			.address( "127.0.0.1" )
 			.request_handler(
 				[&endpoint_value]( auto req ){
-					endpoint_value = fmt::format( "{}", req->remote_endpoint() );
+					endpoint_value = fmt::format( "{}",
+							restinio::fmtlib_tools::streamed(
+									req->remote_endpoint() ) );
 
 					req->create_response()
 						.append_header( "Server", "RESTinio utest server" )
@@ -303,7 +311,9 @@ TEST_CASE( "run_async with manual stop without wait" , "[run_async]" )
 				.address( "127.0.0.1" )
 				.request_handler(
 					[&endpoint_value]( auto req ){
-						endpoint_value = fmt::format( "{}", req->remote_endpoint() );
+						endpoint_value = fmt::format( "{}",
+								restinio::fmtlib_tools::streamed(
+										req->remote_endpoint() ) );
 
 						req->create_response()
 							.append_header( "Server", "RESTinio utest server" )
@@ -353,7 +363,9 @@ TEST_CASE( "run_async with automatic stop/wait" , "[run_async]" )
 				.address( "127.0.0.1" )
 				.request_handler(
 					[&endpoint_value]( auto req ){
-						endpoint_value = fmt::format( "{}", req->remote_endpoint() );
+						endpoint_value = fmt::format( "{}",
+								restinio::fmtlib_tools::streamed(
+										req->remote_endpoint() ) );
 
 						req->create_response()
 							.append_header( "Server", "RESTinio utest server" )

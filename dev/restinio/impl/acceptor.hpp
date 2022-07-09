@@ -223,7 +223,8 @@ class acceptor_t final
 			{
 				const auto ep = m_acceptor.local_endpoint();
 				m_logger.warn( [&]{
-					return fmt::format( "server already started on {}", ep );
+					return fmt::format( "server already started on {}",
+							fmtlib_tools::streamed( ep ) );
 				} );
 				return;
 			}
@@ -238,7 +239,8 @@ class acceptor_t final
 			try
 			{
 				m_logger.trace( [&]{
-					return fmt::format( "starting server on {}", ep );
+					return fmt::format( "starting server on {}",
+							fmtlib_tools::streamed( ep ) );
 				} );
 
 				m_acceptor.open( ep.protocol() );
@@ -272,7 +274,8 @@ class acceptor_t final
 				}
 
 				m_logger.info( [&]{
-					return fmt::format( "server started on {}", ep );
+					return fmt::format( "server started on {}",
+							fmtlib_tools::streamed( ep ) );
 				} );
 			}
 			catch( const std::exception & ex )
@@ -283,8 +286,8 @@ class acceptor_t final
 
 				m_logger.error( [&]() -> auto {
 					return fmt::format( "failed to start server on {}: {}",
-						ep,
-						ex.what() );
+							fmtlib_tools::streamed( ep ),
+							ex.what() );
 				} );
 
 				throw;
@@ -440,7 +443,8 @@ class acceptor_t final
 			m_logger.trace( [&]{
 				return fmt::format(
 						"accept connection from {} on socket #{}",
-						remote_endpoint, i );
+						fmtlib_tools::streamed( remote_endpoint ),
+						i );
 			} );
 
 			// Since v.0.5.1 the incoming connection must be
@@ -456,7 +460,8 @@ class acceptor_t final
 					return fmt::format(
 							"accepted connection from {} on socket #{} denied by"
 							" IP-blocker",
-							remote_endpoint, i );
+							fmtlib_tools::streamed( remote_endpoint ),
+							i );
 				} );
 				// incoming_socket will be closed automatically.
 			break;
@@ -526,13 +531,15 @@ class acceptor_t final
 			// for m_acceptor.
 			restinio::utils::log_trace_noexcept( m_logger,
 				[&]{
-					return fmt::format( "closing server on {}", ep );
+					return fmt::format( "closing server on {}",
+							fmtlib_tools::streamed( ep ) );
 				} );
 
 			m_acceptor.close();
 
 			m_logger.info( [&]{
-				return fmt::format( "server closed on {}", ep );
+				return fmt::format( "server closed on {}",
+						fmtlib_tools::streamed( ep ) );
 			} );
 		}
 

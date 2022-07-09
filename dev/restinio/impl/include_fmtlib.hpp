@@ -58,6 +58,20 @@ runtime_format_string( const char * fmt_string )
 }
 #endif
 
+#if FMT_VERSION < 90000
+template< typename T >
+decltype(auto) streamed( T && v ) noexcept
+{
+	return std::forward<T>(v);
+}
+#else
+template< typename T >
+decltype(auto) streamed( T && v ) noexcept
+{
+	return fmt::streamed( std::forward<T>(v) );
+}
+#endif
+
 } /* namespace fmtlib_tools */
 
 } /* namespace restinio */

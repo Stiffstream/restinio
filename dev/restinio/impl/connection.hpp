@@ -348,7 +348,7 @@ class connection_t final
 					return fmt::format(
 						"[connection:{}] start connection with {}",
 						connection_id(),
-						m_remote_endpoint );
+						fmtlib_tools::streamed( m_remote_endpoint ) );
 			} );
 		}
 
@@ -936,7 +936,7 @@ class connection_t final
 							"flags: {}, write group size: {}",
 							connection_id(),
 							request_id,
-							response_output_flags,
+							fmtlib_tools::streamed( response_output_flags ),
 							wg.items_count() );
 					} );
 

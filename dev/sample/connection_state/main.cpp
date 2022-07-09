@@ -34,7 +34,7 @@ public:
 
 		fmt::print( "connection-notice: {} (from {}) => {}\n",
 				notice.connection_id(),
-				notice.remote_endpoint(),
+				restinio::fmtlib_tools::streamed( notice.remote_endpoint() ),
 				cause_to_str( notice ) );
 	}
 };
@@ -51,7 +51,7 @@ restinio::request_handling_status_t handler( const restinio::request_handle_t& r
 			.append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
 			.set_body( fmt::format( "{} (from {}): Hello world!",
 					req->connection_id(),
-					req->remote_endpoint() ) )
+					restinio::fmtlib_tools::streamed( req->remote_endpoint() ) ) )
 			.done();
 
 		return restinio::request_accepted();

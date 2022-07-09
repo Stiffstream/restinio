@@ -102,7 +102,9 @@ TEST_CASE( "remote_endpoint extraction" , "[remote_endpoint]" )
 				.extra_data_factory( extra_data_factory )
 				.request_handler(
 					[&endpoint_value, &index_value]( auto req ){
-						endpoint_value = fmt::format( "{}", req->remote_endpoint() );
+						endpoint_value = fmt::format( "{}",
+								restinio::fmtlib_tools::streamed(
+										req->remote_endpoint() ) );
 						index_value = req->extra_data().m_index;
 
 						req->create_response()

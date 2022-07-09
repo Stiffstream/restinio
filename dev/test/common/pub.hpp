@@ -70,7 +70,9 @@ do_request(
 				sout << &response_stream;
 
 			if ( !restinio::error_is_eof( error ) )
-				throw std::runtime_error{ fmt::format( "read error: {}", error ) };
+				throw std::runtime_error{
+						fmt::format( "read error: {}",
+								restinio::fmtlib_tools::streamed( error ) ) };
 
 			result = sout.str();
 		},
