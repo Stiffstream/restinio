@@ -39,7 +39,8 @@ restinio::request_handling_status_t handler( const restinio::request_handle_t& r
 			for( const auto p : qp )
 			{
 				fmt::format_to( response_body_inserter, "'{}' => '{}'\n",
-						p.first, p.second );
+						restinio::fmtlib_tools::streamed( p.first ),
+						restinio::fmtlib_tools::streamed( p.second ) );
 			}
 		}
 

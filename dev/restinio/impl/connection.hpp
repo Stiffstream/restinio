@@ -1027,18 +1027,16 @@ class connection_t final
 
 					m_logger.trace( [&]{
 						// Get status line:
-						const string_view_t
-							status_line{
+						const string_view_t status_line{
 								asio_ns::buffer_cast< const char * >(
 									next_write_group->first.items().front().buf() ),
 								next_write_group->first.status_line_size() };
 
-						return
-							fmt::format(
+						return fmt::format(
 								"[connection:{}] start response (#{}): {}",
 								this->connection_id(),
 								next_write_group->second,
-								status_line );
+								fmtlib_tools::streamed( status_line ) );
 					} );
 				}
 

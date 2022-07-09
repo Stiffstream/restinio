@@ -82,7 +82,9 @@ void store_file_to_disk(
 	std::ofstream dest_file;
 	dest_file.exceptions( std::ofstream::failbit );
 	dest_file.open(
-			fmt::format( "{}/{}", args.m_dest_folder, file_name ),
+			fmt::format( "{}/{}",
+					restinio::fmtlib_tools::streamed( args.m_dest_folder ),
+					restinio::fmtlib_tools::streamed( file_name ) ),
 			std::ios_base::out | std::ios_base::trunc | std::ios_base::binary );
 	dest_file.write( raw_content.data(), raw_content.size() );
 }

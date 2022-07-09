@@ -845,7 +845,8 @@ tokens2regexp(
 	catch( const std::exception & ex )
 	{
 		throw exception_t{
-			fmt::format( "unable to process route \"{}\": {}", path, ex.what() ) };
+			fmt::format( "unable to process route \"{}\": {}",
+					fmtlib_tools::streamed( path ), ex.what() ) };
 	}
 
 	return result;

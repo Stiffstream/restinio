@@ -150,7 +150,7 @@ class regex_t final
 				throw exception_t{
 						fmt::format(
 							"unable to compile regex \"{}\": {}",
-							r,
+							fmtlib_tools::streamed( r ),
 							reinterpret_cast< const char * >( buffer.data() ) ) };
 			}
 		}

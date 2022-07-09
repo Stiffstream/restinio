@@ -954,7 +954,8 @@ class http_header_fields_t
 
 			if( m_fields.end() == it )
 				throw exception_t{
-					fmt::format( "field '{}' doesn't exist", field_name ) };
+					fmt::format( "field '{}' doesn't exist",
+							fmtlib_tools::streamed( field_name ) ) };
 
 			return it->value();
 		}

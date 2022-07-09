@@ -256,11 +256,12 @@ throw_exception_on_invalid_base64_string( string_view_t str )
 	if( str.size() > max_allowed_len )
 		throw exception_t{
 				fmt::format( "invalid base64 string that starts with '{}'",
-						str.substr( 0u, max_allowed_len ) )
+						fmtlib_tools::streamed( str.substr( 0u, max_allowed_len ) ) )
 		};
 	else
 		throw exception_t{
-			fmt::format( "invalid base64 string '{}'", str ) };
+			fmt::format( "invalid base64 string '{}'",
+					fmtlib_tools::streamed( str ) ) };
 }
 
 } /* namespace impl */

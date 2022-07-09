@@ -46,7 +46,7 @@ auto server_handler()
 				.set_body(
 					fmt::format(
 						"GET request with single parameter: '{}'",
-						params[ "param" ] ) )
+						restinio::fmtlib_tools::streamed( params[ "param" ] ) ) )
 				.done();
 	} );
 
@@ -59,9 +59,9 @@ auto server_handler()
 						fmt::format(
 							"POST request with many parameters:\n"
 							"year: {}\nmonth: {}\nday: {}\nbody: {}",
-							params[ "year" ],
-							params[ "month" ],
-							params[ "day" ],
+							restinio::fmtlib_tools::streamed( params[ "year" ] ),
+							restinio::fmtlib_tools::streamed( params[ "month" ] ),
+							restinio::fmtlib_tools::streamed( params[ "day" ] ),
 							req->body() ) )
 					.done();
 		} );
@@ -75,9 +75,9 @@ auto server_handler()
 						fmt::format(
 							"GET request with indexed parameters:\n"
 							"#0: '{}'\n#1: {}\n#2: '{}'",
-							params[ 0 ],
-							params[ 1 ],
-							params[ 2 ] ) )
+							restinio::fmtlib_tools::streamed( params[ 0 ] ),
+							restinio::fmtlib_tools::streamed( params[ 1 ] ),
+							restinio::fmtlib_tools::streamed( params[ 2 ] ) ) )
 					.done();
 		} );
 
