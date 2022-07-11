@@ -294,12 +294,14 @@ parse_integer_no_checks(
 	if( apply_minus_sign )
 		while( data_begin != data_end )
 		{
-			result = result*10 - mapping_table[ static_cast< std::size_t >( *data_begin++ ) ];
+			result = result*10 - static_cast<Integer>(
+					mapping_table[ static_cast< std::size_t >( *data_begin++ ) ] );
 		}
 	else
 		while( data_begin != data_end )
 		{
-			result = result*10 + mapping_table[ static_cast< std::size_t >( *data_begin++ ) ];
+			result = result*10 + static_cast<Integer>(
+					mapping_table[ static_cast< std::size_t >( *data_begin++ ) ] );
 		}
 
 	return result;
@@ -318,7 +320,8 @@ parse_integer_no_checks(
 
 	while( data_begin != data_end )
 	{
-		result = result * 10 + mapping_table[ static_cast< std::size_t >( *data_begin++ ) ];
+		result = result * 10 + static_cast<Integer>(
+				mapping_table[ static_cast< std::size_t >( *data_begin++ ) ] );
 	}
 
 	return result;
