@@ -50,7 +50,10 @@
 // Control presence of exception handling (try and auto discover):
 
 #ifndef variant_CONFIG_NO_EXCEPTIONS
-# if defined(__cpp_exceptions) || defined(__EXCEPTIONS) || defined(_CPPUNWIND)
+# if defined(_MSC_VER)
+#  include <cstddef>    // for _HAS_EXCEPTIONS
+# endif
+# if defined(__cpp_exceptions) || defined(__EXCEPTIONS) || (_HAS_EXCEPTIONS)
 #  define variant_CONFIG_NO_EXCEPTIONS  0
 # else
 #  define variant_CONFIG_NO_EXCEPTIONS  1
@@ -366,13 +369,13 @@ namespace nonstd {
 
 #define variant_HAVE_CONDITIONAL        variant_CPP11_120
 #define variant_HAVE_REMOVE_CV          variant_CPP11_120
-#define variant_HAVE_STD_ADD_POINTER    variant_CPP11_90
+#define variant_HAVE_STD_ADD_POINTER    variant_CPP11_100
 #define variant_HAVE_TYPE_TRAITS        variant_CPP11_90
-#define variant_HAVE_ENABLE_IF          variant_CPP11_90
-#define variant_HAVE_IS_SAME            variant_CPP11_90
+#define variant_HAVE_ENABLE_IF          variant_CPP11_100
+#define variant_HAVE_IS_SAME            variant_CPP11_100
 
 #define variant_HAVE_TR1_TYPE_TRAITS    (!! variant_COMPILER_GNUC_VERSION )
-#define variant_HAVE_TR1_ADD_POINTER    (!! variant_COMPILER_GNUC_VERSION )
+#define variant_HAVE_TR1_ADD_POINTER    (!! variant_COMPILER_GNUC_VERSION || variant_CPP11_90)
 
 // C++ feature usage:
 

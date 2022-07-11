@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2014-2018 Martin Moene
+// Copyright (c) 2014-2021 Martin Moene
 //
 // https://github.com/martinmoene/optional-lite
 //
@@ -12,7 +12,7 @@
 #define NONSTD_OPTIONAL_LITE_HPP
 
 #define optional_lite_MAJOR  3
-#define optional_lite_MINOR  4
+#define optional_lite_MINOR  5
 #define optional_lite_PATCH  0
 
 #define optional_lite_VERSION  optional_STRINGIFY(optional_lite_MAJOR) "." optional_STRINGIFY(optional_lite_MINOR) "." optional_STRINGIFY(optional_lite_PATCH)
@@ -44,13 +44,19 @@
 # define optional_CONFIG_SELECT_OPTIONAL  ( optional_HAVE_STD_OPTIONAL ? optional_OPTIONAL_STD : optional_OPTIONAL_NONSTD )
 #endif
 
+// Control presence of extensions:
+
+#ifndef optional_CONFIG_NO_EXTENSIONS
+#define optional_CONFIG_NO_EXTENSIONS  0
+#endif
+
 // Control presence of exception handling (try and auto discover):
 
 #ifndef optional_CONFIG_NO_EXCEPTIONS
-# if _MSC_VER
+# if defined(_MSC_VER)
 # include <cstddef>     // for _HAS_EXCEPTIONS
 # endif
-# if defined(__cpp_exceptions) || defined(__EXCEPTIONS) || (_HAS_EXCEPTIONS)
+# if defined(__cpp_exceptions) || defined(__EXCEPTIONS) || (defined(_HAS_EXCEPTIONS) && (_HAS_EXCEPTIONS))
 #  define optional_CONFIG_NO_EXCEPTIONS  0
 # else
 #  define optional_CONFIG_NO_EXCEPTIONS  1
@@ -313,11 +319,11 @@ namespace nonstd {
 #define optional_CPP14_000  (optional_CPP14_OR_GREATER)
 #define optional_CPP17_000  (optional_CPP17_OR_GREATER)
 
-// gcc >= 4.9, msvc >= vc14.1 (vs17):
-#define optional_CPP11_140_G490     ((optional_CPP11_OR_GREATER_ && optional_COMPILER_GNUC_VERSION >= 490) || (optional_COMPILER_MSVC_VER >= 1910))
+// clang >= 2.9, gcc >= 4.9, msvc >= vc14.0/1900 (vs15):
+#define optional_CPP11_140_C290_G490    ((optional_CPP11_OR_GREATER_ && (optional_COMPILER_CLANG_VERSION >= 290 || optional_COMPILER_GNUC_VERSION >= 490)) || (optional_COMPILER_MSVC_VER >= 1900))
 
 // clang >= 3.5, msvc >= vc11 (vs12):
-#define optional_CPP11_110_C350     ( optional_CPP11_110 && !optional_BETWEEN( optional_COMPILER_CLANG_VERSION, 1, 350 ) )
+#define optional_CPP11_110_C350         ( optional_CPP11_110 && !optional_BETWEEN( optional_COMPILER_CLANG_VERSION, 1, 350 ) )
 
 // clang >= 3.5, gcc >= 5.0, msvc >= vc11 (vs12):
 #define optional_CPP11_110_C350_G500 \
@@ -331,7 +337,8 @@ namespace nonstd {
 #define optional_HAVE_IS_DEFAULT        optional_CPP11_140
 #define optional_HAVE_NOEXCEPT          optional_CPP11_140
 #define optional_HAVE_NULLPTR           optional_CPP11_100
-#define optional_HAVE_REF_QUALIFIER     optional_CPP11_140_G490
+#define optional_HAVE_REF_QUALIFIER     optional_CPP11_140_C290_G490
+#define optional_HAVE_STATIC_ASSERT     optional_CPP11_110
 #define optional_HAVE_INITIALIZER_LIST  optional_CPP11_140
 
 // Presence of C++14 language features:
@@ -403,6 +410,12 @@ namespace nonstd {
 #else
 # define optional_ref_qual  /*&*/
 # define optional_refref_qual  /*&&*/
+#endif
+
+#if optional_HAVE( STATIC_ASSERT )
+# define optional_static_assert(expr, text)    static_assert(expr, text);
+#else
+# define optional_static_assert(expr, text)  /*static_assert(expr, text);*/
 #endif
 
 // additional includes:
@@ -917,6 +930,15 @@ public:
 template< typename T>
 class optional
 {
+    optional_static_assert(( !std::is_same<typename std::remove_cv<T>::type, nullopt_t>::value  ),
+        "T in optional<T> must not be of type 'nullopt_t'.")
+
+    optional_static_assert(( !std::is_same<typename std::remove_cv<T>::type, in_place_t>::value ),
+        "T in optional<T> must not be of type 'in_place_t'.")
+
+    optional_static_assert(( std::is_object<T>::value && std::is_destructible<T>::value && !std::is_array<T>::value ),
+        "T in optional<T> must meet the Cpp17Destructible requirements.")
+
 private:
     template< typename > friend class optional;
 
@@ -925,7 +947,7 @@ private:
 public:
     typedef T value_type;
 
-    // x.x.3.1, constructors
+     // x.x.3.1, constructors
 
     // 1a - default construct
     optional_constexpr optional() optional_noexcept
@@ -1090,7 +1112,7 @@ public:
     >
     optional_constexpr explicit optional( nonstd_lite_in_place_t(T), Args&&... args )
     : has_value_( true )
-    , contained( T( std::forward<Args>(args)...) )
+    , contained( in_place, std::forward<Args>(args)... )
     {}
 
     // 7 (C++11) - in-place construct,  initializer-list
@@ -1443,7 +1465,7 @@ public:
 
 #endif
 
-#if optional_CPP11_OR_GREATER
+#if optional_HAVE( REF_QUALIFIER )
 
     template< typename U >
     optional_constexpr value_type value_or( U && v ) const optional_ref_qual
@@ -1454,7 +1476,11 @@ public:
     template< typename U >
     optional_constexpr14 value_type value_or( U && v ) optional_refref_qual
     {
+#if optional_COMPILER_CLANG_VERSION
+        return has_value() ? /*std::move*/( contained.value() ) : static_cast<T>(std::forward<U>( v ) );
+#else
         return has_value() ? std::move( contained.value() ) : static_cast<T>(std::forward<U>( v ) );
+#endif
     }
 
 #else
@@ -1465,7 +1491,40 @@ public:
         return has_value() ? contained.value() : static_cast<value_type>( v );
     }
 
-#endif // optional_CPP11_OR_GREATER
+#endif // optional_HAVE( REF_QUALIFIER )
+
+#if !optional_CONFIG_NO_EXTENSIONS
+#if  optional_HAVE( REF_QUALIFIER )
+
+    template< typename F >
+    optional_constexpr value_type value_or_eval( F f ) const &
+    {
+        return has_value() ? contained.value() : f();
+    }
+
+    template< typename F >
+    optional_constexpr14 value_type value_or_eval( F f ) &&
+    {
+        if ( has_value() )
+        {
+            return std::move( contained.value() );
+        }
+        else
+        {
+            return f();
+        }
+    }
+
+#else
+
+    template< typename F >
+    optional_constexpr value_type value_or_eval( F f ) const
+    {
+        return has_value() ? contained.value() : f();
+    }
+
+#endif //  optional_HAVE( REF_QUALIFIER )
+#endif // !optional_CONFIG_NO_EXTENSIONS
 
     // x.x.3.6, modifiers
 
@@ -1510,37 +1569,37 @@ private:
 // Relational operators
 
 template< typename T, typename U >
-inline optional_constexpr bool operator==( optional<T> const & x, optional<U> const & y )
+optional_nodiscard optional_constexpr bool operator==( optional<T> const & x, optional<U> const & y )
 {
     return bool(x) != bool(y) ? false : !bool( x ) ? true : *x == *y;
 }
 
 template< typename T, typename U >
-inline optional_constexpr bool operator!=( optional<T> const & x, optional<U> const & y )
+optional_nodiscard optional_constexpr bool operator!=( optional<T> const & x, optional<U> const & y )
 {
     return !(x == y);
 }
 
 template< typename T, typename U >
-inline optional_constexpr bool operator<( optional<T> const & x, optional<U> const & y )
+optional_nodiscard optional_constexpr bool operator<( optional<T> const & x, optional<U> const & y )
 {
     return (!y) ? false : (!x) ? true : *x < *y;
 }
 
 template< typename T, typename U >
-inline optional_constexpr bool operator>( optional<T> const & x, optional<U> const & y )
+optional_nodiscard optional_constexpr bool operator>( optional<T> const & x, optional<U> const & y )
 {
     return (y < x);
 }
 
 template< typename T, typename U >
-inline optional_constexpr bool operator<=( optional<T> const & x, optional<U> const & y )
+optional_nodiscard optional_constexpr bool operator<=( optional<T> const & x, optional<U> const & y )
 {
     return !(y < x);
 }
 
 template< typename T, typename U >
-inline optional_constexpr bool operator>=( optional<T> const & x, optional<U> const & y )
+optional_nodiscard optional_constexpr bool operator>=( optional<T> const & x, optional<U> const & y )
 {
     return !(x < y);
 }
@@ -1548,73 +1607,73 @@ inline optional_constexpr bool operator>=( optional<T> const & x, optional<U> co
 // Comparison with nullopt
 
 template< typename T >
-inline optional_constexpr bool operator==( optional<T> const & x, nullopt_t /*unused*/ ) optional_noexcept
+optional_nodiscard optional_constexpr bool operator==( optional<T> const & x, nullopt_t /*unused*/ ) optional_noexcept
 {
     return (!x);
 }
 
 template< typename T >
-inline optional_constexpr bool operator==( nullopt_t /*unused*/, optional<T> const & x ) optional_noexcept
+optional_nodiscard optional_constexpr bool operator==( nullopt_t /*unused*/, optional<T> const & x ) optional_noexcept
 {
     return (!x);
 }
 
 template< typename T >
-inline optional_constexpr bool operator!=( optional<T> const & x, nullopt_t /*unused*/ ) optional_noexcept
+optional_nodiscard optional_constexpr bool operator!=( optional<T> const & x, nullopt_t /*unused*/ ) optional_noexcept
 {
     return bool(x);
 }
 
 template< typename T >
-inline optional_constexpr bool operator!=( nullopt_t /*unused*/, optional<T> const & x ) optional_noexcept
+optional_nodiscard optional_constexpr bool operator!=( nullopt_t /*unused*/, optional<T> const & x ) optional_noexcept
 {
     return bool(x);
 }
 
 template< typename T >
-inline optional_constexpr bool operator<( optional<T> const & /*unused*/, nullopt_t /*unused*/ ) optional_noexcept
+optional_nodiscard optional_constexpr bool operator<( optional<T> const & /*unused*/, nullopt_t /*unused*/ ) optional_noexcept
 {
     return false;
 }
 
 template< typename T >
-inline optional_constexpr bool operator<( nullopt_t /*unused*/, optional<T> const & x ) optional_noexcept
+optional_nodiscard optional_constexpr bool operator<( nullopt_t /*unused*/, optional<T> const & x ) optional_noexcept
 {
     return bool(x);
 }
 
 template< typename T >
-inline optional_constexpr bool operator<=( optional<T> const & x, nullopt_t /*unused*/ ) optional_noexcept
+optional_nodiscard optional_constexpr bool operator<=( optional<T> const & x, nullopt_t /*unused*/ ) optional_noexcept
 {
     return (!x);
 }
 
 template< typename T >
-inline optional_constexpr bool operator<=( nullopt_t /*unused*/, optional<T> const & /*unused*/ ) optional_noexcept
+optional_nodiscard optional_constexpr bool operator<=( nullopt_t /*unused*/, optional<T> const & /*unused*/ ) optional_noexcept
 {
     return true;
 }
 
 template< typename T >
-inline optional_constexpr bool operator>( optional<T> const & x, nullopt_t /*unused*/ ) optional_noexcept
+optional_nodiscard optional_constexpr bool operator>( optional<T> const & x, nullopt_t /*unused*/ ) optional_noexcept
 {
     return bool(x);
 }
 
 template< typename T >
-inline optional_constexpr bool operator>( nullopt_t /*unused*/, optional<T> const & /*unused*/ ) optional_noexcept
+optional_nodiscard optional_constexpr bool operator>( nullopt_t /*unused*/, optional<T> const & /*unused*/ ) optional_noexcept
 {
     return false;
 }
 
 template< typename T >
-inline optional_constexpr bool operator>=( optional<T> const & /*unused*/, nullopt_t /*unused*/ ) optional_noexcept
+optional_nodiscard optional_constexpr bool operator>=( optional<T> const & /*unused*/, nullopt_t /*unused*/ ) optional_noexcept
 {
     return true;
 }
 
 template< typename T >
-inline optional_constexpr bool operator>=( nullopt_t /*unused*/, optional<T> const & x ) optional_noexcept
+optional_nodiscard optional_constexpr bool operator>=( nullopt_t /*unused*/, optional<T> const & x ) optional_noexcept
 {
     return (!x);
 }
@@ -1622,73 +1681,73 @@ inline optional_constexpr bool operator>=( nullopt_t /*unused*/, optional<T> con
 // Comparison with T
 
 template< typename T, typename U >
-inline optional_constexpr bool operator==( optional<T> const & x, U const & v )
+optional_nodiscard optional_constexpr bool operator==( optional<T> const & x, U const & v )
 {
     return bool(x) ? *x == v : false;
 }
 
 template< typename T, typename U >
-inline optional_constexpr bool operator==( U const & v, optional<T> const & x )
+optional_nodiscard optional_constexpr bool operator==( U const & v, optional<T> const & x )
 {
     return bool(x) ? v == *x : false;
 }
 
 template< typename T, typename U >
-inline optional_constexpr bool operator!=( optional<T> const & x, U const & v )
+optional_nodiscard optional_constexpr bool operator!=( optional<T> const & x, U const & v )
 {
     return bool(x) ? *x != v : true;
 }
 
 template< typename T, typename U >
-inline optional_constexpr bool operator!=( U const & v, optional<T> const & x )
+optional_nodiscard optional_constexpr bool operator!=( U const & v, optional<T> const & x )
 {
     return bool(x) ? v != *x : true;
 }
 
 template< typename T, typename U >
-inline optional_constexpr bool operator<( optional<T> const & x, U const & v )
+optional_nodiscard optional_constexpr bool operator<( optional<T> const & x, U const & v )
 {
     return bool(x) ? *x < v : true;
 }
 
 template< typename T, typename U >
-inline optional_constexpr bool operator<( U const & v, optional<T> const & x )
+optional_nodiscard optional_constexpr bool operator<( U const & v, optional<T> const & x )
 {
     return bool(x) ? v < *x : false;
 }
 
 template< typename T, typename U >
-inline optional_constexpr bool operator<=( optional<T> const & x, U const & v )
+optional_nodiscard optional_constexpr bool operator<=( optional<T> const & x, U const & v )
 {
     return bool(x) ? *x <= v : true;
 }
 
 template< typename T, typename U >
-inline optional_constexpr bool operator<=( U const & v, optional<T> const & x )
+optional_nodiscard optional_constexpr bool operator<=( U const & v, optional<T> const & x )
 {
     return bool(x) ? v <= *x : false;
 }
 
 template< typename T, typename U >
-inline optional_constexpr bool operator>( optional<T> const & x, U const & v )
+optional_nodiscard optional_constexpr bool operator>( optional<T> const & x, U const & v )
 {
     return bool(x) ? *x > v : false;
 }
 
 template< typename T, typename U >
-inline optional_constexpr bool operator>( U const & v, optional<T> const & x )
+optional_nodiscard optional_constexpr bool operator>( U const & v, optional<T> const & x )
 {
     return bool(x) ? v > *x : true;
 }
 
 template< typename T, typename U >
-inline optional_constexpr bool operator>=( optional<T> const & x, U const & v )
+optional_nodiscard optional_constexpr bool operator>=( optional<T> const & x, U const & v )
 {
     return bool(x) ? *x >= v : false;
 }
 
 template< typename T, typename U >
-inline optional_constexpr bool operator>=( U const & v, optional<T> const & x )
+optional_nodiscard optional_constexpr bool operator>=( U const & v, optional<T> const & x )
 {
     return bool(x) ? v >= *x : true;
 }

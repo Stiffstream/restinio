@@ -13,8 +13,8 @@
 #define NONSTD_EXPECTED_LITE_HPP
 
 #define expected_lite_MAJOR  0
-#define expected_lite_MINOR  5
-#define expected_lite_PATCH  0
+#define expected_lite_MINOR  6
+#define expected_lite_PATCH  1
 
 #define expected_lite_VERSION  expected_STRINGIFY(expected_lite_MAJOR) "." expected_STRINGIFY(expected_lite_MINOR) "." expected_STRINGIFY(expected_lite_PATCH)
 
@@ -429,7 +429,7 @@ struct conjunction<B1, Bn...> : std::conditional<bool(B1::value), conjunction<Bn
 
 namespace std20 {
 
-#if nsel_CPP20_OR_GREATER
+#if defined(__cpp_lib_remove_cvref)
 
 using std::remove_cvref;
 
