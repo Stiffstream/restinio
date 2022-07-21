@@ -295,7 +295,7 @@ struct x_www_form_urlencoded
  * @brief Traits for parsing a query string in a very relaxed mode.
  *
  * In that mode all characters described in that rule from
- * [RCF3986](https://tools.ietf.org/html/rfc3986) can be used as unexceped:
+ * [RCF3986](https://tools.ietf.org/html/rfc3986) can be used as unexcaped:
 @verbatim
 query         = *( pchar / "/" / "?" )
 pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
