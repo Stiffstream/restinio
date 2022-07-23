@@ -132,7 +132,8 @@ class regex_t final
 			{
 				throw exception_t{
 						fmt::format(
-							"unable to compile regex \"{}\": {}",
+							RESTINIO_FMT_FORMAT_STRING(
+								"unable to compile regex \"{}\": {}" ),
 							route,
 							compile_error ) };
 			}
@@ -222,7 +223,8 @@ struct pcre_regex_engine_t
 		}
 		if( PCRE_ERROR_NOMATCH != rc )
 		{
-			throw exception_t{ fmt::format("pcre error: {}", rc ) };
+			throw exception_t{
+				fmt::format( RESTINIO_FMT_FORMAT_STRING( "pcre error: {}" ), rc ) };
 		}
 		// else PCRE_ERROR_NOMATCH -- no match for this route
 

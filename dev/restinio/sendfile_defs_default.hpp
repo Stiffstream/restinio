@@ -43,7 +43,11 @@ open_file( const char * file_path )
 
 	if( null_file_descriptor() == file_descriptor )
 	{
-		throw exception_t{ fmt::format( "std::fopen failed: '{}'", file_path ) };
+		throw exception_t{
+			fmt::format(
+					RESTINIO_FMT_FORMAT_STRING( "std::fopen failed: '{}'" ),
+					file_path )
+		};
 	}
 
 	return file_descriptor;

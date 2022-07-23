@@ -56,7 +56,11 @@ open_file( const char * file_path)
 	if( null_file_descriptor() == file_descriptor )
 	{
 		throw exception_t{
-			fmt::format( "unable to openfile '{}': {}", file_path, strerror( errno ) ) };
+			fmt::format(
+				RESTINIO_FMT_FORMAT_STRING( "unable to openfile '{}': {}" ),
+				file_path,
+				strerror( errno ) )
+		};
 	}
 	return file_descriptor;
 }
@@ -84,7 +88,10 @@ get_file_meta( file_descriptor_t fd )
 	if( 0 != fstat_rc )
 	{
 		throw exception_t{
-			fmt::format( "unable to get file stat : {}", strerror( errno ) ) };
+			fmt::format(
+				RESTINIO_FMT_FORMAT_STRING( "unable to get file stat : {}" ),
+				strerror( errno ) )
+		};
 	}
 
 	const std::chrono::system_clock::time_point

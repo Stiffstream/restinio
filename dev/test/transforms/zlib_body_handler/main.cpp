@@ -71,15 +71,16 @@ TEST_CASE( "body_handler" , "[zlib][body_handler]" )
 
 			const std::string request =
 				fmt::format(
-					"POST / HTTP/1.0\r\n"
-					"From: unit-test\r\n"
-					"User-Agent: unit-test\r\n"
-					"Content-Type: text/plain\r\n"
-					"Content-Encoding: DEFLATE\r\n"
-					"Content-Length: {}\r\n"
-					"Connection: close\r\n"
-					"\r\n"
-					"{}",
+					RESTINIO_FMT_FORMAT_STRING(
+						"POST / HTTP/1.0\r\n"
+						"From: unit-test\r\n"
+						"User-Agent: unit-test\r\n"
+						"Content-Type: text/plain\r\n"
+						"Content-Encoding: DEFLATE\r\n"
+						"Content-Length: {}\r\n"
+						"Connection: close\r\n"
+						"\r\n"
+						"{}" ),
 					compressed_data.size(),
 					compressed_data );
 
@@ -99,15 +100,16 @@ TEST_CASE( "body_handler" , "[zlib][body_handler]" )
 
 			const std::string request =
 				fmt::format(
-					"POST / HTTP/1.0\r\n"
-					"From: unit-test\r\n"
-					"User-Agent: unit-test\r\n"
-					"Content-Type: text/plain\r\n"
-					"Content-Encoding: GZIP\r\n"
-					"Content-Length: {}\r\n"
-					"Connection: close\r\n"
-					"\r\n"
-					"{}",
+					RESTINIO_FMT_FORMAT_STRING(
+						"POST / HTTP/1.0\r\n"
+						"From: unit-test\r\n"
+						"User-Agent: unit-test\r\n"
+						"Content-Type: text/plain\r\n"
+						"Content-Encoding: GZIP\r\n"
+						"Content-Length: {}\r\n"
+						"Connection: close\r\n"
+						"\r\n"
+						"{}" ),
 					compressed_data.size(),
 					compressed_data );
 
@@ -178,15 +180,16 @@ TEST_CASE( "body_handler void return" , "[zlib][body_handler][void-return]" )
 	{
 		const std::string request =
 			fmt::format(
-				"POST / HTTP/1.0\r\n"
-				"From: unit-test\r\n"
-				"User-Agent: unit-test\r\n"
-				"Content-Type: text/plain\r\n"
-				"Content-Encoding: IDENTITY\r\n"
-				"Content-Length: {}\r\n"
-				"Connection: close\r\n"
-				"\r\n"
-				"{}",
+				RESTINIO_FMT_FORMAT_STRING(
+					"POST / HTTP/1.0\r\n"
+					"From: unit-test\r\n"
+					"User-Agent: unit-test\r\n"
+					"Content-Type: text/plain\r\n"
+					"Content-Encoding: IDENTITY\r\n"
+					"Content-Length: {}\r\n"
+					"Connection: close\r\n"
+					"\r\n"
+					"{}" ),
 				response_body.size(),
 				response_body );
 

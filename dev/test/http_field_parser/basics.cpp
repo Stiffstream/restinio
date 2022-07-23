@@ -8,6 +8,8 @@
 
 #include <fmt/format.h>
 
+#include <restinio/impl/include_fmtlib.hpp>
+
 #include <restinio/helpers/easy_parser.hpp>
 
 #include <restinio/helpers/http_field_parsers/basics.hpp>
@@ -883,8 +885,9 @@ TEST_CASE( "GUID parser to string", "[hexdigit][expected_digits]" )
 
 	const auto to_string = []( const uuid_t & v ) {
 		return fmt::format(
-				"{:08x}-{:04x}-{:04x}-{:02x}{:02x}-"
-				"{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+				RESTINIO_FMT_FORMAT_STRING(
+					"{:08x}-{:04x}-{:04x}-{:02x}{:02x}-"
+					"{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}" ),
 				v.time_low_, v.time_mid_, v.time_hi_and_version_,
 				v.clock_seq_hi_and_res_, v.clock_seq_low_,
 				v.node_[0], v.node_[1], v.node_[2], v.node_[3],

@@ -325,7 +325,9 @@ class write_group_output_ctx_t
 				reset_write_group();
 
 				throw exception_t{
-					fmt::format( "after write callback failed: {}", ex.what() ) };
+					fmt::format(
+						RESTINIO_FMT_FORMAT_STRING( "after write callback failed: {}" ),
+						ex.what() ) };
 			}
 		}
 

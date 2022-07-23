@@ -566,7 +566,8 @@ check_no_unescaped_brackets( string_view_t strv, std::size_t base_pos )
 	{
 		throw exception_t{
 			fmt::format(
-				"non-escaped bracket '(' at pos {}: may be unmatched group start",
+				RESTINIO_FMT_FORMAT_STRING(
+					"non-escaped bracket '(' at pos {}: may be unmatched group start" ),
 				base_pos + pos ) };
 	}
 
@@ -575,7 +576,8 @@ check_no_unescaped_brackets( string_view_t strv, std::size_t base_pos )
 	{
 		throw exception_t{
 			fmt::format(
-				"non-escaped bracket ')' at pos {}: may be unmatched group finish",
+				RESTINIO_FMT_FORMAT_STRING(
+					"non-escaped bracket ')' at pos {}: may be unmatched group finish" ),
 				base_pos + pos ) };
 	}
 
@@ -810,7 +812,9 @@ tokens2regexp(
 			// This number of captures is not possible with this engine.
 			throw exception_t{
 				fmt::format(
-					"too many parameter to capture from route: {}, while {} is the maximum",
+					RESTINIO_FMT_FORMAT_STRING(
+						"too many parameter to capture from route: {}, while {} "
+						"is the maximum" ),
 					captured_groups_count,
 					Regex_Engine::max_capture_groups() ) };
 		}
@@ -845,7 +849,8 @@ tokens2regexp(
 	catch( const std::exception & ex )
 	{
 		throw exception_t{
-			fmt::format( "unable to process route \"{}\": {}",
+			fmt::format(
+					RESTINIO_FMT_FORMAT_STRING( "unable to process route \"{}\": {}" ),
 					fmtlib_tools::streamed( path ), ex.what() ) };
 	}
 

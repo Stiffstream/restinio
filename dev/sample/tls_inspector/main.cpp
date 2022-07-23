@@ -16,7 +16,9 @@ public :
 		restinio::connection_id_t conn_id,
 		std::string user_name )
 	{
-		fmt::print( "*** Adding information about a user '{}', conn_id={} ***\n",
+		fmt::print(
+				RESTINIO_FMT_FORMAT_STRING(
+					"*** Adding information about a user '{}', conn_id={} ***\n" ),
 				user_name, conn_id );
 
 		m_data.emplace( conn_id, std::move(user_name) );
@@ -27,14 +29,18 @@ public :
 		const auto it = m_data.find( conn_id );
 		if( it == m_data.end() )
 			throw std::runtime_error(
-					fmt::format( "unable to find info for connection with id={}",
+					fmt::format(
+							RESTINIO_FMT_FORMAT_STRING(
+								"unable to find info for connection with id={}" ),
 							conn_id ) );
 		return it->second;
 	}
 
 	void remove( restinio::connection_id_t conn_id ) noexcept
 	{
-		fmt::print( "*** Removing information about conn_id={} ***\n",
+		fmt::print(
+				RESTINIO_FMT_FORMAT_STRING(
+					"*** Removing information about conn_id={} ***\n" ),
 				conn_id );
 
 		m_data.erase( conn_id );
@@ -85,8 +91,9 @@ auto server_handler( const user_connections_shptr_t& user_connections )
 							"text/plain; charset=utf-8" )
 					.set_body(
 							fmt::format(
-								"There is no any restrictions "
-										"for user '{}' on that resource\n",
+								RESTINIO_FMT_FORMAT_STRING(
+									"There is no any restrictions "
+											"for user '{}' on that resource\n" ),
 								user_connections->query( req->connection_id() ) ) )
 					.done();
 
@@ -105,12 +112,14 @@ auto server_handler( const user_connections_shptr_t& user_connections )
 				if( "alice" == user )
 					resp.set_body(
 							fmt::format(
-									"User '{}' have access to limited resource\n",
+									RESTINIO_FMT_FORMAT_STRING(
+											"User '{}' have access to limited resource\n" ),
 									user ) );
 				else
 					resp.set_body(
 							fmt::format(
-									"User '{}' haven't access to limited resource\n",
+									RESTINIO_FMT_FORMAT_STRING(
+											"User '{}' haven't access to limited resource\n" ),
 									user ) );
 
 				resp.done();

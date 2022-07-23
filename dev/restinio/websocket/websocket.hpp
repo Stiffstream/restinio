@@ -228,7 +228,9 @@ upgrade(
 	if( !upgrade_response_header_fields.has_field( http_field::sec_websocket_accept ) )
 	{
 		throw exception_t{
-			fmt::format( "{} field is mandatory for upgrade response",
+			fmt::format(
+				RESTINIO_FMT_FORMAT_STRING(
+					"{} field is mandatory for upgrade response" ),
 				field_to_string( http_field::sec_websocket_accept ) ) };
 	}
 

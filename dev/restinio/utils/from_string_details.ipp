@@ -338,7 +338,8 @@ parse_integer( const char * data_begin, const char * data_end )
 		{
 			throw exception_t{
 				fmt::format(
-					"invalid {} value: unsigned starts with minus",
+					RESTINIO_FMT_FORMAT_STRING(
+						"invalid {} value: unsigned starts with minus" ),
 					Traits::type_name() ) };
 		}
 
@@ -354,14 +355,20 @@ parse_integer( const char * data_begin, const char * data_end )
 	const auto representation_size = static_cast< std::size_t >( data_end - data_begin );
 
 	if( 0 == representation_size )
-		throw exception_t{ fmt::format( "invalid {} value: empty string", Traits::type_name() ) };
+		throw exception_t{
+			fmt::format(
+					RESTINIO_FMT_FORMAT_STRING( "invalid {} value: empty string" ),
+					Traits::type_name() )
+		};
 
 	if( Traits::digits_representation_max_size() < representation_size )
 		throw exception_t{
 			fmt::format(
-				"invalid {} value: max digits for type is {}",
+				RESTINIO_FMT_FORMAT_STRING(
+					"invalid {} value: max digits for type is {}" ),
 				Traits::type_name(),
-				Traits::digits_representation_max_size() ) };
+				Traits::digits_representation_max_size() )
+		};
 
 	const std::uint8_t * const mapping_table = digits_mapping< std::uint8_t >();
 
@@ -371,7 +378,10 @@ parse_integer( const char * data_begin, const char * data_end )
 			[&]( auto d ){ return 0xFF == mapping_table[ static_cast< std::size_t >( d ) ]; } ) )
 	{
 		throw exception_t{
-			fmt::format( "invalid {} value: invalid digit", Traits::type_name() ) };
+			fmt::format(
+				RESTINIO_FMT_FORMAT_STRING( "invalid {} value: invalid digit" ),
+				Traits::type_name() )
+		};
 	}
 
 	if( Traits::digits_representation_max_size() == representation_size )
@@ -381,7 +391,10 @@ parse_integer( const char * data_begin, const char * data_end )
 
 		if( 0 < std::memcmp( data_begin, posssible_max, representation_size ) )
 			throw std::out_of_range{
-				fmt::format( "invalid {} value: out of range", Traits::type_name() ) };
+				fmt::format(
+					RESTINIO_FMT_FORMAT_STRING( "invalid {} value: out of range" ),
+					Traits::type_name() )
+			};
 	}
 
 	using is_signed_t = typename std::is_signed< typename Traits::type_t >::type;

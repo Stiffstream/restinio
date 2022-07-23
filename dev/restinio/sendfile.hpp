@@ -326,7 +326,8 @@ class sendfile_t
 			{
 				throw exception_t{
 					fmt::format(
-						"invalid file offset: {}, while file size is {}",
+						RESTINIO_FMT_FORMAT_STRING(
+							"invalid file offset: {}, while file size is {}" ),
 						offset_value,
 						m_meta.file_total_size() ) };
 			}

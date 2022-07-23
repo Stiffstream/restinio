@@ -87,7 +87,8 @@ class ostream_logger_t
 
 			( *m_out )
 				<< fmt::format(
-						"[{:%Y-%m-%d %H:%M:%S}.{:03d}] {}: {}",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[{:%Y-%m-%d %H:%M:%S}.{:03d}] {}: {}" ),
 						make_localtime( unix_time ),
 						static_cast< int >( ms.count() % 1000u ),
 						tag,

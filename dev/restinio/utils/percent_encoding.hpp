@@ -254,7 +254,8 @@ do_unescape_percent_encoding(
 		if( expect_next_utf8_byte && '%' != c )
 			return make_unexpected( unescape_percent_encoding_failure_t{
 					fmt::format(
-							"next byte from UTF-8 sequence expected at {}",
+							RESTINIO_FMT_FORMAT_STRING(
+								"next byte from UTF-8 sequence expected at {}" ),
 							current_pos() )
 				} );
 
@@ -267,7 +268,9 @@ do_unescape_percent_encoding(
 				const auto ch = extract_escaped_char( d[ 1 ], d[ 2 ] );
 				if( !utf8_checker.process_byte( static_cast<std::uint8_t>(ch) ) )
 					return make_unexpected( unescape_percent_encoding_failure_t{
-							fmt::format( "invalid UTF-8 sequence detected at {}",
+							fmt::format(
+									RESTINIO_FMT_FORMAT_STRING(
+										"invalid UTF-8 sequence detected at {}" ),
 									current_pos() )
 						} );
 
@@ -283,7 +286,9 @@ do_unescape_percent_encoding(
 			{
 				return make_unexpected( unescape_percent_encoding_failure_t{
 						fmt::format(
-							"invalid escape sequence at pos {}", current_pos() )
+							RESTINIO_FMT_FORMAT_STRING(
+								"invalid escape sequence at pos {}" ),
+							current_pos() )
 					} );
 			}
 		}
@@ -303,7 +308,8 @@ do_unescape_percent_encoding(
 		{
 			return make_unexpected( unescape_percent_encoding_failure_t{
 					fmt::format(
-						"invalid non-escaped char with code {:#02X} at pos: {}",
+						RESTINIO_FMT_FORMAT_STRING(
+							"invalid non-escaped char with code {:#02X} at pos: {}" ),
 						c,
 						current_pos() )
 				} );
@@ -312,7 +318,8 @@ do_unescape_percent_encoding(
 
 	if( expect_next_utf8_byte )
 		return make_unexpected( unescape_percent_encoding_failure_t{
-				fmt::format( "unfinished UTF-8 sequence" )
+				fmt::format(
+					RESTINIO_FMT_FORMAT_STRING( "unfinished UTF-8 sequence" ) )
 			} );
 
 	return unescape_percent_encoding_success_t{};
@@ -349,7 +356,7 @@ escape_percent_encoding( const string_view_t data )
 				result += c;
 			else
 			{
-				result += fmt::format( "%{:02X}", c );
+				result += fmt::format( RESTINIO_FMT_FORMAT_STRING( "%{:02X}" ), c );
 			}
 		}
 	}
@@ -519,7 +526,9 @@ run_normalization_algo(
 	{
 		if( expect_next_utf8_byte && '%' != *d )
 			throw exception_t{
-				fmt::format( "next byte from UTF-8 sequence expected at {}",
+				fmt::format(
+						RESTINIO_FMT_FORMAT_STRING(
+								"next byte from UTF-8 sequence expected at {}" ),
 						current_pos() )
 			};
 
@@ -536,7 +545,9 @@ run_normalization_algo(
 			const char ch = extract_escaped_char( d[ 1 ], d[ 2 ] );
 			if( !utf8_checker.process_byte( static_cast<std::uint8_t>(ch) ) )
 				throw exception_t{
-						fmt::format( "invalid UTF-8 sequence detected at {}",
+						fmt::format(
+								RESTINIO_FMT_FORMAT_STRING(
+										"invalid UTF-8 sequence detected at {}" ),
 								current_pos() )
 				};
 
@@ -577,13 +588,16 @@ run_normalization_algo(
 		else
 		{
 			throw exception_t{
-				fmt::format( "invalid escape sequence at pos {}", current_pos() )
+				fmt::format(
+						RESTINIO_FMT_FORMAT_STRING( "invalid escape sequence at pos {}" ),
+						current_pos() )
 			};
 		}
 	}
 
 	if( expect_next_utf8_byte )
-		throw exception_t{ fmt::format( "unfinished UTF-8 sequence" ) };
+		throw exception_t{
+			fmt::format( RESTINIO_FMT_FORMAT_STRING( "unfinished UTF-8 sequence" ) ) };
 }
 
 } /* namespace impl */

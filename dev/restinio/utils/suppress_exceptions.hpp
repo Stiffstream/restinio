@@ -107,14 +107,16 @@ void suppress_exceptions(
 	catch( const std::exception & x )
 	{
 		log_error_noexcept( logger, [&] {
-				return fmt::format( "an exception in '{}': {}",
+				return fmt::format(
+						RESTINIO_FMT_FORMAT_STRING( "an exception in '{}': {}" ),
 						block_description, x.what() );
 			} );
 	}
 	catch( ... )
 	{
 		log_error_noexcept( logger, [&] {
-				return fmt::format( "an unknown exception in '{}'",
+				return fmt::format(
+						RESTINIO_FMT_FORMAT_STRING( "an unknown exception in '{}'" ),
 						block_description );
 			} );
 	}

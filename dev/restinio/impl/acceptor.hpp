@@ -223,7 +223,8 @@ class acceptor_t final
 			{
 				const auto ep = m_acceptor.local_endpoint();
 				m_logger.warn( [&]{
-					return fmt::format( "server already started on {}",
+					return fmt::format(
+							RESTINIO_FMT_FORMAT_STRING( "server already started on {}" ),
 							fmtlib_tools::streamed( ep ) );
 				} );
 				return;
@@ -239,7 +240,8 @@ class acceptor_t final
 			try
 			{
 				m_logger.trace( [&]{
-					return fmt::format( "starting server on {}",
+					return fmt::format(
+							RESTINIO_FMT_FORMAT_STRING( "starting server on {}" ),
 							fmtlib_tools::streamed( ep ) );
 				} );
 
@@ -267,14 +269,16 @@ class acceptor_t final
 				for( std::size_t i = 0; i< this->concurrent_accept_sockets_count(); ++i )
 				{
 					m_logger.info( [&]{
-						return fmt::format( "init accept #{}", i );
+						return fmt::format(
+								RESTINIO_FMT_FORMAT_STRING( "init accept #{}" ), i );
 					} );
 
 					accept_next( i );
 				}
 
 				m_logger.info( [&]{
-					return fmt::format( "server started on {}",
+					return fmt::format(
+							RESTINIO_FMT_FORMAT_STRING( "server started on {}" ),
 							fmtlib_tools::streamed( ep ) );
 				} );
 			}
@@ -285,7 +289,9 @@ class acceptor_t final
 					m_acceptor.close();
 
 				m_logger.error( [&]() -> auto {
-					return fmt::format( "failed to start server on {}: {}",
+					return fmt::format(
+							RESTINIO_FMT_FORMAT_STRING(
+									"failed to start server on {}: {}" ),
 							fmtlib_tools::streamed( ep ),
 							ex.what() );
 				} );
@@ -305,7 +311,8 @@ class acceptor_t final
 			else
 			{
 				m_logger.trace( [&]{
-					return fmt::format( "server already closed" );
+					return fmt::format(
+							RESTINIO_FMT_FORMAT_STRING( "server already closed" ) );
 				} );
 			}
 		}
@@ -412,7 +419,8 @@ class acceptor_t final
 				restinio::utils::log_error_noexcept( m_logger,
 					[&]{
 						return fmt::format(
-							"failed to accept connection on socket #{}: {}",
+							RESTINIO_FMT_FORMAT_STRING(
+								"failed to accept connection on socket #{}: {}" ),
 							i,
 							ec.message() );
 					} );
@@ -442,7 +450,8 @@ class acceptor_t final
 
 			m_logger.trace( [&]{
 				return fmt::format(
-						"accept connection from {} on socket #{}",
+						RESTINIO_FMT_FORMAT_STRING(
+							"accept connection from {} on socket #{}" ),
 						fmtlib_tools::streamed( remote_endpoint ),
 						i );
 			} );
@@ -458,8 +467,9 @@ class acceptor_t final
 				// New connection can be used. It is disabled by IP-blocker.
 				m_logger.warn( [&]{
 					return fmt::format(
-							"accepted connection from {} on socket #{} denied by"
-							" IP-blocker",
+							RESTINIO_FMT_FORMAT_STRING(
+								"accepted connection from {} on socket #{} denied by"
+								" IP-blocker" ),
 							fmtlib_tools::streamed( remote_endpoint ),
 							i );
 				} );
@@ -531,14 +541,16 @@ class acceptor_t final
 			// for m_acceptor.
 			restinio::utils::log_trace_noexcept( m_logger,
 				[&]{
-					return fmt::format( "closing server on {}",
+					return fmt::format(
+							RESTINIO_FMT_FORMAT_STRING( "closing server on {}" ),
 							fmtlib_tools::streamed( ep ) );
 				} );
 
 			m_acceptor.close();
 
 			m_logger.info( [&]{
-				return fmt::format( "server closed on {}",
+				return fmt::format(
+						RESTINIO_FMT_FORMAT_STRING( "server closed on {}" ),
 						fmtlib_tools::streamed( ep ) );
 			} );
 		}

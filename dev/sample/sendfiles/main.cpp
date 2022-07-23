@@ -202,17 +202,25 @@ struct app_args_t
 		auto cli =
 			Opt( result.m_address, "address" )
 					["-a"]["--address"]
-					( fmt::format( "address to listen (default: {})", result.m_address ) )
+					( fmt::format(
+							RESTINIO_FMT_FORMAT_STRING( "address to listen (default: {})" ),
+							result.m_address ) )
 			| Opt( result.m_port, "port" )
 					["-p"]["--port"]
-					( fmt::format( "port to listen (default: {})", result.m_port ) )
+					( fmt::format(
+							RESTINIO_FMT_FORMAT_STRING( "port to listen (default: {})" ),
+							result.m_port ) )
 			| Opt( result.m_pool_size, "thread-pool size" )
 					[ "-n" ][ "--thread-pool-size" ]
 					( fmt::format(
-						"The size of a thread pool to run server (default: {})",
-						result.m_pool_size ) )
+							RESTINIO_FMT_FORMAT_STRING(
+								"The size of a thread pool to run server (default: {})" ),
+							result.m_pool_size ) )
 			| Arg( result.m_root_dir, "root-dir" )
-					( fmt::format( "server root dir (default: '{}')", result.m_root_dir) )
+					( fmt::format(
+							RESTINIO_FMT_FORMAT_STRING(
+								"server root dir (default: '{}')" ),
+							result.m_root_dir) )
 			| Help(result.m_help);
 
 		auto parse_result = cli.parse( Args(argc, argv) );
@@ -220,7 +228,8 @@ struct app_args_t
 		{
 			throw std::runtime_error{
 				fmt::format(
-					"Invalid command-line arguments: {}",
+					RESTINIO_FMT_FORMAT_STRING(
+						"Invalid command-line arguments: {}" ),
 					parse_result.errorMessage() ) };
 		}
 

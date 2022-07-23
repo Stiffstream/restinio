@@ -152,7 +152,8 @@ class query_string_params_t final
 			{
 				throw exception_t{
 					fmt::format(
-						"unable to find parameter \"{}\"",
+						RESTINIO_FMT_FORMAT_STRING(
+							"unable to find parameter \"{}\"" ),
 						std::string{ key.data(), key.size() } ) };
 			}
 
@@ -433,8 +434,9 @@ try_parse_query(
 					// The query string has illegal format.
 					return make_unexpected( parse_query_failure_t{
 							fmt::format(
-								"invalid format of key-value pairs in query_string, "
-								"no '=' symbol starting from position {}",
+								RESTINIO_FMT_FORMAT_STRING(
+									"invalid format of key-value pairs in query_string, "
+									"no '=' symbol starting from position {}" ),
 								pos )
 						} );
 				else

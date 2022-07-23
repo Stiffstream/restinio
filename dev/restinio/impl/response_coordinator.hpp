@@ -342,7 +342,8 @@ class response_coordinator_t
 				// Request is unknown...
 				throw exception_t{
 					fmt::format(
-						"no context associated with request {}",
+						RESTINIO_FMT_FORMAT_STRING(
+							"no context associated with request {}" ),
 						req_id ) };
 			}
 

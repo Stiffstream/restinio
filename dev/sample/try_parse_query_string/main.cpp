@@ -59,15 +59,18 @@ restinio::request_handling_status_t handler(
 		fmt::basic_memory_buffer< char, 1u > response_body;
 		auto response_body_inserter = std::back_inserter( response_body );
 
-		fmt::format_to( response_body_inserter, "GET request to '{}'\n",
+		fmt::format_to( response_body_inserter,
+				RESTINIO_FMT_FORMAT_STRING( "GET request to '{}'\n" ),
 				req->header().request_target() );
 
 		// Request header fields.
-		fmt::format_to( response_body_inserter, "HTTP-fields ({}):\n",
+		fmt::format_to( response_body_inserter,
+				RESTINIO_FMT_FORMAT_STRING( "HTTP-fields ({}):\n" ),
 				req->header().fields_count() );
 		for( const auto & f : req->header() )
 		{
-			fmt::format_to( response_body_inserter, "{}: {}\n",
+			fmt::format_to( response_body_inserter,
+					RESTINIO_FMT_FORMAT_STRING( "{}: {}\n" ),
 					f.name(), f.value() );
 		}
 
@@ -91,16 +94,19 @@ restinio::request_handling_status_t handler(
 		const auto & qp = *qs_parse_result;
 		if( qp.empty() )
 		{
-			fmt::format_to( response_body_inserter, "No query parameters." );
+			fmt::format_to( response_body_inserter,
+					RESTINIO_FMT_FORMAT_STRING( "No query parameters." ) );
 		}
 		else
 		{
 			fmt::format_to( response_body_inserter,
-					"Query params ({}):\n", qp.size() );
+					RESTINIO_FMT_FORMAT_STRING( "Query params ({}):\n" ),
+					qp.size() );
 
 			for( const auto p : qp )
 			{
-				fmt::format_to( response_body_inserter, "'{}' => '{}'\n",
+				fmt::format_to( response_body_inserter,
+						RESTINIO_FMT_FORMAT_STRING( "'{}' => '{}'\n" ),
 						restinio::fmtlib_tools::streamed( p.first ),
 						restinio::fmtlib_tools::streamed( p.second ) );
 			}

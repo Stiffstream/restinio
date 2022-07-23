@@ -346,7 +346,8 @@ class connection_t final
 			// Notify of a new connection instance.
 			m_logger.trace( [&]{
 					return fmt::format(
-						"[connection:{}] start connection with {}",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[connection:{}] start connection with {}" ),
 						connection_id(),
 						fmtlib_tools::streamed( m_remote_endpoint ) );
 			} );
@@ -363,7 +364,8 @@ class connection_t final
 			restinio::utils::log_trace_noexcept( m_logger,
 				[&]{
 					return fmt::format(
-						"[connection:{}] destructor called",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[connection:{}] destructor called" ),
 						connection_id() );
 				} );
 		}
@@ -397,7 +399,8 @@ class connection_t final
 				[ & ]( const asio_ns::error_code & ec ){
 					trigger_error_and_close( [&]{
 						return fmt::format(
-								"[connection:{}] prepare connection error: {}",
+								RESTINIO_FMT_FORMAT_STRING(
+									"[connection:{}] prepare connection error: {}" ),
 								connection_id(),
 								ec.message() );
 					} );
@@ -410,7 +413,8 @@ class connection_t final
 		{
 			m_logger.trace( [&]{
 				 return fmt::format(
-						"[connection:{}] start waiting for request",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[connection:{}] start waiting for request" ),
 						connection_id() );
 			} );
 
@@ -477,7 +481,8 @@ class connection_t final
 			{
 				m_logger.trace( [&]{
 					return fmt::format(
-							"[connection:{}] continue reading request",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[connection:{}] continue reading request" ),
 							connection_id() );
 				} );
 
@@ -499,7 +504,8 @@ class connection_t final
 			{
 				m_logger.trace( [&]{
 					return fmt::format(
-							"[connection:{}] skip read operation: already running",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[connection:{}] skip read operation: already running" ),
 							connection_id() );
 				} );
 			}
@@ -518,7 +524,8 @@ class connection_t final
 				{
 					m_logger.trace( [&]{
 						return fmt::format(
-								"[connection:{}] received {} bytes",
+								RESTINIO_FMT_FORMAT_STRING(
+									"[connection:{}] received {} bytes" ),
 								this->connection_id(),
 								length );
 					} );
@@ -531,8 +538,9 @@ class connection_t final
 				{
 					trigger_error_and_close( [&] {
 							return fmt::format(
-									"[connection:{}] unexpected exception during the "
-									"handling of incoming data: {}",
+									RESTINIO_FMT_FORMAT_STRING(
+										"[connection:{}] unexpected exception during the "
+										"handling of incoming data: {}" ),
 									connection_id(),
 									x.what() );
 						} );
@@ -547,8 +555,9 @@ class connection_t final
 					if ( !error_is_eof( ec ) || 0 != m_input.m_parser.nread )
 						trigger_error_and_close( [&]{
 							return fmt::format(
-									"[connection:{}] read socket error: {}; "
-									"parsed bytes: {}",
+									RESTINIO_FMT_FORMAT_STRING(
+										"[connection:{}] read socket error: {}; "
+										"parsed bytes: {}" ),
 									connection_id(),
 									ec.message(),
 									m_input.m_parser.nread );
@@ -562,8 +571,9 @@ class connection_t final
 						restinio::utils::log_trace_noexcept( m_logger,
 							[&]{
 								return fmt::format(
-										"[connection:{}] EOF and no request, "
-										"close connection",
+										RESTINIO_FMT_FORMAT_STRING(
+											"[connection:{}] EOF and no request, "
+											"close connection" ),
 										connection_id() );
 							} );
 
@@ -603,7 +613,8 @@ class connection_t final
 				// TODO: handle case when there are some request in process.
 				trigger_error_and_close( [&]{
 					return fmt::format(
-							"[connection:{}] parser error {}: {}",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[connection:{}] parser error {}: {}" ),
 							connection_id(),
 							http_errno_name( err ),
 							http_errno_description( err ) );
@@ -649,7 +660,8 @@ class connection_t final
 
 					m_logger.trace( [&]{
 						return fmt::format(
-								"[connection:{}] request received (#{}): {} {}",
+								RESTINIO_FMT_FORMAT_STRING(
+									"[connection:{}] request received (#{}): {} {}" ),
 								connection_id(),
 								request_id,
 								http_method_str(
@@ -705,8 +717,9 @@ class connection_t final
 						const std::string default_value{};
 
 						return fmt::format(
-								"[connection:{}] upgrade request received: {} {}; "
-								"Upgrade: '{}';",
+								RESTINIO_FMT_FORMAT_STRING(
+									"[connection:{}] upgrade request received: {} {}; "
+									"Upgrade: '{}';" ),
 								connection_id(),
 								http_method_str(
 									static_cast<http_method>( parser.method ) ),
@@ -728,8 +741,11 @@ class connection_t final
 						// There are pipelined request
 						m_logger.trace( [&]{
 							return fmt::format(
-									"[connection:{}] upgrade request happened to be a pipelined one, "
-									"and will be handled after previous requests are handled",
+									RESTINIO_FMT_FORMAT_STRING(
+										"[connection:{}] upgrade request happened to "
+										"be a pipelined one, "
+										"and will be handled after previous requests "
+										"are handled" ),
 									connection_id() );
 						} );
 					}
@@ -742,7 +758,8 @@ class connection_t final
 			{
 				trigger_error_and_close( [&]{
 					return fmt::format(
-							"[connection:{}] error while handling request: {}",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[connection:{}] error while handling request: {}" ),
 							this->connection_id(),
 							ex.what() );
 				} );
@@ -767,7 +784,8 @@ class connection_t final
 
 			m_logger.info( [&]{
 				return fmt::format(
-						"[connection:{}] handle upgrade request (#{}): {} {}",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[connection:{}] handle upgrade request (#{}): {} {}" ),
 						connection_id(),
 						request_id,
 						http_method_str(
@@ -816,8 +834,9 @@ class connection_t final
 
 						m_logger.error( [&]{
 							return fmt::format(
-									"[connection:{}] upgrade request handler rejects "
-									"request, but socket was moved out from connection",
+									RESTINIO_FMT_FORMAT_STRING(
+										"[connection:{}] upgrade request handler rejects "
+										"request, but socket was moved out from connection" ),
 									connection_id() );
 						} );
 					}
@@ -873,7 +892,8 @@ class connection_t final
 						{
 							trigger_error_and_close( [&]{
 								return fmt::format(
-									"[connection:{}] unable to handle response: {}",
+									RESTINIO_FMT_FORMAT_STRING(
+										"[connection:{}] unable to handle response: {}" ),
 									connection_id(),
 									ex.what() );
 							} );
@@ -902,7 +922,8 @@ class connection_t final
 				{
 					m_logger.error( [&]{
 						return fmt::format(
-							"[connection:{}] notificator error: {}",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[connection:{}] notificator error: {}" ),
 							connection_id(),
 							ex.what() );
 					} );
@@ -932,8 +953,9 @@ class connection_t final
 				{
 					m_logger.trace( [&]{
 						return fmt::format(
-							"[connection:{}] append response (#{}), "
-							"flags: {}, write group size: {}",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[connection:{}] append response (#{}), "
+								"flags: {}, write group size: {}" ),
 							connection_id(),
 							request_id,
 							fmtlib_tools::streamed( response_output_flags ),
@@ -951,9 +973,10 @@ class connection_t final
 				{
 					m_logger.warn( [&]{
 						return fmt::format(
-								"[connection:{}] receive response parts for "
-								"request (#{}), but response with connection-close "
-								"attribute happened before",
+								RESTINIO_FMT_FORMAT_STRING(
+									"[connection:{}] receive response parts for "
+									"request (#{}), but response with connection-close "
+									"attribute happened before" ),
 								connection_id(),
 								request_id );
 					} );
@@ -964,8 +987,9 @@ class connection_t final
 			{
 				m_logger.warn( [&]{
 					return fmt::format(
-							"[connection:{}] try to write response, "
-							"while socket is closed",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[connection:{}] try to write response, "
+								"while socket is closed" ),
 							connection_id() );
 				} );
 				invoke_after_write_cb_with_error();
@@ -1002,8 +1026,9 @@ class connection_t final
 			{
 				m_logger.trace( [&]{
 					return fmt::format(
-						"[connection:{}] start next write group for response (#{}), "
-						"size: {}",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[connection:{}] start next write group for response (#{}), "
+							"size: {}" ),
 						this->connection_id(),
 						next_write_group->second,
 						next_write_group->first.items_count() );
@@ -1033,7 +1058,8 @@ class connection_t final
 								next_write_group->first.status_line_size() };
 
 						return fmt::format(
-								"[connection:{}] start response (#{}): {}",
+								RESTINIO_FMT_FORMAT_STRING(
+									"[connection:{}] start response (#{}): {}" ),
 								this->connection_id(),
 								next_write_group->second,
 								fmtlib_tools::streamed( status_line ) );
@@ -1095,7 +1121,8 @@ class connection_t final
 			{
 				trigger_error_and_close( [&]{
 					return fmt::format(
-						"[connection:{}] handle_current_write_ctx failed: {}",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[connection:{}] handle_current_write_ctx failed: {}" ),
 						connection_id(),
 						ex.what() );
 				} );
@@ -1113,10 +1140,11 @@ class connection_t final
 			{
 				m_logger.trace( [&]{
 					return fmt::format(
-							"[connection:{}] sending resp data with "
-							"connection-close attribute "
-							"buf count: {}, "
-							"total size: {}",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[connection:{}] sending resp data with "
+								"connection-close attribute "
+								"buf count: {}, "
+								"total size: {}" ),
 							connection_id(),
 							bufs.size(),
 							op.size() );
@@ -1130,9 +1158,10 @@ class connection_t final
 			{
 				m_logger.trace( [&]{
 					return fmt::format(
-						"[connection:{}] sending resp data, "
-						"buf count: {}, "
-						"total size: {}",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[connection:{}] sending resp data, "
+							"buf count: {}, "
+							"total size: {}" ),
 						connection_id(),
 						bufs.size(),
 						op.size() ); } );
@@ -1153,7 +1182,9 @@ class connection_t final
 							restinio::utils::log_trace_noexcept( m_logger,
 								[&]{
 									return fmt::format(
-											"[connection:{}] outgoing data was sent: {} bytes",
+											RESTINIO_FMT_FORMAT_STRING(
+												"[connection:{}] outgoing data was "
+												"sent: {} bytes" ),
 											connection_id(),
 											written );
 								} );
@@ -1173,9 +1204,10 @@ class connection_t final
 			{
 				m_logger.trace( [&]{
 					return fmt::format(
-							"[connection:{}] sending resp file data with "
-							"connection-close attribute, "
-							"total size: {}",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[connection:{}] sending resp file data with "
+								"connection-close attribute, "
+								"total size: {}" ),
 							connection_id(),
 							op.size() );
 				} );
@@ -1188,7 +1220,8 @@ class connection_t final
 			{
 				m_logger.trace( [&]{
 					return fmt::format(
-						"[connection:{}] sending resp file data, total size: {}",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[connection:{}] sending resp file data, total size: {}" ),
 						connection_id(),
 						op.size() );
 				} );
@@ -1224,7 +1257,9 @@ class connection_t final
 							restinio::utils::log_trace_noexcept( m_logger,
 								[&]{
 									return fmt::format(
-											"[connection:{}] file data was sent: {} bytes",
+											RESTINIO_FMT_FORMAT_STRING(
+												"[connection:{}] file data was sent: "
+												"{} bytes" ),
 											connection_id(),
 											written );
 								} );
@@ -1234,7 +1269,9 @@ class connection_t final
 							restinio::utils::log_error_noexcept( m_logger,
 								[&]{
 									return fmt::format(
-											"[connection:{}] send file data error: {} ({}) bytes",
+											RESTINIO_FMT_FORMAT_STRING(
+												"[connection:{}] send file data error: "
+												"{} ({}) bytes" ),
 											connection_id(),
 											ec.value(),
 											ec.message() );
@@ -1252,7 +1289,8 @@ class connection_t final
 			// Finishing writing this group.
 			m_logger.trace( [&]{
 				return fmt::format(
-						"[connection:{}] finishing current write group",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[connection:{}] finishing current write group" ),
 						this->connection_id() );
 			} );
 
@@ -1263,7 +1301,8 @@ class connection_t final
 			{
 				m_logger.trace( [&]{
 					return fmt::format(
-							"[connection:{}] should keep alive",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[connection:{}] should keep alive" ),
 							this->connection_id() );
 				} );
 
@@ -1323,8 +1362,9 @@ class connection_t final
 
 				m_logger.trace( [&]{
 					return fmt::format(
-						"[connection:{}] last sent response was marked "
-						"as complete",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[connection:{}] last sent response was marked "
+							"as complete" ),
 						connection_id() ); } );
 				close();
 			}
@@ -1364,7 +1404,8 @@ class connection_t final
 				{
 					trigger_error_and_close( [&]{
 						return fmt::format(
-							"[connection:{}] unable to write: {}",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[connection:{}] unable to write: {}" ),
 							connection_id(),
 							ec.message() );
 					} );
@@ -1380,7 +1421,8 @@ class connection_t final
 					restinio::utils::log_error_noexcept( m_logger,
 						[&]{
 							return fmt::format(
-								"[connection:{}] notificator error: {}",
+								RESTINIO_FMT_FORMAT_STRING(
+									"[connection:{}] notificator error: {}" ),
 								connection_id(),
 								ex.what() );
 						} );
@@ -1398,7 +1440,7 @@ class connection_t final
 			restinio::utils::log_trace_noexcept( m_logger,
 				[&]{
 					return fmt::format(
-						"[connection:{}] close",
+						RESTINIO_FMT_FORMAT_STRING( "[connection:{}] close" ),
 						connection_id() );
 				} );
 
@@ -1423,7 +1465,8 @@ class connection_t final
 			restinio::utils::log_trace_noexcept( m_logger,
 				[&]{
 					return fmt::format(
-						"[connection:{}] close: close socket",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[connection:{}] close: close socket" ),
 						connection_id() );
 				} );
 
@@ -1433,7 +1476,8 @@ class connection_t final
 			restinio::utils::log_trace_noexcept( m_logger,
 				[&]{
 					return fmt::format(
-						"[connection:{}] close: timer canceled",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[connection:{}] close: timer canceled" ),
 						connection_id() );
 				} );
 
@@ -1442,7 +1486,8 @@ class connection_t final
 			restinio::utils::log_trace_noexcept( m_logger,
 				[&]{
 					return fmt::format(
-						"[connection:{}] close: reset responses data",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[connection:{}] close: reset responses data" ),
 						connection_id() );
 				} );
 
@@ -1526,8 +1571,10 @@ class connection_t final
 					catch( const std::exception & x )
 					{
 						conn_object.trigger_error_and_close( [&] {
-								return fmt::format( "[connection: {}] unexpected "
-										"error during timeout handling: {}",
+								return fmt::format(
+										RESTINIO_FMT_FORMAT_STRING(
+											"[connection: {}] unexpected "
+											"error during timeout handling: {}" ),
 										conn_object.connection_id(),
 										x.what() );
 							} );
@@ -1603,7 +1650,7 @@ class connection_t final
 		{
 			m_logger.trace( [&]{
 				return fmt::format(
-						"[connection:{}] {} timed out",
+						RESTINIO_FMT_FORMAT_STRING( "[connection:{}] {} timed out" ),
 						connection_id(),
 						operation_name );
 			} );

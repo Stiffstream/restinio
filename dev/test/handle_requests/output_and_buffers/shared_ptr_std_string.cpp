@@ -52,7 +52,8 @@ TEST_CASE(
 
 	REQUIRE_THAT( response,
 		Catch::Matchers::Contains(
-			fmt::format( "Content-Length: {}", resp_message->size() ) ) );
+			fmt::format( RESTINIO_FMT_FORMAT_STRING( "Content-Length: {}" ),
+				resp_message->size() ) ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( *resp_message ) );
 
@@ -120,7 +121,8 @@ TEST_CASE(
 
 	REQUIRE_THAT( response,
 		Catch::Matchers::Contains(
-			fmt::format( "Content-Length: {}", resp_message->size() ) ) );
+			fmt::format( RESTINIO_FMT_FORMAT_STRING( "Content-Length: {}" ),
+				resp_message->size() ) ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( *resp_message ) );
 
@@ -185,7 +187,8 @@ TEST_CASE(
 
 	REQUIRE_THAT( response,
 		Catch::Matchers::Contains(
-			fmt::format( "Content-Length: {}", resp_message->size() ) ) );
+			fmt::format( RESTINIO_FMT_FORMAT_STRING( "Content-Length: {}" ),
+				resp_message->size() ) ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( *resp_message ) );
 
@@ -281,7 +284,8 @@ TEST_CASE(
 
 	REQUIRE_THAT( response,
 		Catch::Matchers::Contains(
-			fmt::format( "Content-Length: {}", resp_message->size() ) ) );
+			fmt::format( RESTINIO_FMT_FORMAT_STRING( "Content-Length: {}" ),
+				resp_message->size() ) ) );
 
 	// Add "\r\n\r\n" to ensure that resp goes right after header.
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( std::string( "\r\n\r\n" ) + *resp_message ) );
@@ -338,7 +342,8 @@ TEST_CASE(
 
 	REQUIRE_THAT( response,
 		Catch::Matchers::Contains(
-			fmt::format( "Content-Length: {}", resp_message->size() ) ) );
+			fmt::format( RESTINIO_FMT_FORMAT_STRING( "Content-Length: {}" ),
+				resp_message->size() ) ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( *resp_message ) );
 
@@ -399,7 +404,8 @@ TEST_CASE(
 
 	REQUIRE_THAT( response,
 		Catch::Matchers::Contains(
-			fmt::format( "Content-Length: {}", resp_message->size() ) ) );
+			fmt::format( RESTINIO_FMT_FORMAT_STRING( "Content-Length: {}" ),
+				resp_message->size() ) ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( *resp_message ) );
 
@@ -466,7 +472,8 @@ TEST_CASE(
 
 	REQUIRE_THAT( response,
 		Catch::Matchers::Contains(
-			fmt::format( "Content-Length: {}", resp_message->size() ) ) );
+			fmt::format( RESTINIO_FMT_FORMAT_STRING( "Content-Length: {}" ),
+				resp_message->size() ) ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( *resp_message ) );
 
@@ -565,7 +572,8 @@ TEST_CASE(
 
 	REQUIRE_THAT( response,
 		Catch::Matchers::Contains(
-			fmt::format( "Content-Length: {}", resp_message->size() ) ) );
+			fmt::format( RESTINIO_FMT_FORMAT_STRING( "Content-Length: {}" ),
+				resp_message->size() ) ) );
 
 	// Add "\r\n\r\n" to ensure that resp goes right after header.
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( std::string( "\r\n\r\n" ) + *resp_message ) );

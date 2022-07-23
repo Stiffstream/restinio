@@ -89,8 +89,10 @@ public:
 				m_started_at + m_size > full_body.size() )
 		{
 			throw exception_t{
-				fmt::format( "unable to make a chunk (started_at:{}, size: {}) "
-						"from a body with length:{}",
+				fmt::format(
+						RESTINIO_FMT_FORMAT_STRING(
+							"unable to make a chunk (started_at:{}, size: {}) "
+							"from a body with length:{}" ),
 						m_started_at,
 						m_size,
 						full_body.size() )

@@ -149,7 +149,8 @@ class regex_t final
 				(void)pcre2_get_error_message( errorcode, buffer.data(), buffer.size() );
 				throw exception_t{
 						fmt::format(
-							"unable to compile regex \"{}\": {}",
+							RESTINIO_FMT_FORMAT_STRING(
+								"unable to compile regex \"{}\": {}" ),
 							fmtlib_tools::streamed( r ),
 							reinterpret_cast< const char * >( buffer.data() ) ) };
 			}
@@ -238,7 +239,8 @@ struct pcre2_regex_engine_t
 		}
 		if( PCRE2_ERROR_NOMATCH != rc )
 		{
-			throw exception_t{ fmt::format("pcre2 error: {}", rc ) };
+			throw exception_t{
+				fmt::format( RESTINIO_FMT_FORMAT_STRING( "pcre2 error: {}" ), rc ) };
 		}
 		// else PCRE2_ERROR_NOMATCH -- no match for this route
 

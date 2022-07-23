@@ -37,33 +37,42 @@ struct app_args_t
 		auto cli =
 			Opt( result.m_address, "address" )
 					["-a"]["--address"]
-					( fmt::format( "address to listen (default: {})", result.m_address ) )
+					( fmt::format(
+							RESTINIO_FMT_FORMAT_STRING( "address to listen (default: {})" ),
+							result.m_address ) )
 			| Opt( result.m_port, "port" )
 					["-p"]["--port"]
-					( fmt::format( "port to listen (default: {})", result.m_port ) )
+					( fmt::format(
+							RESTINIO_FMT_FORMAT_STRING( "port to listen (default: {})" ),
+							result.m_port ) )
 			| Opt( result.m_pool_size, "thread-pool size" )
 					[ "-n" ][ "--thread-pool-size" ]
 					( fmt::format(
-						"The size of a thread pool to run server (default: {})",
-						result.m_pool_size ) )
+							RESTINIO_FMT_FORMAT_STRING(
+								"The size of a thread pool to run server (default: {})" ),
+							result.m_pool_size ) )
 			| Opt( result.m_certs_dir, "dir" )
 					[ "--certs-dir" ]
 					( fmt::format(
-						"A directory with server.pem, key.pem, dh2048.pem (default: {})",
-						result.m_certs_dir ) )
+							RESTINIO_FMT_FORMAT_STRING(
+								"A directory with server.pem, key.pem, "
+								"dh2048.pem (default: {})" ),
+								result.m_certs_dir ) )
 			| Opt( result.m_data_offset, "offset" )
 					["-o"]["--data-offset"]
 					( fmt::format(
-						"Offset of the data portion in file (default: {})",
-						result.m_data_offset ) )
+							RESTINIO_FMT_FORMAT_STRING(
+								"Offset of the data portion in file (default: {})" ),
+								result.m_data_offset ) )
 			| Opt( result.m_data_size, "size" )
 					["-s"]["--data-size"]
 					( "size of the data portion in file (default: to the end of file)" )
 			| Opt( result.m_content_type, "content-type" )
 					["--content-type"]
 					( fmt::format(
-						"A value of 'Content-Type' header field (default: {})",
-						result.m_content_type ) )
+							RESTINIO_FMT_FORMAT_STRING(
+								"A value of 'Content-Type' header field (default: {})" ),
+								result.m_content_type ) )
 			| Opt( result.m_trace_server )
 					[ "-t" ][ "--trace" ]
 					( "Enable trace server" )
@@ -76,8 +85,9 @@ struct app_args_t
 		{
 			throw std::runtime_error{
 				fmt::format(
-					"Invalid command-line arguments: {}",
-					parse_result.errorMessage() ) };
+						RESTINIO_FMT_FORMAT_STRING(
+							"Invalid command-line arguments: {}" ),
+							parse_result.errorMessage() ) };
 		}
 
 		if( result.m_help )

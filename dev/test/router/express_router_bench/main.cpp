@@ -67,7 +67,7 @@ struct app_args_t
 		{
 			throw std::runtime_error{
 				fmt::format(
-					"Invalid command-line arguments: {}",
+					RESTINIO_FMT_FORMAT_STRING( "Invalid command-line arguments: {}" ),
 					parse_result.errorMessage() ) };
 		}
 

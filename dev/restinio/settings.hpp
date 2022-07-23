@@ -1005,7 +1005,8 @@ class basic_server_settings_t
 			if( 0 == n || 1024 < n )
 				throw exception_t{
 					fmt::format(
-						"invalid value for number of cuncurrent connects: {}",
+						RESTINIO_FMT_FORMAT_STRING(
+							"invalid value for number of cuncurrent connects: {}" ),
 						n ) };
 
 			m_concurrent_accepts_count = n;

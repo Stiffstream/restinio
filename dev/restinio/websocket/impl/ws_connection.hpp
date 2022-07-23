@@ -162,14 +162,16 @@ class ws_connection_t final
 			// Notify of a new connection instance.
 			m_logger.trace( [&]{
 					return fmt::format(
-						"[connection:{}] move socket to [ws_connection:{}]",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[connection:{}] move socket to [ws_connection:{}]" ),
 						connection_id(),
 						connection_id() );
 			} );
 
 			m_logger.trace( [&]{
 					return fmt::format(
-						"[ws_connection:{}] start connection with {}",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[ws_connection:{}] start connection with {}" ),
 						connection_id(),
 						fmtlib_tools::streamed( m_socket.remote_endpoint() ) );
 			} );
@@ -196,7 +198,8 @@ class ws_connection_t final
 				// Notify of a new connection instance.
 				m_logger.trace( [&]{
 					return fmt::format(
-						"[ws_connection:{}] destructor called",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[ws_connection:{}] destructor called" ),
 						connection_id() );
 				} );
 			}
@@ -220,7 +223,8 @@ class ws_connection_t final
 						restinio::utils::log_trace_noexcept( m_logger,
 							[&]{
 								return fmt::format(
-									"[ws_connection:{}] shutdown",
+									RESTINIO_FMT_FORMAT_STRING(
+										"[ws_connection:{}] shutdown" ),
 									connection_id() );
 							} );
 
@@ -232,7 +236,8 @@ class ws_connection_t final
 						restinio::utils::log_error_noexcept( m_logger,
 							[&]{
 								return fmt::format(
-									"[ws_connection:{}] shutdown operation error: {}",
+									RESTINIO_FMT_FORMAT_STRING(
+										"[ws_connection:{}] shutdown operation error: {}" ),
 									connection_id(),
 									ex.what() );
 							} );
@@ -257,7 +262,8 @@ class ws_connection_t final
 						restinio::utils::log_trace_noexcept( m_logger,
 							[&]{
 								return fmt::format(
-									"[ws_connection:{}] kill",
+									RESTINIO_FMT_FORMAT_STRING(
+										"[ws_connection:{}] kill" ),
 									connection_id() );
 							} );
 
@@ -271,7 +277,8 @@ class ws_connection_t final
 						restinio::utils::log_error_noexcept( m_logger,
 							[&]{
 								return fmt::format(
-									"[ws_connection:{}] kill operation error: {}",
+									RESTINIO_FMT_FORMAT_STRING(
+										"[ws_connection:{}] kill operation error: {}" ),
 									connection_id(),
 									ex.what() );
 							} );
@@ -308,7 +315,8 @@ class ws_connection_t final
 							status_code_t::unexpected_condition,
 							[&]{
 								return fmt::format(
-									"[ws_connection:{}] unable to init read: {}",
+									RESTINIO_FMT_FORMAT_STRING(
+										"[ws_connection:{}] unable to init read: {}" ),
 									connection_id(),
 									ex.what() );
 							} );
@@ -342,8 +350,9 @@ class ws_connection_t final
 						{
 							m_logger.warn( [&]{
 								return fmt::format(
-										"[ws_connection:{}] cannot write to websocket: "
-										"write operations disabled",
+										RESTINIO_FMT_FORMAT_STRING(
+											"[ws_connection:{}] cannot write to websocket: "
+											"write operations disabled" ),
 										connection_id() );
 							} );
 						}
@@ -354,7 +363,8 @@ class ws_connection_t final
 							status_code_t::unexpected_condition,
 							[&]{
 								return fmt::format(
-									"[ws_connection:{}] unable to write data: {}",
+									RESTINIO_FMT_FORMAT_STRING(
+										"[ws_connection:{}] unable to write data: {}" ),
 									connection_id(),
 									ex.what() );
 							} );
@@ -375,7 +385,8 @@ class ws_connection_t final
 					restinio::utils::log_trace_noexcept( m_logger,
 						[&]{
 							return fmt::format(
-									"[ws_connection:{}] close socket",
+									RESTINIO_FMT_FORMAT_STRING(
+										"[ws_connection:{}] close socket" ),
 									connection_id() );
 						} );
 
@@ -486,7 +497,8 @@ class ws_connection_t final
 		{
 			m_logger.trace( [&]{
 				return fmt::format(
-						"[ws_connection:{}] start reading header",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[ws_connection:{}] start reading header" ),
 						connection_id() );
 			} );
 
@@ -511,7 +523,8 @@ class ws_connection_t final
 		{
 			m_logger.trace( [&]{
 				return fmt::format(
-						"[ws_connection:{}] continue reading message",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[ws_connection:{}] continue reading message" ),
 						connection_id() );
 			} );
 
@@ -533,7 +546,9 @@ class ws_connection_t final
 								status_code_t::unexpected_condition,
 								[&]{
 									return fmt::format(
-										"[ws_connection:{}] after read header callback error: {}",
+										RESTINIO_FMT_FORMAT_STRING(
+											"[ws_connection:{}] after read header "
+											"callback error: {}" ),
 										connection_id(),
 										ex.what() );
 								} );
@@ -550,7 +565,7 @@ class ws_connection_t final
 				status_code_t::connection_lost,
 				[&]{
 					return fmt::format(
-						"[ws_connection:{}] {}: {}",
+						RESTINIO_FMT_FORMAT_STRING( "[ws_connection:{}] {}: {}" ),
 						connection_id(),
 						desc,
 						ec.message() );
@@ -567,7 +582,8 @@ class ws_connection_t final
 			{
 				m_logger.trace( [&]{
 					return fmt::format(
-							"[ws_connection:{}] received {} bytes",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[ws_connection:{}] received {} bytes" ),
 							this->connection_id(),
 							length );
 				} );
@@ -606,7 +622,8 @@ class ws_connection_t final
 		{
 			m_logger.trace( [&]{
 				return fmt::format(
-						"[ws_connection:{}] start handling {} ({:#x})",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[ws_connection:{}] start handling {} ({:#x})" ),
 						connection_id(),
 						opcode_to_string( md.m_opcode ),
 						static_cast<std::uint16_t>(md.m_opcode) );
@@ -619,7 +636,8 @@ class ws_connection_t final
 			{
 				m_logger.error( [&]{
 					return fmt::format(
-							"[ws_connection:{}] invalid header",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[ws_connection:{}] invalid header" ),
 							connection_id() );
 				} );
 
@@ -735,7 +753,9 @@ class ws_connection_t final
 									status_code_t::unexpected_condition,
 									[&]{
 										return fmt::format(
-											"[ws_connection:{}] after read payload callback error: {}",
+											RESTINIO_FMT_FORMAT_STRING(
+												"[ws_connection:{}] after read payload "
+												"callback error: {}" ),
 											connection_id(),
 											ex.what() );
 									} );
@@ -756,7 +776,8 @@ class ws_connection_t final
 			{
 				m_logger.trace( [&]{
 					return fmt::format(
-							"[ws_connection:{}] received {} bytes",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[ws_connection:{}] received {} bytes" ),
 							this->connection_id(),
 							length );
 				} );
@@ -827,7 +848,8 @@ class ws_connection_t final
 				{
 					m_logger.error( [&]{
 						return fmt::format(
-								"[ws_connection:{}] execute handler error: {}",
+								RESTINIO_FMT_FORMAT_STRING(
+									"[ws_connection:{}] execute handler error: {}" ),
 								connection_id(),
 								ex.what() );
 					} );
@@ -884,7 +906,8 @@ class ws_connection_t final
 		{
 			m_logger.error( [&]{
 					return fmt::format(
-							"[ws_connection:{}] invalid paload",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[ws_connection:{}] invalid paload" ),
 							connection_id() );
 				} );
 
@@ -945,7 +968,9 @@ class ws_connection_t final
 					{
 						m_logger.trace( [&]{
 							return fmt::format(
-									"[ws_connection:{}] got close frame from peer, status: {}",
+									RESTINIO_FMT_FORMAT_STRING(
+										"[ws_connection:{}] got close frame from "
+										"peer, status: {}" ),
 									connection_id(),
 									static_cast<std::uint16_t>(
 											status_code_from_bin( m_input.m_payload )) );
@@ -982,7 +1007,8 @@ class ws_connection_t final
 
 						m_logger.trace( [&]{
 							return fmt::format(
-									"[ws_connection:{}] expected close frame came",
+									RESTINIO_FMT_FORMAT_STRING(
+										"[ws_connection:{}] expected close frame came" ),
 									connection_id() );
 						} );
 					}
@@ -1022,7 +1048,8 @@ class ws_connection_t final
 				{
 					m_logger.trace( [&]{
 						return fmt::format(
-								"[ws_connection:{}] user sends close frame",
+								RESTINIO_FMT_FORMAT_STRING(
+									"[ws_connection:{}] user sends close frame" ),
 								connection_id() );
 					} );
 
@@ -1044,7 +1071,9 @@ class ws_connection_t final
 			{
 				m_logger.warn( [&]{
 					return fmt::format(
-							"[ws_connection:{}] try to write while socket is closed",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[ws_connection:{}] try to write while "
+								"socket is closed" ),
 							connection_id() );
 				} );
 
@@ -1082,8 +1111,9 @@ class ws_connection_t final
 			{
 				m_logger.trace( [&]{
 					return fmt::format(
-						"[ws_connection:{}] start next write group, "
-						"size: {}",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[ws_connection:{}] start next write group, "
+							"size: {}" ),
 						this->connection_id(),
 						next_write_group->items_count() );
 				} );
@@ -1129,7 +1159,8 @@ class ws_connection_t final
 					status_code_t::unexpected_condition,
 					[&]{
 						return fmt::format(
-							"[ws_connection:{}] handle_current_write_ctx failed: {}",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[ws_connection:{}] handle_current_write_ctx failed: {}" ),
 							connection_id(),
 							ex.what() );
 					} );
@@ -1144,9 +1175,10 @@ class ws_connection_t final
 
 			m_logger.trace( [&]{
 				return fmt::format(
-					"[ws_connection:{}] sending data with "
-					"buf count: {}, "
-					"total size: {}",
+					RESTINIO_FMT_FORMAT_STRING(
+						"[ws_connection:{}] sending data with "
+						"buf count: {}, "
+						"total size: {}" ),
 					connection_id(),
 					bufs.size(),
 					op.size() ); } );
@@ -1170,7 +1202,9 @@ class ws_connection_t final
 							{
 								m_logger.trace( [&]{
 									return fmt::format(
-											"[ws_connection:{}] outgoing data was sent: {} bytes",
+											RESTINIO_FMT_FORMAT_STRING(
+												"[ws_connection:{}] outgoing data was "
+												"sent: {} bytes" ),
 											connection_id(),
 											written );
 								} );
@@ -1184,7 +1218,9 @@ class ws_connection_t final
 								status_code_t::unexpected_condition,
 								[&]{
 									return fmt::format(
-										"[ws_connection:{}] after write callback error: {}",
+										RESTINIO_FMT_FORMAT_STRING(
+											"[ws_connection:{}] after write "
+											"callback error: {}" ),
 										connection_id(),
 										ex.what() );
 								} );
@@ -1199,7 +1235,8 @@ class ws_connection_t final
 			// Finishing writing this group.
 			m_logger.trace( [&]{
 				return fmt::format(
-						"[ws_connection:{}] finishing current write group",
+						RESTINIO_FMT_FORMAT_STRING(
+							"[ws_connection:{}] finishing current write group" ),
 						this->connection_id() );
 			} );
 
@@ -1225,7 +1262,8 @@ class ws_connection_t final
 					status_code_t::connection_lost,
 					[&]{
 						return fmt::format(
-							"[ws_connection:{}] unable to write: {}",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[ws_connection:{}] unable to write: {}" ),
 							connection_id(),
 							ec.message() );
 					} );
@@ -1238,7 +1276,8 @@ class ws_connection_t final
 				{
 					m_logger.error( [&]{
 						return fmt::format(
-							"[ws_connection:{}] notificator error: {}",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[ws_connection:{}] notificator error: {}" ),
 							connection_id(),
 							ex.what() );
 					} );
@@ -1288,8 +1327,10 @@ class ws_connection_t final
 						conn_object.trigger_error_and_close(
 							status_code_t::unexpected_condition,
 							[&] {
-								return fmt::format( "[connection: {}] unexpected "
-										"error during timeout handling: {}",
+								return fmt::format(
+										RESTINIO_FMT_FORMAT_STRING(
+											"[connection: {}] unexpected "
+											"error during timeout handling: {}" ),
 										conn_object.connection_id(),
 										x.what() );
 							} );
@@ -1311,7 +1352,8 @@ class ws_connection_t final
 			{
 				m_logger.trace( [&]{
 					return fmt::format(
-							"[wd_connection:{}] write operation timed out",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[wd_connection:{}] write operation timed out" ),
 							connection_id() );
 					} );
 				m_close_frame_to_peer.disable();
@@ -1322,7 +1364,9 @@ class ws_connection_t final
 			{
 				m_logger.trace( [&]{
 					return fmt::format(
-							"[wd_connection:{}] waiting for close-frame from peer timed out",
+							RESTINIO_FMT_FORMAT_STRING(
+								"[wd_connection:{}] waiting for close-frame "
+								"from peer timed out" ),
 							connection_id() );
 					} );
 				close_impl();

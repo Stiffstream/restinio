@@ -40,8 +40,10 @@ auto server_handler(std::string prefix)
 		[prefix]( auto req, auto ){
 				init_resp( req->create_response() )
 					.append_header( restinio::http_field::content_type, "application/json" )
-					.set_body( fmt::format(
-							R"-({{"message" : "{}: Hello world!"}})-",
+					.set_body(
+							fmt::format(
+								RESTINIO_FMT_FORMAT_STRING(
+									R"-({{"message" : "{}: Hello world!"}})-" ),
 							prefix ) )
 					.done();
 
@@ -55,12 +57,13 @@ auto server_handler(std::string prefix)
 						.append_header( restinio::http_field::content_type, "text/html; charset=utf-8" )
 						.set_body(
 								fmt::format(
+									RESTINIO_FMT_FORMAT_STRING(
 R"-(<html>
 <head><title>Hello from RESTinio!</title></head>
 <body>
 <center><h1>{}: Hello world</h1></center>
 </body>
-</html>)-",
+</html>)-" ),
 								prefix ) )
 						.done();
 

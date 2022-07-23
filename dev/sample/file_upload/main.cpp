@@ -36,19 +36,28 @@ struct app_args_t
 		auto cli =
 			Opt( result.m_dest_folder, "destination folder" )
 					["-d"]["--dest-folder"]
-					( fmt::format( "destination folder for uploaded files"
-							" (default: {})", result.m_dest_folder ) )
+					( fmt::format(
+							RESTINIO_FMT_FORMAT_STRING(
+								"destination folder for uploaded files"
+								" (default: {})" ), result.m_dest_folder ) )
 			| Opt( result.m_address, "address" )
 					["-a"]["--address"]
-					( fmt::format( "address to listen (default: {})", result.m_address ) )
+					( fmt::format(
+							RESTINIO_FMT_FORMAT_STRING(
+								"address to listen (default: {})" ),
+							result.m_address ) )
 			| Opt( result.m_port, "port" )
 					["-p"]["--port"]
-					( fmt::format( "port to listen (default: {})", result.m_port ) )
+					( fmt::format(
+							RESTINIO_FMT_FORMAT_STRING(
+								"port to listen (default: {})" ),
+							result.m_port ) )
 			| Opt( result.m_pool_size, "thread-pool size" )
 					[ "-n" ][ "--thread-pool-size" ]
 					( fmt::format(
-						"The size of a thread pool to run server (default: {})",
-						result.m_pool_size ) )
+							RESTINIO_FMT_FORMAT_STRING(
+								"The size of a thread pool to run server (default: {})" ),
+							result.m_pool_size ) )
 			| Opt( result.m_trace_server )
 					[ "-t" ][ "--trace" ]
 					( "Enable trace server" )
@@ -59,7 +68,8 @@ struct app_args_t
 		{
 			throw std::runtime_error{
 				fmt::format(
-					"Invalid command-line arguments: {}",
+					RESTINIO_FMT_FORMAT_STRING(
+						"Invalid command-line arguments: {}" ),
 					parse_result.errorMessage() ) };
 		}
 
@@ -82,7 +92,7 @@ void store_file_to_disk(
 	std::ofstream dest_file;
 	dest_file.exceptions( std::ofstream::failbit );
 	dest_file.open(
-			fmt::format( "{}/{}",
+			fmt::format( RESTINIO_FMT_FORMAT_STRING( "{}/{}" ),
 					restinio::fmtlib_tools::streamed( args.m_dest_folder ),
 					restinio::fmtlib_tools::streamed( file_name ) ),
 			std::ios_base::out | std::ios_base::trunc | std::ios_base::binary );
@@ -129,7 +139,8 @@ auto make_router( const app_args_t & args )
 	router->http_get(
 		"/",
 		[ & ]( const restinio::request_handle_t& req, auto ){
-			const auto action_url = fmt::format( "http://{}:{}/upload",
+			const auto action_url = fmt::format(
+					RESTINIO_FMT_FORMAT_STRING( "http://{}:{}/upload" ),
 					args.m_address, args.m_port );
 
 			auto resp = req->create_response();

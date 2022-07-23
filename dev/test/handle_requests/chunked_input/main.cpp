@@ -21,19 +21,25 @@ format_chunked_input_info(
 
 	const auto * chunked_input = req.chunked_input_info();
 	if( !chunked_input )
-		fmt::format_to( resp_body_inserter, "no chunked input" );
+		fmt::format_to( resp_body_inserter,
+				RESTINIO_FMT_FORMAT_STRING( "no chunked input" ) );
 	else
 	{
 		fmt::format_to( resp_body_inserter,
-				"chunks:{};", chunked_input->chunk_count() );
+				RESTINIO_FMT_FORMAT_STRING( "chunks:{};" ),
+				chunked_input->chunk_count() );
 		for( const auto & ch : chunked_input->chunks() )
-			fmt::format_to( resp_body_inserter, "[{},{}]",
+			fmt::format_to( resp_body_inserter,
+					RESTINIO_FMT_FORMAT_STRING( "[{},{}]" ),
 					ch.started_at(), ch.size() );
-		fmt::format_to( resp_body_inserter, ";trailing_fields:{};",
+		fmt::format_to( resp_body_inserter,
+				RESTINIO_FMT_FORMAT_STRING( ";trailing_fields:{};" ),
 				chunked_input->trailing_fields().fields_count() );
 		for( const auto & f : chunked_input->trailing_fields() )
 			fmt::format_to(
-					resp_body_inserter, "('{}':'{}')", f.name(), f.value() );
+					resp_body_inserter,
+					RESTINIO_FMT_FORMAT_STRING( "('{}':'{}')" ),
+					f.name(), f.value() );
 	}
 
 	return resp_body;

@@ -32,7 +32,8 @@ public:
 	{
 		std::lock_guard<std::mutex> l{ m_lock };
 
-		fmt::print( "connection-notice: {} (from {}) => {}\n",
+		fmt::print(
+				RESTINIO_FMT_FORMAT_STRING( "connection-notice: {} (from {}) => {}\n" ),
 				notice.connection_id(),
 				restinio::fmtlib_tools::streamed( notice.remote_endpoint() ),
 				cause_to_str( notice ) );
@@ -49,7 +50,8 @@ restinio::request_handling_status_t handler( const restinio::request_handle_t& r
 			.append_header( restinio::http_field::server, "RESTinio hello world server" )
 			.append_header_date_field()
 			.append_header( restinio::http_field::content_type, "text/plain; charset=utf-8" )
-			.set_body( fmt::format( "{} (from {}): Hello world!",
+			.set_body( fmt::format(
+					RESTINIO_FMT_FORMAT_STRING( "{} (from {}): Hello world!" ),
 					req->connection_id(),
 					restinio::fmtlib_tools::streamed( req->remote_endpoint() ) ) )
 			.done();

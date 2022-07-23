@@ -139,8 +139,9 @@ class params_t
 			{
 				throw exception_t{
 					fmt::format(
-						"invalid compression level: {}, must be "
-						"an integer value in the range of -1 to 9",
+						RESTINIO_FMT_FORMAT_STRING(
+							"invalid compression level: {}, must be "
+							"an integer value in the range of -1 to 9" ),
 						level_value ) };
 			}
 
@@ -190,9 +191,10 @@ class params_t
 			{
 				throw exception_t{
 					fmt::format(
-						"invalid window_bits: {}, must be "
-						"an integer value in the range of 8 to {} or "
-						"0 for decompress operation",
+						RESTINIO_FMT_FORMAT_STRING(
+							"invalid window_bits: {}, must be "
+							"an integer value in the range of 8 to {} or "
+							"0 for decompress operation" ),
 						window_bits_value,
 						MAX_WBITS ) };
 			}
@@ -235,8 +237,9 @@ class params_t
 			{
 				throw exception_t{
 					fmt::format(
-						"invalid compression mem_level: {}, must be "
-						"an integer value in the range of 1 to {}",
+						RESTINIO_FMT_FORMAT_STRING(
+							"invalid compression mem_level: {}, must be "
+							"an integer value in the range of 1 to {}" ),
 						mem_level_value,
 						MAX_MEM_LEVEL ) };
 			}
@@ -277,12 +280,13 @@ class params_t
 			{
 				throw exception_t{
 					fmt::format(
-						"invalid compression strategy: {}, must be "
-						"one of: "
-						"Z_DEFAULT_STRATEGY({}), ",
-						"Z_FILTERED({}), ",
-						"Z_HUFFMAN_ONLY({}), ",
-						"Z_RLE({})",
+						RESTINIO_FMT_FORMAT_STRING(
+							"invalid compression strategy: {}, must be "
+							"one of: "
+							"Z_DEFAULT_STRATEGY({}), "
+							"Z_FILTERED({}), "
+							"Z_HUFFMAN_ONLY({}), "
+							"Z_RLE({})" ),
 						strategy_value,
 						Z_DEFAULT_STRATEGY,
 						Z_FILTERED,
@@ -520,7 +524,8 @@ class zlib_t
 				{
 					throw exception_t{
 						fmt::format(
-							"Failed to initialize zlib stream: {}, {}",
+							RESTINIO_FMT_FORMAT_STRING(
+								"Failed to initialize zlib stream: {}, {}" ),
 							init_result,
 							get_error_msg() ) };
 				}
@@ -577,8 +582,9 @@ class zlib_t
 				{
 					throw exception_t{
 						fmt::format(
-							"input data is too large: {} (max possible: {}), "
-							"try to break large data into pieces",
+							RESTINIO_FMT_FORMAT_STRING(
+								"input data is too large: {} (max possible: {}), "
+								"try to break large data into pieces" ),
 							input.size(),
 							std::numeric_limits< decltype( m_zlib_stream.avail_in ) >::max() ) };
 				}
@@ -764,7 +770,8 @@ class zlib_t
 
 					throw exception_t{
 						fmt::format(
-							"unexpected result of deflate() (zlib): {}, {}",
+							RESTINIO_FMT_FORMAT_STRING(
+								"unexpected result of deflate() (zlib): {}, {}" ),
 							operation_result,
 							err_msg ) };
 				}
@@ -808,7 +815,8 @@ class zlib_t
 				{
 					throw exception_t{
 						fmt::format(
-							"unexpected result of inflate() (zlib): {}, {}",
+							RESTINIO_FMT_FORMAT_STRING(
+								"unexpected result of inflate() (zlib): {}, {}" ),
 							operation_result,
 							get_error_msg() ) };
 				}
@@ -1334,7 +1342,10 @@ handle_body(
 	else if( !is_equal_caseless( content_encoding, "identity" ) )
 	{
 		throw exception_t{
-			fmt::format( "content-encoding '{}' not supported", content_encoding ) };
+			fmt::format(
+					RESTINIO_FMT_FORMAT_STRING( "content-encoding '{}' not supported" ),
+					content_encoding )
+		};
 	}
 
 	return handler( req.body() );

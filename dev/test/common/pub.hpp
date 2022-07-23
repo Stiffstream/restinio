@@ -71,7 +71,8 @@ do_request(
 
 			if ( !restinio::error_is_eof( error ) )
 				throw std::runtime_error{
-						fmt::format( "read error: {}",
+						fmt::format(
+								RESTINIO_FMT_FORMAT_STRING( "read error: {}" ),
 								restinio::fmtlib_tools::streamed( error ) ) };
 
 			result = sout.str();

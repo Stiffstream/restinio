@@ -179,12 +179,13 @@ TEST_CASE( "restinio_controlled_output" , "[zlib][body_appender][restinio_contro
 		{
 			const std::string request =
 				fmt::format(
-					"GET /deflate/{} HTTP/1.0\r\n"
-					"From: unit-test\r\n"
-					"User-Agent: unit-test\r\n"
-					"Content-Type: application/x-www-form-urlencoded\r\n"
-					"Connection: close\r\n"
-					"\r\n",
+					RESTINIO_FMT_FORMAT_STRING(
+						"GET /deflate/{} HTTP/1.0\r\n"
+						"From: unit-test\r\n"
+						"User-Agent: unit-test\r\n"
+						"Content-Type: application/x-www-form-urlencoded\r\n"
+						"Connection: close\r\n"
+						"\r\n" ),
 					i );
 
 			std::string response;
@@ -205,12 +206,13 @@ TEST_CASE( "restinio_controlled_output" , "[zlib][body_appender][restinio_contro
 		{
 			const std::string request =
 				fmt::format(
-					"GET /gzip/{} HTTP/1.0\r\n"
-					"From: unit-test\r\n"
-					"User-Agent: unit-test\r\n"
-					"Content-Type: application/x-www-form-urlencoded\r\n"
-					"Connection: close\r\n"
-					"\r\n",
+					RESTINIO_FMT_FORMAT_STRING(
+						"GET /gzip/{} HTTP/1.0\r\n"
+						"From: unit-test\r\n"
+						"User-Agent: unit-test\r\n"
+						"Content-Type: application/x-www-form-urlencoded\r\n"
+						"Connection: close\r\n"
+						"\r\n" ),
 					i );
 
 			std::string response;
@@ -452,12 +454,13 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 		{
 			const std::string request =
 				fmt::format(
-					"GET /deflate/{} HTTP/1.0\r\n"
-					"From: unit-test\r\n"
-					"User-Agent: unit-test\r\n"
-					"Content-Type: application/x-www-form-urlencoded\r\n"
-					"Connection: close\r\n"
-					"\r\n",
+					RESTINIO_FMT_FORMAT_STRING(
+						"GET /deflate/{} HTTP/1.0\r\n"
+						"From: unit-test\r\n"
+						"User-Agent: unit-test\r\n"
+						"Content-Type: application/x-www-form-urlencoded\r\n"
+						"Connection: close\r\n"
+						"\r\n" ),
 					i );
 
 			std::string response;
@@ -485,12 +488,13 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 		{
 			const std::string request =
 				fmt::format(
-					"GET /gzip/{} HTTP/1.0\r\n"
-					"From: unit-test\r\n"
-					"User-Agent: unit-test\r\n"
-					"Content-Type: application/x-www-form-urlencoded\r\n"
-					"Connection: close\r\n"
-					"\r\n",
+					RESTINIO_FMT_FORMAT_STRING(
+						"GET /gzip/{} HTTP/1.0\r\n"
+						"From: unit-test\r\n"
+						"User-Agent: unit-test\r\n"
+						"Content-Type: application/x-www-form-urlencoded\r\n"
+						"Connection: close\r\n"
+						"\r\n" ),
 					i );
 
 			std::string response;

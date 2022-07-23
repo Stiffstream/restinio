@@ -123,7 +123,11 @@ class route_params_t final
 		operator [] ( std::size_t i ) const
 		{
 			if( i >= m_indexed_parameters.size() )
-				throw exception_t{ fmt::format( "invalid parameter index: {}", i ) };
+				throw exception_t{
+					fmt::format(
+						RESTINIO_FMT_FORMAT_STRING( "invalid parameter index: {}" ),
+						i )
+				};
 
 			return m_indexed_parameters.at( i );
 		}
@@ -155,7 +159,7 @@ class route_params_t final
 			if( m_named_parameters.end() == it )
 				throw exception_t{
 					fmt::format(
-						"invalid parameter name: {}",
+						RESTINIO_FMT_FORMAT_STRING( "invalid parameter name: {}" ),
 						std::string{ key.data(), key.size() } ) };
 
 			return *it;

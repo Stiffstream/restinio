@@ -224,7 +224,8 @@ TEST_CASE( "ordinary connection" , "[ordinary_connection]" )
 				.connection_state_listener( state_listener )
 				.request_handler(
 					[&endpoint_value]( auto req ){
-						endpoint_value = fmt::format( "{}",
+						endpoint_value = fmt::format(
+								RESTINIO_FMT_FORMAT_STRING( "{}" ),
 								restinio::fmtlib_tools::streamed(
 										req->remote_endpoint() ) );
 
@@ -289,7 +290,8 @@ TEST_CASE( "connection state for WS" , "[connection_state][ws]" )
 				.connection_state_listener( state_listener )
 				.request_handler(
 					[&endpoint_value, &endpoint_value_ws]( auto req ){
-						endpoint_value = fmt::format( "{}",
+						endpoint_value = fmt::format(
+								RESTINIO_FMT_FORMAT_STRING( "{}" ),
 								restinio::fmtlib_tools::streamed(
 										req->remote_endpoint() ) );
 
@@ -306,7 +308,8 @@ TEST_CASE( "connection state for WS" , "[connection_state][ws]" )
 											rws::message_handle_t ){} );
 
 
-								endpoint_value_ws = fmt::format( "{}",
+								endpoint_value_ws = fmt::format(
+										RESTINIO_FMT_FORMAT_STRING( "{}" ),
 										restinio::fmtlib_tools::streamed(
 												ws->remote_endpoint() ) );
 
@@ -377,7 +380,8 @@ TEST_CASE( "listener throws on accept" , "[throws_on_accept]" )
 				.connection_state_listener( state_listener )
 				.request_handler(
 					[&endpoint_value]( auto req ){
-						endpoint_value = fmt::format( "{}",
+						endpoint_value = fmt::format(
+								RESTINIO_FMT_FORMAT_STRING( "{}" ),
 								restinio::fmtlib_tools::streamed(
 										req->remote_endpoint() ) );
 
@@ -439,7 +443,8 @@ TEST_CASE( "listener throws on close" , "[throws_on_close]" )
 				.connection_state_listener( state_listener )
 				.request_handler(
 					[&endpoint_value]( auto req ){
-						endpoint_value = fmt::format( "{}",
+						endpoint_value = fmt::format(
+								RESTINIO_FMT_FORMAT_STRING( "{}" ),
 								restinio::fmtlib_tools::streamed(
 										req->remote_endpoint() ) );
 
@@ -505,7 +510,8 @@ TEST_CASE( "listener throws on WS-upgrade" , "[throws_on_ws_upgrade]" )
 				.connection_state_listener( state_listener )
 				.request_handler(
 					[&endpoint_value, &ws_upgrade_failed]( auto req ){
-						endpoint_value = fmt::format( "{}",
+						endpoint_value = fmt::format(
+								RESTINIO_FMT_FORMAT_STRING( "{}" ),
 								restinio::fmtlib_tools::streamed(
 										req->remote_endpoint() ) );
 

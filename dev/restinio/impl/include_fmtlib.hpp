@@ -76,6 +76,14 @@ decltype(auto) streamed( T && v ) noexcept
 
 } /* namespace restinio */
 
+//FIXME: document this!
+
+#if defined(FMT_ENFORCE_COMPILE_STRING)
+	#define RESTINIO_FMT_FORMAT_STRING(s) FMT_STRING(s)
+#else
+	#define RESTINIO_FMT_FORMAT_STRING(s) s
+#endif
+
 #if defined(__GNUG__) || defined(__clang__)
 
 #pragma GCC diagnostic pop

@@ -96,7 +96,8 @@ TEST_CASE( "buffers on fmt::basic_memory_buffer<char,1>" ,
 {
 	fmt::basic_memory_buffer<char, 1u> fmt_buf;
 	fmt::format_to(
-			std::back_inserter(fmt_buf), "Hello, {}", "World!" );
+			std::back_inserter(fmt_buf),
+			RESTINIO_FMT_FORMAT_STRING( "Hello, {}" ), "World!" );
 
 	writable_item_t bs{ std::move( fmt_buf ) };
 	REQUIRE( writable_item_type_t::trivial_write_operation == bs.write_type() );

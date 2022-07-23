@@ -54,7 +54,10 @@ open_file( const char * file_path )
 	if( null_file_descriptor() == file_descriptor )
 	{
 		throw exception_t{
-			fmt::format( "unable to openfile '{}': error({})", file_path, GetLastError() ) };
+			fmt::format(
+					RESTINIO_FMT_FORMAT_STRING( "unable to openfile '{}': error({})" ),
+					file_path, GetLastError() )
+		};
 	}
 
 	return file_descriptor;
@@ -79,7 +82,11 @@ get_file_meta( file_descriptor_t fd )
 		else
 		{
 			throw exception_t{
-				fmt::format( "unable to get file size: error code:{}", GetLastError() ) };
+				fmt::format(
+						RESTINIO_FMT_FORMAT_STRING(
+							"unable to get file size: error code:{}" ),
+						GetLastError() )
+			};
 		}
 
 		FILETIME ftWrite;
@@ -107,8 +114,10 @@ get_file_meta( file_descriptor_t fd )
 		{
 			throw exception_t{
 				fmt::format( 
-					"unable to get file last modification: error code:{}", 
-					GetLastError() ) };
+					RESTINIO_FMT_FORMAT_STRING(
+						"unable to get file last modification: error code:{}" ),
+					GetLastError() )
+			};
 		}
 	}
 

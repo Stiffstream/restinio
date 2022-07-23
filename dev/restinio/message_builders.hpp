@@ -833,7 +833,7 @@ class response_builder_t< chunked_output_t > final
 			{
 				bufs.emplace_back(
 					fmt::format(
-						"{:X}\r\n",
+						RESTINIO_FMT_FORMAT_STRING( "{:X}\r\n" ),
 						asio_ns::buffer_size( chunk_it->buf() ) ) );
 				bufs.emplace_back( std::move( *chunk_it ) );
 
@@ -841,7 +841,7 @@ class response_builder_t< chunked_output_t > final
 				{
 					bufs.emplace_back(
 						fmt::format(
-							"\r\n{:X}\r\n",
+							RESTINIO_FMT_FORMAT_STRING( "\r\n{:X}\r\n" ),
 							asio_ns::buffer_size( chunk_it->buf() ) ) );
 					bufs.emplace_back( std::move( *chunk_it ) );
 				}

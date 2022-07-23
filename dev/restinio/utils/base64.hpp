@@ -255,12 +255,15 @@ throw_exception_on_invalid_base64_string( string_view_t str )
 	// in the error message.
 	if( str.size() > max_allowed_len )
 		throw exception_t{
-				fmt::format( "invalid base64 string that starts with '{}'",
+				fmt::format(
+						RESTINIO_FMT_FORMAT_STRING(
+							"invalid base64 string that starts with '{}'" ),
 						fmtlib_tools::streamed( str.substr( 0u, max_allowed_len ) ) )
 		};
 	else
 		throw exception_t{
-			fmt::format( "invalid base64 string '{}'",
+			fmt::format(
+					RESTINIO_FMT_FORMAT_STRING( "invalid base64 string '{}'" ),
 					fmtlib_tools::streamed( str ) ) };
 }
 

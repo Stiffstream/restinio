@@ -243,8 +243,10 @@ auto create_request_handler()
 				.append_header(
 					restinio::http_field::content_type,
 					"text/plain; charset=utf-8" )
-				.set_body( fmt::format( "Stats data for user #{}",
-						req->extra_data().m_auth_result.m_identity.m_id ) )
+				.set_body(
+						fmt::format(
+							RESTINIO_FMT_FORMAT_STRING( "Stats data for user #{}" ),
+							req->extra_data().m_auth_result.m_identity.m_id ) )
 				.done();
 
 			return restinio::request_accepted();
@@ -259,12 +261,13 @@ auto create_request_handler()
 					"text/html; charset=utf-8" )
 				.set_body(
 					fmt::format(
-						"<html>\r\n"
-						"  <head><title>Admin panel for user #{}</title></head>\r\n"
-						"  <body>\r\n"
-						"    <center><h1>NOT IMPLEMENTED YET</h1></center>\r\n"
-						"  </body>\r\n"
-						"</html>\r\n",
+						RESTINIO_FMT_FORMAT_STRING(
+							"<html>\r\n"
+							"  <head><title>Admin panel for user #{}</title></head>\r\n"
+							"  <body>\r\n"
+							"    <center><h1>NOT IMPLEMENTED YET</h1></center>\r\n"
+							"  </body>\r\n"
+							"</html>\r\n" ),
 						req->extra_data().m_auth_result.m_identity.m_id ) )
 				.done();
 

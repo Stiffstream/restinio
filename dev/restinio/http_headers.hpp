@@ -954,7 +954,8 @@ class http_header_fields_t
 
 			if( m_fields.end() == it )
 				throw exception_t{
-					fmt::format( "field '{}' doesn't exist",
+					fmt::format(
+							RESTINIO_FMT_FORMAT_STRING( "field '{}' doesn't exist" ),
 							fmtlib_tools::streamed( field_name ) ) };
 
 			return it->value();
@@ -989,8 +990,7 @@ class http_header_fields_t
 			if( http_field_t::field_unspecified == field_id )
 			{
 				throw exception_t{
-					fmt::format(
-						"unspecified fields cannot be searched by id" ) };
+						"unspecified fields cannot be searched by id" };
 			}
 
 			const auto it = cfind( field_id );
@@ -999,7 +999,7 @@ class http_header_fields_t
 			{
 				throw exception_t{
 					fmt::format(
-						"field '{}' doesn't exist",
+						RESTINIO_FMT_FORMAT_STRING( "field '{}' doesn't exist" ),
 						field_to_string( field_id ) ) };
 			}
 

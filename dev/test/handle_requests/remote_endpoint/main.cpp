@@ -32,7 +32,8 @@ TEST_CASE( "remote_endpoint extraction" , "[remote_endpoint]" )
 				.address( "127.0.0.1" )
 				.request_handler(
 					[&endpoint_value]( auto req ){
-						endpoint_value = fmt::format( "{}",
+						endpoint_value = fmt::format(
+								RESTINIO_FMT_FORMAT_STRING( "{}" ),
 								restinio::fmtlib_tools::streamed(
 										req->remote_endpoint() ) );
 
@@ -91,7 +92,8 @@ TEST_CASE( "remote_endpoint for WS" , "[remote_endpoint][ws]" )
 				.address( "127.0.0.1" )
 				.request_handler(
 					[&endpoint_value, &endpoint_value_ws]( auto req ){
-						endpoint_value = fmt::format( "{}",
+						endpoint_value = fmt::format(
+								RESTINIO_FMT_FORMAT_STRING( "{}" ),
 								restinio::fmtlib_tools::streamed(
 										req->remote_endpoint() ) );
 
@@ -108,7 +110,8 @@ TEST_CASE( "remote_endpoint for WS" , "[remote_endpoint][ws]" )
 											const rws::message_handle_t& ){} );
 
 
-								endpoint_value_ws = fmt::format( "{}",
+								endpoint_value_ws = fmt::format(
+										RESTINIO_FMT_FORMAT_STRING( "{}" ),
 										restinio::fmtlib_tools::streamed(
 												ws->remote_endpoint() ) );
 								
