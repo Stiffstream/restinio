@@ -17,6 +17,12 @@ MxxRu::Cpp::composite_target do
   default_runtime_mode( MxxRu::Cpp::RUNTIME_RELEASE )
   MxxRu::enable_show_brief
 
+  if ENV.has_key?( 'FMT_ENFORCE_COMPILE_STRING' )
+    global_define 'FMT_ENFORCE_COMPILE_STRING=1'
+  end
+
+#  global_define 'ASIO_USE_TS_EXECUTOR_AS_DEFAULT'
+
   if 'vc' == toolset.name
     global_compiler_option '/W3'
     global_define '_CRT_SECURE_NO_WARNINGS'
