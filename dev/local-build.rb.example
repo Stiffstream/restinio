@@ -1,5 +1,5 @@
 MxxRu::Cpp::composite_target do
-  default_cpp_std = 'cpp17'
+  default_cpp_std = 'cpp14'
   cpp_std = ENV.fetch( 'RESTINIO_CPP_STD', default_cpp_std )
 
   if 'cpp20' == cpp_std
