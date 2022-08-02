@@ -9,6 +9,9 @@ MxxRu::Cpp::composite_target {
 
 	required_prj( "test/metaprogramming/prj.ut.rb" )
 	required_prj( "test/tuple_algorithms/prj.ut.rb" )
+
+	required_prj( "test/utf8_checker/prj.ut.rb" )
+
 	required_prj( "test/http_field_parser/prj.ut.rb" )
 	required_prj( "test/try_parse_field/prj.ut.rb" )
 	required_prj( "test/multipart_body/prj.ut.rb" )

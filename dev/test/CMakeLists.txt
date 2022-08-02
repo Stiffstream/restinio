@@ -3,6 +3,9 @@ project(tests)
 add_subdirectory(catch_main)
 add_subdirectory(metaprogramming)
 add_subdirectory(tuple_algorithms)
+
+add_subdirectory(utf8_checker)
+
 add_subdirectory(http_field_parser)
 add_subdirectory(try_parse_field)
 add_subdirectory(multipart_body)

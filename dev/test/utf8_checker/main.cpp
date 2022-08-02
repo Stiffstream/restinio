@@ -319,5 +319,156 @@ TEST_CASE( "Additional sequences", "[utf-8][additional]" )
 	REQUIRE( !is_valid( make_from(
 			{ 0xfd, 0xbf, 0xbf, 0xbf, 0xbf }
 	) ) );
+
+	// All 10 invalid sequences from above concatenated.
+	REQUIRE( !is_valid( make_from(
+			{ 0xc0,
+			  0xe0, 0x80,
+			  0xf0, 0x80, 0x80,
+			  0xf8, 0x80, 0x80, 0x80,
+			  0xfc, 0x80, 0x80, 0x80, 0x80,
+			  0xdf,
+			  0xef, 0xbf,
+			  0xf7, 0xbf, 0xbf,
+			  0xfb, 0xbf, 0xbf, 0xbf,
+			  0xfd, 0xbf, 0xbf, 0xbf, 0xbf }
+	) ) );
+
+	// Impossible bytes.
+	REQUIRE( !is_valid( make_from(
+			{ ' ', 0xfe, ' ' }
+	) ) );
+	REQUIRE( !is_valid( make_from(
+			{ 0xc2, 0xfe }
+	) ) );
+	REQUIRE( !is_valid( make_from(
+			{ ' ', 0xff, ' ' }
+	) ) );
+	REQUIRE( !is_valid( make_from(
+			{ 0xc2, 0xff }
+	) ) );
+	REQUIRE( !is_valid( make_from(
+			{ ' ', 0xfe, 0xfe, 0xff, 0xff, ' ' }
+	) ) );
+}
+
+TEST_CASE( "Overlong sequences", "[utf-8][overlong]" )
+{
+	REQUIRE( !is_valid( make_from(
+			{ 0xc0, 0xaf }
+	) ) );
+	REQUIRE( !is_valid( make_from(
+			{ 0xe0, 0x80, 0xaf }
+	) ) );
+	REQUIRE( !is_valid( make_from(
+			{ 0xf0, 0x80, 0x80, 0xaf }
+	) ) );
+	REQUIRE( !is_valid( make_from(
+			{ 0xf8, 0x80, 0x80, 0x80, 0xaf }
+	) ) );
+	REQUIRE( !is_valid( make_from(
+			{ 0xfc, 0x80, 0x80, 0x80, 0x80, 0xaf }
+	) ) );
+
+	REQUIRE( !is_valid( make_from(
+			{ 0xc1, 0xbf }
+	) ) );
+	REQUIRE( !is_valid( make_from(
+			{ 0xe0, 0x9f, 0xbf }
+	) ) );
+	REQUIRE( !is_valid( make_from(
+			{ 0xf0, 0x8f, 0xbf, 0xbf }
+	) ) );
+	REQUIRE( !is_valid( make_from(
+			{ 0xf8, 0x87, 0xbf, 0xbf, 0xbf }
+	) ) );
+	REQUIRE( !is_valid( make_from(
+			{ 0xfc, 0x83, 0xbf, 0xbf, 0xbf, 0xbf }
+	) ) );
+
+	REQUIRE( !is_valid( make_from(
+			{ 0xc0, 0x80 }
+	) ) );
+	REQUIRE( !is_valid( make_from(
+			{ 0xe0, 0x80, 0x80 }
+	) ) );
+	REQUIRE( !is_valid( make_from(
+			{ 0xf0, 0x80, 0x80, 0x80 }
+	) ) );
+	REQUIRE( !is_valid( make_from(
+			{ 0xf8, 0x80, 0x80, 0x80, 0x80 }
+	) ) );
+	REQUIRE( !is_valid( make_from(
+			{ 0xfc, 0x80, 0x80, 0x80, 0x80, 0x80 }
+	) ) );
+
+}
+
+TEST_CASE( "Illegal code positions", "[utf-8][illegal-positions]" )
+{
+	// Single UTF-16 surrogates.
+	//
+	// U+D800
+	REQUIRE( !is_valid( make_from(
+			{ 0xed, 0xa0, 0x80 }
+	) ) );
+	// U+DB7F
+	REQUIRE( !is_valid( make_from(
+			{ 0xed, 0xad, 0xbf }
+	) ) );
+	// U+DB80
+	REQUIRE( !is_valid( make_from(
+			{ 0xed, 0xae, 0x80 }
+	) ) );
+	// U+DBFF
+	REQUIRE( !is_valid( make_from(
+			{ 0xed, 0xaf, 0xbf }
+	) ) );
+	// U+DC00
+	REQUIRE( !is_valid( make_from(
+			{ 0xed, 0xb0, 0x80 }
+	) ) );
+	// U+DF80
+	REQUIRE( !is_valid( make_from(
+			{ 0xed, 0xbe, 0x80 }
+	) ) );
+	// U+DFFF
+	REQUIRE( !is_valid( make_from(
+			{ 0xed, 0xbf, 0xbf }
+	) ) );
+
+	// Paired UTF-16 surrogates
+	// U+DB800 U+DC00
+	REQUIRE( !is_valid( make_from(
+			{ 0xed, 0xa0, 0x80, 0xed, 0xb0, 0x80 }
+	) ) );
+	// U+D800 U+DFFF
+	REQUIRE( !is_valid( make_from(
+			{ 0xed, 0xa0, 0x80, 0xed, 0xbf, 0xbf }
+	) ) );
+	// U+DB7F U+DC00
+	REQUIRE( !is_valid( make_from(
+			{ 0xed, 0xad, 0xbf, 0xed, 0xb0, 0x80 }
+	) ) );
+	// U+DB7F U+DFFF
+	REQUIRE( !is_valid( make_from(
+			{ 0xed, 0xad, 0xbf, 0xed, 0xbf, 0xbf }
+	) ) );
+	// U+DB80 U+DC00
+	REQUIRE( !is_valid( make_from(
+			{ 0xed, 0xae, 0x80, 0xed, 0xb0, 0x80 }
+	) ) );
+	// U+DB80 U+DFFF
+	REQUIRE( !is_valid( make_from(
+			{ 0xed, 0xae, 0x80, 0xed, 0xbf, 0xbf }
+	) ) );
+	// U+DBFF U+DC00
+	REQUIRE( !is_valid( make_from(
+			{ 0xed, 0xaf, 0xbf, 0xed, 0xb0, 0x80 }
+	) ) );
+	// U+DBFF U+DFFF
+	REQUIRE( !is_valid( make_from(
+			{ 0xed, 0xaf, 0xbf, 0xed, 0xbf, 0xbf }
+	) ) );
 }
 
