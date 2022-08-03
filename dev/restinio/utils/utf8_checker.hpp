@@ -172,19 +172,8 @@ private:
 			{
 				m_state = state_t::overlong;
 			}
-			else if( byte == 0xE0 )
-			{
-				m_state = state_t::may_be_overlong;
-			}
-			else if( byte == 0xF0 )
-			{
-				m_state = state_t::may_be_overlong;
-			}
-			if( byte == 0xF8 )
-			{
-				m_state = state_t::may_be_overlong;
-			}
-			if( byte == 0xFC )
+			else if( byte == 0xE0 || byte == 0xF0
+					|| byte == 0xF8 || byte == 0xFC )
 			{
 				m_state = state_t::may_be_overlong;
 			}
