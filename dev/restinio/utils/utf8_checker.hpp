@@ -463,20 +463,6 @@ class utf8_checker3_t
 	state_t m_state{ state_t::wait_first_byte };
 
 	void
-	ensure_valid_result_value() noexcept
-	{
-		if( (m_current_symbol >= 0xD800 && m_current_symbol <= 0xDFFF) ||
-			(m_current_symbol >= 0x110000) )
-		{
-			m_state = state_t::invalid;
-		}
-		else
-		{
-			m_state = state_t::wait_first_byte;
-		}
-	}
-
-	void
 	on_first_byte( std::uint8_t byte ) noexcept
 	{
 		if( byte <= 0x7Fu )
@@ -532,7 +518,10 @@ class utf8_checker3_t
 				m_state = state_t::invalid;
 			}
 			else
-				ensure_valid_result_value();
+				// Three is no need to check the result value against
+				// invalid ranges (0xD800..0xDFFF and 0x110000..)
+				// because two bytes only represents 0x0080..0x07FF.
+				m_state = state_t::wait_first_byte;
 		}
 		else
 		{
@@ -588,7 +577,13 @@ class utf8_checker3_t
 				m_state = state_t::invalid;
 			}
 			else
-				ensure_valid_result_value();
+			{
+				// It's necessary to check illigal points 0xD800..0xDFFF.
+				if( m_current_symbol >= 0xD800 && m_current_symbol <= 0xDFFF )
+					m_state = state_t::invalid;
+				else
+					m_state = state_t::wait_first_byte;
+			}
 		}
 		else
 		{
@@ -628,7 +623,15 @@ class utf8_checker3_t
 				m_state = state_t::invalid;
 			}
 			else
-				ensure_valid_result_value();
+			{
+				// It's necessary to check for values above 0x10FFFF.
+				// There is no need to check 0xD800..0xDFFF range because
+				// it was already handled by overlong check.
+				if( m_current_symbol >= 0x110000 )
+					m_state = state_t::invalid;
+				else
+					m_state = state_t::wait_first_byte;
+			}
 		}
 		else
 		{
