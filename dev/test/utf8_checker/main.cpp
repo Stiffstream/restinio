@@ -28,7 +28,7 @@ make_from( std::initializer_list<int> values )
 bool
 is_valid( const std::string & what )
 {
-	restinio::utils::utf8_checker3_t checker;
+	restinio::utils::utf8_checker_t checker;
 
 	for( auto ch : what )
 	{
