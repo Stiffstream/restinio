@@ -76,7 +76,15 @@ decltype(auto) streamed( T && v ) noexcept
 
 } /* namespace restinio */
 
-//FIXME: document this!
+/*
+ * NOTE: if RESTinio is used in project compiled with
+ * FMT_ENFORCE_COMPILE_STRING then a format_string for fmt::format
+ * and fmt::print function has to be specified via FMT_STRING macro.
+ *
+ * To cope with this a new macro RESTINIO_FMT_FORMAT_STRING(s) was
+ * introduced in v.0.6.17. It's expanded into FMT_STRING(s) if
+ * FMT_ENFORCE_COMPILE_STRING is set, otherwise it's just s.
+ */
 
 #if defined(FMT_ENFORCE_COMPILE_STRING)
 	#define RESTINIO_FMT_FORMAT_STRING(s) FMT_STRING(s)
