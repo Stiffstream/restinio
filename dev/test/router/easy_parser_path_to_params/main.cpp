@@ -209,7 +209,8 @@ tc_two_parameters()
 	router.add_handler(
 		restinio::http_method_get(),
 		epr::path_to_params( "/api/v1/books/", id_p, "/versions/", id_p ),
-		[&]( const auto &, auto book_id, auto ver_id ){
+//		[&]( const auto &, auto book_id, auto ver_id ){
+		[&]( const restinio::request_handle_t &, auto book_id, auto ver_id ){
 			REQUIRE( 123 == book_id );
 			REQUIRE( 4386 == ver_id );
 

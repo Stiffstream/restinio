@@ -107,6 +107,9 @@ class actual_router_entry_t : public router_entry_t< Extra_Data >
 {
 	//FIXME: compatibility between Extra_Data and Handler should be
 	//checked by static_assert. If it's possible.
+	static_assert(
+			Producer::template handler_checker_metafunc<Handler, Extra_Data>::value,
+			"Handler should be callable with generic_request_handle_t<Extra_Data>" );
 
 	//! HTTP method to match.
 	restinio::router::impl::buffered_matcher_holder_t m_method_matcher;
@@ -410,7 +413,7 @@ struct one_clause_type_processor<T, true, Current_Index>
 // Takes a type-list of user-specified types From and produces a
 // typelist of actual clauses types To.
 //
-// The Current_Index should 0 at the first invocation.
+// The Current_Index should be 0 at the first invocation.
 template< typename From, typename To, std::size_t Current_Index >
 struct clauses_type_maker;
 
@@ -525,6 +528,32 @@ struct dsl_processor
 	using clauses_tuple = dsl_details::make_clauses_types_t< arg_types >;
 };
 
+//FIXME: document this!
+template<
+	typename Handler,
+	typename Extra_Data,
+	typename Tuple,
+	typename = restinio::utils::metaprogramming::void_t<> >
+struct is_valid_handler_for_extra_data_1 : public std::false_type {};
+
+template<
+		typename Handler,
+		typename Extra_Data,
+		typename Tuple >
+struct is_valid_handler_for_extra_data_1<
+		Handler,
+		Extra_Data,
+		Tuple,
+		restinio::utils::metaprogramming::void_t<
+			decltype(
+				std::declval<Handler &>()(
+					std::declval<const generic_request_handle_t<Extra_Data> &>(),
+					std::declval<Tuple &>()
+				)
+			)
+		>
+	> : public std::true_type {};
+
 //
 // path_to_tuple_producer_t
 //
@@ -546,6 +575,12 @@ class path_to_tuple_producer_t
 
 public:
 	using base_type_t::base_type_t;
+
+	template< typename Handler, typename Extra_Data >
+	using handler_checker_metafunc = is_valid_handler_for_extra_data_1<
+			Handler,
+			Extra_Data,
+			typename base_type_t::result_type >;
 
 	template< typename Extra_Data, typename Handler >
 	RESTINIO_NODISCARD
@@ -607,6 +642,43 @@ call_with_tuple(
 
 } /* namespace path_to_params_details */
 
+//FIXME: document this!
+template<
+	typename Handler,
+	typename Extra_Data,
+	typename Tuple,
+	typename = restinio::utils::metaprogramming::void_t<> >
+struct is_valid_handler_for_extra_data_2 : public std::false_type {};
+
+template<
+		typename Handler,
+		typename Extra_Data,
+		typename Tuple >
+struct is_valid_handler_for_extra_data_2<
+		Handler,
+		Extra_Data,
+		Tuple,
+		restinio::utils::metaprogramming::void_t<
+#if 0
+			decltype(
+				path_to_params_details::call_with_tuple_impl(
+					std::declval<Handler &>(),
+					std::declval<const generic_request_handle_t<Extra_Data> &>(),
+					std::declval<Tuple &>(),
+					std::make_index_sequence< std::tuple_size< Tuple >::value >{}
+				)
+			)
+#endif
+			decltype(
+				path_to_params_details::call_with_tuple(
+					std::declval<Handler &>(),
+					std::declval<const generic_request_handle_t<Extra_Data> &>(),
+					std::declval<Tuple &>()
+				)
+			)
+		>
+	> : public std::true_type {};
+
 //
 // path_to_params_producer_t
 //
@@ -629,6 +701,12 @@ class path_to_params_producer_t
 
 public:
 	using base_type_t::base_type_t;
+
+	template< typename Handler, typename Extra_Data >
+	using handler_checker_metafunc = is_valid_handler_for_extra_data_2<
+			Handler,
+			Extra_Data,
+			typename base_type_t::result_type >;
 
 	template< typename User_Type, typename Handler >
 	RESTINIO_NODISCARD
