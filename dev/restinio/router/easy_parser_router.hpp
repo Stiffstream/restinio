@@ -105,9 +105,6 @@ using router_entry_unique_ptr_t =
 template< typename Extra_Data, typename Producer, typename Handler >
 class actual_router_entry_t : public router_entry_t< Extra_Data >
 {
-	//FIXME: compatibility between Extra_Data and Handler should be
-	//checked by static_assert. If it's possible.
-
 	//! HTTP method to match.
 	restinio::router::impl::buffered_matcher_holder_t m_method_matcher;
 
@@ -410,7 +407,7 @@ struct one_clause_type_processor<T, true, Current_Index>
 // Takes a type-list of user-specified types From and produces a
 // typelist of actual clauses types To.
 //
-// The Current_Index should 0 at the first invocation.
+// The Current_Index should be 0 at the first invocation.
 template< typename From, typename To, std::size_t Current_Index >
 struct clauses_type_maker;
 
@@ -648,7 +645,7 @@ using namespace restinio::easy_parser;
 
 //
 // path_to_tuple
-// 
+//
 /*!
  * @brief Describe a route for a handler that accepts params from the
  * route in form of a tuple.
