@@ -265,6 +265,32 @@ TEST_CASE( "ordinary connection" , "[ordinary_connection]" )
 	REQUIRE( 0 == state_listener->m_upgraded_to_websocket.load() );
 }
 
+// eao197: helper function to simpilfy the code of
+// "remote_endpoint for WS" unit-test.
+// Otherwise we'll get an error on clang-14 with
+// c++20 and FMT_ENFORCE_COMPILE_STRING=1.
+template< class Traits >
+void
+do_upgrade_attempt(
+	restinio::request_handle_t & req,
+	std::string & endpoint_value_ws_receiver )
+{
+	namespace rws = restinio::websocket::basic;
+	auto ws =
+		rws::upgrade< Traits >(
+			*req,
+			rws::activation_t::immediate,
+			[]( const rws::ws_handle_t&,
+				const rws::message_handle_t& ){} );
+
+	endpoint_value_ws_receiver = fmt::format(
+			RESTINIO_FMT_FORMAT_STRING( "{}" ),
+			restinio::fmtlib_tools::streamed(
+					ws->remote_endpoint() ) );
+	
+	ws->kill();
+}
+
 TEST_CASE( "connection state for WS" , "[connection_state][ws]" )
 {
 	std::string endpoint_value;
@@ -299,22 +325,9 @@ TEST_CASE( "connection state for WS" , "[connection_state][ws]" )
 						{
 							try
 							{
-								namespace rws = restinio::websocket::basic;
-								auto ws =
-									rws::upgrade< test_traits >(
-										*req,
-										rws::activation_t::immediate,
-										[]( rws::ws_handle_t,
-											rws::message_handle_t ){} );
+								do_upgrade_attempt< test_traits >(
+										req, endpoint_value_ws );
 
-
-								endpoint_value_ws = fmt::format(
-										RESTINIO_FMT_FORMAT_STRING( "{}" ),
-										restinio::fmtlib_tools::streamed(
-												ws->remote_endpoint() ) );
-
-								ws->kill();
-								
 								return restinio::request_accepted();
 							}
 							catch( const std::exception & ex )

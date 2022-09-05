@@ -70,6 +70,31 @@ TEST_CASE( "remote_endpoint extraction" , "[remote_endpoint]" )
 	REQUIRE( !endpoint_value.empty() );
 }
 
+// eao197: helper function to simpilfy the code of
+// "remote_endpoint for WS" unit-test.
+// Otherwise we'll get an error on clang-14 with
+// c++20 and FMT_ENFORCE_COMPILE_STRING=1.
+template< class Traits >
+void
+do_upgrade_attempt(
+	restinio::request_handle_t & req,
+	std::string & endpoint_value_ws_receiver )
+{
+	namespace rws = restinio::websocket::basic;
+	auto ws =
+		rws::upgrade< Traits >(
+			*req,
+			rws::activation_t::immediate,
+			[]( const rws::ws_handle_t&,
+				const rws::message_handle_t& ){} );
+
+	endpoint_value_ws_receiver = fmt::format(
+			RESTINIO_FMT_FORMAT_STRING( "{}" ),
+			restinio::fmtlib_tools::streamed(
+					ws->remote_endpoint() ) );
+	
+	ws->kill();
+}
 
 TEST_CASE( "remote_endpoint for WS" , "[remote_endpoint][ws]" )
 {
@@ -101,21 +126,8 @@ TEST_CASE( "remote_endpoint for WS" , "[remote_endpoint][ws]" )
 						{
 							try
 							{
-								namespace rws = restinio::websocket::basic;
-								auto ws =
-									rws::upgrade< traits_t >(
-										*req,
-										rws::activation_t::immediate,
-										[]( const rws::ws_handle_t&,
-											const rws::message_handle_t& ){} );
-
-
-								endpoint_value_ws = fmt::format(
-										RESTINIO_FMT_FORMAT_STRING( "{}" ),
-										restinio::fmtlib_tools::streamed(
-												ws->remote_endpoint() ) );
-								
-								ws->kill();
+								do_upgrade_attempt< traits_t >(
+										req, endpoint_value_ws );
 
 								return restinio::request_accepted();
 							}
@@ -125,6 +137,7 @@ TEST_CASE( "remote_endpoint for WS" , "[remote_endpoint][ws]" )
 									<< ex.what() << std::endl;
 							}
 						}
+
 						return restinio::request_rejected();
 					} );
 		} };
@@ -152,3 +165,4 @@ TEST_CASE( "remote_endpoint for WS" , "[remote_endpoint][ws]" )
 	REQUIRE( !endpoint_value.empty() );
 	REQUIRE( endpoint_value == endpoint_value_ws );
 }
+

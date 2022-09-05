@@ -39,7 +39,7 @@ MxxRu::arch_externals :nodejs_http_parser_mxxru do |e|
 end
 
 MxxRu::arch_externals :fmt do |e|
-  e.url 'https://github.com/fmtlib/fmt/archive/9.0.0.zip'
+  e.url 'https://github.com/fmtlib/fmt/archive/9.1.0.zip'
 #  e.url 'https://github.com/fmtlib/fmt/archive/8.1.1.zip'
 #  e.url 'https://github.com/fmtlib/fmt/archive/7.1.3.zip'
 

@@ -65,6 +65,31 @@ init_resp( RESP resp )
 namespace rr = restinio::router;
 using router_t = rr::express_router_t<>;
 
+std::string make_no_restrictions_body( const std::string & user )
+{
+	return fmt::format(
+			RESTINIO_FMT_FORMAT_STRING(
+					"There is no any restrictions for user '{}' "
+					"on that resource\n" ),
+			user );
+}
+
+std::string make_user_has_access_body( const std::string & user )
+{
+	return fmt::format(
+			RESTINIO_FMT_FORMAT_STRING(
+					"User '{}' have access to limited resource\n" ),
+			user );
+}
+
+std::string make_user_has_no_access_body( const std::string & user )
+{
+	return fmt::format(
+			RESTINIO_FMT_FORMAT_STRING(
+					"User '{}' haven't access to limited resource\n" ),
+			user );
+}
+
 auto server_handler( const user_connections_shptr_t& user_connections )
 {
 	auto router = std::make_unique< router_t >();
@@ -90,11 +115,8 @@ auto server_handler( const user_connections_shptr_t& user_connections )
 							restinio::http_field::content_type,
 							"text/plain; charset=utf-8" )
 					.set_body(
-							fmt::format(
-								RESTINIO_FMT_FORMAT_STRING(
-									"There is no any restrictions "
-											"for user '{}' on that resource\n" ),
-								user_connections->query( req->connection_id() ) ) )
+							make_no_restrictions_body(
+									user_connections->query( req->connection_id() ) ) )
 					.done();
 
 				return restinio::request_accepted();
@@ -110,17 +132,9 @@ auto server_handler( const user_connections_shptr_t& user_connections )
 
 				const auto & user = user_connections->query( req->connection_id() );
 				if( "alice" == user )
-					resp.set_body(
-							fmt::format(
-									RESTINIO_FMT_FORMAT_STRING(
-											"User '{}' have access to limited resource\n" ),
-									user ) );
+					resp.set_body( make_user_has_access_body( user ) );
 				else
-					resp.set_body(
-							fmt::format(
-									RESTINIO_FMT_FORMAT_STRING(
-											"User '{}' haven't access to limited resource\n" ),
-									user ) );
+					resp.set_body( make_user_has_no_access_body( user ) );
 
 				resp.done();
 
