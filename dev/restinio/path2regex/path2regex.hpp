@@ -32,29 +32,6 @@ namespace impl
 {
 
 //
-// escape_group()
-//
-
-//! Escapes not allowed symbols in a sub-match group assigned to a parameter.
-inline auto
-escape_group( const std::string & group )
-{
-	std::string result;
-	result.reserve( group.size() + group.size() / 2 );
-
-	for( const char c : group )
-	{
-		if( '=' == c || '!' == c || ':' == c ||
-			'$' == c || '/' == c || '(' == c || ')' == c )
-			result+= '\\';
-
-		result+= c;
-	}
-
-	return result;
-}
-
-//
 // escape_string()
 //
 
@@ -69,10 +46,10 @@ escape_string( const std::string & group )
 	{
 		if( '.' == c || '+' == c || '*' == c ||
 			'?' == c || '=' == c || '^' == c ||
-			':' == c || '$' == c || '{' == c ||
-			'}' == c || '(' == c || ')' == c ||
-			'[' == c || ']' == c || '|' == c ||
-			'\\' == c || '/' == c )
+			'!' == c || ':' == c || '$' == c ||
+			'{' == c || '}' == c || '(' == c ||
+			')' == c || '[' == c || ']' == c ||
+			'|' == c || '\\' == c || '/' == c )
 			result+= '\\';
 
 		result+= c;
@@ -147,7 +124,24 @@ class options_t
 		{
 			return m_ending;
 		}
+		options_t &
+		starting( bool p ) &
+		{
+			m_starting = p;
+			return *this;
+		}
 
+		options_t &&
+		starting( bool p ) &&
+		{
+			return std::move( this->starting( p ) );
+		}
+
+		bool
+		starting() const
+		{
+			return m_starting;
+		}
 		options_t &
 		delimiter( std::string p ) &
 		{
@@ -179,22 +173,22 @@ class options_t
 		}
 
 		options_t &
-		delimiters( std::string p ) &
+		prefixes( std::string p ) &
 		{
-			m_delimiters = std::move( p );
+			m_prefixes = std::move( p );
 			return *this;
 		}
 
 		options_t &&
-		delimiters( std::string p ) &&
+		prefixes( std::string p ) &&
 		{
-			return std::move( this->delimiters( std::move( p ) ) );
+			return std::move( this->prefixes( std::move( p ) ) );
 		}
 
 		const std::string &
-		delimiters() const
+		prefixes() const
 		{
-			return m_delimiters;
+			return m_prefixes;
 		}
 
 		options_t &
@@ -220,15 +214,20 @@ class options_t
 		make_ends_with() const
 		{
 			std::string result;
+			if (m_ends_with.size() >= 1) {
+				result += "[";
+				}
 
 			for( const auto & e : m_ends_with )
 			{
 				if( !e.empty() )
 				{
-					result += impl::escape_string( e ) + "|";
+					result += impl::escape_string( e );
 				}
 			}
-
+				if (m_ends_with.size() >= 1) {
+					result += "]|";
+					}
 			result += "$";
 
 			return result;
@@ -241,16 +240,19 @@ class options_t
 		//! When false the trailing slash is optional.
 		bool m_strict{ false };
 
-		//! When false the path will match at the beginning.
+		//! When true the regexp will match to the end of the string.
 		bool m_ending{ true };
 
-		//! Path delimiter.
-		std::string m_delimiter{ "/" };
+	//! When false the path will match at the beginning.
+		bool m_starting{ true };
 
-		//! Path delimiters.
-		std::string m_delimiters{ "./" };
+		//! End delimiter.
+		std::string m_delimiter{ "/#?" };
 
-		//! Path delimiter.
+		//! List of characters to automatically consider prefixes when parsing.
+		std::string m_prefixes{ "./" };
+
+		//! End delimiter.
 		std::vector< std::string > m_ends_with;
 };
 
@@ -329,7 +331,7 @@ class string_view_buffer_storage_appender_t final
 				// This actually should never happen,
 				// because buffer is set to the size
 				// of a whole route-path that itself contains all the names.
-				throw exception_t{ "unable to insert data into names buffer" };
+				throw exception_t( "unable to insert data into names buffer" );
 			}
 
 			// Remember where previous names finishes.
@@ -351,10 +353,6 @@ class string_view_buffer_storage_appender_t final
 };
 
 using names_buffer_appender_t = string_view_buffer_storage_appender_t< std::string >;
-
-//! The main path matching expression.
-constexpr auto path_regex_str =
-	R"((\\.)|(?:\:(\w+)(?:\(((?:\\.|[^\\()])+)\))?|\(((?:\\.|[^\\()])+)\))([+*?])?)";
 
 enum class token_type_t : std::uint8_t
 {
@@ -421,9 +419,9 @@ class plain_string_token_t final : public token_t< Route_Param_Appender >
 		}
 
 		virtual bool
-		is_end_delimited( const std::string & delimiters ) const noexcept override
+		is_end_delimited( const std::string & prefixes ) const noexcept override
 		{
-			return std::string::npos != delimiters.find( m_last_char );
+			return std::string::npos != prefixes.find( m_last_char );
 		}
 
 	private:
@@ -455,51 +453,76 @@ class parameter_token_t final : public token_t< Route_Param_Appender >
 		parameter_token_t(
 			Name name,
 			const std::string & prefix,
-			std::string delimiter,
-			bool optional,
-			bool repeat,
-			bool partial,
-			std::string pattern )
+			const std::string & suffix,
+			const std::string & pattern,
+			const std::string & modifier
+			 )
 			:	m_name{ std::move( name ) }
 			,	m_escaped_prefix{ escape_string( prefix ) }
-			,	m_delimiter{ std::move( delimiter ) }
-			,	m_optional{ optional }
-			,	m_repeat{ repeat }
-			,	m_partial{ partial }
+			,	m_escaped_suffix{ escape_string( suffix ) }
 			,	m_pattern{ std::move( pattern ) }
+			,	m_modifier{ std::move( modifier ) }
 		{}
-
+	// optional() is apparently not used anymore in tokens2regexp; but I left it, in case that changes at some point.
+		bool optional() const {
+			return (m_modifier == "*" || m_modifier == "?");
+		}
+		bool repeat() const {
+			return (m_modifier == "*" || m_modifier == "+");
+		}
 		virtual token_type_t
 		append_self_to(
 			std::string & route,
 			param_appender_sequence_t< Route_Param_Appender > & param_appender_sequence,
 			names_buffer_appender_t & names_buffer_appender ) const override
 		{
-			// Basic capturing pattern.
-			auto capture = "(?:" + m_pattern + ")";
+			std::string capture{};
+			if( !m_pattern.empty() )
+			{
+				if ( !m_escaped_prefix.empty() || !m_escaped_suffix.empty() ) {
 
-			if( m_repeat )
-			{
-				// Add * as the parameter can be repeeated.
-				capture += "(?:" + m_escaped_prefix + capture + ")*";
-			}
-
-			if( m_optional )
-			{
-				// Optional param goes in ()?.
-				if( !m_partial )
-				{
-					capture = "(?:" + m_escaped_prefix + "(" + capture + "))?";
+					if( repeat() )
+					{
+						const std::string mod{m_modifier == "*" ? "?" : ""};
+						// Add * as the parameter can be repeeated.
+						capture += fmt::format(
+							RESTINIO_FMT_FORMAT_STRING(
+								"(?:{}((?:{})(?:{}{}(?:{}))*){}){}"
+							 ),
+							m_escaped_prefix, m_pattern, m_escaped_suffix, m_escaped_prefix, m_pattern, m_escaped_suffix, mod
+						);
+					} else {
+						capture += fmt::format(
+							RESTINIO_FMT_FORMAT_STRING(
+								"(?:{}({}){}){}"
+							 ),
+							m_escaped_prefix, m_pattern, m_escaped_suffix, m_modifier
+						);
+					}
+				} else {
+					if ( repeat() ) {
+						capture += fmt::format(
+							RESTINIO_FMT_FORMAT_STRING(
+								"((?:{}){})"
+							 ),
+							m_pattern, m_modifier
+						);
+					} else {
+						capture += fmt::format(
+							RESTINIO_FMT_FORMAT_STRING(
+								"({}){}"
+							 ),
+							m_pattern, m_modifier
+						);
+					}
 				}
-				else
-				{
-					capture = m_escaped_prefix + "(" + capture + ")?";
-				}
-			}
-			else
-			{
-				// Mandatory param goes in ().
-				capture = m_escaped_prefix + "(" + capture + ")";
+			} else {
+				capture += fmt::format(
+					RESTINIO_FMT_FORMAT_STRING(
+						"(?:{}{}){}"
+					 ),
+					m_escaped_prefix, m_escaped_suffix, m_modifier
+				);
 			}
 
 			route += capture;
@@ -514,11 +537,10 @@ class parameter_token_t final : public token_t< Route_Param_Appender >
 	private:
 		const Name m_name;
 		const std::string m_escaped_prefix;
+		const std::string m_escaped_suffix;
 		const std::string m_delimiter;
-		const bool m_optional;
-		const bool m_repeat;
-		const bool m_partial;
 		const std::string m_pattern;
+		const std::string m_modifier;
 };
 
 //
@@ -531,20 +553,16 @@ inline token_unique_ptr_t< Route_Param_Appender >
 create_token(
 	Name name,
 	std::string prefix,
-	std::string delimiter,
-	bool optional,
-	bool repeat,
-	bool partial,
-	std::string pattern )
+	std::string suffix,
+	std::string pattern,
+	std::string modifier )
 {
 	return std::make_unique< parameter_token_t< Route_Param_Appender, Name > >(
 		std::move( name ),
 		std::move( prefix ),
-		std::move( delimiter ),
-		optional,
-		repeat,
-		partial,
-		std::move( pattern ) );
+		std::move( suffix ),
+		std::move( pattern ),
+		std::move( modifier ) );
 }
 
 //! Indexes for different groups in matched result
@@ -557,115 +575,183 @@ constexpr std::size_t group_group_idx = 4;
 constexpr std::size_t group_modifier_idx = 5;
 //! \}
 
-//! Checks that string doesn't contain non-excaped brackets
-inline std::string
-check_no_unescaped_brackets( string_view_t strv, std::size_t base_pos )
-{
-	auto pos = strv.find( '(' );
-	if( std::string::npos != pos )
-	{
-		throw exception_t{
-			fmt::format(
-				RESTINIO_FMT_FORMAT_STRING(
-					"non-escaped bracket '(' at pos {}: may be unmatched group start" ),
-				base_pos + pos ) };
-	}
+enum class lextoken_type_t : std::uint8_t {
+	open,
+	close,
+	pattern,
+	name,
+	char_t,
+	escaped_char,
+	modifier,
+	end
+};
 
-	pos = strv.find( ')' );
-	if( std::string::npos != pos )
-	{
-		throw exception_t{
-			fmt::format(
-				RESTINIO_FMT_FORMAT_STRING(
-					"non-escaped bracket ')' at pos {}: may be unmatched group finish" ),
-				base_pos + pos ) };
-	}
+struct lextoken_t {
+	lextoken_t(std::string& _val, std::size_t _index, lextoken_type_t _type):
+		value(std::move(_val)), index(_index), type(_type) {};
+	lextoken_t(const char* _val, std::size_t _index, lextoken_type_t _type):
+		value({_val, 1}), index(_index), type(_type) {};
 
-	return std::string{ strv.data(), strv.size() };
+	std::string value;
+	size_t index;
+	lextoken_type_t type;
+};
+
+inline const std::string print_type(const lextoken_type_t& _type) {
+	std::string result;
+	switch (_type) {
+		case lextoken_type_t::open:
+			result = "open";
+			break;
+		case lextoken_type_t::close:
+			result = "close";
+			break;
+		case lextoken_type_t::pattern:
+			result = "pattern";
+			break;
+		case lextoken_type_t::name:
+			result = "name";
+			break;
+		case lextoken_type_t::char_t:
+			result = "char_t";
+			break;
+		case lextoken_type_t::escaped_char:
+			result = "escaped_char";
+			break;
+		case lextoken_type_t::modifier:
+			result = "modifier";
+			break;
+		case lextoken_type_t::end:
+			result = "end";
+			break;
+		default:
+			throw exception_t( "Invalid lextoken_type" );
+	}
+	return result;
+};
+
+using lextokens_t = std::vector<lextoken_t>;
+
+inline lextokens_t lexer (string_view_t str) {
+	lextokens_t tokens;
+	for (string_view_t::const_iterator c = str.begin(); c != str.end();) {
+		assert ( c >= str.data() );
+		std::size_t _index = static_cast<size_t>(c - str.data());
+		if (*c == '*' || *c == '+' || *c == '?') {
+			tokens.emplace_back(lextoken_t(c, _index, lextoken_type_t::modifier));
+			std::advance(c,1);
+			continue;
+		}
+		if (*c == '\\') {
+			std::advance(c,1);
+			tokens.emplace_back(lextoken_t(c, _index + 1, lextoken_type_t::escaped_char));
+			std::advance(c,1);
+			continue;
+		}
+		if (*c == '{') {
+			tokens.emplace_back(lextoken_t(c, _index, lextoken_type_t::open));
+			std::advance(c,1);
+			continue;
+		}
+		if (*c == '}') {
+			tokens.emplace_back(lextoken_t(c, _index, lextoken_type_t::close));
+			std::advance(c,1);
+			continue;
+		}
+		if (*c == ':') {
+			std::string groupName;
+			std::size_t j = _index + 1;
+			while (j < str.size()) {
+				unsigned code = static_cast<unsigned>(str.at(j));
+				if ((code >= 48 && code <= 57) || ///< '0-9'
+					(code >= 65 && code <= 90) || ///< 'A-Z'
+					(code >= 97 && code <= 122) || ///< 'a-z'
+					(code == 95)) { ///< '_'
+						groupName += str.at(j);
+						j++;
+						continue;
+					}
+				break;
+			}
+			if (groupName.empty())
+				throw exception_t("Missing parameter name at: " + std::to_string(_index));
+	
+			tokens.emplace_back(lextoken_t(groupName, _index, lextoken_type_t::name));
+			std::advance(c, j - _index);
+			continue;
+		}
+		if (*c == '(') {
+			std::string pattern;
+			std::size_t count = 1;
+			std::size_t j = _index + 1;
+			if (str.at(j) == '?')
+				throw exception_t("Pattern cannot start with '?' at pos " + std::to_string(j));
+			while (j < str.size()) {
+				if (str.at(j) == '\\') {
+					pattern += {str.at(j), str.at(j + 1)}; // string_view_lite doesn't let us use substr() to do this.
+					j+=2;
+					continue;
+				}
+				if (str.at(j) == ')') {
+					count--;
+					if (count == 0) {
+						j++;
+						break;
+					}
+				}
+				else if (str.at(j) == '(') {
+					count++;
+					if (str.at(j + 1) != '?')
+						throw exception_t("Capturing groups are not allowed at pos " + std::to_string(j));
+				}
+				pattern += str.at(j++);
+			}
+			if (count != 0)
+				throw exception_t("Unbalanced pattern at pos " + std::to_string(_index) +":");
+			if (pattern.empty())
+				throw exception_t("Missing pattern at pos " + std::to_string(_index));
+			
+			tokens.emplace_back(lextoken_t(pattern, _index, lextoken_type_t::pattern));
+			std::advance(c, j - _index);
+			continue;
+		}
+		tokens.emplace_back(lextoken_t(c, _index, lextoken_type_t::char_t));
+		std::advance(c, 1);
+		continue;
+	}
+	tokens.emplace_back(lextoken_t("E", str.size() - 1, lextoken_type_t::end));
+	return tokens;
 }
 
-//
-// handle_param_token()
-//
 
-//! Handling of a parameterized token.
-template < typename Route_Param_Appender, typename MATCH >
-inline void
-handle_param_token(
-	const options_t & options,
-	const MATCH & match,
-	std::string & path,
-	bool & path_escaped,
-	token_list_t< Route_Param_Appender > & result )
-{
-	std::string prefix{ "" }; // prev in js code.
-	if( !path_escaped && !path.empty() )
-	{
-		const auto k = path.size() - 1;
-
-		if( std::string::npos != options.delimiters().find( path[k] ) )
-		{
-			prefix = path.substr( k, 1 );
-			path = path.substr( 0, k );
-		}
+inline optional_t<std::string> try_consume (lextoken_type_t type, lextokens_t::const_iterator& token) {
+	if (token->type == type) {
+		return (token++)->value;
 	}
+	return nonstd::nullopt;
+}
 
-	// Push the current path onto the tokens.
-	if( !path.empty() )
-	{
-		result.push_back( create_token< Route_Param_Appender >( std::move( path ) ) );
-		path_escaped = false;
+inline void must_consume (lextoken_type_t type, lextokens_t::const_iterator& token) {
+	auto ret = try_consume(type, token);
+	if (ret) {
+		return;
 	}
+	throw exception_t("Unexpected type: " + print_type(token->type) + ", expected: " + print_type(type));
+}
 
-	const auto next = match.suffix().str().substr( 0, 1 );
-
-	std::string name{ match[ group_name_idx ].str() };
-	const std::string modifier{ match[ group_modifier_idx ].str() };
-
-	const bool partial = !prefix.empty() && !next.empty() && prefix != next;
-
-	const bool optional = modifier == "?" || modifier == "*";
-	const bool repeat = modifier == "+" || modifier == "*";
-	std::string delimiter = options.make_delimiter( prefix );
-
-	auto create_pattern = [ delimiter ]( auto pattern ){
-		if( !pattern.empty() )
-		{
-			pattern = escape_group( pattern );
-		}
-		else
-		{
-			pattern = "[^" + escape_string( delimiter ) + "]+?";
-		}
-		return pattern;
-	};
-
-	if( !name.empty() )
-	{
-		// Named parameter.
-		result.push_back(
-			create_token< Route_Param_Appender >(
-				name,
-				std::move( prefix ),
-				std::move( delimiter ),
-				optional,
-				repeat,
-				partial,
-				create_pattern( match[ group_capture_idx ].str() ) ) );
+inline optional_t<std::string> consume_text (lextokens_t::const_iterator& token) {
+	std::string result{};
+	optional_t<std::string> value{"_"};
+	while (value) {
+		value = try_consume(lextoken_type_t::char_t, token);
+		if (!value)
+			value = try_consume(lextoken_type_t::escaped_char, token);
+		if (!value) break;
+		result += value.value();
 	}
-	else
-	{
-		// Indexed parameter.
-		result.push_back(
-			create_token< Route_Param_Appender >(
-				std::size_t{ 0 }, // just to have a variable of this type.
-				std::move( prefix ),
-				std::move( delimiter ),
-				optional,
-				repeat,
-				partial,
-				create_pattern( match[ group_group_idx ].str() ) ) );
-	}
+	if (!result.empty())
+		return result;
+	return nonstd::nullopt;
 }
 
 //
@@ -679,66 +765,105 @@ parse( string_view_t route_sv, const options_t & options )
 {
 	token_list_t< Route_Param_Appender > result;
 
+	std::string delimiter{options.delimiter()};
+	std::string defaultPattern{R"-([^)-" + escape_string( delimiter ) + R"-(]+?)-"};
 	std::string path{};
-	const std::regex main_path_regex{ path_regex_str };
-	bool path_escaped = false;
+	std::size_t key{0};
 
-	std::cregex_iterator token_it{
-			route_sv.data(),
-			route_sv.data() + route_sv.size(),
-			main_path_regex
-	};
-	std::cregex_iterator token_end{};
+	lextokens_t tokens = lexer(route_sv);
+	for (lextokens_t::const_iterator token = tokens.begin(); token != tokens.end();) {
+		std::string prefix{};
+		auto char_t = try_consume(lextoken_type_t::char_t, token);
+		auto name = try_consume(lextoken_type_t::name, token);
+		auto pattern = try_consume(lextoken_type_t::pattern, token);
 
-	if( token_it == token_end )
-	{
-		// Path is a single token.
-		path = check_no_unescaped_brackets( route_sv, 0 );
+		if (name || pattern) {
+			prefix = char_t.value_or("");
+			if (options.prefixes().find(prefix) == std::string::npos) {
+				path += prefix;
+				prefix.clear();
+			}
+			
+			if (!path.empty()) {
+				result.push_back( create_token< Route_Param_Appender >( std::move( path ) ) );
+				path.clear();
+			}
+			optional_t<std::string> modifier = try_consume(lextoken_type_t::modifier, token);
+			if (name) {
+				result.push_back( create_token< Route_Param_Appender >(
+					name.value(),
+					prefix,
+					"",
+					pattern.value_or( defaultPattern ),
+					modifier.value_or("") ) );
+			}
+			else {
+				result.push_back( create_token< Route_Param_Appender >(
+					key++,
+					prefix,
+					"",
+					pattern.value_or(defaultPattern),
+					modifier.value_or("") ) );
+			}
+			continue;
+		}
+		optional_t<std::string> value;
+		if (char_t) {
+			value = char_t;
+		}
+		else {
+			value = try_consume(lextoken_type_t::escaped_char, token);
+		}
+		if (value) {
+			path += value.value();
+			continue;
+		}
+		
+		if (!path.empty()) {
+			result.push_back ( create_token< Route_Param_Appender >(
+				std::move(path ) ) );
+			path.clear();
+		}
+		auto open = try_consume(lextoken_type_t::open, token);
+		if (open) {
+			auto prefix = consume_text(token);
+			auto name = try_consume(lextoken_type_t::name, token);
+			auto pattern = try_consume(lextoken_type_t::pattern, token);
+			auto suffix = consume_text(token);
+
+			must_consume(lextoken_type_t::close, token);
+			optional_t<std::string> modifier = try_consume(lextoken_type_t::modifier, token);
+
+			if (name) {
+				result.push_back( create_token< Route_Param_Appender >(
+					name.value(),
+					prefix.value_or(""),
+					suffix.value_or(""),
+					pattern.value_or( defaultPattern ),
+					modifier.value_or("") ) );
+			}
+			else {
+				if (pattern) {
+					result.push_back( create_token< Route_Param_Appender >(
+						key++,
+						prefix.value_or(""),
+						suffix.value_or(""),
+						pattern.value(),
+						modifier.value_or("") ) );
+				}
+				else {
+					result.push_back( create_token< Route_Param_Appender >(
+						"",
+						prefix.value_or(""),
+						suffix.value_or(""),
+						"",
+						modifier.value_or("") ) );
+				}
+			}
+			continue;
+		}
+		must_consume(lextoken_type_t::end, token);
 	}
-
-	while( token_it != token_end )
-	{
-		const auto & match = *token_it;
-
-		assert( 6 == match.size() );
-
-		const string_view_t prefix{
-				match.prefix().first,
-				static_cast<std::size_t>( match.prefix().length() ) };
-
-		path += check_no_unescaped_brackets( prefix,
-				static_cast<std::size_t>(match.position()) - prefix.size() );
-
-		const auto escaped = match[ group_escaped_idx ].str();
-		if( !escaped.empty() )
-		{
-			assert( 2 == escaped.size() );
-			path += escaped[ 1 ];
-			path_escaped = true;
-		}
-		else
-		{
-			handle_param_token( options, match, path, path_escaped, result );
-		}
-
-		auto next_it = token_it;
-		std::advance( next_it, 1 );
-
-		if( next_it == token_end )
-		{
-			const std::string suffix{ match.suffix() };
-			path +=
-				check_no_unescaped_brackets(
-					suffix,
-					static_cast<std::size_t>(match.position() + match.length()) );
-		}
-
-		token_it = next_it;
-	}
-
-	if( !path.empty() )
-		result.push_back( create_token< Route_Param_Appender >( std::move( path ) ) );
-
 	return result;
 }
 
@@ -791,13 +916,14 @@ tokens2regexp(
 		names_buffer_appender_t
 			names_buffer_appender{ path.size(), *result.m_named_params_buffer };
 
-		std::string route;
+		std::string route{options.starting() ? "^" : ""};
 		auto & param_appender_sequence = result.m_param_appender_sequence;
 
 		// The number of capture groups in resultin regex
 		// 1 is for match of a route itself.
 		std::size_t captured_groups_count = 1 ;
-
+		const auto & delimiter = "[" + escape_string( options.delimiter() ) + "]";
+		const auto & ends_with = options.make_ends_with();
 		for( const auto & t : tokens )
 		{
 			const auto appended_token_type =
@@ -810,23 +936,21 @@ tokens2regexp(
 		if( Regex_Engine::max_capture_groups() < captured_groups_count )
 		{
 			// This number of captures is not possible with this engine.
-			throw exception_t{
+			throw exception_t(
 				fmt::format(
 					RESTINIO_FMT_FORMAT_STRING(
 						"too many parameter to capture from route: {}, while {} "
 						"is the maximum" ),
 					captured_groups_count,
-					Regex_Engine::max_capture_groups() ) };
+					Regex_Engine::max_capture_groups() ) );
 		}
 
-		const auto & delimiter = escape_string( options.delimiter() );
-		const auto & ends_with = options.make_ends_with();
 
 		if( options.ending() )
 		{
 			if( !options.strict() )
 			{
-				route += "(?:" + delimiter + ")?";
+				route += delimiter + "?";
 			}
 
 			if( ends_with == "$" )
@@ -840,18 +964,18 @@ tokens2regexp(
 				route += "(?:" + delimiter + "(?=" + ends_with + "))?";
 
 			if( !tokens.empty() &&
-				!tokens.back()->is_end_delimited( options.delimiters() ) )
+				!tokens.back()->is_end_delimited( options.prefixes() ) )
 				route += "(?=" + delimiter + "|" + ends_with + ")";
 		}
 
-		result.m_regex = Regex_Engine::compile_regex( "^" + route, options.sensitive() );
+		result.m_regex = Regex_Engine::compile_regex(route, options.sensitive() );
 	}
 	catch( const std::exception & ex )
 	{
-		throw exception_t{
+		throw exception_t(
 			fmt::format(
 					RESTINIO_FMT_FORMAT_STRING( "unable to process route \"{}\": {}" ),
-					fmtlib_tools::streamed( path ), ex.what() ) };
+					fmtlib_tools::streamed( path ), ex.what() ) );
 	}
 
 	return result;
