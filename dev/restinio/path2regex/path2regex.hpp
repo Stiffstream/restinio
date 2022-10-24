@@ -190,6 +190,25 @@ class options_t
 		{
 			return m_prefixes;
 		}
+		/// Keeping delimiters to avoid breaking change here. Still, it should eventually be deprecated for clearer code and ease of maintainig the code in the future.
+		options_t &
+		delimiters( std::string p ) &
+		{
+			prefixes( p );
+			return *this;
+		}
+
+		options_t &&
+		delimiters( std::string p ) &&
+		{
+			return std::move( prefixes(p) );
+		}
+
+		const std::string &
+		delimiters() const
+		{
+			return prefixes();
+		}
 
 		options_t &
 		ends_with( std::vector< std::string > p ) &
@@ -357,7 +376,8 @@ using names_buffer_appender_t = string_view_buffer_storage_appender_t< std::stri
 enum class token_type_t : std::uint8_t
 {
 	plain_string,
-	capturing_token
+	capturing_token,
+	empty_capturing_token
 };
 
 //
@@ -419,9 +439,9 @@ class plain_string_token_t final : public token_t< Route_Param_Appender >
 		}
 
 		virtual bool
-		is_end_delimited( const std::string & prefixes ) const noexcept override
+		is_end_delimited( const std::string & delimiters ) const noexcept override
 		{
-			return std::string::npos != prefixes.find( m_last_char );
+			return std::string::npos != delimiters.find( m_last_char );
 		}
 
 	private:
@@ -470,8 +490,13 @@ class parameter_token_t final : public token_t< Route_Param_Appender >
 		bool repeat() const {
 			return (m_modifier == "*" || m_modifier == "+");
 		}
-		virtual token_type_t
-		append_self_to(
+		bool name_not_empty(std::size_t const&) const {
+			return true;
+		}
+		bool name_not_empty(std::string const& n) const {
+			return !n.empty();
+		}
+		virtual token_type_t append_self_to(
 			std::string & route,
 			param_appender_sequence_t< Route_Param_Appender > & param_appender_sequence,
 			names_buffer_appender_t & names_buffer_appender ) const override
@@ -526,12 +551,14 @@ class parameter_token_t final : public token_t< Route_Param_Appender >
 			}
 
 			route += capture;
-
-			param_appender_sequence.push_back(
-				make_param_setter< Route_Param_Appender >(
-					names_buffer_appender.append_name( m_name ) ) );
-
-			return token_type_t::capturing_token;
+// Only add named capture groups if they actually have a name.
+			if (name_not_empty(m_name)) {
+				param_appender_sequence.push_back(
+					make_param_setter< Route_Param_Appender >(
+						names_buffer_appender.append_name( m_name ) ) );
+				return token_type_t::capturing_token;
+			}
+			return token_type_t::empty_capturing_token;
 		}
 
 	private:
@@ -964,7 +991,7 @@ tokens2regexp(
 				route += "(?:" + delimiter + "(?=" + ends_with + "))?";
 
 			if( !tokens.empty() &&
-				!tokens.back()->is_end_delimited( options.prefixes() ) )
+				!tokens.back()->is_end_delimited( options.delimiter() ) )
 				route += "(?=" + delimiter + "|" + ends_with + ")";
 		}
 

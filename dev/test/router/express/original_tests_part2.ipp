@@ -335,7 +335,7 @@ TEST_CASE( "Original tests #25", "[path2regex][original][generated][n25]")
 
 // "/:test?-bar"
 // null
-// [["/-bar",["/-bar",null]],["/foo-bar",["/foo-bar","foo"]]]
+// [["/-bar", null], ["-bar",["-bar",null]],["/foo-bar",["/foo-bar","foo"]]]
 TEST_CASE( "Original tests #26", "[path2regex][original][generated][n26]")
 {
 	auto matcher_data =
@@ -354,8 +354,15 @@ TEST_CASE( "Original tests #26", "[path2regex][original][generated][n26]")
 		route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/-bar)target" };
+		REQUIRE_FALSE( rm.match_route( target_path, params ) );
+	}
+
+	{
+		route_params_t params;
+
+		restinio::router::impl::target_path_holder_t target_path{ R"target(-bar)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
-		REQUIRE( params.match() == R"match(/-bar)match" );
+		REQUIRE( params.match() == R"match(-bar)match" );
 
 		REQUIRE( 1 == params.named_parameters_size() );
 		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( params );
@@ -392,7 +399,7 @@ TEST_CASE( "Original tests #26", "[path2regex][original][generated][n26]")
 
 // "/:test*-bar"
 // null
-// [["/-bar",["/-bar",null]],["/foo-bar",["/foo-bar","foo"]],["/foo/baz-bar",["/foo/baz-bar","foo/baz"]]]
+// [["/-bar", null], ["-bar",["-bar",null]],["/foo-bar",["/foo-bar","foo"]]]
 TEST_CASE( "Original tests #27", "[path2regex][original][generated][n27]")
 {
 	auto matcher_data =
@@ -411,8 +418,15 @@ TEST_CASE( "Original tests #27", "[path2regex][original][generated][n27]")
 		route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/-bar)target" };
+		REQUIRE_FALSE( rm.match_route( target_path, params ) );
+	}
+
+	{
+		route_params_t params;
+
+		restinio::router::impl::target_path_holder_t target_path{ R"target(-bar)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
-		REQUIRE( params.match() == R"match(/-bar)match" );
+		REQUIRE( params.match() == R"match(-bar)match" );
 
 		REQUIRE( 1 == params.named_parameters_size() );
 		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( params );
