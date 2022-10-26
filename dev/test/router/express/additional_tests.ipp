@@ -159,3 +159,79 @@ TEST_CASE( "value_or" , "[value_or]" )
 															"2.71828" );
 }
 
+
+// Javascript automatically escapes slashes when new RegExp is called. C++ doesn't. This causes the implementation to behave slightly differently. This test is to check that they've effectively been escaped (but not the other special characters inside the pattern)
+// "/:path((?!api/?).+)"
+// null
+// [[["/style.css", ["/style.css", "/style.css"]],
+// ["/images/foo.jpg", ["/images/foo.jpg", "/images/foo.jpg"]],
+// "/api", null,
+// "/api/getDatabase.json", null]]
+TEST_CASE( "Escape of forward slashes inside capture groups", "/:path((?!api/?).+)")
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			R"route(/:path((?!api/?).+))route",
+			path2regex::options_t{} );
+
+	route_matcher_t
+		rm{
+			http_method_get(),
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
+
+	{
+		route_params_t params;
+
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/style.css)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
+		REQUIRE( params.match() == R"match(/style.css)match" );
+
+		REQUIRE( 1 == params.named_parameters_size() );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( params );
+		REQUIRE( 1 == nps.size() );
+		REQUIRE( params.has( R"key(path)key" ) );
+		REQUIRE( nps[0].first == R"key(path)key" );
+		REQUIRE( nps[0].second == R"value(style.css)value" );
+
+		REQUIRE( 0 == params.indexed_parameters_size() );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
+		REQUIRE( ips.empty() );
+	}
+
+	{
+		route_params_t params;
+
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/images/foo.jpg)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
+		REQUIRE( params.match() == R"match(/images/foo.jpg)match" );
+
+		REQUIRE( 1 == params.named_parameters_size() );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( params );
+		REQUIRE( 1 == nps.size() );
+		REQUIRE( params.has( R"key(path)key" ) );
+		REQUIRE( nps[0].first == R"key(path)key" );
+		REQUIRE( nps[0].second == R"value(images/foo.jpg)value" );
+
+		REQUIRE( 0 == params.indexed_parameters_size() );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
+		REQUIRE( ips.empty() );
+	}
+
+
+	{
+		route_params_t params;
+
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/api)target" };
+		REQUIRE_FALSE( rm.match_route( target_path, params ) );
+	}
+
+	{
+		route_params_t params;
+
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/api/getDatabase.json)target" };
+		REQUIRE_FALSE( rm.match_route( target_path, params ) );
+	}
+
+}

@@ -714,7 +714,12 @@ inline lextokens_t lexer (string_view_t str) {
 			if (str.at(j) == '?')
 				throw exception_t("Pattern cannot start with '?' at pos " + std::to_string(j));
 			while (j < str.size()) {
-				if (str.at(j) == '\\') {
+				if (str.at(j) == '/') {
+
+					pattern.append("\\") += str.at(j++);
+					continue;
+				}
+				else if (str.at(j) == '\\') {
 					pattern += {str.at(j), str.at(j + 1)}; // string_view_lite doesn't let us use substr() to do this.
 					j+=2;
 					continue;
