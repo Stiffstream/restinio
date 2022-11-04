@@ -394,14 +394,14 @@ TEST_CASE( "Original tests #45", "[path2regex][original][generated][n45]")
 
 }
 
-// "/test.:format"
+// "/test.:format(\\w+)"
 // null
-// [["/test.html",["/test.html","html"]],["/test.hbs.html",null]]
+// [["/test.html",["/test.html","html"]],["/test.hbs.html", null]]
 TEST_CASE( "Original tests #46", "[path2regex][original][generated][n46]")
 {
 	auto matcher_data =
 		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
-			R"route(/test.:format)route",
+			R"route(/test.:format(\w+))route",
 			path2regex::options_t{} );
 
 	route_matcher_t
@@ -436,17 +436,62 @@ TEST_CASE( "Original tests #46", "[path2regex][original][generated][n46]")
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/test.hbs.html)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
 	}
-
 }
 
-// "/test.:format+"
+// "/test.:format(\\w+).:format(\\w+)"
 // null
-// [["/test.html",["/test.html","html"]],["/test.hbs.html",["/test.hbs.html","hbs.html"]]]
+// [["/test.html",["/test.html",null]],["/test.hbs.html", "hbs", "html"]]
 TEST_CASE( "Original tests #47", "[path2regex][original][generated][n47]")
 {
 	auto matcher_data =
 		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
-			R"route(/test.:format+)route",
+			R"route(/test.:format(\w+).:format(\w+))route",
+			path2regex::options_t{} );
+
+	route_matcher_t
+		rm{
+			http_method_get(),
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
+
+	{
+		route_params_t params;
+
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/test.html)target" };
+		REQUIRE_FALSE( rm.match_route( target_path, params ) );
+	}
+
+	{
+		route_params_t params;
+
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/test.hbs.html)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
+		REQUIRE( params.match() == R"match(/test.hbs.html)match" );
+
+		REQUIRE( 2 == params.named_parameters_size() );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( params );
+		REQUIRE( 2 == nps.size() );
+		REQUIRE( params.has( R"key(format)key" ) );
+		REQUIRE( nps[0].first == R"key(format)key" );
+		REQUIRE( nps[0].second == R"value(hbs)value" );
+		REQUIRE( nps[1].first == R"key(format)key" );
+		REQUIRE( nps[1].second == R"value(html)value" );
+
+		REQUIRE( 0 == params.indexed_parameters_size() );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
+		REQUIRE( ips.empty() );
+	}
+}
+
+// "/test{.:format}+"
+// null
+// [["/test.html",["/test.html",".html"]],["/test.hbs.html", "hbs.html"]]
+TEST_CASE( "Original tests #48", "[path2regex][original][generated][n48]")
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			R"route(/test{.:format}+)route",
 			path2regex::options_t{} );
 
 	route_matcher_t
@@ -473,6 +518,7 @@ TEST_CASE( "Original tests #47", "[path2regex][original][generated][n47]")
 		REQUIRE( 0 == params.indexed_parameters_size() );
 		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
 		REQUIRE( ips.empty() );
+
 	}
 
 	{
@@ -493,17 +539,16 @@ TEST_CASE( "Original tests #47", "[path2regex][original][generated][n47]")
 		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
 		REQUIRE( ips.empty() );
 	}
-
 }
 
-// "/test.:format"
+// "/test.:format(\\w+)"
 // {"end":false}
 // [["/test.html",["/test.html","html"]],["/test.hbs.html",null]]
-TEST_CASE( "Original tests #48", "[path2regex][original][generated][n48]")
+TEST_CASE( "Original tests #49", "[path2regex][original][generated][n49]")
 {
 	auto matcher_data =
 		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
-			R"route(/test.:format)route",
+			R"route(/test.:format(\w+))route",
 			path2regex::options_t{}.ending( false ) );
 
 	route_matcher_t
@@ -544,7 +589,7 @@ TEST_CASE( "Original tests #48", "[path2regex][original][generated][n48]")
 // "/test.:format."
 // null
 // [["/test.html.",["/test.html.","html"]],["/test.hbs.html",null]]
-TEST_CASE( "Original tests #49", "[path2regex][original][generated][n49]")
+TEST_CASE( "Original tests #50", "[path2regex][original][generated][n50]")
 {
 	auto matcher_data =
 		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
@@ -589,7 +634,7 @@ TEST_CASE( "Original tests #49", "[path2regex][original][generated][n49]")
 // "/:test.:format"
 // null
 // [["/route.html",["/route.html","route","html"]],["/route",null],["/route.html.json",["/route.html.json","route.html","json"]]]
-TEST_CASE( "Original tests #50", "[path2regex][original][generated][n50]")
+TEST_CASE( "Original tests #51", "[path2regex][original][generated][n51]")
 {
 	auto matcher_data =
 		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
@@ -644,26 +689,25 @@ TEST_CASE( "Original tests #50", "[path2regex][original][generated][n50]")
 		REQUIRE( 2 == nps.size() );
 		REQUIRE( params.has( R"key(test)key" ) );
 		REQUIRE( nps[0].first == R"key(test)key" );
-		REQUIRE( nps[0].second == R"value(route.html)value" );
+		REQUIRE( nps[0].second == R"value(route)value" );
 		REQUIRE( params.has( R"key(format)key" ) );
 		REQUIRE( nps[1].first == R"key(format)key" );
-		REQUIRE( nps[1].second == R"value(json)value" );
+		REQUIRE( nps[1].second == R"value(html.json)value" );
 
 		REQUIRE( 0 == params.indexed_parameters_size() );
 		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
 		REQUIRE( ips.empty() );
 	}
-
 }
 
-// "/:test.:format?"
+// "/:test{.:format}?"
 // null
-// [["/route",["/route","route",null]],["/route.json",["/route.json","route","json"]],["/route.json.html",["/route.json.html","route.json","html"]]]
-TEST_CASE( "Original tests #51", "[path2regex][original][generated][n51]")
+// [["/route",["/route","route",null]],["/route.json",["/route.json","route","json"]],["/route.json.html",["/route.json.html","route","json.html"]]]
+TEST_CASE( "Original tests #52", "[path2regex][original][generated][n52]")
 {
 	auto matcher_data =
 		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
-			R"route(/:test.:format?)route",
+			R"route(/:test{.:format}?)route",
 			path2regex::options_t{} );
 
 	route_matcher_t
@@ -729,10 +773,10 @@ TEST_CASE( "Original tests #51", "[path2regex][original][generated][n51]")
 		REQUIRE( 2 == nps.size() );
 		REQUIRE( params.has( R"key(test)key" ) );
 		REQUIRE( nps[0].first == R"key(test)key" );
-		REQUIRE( nps[0].second == R"value(route.json)value" );
+		REQUIRE( nps[0].second == R"value(route)value" );
 		REQUIRE( params.has( R"key(format)key" ) );
 		REQUIRE( nps[1].first == R"key(format)key" );
-		REQUIRE( nps[1].second == R"value(html)value" );
+		REQUIRE( nps[1].second == R"value(json.html)value" );
 
 		REQUIRE( 0 == params.indexed_parameters_size() );
 		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
@@ -743,8 +787,8 @@ TEST_CASE( "Original tests #51", "[path2regex][original][generated][n51]")
 
 // "/:test.:format?"
 // {"end":false}
-// [["/route",["/route","route",null]],["/route.json",["/route.json","route","json"]],["/route.json.html",["/route.json.html","route.json","html"]]]
-TEST_CASE( "Original tests #52", "[path2regex][original][generated][n52]")
+// [["/route",["/route","route",null]],["/route.json",["/route.json","route","json"]],["/route.json.html",["/route.json.html","route","json.html"]]]
+TEST_CASE( "Original tests #53", "[path2regex][original][generated][n53]")
 {
 	auto matcher_data =
 		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
@@ -814,22 +858,21 @@ TEST_CASE( "Original tests #52", "[path2regex][original][generated][n52]")
 		REQUIRE( 2 == nps.size() );
 		REQUIRE( params.has( R"key(test)key" ) );
 		REQUIRE( nps[0].first == R"key(test)key" );
-		REQUIRE( nps[0].second == R"value(route.json)value" );
+		REQUIRE( nps[0].second == R"value(route)value" );
 		REQUIRE( params.has( R"key(format)key" ) );
 		REQUIRE( nps[1].first == R"key(format)key" );
-		REQUIRE( nps[1].second == R"value(html)value" );
+		REQUIRE( nps[1].second == R"value(json.html)value" );
 
 		REQUIRE( 0 == params.indexed_parameters_size() );
 		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
 		REQUIRE( ips.empty() );
 	}
-
 }
 
 // "/test.:format(.*)z"
 // {"end":false}
 // [["/test.abc",null],["/test.z",["/test.z",""]],["/test.abcz",["/test.abcz","abc"]]]
-TEST_CASE( "Original tests #53", "[path2regex][original][generated][n53]")
+TEST_CASE( "Original tests #54", "[path2regex][original][generated][n54]")
 {
 	auto matcher_data =
 		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
@@ -893,7 +936,7 @@ TEST_CASE( "Original tests #53", "[path2regex][original][generated][n53]")
 // "/(\\d+)"
 // null
 // [["/123",["/123","123"]],["/abc",null],["/123/abc",null]]
-TEST_CASE( "Original tests #54", "[path2regex][original][generated][n54]")
+TEST_CASE( "Original tests #55", "[path2regex][original][generated][n55]")
 {
 	auto matcher_data =
 		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
@@ -921,6 +964,7 @@ TEST_CASE( "Original tests #54", "[path2regex][original][generated][n54]")
 		REQUIRE( 1 == params.indexed_parameters_size() );
 		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
 		REQUIRE( 1 == ips.size() );
+		REQUIRE( R"(123)" == ips.at(0) );
 	}
 
 	{
@@ -942,7 +986,7 @@ TEST_CASE( "Original tests #54", "[path2regex][original][generated][n54]")
 // "/(\\d+)"
 // {"end":false}
 // [["/123",["/123","123"]],["/abc",null],["/123/abc",["/123","123"]],["/123/",["/123/","123"]]]
-TEST_CASE( "Original tests #55", "[path2regex][original][generated][n55]")
+TEST_CASE( "Original tests #56", "[path2regex][original][generated][n56]")
 {
 	auto matcher_data =
 		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
@@ -970,6 +1014,7 @@ TEST_CASE( "Original tests #55", "[path2regex][original][generated][n55]")
 		REQUIRE( 1 == params.indexed_parameters_size() );
 		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
 		REQUIRE( 1 == ips.size() );
+		REQUIRE( R"(123)" == ips.at(0) );
 	}
 
 	{
@@ -993,6 +1038,7 @@ TEST_CASE( "Original tests #55", "[path2regex][original][generated][n55]")
 		REQUIRE( 1 == params.indexed_parameters_size() );
 		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
 		REQUIRE( 1 == ips.size() );
+		REQUIRE( R"(123)" == ips.at(0) );
 	}
 
 	{
@@ -1009,6 +1055,7 @@ TEST_CASE( "Original tests #55", "[path2regex][original][generated][n55]")
 		REQUIRE( 1 == params.indexed_parameters_size() );
 		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
 		REQUIRE( 1 == ips.size() );
+		REQUIRE( R"(123)" == ips.at(0) );
 	}
 
 }
@@ -1016,7 +1063,7 @@ TEST_CASE( "Original tests #55", "[path2regex][original][generated][n55]")
 // "/(\\d+)?"
 // null
 // [["/",["/",null]],["/123",["/123","123"]]]
-TEST_CASE( "Original tests #56", "[path2regex][original][generated][n56]")
+TEST_CASE( "Original tests #57", "[path2regex][original][generated][n57]")
 {
 	auto matcher_data =
 		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
@@ -1043,7 +1090,7 @@ TEST_CASE( "Original tests #56", "[path2regex][original][generated][n56]")
 
 		REQUIRE( 1 == params.indexed_parameters_size() );
 		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
-		REQUIRE( 1 == ips.size() );
+		REQUIRE( R"value()value" == ips.at(0) );
 	}
 
 	{
@@ -1060,6 +1107,7 @@ TEST_CASE( "Original tests #56", "[path2regex][original][generated][n56]")
 		REQUIRE( 1 == params.indexed_parameters_size() );
 		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
 		REQUIRE( 1 == ips.size() );
+		REQUIRE( R"(123)" == ips.at(0) );
 	}
 
 }
@@ -1067,7 +1115,7 @@ TEST_CASE( "Original tests #56", "[path2regex][original][generated][n56]")
 // "/(.*)"
 // null
 // [["/",["/",""]],["/route",["/route","route"]],["/route/nested",["/route/nested","route/nested"]]]
-TEST_CASE( "Original tests #57", "[path2regex][original][generated][n57]")
+TEST_CASE( "Original tests #58", "[path2regex][original][generated][n58]")
 {
 	auto matcher_data =
 		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
@@ -1134,7 +1182,7 @@ TEST_CASE( "Original tests #57", "[path2regex][original][generated][n57]")
 // "/route\\(\\\\(\\d+\\\\)\\)"
 // null
 // [["/route(\\123\\)",["/route(\\123\\)","123\\"]]]
-TEST_CASE( "Original tests #58", "[path2regex][original][generated][n58]")
+TEST_CASE( "Original tests #59", "[path2regex][original][generated][n59]")
 {
 	auto matcher_data =
 		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
@@ -1166,7 +1214,144 @@ TEST_CASE( "Original tests #58", "[path2regex][original][generated][n58]")
 
 }
 
-// Test #59 skipped
-// "/.*/"
+// "{/login}?"
 // null
-// [["/match/anything",["/match/anything"]]]
+// [["/", ["/"]], ["/login", ["/login"]]]
+TEST_CASE( "Original tests #60", "[path2regex][original][generated][n60]")
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			R"route({/login}?)route",
+			path2regex::options_t{} );
+
+	route_matcher_t
+		rm{
+			http_method_get(),
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
+
+	{
+		route_params_t params;
+
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
+		REQUIRE( params.match() == R"match(/)match" );
+
+		REQUIRE( 0 == params.named_parameters_size() );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( params );
+		REQUIRE( nps.empty() );
+
+		REQUIRE( 0 == params.indexed_parameters_size() );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
+		REQUIRE( ips.empty() );
+	}
+
+	{
+		route_params_t params;
+
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/login)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
+		REQUIRE( params.match() == R"match(/login)match" );
+
+		REQUIRE( 0 == params.named_parameters_size() );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( params );
+		REQUIRE( nps.empty() );
+
+		REQUIRE( 0 == params.indexed_parameters_size() );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
+		REQUIRE( ips.empty() );
+	}
+}
+
+// "{/login}"
+// null
+// [["/", null], ["/login", ["/login"]]]
+TEST_CASE( "Original tests #61", "[path2regex][original][generated][n61]")
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			R"route({/login})route",
+			path2regex::options_t{} );
+
+	route_matcher_t
+		rm{
+			http_method_get(),
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
+
+	{
+		route_params_t params;
+
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/)target" };
+		REQUIRE_FALSE( rm.match_route( target_path, params ) );
+	}
+
+	{
+		route_params_t params;
+
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/login)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
+		REQUIRE( params.match() == R"match(/login)match" );
+
+		REQUIRE( 0 == params.named_parameters_size() );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( params );
+		REQUIRE( nps.empty() );
+
+		REQUIRE( 0 == params.indexed_parameters_size() );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
+		REQUIRE( ips.empty() );
+	}
+}
+
+// "{/(.*)}"
+// null
+// [["/", ["/", ""]], ["/login", ["/login", "login"]]]
+TEST_CASE( "Original tests #62", "[path2regex][original][generated][n62]")
+{
+	auto matcher_data =
+		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			R"route({/(.*)})route",
+			path2regex::options_t{} );
+
+	route_matcher_t
+		rm{
+			http_method_get(),
+			std::move( matcher_data.m_regex ),
+			std::move( matcher_data.m_named_params_buffer ),
+			std::move( matcher_data.m_param_appender_sequence ) };
+
+	{
+		route_params_t params;
+
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
+		REQUIRE( params.match() == R"match(/)match" );
+
+		REQUIRE( 0 == params.named_parameters_size() );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( params );
+		REQUIRE( nps.empty() );
+
+		REQUIRE( 1 == params.indexed_parameters_size() );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
+		REQUIRE( R"value()value" == ips.at(0) );
+
+	}
+
+	{
+		route_params_t params;
+
+		restinio::router::impl::target_path_holder_t target_path{ R"target(/login)target" };
+		REQUIRE( rm.match_route( target_path, params ) );
+		REQUIRE( params.match() == R"match(/login)match" );
+
+		REQUIRE( 0 == params.named_parameters_size() );
+		const auto & nps = restinio::router::impl::route_params_accessor_t::named_parameters( params );
+		REQUIRE( nps.empty() );
+
+		REQUIRE( 1 == params.indexed_parameters_size() );
+		const auto & ips = restinio::router::impl::route_params_accessor_t::indexed_parameters( params);
+		REQUIRE( R"value(login)value" == ips.at(0) );
+	}
+}
