@@ -616,7 +616,7 @@ enum class lextoken_type_t : std::uint8_t {
 struct lextoken_t {
 	lextoken_t(std::string& _val, std::size_t _index, lextoken_type_t _type):
 		value(std::move(_val)), index(_index), type(_type) {};
-	lextoken_t(const char* _val, std::size_t _index, lextoken_type_t _type):
+	lextoken_t(string_view_t::const_pointer _val, std::size_t _index, lextoken_type_t _type):
 		value({_val, 1}), index(_index), type(_type) {};
 
 	std::string value;
@@ -662,26 +662,27 @@ using lextokens_t = std::vector<lextoken_t>;
 inline lextokens_t lexer (string_view_t str) {
 	lextokens_t tokens;
 	for (string_view_t::const_iterator c = str.begin(); c != str.end();) {
-		assert ( c >= str.data() );
-		std::size_t _index = static_cast<size_t>(c - str.data());
+		assert ( c >= str.begin() );
+		std::size_t _index = static_cast<size_t>(std::distance(str.begin(),c));
+		string_view_t::const_pointer p = str.data() + _index; // Ugly voodoo to keep MSVC happy.
 		if (*c == '*' || *c == '+' || *c == '?') {
-			tokens.emplace_back(lextoken_t(c, _index, lextoken_type_t::modifier));
+			tokens.emplace_back(p, _index, lextoken_type_t::modifier);
 			std::advance(c,1);
 			continue;
 		}
 		if (*c == '\\') {
 			std::advance(c,1);
-			tokens.emplace_back(lextoken_t(c, _index + 1, lextoken_type_t::escaped_char));
+			tokens.emplace_back(++p, _index + 1, lextoken_type_t::escaped_char);
 			std::advance(c,1);
 			continue;
 		}
 		if (*c == '{') {
-			tokens.emplace_back(lextoken_t(c, _index, lextoken_type_t::open));
+			tokens.emplace_back(p, _index, lextoken_type_t::open);
 			std::advance(c,1);
 			continue;
 		}
 		if (*c == '}') {
-			tokens.emplace_back(lextoken_t(c, _index, lextoken_type_t::close));
+			tokens.emplace_back(p, _index, lextoken_type_t::close);
 			std::advance(c,1);
 			continue;
 		}
@@ -703,7 +704,7 @@ inline lextokens_t lexer (string_view_t str) {
 			if (groupName.empty())
 				throw exception_t("Missing parameter name at: " + std::to_string(_index));
 	
-			tokens.emplace_back(lextoken_t(groupName, _index, lextoken_type_t::name));
+			tokens.emplace_back(groupName, _index, lextoken_type_t::name);
 			std::advance(c, j - _index);
 			continue;
 		}
@@ -743,15 +744,15 @@ inline lextokens_t lexer (string_view_t str) {
 			if (pattern.empty())
 				throw exception_t("Missing pattern at pos " + std::to_string(_index));
 			
-			tokens.emplace_back(lextoken_t(pattern, _index, lextoken_type_t::pattern));
+			tokens.emplace_back(pattern, _index, lextoken_type_t::pattern);
 			std::advance(c, j - _index);
 			continue;
 		}
-		tokens.emplace_back(lextoken_t(c, _index, lextoken_type_t::char_t));
+		tokens.emplace_back(p, _index, lextoken_type_t::char_t);
 		std::advance(c, 1);
 		continue;
 	}
-	tokens.emplace_back(lextoken_t("E", str.size() - 1, lextoken_type_t::end));
+	tokens.emplace_back("E", str.size() - 1, lextoken_type_t::end);
 	return tokens;
 }
 
