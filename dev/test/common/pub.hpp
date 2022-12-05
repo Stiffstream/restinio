@@ -32,12 +32,17 @@ do_with_socket(
 	restinio::asio_ns::io_context io_context;
 	restinio::asio_ns::ip::tcp::socket socket{ io_context };
 
-	restinio::asio_ns::ip::tcp::resolver resolver{ io_context };
-	restinio::asio_ns::ip::tcp::resolver::query
-		query{ restinio::asio_ns::ip::tcp::v4(), addr, std::to_string( port ) };
-	restinio::asio_ns::ip::tcp::resolver::iterator iterator = resolver.resolve( query );
+	std::string str_addr{ addr };
+	if( str_addr == "localhost" )
+		str_addr = "127.0.0.1";
+	else if( str_addr == "ip6-localhost" )
+		str_addr = "::1";
 
-	restinio::asio_ns::connect( socket, iterator );
+	socket.connect(
+		restinio::asio_ns::ip::tcp::endpoint{
+			restinio::asio_ns::ip::address::from_string( str_addr ),
+			port
+		} );
 
 	lambda( socket, io_context );
 	socket.close();
