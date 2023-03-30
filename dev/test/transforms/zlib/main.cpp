@@ -13,6 +13,8 @@
 
 #include "../random_data_generators.ipp"
 
+#include <test/common/time_limited_execution.hpp>
+
 TEST_CASE( "Create parameters for zlib transformators" , "[zlib][params][create_params]" )
 {
 	namespace rtz = restinio::transforms::zlib;
@@ -480,7 +482,7 @@ TEST_CASE( "transform functions" , "[zlib][transform]" )
 		rtz::gzip_decompress( rtz::gzip_compress( input_data ) ) );
 }
 
-TEST_CASE( "complete" , "[zlib][compress][decompress][commplete]" )
+TEST_CASE( "complete" , "[zlib][compress][decompress][complete]" )
 {
 	namespace rtz = restinio::transforms::zlib;
 
@@ -646,3 +648,49 @@ TEST_CASE( "write check input size" , "[zlib][write][large input]" )
 		REQUIRE_THROWS( zc.write( large_input ) );
 	}
 }
+
+TEST_CASE( "decompress when some trailing data",
+		"[zlib][compress][decompress][complete]" )
+{
+	namespace rtz = restinio::transforms::zlib;
+
+	{
+		rtz::zlib_t zc{ rtz::make_gzip_compress_params() };
+		REQUIRE_FALSE( zc.is_completed() );
+
+		std::string
+			input_data{
+				"The zlib compression library provides "
+				"in-memory compression and decompression functions, "
+				"including integrity checks of the uncompressed data." };
+
+		REQUIRE_NOTHROW( zc.write( input_data ) );
+		REQUIRE_NOTHROW( zc.complete() );
+		REQUIRE( zc.is_completed() );
+
+		const auto out_size = zc.output_size();
+		auto out_data = zc.giveaway_output();
+		REQUIRE( out_size == out_data.size() );
+
+		out_data += "\r\n";
+
+		rtz::zlib_t zd{ rtz::make_gzip_decompress_params() };
+		REQUIRE_FALSE( zd.is_completed() );
+
+		run_with_time_limit(
+				[&zd, &out_data]() {
+					zd.write( out_data );
+					zd.complete();
+				},
+				2,
+				"attempt to decompress data with some trailers" );
+
+		REQUIRE( zd.is_completed() );
+
+		const auto decompression_out_size = zd.output_size();
+		const auto decompression_out_data = zd.giveaway_output();
+		REQUIRE( decompression_out_size == input_data.size() );
+		REQUIRE( decompression_out_data == input_data );
+	}
+}
+
