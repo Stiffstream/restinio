@@ -833,7 +833,14 @@ class zlib_t
 					continue;
 				}
 
-				if( 0 == m_zlib_stream.avail_in || Z_STREAM_END == operation_result)
+				if( Z_STREAM_END == operation_result )
+				{
+					// All data was processed. There is no sense to continue
+					// even if m_zlib_stream.avail_in isn't zero.
+					break;
+				}
+
+				if( 0 == m_zlib_stream.avail_in )
 				{
 					// All the input was consumed.
 					break;
