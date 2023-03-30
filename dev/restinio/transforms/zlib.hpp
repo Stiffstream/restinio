@@ -833,7 +833,7 @@ class zlib_t
 					continue;
 				}
 
-				if( 0 == m_zlib_stream.avail_in )
+				if( 0 == m_zlib_stream.avail_in || Z_STREAM_END == operation_result)
 				{
 					// All the input was consumed.
 					break;
