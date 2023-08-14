@@ -30,6 +30,20 @@ decltype(auto) read_case( so_5::mchain_t chain, Handler && handler )
 }
 #endif
 
+#if !defined(SO_5_VERSION) || SO_5_VERSION < SO_5_VERSION_MAKE(8ull, 0ull, 0ull)
+decltype(auto) close_drop_content( const so_5::mchain_t & chain )
+{
+	return so_5::close_drop_content( chain );
+}
+#else
+decltype(auto) close_drop_content( const so_5::mchain_t & chain )
+{
+	return so_5::close_drop_content(
+			so_5::terminate_if_throws,
+			chain );
+}
+#endif
+
 // Message for transfer requests from RESTinio's thread to processing thread.
 struct handle_request
 {
@@ -144,7 +158,7 @@ int main()
 				// Processing thread needs to be closed.
 				// It is better to do it manually because there can
 				// be requests waiting in req_ch.
-				so_5::close_drop_content(req_ch);
+				::close_drop_content(req_ch);
 			}));
 
 	return 0;

@@ -6,7 +6,7 @@ MxxRu::arch_externals :so5 do |e|
     e.map_dir 'dev/so_5' => 'dev'
     e.map_dir 'dev/timertt' => 'dev'
   else
-    e.url 'https://github.com/Stiffstream/sobjectizer/archive/v.5.7.4.1.tar.gz'
+    e.url 'https://github.com/Stiffstream/sobjectizer/archive/v.5.8.0.1.tar.gz'
 
     e.map_dir 'dev/so_5' => 'dev'
   end
@@ -14,7 +14,7 @@ end
 
 MxxRu::arch_externals :asio do |e|
 #  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-18-0.tar.gz'
-  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-21-0.tar.gz'
+  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-28-1.tar.gz'
 
   e.map_dir 'asio/include' => 'dev/asio'
 end
@@ -39,7 +39,7 @@ MxxRu::arch_externals :nodejs_http_parser_mxxru do |e|
 end
 
 MxxRu::arch_externals :fmt do |e|
-  e.url 'https://github.com/fmtlib/fmt/archive/9.1.0.zip'
+  e.url 'https://github.com/fmtlib/fmt/archive/10.1.0.zip'
 #  e.url 'https://github.com/fmtlib/fmt/archive/8.1.1.zip'
 #  e.url 'https://github.com/fmtlib/fmt/archive/7.1.3.zip'
 
