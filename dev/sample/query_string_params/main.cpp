@@ -40,7 +40,7 @@ restinio::request_handling_status_t handler( const restinio::request_handle_t& r
 			fmt::format_to( response_body_inserter,
 					RESTINIO_FMT_FORMAT_STRING( "Query params ({}):\n" ), qp.size() );
 
-			for( const auto p : qp )
+			for( const auto & p : qp )
 			{
 				fmt::format_to( response_body_inserter,
 						RESTINIO_FMT_FORMAT_STRING( "'{}' => '{}'\n" ),
