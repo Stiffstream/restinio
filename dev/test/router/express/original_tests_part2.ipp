@@ -11,13 +11,13 @@ TEST_CASE( "Original tests #20", "[path2regex][original][generated][n20]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route/)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -36,7 +36,7 @@ TEST_CASE( "Original tests #20", "[path2regex][original][generated][n20]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route//)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
@@ -56,13 +56,13 @@ TEST_CASE( "Original tests #21", "[path2regex][original][generated][n21]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route.json)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -81,7 +81,7 @@ TEST_CASE( "Original tests #21", "[path2regex][original][generated][n21]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route//)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -113,13 +113,13 @@ TEST_CASE( "Original tests #22", "[path2regex][original][generated][n22]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -138,14 +138,14 @@ TEST_CASE( "Original tests #22", "[path2regex][original][generated][n22]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route/nested)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -164,7 +164,7 @@ TEST_CASE( "Original tests #22", "[path2regex][original][generated][n22]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(//)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
@@ -184,13 +184,13 @@ TEST_CASE( "Original tests #23", "[path2regex][original][generated][n23]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -209,14 +209,14 @@ TEST_CASE( "Original tests #23", "[path2regex][original][generated][n23]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(//)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
@@ -236,20 +236,20 @@ TEST_CASE( "Original tests #24", "[path2regex][original][generated][n24]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route/)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -268,7 +268,7 @@ TEST_CASE( "Original tests #24", "[path2regex][original][generated][n24]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -287,7 +287,7 @@ TEST_CASE( "Original tests #24", "[path2regex][original][generated][n24]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(//)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
@@ -307,13 +307,13 @@ TEST_CASE( "Original tests #25", "[path2regex][original][generated][n25]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/foo/bar)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -345,13 +345,13 @@ TEST_CASE( "Original tests #26", "[path2regex][original][generated][n26]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/-bar)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -370,7 +370,7 @@ TEST_CASE( "Original tests #26", "[path2regex][original][generated][n26]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/foo-bar)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -402,13 +402,13 @@ TEST_CASE( "Original tests #27", "[path2regex][original][generated][n27]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/-bar)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -427,7 +427,7 @@ TEST_CASE( "Original tests #27", "[path2regex][original][generated][n27]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/foo-bar)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -446,7 +446,7 @@ TEST_CASE( "Original tests #27", "[path2regex][original][generated][n27]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/foo/baz-bar)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -478,20 +478,20 @@ TEST_CASE( "Original tests #28", "[path2regex][original][generated][n28]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -510,7 +510,7 @@ TEST_CASE( "Original tests #28", "[path2regex][original][generated][n28]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/some/basic/route)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -529,7 +529,7 @@ TEST_CASE( "Original tests #28", "[path2regex][original][generated][n28]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(//)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
@@ -549,20 +549,20 @@ TEST_CASE( "Original tests #29", "[path2regex][original][generated][n29]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/abc/456/789)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/123/456/789)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -594,20 +594,20 @@ TEST_CASE( "Original tests #30", "[path2regex][original][generated][n30]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route.json)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -626,7 +626,7 @@ TEST_CASE( "Original tests #30", "[path2regex][original][generated][n30]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route.xml.json)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -645,7 +645,7 @@ TEST_CASE( "Original tests #30", "[path2regex][original][generated][n30]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route.html)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
@@ -665,13 +665,13 @@ TEST_CASE( "Original tests #31", "[path2regex][original][generated][n31]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -690,14 +690,14 @@ TEST_CASE( "Original tests #31", "[path2regex][original][generated][n31]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(//)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -716,7 +716,7 @@ TEST_CASE( "Original tests #31", "[path2regex][original][generated][n31]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/some/basic/route)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -748,13 +748,13 @@ TEST_CASE( "Original tests #32", "[path2regex][original][generated][n32]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -773,7 +773,7 @@ TEST_CASE( "Original tests #32", "[path2regex][original][generated][n32]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route.json)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -792,7 +792,7 @@ TEST_CASE( "Original tests #32", "[path2regex][original][generated][n32]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route.json.xml)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -811,7 +811,7 @@ TEST_CASE( "Original tests #32", "[path2regex][original][generated][n32]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/route.123)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
@@ -831,13 +831,13 @@ TEST_CASE( "Original tests #33", "[path2regex][original][generated][n33]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/123)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -856,14 +856,14 @@ TEST_CASE( "Original tests #33", "[path2regex][original][generated][n33]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/abc)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/123/abc)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
@@ -883,13 +883,13 @@ TEST_CASE( "Original tests #34", "[path2regex][original][generated][n34]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/123)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -908,14 +908,14 @@ TEST_CASE( "Original tests #34", "[path2regex][original][generated][n34]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/abc)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/123/abc)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -947,13 +947,13 @@ TEST_CASE( "Original tests #35", "[path2regex][original][generated][n35]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/anything/goes/here)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -972,7 +972,7 @@ TEST_CASE( "Original tests #35", "[path2regex][original][generated][n35]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/;,:@&=/+$-_.!/~*())target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -1004,13 +1004,13 @@ TEST_CASE( "Original tests #36", "[path2regex][original][generated][n36]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/abcde)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -1029,7 +1029,7 @@ TEST_CASE( "Original tests #36", "[path2regex][original][generated][n36]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/12345)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
@@ -1049,13 +1049,13 @@ TEST_CASE( "Original tests #37", "[path2regex][original][generated][n37]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/this)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -1074,7 +1074,7 @@ TEST_CASE( "Original tests #37", "[path2regex][original][generated][n37]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/that)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -1093,7 +1093,7 @@ TEST_CASE( "Original tests #37", "[path2regex][original][generated][n37]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/foo)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
@@ -1113,13 +1113,13 @@ TEST_CASE( "Original tests #38", "[path2regex][original][generated][n38]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/abc)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -1138,7 +1138,7 @@ TEST_CASE( "Original tests #38", "[path2regex][original][generated][n38]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/abc/abc)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -1157,7 +1157,7 @@ TEST_CASE( "Original tests #38", "[path2regex][original][generated][n38]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/xyz/xyz)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -1176,7 +1176,7 @@ TEST_CASE( "Original tests #38", "[path2regex][original][generated][n38]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/abc/xyz)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -1195,7 +1195,7 @@ TEST_CASE( "Original tests #38", "[path2regex][original][generated][n38]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/abc/xyz/abc/xyz)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -1214,7 +1214,7 @@ TEST_CASE( "Original tests #38", "[path2regex][original][generated][n38]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/xyzxyz)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );
@@ -1234,13 +1234,13 @@ TEST_CASE( "Original tests #39", "[path2regex][original][generated][n39]")
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(test)target" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -1256,7 +1256,7 @@ TEST_CASE( "Original tests #39", "[path2regex][original][generated][n39]")
 	}
 
 	{
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ R"target(/test)target" };
 		REQUIRE_FALSE( rm.match_route( target_path, params ) );

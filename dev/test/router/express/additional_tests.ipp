@@ -9,12 +9,12 @@ TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 
 		route_matcher_t
 			rm{
-				http_method_get(),
+				restinio::http_method_get(),
 				std::move( matcher_data.m_regex ),
 				std::move( matcher_data.m_named_params_buffer ),
 				std::move( matcher_data.m_param_appender_sequence ) };
 
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		{
 			restinio::router::impl::target_path_holder_t target_path{ "/foo/42/q" };
@@ -45,12 +45,12 @@ TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 
 		route_matcher_t
 			rm{
-				http_method_get(),
+				restinio::http_method_get(),
 				std::move( matcher_data.m_regex ),
 				std::move( matcher_data.m_named_params_buffer ),
 				std::move( matcher_data.m_param_appender_sequence ) };
 
-		route_params_t params;
+		restinio::router::route_params_t params;
 
 		restinio::router::impl::target_path_holder_t target_path{ "/a-route/42" };
 		REQUIRE( rm.match_route( target_path, params ) );
@@ -139,23 +139,23 @@ TEST_CASE( "value_or" , "[value_or]" )
 
 	route_matcher_t
 		rm{
-			http_method_get(),
+			restinio::http_method_get(),
 			std::move( matcher_data.m_regex ),
 			std::move( matcher_data.m_named_params_buffer ),
 			std::move( matcher_data.m_param_appender_sequence ) };
 
-	route_params_t params;
+	restinio::router::route_params_t params;
 
 	restinio::router::impl::target_path_holder_t target_path{ "/815875200/1133136000/38/f" };
 	REQUIRE( rm.match_route( target_path, params ) );
 	REQUIRE( restinio::value_or< std::uint32_t >( params, "to", 0L ) == 815875200L );
 	REQUIRE( restinio::value_or< std::uint32_t >( params, "from", 0L ) == 1133136000UL );
 	REQUIRE( restinio::value_or( params, "age", std::uint16_t{99} ) == 38 );
-	REQUIRE( restinio::value_or( params, "gender", string_view_t{"m"} ) == "f" );
+	REQUIRE( restinio::value_or( params, "gender", restinio::string_view_t{"m"} ) == "f" );
 
 	REQUIRE( restinio::value_or<std::uint32_t>( params, "does_not_exits", 42UL ) == 42UL );
 	REQUIRE( restinio::value_or( params, "pi", 3.14 ) == 3.14 );
-	REQUIRE( restinio::value_or( params, "e", string_view_t{ "2.71828" } ) ==
+	REQUIRE( restinio::value_or( params, "e", restinio::string_view_t{ "2.71828" } ) ==
 															"2.71828" );
 }
 
