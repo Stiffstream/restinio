@@ -3,9 +3,9 @@ TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 {
 	{
 		auto matcher_data =
-			path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 				"/foo/:bar",
-				path2regex::options_t{} );
+				restinio::path2regex::options_t{} );
 
 		route_matcher_t
 			rm{
@@ -39,9 +39,9 @@ TEST_CASE( "Path to regex" , "[path2regex][simple]" )
 
 	{
 		auto matcher_data =
-			path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 				"/a-route/:id",
-				path2regex::options_t{} );
+				restinio::path2regex::options_t{} );
 
 		route_matcher_t
 			rm{
@@ -70,9 +70,9 @@ TEST_CASE( "Invalid path" , "[path2regex][invalid]" )
 {
 	auto try_to_create = []( const std::string & r ){
 		auto matcher_data =
-			path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+			restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 				r,
-				path2regex::options_t{} );
+				restinio::path2regex::options_t{} );
 	};
 
 	REQUIRE_THROWS( try_to_create( R"(/:foo([123]+)" ) );
@@ -133,9 +133,9 @@ TEST_CASE( "Invalid path" , "[path2regex][invalid]" )
 TEST_CASE( "value_or" , "[value_or]" )
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			"/:to/:from/:age/:gender",
-			path2regex::options_t{} );
+			restinio::path2regex::options_t{} );
 
 	route_matcher_t
 		rm{

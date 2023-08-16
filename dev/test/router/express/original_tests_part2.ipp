@@ -5,9 +5,9 @@
 TEST_CASE( "Original tests #20", "[path2regex][original][generated][n20]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/:test/)route",
-			path2regex::options_t{}.strict( true ) );
+			restinio::path2regex::options_t{}.strict( true ) );
 
 	route_matcher_t
 		rm{
@@ -50,9 +50,9 @@ TEST_CASE( "Original tests #20", "[path2regex][original][generated][n20]")
 TEST_CASE( "Original tests #21", "[path2regex][original][generated][n21]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/:test)route",
-			path2regex::options_t{}.ending( false ) );
+			restinio::path2regex::options_t{}.ending( false ) );
 
 	route_matcher_t
 		rm{
@@ -107,9 +107,9 @@ TEST_CASE( "Original tests #21", "[path2regex][original][generated][n21]")
 TEST_CASE( "Original tests #22", "[path2regex][original][generated][n22]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/:test?)route",
-			path2regex::options_t{} );
+			restinio::path2regex::options_t{} );
 
 	route_matcher_t
 		rm{
@@ -178,9 +178,9 @@ TEST_CASE( "Original tests #22", "[path2regex][original][generated][n22]")
 TEST_CASE( "Original tests #23", "[path2regex][original][generated][n23]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/:test?)route",
-			path2regex::options_t{}.strict( true ) );
+			restinio::path2regex::options_t{}.strict( true ) );
 
 	route_matcher_t
 		rm{
@@ -230,9 +230,9 @@ TEST_CASE( "Original tests #23", "[path2regex][original][generated][n23]")
 TEST_CASE( "Original tests #24", "[path2regex][original][generated][n24]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/:test?/)route",
-			path2regex::options_t{}.strict( true ) );
+			restinio::path2regex::options_t{}.strict( true ) );
 
 	route_matcher_t
 		rm{
@@ -301,9 +301,9 @@ TEST_CASE( "Original tests #24", "[path2regex][original][generated][n24]")
 TEST_CASE( "Original tests #25", "[path2regex][original][generated][n25]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/:test?/bar)route",
-			path2regex::options_t{} );
+			restinio::path2regex::options_t{} );
 
 	route_matcher_t
 		rm{
@@ -339,9 +339,9 @@ TEST_CASE( "Original tests #25", "[path2regex][original][generated][n25]")
 TEST_CASE( "Original tests #26", "[path2regex][original][generated][n26]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/:test?-bar)route",
-			path2regex::options_t{} );
+			restinio::path2regex::options_t{} );
 
 	route_matcher_t
 		rm{
@@ -396,9 +396,9 @@ TEST_CASE( "Original tests #26", "[path2regex][original][generated][n26]")
 TEST_CASE( "Original tests #27", "[path2regex][original][generated][n27]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/:test*-bar)route",
-			path2regex::options_t{} );
+			restinio::path2regex::options_t{} );
 
 	route_matcher_t
 		rm{
@@ -472,9 +472,9 @@ TEST_CASE( "Original tests #27", "[path2regex][original][generated][n27]")
 TEST_CASE( "Original tests #28", "[path2regex][original][generated][n28]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/:test+)route",
-			path2regex::options_t{} );
+			restinio::path2regex::options_t{} );
 
 	route_matcher_t
 		rm{
@@ -543,9 +543,9 @@ TEST_CASE( "Original tests #28", "[path2regex][original][generated][n28]")
 TEST_CASE( "Original tests #29", "[path2regex][original][generated][n29]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/:test(\d+)+)route",
-			path2regex::options_t{} );
+			restinio::path2regex::options_t{} );
 
 	route_matcher_t
 		rm{
@@ -588,9 +588,9 @@ TEST_CASE( "Original tests #29", "[path2regex][original][generated][n29]")
 TEST_CASE( "Original tests #30", "[path2regex][original][generated][n30]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/route.:ext(json|xml)+)route",
-			path2regex::options_t{} );
+			restinio::path2regex::options_t{} );
 
 	route_matcher_t
 		rm{
@@ -659,9 +659,9 @@ TEST_CASE( "Original tests #30", "[path2regex][original][generated][n30]")
 TEST_CASE( "Original tests #31", "[path2regex][original][generated][n31]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/:test*)route",
-			path2regex::options_t{} );
+			restinio::path2regex::options_t{} );
 
 	route_matcher_t
 		rm{
@@ -742,9 +742,9 @@ TEST_CASE( "Original tests #31", "[path2regex][original][generated][n31]")
 TEST_CASE( "Original tests #32", "[path2regex][original][generated][n32]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/route.:ext([a-z]+)*)route",
-			path2regex::options_t{} );
+			restinio::path2regex::options_t{} );
 
 	route_matcher_t
 		rm{
@@ -825,9 +825,9 @@ TEST_CASE( "Original tests #32", "[path2regex][original][generated][n32]")
 TEST_CASE( "Original tests #33", "[path2regex][original][generated][n33]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/:test(\d+))route",
-			path2regex::options_t{} );
+			restinio::path2regex::options_t{} );
 
 	route_matcher_t
 		rm{
@@ -877,9 +877,9 @@ TEST_CASE( "Original tests #33", "[path2regex][original][generated][n33]")
 TEST_CASE( "Original tests #34", "[path2regex][original][generated][n34]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/:test(\d+))route",
-			path2regex::options_t{}.ending( false ) );
+			restinio::path2regex::options_t{}.ending( false ) );
 
 	route_matcher_t
 		rm{
@@ -941,9 +941,9 @@ TEST_CASE( "Original tests #34", "[path2regex][original][generated][n34]")
 TEST_CASE( "Original tests #35", "[path2regex][original][generated][n35]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/:test(.*))route",
-			path2regex::options_t{} );
+			restinio::path2regex::options_t{} );
 
 	route_matcher_t
 		rm{
@@ -998,9 +998,9 @@ TEST_CASE( "Original tests #35", "[path2regex][original][generated][n35]")
 TEST_CASE( "Original tests #36", "[path2regex][original][generated][n36]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/:route([a-z]+))route",
-			path2regex::options_t{} );
+			restinio::path2regex::options_t{} );
 
 	route_matcher_t
 		rm{
@@ -1043,9 +1043,9 @@ TEST_CASE( "Original tests #36", "[path2regex][original][generated][n36]")
 TEST_CASE( "Original tests #37", "[path2regex][original][generated][n37]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/:route(this|that))route",
-			path2regex::options_t{} );
+			restinio::path2regex::options_t{} );
 
 	route_matcher_t
 		rm{
@@ -1107,9 +1107,9 @@ TEST_CASE( "Original tests #37", "[path2regex][original][generated][n37]")
 TEST_CASE( "Original tests #38", "[path2regex][original][generated][n38]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(/:path(abc|xyz)*)route",
-			path2regex::options_t{} );
+			restinio::path2regex::options_t{} );
 
 	route_matcher_t
 		rm{
@@ -1228,9 +1228,9 @@ TEST_CASE( "Original tests #38", "[path2regex][original][generated][n38]")
 TEST_CASE( "Original tests #39", "[path2regex][original][generated][n39]")
 {
 	auto matcher_data =
-		path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
+		restinio::path2regex::path2regex< restinio::router::impl::route_params_appender_t, regex_engine_t >(
 			R"route(test)route",
-			path2regex::options_t{} );
+			restinio::path2regex::options_t{} );
 
 	route_matcher_t
 		rm{
