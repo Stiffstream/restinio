@@ -25,7 +25,7 @@ option(RESTINIO_USE_EXTERNAL_SOBJECTIZER "Allow add_subdirectory(so_5) in the ma
 
 # Since v.0.6.5 a user can force usage of already installed http-parser
 # library.
-option(RESTINIO_USE_EXTERNAL_HTTP_PARSER "Use already installed http-parser library" OFF)
+option(RESTINIO_USE_EXTERNAL_LLHTTP "Use already installed http-parser library" OFF)
 
 # Since v.0.6.7 a user can force usage of already installed nonstd
 # libraries.
@@ -94,7 +94,7 @@ IF (RESTINIO_MASTER_PROJECT)
 		ENDIF ()
 
 		# HTTP parser
-		IF (RESTINIO_USE_EXTERNAL_HTTP_PARSER)
+		IF (RESTINIO_USE_EXTERNAL_LLHTTP)
 			find_package(http-parser REQUIRED)
 		ELSE ()
 			find_package(unofficial-http-parser CONFIG REQUIRED)
@@ -108,10 +108,10 @@ IF (RESTINIO_MASTER_PROJECT)
 		include_directories("${CMAKE_SOURCE_DIR}/clara")
 
 		# HTTP parser
-		IF (RESTINIO_USE_EXTERNAL_HTTP_PARSER)
+		IF (RESTINIO_USE_EXTERNAL_LLHTTP)
 			find_package(http-parser REQUIRED)
 		ELSE ()
-			add_subdirectory(nodejs/http_parser)
+			add_subdirectory(nodejs/llhttp_parser)
 		ENDIF ()
 
 		# fmtlib

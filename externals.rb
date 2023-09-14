@@ -25,17 +25,17 @@ MxxRu::arch_externals :asio_mxxru do |e|
   e.map_dir 'dev/asio_mxxru' => 'dev'
 end
 
-MxxRu::arch_externals :nodejs_http_parser do |e|
-  e.url 'https://github.com/nodejs/http-parser/archive/v2.9.4.tar.gz'
+MxxRu::arch_externals :llhttp do |e|
+  e.url 'https://github.com/nodejs/llhttp/archive/refs/tags/release/v9.1.2.tar.gz'
 
-  e.map_file 'http_parser.h' => 'dev/nodejs/http_parser/*'
-  e.map_file 'http_parser.c' => 'dev/nodejs/http_parser/*'
+  e.map_dir 'include' => 'dev/nodejs/llhttp'
+  e.map_dir 'src' => 'dev/nodejs/llhttp'
 end
 
-MxxRu::arch_externals :nodejs_http_parser_mxxru do |e|
-  e.url 'https://github.com/Stiffstream/nodejs_http_parser_mxxru/archive/v.0.2.1.tar.gz'
+MxxRu::arch_externals :nodejs_llhttp_mxxru do |e|
+  e.url 'https://github.com/ngrodzitski/nodejs_llhttp_mxxru/archive/4fc1d44865f091ddca689e4a98482ebdbc97d17b.tar.gz'
 
-  e.map_dir 'dev/nodejs/http_parser_mxxru' => 'dev/nodejs'
+  e.map_dir 'dev/nodejs/llhttp_mxxru' => 'dev/nodejs'
 end
 
 MxxRu::arch_externals :fmt do |e|

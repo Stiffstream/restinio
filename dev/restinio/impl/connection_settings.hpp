@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <http_parser.h>
+#include <llhttp.h>
 
 #include <restinio/connection_state_listener.hpp>
 #include <restinio/incoming_http_msg_limits.hpp>
@@ -139,7 +139,7 @@ struct connection_settings_t final
 	template < typename Settings >
 	connection_settings_t(
 		Settings && settings,
-		http_parser_settings parser_settings,
+		llhttp_settings_t parser_settings,
 		timer_manager_handle_t timer_manager )
 		:	connection_state_listener_holder_t{ settings }
 		,	m_request_handler{ settings.request_handler() }
@@ -171,7 +171,7 @@ struct connection_settings_t final
 	/*!
 		Parsing settings are common for each connection.
 	*/
-	const http_parser_settings m_parser_settings;
+	const llhttp_settings_t m_parser_settings;
 
 	//! Params from server_settings_t.
 	//! \{
