@@ -95,7 +95,7 @@ IF (RESTINIO_MASTER_PROJECT)
 
 		# HTTP parser
 		IF (RESTINIO_USE_EXTERNAL_LLHTTP)
-			find_package(http-parser REQUIRED)
+			find_package(llhttp REQUIRED)
 		ELSE ()
 			find_package(unofficial-http-parser CONFIG REQUIRED)
 		ENDIF ()
@@ -109,9 +109,9 @@ IF (RESTINIO_MASTER_PROJECT)
 
 		# HTTP parser
 		IF (RESTINIO_USE_EXTERNAL_LLHTTP)
-			find_package(http-parser REQUIRED)
+			find_package(llhttp REQUIRED)
 		ELSE ()
-			add_subdirectory(nodejs/llhttp_parser)
+			add_subdirectory(nodejs/llhttp)
 		ENDIF ()
 
 		# fmtlib
