@@ -1,4 +1,4 @@
-project(sample)
+project(${RESTINIO_LIBRARY_NAME}_sample)
 
 add_subdirectory(hello_world_basic)
 add_subdirectory(hello_world)
@@ -21,8 +21,10 @@ if ( RESTINIO_SOBJECTIZER_ENABLED )
 	add_subdirectory(async_handling_with_sobjectizer)
 endif()
 
-add_subdirectory(compression)
-add_subdirectory(decompression)
+if (ZLIB_FOUND)
+	add_subdirectory(compression)
+	add_subdirectory(decompression)
+endif ()
 
 if ( RESTINIO_SOBJECTIZER_ENABLED )
 	add_subdirectory(notificators)
