@@ -66,8 +66,8 @@ if (RESTINIO_ASIO_SOURCE STREQUAL "standalone")
         message(STATUS "${RESTINIO_LIBRARY_NAME} target will use asio_INCLUDE_DIRS include dirs: ${asio_INCLUDE_DIRS}")
     else ()
         message(FATAL_ERROR
-                "Unable to identify asio::asio or asio_INCLUDE_DIRS "
-                "(RESTINIO_ASIO_SOURCE=standalone), giving up")
+                "Unable to identify how to depend on standalone ASIO "
+                "Giving up...")
     endif()
 elseif (RESTINIO_ASIO_SOURCE STREQUAL "boost")
     if(RESTINIO_USE_SYSTEM_BOOST_ASIO)
@@ -83,8 +83,8 @@ elseif (RESTINIO_ASIO_SOURCE STREQUAL "boost")
         message(STATUS "${RESTINIO_LIBRARY_NAME} target will use Boost_INCLUDE_DIRS include dirs: ${Boost_INCLUDE_DIRS}")
     else ()
         message(FATAL_ERROR
-                "Unable to identify Boost::headers, Boost::asio or Boost_INCLUDE_DIRS "
-                "(RESTINIO_ASIO_SOURCE=boost), giving up")
+                "Unable to identify how to depend on Boost::asio. "
+                "Giving up...")
     endif ()
 else ()
     message(FATAL_ERROR "Invalid value for RESTINIO_ASIO_SOURCE (${RESTINIO_ASIO_SOURCE})")
@@ -92,11 +92,16 @@ endif ()
 # --------------------------------------------------------------------
 
 # --------------------------------------------------------------------
-# Handle FMT dependency.
+# Handle LLHTTP dependency.
 if(RESTINIO_USE_SYSTEM_LLHTTP)
-    message(STATUS "Using system llhttp")
-    # target_compile_definitions(${RESTINIO_LIBRARY_NAME} INTERFACE FMT_HEADER_ONLY=0 )
-    target_link_libraries(${RESTINIO_LIBRARY_NAME} INTERFACE llhttp)
+    if (RESTINIO_LLHTTP_LIB_LINK_NAME)
+        message(STATUS "Using system llhttp with linking to custom lib name: ${RESTINIO_LLHTTP_LIB_LINK_NAME}")
+        # target_compile_definitions(${RESTINIO_LIBRARY_NAME} INTERFACE FMT_HEADER_ONLY=0 )
+        target_link_libraries(${RESTINIO_LIBRARY_NAME} INTERFACE ${RESTINIO_LLHTTP_LIB_LINK_NAME})
+    else()
+        message(STATUS "Using system llhttp")
+        target_link_libraries(${RESTINIO_LIBRARY_NAME} INTERFACE llhttp)
+    endif()
 elseif (TARGET llhttp::llhttp)
     target_link_libraries(${RESTINIO_LIBRARY_NAME} INTERFACE llhttp::llhttp)
     message(STATUS "${RESTINIO_LIBRARY_NAME} target will depend on 'llhttp::llhttp' target")
@@ -162,7 +167,7 @@ elseif (nonstd_INCLUDE_DIRS)
     message(STATUS "${RESTINIO_LIBRARY_NAME} target will use nonstd_INCLUDE_DIRS include dirs: ${nonstd_INCLUDE_DIRS}")
 else ()
     message(FATAL_ERROR
-            "Unable to identify nonstd::expected-lite, expected-lite::expected-lite, nonstd_INCLUDE_DIRS or nonstd_expected-lite_INCLUDE_DIRS. "
+            "Unable to identify how to depend on nonstd::expected-lite. "
             "Giving up...")
 endif()
 # --------------------------------------------------------------------

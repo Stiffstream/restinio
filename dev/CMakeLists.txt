@@ -108,6 +108,9 @@ else ()
     message(STATUS "RESTINIO_FMT_TARGET:  ${RESTINIO_FMT_TARGET}")
 endif ()
 
+# ====================================================================
+# Define dependencies.
+message(STATUS "Defining RESTinio dependencies...")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
@@ -121,7 +124,9 @@ if (RESTINIO_ASIO_SOURCE STREQUAL "standalone")
         endif()
     endif ()
 else ()
-    # TODO
+    if (NOT RESTINIO_USE_SYSTEM_BOOST_ASIO)
+        find_package(Boost REQUIRED)
+    endif ()
 endif ()
 
 if (NOT RESTINIO_USE_SYSTEM_LLHTTP)
@@ -180,10 +185,12 @@ IF (PCRE2_FOUND)
   message( STATUS "PCRE2_LIBRARIES='" ${PCRE2_LIBRARIES} "'" )
   message( STATUS "PCRE2_INCLUDE_DIRS='" ${PCRE2_INCLUDE_DIRS} "'" )
 ENDIF ()
+# ====================================================================
 
 message("========================================")
 message(STATUS "Defining restinio target...")
 add_subdirectory(restinio)
+message("========================================")
 
 if (RESTINIO_TEST)
     enable_testing()
