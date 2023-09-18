@@ -261,24 +261,32 @@ restinio_message_complete_cb( llhttp_t * parser )
 inline int
 restinio_chunk_extension_name_cb( llhttp_t * /*parser*/, const char * /*at*/, size_t /*length*/  )
 {
+	// TODO: make use of chunk attributes name-value pairs
+	//       by extending chunked_input_info_block_t or chunk_info_t.
 	return 0;
 }
 
 inline int
 restinio_chunk_extension_value_cb( llhttp_t * /*parser*/, const char * /*at*/, size_t /*length*/  )
 {
+	// TODO: make use of chunk attributes name-value pairs
+	//       by extending chunked_input_info_block_t or chunk_info_t.
 	return 0;
 }
 
 inline int
 restinio_chunk_extension_name_complete_cb( llhttp_t * /*parser*/ )
 {
+	// TODO: make use of chunk attributes name-value pairs
+	//       by extending chunked_input_info_block_t or chunk_info_t.
 	return 0;
 }
 
 inline int
 restinio_chunk_extension_value_complete_cb( llhttp_t * /*parser*/ )
 {
+	// TODO: make use of chunk attributes name-value pairs
+	//       by extending chunked_input_info_block_t or chunk_info_t.
 	return 0;
 }
 /// @}

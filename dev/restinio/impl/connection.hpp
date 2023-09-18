@@ -632,7 +632,24 @@ class connection_t final
 				return static_cast< std::size_t >( parser->error_pos - data );
 			}();
 
-			assert( static_cast< std::size_t >( nparsed ) <= length );
+			if( nparsed > length )
+			{
+				// Parser is in the unreliable state,
+				// so we done with this connection.
+				trigger_error_and_close( [&]{
+					return fmt::format(
+							RESTINIO_FMT_FORMAT_STRING(
+								"[connection:{}] unexpected parser behavior: "
+								"llhttp_execute() reports parsed bytes number ({}) "
+								"is greater than the size of a buffer ({})"
+								"that was fed to the parser" ),
+							connection_id(),
+							nparsed,
+							length );
+				} );
+				return;
+			}
+
 			m_input.m_parser_ctx.m_bytes_parsed += nparsed;
 
 			// If entire http-message was obtained,
