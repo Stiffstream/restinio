@@ -112,6 +112,12 @@ endif ()
 option(BUILD_SHARED_LIBS "Build shared libraries (.dll/.so)" OFF)
 option(BUILD_STATIC_LIBS "Build static libraries (.lib/.a)" ON)
 
+if (MSVC)
+    add_compile_options(/W3)
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+    add_compile_definitions(_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS)
+endif ()
+
 # ====================================================================
 # Define dependencies.
 message(STATUS "Defining RESTinio dependencies...")
