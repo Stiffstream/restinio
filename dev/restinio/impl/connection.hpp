@@ -10,7 +10,7 @@
 
 #include <restinio/asio_include.hpp>
 
-#include <http_parser.h>
+#include <llhttp.h>
 
 #include <restinio/impl/include_fmtlib.hpp>
 
@@ -68,6 +68,14 @@ struct http_parser_ctx_t
 	 * @since v.0.6.9
 	 */
 	chunked_input_info_block_t m_chunked_info_block;
+
+	/*!
+	 * @brief How many bytes were parsed for current request.
+	 *
+	 * @since v.0.7.0
+	 */
+	std::size_t m_bytes_parsed;
+
 	//! \}
 
 	//! Flag: is http message parsed completely.
@@ -110,6 +118,7 @@ struct http_parser_ctx_t
 		m_last_value_total_size = 0u;
 		m_last_was_value = true;
 		m_leading_headers_completed = false;
+		m_bytes_parsed = 0;
 		m_message_complete = false;
 		m_total_field_count = 0u;
 	}
@@ -148,50 +157,70 @@ struct http_parser_ctx_t
 	Is used to initialize const value in connection_settings_t ctor.
 */
 template< typename Http_Methods >
-inline http_parser_settings
+inline llhttp_settings_t
 create_parser_settings() noexcept
 {
-	http_parser_settings parser_settings;
-	http_parser_settings_init( &parser_settings );
+	llhttp_settings_t parser_settings;
+	llhttp_settings_init( &parser_settings );
 
 	parser_settings.on_url =
-		[]( http_parser * parser, const char * at, size_t length ) -> int {
+		[]( llhttp_t * parser, const char * at, size_t length ) -> int {
 			return restinio_url_cb( parser, at, length );
 		};
 
 	parser_settings.on_header_field =
-		[]( http_parser * parser, const char * at, size_t length ) -> int {
+		[]( llhttp_t * parser, const char * at, size_t length ) -> int {
 			return restinio_header_field_cb( parser, at, length );
 		};
 
 	parser_settings.on_header_value =
-			[]( http_parser * parser, const char * at, size_t length ) -> int {
+			[]( llhttp_t * parser, const char * at, size_t length ) -> int {
 			return restinio_header_value_cb( parser, at, length );
 		};
 
 	parser_settings.on_headers_complete =
-		[]( http_parser * parser ) -> int {
+		[]( llhttp_t * parser ) -> int {
 			return restinio_headers_complete_cb( parser );
 		};
 
 	parser_settings.on_body =
-		[]( http_parser * parser, const char * at, size_t length ) -> int {
+		[]( llhttp_t * parser, const char * at, size_t length ) -> int {
 			return restinio_body_cb( parser, at, length );
 		};
 
 	parser_settings.on_chunk_header =
-		[]( http_parser * parser ) -> int {
+		[]( llhttp_t * parser ) -> int {
 			return restinio_chunk_header_cb( parser );
 		};
 
 	parser_settings.on_chunk_complete =
-		[]( http_parser * parser ) -> int {
+		[]( llhttp_t * parser ) -> int {
 			return restinio_chunk_complete_cb( parser );
 		};
 
 	parser_settings.on_message_complete =
-		[]( http_parser * parser ) -> int {
+		[]( llhttp_t * parser ) -> int {
 			return restinio_message_complete_cb< Http_Methods >( parser );
+		};
+
+	parser_settings.on_chunk_extension_name =
+		[]( llhttp_t * parser, const char * at, size_t length  ) -> int {
+			return restinio_chunk_extension_name_cb( parser, at, length );
+		};
+
+	parser_settings.on_chunk_extension_value =
+		[]( llhttp_t * parser, const char * at, size_t length  ) -> int {
+			return restinio_chunk_extension_value_cb( parser, at, length );
+		};
+
+	parser_settings.on_chunk_extension_name_complete =
+		[]( llhttp_t * parser ) -> int {
+			return restinio_chunk_extension_name_complete_cb( parser );
+		};
+
+	parser_settings.on_chunk_extension_value_complete =
+		[]( llhttp_t * parser ) -> int {
+			return restinio_chunk_extension_value_complete_cb( parser );
 		};
 
 	return parser_settings;
@@ -226,14 +255,18 @@ struct connection_input_t
 {
 	connection_input_t(
 		std::size_t buffer_size,
-		incoming_http_msg_limits_t limits )
+		incoming_http_msg_limits_t limits,
+		const llhttp_settings_t* settings )
 		:	m_parser_ctx{ limits }
 		,	m_buf{ buffer_size }
-	{}
+	{
+		llhttp_init( &m_parser, llhttp_type_t::HTTP_REQUEST, settings );
+		m_parser.data = &m_parser_ctx;
+	}
 
 	//! HTTP-parser.
 	//! \{
-	http_parser m_parser;
+	llhttp_t m_parser;
 	http_parser_ctx_t m_parser_ctx;
 	//! \}
 
@@ -252,11 +285,10 @@ struct connection_input_t
 	reset_parser()
 	{
 		// Reinit parser.
-		http_parser_init( &m_parser, HTTP_REQUEST);
+		llhttp_reset( &m_parser);
 
 		// Reset context and attach it to parser.
 		m_parser_ctx.reset();
-		m_parser.data = &m_parser_ctx;
 	}
 };
 
@@ -335,7 +367,8 @@ class connection_t final
 			,	m_remote_endpoint{ std::move( remote_endpoint ) }
 			,	m_input{
 					m_settings->m_buffer_size,
-					m_settings->m_incoming_http_msg_limits
+					m_settings->m_incoming_http_msg_limits,
+					&m_settings->m_parser_settings
 				}
 			,	m_response_coordinator{ m_settings->m_max_pipelined_requests }
 			,	m_timer_guard{ m_settings->create_timer_guard() }
@@ -552,7 +585,7 @@ class connection_t final
 				// then close connection.
 				if( !error_is_operation_aborted( ec ) )
 				{
-					if ( !error_is_eof( ec ) || 0 != m_input.m_parser.nread )
+					if ( !error_is_eof( ec ) || 0 != m_input.m_parser_ctx.m_bytes_parsed )
 						trigger_error_and_close( [&]{
 							return fmt::format(
 									RESTINIO_FMT_FORMAT_STRING(
@@ -560,7 +593,7 @@ class connection_t final
 										"parsed bytes: {}" ),
 									connection_id(),
 									ec.message(),
-									m_input.m_parser.nread );
+									m_input.m_parser_ctx.m_bytes_parsed );
 						} );
 					else
 					{
@@ -588,14 +621,36 @@ class connection_t final
 		void
 		consume_data( const char * data, std::size_t length )
 		{
-			auto & parser = m_input.m_parser;
+			auto * parser = &m_input.m_parser;
 
-			const auto nparsed =
-				http_parser_execute(
-					&parser,
-					&( m_settings->m_parser_settings ),
-					data,
-					length );
+			const auto parse_err =
+				llhttp_execute( parser, data, length );
+
+			const auto nparsed = [&]{
+				if( !parser->error_pos )
+					return length;
+				return static_cast< std::size_t >( parser->error_pos - data );
+			}();
+
+			if( nparsed > length )
+			{
+				// Parser is in the unreliable state,
+				// so we done with this connection.
+				trigger_error_and_close( [&]{
+					return fmt::format(
+							RESTINIO_FMT_FORMAT_STRING(
+								"[connection:{}] unexpected parser behavior: "
+								"llhttp_execute() reports parsed bytes number ({}) "
+								"is greater than the size of a buffer ({})"
+								"that was fed to the parser" ),
+							connection_id(),
+							nparsed,
+							length );
+				} );
+				return;
+			}
+
+			m_input.m_parser_ctx.m_bytes_parsed += nparsed;
 
 			// If entire http-message was obtained,
 			// parser is stopped and the might be a part of consecutive request
@@ -604,11 +659,19 @@ class connection_t final
 			// data left in buffer.
 			m_input.m_buf.consumed_bytes( nparsed );
 
-			if( HPE_OK != parser.http_errno &&
-				HPE_PAUSED != parser.http_errno )
+			if( HPE_OK != parse_err &&
+				HPE_PAUSED != parse_err &&
+				HPE_PAUSED_UPGRADE != parse_err )
 			{
-				// PARSE ERROR:
-				auto err = HTTP_PARSER_ERRNO( &parser );
+				// Parser error must be the one defined by llhttp_errno.
+				// It is possible to get a random error value
+				// (e.g. providing parser-callbacks that return
+				// unconventional errors), here we put an assert
+				// to quickly highlight the problems.
+				// As all the parser-callbacks are implemented by
+				// restinio the assert bellow MUST pass.
+				assert( llhttp_errno::HPE_OK <= parse_err &&
+						llhttp_errno::HPE_CB_RESET >= parse_err );
 
 				// TODO: handle case when there are some request in process.
 				trigger_error_and_close( [&]{
@@ -616,8 +679,8 @@ class connection_t final
 							RESTINIO_FMT_FORMAT_STRING(
 								"[connection:{}] parser error {}: {}" ),
 							connection_id(),
-							http_errno_name( err ),
-							http_errno_description( err ) );
+							llhttp_errno_name( parse_err ),
+							llhttp_get_error_reason( parser ) );
 				} );
 
 				// nothing to do.
@@ -664,8 +727,8 @@ class connection_t final
 									"[connection:{}] request received (#{}): {} {}" ),
 								connection_id(),
 								request_id,
-								http_method_str(
-									static_cast<http_method>( parser.method ) ),
+								llhttp_method_name(
+									static_cast<llhttp_method>( parser.method ) ),
 								parser_ctx.m_header.request_target() );
 					} );
 
@@ -721,8 +784,8 @@ class connection_t final
 									"[connection:{}] upgrade request received: {} {}; "
 									"Upgrade: '{}';" ),
 								connection_id(),
-								http_method_str(
-									static_cast<http_method>( parser.method ) ),
+								llhttp_method_name(
+									static_cast<llhttp_method>( parser.method ) ),
 								parser_ctx.m_header.request_target(),
 								parser_ctx.m_header.get_field_or(
 									http_field::upgrade, default_value ) );
@@ -788,8 +851,8 @@ class connection_t final
 							"[connection:{}] handle upgrade request (#{}): {} {}" ),
 						connection_id(),
 						request_id,
-						http_method_str(
-							static_cast<http_method>( parser.method ) ),
+						llhttp_method_name(
+							static_cast<llhttp_method>( parser.method ) ),
 						parser_ctx.m_header.request_target() );
 			} );
 

@@ -7,7 +7,7 @@
 */
 
 inline int
-restinio_url_cb( http_parser * parser, const char * at, size_t length )
+restinio_url_cb( llhttp_t * parser, const char * at, size_t length )
 {
 	try
 	{
@@ -32,7 +32,7 @@ restinio_url_cb( http_parser * parser, const char * at, size_t length )
 }
 
 inline int
-restinio_header_field_cb( http_parser * parser, const char *at, size_t length )
+restinio_header_field_cb( llhttp_t * parser, const char *at, size_t length )
 {
 	try
 	{
@@ -77,7 +77,7 @@ append_last_field_accessor( http_header_fields_t & fields, string_view_t value )
 }
 
 inline int
-restinio_header_value_cb( http_parser * parser, const char *at, size_t length )
+restinio_header_value_cb( llhttp_t * parser, const char *at, size_t length )
 {
 	try
 	{
@@ -121,7 +121,7 @@ restinio_header_value_cb( http_parser * parser, const char *at, size_t length )
 }
 
 inline int
-restinio_headers_complete_cb( http_parser * parser )
+restinio_headers_complete_cb( llhttp_t * parser )
 {
 	auto * ctx =
 		reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
@@ -156,7 +156,7 @@ restinio_headers_complete_cb( http_parser * parser )
 
 
 inline int
-restinio_body_cb( http_parser * parser, const char *at, size_t length )
+restinio_body_cb( llhttp_t * parser, const char *at, size_t length )
 {
 	try
 	{
@@ -183,7 +183,7 @@ restinio_body_cb( http_parser * parser, const char *at, size_t length )
 }
 
 inline int
-restinio_chunk_header_cb( http_parser * parser )
+restinio_chunk_header_cb( llhttp_t * parser )
 {
 	try
 	{
@@ -215,7 +215,7 @@ restinio_chunk_header_cb( http_parser * parser )
 }
 
 inline int
-restinio_chunk_complete_cb( http_parser * /*parser*/ )
+restinio_chunk_complete_cb( llhttp_t * /*parser*/ )
 {
 	// There is nothing to do.
 	return 0;
@@ -223,11 +223,8 @@ restinio_chunk_complete_cb( http_parser * /*parser*/ )
 
 template< typename Http_Methods >
 int
-restinio_message_complete_cb( http_parser * parser )
+restinio_message_complete_cb( llhttp_t * parser )
 {
-	// If entire http-message consumed, we need to stop parser.
-	http_parser_pause( parser, 1 );
-
 	auto * ctx =
 		reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
 			parser->data );
@@ -243,10 +240,53 @@ restinio_message_complete_cb( http_parser * parser )
 	ctx->m_message_complete = true;
 	ctx->m_header.method( Http_Methods::from_nodejs( parser->method ) );
 
-	if( 0 == parser->upgrade )
-		ctx->m_header.should_keep_alive( 0 != http_should_keep_alive( parser ) );
+	if( 0 == llhttp_get_upgrade( parser ) )
+	{
+		ctx->m_header.should_keep_alive( 0 != llhttp_should_keep_alive( parser ) );
+	}
 	else
+	{
 		ctx->m_header.connection( http_connection_header_t::upgrade );
+	}
 
+	return HPE_PAUSED;
+}
+
+/*!
+ * @name Chunked encoding callbacks.
+ *
+ * @since v.0.7.0
+ */
+/// @{
+inline int
+restinio_chunk_extension_name_cb( llhttp_t * /*parser*/, const char * /*at*/, size_t /*length*/  )
+{
+	// TODO: make use of chunk attributes name-value pairs
+	//       by extending chunked_input_info_block_t or chunk_info_t.
 	return 0;
 }
+
+inline int
+restinio_chunk_extension_value_cb( llhttp_t * /*parser*/, const char * /*at*/, size_t /*length*/  )
+{
+	// TODO: make use of chunk attributes name-value pairs
+	//       by extending chunked_input_info_block_t or chunk_info_t.
+	return 0;
+}
+
+inline int
+restinio_chunk_extension_name_complete_cb( llhttp_t * /*parser*/ )
+{
+	// TODO: make use of chunk attributes name-value pairs
+	//       by extending chunked_input_info_block_t or chunk_info_t.
+	return 0;
+}
+
+inline int
+restinio_chunk_extension_value_complete_cb( llhttp_t * /*parser*/ )
+{
+	// TODO: make use of chunk attributes name-value pairs
+	//       by extending chunked_input_info_block_t or chunk_info_t.
+	return 0;
+}
+/// @}
