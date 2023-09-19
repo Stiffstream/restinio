@@ -18,4 +18,8 @@ IF (WIN32)
 	TARGET_LINK_LIBRARIES(${UNITTEST} PRIVATE wsock32 ws2_32)
 ENDIF ()
 
+if (MSVC)
+    target_compile_options(${UNITTEST} PRIVATE /bigobj)
+endif ()
+
 add_test(NAME ${UNITTEST} COMMAND ${UNITTEST})
