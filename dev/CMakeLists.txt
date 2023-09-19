@@ -108,6 +108,7 @@ else ()
     message(STATUS "RESTINIO_FMT_TARGET:  ${RESTINIO_FMT_TARGET}")
 endif ()
 
+# This effects llhttp and fmt.
 option(BUILD_SHARED_LIBS "Build shared libraries (.dll/.so)" OFF)
 option(BUILD_STATIC_LIBS "Build static libraries (.lib/.a)" ON)
 
@@ -133,13 +134,17 @@ else ()
 endif ()
 
 if (NOT RESTINIO_USE_SYSTEM_LLHTTP)
+    message("========================================")
     message(STATUS "Add subdirectory nodejs/llhttp")
     add_subdirectory(nodejs/llhttp)
+    message("========================================")
 endif ()
 
 if (NOT RESTINIO_USE_SYSTEM_FMT)
+    message("========================================")
     message(STATUS "Add subdirectory fmt")
     add_subdirectory(fmt)
+    message("========================================")
 endif ()
 
 if (NOT RESTINIO_USE_SYSTEM_EXPECTED_LITE)
@@ -152,8 +157,10 @@ if (NOT RESTINIO_USE_SYSTEM_EXPECTED_LITE)
 endif ()
 
 if (RESTINIO_WITH_SOBJECTIZER)
+    message("========================================")
     SET(SOBJECTIZER_BUILD_STATIC ON)
     add_subdirectory(so_5)
+    message("========================================")
 endif ()
 
 find_package(ZLIB)
