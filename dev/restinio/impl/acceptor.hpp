@@ -608,7 +608,7 @@ class acceptor_t final
 		{
 			std::optional< asio_ns::ip::address > result;
 
-			if( auto * str_v = get_if<std::string>( &from ) )
+			if( auto * str_v = std::get_if<std::string>( &from ) )
 			{
 				auto str_addr = *str_v;
 				if( str_addr == "localhost" )
@@ -618,7 +618,7 @@ class acceptor_t final
 
 				result = asio_ns::ip::address::from_string( str_addr );
 			}
-			else if( auto * addr_v = get_if<asio_ns::ip::address>( &from ) )
+			else if( auto * addr_v = std::get_if<asio_ns::ip::address>( &from ) )
 			{
 				result = *addr_v;
 			}

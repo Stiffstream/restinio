@@ -183,7 +183,7 @@ inline expected_t< params_t, extraction_error_t >
 try_extract_params(
 	const authorization_value_t & http_field )
 {
-	const auto * token68 = get_if<authorization_value_t::token68_t>(
+	const auto * token68 = std::get_if<authorization_value_t::token68_t>(
 			&http_field.auth_param );
 	if( !token68 )
 		return make_unexpected( extraction_error_t::invalid_basic_auth_param );

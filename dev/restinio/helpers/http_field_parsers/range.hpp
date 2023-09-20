@@ -13,7 +13,7 @@
 
 #include <restinio/helpers/http_field_parsers/basics.hpp>
 
-#include <restinio/variant.hpp>
+#include <variant>
 
 namespace restinio
 {
@@ -82,7 +82,7 @@ struct suffix_length_t
  * @since v.0.6.2
  */
 template< typename T >
-using byte_range_spec_t = variant_t<
+using byte_range_spec_t = std::variant<
 		double_ended_range_t<T>,
 		open_ended_range_t<T>,
 		suffix_length_t<T> >;
@@ -123,7 +123,7 @@ struct other_ranges_specifier_t
  * @since v.0.6.2
  */
 template< typename T >
-using value_t = variant_t<
+using value_t = std::variant<
 		byte_ranges_specifier_t<T>,
 		other_ranges_specifier_t >;
 
@@ -300,10 +300,10 @@ struct range_value_t
 		const auto parse_result = range_type::try_parse(range_field_value);
 		if(parse_result) {
 			if(const auto * byte_ranges =
-					restinio::get_if<range_type::byte_ranges_specifier_t>(parse_result->value)) {
+					std::get_if<range_type::byte_ranges_specifier_t>(parse_result->value)) {
 				for(const auto & r : byte_ranges->ranges) {
 					if(const auto * full_range =
-							restinio::get_if<range_type::double_ended_range_t>(&r)) {
+							std::get_if<range_type::double_ended_range_t>(&r)) {
 						... // access to full_range->first and full_range->last
 					}
 					else
@@ -332,10 +332,10 @@ struct range_value_t
 		const auto parse_result = range_type::try_parse(range_field_value);
 		if(parse_result) {
 			if(const auto * byte_ranges =
-					restinio::get_if<range_type::byte_ranges_specifier_t>(parse_result->value)) {
+					std::get_if<range_type::byte_ranges_specifier_t>(parse_result->value)) {
 				for(const auto & r : byte_ranges->ranges) {
 					if(const auto * open_range =
-							restinio::get_if<range_type::open_ended_range_t>(&r)) {
+							std::get_if<range_type::open_ended_range_t>(&r)) {
 						... // access to open_range->first.
 					}
 					else
@@ -363,10 +363,10 @@ struct range_value_t
 		const auto parse_result = range_type::try_parse(range_field_value);
 		if(parse_result) {
 			if(const auto * byte_ranges =
-					restinio::get_if<range_type::byte_ranges_specifier_t>(parse_result->value)) {
+					std::get_if<range_type::byte_ranges_specifier_t>(parse_result->value)) {
 				for(const auto & r : byte_ranges->ranges) {
 					if(const auto * suffix =
-							restinio::get_if<range_type::suffix_length_t>(&r)) {
+							std::get_if<range_type::suffix_length_t>(&r)) {
 						... // access to suffix->first.
 					}
 					else
@@ -396,18 +396,18 @@ struct range_value_t
 		const auto parse_result = range_type::try_parse(range_field_value);
 		if(parse_result) {
 			if(const auto * byte_ranges =
-					restinio::get_if<range_type::byte_ranges_specifier_t>(parse_result->value)) {
+					std::get_if<range_type::byte_ranges_specifier_t>(parse_result->value)) {
 				for(const auto & r : byte_ranges->ranges) {
 					if(const auto * full_range =
-							restinio::get_if<range_type::double_ended_range_t>(&r)) {
+							std::get_if<range_type::double_ended_range_t>(&r)) {
 						... // access to full_range->first and full_range->last
 					}
 					else if(const auto * open_range =
-							restinio::get_if<range_type::open_ended_range_t>(&r)) {
+							std::get_if<range_type::open_ended_range_t>(&r)) {
 						... // access to open_range->first.
 					}
 					else if(const auto * suffix =
-							restinio::get_if<range_type::suffix_length_t>(&r)) {
+							std::get_if<range_type::suffix_length_t>(&r)) {
 						... // access to suffix->first.
 					}
 				}

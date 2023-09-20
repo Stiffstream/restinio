@@ -15,9 +15,9 @@
 
 #include <restinio/http_headers.hpp>
 #include <restinio/request_handler.hpp>
-#include <restinio/variant.hpp>
 
 #include <iostream>
+#include <variant>
 
 namespace restinio
 {
@@ -49,7 +49,7 @@ namespace try_extract_field_details
  * @since v.0.6.8
  */
 template< typename Parsed_Field_Type >
-using result_variant_t = variant_t<
+using result_variant_t = std::variant<
 		Parsed_Field_Type,
 		field_not_found_t,
 		restinio::easy_parser::parse_error_t >;
@@ -121,7 +121,7 @@ try_extract_field_value_from(
  *
  * 	const auto auth_field = try_parse_field< authorization_value_t >(
  * 			req, "X-My-Authorization");
- * 	if(auto * auth = restinio::get_if<authorization_value_t>(&auth_field)) {
+ * 	if(auto * auth = std::get_if<authorization_value_t>(&auth_field)) {
  * 		// X-My-Authorization is successfully parsed.
  * 		if("basic" == auth->auth_scheme) {
  * 			... // Dealing with basic authentification.
@@ -179,7 +179,7 @@ try_parse_field(
  *
  * 	const auto auth_field = try_parse_field< authorization_value_t >(
  * 			req, restinio::http_field::authorization);
- * 	if(auto * auth = restinio::get_if<authorization_value_t>(&auth_field)) {
+ * 	if(auto * auth = std::get_if<authorization_value_t>(&auth_field)) {
  * 		// Authorization is successfully parsed.
  * 		if("basic" == auth->auth_scheme) {
  * 			... // Dealing with basic authentification.

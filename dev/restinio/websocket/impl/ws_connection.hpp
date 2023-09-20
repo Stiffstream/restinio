@@ -1139,17 +1139,17 @@ class ws_connection_t final
 			{
 				auto wo = m_write_output_ctx.extract_next_write_operation();
 
-				if( holds_alternative< trivial_write_operation_t >( wo ) )
+				if( std::holds_alternative< trivial_write_operation_t >( wo ) )
 				{
-					handle_trivial_write_operation( get< trivial_write_operation_t >( wo ) );
+					handle_trivial_write_operation( std::get< trivial_write_operation_t >( wo ) );
 				}
-				else if( holds_alternative< none_write_operation_t >( wo ) )
+				else if( std::holds_alternative< none_write_operation_t >( wo ) )
 				{
 					finish_handling_current_write_ctx();
 				}
 				else
 				{
-					assert( holds_alternative< file_write_operation_t >( wo ) );
+					assert( std::holds_alternative< file_write_operation_t >( wo ) );
 					throw exception_t{ "sendfile write operation not implemented" };
 				}
 			}

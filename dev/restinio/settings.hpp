@@ -16,9 +16,8 @@
 
 #include <restinio/incoming_http_msg_limits.hpp>
 
-#include <restinio/variant.hpp>
-
 #include <chrono>
+#include <variant>
 #include <tuple>
 #include <utility>
 
@@ -457,7 +456,7 @@ struct no_address_specified_t {};
  *
  * @since v.0.6.11
  */
-using address_variant_t = variant_t<
+using address_variant_t = std::variant<
 		no_address_specified_t,
 		std::string,
 		asio_ns::ip::address >;

@@ -41,7 +41,7 @@ struct state_listener_t
 	void state_changed(
 		const restinio::connection_state::notice_t & notice ) noexcept
 	{
-		restinio::visit( cause_visitor_t{ *this }, notice.cause() );
+		std::visit( cause_visitor_t{ *this }, notice.cause() );
 	}
 };
 
@@ -77,7 +77,7 @@ struct state_listener_that_throws_on_accept_t
 	void state_changed(
 		const restinio::connection_state::notice_t & notice )
 	{
-		restinio::visit( cause_visitor_t{ *this }, notice.cause() );
+		std::visit( cause_visitor_t{ *this }, notice.cause() );
 	}
 };
 
@@ -113,7 +113,7 @@ struct state_listener_that_throws_on_close_t
 	void state_changed(
 		const restinio::connection_state::notice_t & notice )
 	{
-		restinio::visit( cause_visitor_t{ *this }, notice.cause() );
+		std::visit( cause_visitor_t{ *this }, notice.cause() );
 	}
 };
 
@@ -149,7 +149,7 @@ struct state_listener_that_throws_on_ws_upgrade_t
 	void state_changed(
 		const restinio::connection_state::notice_t & notice )
 	{
-		restinio::visit( cause_visitor_t{ *this }, notice.cause() );
+		std::visit( cause_visitor_t{ *this }, notice.cause() );
 	}
 };
 

@@ -152,7 +152,7 @@ inline expected_t< params_t, extraction_error_t >
 try_extract_params(
 	const authorization_value_t & http_field )
 {
-	const auto * b64token = get_if<authorization_value_t::token68_t>(
+	const auto * b64token = std::get_if<authorization_value_t::token68_t>(
 			&http_field.auth_param );
 	if( !b64token )
 		return make_unexpected( extraction_error_t::invalid_bearer_auth_param );
@@ -214,7 +214,7 @@ inline expected_t< params_t, extraction_error_t >
 try_extract_params(
 	authorization_value_t && http_field )
 {
-	auto * b64token = get_if<authorization_value_t::token68_t>(
+	auto * b64token = std::get_if<authorization_value_t::token68_t>(
 			&http_field.auth_param );
 	if( !b64token )
 		return make_unexpected( extraction_error_t::invalid_bearer_auth_param );

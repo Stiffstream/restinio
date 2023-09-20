@@ -29,13 +29,13 @@ operator<<(
 	std::ostream & to,
 	const user_agent_value_t::tail_item_t & i ) noexcept
 {
-	if( auto p = restinio::get_if<user_agent_value_t::product_t>(&i) ) {
+	if( auto p = std::get_if<user_agent_value_t::product_t>(&i) ) {
 		to << "[" << p->product;
 		if( p->product_version )
 			to << ", " << *(p->product_version);
 		to << "]";
 	}
-	else if( auto p2 = restinio::get_if<std::string>(&i) ) {
+	else if( auto p2 = std::get_if<std::string>(&i) ) {
 		to << "(" << *p2 << ")";
 	}
 

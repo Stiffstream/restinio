@@ -15,11 +15,11 @@ class connection_listener_t
 	{
 		using namespace restinio::connection_state;
 		const auto cause = notice.cause();
-		if( restinio::holds_alternative< accepted_t >( cause ) )
+		if( std::holds_alternative< accepted_t >( cause ) )
 			return "accepted";
-		else if( restinio::holds_alternative< closed_t >( cause ) )
+		else if( std::holds_alternative< closed_t >( cause ) )
 			return "closed";
-		else if( restinio::holds_alternative< upgraded_to_websocket_t >( cause ) )
+		else if( std::holds_alternative< upgraded_to_websocket_t >( cause ) )
 			return "upgraded_to_websocket";
 		else
 			return "unknown";

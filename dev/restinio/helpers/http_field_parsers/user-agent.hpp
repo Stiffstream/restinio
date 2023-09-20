@@ -13,7 +13,7 @@
 
 #include <restinio/helpers/http_field_parsers/basics.hpp>
 
-#include <restinio/variant.hpp>
+#include <variant>
 
 namespace restinio
 {
@@ -56,7 +56,7 @@ struct user_agent_value_t
 	 *
 	 * @since v.0.6.4
 	 */
-	using tail_item_t = restinio::variant_t< product_t, std::string >;
+	using tail_item_t = std::variant< product_t, std::string >;
 
 	product_t product;
 	std::vector< tail_item_t > tail;

@@ -14,7 +14,7 @@
 
 #include <restinio/helpers/http_field_parsers/basics.hpp>
 
-#include <restinio/variant.hpp>
+#include <variant>
 
 struct media_type_t
 {
@@ -1095,7 +1095,7 @@ TEST_CASE( "alternatives, as_result and variant",
 {
 	using namespace restinio::http_field_parsers;
 
-	using book_identity = restinio::variant_t<int, std::string>;
+	using book_identity = std::variant<int, std::string>;
 
 	const auto try_parse = []( restinio::string_view_t what ) {
 		const auto parser = produce<book_identity>(
@@ -1119,7 +1119,7 @@ TEST_CASE( "alternatives, as_result and variant",
 
 		REQUIRE( result );
 		const auto & identity = *result;
-		const auto * n = restinio::get_if<int>(&identity);
+		const auto * n = std::get_if<int>(&identity);
 		REQUIRE( n );
 		REQUIRE( 1234 == *n );
 	}
@@ -1129,7 +1129,7 @@ TEST_CASE( "alternatives, as_result and variant",
 
 		REQUIRE( result );
 		const auto & identity = *result;
-		const auto * n = restinio::get_if<std::string>(&identity);
+		const auto * n = std::get_if<std::string>(&identity);
 		REQUIRE( n );
 		REQUIRE( "SomeName" == *n );
 	}
@@ -1143,7 +1143,7 @@ TEST_CASE( "force_only_this_alternative",
 	struct increment_t { int m_v; };
 	struct decrement_t { int m_v; };
 
-	using inc_or_dec_t = restinio::variant_t<increment_t, decrement_t>;
+	using inc_or_dec_t = std::variant<increment_t, decrement_t>;
 
 	const auto try_parse = []( restinio::string_view_t what ) {
 		return restinio::easy_parser::try_parse( what,
@@ -1172,7 +1172,7 @@ TEST_CASE( "force_only_this_alternative",
 
 		REQUIRE( result );
 		REQUIRE( 0 == result->index() );
-		REQUIRE( 234 == restinio::get<increment_t>(*result).m_v );
+		REQUIRE( 234 == std::get<increment_t>(*result).m_v );
 	}
 
 	{
@@ -1192,7 +1192,7 @@ TEST_CASE( "force_only_this_alternative",
 
 		REQUIRE( result );
 		REQUIRE( 1 == result->index() );
-		REQUIRE( 234 == restinio::get<decrement_t>(*result).m_v );
+		REQUIRE( 234 == std::get<decrement_t>(*result).m_v );
 	}
 }
 

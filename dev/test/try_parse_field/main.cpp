@@ -49,7 +49,7 @@ TEST_CASE( "No Content-Encoding field", "[try_parse_field]" )
 		}
 	};
 
-	restinio::visit( handler_t{},
+	std::visit( handler_t{},
 			try_parse_field< content_encoding_value_t >(
 					*req,
 					restinio::http_field::content_encoding) );
@@ -92,7 +92,7 @@ TEST_CASE( "Empty Content-Encoding field", "[try_parse_field]" )
 		}
 	};
 
-	restinio::visit( handler_t{},
+	std::visit( handler_t{},
 			try_parse_field< content_encoding_value_t >(
 					*req,
 					restinio::http_field::content_encoding) );
@@ -134,7 +134,7 @@ TEST_CASE( "Normal Content-Encoding field", "[try_parse_field]" )
 		}
 	};
 
-	restinio::visit( handler_t{},
+	std::visit( handler_t{},
 			try_parse_field< content_encoding_value_t >(
 					*req,
 					restinio::http_field::content_encoding) );
@@ -172,7 +172,7 @@ TEST_CASE( "Default value for Content-Encoding", "[try_parse_field]" )
 		}
 	};
 
-	restinio::visit( handler_t{},
+	std::visit( handler_t{},
 			try_parse_field< content_encoding_value_t >(
 					*req,
 					restinio::http_field::content_encoding,
@@ -215,7 +215,7 @@ TEST_CASE( "Normal Content-Encoding field with custom name", "[try_parse_field]"
 		}
 	};
 
-	restinio::visit( handler_t{},
+	std::visit( handler_t{},
 			try_parse_field< content_encoding_value_t >(
 					*req,
 					"my-content-encoding") );
@@ -253,7 +253,7 @@ TEST_CASE( "Default value for Content-Encoding with custom name", "[try_parse_fi
 		}
 	};
 
-	restinio::visit( handler_t{},
+	std::visit( handler_t{},
 			try_parse_field< content_encoding_value_t >(
 					*req,
 					"My-Content-Encoding",
@@ -284,7 +284,7 @@ TEST_CASE( "Normal Content-Encoding field with get_if", "[try_parse_field]" )
 	const auto parse_result = try_parse_field< content_encoding_value_t >(
 			*req,
 			restinio::http_field::content_encoding );
-	if( const auto * v = restinio::get_if< content_encoding_value_t >(
+	if( const auto * v = std::get_if< content_encoding_value_t >(
 			&parse_result ) ) 
 	{
 		REQUIRE( std::vector<std::string>{ "utf-8"s } == v->values);

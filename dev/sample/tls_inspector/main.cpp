@@ -198,7 +198,7 @@ public:
 	void state_changed(
 		const restinio::connection_state::notice_t & notice)
 	{
-		restinio::visit(
+		std::visit(
 				notice_visitor_t{ *m_user_connections, notice },
 				notice.cause() );
    }

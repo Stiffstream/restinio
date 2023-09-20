@@ -15,7 +15,7 @@
 
 #include <restinio/helpers/http_field_parsers/details/pct_encoded_symbols.hpp>
 
-#include <restinio/variant.hpp>
+#include <variant>
 
 namespace restinio
 {
@@ -485,7 +485,7 @@ struct raw_host_value_t
 		}
 	};
 
-	using host_value_t = variant_t< reg_name_t, ipv4_address_t, ipv6_address_t >;
+	using host_value_t = std::variant< reg_name_t, ipv4_address_t, ipv6_address_t >;
 
 	host_value_t host;
 

@@ -13,9 +13,8 @@
 
 #include <restinio/helpers/http_field_parsers/basics.hpp>
 
-#include <restinio/variant.hpp>
-
 #include <iostream>
+#include <variant>
 
 namespace restinio
 {
@@ -165,7 +164,7 @@ struct authorization_value_t
 	using token68_t = authorization_details::token68_t;
 
 	//! Type for holding a parameter for authorization.
-	using auth_param_t = variant_t< token68_t, param_container_t >;
+	using auth_param_t = std::variant< token68_t, param_container_t >;
 
 	//! A value of auth-scheme.
 	std::string auth_scheme;
@@ -298,7 +297,7 @@ operator<<(
 		}
 	};
 
-	restinio::visit( printer_t{ to }, p );
+	std::visit( printer_t{ to }, p );
 
 	return to;
 }

@@ -13,8 +13,7 @@
 
 #include <restinio/helpers/http_field_parsers/basics.hpp>
 
-#include <restinio/variant.hpp>
-
+#include <variant>
 #include <tuple>
 
 namespace restinio
@@ -88,7 +87,7 @@ struct transfer_encoding_value_t
 	};
 
 	//! Type for one value from Transfer-Encoding HTTP-field.
-	using value_t = variant_t<
+	using value_t = std::variant<
 			known_transfer_coding_t,
 			transfer_extension_t
 		>;

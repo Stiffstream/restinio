@@ -852,7 +852,7 @@ template < typename Value_Type >
 Value_Type
 get( const router::route_params_t & params, string_view_t key )
 {
-	return get< Value_Type >( params[ key ] );
+	return std::get< Value_Type >( params[ key ] );
 }
 
 //! Cast indexed parameter value to a given type.
@@ -860,7 +860,7 @@ template < typename Value_Type >
 Value_Type
 get( const router::route_params_t & params, std::size_t index )
 {
-	return get< Value_Type >( params[ index ] );
+	return std::get< Value_Type >( params[ index ] );
 }
 
 } /* namespace restinio */

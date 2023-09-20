@@ -51,12 +51,12 @@ public:
 
 		auto & connections = m_connections[ notice.remote_endpoint().address() ];
 		const auto cause = notice.cause();
-		if( restinio::holds_alternative< accepted_t >( cause ) )
+		if( std::holds_alternative< accepted_t >( cause ) )
 		{
 			// Info about a new connection must be stored.
 			connections.push_back( notice.connection_id() );
 		}
-		else if( restinio::holds_alternative< closed_t >( cause ) )
+		else if( std::holds_alternative< closed_t >( cause ) )
 		{
 			// Info about closed connection must be removed.
 			connections.erase(

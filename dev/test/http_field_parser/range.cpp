@@ -55,7 +55,7 @@ TEST_CASE( "Range", "[range]" )
 
 		REQUIRE( result );
 
-		const auto * v = restinio::get_if<range_type::other_ranges_specifier_t>(
+		const auto * v = std::get_if<range_type::other_ranges_specifier_t>(
 				&(result->value) );
 		REQUIRE( v );
 		REQUIRE( "myunits"s == v->range_unit );
@@ -70,12 +70,12 @@ TEST_CASE( "Range", "[range]" )
 
 		REQUIRE( result );
 
-		const auto * v = restinio::get_if<range_type::byte_ranges_specifier_t>(
+		const auto * v = std::get_if<range_type::byte_ranges_specifier_t>(
 				&(result->value) );
 		REQUIRE( v );
 		REQUIRE( 1u == v->ranges.size() );
 
-		const auto * f = restinio::get_if<range_type::suffix_length_t>(
+		const auto * f = std::get_if<range_type::suffix_length_t>(
 				&( v->ranges[0] ) );
 		REQUIRE( f );
 		REQUIRE( 1 == f->length );
@@ -89,12 +89,12 @@ TEST_CASE( "Range", "[range]" )
 
 		REQUIRE( result );
 
-		const auto * v = restinio::get_if<range_type::byte_ranges_specifier_t>(
+		const auto * v = std::get_if<range_type::byte_ranges_specifier_t>(
 				&(result->value) );
 		REQUIRE( v );
 		REQUIRE( 1u == v->ranges.size() );
 
-		const auto * f = restinio::get_if<range_type::double_ended_range_t>(
+		const auto * f = std::get_if<range_type::double_ended_range_t>(
 				&( v->ranges[0] ) );
 		REQUIRE( f );
 		REQUIRE( 100 == f->first );
@@ -109,12 +109,12 @@ TEST_CASE( "Range", "[range]" )
 
 		REQUIRE( result );
 
-		const auto * v = restinio::get_if<range_type::byte_ranges_specifier_t>(
+		const auto * v = std::get_if<range_type::byte_ranges_specifier_t>(
 				&(result->value) );
 		REQUIRE( v );
 		REQUIRE( 1u == v->ranges.size() );
 
-		const auto * f = restinio::get_if<range_type::open_ended_range_t>(
+		const auto * f = std::get_if<range_type::open_ended_range_t>(
 				&( v->ranges[0] ) );
 		REQUIRE( f );
 		REQUIRE( 4500 == f->first );
@@ -128,27 +128,27 @@ TEST_CASE( "Range", "[range]" )
 
 		REQUIRE( result );
 
-		const auto * v = restinio::get_if<range_type::byte_ranges_specifier_t>(
+		const auto * v = std::get_if<range_type::byte_ranges_specifier_t>(
 				&(result->value) );
 		REQUIRE( v );
 		REQUIRE( 3u == v->ranges.size() );
 
 		{
-			const auto * f = restinio::get_if<range_type::double_ended_range_t>(
+			const auto * f = std::get_if<range_type::double_ended_range_t>(
 					&( v->ranges[0] ) );
 			REQUIRE( f );
 			REQUIRE( 100 == f->first );
 			REQUIRE( 5000 == f->last );
 		}
 		{
-			const auto * f = restinio::get_if<range_type::double_ended_range_t>(
+			const auto * f = std::get_if<range_type::double_ended_range_t>(
 					&( v->ranges[1] ) );
 			REQUIRE( f );
 			REQUIRE( 6000 == f->first );
 			REQUIRE( 9000 == f->last );
 		}
 		{
-			const auto * f = restinio::get_if<range_type::suffix_length_t>(
+			const auto * f = std::get_if<range_type::suffix_length_t>(
 					&( v->ranges[2] ) );
 			REQUIRE( f );
 			REQUIRE( 450 == f->length );
@@ -163,26 +163,26 @@ TEST_CASE( "Range", "[range]" )
 
 		REQUIRE( result );
 
-		const auto * v = restinio::get_if<range_type::byte_ranges_specifier_t>(
+		const auto * v = std::get_if<range_type::byte_ranges_specifier_t>(
 				&(result->value) );
 		REQUIRE( v );
 		REQUIRE( 3u == v->ranges.size() );
 
 		{
-			const auto * f = restinio::get_if<range_type::double_ended_range_t>(
+			const auto * f = std::get_if<range_type::double_ended_range_t>(
 					&( v->ranges[0] ) );
 			REQUIRE( f );
 			REQUIRE( 100 == f->first );
 			REQUIRE( 5000 == f->last );
 		}
 		{
-			const auto * f = restinio::get_if<range_type::open_ended_range_t>(
+			const auto * f = std::get_if<range_type::open_ended_range_t>(
 					&( v->ranges[1] ) );
 			REQUIRE( f );
 			REQUIRE( 15000 == f->first );
 		}
 		{
-			const auto * f = restinio::get_if<range_type::double_ended_range_t>(
+			const auto * f = std::get_if<range_type::double_ended_range_t>(
 					&( v->ranges[2] ) );
 			REQUIRE( f );
 			REQUIRE( 6000 == f->first );
@@ -198,33 +198,33 @@ TEST_CASE( "Range", "[range]" )
 
 		REQUIRE( result );
 
-		const auto * v = restinio::get_if<range_type::byte_ranges_specifier_t>(
+		const auto * v = std::get_if<range_type::byte_ranges_specifier_t>(
 				&(result->value) );
 		REQUIRE( v );
 		REQUIRE( 4u == v->ranges.size() );
 
 		{
-			const auto * f = restinio::get_if<range_type::suffix_length_t>(
+			const auto * f = std::get_if<range_type::suffix_length_t>(
 					&( v->ranges[0] ) );
 			REQUIRE( f );
 			REQUIRE( 450 == f->length );
 		}
 		{
-			const auto * f = restinio::get_if<range_type::double_ended_range_t>(
+			const auto * f = std::get_if<range_type::double_ended_range_t>(
 					&( v->ranges[1] ) );
 			REQUIRE( f );
 			REQUIRE( 100 == f->first );
 			REQUIRE( 5000 == f->last );
 		}
 		{
-			const auto * f = restinio::get_if<range_type::double_ended_range_t>(
+			const auto * f = std::get_if<range_type::double_ended_range_t>(
 					&( v->ranges[2] ) );
 			REQUIRE( f );
 			REQUIRE( 6000 == f->first );
 			REQUIRE( 9000 == f->last );
 		}
 		{
-			const auto * f = restinio::get_if<range_type::open_ended_range_t>(
+			const auto * f = std::get_if<range_type::open_ended_range_t>(
 					&( v->ranges[3] ) );
 			REQUIRE( f );
 			REQUIRE( 15000 == f->first );
@@ -239,7 +239,7 @@ TEST_CASE( "Range", "[range]" )
 
 		REQUIRE( result );
 
-		const auto * v = restinio::get_if<range_type::other_ranges_specifier_t>(
+		const auto * v = std::get_if<range_type::other_ranges_specifier_t>(
 				&(result->value) );
 		REQUIRE( v );
 		REQUIRE( "Bytes"s == v->range_unit );
@@ -255,12 +255,12 @@ TEST_CASE( "Range", "[range]" )
 
 			REQUIRE( result );
 
-			const auto * v = restinio::get_if<range_type::byte_ranges_specifier_t>(
+			const auto * v = std::get_if<range_type::byte_ranges_specifier_t>(
 					&(result->value) );
 			REQUIRE( v );
 			REQUIRE( 1u == v->ranges.size() );
 
-			const auto * f = restinio::get_if<range_type::suffix_length_t>(
+			const auto * f = std::get_if<range_type::suffix_length_t>(
 					&( v->ranges[0] ) );
 			REQUIRE( f );
 			REQUIRE( 450 == f->length );
@@ -272,12 +272,12 @@ TEST_CASE( "Range", "[range]" )
 
 			REQUIRE( result );
 
-			const auto * v = restinio::get_if<range_type::byte_ranges_specifier_t>(
+			const auto * v = std::get_if<range_type::byte_ranges_specifier_t>(
 					&(result->value) );
 			REQUIRE( v );
 			REQUIRE( 1u == v->ranges.size() );
 
-			const auto * f = restinio::get_if<range_type::suffix_length_t>(
+			const auto * f = std::get_if<range_type::suffix_length_t>(
 					&( v->ranges[0] ) );
 			REQUIRE( f );
 			REQUIRE( 32767 == f->length );
@@ -300,12 +300,12 @@ TEST_CASE( "Range", "[range]" )
 
 			REQUIRE( result );
 
-			const auto * v = restinio::get_if<range_type::byte_ranges_specifier_t>(
+			const auto * v = std::get_if<range_type::byte_ranges_specifier_t>(
 					&(result->value) );
 			REQUIRE( v );
 			REQUIRE( 1u == v->ranges.size() );
 
-			const auto * f = restinio::get_if<range_type::suffix_length_t>(
+			const auto * f = std::get_if<range_type::suffix_length_t>(
 					&( v->ranges[0] ) );
 			REQUIRE( f );
 			REQUIRE( 450u == f->length );
@@ -317,12 +317,12 @@ TEST_CASE( "Range", "[range]" )
 
 			REQUIRE( result );
 
-			const auto * v = restinio::get_if<range_type::byte_ranges_specifier_t>(
+			const auto * v = std::get_if<range_type::byte_ranges_specifier_t>(
 					&(result->value) );
 			REQUIRE( v );
 			REQUIRE( 1u == v->ranges.size() );
 
-			const auto * f = restinio::get_if<range_type::suffix_length_t>(
+			const auto * f = std::get_if<range_type::suffix_length_t>(
 					&( v->ranges[0] ) );
 			REQUIRE( f );
 			REQUIRE( 65535u == f->length );

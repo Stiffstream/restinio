@@ -107,17 +107,17 @@ TEST_CASE( "write_group_output_ctx_t simple" , "[write_group_output_ctx_t][trivi
 
 		write_group_output_ctx_t::solid_write_operation_variant_t wo{};
 
-		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< none_write_operation_t >( wo ) );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< trivial_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< trivial_write_operation_t >( wo ) );
 		REQUIRE(
 			concat_bufs(
-				get< trivial_write_operation_t >( wo )
+				std::get< trivial_write_operation_t >( wo )
 					.get_trivial_bufs() ) == "BUFFER" );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< none_write_operation_t >( wo ) );
 
 		REQUIRE_NOTHROW( wg_output.finish_write_group() );
 		REQUIRE_FALSE( wg_output.transmitting() );
@@ -143,13 +143,13 @@ TEST_CASE( "write_group_output_ctx_t simple" , "[write_group_output_ctx_t][trivi
 
 		write_group_output_ctx_t::solid_write_operation_variant_t wo{};
 
-		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< none_write_operation_t >( wo ) );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< trivial_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< trivial_write_operation_t >( wo ) );
 		REQUIRE(
 			concat_bufs(
-				get< trivial_write_operation_t >( wo )
+				std::get< trivial_write_operation_t >( wo )
 					.get_trivial_bufs() ) ==
 						"0123456789ABCDEF"
 						"0123456789ABCDEF"
@@ -157,7 +157,7 @@ TEST_CASE( "write_group_output_ctx_t simple" , "[write_group_output_ctx_t][trivi
 						"0123456789ABCDEF" );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< none_write_operation_t >( wo ) );
 
 		REQUIRE_NOTHROW( wg_output.finish_write_group() );
 		REQUIRE_FALSE( wg_output.transmitting() );
@@ -192,12 +192,12 @@ TEST_CASE( "write_group_output_ctx_t simple" , "[write_group_output_ctx_t][trivi
 
 		write_group_output_ctx_t::solid_write_operation_variant_t wo{};
 
-		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< none_write_operation_t >( wo ) );
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< trivial_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< trivial_write_operation_t >( wo ) );
 		REQUIRE(
 			concat_bufs(
-				get< trivial_write_operation_t >( wo )
+				std::get< trivial_write_operation_t >( wo )
 					.get_trivial_bufs() ) ==
 						"0123456789ABCDEF"
 						"0123456789ABCDEF"
@@ -205,10 +205,10 @@ TEST_CASE( "write_group_output_ctx_t simple" , "[write_group_output_ctx_t][trivi
 						"0123456789ABCDEF" );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< trivial_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< trivial_write_operation_t >( wo ) );
 		REQUIRE(
 			concat_bufs(
-				get< trivial_write_operation_t >( wo )
+				std::get< trivial_write_operation_t >( wo )
 					.get_trivial_bufs() ) ==
 						"*123456789ABCDEF"
 						"*123456789ABCDEF"
@@ -216,7 +216,7 @@ TEST_CASE( "write_group_output_ctx_t simple" , "[write_group_output_ctx_t][trivi
 						"*123456789ABCDEF" );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< none_write_operation_t >( wo ) );
 
 		REQUIRE_NOTHROW( wg_output.finish_write_group() );
 		REQUIRE_FALSE( wg_output.transmitting() );
@@ -243,13 +243,13 @@ TEST_CASE( "write_group_output_ctx_t simple" , "[write_group_output_ctx_t][trivi
 
 		write_group_output_ctx_t::solid_write_operation_variant_t wo{};
 
-		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< none_write_operation_t >( wo ) );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< trivial_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< trivial_write_operation_t >( wo ) );
 		REQUIRE(
 			concat_bufs(
-				get< trivial_write_operation_t >( wo )
+				std::get< trivial_write_operation_t >( wo )
 					.get_trivial_bufs() ) ==
 						"0123456789ABCDEF"
 						"0123456789ABCDEF"
@@ -257,14 +257,14 @@ TEST_CASE( "write_group_output_ctx_t simple" , "[write_group_output_ctx_t][trivi
 						"0123456789ABCDEF" );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< trivial_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< trivial_write_operation_t >( wo ) );
 		REQUIRE(
 			concat_bufs(
-				get< trivial_write_operation_t >( wo )
+				std::get< trivial_write_operation_t >( wo )
 					.get_trivial_bufs() ) == "*****" );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< none_write_operation_t >( wo ) );
 
 		REQUIRE_NOTHROW( wg_output.finish_write_group() );
 		REQUIRE_FALSE( wg_output.transmitting() );
@@ -287,11 +287,11 @@ TEST_CASE( "write_group_output_ctx_t simple sf" , "[write_group_output_ctx_t][se
 		write_group_output_ctx_t::solid_write_operation_variant_t wo{};
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< file_write_operation_t >( wo ) );
-		REQUIRE( 1024 == get< file_write_operation_t >( wo ).size() );
+		REQUIRE( std::holds_alternative< file_write_operation_t >( wo ) );
+		REQUIRE( 1024 == std::get< file_write_operation_t >( wo ).size() );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< none_write_operation_t >( wo ) );
 
 		REQUIRE_NOTHROW( wg_output.finish_write_group() );
 		REQUIRE_FALSE( wg_output.transmitting() );
@@ -319,19 +319,19 @@ TEST_CASE( "write_group_output_ctx_t simple sf" , "[write_group_output_ctx_t][se
 		write_group_output_ctx_t::solid_write_operation_variant_t wo{};
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< file_write_operation_t >( wo ) );
-		REQUIRE( 1024 == get< file_write_operation_t >( wo ).size() );
+		REQUIRE( std::holds_alternative< file_write_operation_t >( wo ) );
+		REQUIRE( 1024 == std::get< file_write_operation_t >( wo ).size() );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< file_write_operation_t >( wo ) );
-		REQUIRE( 2048 == get< file_write_operation_t >( wo ).size() );
+		REQUIRE( std::holds_alternative< file_write_operation_t >( wo ) );
+		REQUIRE( 2048 == std::get< file_write_operation_t >( wo ).size() );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< file_write_operation_t >( wo ) );
-		REQUIRE( 4096 == get< file_write_operation_t >( wo ).size() );
+		REQUIRE( std::holds_alternative< file_write_operation_t >( wo ) );
+		REQUIRE( 4096 == std::get< file_write_operation_t >( wo ).size() );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< none_write_operation_t >( wo ) );
 
 		REQUIRE_NOTHROW( wg_output.finish_write_group() );
 		REQUIRE_FALSE( wg_output.transmitting() );
@@ -390,10 +390,10 @@ TEST_CASE( "write_group_output_ctx_t mixed" , "[write_group_output_ctx_t][mix][t
 		write_group_output_ctx_t::solid_write_operation_variant_t wo{};
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< trivial_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< trivial_write_operation_t >( wo ) );
 		REQUIRE(
 			concat_bufs(
-				get< trivial_write_operation_t >( wo )
+				std::get< trivial_write_operation_t >( wo )
 					.get_trivial_bufs() ) ==
 						"0123456789ABCDEF"
 						"0123456789ABCDEF"
@@ -401,26 +401,26 @@ TEST_CASE( "write_group_output_ctx_t mixed" , "[write_group_output_ctx_t][mix][t
 						"0123456789ABCDEF" );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< file_write_operation_t >( wo ) );
-		REQUIRE( 1024 == get< file_write_operation_t >( wo ).size() );
+		REQUIRE( std::holds_alternative< file_write_operation_t >( wo ) );
+		REQUIRE( 1024 == std::get< file_write_operation_t >( wo ).size() );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< trivial_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< trivial_write_operation_t >( wo ) );
 		REQUIRE(
 			concat_bufs(
-				get< trivial_write_operation_t >( wo )
+				std::get< trivial_write_operation_t >( wo )
 					.get_trivial_bufs() ) == "0123456789ABCDEF" );
 
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< file_write_operation_t >( wo ) );
-		REQUIRE( 2048 == get< file_write_operation_t >( wo ).size() );
+		REQUIRE( std::holds_alternative< file_write_operation_t >( wo ) );
+		REQUIRE( 2048 == std::get< file_write_operation_t >( wo ).size() );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< trivial_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< trivial_write_operation_t >( wo ) );
 		REQUIRE(
 			concat_bufs(
-				get< trivial_write_operation_t >( wo )
+				std::get< trivial_write_operation_t >( wo )
 					.get_trivial_bufs() ) ==
 						"0123456789ABCDEF"
 						"0123456789ABCDEF"
@@ -428,28 +428,28 @@ TEST_CASE( "write_group_output_ctx_t mixed" , "[write_group_output_ctx_t][mix][t
 						"0123456789ABCDEF" );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< trivial_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< trivial_write_operation_t >( wo ) );
 		REQUIRE(
 			concat_bufs(
-				get< trivial_write_operation_t >( wo )
+				std::get< trivial_write_operation_t >( wo )
 					.get_trivial_bufs() ) == "****************" );
 
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< file_write_operation_t >( wo ) );
-		REQUIRE( 4096 == get< file_write_operation_t >( wo ).size() );
+		REQUIRE( std::holds_alternative< file_write_operation_t >( wo ) );
+		REQUIRE( 4096 == std::get< file_write_operation_t >( wo ).size() );
 
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< trivial_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< trivial_write_operation_t >( wo ) );
 		REQUIRE(
 			concat_bufs(
-				get< trivial_write_operation_t >( wo )
+				std::get< trivial_write_operation_t >( wo )
 					.get_trivial_bufs() ) == "THE END" );
 
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< none_write_operation_t >( wo ) );
 
 		REQUIRE_NOTHROW( wg_output.finish_write_group() );
 		REQUIRE_FALSE( wg_output.transmitting() );
@@ -469,16 +469,16 @@ TEST_CASE( "write_group_output_ctx_t two groups" , "[write_group_output_ctx_t][t
 
 		write_group_output_ctx_t::solid_write_operation_variant_t wo{};
 
-		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< none_write_operation_t >( wo ) );
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< trivial_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< trivial_write_operation_t >( wo ) );
 		REQUIRE(
 			concat_bufs(
-				get< trivial_write_operation_t >( wo )
+				std::get< trivial_write_operation_t >( wo )
 					.get_trivial_bufs() ) == "BUFFER1" );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< none_write_operation_t >( wo ) );
 
 		REQUIRE_NOTHROW( wg_output.finish_write_group() );
 		REQUIRE_FALSE( wg_output.transmitting() );
@@ -489,16 +489,16 @@ TEST_CASE( "write_group_output_ctx_t two groups" , "[write_group_output_ctx_t][t
 			write_group_t{
 				make_buffers( { "BUFFER2" } ) } );
 
-		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< none_write_operation_t >( wo ) );
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< trivial_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< trivial_write_operation_t >( wo ) );
 		REQUIRE(
 			concat_bufs(
-				get< trivial_write_operation_t >( wo )
+				std::get< trivial_write_operation_t >( wo )
 					.get_trivial_bufs() ) == "BUFFER2" );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< none_write_operation_t >( wo ) );
 
 		REQUIRE_NOTHROW( wg_output.finish_write_group() );
 		REQUIRE_FALSE( wg_output.transmitting() );
@@ -509,16 +509,16 @@ TEST_CASE( "write_group_output_ctx_t two groups" , "[write_group_output_ctx_t][t
 			write_group_t{
 				make_buffers( { "BUFFER3" } ) } );
 
-		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< none_write_operation_t >( wo ) );
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< trivial_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< trivial_write_operation_t >( wo ) );
 		REQUIRE(
 			concat_bufs(
-				get< trivial_write_operation_t >( wo )
+				std::get< trivial_write_operation_t >( wo )
 					.get_trivial_bufs() ) == "BUFFER3" );
 
 		REQUIRE_NOTHROW( wo = wg_output.extract_next_write_operation() );
-		REQUIRE( holds_alternative< none_write_operation_t >( wo ) );
+		REQUIRE( std::holds_alternative< none_write_operation_t >( wo ) );
 
 		REQUIRE_NOTHROW( wg_output.finish_write_group() );
 		REQUIRE_FALSE( wg_output.transmitting() );

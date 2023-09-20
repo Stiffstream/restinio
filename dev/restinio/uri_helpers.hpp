@@ -174,7 +174,7 @@ template < typename Value_Type >
 Value_Type
 get( const query_string_params_t & params, string_view_t key )
 {
-	return get< Value_Type >( params[ key ] );
+	return std::get< Value_Type >( params[ key ] );
 }
 
 namespace parse_query_traits
