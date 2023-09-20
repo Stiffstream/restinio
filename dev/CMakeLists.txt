@@ -29,22 +29,23 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 if (RESTINIO_EXPLICIT_CPPSTD)
-    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cpp_standard.cmake)
     # The C++ standard is set explicit by user.
     if ("${RESTINIO_EXPLICIT_CPPSTD}" STREQUAL "17" )
         message(STATUS "ENABLE C++17")
-        cxx_17()
+        set(CMAKE_CXX_STANDARD 17)
     elseif ("${RESTINIO_EXPLICIT_CPPSTD}" STREQUAL "20")
         message(STATUS "ENABLE C++20")
-        cxx_20()
+        set(CMAKE_CXX_STANDARD 20)
     elseif ("${RESTINIO_EXPLICIT_CPPSTD}" STREQUAL "23")
         message(STATUS "ENABLE C++23")
-        cxx_23()
+        set(CMAKE_CXX_STANDARD 23)
     else ()
         message(FATAL_ERROR
                 "invalid RESTINIO_EXPLICIT_CPPSTD (value ='${RESTINIO_EXPLICIT_CPPSTD}')"
                 "must be on of: [17, 20, 23]")
     endif ()
+        set(CMAKE_CXX_STANDARD_REQUIRED ON)
+        set(CMAKE_CXX_EXTENSIONS OFF)
 endif()
 
 if (RESTINIO_EXPLICIT_LIBCXX)
