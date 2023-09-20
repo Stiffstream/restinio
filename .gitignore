@@ -30,3 +30,6 @@ o/*
 /dev/__*.vim
 /dev/__*.cpp
 _*
+restinio_coverage.xml
+restinio_coverage_html
+/dev/expected-lite

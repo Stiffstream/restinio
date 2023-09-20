@@ -205,6 +205,41 @@ IF (PCRE2_FOUND)
 ENDIF ()
 # ====================================================================
 
+option(RESTINIO_GCC_CODE_COVERAGE "Build code coverage targets" OFF)
+if (RESTINIO_GCC_CODE_COVERAGE)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/find_program_required.cmake)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/code_coverage.cmake)
+
+    if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug"
+        AND NOT ${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo" )
+
+        message(FATAL_ERROR "Codecoverage must be applied for debug builds")
+    endif ()
+
+    # Note 1: This code coverage approach is tested only for gcc.
+    # Note 2: In case you have multipple gcc versions on the system
+    #         you need to make sure that coverage commands (custom cmake commands)
+    #         are executed with appropriate version of gcov.
+    #         E.g. if you build with gcc-11/g++-11 then you should use
+    #         gcov-11.
+    #
+    # You can use TOOLING_CODE_COVERAGE_GCOV for this:
+    # cmake ... -DTOOLING_CODE_COVERAGE_GCOV=gcov-11 ...
+    make_code_coverage_targets(
+        NAME RESTINIO_CODE_COVERAGE
+        FILTERS
+            '${CMAKE_SOURCE_DIR}/restinio/.*'
+        XML_REPORT_FILE ${CMAKE_SOURCE_DIR}/restinio_coverage.xml
+        HTML_REPORT_DIR ${CMAKE_SOURCE_DIR}/restinio_coverage_html
+        HTML_TITLE "Code coverage report for RESTinio"
+    )
+
+# Example (Ubuntu with gcc-11):
+#     cmake -B_build -DCMAKE_BUILD_TYPE=Debug -DRESTINIO_GCC_CODE_COVERAGE=ON -DTOOLING_CODE_COVERAGE_GCOV=gcov-11 .
+#     cmake --build _build
+#     cmake --build _build --target RESTINIO_CODE_COVERAGE_all
+endif()
+
 message("========================================")
 message(STATUS "Defining restinio target...")
 add_subdirectory(restinio)
