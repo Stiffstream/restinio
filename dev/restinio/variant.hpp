@@ -10,21 +10,17 @@
 
 #pragma once
 
-#if defined(RESTINIO_EXTERNAL_VARIANT_LITE)
-	#include <nonstd/variant.hpp>
-#else
-	#include "third_party/variant-lite/variant.hpp"
-#endif
+#include <variant>
 
 namespace restinio
 {
 	template< typename... Types >
-	using variant_t = nonstd::variant< Types... >;
+	using variant_t = std::variant< Types... >;
 
-	using nonstd::holds_alternative;
-	using nonstd::get;
-	using nonstd::get_if;
-	using nonstd::visit;
+	using std::holds_alternative;
+	using std::get;
+	using std::get_if;
+	using std::visit;
 
 } /* namespace restinio */
 

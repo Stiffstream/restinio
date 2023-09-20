@@ -8,14 +8,14 @@ ENDIF()
 
 add_executable(${SAMPLE} ${SAMPLE_SRCFILES})
 
-TARGET_LINK_LIBRARIES(${SAMPLE} PRIVATE restinio::restinio)
-TARGET_INCLUDE_DIRECTORIES(${SAMPLE} PRIVATE ${CMAKE_SOURCE_DIR}/args)
+target_link_libraries(${SAMPLE} PRIVATE restinio::restinio)
+target_include_directories(${SAMPLE} PRIVATE ${CMAKE_SOURCE_DIR}/args)
 
 link_threads_if_necessary(${SAMPLE})
-link_atomic_if_necessary(${SAMPLE})
+# link_atomic_if_necessary(${SAMPLE})
 
 IF (WIN32)
-	TARGET_LINK_LIBRARIES(${SAMPLE} PRIVATE wsock32 ws2_32)
+	target_link_libraries(${SAMPLE} PRIVATE wsock32 ws2_32)
 ENDIF ()
 
 IF (RESTINIO_INSTALL_SAMPLES)

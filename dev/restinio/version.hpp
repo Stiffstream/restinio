@@ -26,14 +26,14 @@
  *
  * If RESTinio's version is 0.6.0 then RESTINIO_VERSION_MINOR==6.
  */
-#define RESTINIO_VERSION_MINOR 6ull
+#define RESTINIO_VERSION_MINOR 7ull
 
 /*!
  * The patch part of version number.
  *
  * If RESTinio's version is 0.6.23 then RESTINIO_VERSION_PATCH==23.
  */
-#define RESTINIO_VERSION_PATCH 19ull
+#define RESTINIO_VERSION_PATCH 0ull
 
 /*!
  * Helper macro for make single number representation of RESTinio's version.
@@ -42,7 +42,7 @@
  * \code
  * // Some feature is available only from 1.2.4
  * #if RESTINIO_VERSION >= RESTINIO_VERSION_MAKE(1, 2, 4)
- * 	... // Some 1.2.4 (or above) specific code.
+ *  ... // Some 1.2.4 (or above) specific code.
  * #endif
  * \endcode
  */
@@ -61,4 +61,3 @@
 	RESTINIO_VERSION_MAJOR,\
 	RESTINIO_VERSION_MINOR,\
 	RESTINIO_VERSION_PATCH)
-

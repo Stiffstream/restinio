@@ -13,10 +13,13 @@ TARGET_LINK_LIBRARIES(${UNITTEST} PRIVATE restinio::catch_main)
 TARGET_INCLUDE_DIRECTORIES(${UNITTEST} PRIVATE ${CMAKE_SOURCE_DIR})
 
 link_threads_if_necessary(${UNITTEST})
-link_atomic_if_necessary(${UNITTEST})
 
 IF (WIN32)
 	TARGET_LINK_LIBRARIES(${UNITTEST} PRIVATE wsock32 ws2_32)
 ENDIF ()
+
+if (MSVC)
+    target_compile_options(${UNITTEST} PRIVATE /bigobj)
+endif ()
 
 add_test(NAME ${UNITTEST} COMMAND ${UNITTEST})
