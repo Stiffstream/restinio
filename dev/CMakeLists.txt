@@ -44,8 +44,9 @@ if (RESTINIO_EXPLICIT_CPPSTD)
                 "invalid RESTINIO_EXPLICIT_CPPSTD (value ='${RESTINIO_EXPLICIT_CPPSTD}')"
                 "must be on of: [17, 20, 23]")
     endif ()
-        set(CMAKE_CXX_STANDARD_REQUIRED ON)
-        set(CMAKE_CXX_EXTENSIONS OFF)
+
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    set(CMAKE_CXX_EXTENSIONS OFF)
 endif()
 
 if (RESTINIO_EXPLICIT_LIBCXX)

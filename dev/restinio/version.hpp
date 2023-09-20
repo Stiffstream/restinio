@@ -51,7 +51,6 @@
 	((minor) * 1000ull) + \
 	(patch))
 
-
 /*!
  * A single number representation of RESTinio version.
  *
