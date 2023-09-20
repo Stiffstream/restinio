@@ -14,7 +14,6 @@
 
 #include <restinio/exception.hpp>
 #include <restinio/string_view.hpp>
-#include <restinio/optional.hpp>
 #include <restinio/common_types.hpp>
 
 #include <llhttp.h>
@@ -23,6 +22,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <optional>
 
 namespace restinio
 {
@@ -690,7 +690,7 @@ append_last_field_accessor( http_header_fields_t &, string_view_t );
 	to `std::string`). This group includes the following methods: get_field(),
 	get_field_or(), try_get_field().
 
-	The second group returns `string_view_t` or `optional_t<string_view_t>`.
+	The second group returns `string_view_t` or `std::optional<string_view_t>`.
 	This group includes the following methods: value_of() and opt_value_of().
 
 	The first group was created in early versions of RESTinio and is present
@@ -1297,12 +1297,12 @@ class http_header_fields_t
 				...
 			\endcode
 		*/
-		optional_t< string_view_t >
+		std::optional< string_view_t >
 		opt_value_of(
 			//! Name of a field.
 			string_view_t name ) const noexcept
 		{
-			optional_t< string_view_t > result;
+			std::optional< string_view_t > result;
 
 			if( auto * ptr = this->try_get_field(name) )
 				result = string_view_t{ *ptr };
@@ -1322,12 +1322,12 @@ class http_header_fields_t
 				...
 			\endcode
 		*/
-		optional_t< string_view_t >
+		std::optional< string_view_t >
 		opt_value_of(
 			//! ID of a field.
 			http_field_t field_id ) const noexcept
 		{
-			optional_t< string_view_t > result;
+			std::optional< string_view_t > result;
 
 			if( auto * ptr = this->try_get_field(field_id) )
 				result = string_view_t{ *ptr };

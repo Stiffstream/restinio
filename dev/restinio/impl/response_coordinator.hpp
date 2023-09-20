@@ -9,9 +9,6 @@
 
 #pragma once
 
-#include <string>
-#include <deque>
-
 #include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/utils/suppress_exceptions.hpp>
@@ -19,7 +16,11 @@
 #include <restinio/exception.hpp>
 #include <restinio/request_handler.hpp>
 #include <restinio/buffers.hpp>
-#include <restinio/optional.hpp>
+
+#include <string>
+#include <deque>
+#include <optional>
+
 
 namespace restinio
 {
@@ -368,7 +369,7 @@ class response_coordinator_t
 			and a notificator that must be invoked after the write operation
 			of a given group completes.
 		*/
-		optional_t< std::pair< write_group_t, request_id_t > >
+		std::optional< std::pair< write_group_t, request_id_t > >
 		pop_ready_buffers()
 		{
 			if( closed() )
@@ -376,7 +377,7 @@ class response_coordinator_t
 					"unable to prepare output buffers, "
 					"response coordinator is closed" };
 
-			optional_t< std::pair< write_group_t, request_id_t > > result;
+			std::optional< std::pair< write_group_t, request_id_t > > result;
 
 			// Check for custom write operation.
 			if( !m_context_table.empty() )

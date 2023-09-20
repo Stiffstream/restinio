@@ -8,14 +8,14 @@
 
 #pragma once
 
-#include <string>
-#include <unordered_map>
-
 #include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/exception.hpp>
 #include <restinio/utils/percent_encoding.hpp>
-#include <restinio/optional.hpp>
+
+#include <optional>
+#include <string>
+#include <unordered_map>
 
 namespace restinio
 {
@@ -57,7 +57,7 @@ class query_string_params_t final
 		//! (web beacon).
 		query_string_params_t(
 			std::unique_ptr< char[] > data_buffer,
-			optional_t< string_view_t > tag )
+			std::optional< string_view_t > tag )
 			:	m_data_buffer{ std::move( data_buffer ) }
 			,	m_tag{ tag }
 		{}
@@ -84,14 +84,14 @@ class query_string_params_t final
 
 		//! Get the value of a parameter if it exists.
 		//! @since v.0.4.4
-		optional_t< string_view_t >
+		std::optional< string_view_t >
 		get_param( string_view_t key ) const noexcept
 		{
 			const auto it = find_parameter( key );
 
 			return m_parameters.end() != it ?
-				optional_t< string_view_t >{ it->second } :
-				optional_t< string_view_t >{ nullopt };
+				std::optional< string_view_t >{ it->second } :
+				std::optional< string_view_t >{ std::nullopt };
 		}
 
 		//! Get the size of parameters.
@@ -166,7 +166,7 @@ class query_string_params_t final
 
 		//! Tag (or web beacon) part.
 		/*! @since v.0.4.9 */
-		optional_t< string_view_t > m_tag;
+		std::optional< string_view_t > m_tag;
 };
 
 //! Cast query string parameter to a given type.

@@ -82,7 +82,7 @@ template< typename Parsed_Field_Type >
 RESTINIO_NODISCARD
 result_variant_t< Parsed_Field_Type >
 try_extract_field_value_from(
-	optional_t< string_view_t > opt_value,
+	std::optional< string_view_t > opt_value,
 	string_view_t default_value )
 {
 	static_assert( valid_field_type<Parsed_Field_Type>::value,

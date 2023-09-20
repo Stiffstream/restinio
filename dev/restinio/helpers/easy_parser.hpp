@@ -22,7 +22,6 @@
 #include <restinio/compiler_features.hpp>
 
 #include <restinio/exception.hpp>
-#include <restinio/optional.hpp>
 #include <restinio/expected.hpp>
 
 #include <iostream>
@@ -31,6 +30,7 @@
 #include <array>
 #include <vector>
 #include <cstring>
+#include <optional>
 
 namespace restinio
 {
@@ -1380,7 +1380,7 @@ constexpr bool is_consumer_v = is_consumer<T>::value;
  * public :
  * 	static constexpr entity_type_t entity_type = entity_type_t::clause;
  *
- * 	optional_t<parse_error_t>
+ * 	std::optional<parse_error_t>
  * 	try_process(source_t & from, Target_Type & dest);
  * 	...
  * };
@@ -1486,14 +1486,14 @@ public :
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	optional_t< parse_error_t >
+	std::optional< parse_error_t >
 	try_process( source_t & from, Target_Type & target )
 	{
 		auto parse_result = m_producer.try_parse( from );
 		if( parse_result )
 		{
 			m_consumer.consume( target, std::move(*parse_result) );
-			return nullopt;
+			return std::nullopt;
 		}
 		else
 			return parse_result.error();
@@ -1562,7 +1562,7 @@ public :
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-inline optional_t< parse_error_t >
+inline std::optional< parse_error_t >
 ensure_no_remaining_content(
 	source_t & from )
 {
@@ -1578,7 +1578,7 @@ ensure_no_remaining_content(
 		}
 	}
 
-	return nullopt;
+	return std::nullopt;
 }
 
 //
@@ -1644,12 +1644,12 @@ public :
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	optional_t< parse_error_t >
+	std::optional< parse_error_t >
 	try_process( source_t & from, Target_Type & target )
 	{
 		const auto starting_pos = from.current_position();
 
-		optional_t< parse_error_t > actual_parse_error;
+		std::optional< parse_error_t > actual_parse_error;
 		const bool success = restinio::utils::tuple_algorithms::any_of(
 				m_subitems,
 				[&from, &target, &actual_parse_error]( auto && one_producer ) {
@@ -1680,7 +1680,7 @@ public :
 					error_reason_t::no_appropriate_alternative
 			};
 		else
-			return nullopt;
+			return std::nullopt;
 	}
 };
 
@@ -1725,7 +1725,7 @@ public :
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	optional_t< parse_error_t >
+	std::optional< parse_error_t >
 	try_process( source_t & from, Target_Type & target )
 	{
 		source_t::content_consumer_t consumer{ from };
@@ -1744,7 +1744,7 @@ public :
 		}
 
 		// maybe_clause always returns success even if nothing consumed.
-		return nullopt;
+		return std::nullopt;
 	}
 };
 
@@ -1788,7 +1788,7 @@ public :
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	optional_t< parse_error_t >
+	std::optional< parse_error_t >
 	try_process( source_t & from, Target_Type & )
 	{
 		// NOTE: will always return the current position back.
@@ -1812,7 +1812,7 @@ public :
 					error_reason_t::pattern_not_found
 			};
 		else
-			return nullopt;
+			return std::nullopt;
 	}
 };
 
@@ -1856,7 +1856,7 @@ public :
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	optional_t< parse_error_t >
+	std::optional< parse_error_t >
 	try_process( source_t & from, Target_Type & )
 	{
 		// NOTE: will always return the current position back.
@@ -1876,7 +1876,7 @@ public :
 					error_reason_t::pattern_not_found
 			};
 		else
-			return nullopt;
+			return std::nullopt;
 	}
 };
 
@@ -1917,14 +1917,14 @@ public :
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	optional_t< parse_error_t >
+	std::optional< parse_error_t >
 	try_process( source_t & from, Target_Type & target )
 	{
 		source_t::content_consumer_t consumer{ from };
 		Target_Type tmp_value{ target };
 
 		// We should store actual parse error from subitems to return it.
-		optional_t< parse_error_t > result;
+		std::optional< parse_error_t > result;
 
 		const bool success = restinio::utils::tuple_algorithms::all_of(
 				m_subitems,
@@ -1967,7 +1967,7 @@ public :
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	optional_t< parse_error_t >
+	std::optional< parse_error_t >
 	try_process( source_t & from, Target_Type & target )
 	{
 		const auto starting_pos = from.current_position();
@@ -1982,7 +1982,7 @@ public :
 			};
 		}
 		else
-			return nullopt;
+			return std::nullopt;
 	}
 };
 
@@ -2023,7 +2023,7 @@ public :
 	try_parse( source_t & from )
 	{
 		typename value_wrapper_t::wrapped_type tmp_value{};
-		optional_t< parse_error_t > error;
+		std::optional< parse_error_t > error;
 
 		const bool success = restinio::utils::tuple_algorithms::all_of(
 				m_subitems,
@@ -2076,7 +2076,7 @@ public :
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	optional_t< parse_error_t >
+	std::optional< parse_error_t >
 	try_process( source_t & from, Target_Type & dest )
 	{
 		source_t::content_consumer_t whole_consumer{ from };
@@ -2104,7 +2104,7 @@ public :
 		if( count >= m_min_occurences )
 		{
 			whole_consumer.commit();
-			return nullopt;
+			return std::nullopt;
 		}
 
 		return parse_error_t{

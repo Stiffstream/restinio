@@ -38,7 +38,7 @@ struct content_type_t
 
 struct value_with_opt_params_t
 {
-	using param_t = std::pair< std::string, restinio::optional_t<std::string> >;
+	using param_t = std::pair< std::string, std::optional<std::string> >;
 	using param_storage_t = std::vector< param_t >;
 
 	std::string m_value;
@@ -700,7 +700,7 @@ TEST_CASE( "sequence with optional", "[optional][simple]" )
 							token_p() >> to_lower() >>
 									&value_with_opt_params_t::param_t::first,
 
-							produce< restinio::optional_t<std::string> >(
+							produce< std:optional<std::string> >(
 								maybe(
 									symbol('='),
 
@@ -1434,8 +1434,8 @@ TEST_CASE( "Cache-Control Field", "[cache-control]" )
 
 		cache_control_value_t::directive_container_t expected_directives{
 			{ "max-age"s, "5"s },
-			{ "no-transform"s, restinio::nullopt },
-			{ "only-if-cached"s, restinio::nullopt },
+			{ "no-transform"s, std::nullopt },
+			{ "only-if-cached"s, std::nullopt },
 			{ "min-fresh"s, "20"s }
 		};
 
@@ -1450,8 +1450,8 @@ TEST_CASE( "Cache-Control Field", "[cache-control]" )
 
 		cache_control_value_t::directive_container_t expected_directives{
 			{ "max-age"s, "5"s },
-			{ "no-transform"s, restinio::nullopt },
-			{ "only-if-cached"s, restinio::nullopt },
+			{ "no-transform"s, std::nullopt },
+			{ "only-if-cached"s, std::nullopt },
 			{ "min-fresh"s, "20"s }
 		};
 
@@ -1637,7 +1637,7 @@ TEST_CASE( "Accept", "[media-type][accept]" )
 					*item.m_weight );
 
 			accept_value_t::item_t::accept_ext_container_t expected{
-				{ "signed"s, restinio::nullopt },
+				{ "signed"s, std::nullopt },
 				{ "signature-method"s, "sha512"s }
 			};
 			REQUIRE( expected == item.m_accept_params );

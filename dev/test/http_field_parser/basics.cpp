@@ -42,7 +42,7 @@ struct content_type_t
 
 struct value_with_opt_params_t
 {
-	using param_t = std::pair< std::string, restinio::optional_t<std::string> >;
+	using param_t = std::pair< std::string, std::optional<std::string> >;
 	using param_storage_t = std::vector< param_t >;
 
 	std::string m_value;
@@ -1881,7 +1881,7 @@ TEST_CASE( "sequence with optional", "[optional][simple]" )
 							token_p() >> to_lower() >>
 									&value_with_opt_params_t::param_t::first,
 
-							produce< restinio::optional_t<std::string> >(
+							produce< std::optional<std::string> >(
 								maybe(
 									symbol('='),
 

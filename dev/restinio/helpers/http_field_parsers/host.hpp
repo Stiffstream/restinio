@@ -194,12 +194,12 @@ struct debug_printer : public ep_impl::clause_tag
 
 	template< typename Target_Type >
 	RESTINIO_NODISCARD
-	optional_t< parse_error_t >
+	std::optional< parse_error_t >
 	try_process( ep_impl::source_t & from, Target_Type & /*target*/ )
 	{
 		std::cout << "*** debug_print: " << m_tag << std::endl;
 
-		return nullopt;
+		return std::nullopt;
 	}
 };
 #endif
@@ -493,7 +493,7 @@ struct raw_host_value_t
 	/*!
 	 * Will be empty if there is no 'port' in the value of Host HTTP-field.
 	 */
-	optional_t<std::uint16_t> port;
+	std::optional<std::uint16_t> port;
 
 	/*!
 	 * @brief A factory function for a parser of Host value.

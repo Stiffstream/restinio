@@ -43,7 +43,7 @@ TEST_CASE( "Raw value of Host", "[raw-host]" )
 
 		raw_host_value_t expected{
 				raw_host_value_t::reg_name_t{ "localhost"s },
-				restinio::nullopt
+				std::nullopt
 			};
 
 		REQUIRE( expected == *result );
@@ -71,7 +71,7 @@ TEST_CASE( "Raw value of Host", "[raw-host]" )
 
 		raw_host_value_t expected{
 				raw_host_value_t::ipv4_address_t{ "127.0.0.1"s },
-				restinio::nullopt
+				std::nullopt
 			};
 
 		REQUIRE( expected == *result );
@@ -99,7 +99,7 @@ TEST_CASE( "Raw value of Host", "[raw-host]" )
 
 		raw_host_value_t expected{
 				raw_host_value_t::ipv4_address_t{ "255.255.255.255"s },
-				restinio::nullopt
+				std::nullopt
 			};
 
 		REQUIRE( expected == *result );

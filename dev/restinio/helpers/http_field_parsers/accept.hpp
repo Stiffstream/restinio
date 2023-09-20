@@ -57,7 +57,7 @@ struct accept_value_t
 		using accept_ext_container_t = parameter_with_optional_value_container_t;
 
 		media_type_value_t media_type;
-		restinio::optional_t< qvalue_t > weight;
+		std::optional< qvalue_t > weight;
 		accept_ext_container_t accept_params;
 	};
 

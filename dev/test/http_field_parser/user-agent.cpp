@@ -129,10 +129,10 @@ TEST_CASE( "User-Agent Field", "[user-agent]" )
 
 		std::vector< user_agent_value_t::tail_item_t > expected{
 			"X11; Linux x86_64"s,
-			user_agent_value_t::product_t{ "AppleWebKit"s, restinio::nullopt },
+			user_agent_value_t::product_t{ "AppleWebKit"s, std::nullopt },
 			"KHTML, like Gecko"s,
 			user_agent_value_t::product_t{ "Chrome"s, "79.0.3945.130"s },
-			user_agent_value_t::product_t{ "Safari"s, restinio::nullopt }
+			user_agent_value_t::product_t{ "Safari"s, std::nullopt }
 		};
 
 		REQUIRE( result->tail == expected );

@@ -63,10 +63,10 @@ class ws_outgoing_data_t
 			m_awaiting_write_groups.emplace( std::move( wg ) );
 		}
 
-		optional_t< write_group_t >
+		std::optional< write_group_t >
 		pop_ready_buffers()
 		{
-			optional_t< write_group_t > result;
+			std::optional< write_group_t > result;
 
 			if( !m_awaiting_write_groups.empty() )
 			{

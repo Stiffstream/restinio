@@ -228,7 +228,7 @@ namespace impl
 RESTINIO_NODISCARD
 inline expected_t< params_t, extraction_error_t >
 perform_extraction_attempt(
-	const optional_t< string_view_t > opt_field_value )
+	const std::optional< string_view_t > opt_field_value )
 {
 	if( !opt_field_value )
 		return make_unexpected( extraction_error_t::no_auth_http_field );

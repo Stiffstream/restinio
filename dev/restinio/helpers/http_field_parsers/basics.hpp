@@ -472,13 +472,13 @@ struct is_token_char_predicate_t
  * @brief A producer for OWS.
  *
  * If an OWS found in the input stream it produces non-empty
- * optional_t<char> with SP as the value.
+ * std::optional<char> with SP as the value.
  *
  * See: https://tools.ietf.org/html/rfc7230
  *
  * @since v.0.6.1
  */
-class ows_producer_t : public producer_tag< restinio::optional_t<char> >
+class ows_producer_t : public producer_tag< std::optional<char> >
 {
 public :
 	RESTINIO_NODISCARD
@@ -502,7 +502,7 @@ public :
 		if( extracted_spaces > 0u )
 			return result_type{ ' ' };
 
-		return result_type{ nullopt };
+		return result_type{ std::nullopt };
 	}
 };
 
@@ -522,7 +522,7 @@ public :
 class token_producer_t : public producer_tag< std::string >
 {
 	RESTINIO_NODISCARD
-	static optional_t< parse_error_t >
+	static std::optional< parse_error_t >
 	try_parse_value( source_t & from, std::string & accumulator )
 	{
 		error_reason_t reason = error_reason_t::pattern_not_found;
@@ -552,7 +552,7 @@ class token_producer_t : public producer_tag< std::string >
 			return parse_error_t{ from.current_position(), reason };
 		}
 
-		return nullopt;
+		return std::nullopt;
 	}
 
 	RESTINIO_NODISCARD
@@ -592,7 +592,7 @@ public :
 class quoted_string_producer_t : public producer_tag< std::string >
 {
 	RESTINIO_NODISCARD
-	static optional_t< parse_error_t >
+	static std::optional< parse_error_t >
 	try_parse_value( source_t & from, std::string & accumulator )
 	{
 		error_reason_t reason = error_reason_t::pattern_not_found;
@@ -644,7 +644,7 @@ class quoted_string_producer_t : public producer_tag< std::string >
 		if( !second_quote_extracted )
 			return parse_error_t{ from.current_position(), reason };
 		else
-			return nullopt;
+			return std::nullopt;
 	}
 
 public :
@@ -1693,7 +1693,7 @@ params_with_value_p() { return {}; }
  * @since v.0.6.1
  */
 using parameter_with_optional_value_t =
-		std::pair< std::string, restinio::optional_t<std::string> >;
+		std::pair< std::string, std::optional<std::string> >;
 
 //
 // parameter_with_optional_value_container_t
@@ -1734,7 +1734,7 @@ using parameter_with_optional_value_container_t =
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-inline expected_t< restinio::optional_t<string_view_t>, not_found_t >
+inline expected_t< std::optional<string_view_t>, not_found_t >
 find_first(
 	const parameter_with_optional_value_container_t & where,
 	string_view_t what )
@@ -1749,7 +1749,7 @@ find_first(
 		if( opt )
 			return string_view_t{ *opt };
 		else
-			return restinio::optional_t< string_view_t >{ nullopt };
+			return std::optional< string_view_t >{ std::nullopt };
 	}
 	else
 		return make_unexpected( not_found_t{} );

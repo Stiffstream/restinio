@@ -11,8 +11,6 @@
 #include <restinio/router/impl/target_path_holder.hpp>
 #include <restinio/router/non_matched_request_handler.hpp>
 
-#include <restinio/optional.hpp>
-
 #include <restinio/path2regex/path2regex.hpp>
 
 #include <restinio/router/std_regex_engine.hpp>
@@ -22,6 +20,7 @@
 #include <restinio/utils/percent_encoding.hpp>
 
 #include <map>
+#include <optional>
 #include <vector>
 
 namespace restinio
@@ -108,14 +107,14 @@ class route_params_t final
 
 		//! Get the value of a parameter if it exists.
 		//! @since v.0.4.4
-		optional_t< string_view_t >
+		std::optional< string_view_t >
 		get_param( string_view_t key ) const noexcept
 		{
 			const auto it = find_named_parameter( key );
 
 			return m_named_parameters.end() != it ?
-				optional_t< string_view_t >{ it->second } :
-				optional_t< string_view_t >{ nullopt };
+				std::optional< string_view_t >{ it->second } :
+				std::optional< string_view_t >{ std::nullopt };
 		}
 
 		//! Get indexed parameter.

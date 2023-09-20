@@ -453,7 +453,7 @@ is_bchar( char ch )
  * @since v.0.6.1
  */
 RESTINIO_NODISCARD
-inline optional_t< enumeration_error_t >
+inline std::optional< enumeration_error_t >
 check_boundary_value( string_view_t value )
 {
 	using namespace impl::boundary_value_checkers;
@@ -471,7 +471,7 @@ check_boundary_value( string_view_t value )
 	else
 		return enumeration_error_t::illegal_boundary_value;
 
-	return nullopt;
+	return std::nullopt;
 }
 
 //
@@ -497,7 +497,7 @@ expected_t< std::string, enumeration_error_t >
 detect_boundary_for_multipart_body(
 	const generic_request_t< Extra_Data > & req,
 	string_view_t expected_media_type,
-	optional_t< string_view_t > expected_media_subtype )
+	std::optional< string_view_t > expected_media_subtype )
 {
 	namespace hfp = restinio::http_field_parsers;
 	using restinio::impl::is_equal_caseless;
@@ -572,7 +572,7 @@ enumerate_parts_of_request_body(
 	Handler && handler )
 {
 	std::size_t parts_processed{ 0u };
-	optional_t< enumeration_error_t > error;
+	std::optional< enumeration_error_t > error;
 
 	for( auto current_part : parts )
 	{
@@ -701,7 +701,7 @@ enumerate_parts(
 	//!
 	//! @note
 	//! The special value '*' is not handled here.
-	optional_t< string_view_t > expected_media_subtype = nullopt )
+	std::optional< string_view_t > expected_media_subtype = std::nullopt )
 {
 	static_assert(
 			impl::valid_handler_type< std::decay_t<Handler> >::value,

@@ -48,7 +48,7 @@ struct user_agent_value_t
 	struct product_t
 	{
 		std::string product;
-		restinio::optional_t<std::string> product_version;
+		std::optional<std::string> product_version;
 	};
 
 	/*!
