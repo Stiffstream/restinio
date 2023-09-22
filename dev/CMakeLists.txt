@@ -248,21 +248,19 @@ if (RESTINIO_CLANG_TIDY)
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/find_program_required.cmake)
     find_program_required(
         NAME clang-tidy
-        SEARCH_NAME ${TOOLING_CLANG_TIDY_PATH}
+        SEARCH_NAME ${TOOLING_CLANG_TIDY_PATH} clang-tidy
         PATH clang_tidy_exe )
 
     if (NOT TOOLING_CLANG_TIDY_PARAMS)
-        # TODO: consider appropriate defaults.
-        string(CONCAT TOOLING_CLANG_TIDY_PARAMS
-            "--header-filter='${CMAKE_SOURCE_DIR}/restinio/.*';"
-            "--warnings-as-errors=*,-cppcoreguidelines-avoid-magic-numbers,-readability-magic-numbers,-altera-struct-pack-align,-cppcoreguidelines-non-private-member-variables-in-classes,-misc-non-private-member-variables-in-classes,-abseil-string-find-str-contains;"
-            "--checks=*,-cppcoreguidelines-pro-type-vararg,-fuchsia-default-arguments-calls,-hicpp-vararg,-llvm-include-order,-fuchsia-overloaded-operator,-cert-err58-cpp,-modernize-use-trailing-return-type,-llvmlibc-*,-cppcoreguidelines-avoid-goto,-hicpp-avoid-goto,-fuchsia-default-arguments-declarations"
-            )
+        include(${CMAKE_CURRENT_SOURCE_DIR}/default-clang-tidy-flags.cmake)
     endif ()
+
+    set(RESTINIO_CLANG_TIDY_ARGS
+        "--header-filter='${CMAKE_SOURCE_DIR}/restinio/.*';${TOOLING_CLANG_TIDY_PARAMS}")
 
     # Rely on CMake feature:
     # https://cmake.org/cmake/help/v3.10/variable/CMAKE_LANG_CLANG_TIDY.html#variable:CMAKE_%3CLANG%3E_CLANG_TIDY
-    set(CMAKE_CXX_CLANG_TIDY "${clang_tidy_exe};${TOOLING_CLANG_TIDY_PARAMS}")
+    set(CMAKE_CXX_CLANG_TIDY "${clang_tidy_exe};${RESTINIO_CLANG_TIDY_ARGS}")
     message(STATUS "CMAKE_CXX_CLANG_TIDY: ${CMAKE_CXX_CLANG_TIDY}")
     message("========================================")
 
