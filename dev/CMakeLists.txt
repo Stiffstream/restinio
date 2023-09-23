@@ -240,6 +240,35 @@ if (RESTINIO_GCC_CODE_COVERAGE)
 #     cmake --build _build --target RESTINIO_CODE_COVERAGE_all
 endif()
 
+option(RESTINIO_CLANG_TIDY "Scan build with cllang-tidy" OFF)
+if (RESTINIO_CLANG_TIDY)
+    message("========================================")
+    message(STATUS "Enabling clang-tidy")
+
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/find_program_required.cmake)
+    find_program_required(
+        NAME clang-tidy
+        SEARCH_NAME ${TOOLING_CLANG_TIDY_PATH} clang-tidy
+        PATH clang_tidy_exe )
+
+    if (NOT TOOLING_CLANG_TIDY_PARAMS)
+        include(${CMAKE_CURRENT_SOURCE_DIR}/default-clang-tidy-flags.cmake)
+    endif ()
+
+    set(RESTINIO_CLANG_TIDY_ARGS
+        "--header-filter='${CMAKE_SOURCE_DIR}/restinio/.*';${TOOLING_CLANG_TIDY_PARAMS}")
+
+    # Rely on CMake feature:
+    # https://cmake.org/cmake/help/v3.10/variable/CMAKE_LANG_CLANG_TIDY.html#variable:CMAKE_%3CLANG%3E_CLANG_TIDY
+    set(CMAKE_CXX_CLANG_TIDY "${clang_tidy_exe};${RESTINIO_CLANG_TIDY_ARGS}")
+    message(STATUS "CMAKE_CXX_CLANG_TIDY: ${CMAKE_CXX_CLANG_TIDY}")
+    message("========================================")
+
+# Example (Ubuntu with clang-tidy-12):
+#     cmake -B_build -DCMAKE_BUILD_TYPE=Debug -DRESTINIO_CLANG_TIDY=ON -DTOOLING_CLANG_TIDY_PATH=clang-tidy-12 .
+#     cmake --build _build
+endif ()
+
 message("========================================")
 message(STATUS "Defining restinio target...")
 add_subdirectory(restinio)
