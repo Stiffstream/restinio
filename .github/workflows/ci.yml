@@ -5,7 +5,7 @@ name: CI
 
 on:
   push:
-    branches: [master", "feature/add-ci-github-actions"]
+    branches: ["master"]
   pull_request:
 
 jobs:
@@ -86,18 +86,7 @@ jobs:
             cxxname: g++-9
             ar: gcc-ar-9
             cppstd: 17
-          - cname: gcc-10
-            cxxname: g++-10
-            ar: gcc-ar-10
-            cppstd: 17
-          - cname: gcc-11
-            cxxname: g++-11
-            ar: gcc-ar-11
-            cppstd: 17
-          - cname: gcc-11
-            cxxname: g++-11
-            ar: gcc-ar-11
-            cppstd: 20
+
           - cname: gcc-12
             cxxname: g++-12
             ar: gcc-ar-12
@@ -111,18 +100,11 @@ jobs:
             cxxname: clang++-12
             ar: llvm-ar-12
             cppstd: 17
-          - cname: clang-13
-            cxxname: clang++-13
-            ar: llvm-ar-13
+
+          - cname: clang-15
+            cxxname: clang++-15
+            ar: llvm-ar-15
             cppstd: 17
-          - cname: clang-13
-            cxxname: clang++-13
-            ar: llvm-ar-13
-            cppstd: 20
-          - cname: clang-14
-            cxxname: clang++-14
-            ar: llvm-ar-14
-            cppstd: 20
           - cname: clang-15
             cxxname: clang++-15
             ar: llvm-ar-15
@@ -157,6 +139,60 @@ jobs:
             -B ${RESTINIO_BUILD_DIR} \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DRESTINIO_EXPLICIT_CPPSTD=${{ matrix.compiler.cppstd }}
+      - name: Build
+        working-directory: ./dev
+        shell: bash
+        run: |
+          cmake \
+            --build $RESTINIO_BUILD_DIR \
+            --verbose
+      - name: Test
+        shell: bash
+        working-directory: ./dev
+        run: |
+          ctest \
+            -T test \
+            --test-dir $RESTINIO_BUILD_DIR \
+            --output-on-failure \
+            --no-compress-output
+
+
+  Build-Macos:
+    # The type of runner that the job will run on
+    name: macos-12 (${{ matrix.build_type }}, C++${{ matrix.cppstd }})
+    runs-on: macos-12
+    strategy:
+      fail-fast: false
+      matrix:
+        cppstd:
+          - 17
+          - 20
+        build_type:
+          - Release
+          - Debug
+    env:
+      RESTINIO_BUILD_DIR: _build_cpp${{ matrix.cppstd }}_${{ matrix.build_type }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Print env
+        run: |
+          echo github.event.action: ${{ github.event.action }}
+          echo github.event_name: ${{ github.event_name }}
+
+      - name: Install dependencies
+        run: |
+          gem install Mxx_ru
+
+      - name: Configure
+        shell: bash
+        run: |
+          mxxruexternals
+          cd dev
+          cmake \
+            -B ${RESTINIO_BUILD_DIR} \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DRESTINIO_EXPLICIT_CPPSTD=${{ matrix.cppstd }}
       - name: Build
         working-directory: ./dev
         shell: bash
