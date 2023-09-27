@@ -22,4 +22,6 @@ if (MSVC)
     target_compile_options(${UNITTEST} PRIVATE /bigobj)
 endif ()
 
-add_test(NAME ${UNITTEST} COMMAND ${UNITTEST})
+catch_discover_tests(
+	${UNITTEST}
+	TEST_SUFFIX ${RESTINIO_TEST_SUFFIX})

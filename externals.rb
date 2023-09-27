@@ -70,6 +70,7 @@ MxxRu::arch_externals :catch do |e|
 
   e.map_dir 'src' => 'dev/catch2/'
   e.map_dir 'CMake' => 'dev/catch2/'
+  e.map_dir 'extras' => 'dev/catch2/'
   e.map_file 'CMakeLists.txt' => 'dev/catch2/*'
 end
 

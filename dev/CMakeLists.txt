@@ -282,6 +282,9 @@ if (RESTINIO_TEST)
     set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
     add_subdirectory(catch2)
 
+    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/catch2/extras)
+    include(Catch)
+
     enable_testing()
     add_subdirectory(test)
 endif ()

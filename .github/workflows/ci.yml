@@ -54,6 +54,7 @@ jobs:
             -B $RESTINIO_BUILD_DIR  \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DRESTINIO_EXPLICIT_CPPSTD=${{ matrix.cppstd }} \
+            -DRESTINIO_TEST_SUFFIX=" [cpp${{ matrix.cppstd }}_${{ matrix.build_type }}]" \
             -G "${{ matrix.config.generator }}"
       - name: Build
         working-directory: ./dev
@@ -138,7 +139,8 @@ jobs:
           cmake \
             -B ${RESTINIO_BUILD_DIR} \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DRESTINIO_EXPLICIT_CPPSTD=${{ matrix.compiler.cppstd }}
+            -DRESTINIO_EXPLICIT_CPPSTD=${{ matrix.compiler.cppstd }} \
+            -DRESTINIO_TEST_SUFFIX=" [${{ matrix.compiler.cname }}_cpp${{ matrix.compiler.cppstd }}_${{ matrix.build_type }}]"
       - name: Build
         working-directory: ./dev
         shell: bash
@@ -192,7 +194,8 @@ jobs:
           cmake \
             -B ${RESTINIO_BUILD_DIR} \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DRESTINIO_EXPLICIT_CPPSTD=${{ matrix.cppstd }}
+            -DRESTINIO_EXPLICIT_CPPSTD=${{ matrix.cppstd }} \
+            -DRESTINIO_TEST_SUFFIX=" [cpp${{ matrix.cppstd }}_${{ matrix.build_type }}]"
       - name: Build
         working-directory: ./dev
         shell: bash
