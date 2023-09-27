@@ -28,7 +28,6 @@ target_include_directories(
     #       headers to include dir so the next dir is not pointing to
     #       the parent dir.
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/..>
-    $<BUILD_INTERFACE:${version_header_include_path}>
     $<INSTALL_INTERFACE:include>)
 
 if (RESTINIO_EXPLICIT_CPPSTD)
@@ -88,7 +87,6 @@ endif ()
 if(RESTINIO_USE_SYSTEM_LLHTTP)
     if (RESTINIO_LLHTTP_LIB_LINK_NAME)
         message(STATUS "Using system llhttp with linking to custom lib name: ${RESTINIO_LLHTTP_LIB_LINK_NAME}")
-        # target_compile_definitions(${RESTINIO_LIBRARY_NAME} INTERFACE FMT_HEADER_ONLY=0 )
         target_link_libraries(${RESTINIO_LIBRARY_NAME} INTERFACE ${RESTINIO_LLHTTP_LIB_LINK_NAME})
     else()
         message(STATUS "Using system llhttp")

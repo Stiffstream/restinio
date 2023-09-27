@@ -6,8 +6,8 @@
 #   * Gathering meaningful targets from subdirectories (add_subdirectory).
 #
 # This file serves as the primary build entry for RESTinio's developers
-#  and is not intended for use when RESTinio is added as a dependency
-#  in another project.
+# and is not intended for use when RESTinio is added as a dependency
+# in another project.
 #
 # If you are not using a package manager (such as Conan or Vcpkg) and wish to use
 # RESTinio as a submodule or any other approach that involves downloading a tarball
@@ -80,10 +80,10 @@ option(RESTINIO_USE_SYSTEM_STANDALONE_ASIO "Assume ASIO is available as system h
 # to be more specific we will assume that find_package would do it.
 option(RESTINIO_USE_SYSTEM_BOOST_ASIO "Assume Boosr::asio is available as system headers" OFF)
 
-# By default we assume to use an embedded version of expected-lite.
+# By default we assume to use an embedded version of LLHTTP.
 option(RESTINIO_USE_SYSTEM_LLHTTP "Assume llhttp (http parser) is available as system library" OFF)
 
-# By default we assume to use an embedded version of expected-lite.
+# By default we assume to use an embedded version of FMT.
 option(RESTINIO_USE_SYSTEM_FMT "Assume FMT is available as system headers" OFF)
 
 # By default we assume to use an embedded version of expected-lite.
