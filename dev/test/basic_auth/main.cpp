@@ -2,7 +2,7 @@
 	restinio
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <restinio/helpers/http_field_parsers/basic_auth.hpp>
 #include <restinio/helpers/http_field_parsers/try_parse_field.hpp>

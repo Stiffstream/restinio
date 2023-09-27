@@ -6,7 +6,7 @@
 	Tests for header objects.
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <iterator>
 #include <set>
@@ -925,7 +925,7 @@ TEST_CASE( "working with string_to_field()" , "[header][string_to_field]" )
 
 TEST_CASE( "Connection" , "[header][connection]" )
 {
-	using namespace Catch;
+	using namespace Catch::Matchers;
 
 	{
 		// Default.
@@ -936,8 +936,8 @@ TEST_CASE( "Connection" , "[header][connection]" )
 
 		REQUIRE_THAT(
 			serialized,
-			Contains( "Connection: close" ) ||
-			!Contains( "Content-Length" ) );
+			ContainsSubstring( "Connection: close" ) ||
+			!ContainsSubstring( "Content-Length" ) );
 	}
 	{
 		// Default.
@@ -947,8 +947,8 @@ TEST_CASE( "Connection" , "[header][connection]" )
 
 		REQUIRE_THAT(
 			serialized,
-			Contains( "Connection: close" ) ||
-			Contains( "Content-Length: 0" ) );
+			ContainsSubstring( "Connection: close" ) ||
+			ContainsSubstring( "Content-Length: 0" ) );
 	}
 
 	{
@@ -959,7 +959,7 @@ TEST_CASE( "Connection" , "[header][connection]" )
 
 		REQUIRE_THAT(
 			serialized,
-			Contains( "Connection: close" ) );
+			ContainsSubstring( "Connection: close" ) );
 	}
 
 	{
@@ -970,7 +970,7 @@ TEST_CASE( "Connection" , "[header][connection]" )
 
 		REQUIRE_THAT(
 			serialized,
-			Contains( "Connection: keep-alive" ) );
+			ContainsSubstring( "Connection: keep-alive" ) );
 	}
 
 	{
@@ -981,7 +981,7 @@ TEST_CASE( "Connection" , "[header][connection]" )
 
 		REQUIRE_THAT(
 			serialized,
-			Contains( "Connection: Upgrade" ) );
+			ContainsSubstring( "Connection: Upgrade" ) );
 	}
 }
 

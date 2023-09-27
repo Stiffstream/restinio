@@ -14,12 +14,13 @@
 # of sources and building RESTinio as part of your CMake-based project,
 # consider using the CMake file that defines RESTinio targets
 # (found in <prj_root>/dev/destionio). That will simplify the process
-# of incorporating RESTinio into your project, avoiding the need to disable
-# various build environment settings defined in this file.
+# of incorporating RESTinio into your project, avoiding the need to cancel
+# various build environment settings defined in this file (and this
+# root cmake-file will not help with it in any way).
 
 
-# Root CMake for logr project.
-cmake_minimum_required(VERSION 3.8)
+# Root CMake for RESTinio project.
+cmake_minimum_required(VERSION 3.14)
 
 set(RESTINIO_LIBRARY_NAME restinio)
 project(${RESTINIO_LIBRARY_NAME}_root CXX)
@@ -275,6 +276,15 @@ add_subdirectory(restinio)
 message("========================================")
 
 if (RESTINIO_TEST)
+    set(CATCH_INSTALL_DOCS      OFF)
+    set(CATCH_INSTALL_EXTRAS    OFF)
+    set(CATCH_DEVELOPMENT_BUILD OFF)
+    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+    add_subdirectory(catch2)
+
+    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/catch2/extras)
+    include(Catch)
+
     enable_testing()
     add_subdirectory(test)
 endif ()

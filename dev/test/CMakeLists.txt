@@ -1,6 +1,5 @@
 project(tests)
 
-add_subdirectory(catch_main)
 add_subdirectory(metaprogramming)
 add_subdirectory(tuple_algorithms)
 

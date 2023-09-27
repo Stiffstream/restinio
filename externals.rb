@@ -66,8 +66,11 @@ MxxRu::arch_externals :clara do |e|
 end
 
 MxxRu::arch_externals :catch do |e|
-  e.url 'https://github.com/catchorg/Catch2/archive/v2.13.9.tar.gz'
+  e.url 'https://github.com/catchorg/Catch2/archive/refs/tags/v3.4.0.tar.gz'
 
-  e.map_dir 'single_include/catch2' => 'dev'
+  e.map_dir 'src' => 'dev/catch2/'
+  e.map_dir 'CMake' => 'dev/catch2/'
+  e.map_dir 'extras' => 'dev/catch2/'
+  e.map_file 'CMakeLists.txt' => 'dev/catch2/*'
 end
 

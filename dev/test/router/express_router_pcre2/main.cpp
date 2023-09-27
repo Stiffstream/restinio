@@ -6,7 +6,7 @@
 	Tests for express router (PCRE2).
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <iterator>
 

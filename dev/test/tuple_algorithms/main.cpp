@@ -2,7 +2,7 @@
 	restinio
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <restinio/utils/tuple_algorithms.hpp>
 

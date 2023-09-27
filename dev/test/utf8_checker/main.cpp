@@ -6,7 +6,7 @@
 	Tests for utf8_checker.
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <restinio/utils/utf8_checker.hpp>
 

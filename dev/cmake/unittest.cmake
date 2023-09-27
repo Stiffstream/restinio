@@ -9,7 +9,7 @@ ENDIF ()
 add_executable(${UNITTEST} ${UNITTEST_SRCFILES})
 
 TARGET_LINK_LIBRARIES(${UNITTEST} PRIVATE restinio::restinio)
-TARGET_LINK_LIBRARIES(${UNITTEST} PRIVATE restinio::catch_main)
+TARGET_LINK_LIBRARIES(${UNITTEST} PRIVATE Catch2::Catch2WithMain)
 TARGET_INCLUDE_DIRECTORIES(${UNITTEST} PRIVATE ${CMAKE_SOURCE_DIR})
 
 link_threads_if_necessary(${UNITTEST})
@@ -22,4 +22,6 @@ if (MSVC)
     target_compile_options(${UNITTEST} PRIVATE /bigobj)
 endif ()
 
-add_test(NAME ${UNITTEST} COMMAND ${UNITTEST})
+catch_discover_tests(
+	${UNITTEST}
+	TEST_SUFFIX ${RESTINIO_TEST_SUFFIX})

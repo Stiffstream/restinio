@@ -6,7 +6,7 @@
 	Tests for settings parameters that have default constructor.
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <restinio/utils/base64.hpp>
 #include <restinio/utils/sha1.hpp>

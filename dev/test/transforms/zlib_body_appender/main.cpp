@@ -6,7 +6,7 @@
 	Echo server.
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <restinio/all.hpp>
 #include <restinio/transforms/zlib.hpp>
@@ -119,7 +119,7 @@ TEST_CASE( "restinio_controlled_output" , "[zlib][body_appender][restinio_contro
 
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "Content-Encoding: deflate\r\n" ) );
+			Catch::Matchers::ContainsSubstring( "Content-Encoding: deflate\r\n" ) );
 
 		REQUIRE_THAT(
 			response,
@@ -143,7 +143,7 @@ TEST_CASE( "restinio_controlled_output" , "[zlib][body_appender][restinio_contro
 
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "Content-Encoding: gzip\r\n" ) );
+			Catch::Matchers::ContainsSubstring( "Content-Encoding: gzip\r\n" ) );
 
 		REQUIRE_THAT(
 			response,
@@ -167,7 +167,7 @@ TEST_CASE( "restinio_controlled_output" , "[zlib][body_appender][restinio_contro
 
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "Content-Encoding: identity\r\n" ) );
+			Catch::Matchers::ContainsSubstring( "Content-Encoding: identity\r\n" ) );
 
 		REQUIRE_THAT(
 			response,
@@ -194,7 +194,7 @@ TEST_CASE( "restinio_controlled_output" , "[zlib][body_appender][restinio_contro
 
 			REQUIRE_THAT(
 				response,
-				Catch::Matchers::Contains( "Content-Encoding: deflate\r\n" ) );
+				Catch::Matchers::ContainsSubstring( "Content-Encoding: deflate\r\n" ) );
 
 			REQUIRE_THAT(
 				response,
@@ -221,7 +221,7 @@ TEST_CASE( "restinio_controlled_output" , "[zlib][body_appender][restinio_contro
 
 			REQUIRE_THAT(
 				response,
-				Catch::Matchers::Contains( "Content-Encoding: gzip\r\n" ) );
+				Catch::Matchers::ContainsSubstring( "Content-Encoding: gzip\r\n" ) );
 
 			REQUIRE_THAT(
 				response,
@@ -370,11 +370,11 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "Content-Encoding: deflate\r\n" ) );
+			Catch::Matchers::ContainsSubstring( "Content-Encoding: deflate\r\n" ) );
 
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "\r\n\r\n" ) );
+			Catch::Matchers::ContainsSubstring( "\r\n\r\n" ) );
 
 		const auto body_start = response.find( "\r\n\r\n" ) + 4;
 
@@ -402,11 +402,11 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "Content-Encoding: gzip\r\n" ) );
+			Catch::Matchers::ContainsSubstring( "Content-Encoding: gzip\r\n" ) );
 
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "\r\n\r\n" ) );
+			Catch::Matchers::ContainsSubstring( "\r\n\r\n" ) );
 
 		const auto body_start = response.find( "\r\n\r\n" ) + 4;
 
@@ -434,11 +434,11 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "Content-Encoding: identity\r\n" ) );
+			Catch::Matchers::ContainsSubstring( "Content-Encoding: identity\r\n" ) );
 
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "\r\n\r\n" ) );
+			Catch::Matchers::ContainsSubstring( "\r\n\r\n" ) );
 
 		const auto body_start = response.find( "\r\n\r\n" ) + 4;
 
@@ -469,11 +469,11 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 
 			REQUIRE_THAT(
 				response,
-				Catch::Matchers::Contains( "Content-Encoding: deflate\r\n" ) );
+				Catch::Matchers::ContainsSubstring( "Content-Encoding: deflate\r\n" ) );
 
 			REQUIRE_THAT(
 				response,
-				Catch::Matchers::Contains( "\r\n\r\n" ) );
+				Catch::Matchers::ContainsSubstring( "\r\n\r\n" ) );
 
 			const auto body_start = response.find( "\r\n\r\n" ) + 4;
 
@@ -503,11 +503,11 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 
 			REQUIRE_THAT(
 				response,
-				Catch::Matchers::Contains( "Content-Encoding: gzip\r\n" ) );
+				Catch::Matchers::ContainsSubstring( "Content-Encoding: gzip\r\n" ) );
 
 			REQUIRE_THAT(
 				response,
-				Catch::Matchers::Contains( "\r\n\r\n" ) );
+				Catch::Matchers::ContainsSubstring( "\r\n\r\n" ) );
 
 			const auto body_start = response.find( "\r\n\r\n" ) + 4;
 
@@ -668,7 +668,7 @@ TEST_CASE( "chunked_output" , "[zlib][body_appender][chunked_output]" )
 
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "Content-Encoding: deflate\r\n" ) );
+			Catch::Matchers::ContainsSubstring( "Content-Encoding: deflate\r\n" ) );
 	}
 
 
@@ -687,7 +687,7 @@ TEST_CASE( "chunked_output" , "[zlib][body_appender][chunked_output]" )
 
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "Content-Encoding: gzip\r\n" ) );
+			Catch::Matchers::ContainsSubstring( "Content-Encoding: gzip\r\n" ) );
 	}
 
 
@@ -706,7 +706,7 @@ TEST_CASE( "chunked_output" , "[zlib][body_appender][chunked_output]" )
 
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "Content-Encoding: identity\r\n" ) );
+			Catch::Matchers::ContainsSubstring( "Content-Encoding: identity\r\n" ) );
 	}
 
 	other_thread.stop_and_join();

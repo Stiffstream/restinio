@@ -9,7 +9,7 @@
 #include <cstdlib>
 #include <thread>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <restinio/all.hpp>
 
@@ -148,31 +148,31 @@ TEST_CASE( "Using user controlled output response builder" , "[user_controlled_o
 		REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "0:0123456789:0" ) );
+			Catch::Matchers::ContainsSubstring( "0:0123456789:0" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "1:0123456789:1" ) );
+			Catch::Matchers::ContainsSubstring( "1:0123456789:1" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "2:0123456789:2" ) );
+			Catch::Matchers::ContainsSubstring( "2:0123456789:2" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "3:0123456789:3" ) );
+			Catch::Matchers::ContainsSubstring( "3:0123456789:3" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "4:0123456789:4" ) );
+			Catch::Matchers::ContainsSubstring( "4:0123456789:4" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "5:0123456789:5" ) );
+			Catch::Matchers::ContainsSubstring( "5:0123456789:5" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "6:0123456789:6" ) );
+			Catch::Matchers::ContainsSubstring( "6:0123456789:6" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "7:0123456789:7" ) );
+			Catch::Matchers::ContainsSubstring( "7:0123456789:7" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "8:0123456789:8" ) );
+			Catch::Matchers::ContainsSubstring( "8:0123456789:8" ) );
 		REQUIRE_THAT(
 			response,
 			Catch::Matchers::EndsWith( "9:0123456789:9" ) );
@@ -197,19 +197,19 @@ TEST_CASE( "Using user controlled output response builder" , "[user_controlled_o
 		REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "0:0123456789:0" ) );
+			Catch::Matchers::ContainsSubstring( "0:0123456789:0" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "1:0123456789:1" ) );
+			Catch::Matchers::ContainsSubstring( "1:0123456789:1" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "2:0123456789:2" ) );
+			Catch::Matchers::ContainsSubstring( "2:0123456789:2" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "3:0123456789:3" ) );
+			Catch::Matchers::ContainsSubstring( "3:0123456789:3" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "4:0123456789:4" ) );
+			Catch::Matchers::ContainsSubstring( "4:0123456789:4" ) );
 		REQUIRE_THAT(
 			response,
 			Catch::Matchers::EndsWith( "5:0123456789:5" ) );
@@ -250,32 +250,32 @@ TEST_CASE( "Using user controlled output response builder" , "[user_controlled_o
 		REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "0:0123456789:0" ) );
+			Catch::Matchers::ContainsSubstring( "0:0123456789:0" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "1:0123456789:1" ) );
+			Catch::Matchers::ContainsSubstring( "1:0123456789:1" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "2:0123456789:2" ) );
+			Catch::Matchers::ContainsSubstring( "2:0123456789:2" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "3:0123456789:3" ) );
+			Catch::Matchers::ContainsSubstring( "3:0123456789:3" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "4:0123456789:4" ) );
+			Catch::Matchers::ContainsSubstring( "4:0123456789:4" ) );
 
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "9:MUST_BE_1:9" ) );
+			Catch::Matchers::ContainsSubstring( "9:MUST_BE_1:9" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "9:MUST_BE_2:9" ) );
+			Catch::Matchers::ContainsSubstring( "9:MUST_BE_2:9" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "9:MUST_BE_3:9" ) );
+			Catch::Matchers::ContainsSubstring( "9:MUST_BE_3:9" ) );
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains( "9:MUST_BE_4:9" ) );
+			Catch::Matchers::ContainsSubstring( "9:MUST_BE_4:9" ) );
 
 		REQUIRE_THAT(
 			response,
@@ -311,7 +311,7 @@ TEST_CASE( "Using user controlled output response builder" , "[user_controlled_o
 		{
 			REQUIRE_THAT(
 				response,
-				Catch::Matchers::Contains( create_body( i ) ) );
+				Catch::Matchers::ContainsSubstring( create_body( i ) ) );
 		}
 
 		REQUIRE_THAT(

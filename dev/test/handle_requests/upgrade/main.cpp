@@ -7,7 +7,7 @@
 	Test upgrade request.
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <restinio/all.hpp>
 #include <restinio/websocket/websocket.hpp>
@@ -74,10 +74,13 @@ perform_test()
 
 	REQUIRE_NOTHROW( response = do_request( request_str ) );
 
-	REQUIRE_THAT( response, Catch::StartsWith( "HTTP/1.1 101 Switching Protocols" ) );
-	REQUIRE_THAT( response, Catch::Contains( "Connection: Upgrade" ) );
-	REQUIRE_THAT( response, Catch::Contains( "Sec-WebSocket-Accept:" ) );
-	REQUIRE_THAT( response, Catch::Contains( "Upgrade: websocket" ) );
+	REQUIRE_THAT(
+		response,
+		Catch::Matchers::StartsWith( "HTTP/1.1 101 Switching Protocols" ) );
+
+	REQUIRE_THAT( response, Catch::Matchers::ContainsSubstring( "Connection: Upgrade" ) );
+	REQUIRE_THAT( response, Catch::Matchers::ContainsSubstring( "Sec-WebSocket-Accept:" ) );
+	REQUIRE_THAT( response, Catch::Matchers::ContainsSubstring( "Upgrade: websocket" ) );
 
 	other_thread.stop_and_join();
 }

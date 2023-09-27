@@ -1,4 +1,4 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <restinio/all.hpp>
 
@@ -51,7 +51,7 @@ TEST_CASE(
 	REQUIRE_NOTHROW( response = do_request( request_str ) );
 
 	REQUIRE_THAT( response,
-		Catch::Matchers::Contains(
+		Catch::Matchers::ContainsSubstring(
 			fmt::format( RESTINIO_FMT_FORMAT_STRING( "Content-Length: {}" ),
 				resp_message->size() ) ) );
 
@@ -120,7 +120,7 @@ TEST_CASE(
 	REQUIRE_NOTHROW( response = do_request( request_str ) );
 
 	REQUIRE_THAT( response,
-		Catch::Matchers::Contains(
+		Catch::Matchers::ContainsSubstring(
 			fmt::format( RESTINIO_FMT_FORMAT_STRING( "Content-Length: {}" ),
 				resp_message->size() ) ) );
 
@@ -186,7 +186,7 @@ TEST_CASE(
 	REQUIRE_NOTHROW( response = do_request( request_str ) );
 
 	REQUIRE_THAT( response,
-		Catch::Matchers::Contains(
+		Catch::Matchers::ContainsSubstring(
 			fmt::format( RESTINIO_FMT_FORMAT_STRING( "Content-Length: {}" ),
 				resp_message->size() ) ) );
 
@@ -283,7 +283,7 @@ TEST_CASE(
 	REQUIRE_NOTHROW( response = do_request( request_str ) );
 
 	REQUIRE_THAT( response,
-		Catch::Matchers::Contains(
+		Catch::Matchers::ContainsSubstring(
 			fmt::format( RESTINIO_FMT_FORMAT_STRING( "Content-Length: {}" ),
 				resp_message->size() ) ) );
 
@@ -341,7 +341,7 @@ TEST_CASE(
 	REQUIRE_NOTHROW( response = do_request( request_str ) );
 
 	REQUIRE_THAT( response,
-		Catch::Matchers::Contains(
+		Catch::Matchers::ContainsSubstring(
 			fmt::format( RESTINIO_FMT_FORMAT_STRING( "Content-Length: {}" ),
 				resp_message->size() ) ) );
 
@@ -403,7 +403,7 @@ TEST_CASE(
 	REQUIRE_NOTHROW( response = do_request( request_str ) );
 
 	REQUIRE_THAT( response,
-		Catch::Matchers::Contains(
+		Catch::Matchers::ContainsSubstring(
 			fmt::format( RESTINIO_FMT_FORMAT_STRING( "Content-Length: {}" ),
 				resp_message->size() ) ) );
 
@@ -471,7 +471,7 @@ TEST_CASE(
 	REQUIRE_NOTHROW( response = do_request( request_str ) );
 
 	REQUIRE_THAT( response,
-		Catch::Matchers::Contains(
+		Catch::Matchers::ContainsSubstring(
 			fmt::format( RESTINIO_FMT_FORMAT_STRING( "Content-Length: {}" ),
 				resp_message->size() ) ) );
 
@@ -571,7 +571,7 @@ TEST_CASE(
 	REQUIRE_NOTHROW( response = do_request( request_str ) );
 
 	REQUIRE_THAT( response,
-		Catch::Matchers::Contains(
+		Catch::Matchers::ContainsSubstring(
 			fmt::format( RESTINIO_FMT_FORMAT_STRING( "Content-Length: {}" ),
 				resp_message->size() ) ) );
 
@@ -667,7 +667,7 @@ TEST_CASE(
 
 	REQUIRE_NOTHROW( response = do_request( request_str ) );
 
-	REQUIRE_THAT( response, !Catch::Matchers::Contains( "Content-Length" ) );
+	REQUIRE_THAT( response, !Catch::Matchers::ContainsSubstring( "Content-Length" ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( chunked_resp_message ) );
 
