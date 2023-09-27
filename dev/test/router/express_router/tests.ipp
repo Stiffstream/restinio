@@ -53,8 +53,8 @@ TEST_CASE( "Simple named param" , "[express][simple][named_params]" )
 			REQUIRE( restinio::cast_to< unsigned short >( route_params[ "id" ] ) == 42 );
 			REQUIRE( restinio::cast_to< int >( route_params[ "id" ] ) == 42 );
 			REQUIRE( restinio::cast_to< unsigned int >( route_params[ "id" ] ) == 42 );
-			REQUIRE( restinio::cast_to< float >( route_params[ "id" ] ) == Approx(42) );
-			REQUIRE( restinio::cast_to< double >( route_params[ "id" ] ) == Approx(42) );
+			REQUIRE( restinio::cast_to< float >( route_params[ "id" ] ) == Catch::Approx(42.0) );
+			REQUIRE( restinio::cast_to< double >( route_params[ "id" ] ) == Catch::Approx(42.0) );
 	};
 
 	router.http_get(
@@ -748,8 +748,8 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 		REQUIRE( restinio::cast_to< unsigned short >( route_params[ "named_param" ] ) == 0 );
 		REQUIRE( restinio::cast_to< int >( route_params[ "named_param" ] ) == 0 );
 		REQUIRE( restinio::cast_to< unsigned int >( route_params[ "named_param" ] ) == 0 );
-		REQUIRE( restinio::cast_to< float >( route_params[ "named_param" ] ) == Approx(0.0) );
-		REQUIRE( restinio::cast_to< double >( route_params[ "named_param" ] ) == Approx(0.0) );
+		REQUIRE( restinio::cast_to< float >( route_params[ "named_param" ] ) == Catch::Approx(0.0) );
+		REQUIRE( restinio::cast_to< double >( route_params[ "named_param" ] ) == Catch::Approx(0.0) );
 		REQUIRE( route_params[ 0 ] == "0" );
 		REQUIRE( restinio::cast_to< std::uint8_t >( route_params[ 0 ] ) == 0 );
 		REQUIRE( restinio::cast_to< std::int8_t >( route_params[ 0 ] ) == 0 );
@@ -757,8 +757,8 @@ TEST_CASE( "Parameters cast" , "[express][parameters_cast]" )
 		REQUIRE( restinio::cast_to< unsigned short >( route_params[ 0 ] ) == 0 );
 		REQUIRE( restinio::cast_to< int >( route_params[ 0 ] ) == 0 );
 		REQUIRE( restinio::cast_to< unsigned int >( route_params[ 0 ] ) == 0 );
-		REQUIRE( restinio::cast_to< float >( route_params[ 0 ] ) == Approx(0.0) );
-		REQUIRE( restinio::cast_to< double >( route_params[ 0 ] ) == Approx(0.0) );
+		REQUIRE( restinio::cast_to< float >( route_params[ 0 ] ) == Catch::Approx(0.0) );
+		REQUIRE( restinio::cast_to< double >( route_params[ 0 ] ) == Catch::Approx(0.0) );
 	}
 
 	SECTION( "int8" )

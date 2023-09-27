@@ -96,7 +96,7 @@ TEST_CASE( "Invalid path" , "[path2regex][invalid]" )
 	}
 	catch( const restinio::exception_t & ex )
 	{
-		REQUIRE_THAT( ex.what(), Catch::Matchers::Contains( "pos 5:" ) );
+		REQUIRE_THAT( ex.what(), Catch::Matchers::ContainsSubstring( "pos 5:" ) );
 	}
 
 	try
@@ -106,7 +106,7 @@ TEST_CASE( "Invalid path" , "[path2regex][invalid]" )
 	}
 	catch( const restinio::exception_t & ex )
 	{
-		REQUIRE_THAT( ex.what(), Catch::Matchers::Contains( "pos 4:" ) );
+		REQUIRE_THAT( ex.what(), Catch::Matchers::ContainsSubstring( "pos 4:" ) );
 	}
 
 	try
@@ -116,7 +116,7 @@ TEST_CASE( "Invalid path" , "[path2regex][invalid]" )
 	}
 	catch( const restinio::exception_t & ex )
 	{
-		REQUIRE_THAT( ex.what(), Catch::Matchers::Contains( "pos 11:" ) );
+		REQUIRE_THAT( ex.what(), Catch::Matchers::ContainsSubstring( "pos 11:" ) );
 	}
 
 	try
@@ -126,7 +126,7 @@ TEST_CASE( "Invalid path" , "[path2regex][invalid]" )
 	}
 	catch( const restinio::exception_t & ex )
 	{
-		REQUIRE_THAT( ex.what(), Catch::Matchers::Contains( "pos 10:" ) );
+		REQUIRE_THAT( ex.what(), Catch::Matchers::ContainsSubstring( "pos 10:" ) );
 	}
 }
 

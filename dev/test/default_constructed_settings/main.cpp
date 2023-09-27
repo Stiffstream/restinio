@@ -6,7 +6,7 @@
 	Tests for settings parameters that have default constructor.
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <restinio/all.hpp>
 
@@ -70,7 +70,7 @@ TEST_CASE( "Request handler" , "[settings][request_handler]" )
 
 		REQUIRE_THROWS_WITH(
 			s.request_handler(),
-			Catch::Matchers::Contains( "request handler" ) );
+			Catch::Matchers::ContainsSubstring( "request handler" ) );
 
 		s.request_handler( 42 );
 		REQUIRE_NOTHROW( s.request_handler() );
@@ -91,7 +91,7 @@ TEST_CASE( "Request handler" , "[settings][request_handler]" )
 
 		REQUIRE_THROWS_WITH(
 			s.request_handler(),
-			Catch::Matchers::Contains( "request handler" ) );
+			Catch::Matchers::ContainsSubstring( "request handler" ) );
 
 		s.request_handler(
 			[]( request_handle_t ){
@@ -168,7 +168,7 @@ TEST_CASE( "Logger" , "[settings][logger]" )
 
 		REQUIRE_THROWS_WITH(
 			s.logger(),
-			Catch::Matchers::Contains( "logger" ) );
+			Catch::Matchers::ContainsSubstring( "logger" ) );
 
 		s.logger( 42 );
 		REQUIRE_NOTHROW( s.logger() );
@@ -267,7 +267,7 @@ TEST_CASE( "Timer factory" , "[settings][timer_factory]" )
 
 		REQUIRE_THROWS_WITH(
 			s.timer_factory(),
-			Catch::Matchers::Contains( "timer manager" ) );
+			Catch::Matchers::ContainsSubstring( "timer manager" ) );
 
 		s.timer_manager( 42 );
 		REQUIRE_NOTHROW( s.timer_factory() );

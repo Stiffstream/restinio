@@ -6,7 +6,7 @@
 	Socket options.
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <restinio/all.hpp>
 
@@ -74,7 +74,7 @@ TEST_CASE( "Socket options" , "[socket][options]" )
 
 		REQUIRE_THAT(
 			response,
-			Catch::Matchers::Contains(
+			Catch::Matchers::ContainsSubstring(
 				"Content-Length: " + std::to_string( body.size() ) ) );
 		REQUIRE_THAT( response, Catch::Matchers::EndsWith( body ) );
 

@@ -2,7 +2,7 @@
 	restinio
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <restinio/helpers/easy_parser.hpp>
 #include <restinio/helpers/http_field_parsers/cache-control.hpp>

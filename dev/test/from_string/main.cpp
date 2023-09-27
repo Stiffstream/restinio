@@ -6,7 +6,7 @@
 	Tests for from_string functions.
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <restinio/utils/from_string.hpp>
 

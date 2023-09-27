@@ -6,7 +6,7 @@
 	Test throwing exception in handler.
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <restinio/all.hpp>
 

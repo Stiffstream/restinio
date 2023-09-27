@@ -2,7 +2,7 @@
 	restinio
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <restinio/helpers/file_upload.hpp>
 

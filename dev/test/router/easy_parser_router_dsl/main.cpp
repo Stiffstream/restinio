@@ -6,7 +6,7 @@
 	Tests for easy-parser based router DSL.
 */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <restinio/router/easy_parser_router.hpp>
 
