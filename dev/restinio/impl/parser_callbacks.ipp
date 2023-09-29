@@ -2,6 +2,16 @@
 	restinio
 */
 
+/**
+ * @brief A helper function to get the pointer to a context object.
+ */
+[[nodiscard]] inline restinio::impl::http_parser_ctx_t *
+get_http_parser_ctx( llhttp_t * parser )
+{
+	return reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
+		parser->data );
+}
+
 /*!
 	Callbacks used with http parser.
 */
@@ -11,9 +21,7 @@ restinio_url_cb( llhttp_t * parser, const char * at, size_t length )
 {
 	try
 	{
-		auto * ctx =
-			reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
-				parser->data );
+		auto * ctx = get_http_parser_ctx( parser );
 
 		ctx->m_header.append_request_target( at, length );
 
@@ -36,31 +44,21 @@ restinio_header_field_cb( llhttp_t * parser, const char *at, size_t length )
 {
 	try
 	{
-		auto * ctx =
-			reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
-				parser->data );
+		auto * ctx = get_http_parser_ctx( parser );
 
-		if( ctx->m_last_was_value )
+		// Maybe there are too many fields?
+		if( ctx->m_total_field_count == ctx->m_limits.max_field_count() )
 		{
-			// Maybe there are too many fields?
-			if( ctx->m_total_field_count == ctx->m_limits.max_field_count() )
-			{
-				return -1;
-			}
-
-			ctx->m_current_field_name.assign( at, length );
-			ctx->m_last_was_value = false;
-		}
-		else
-		{
-			ctx->m_current_field_name.append( at, length );
+			return -1;
 		}
 
-		if( ctx->m_current_field_name.size() >
+		if( ctx->m_current_field_name.size() + length >
 				ctx->m_limits.max_field_name_size() )
 		{
 			return -1;
 		}
+
+		ctx->m_current_field_name.append( at, length );
 	}
 	catch( const std::exception & )
 	{
@@ -69,6 +67,36 @@ restinio_header_field_cb( llhttp_t * parser, const char *at, size_t length )
 
 	return 0;
 }
+
+inline int
+restinio_header_field_complete_cb( llhttp_t * parser )
+{
+	try
+	{
+		auto * ctx = get_http_parser_ctx( parser );
+
+		auto & fields = ctx->m_leading_headers_completed
+				? ctx->m_chunked_info_block.m_trailing_fields
+				: ctx->m_header;
+
+		// Note: moving `ctx->m_current_field_name`
+		//       also cleans the placeholder, so it
+		//       becomes ready to accumulating next field.
+		fields.add_field(
+			std::move( ctx->m_current_field_name ),
+			std::string{} );
+
+		// At this point the number of parsed fields can be incremented.
+		ctx->m_total_field_count += 1u;
+	}
+	catch( const std::exception & )
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
 
 inline void
 append_last_field_accessor( http_header_fields_t & fields, string_view_t value )
@@ -81,36 +109,21 @@ restinio_header_value_cb( llhttp_t * parser, const char *at, size_t length )
 {
 	try
 	{
-		auto * ctx =
-			reinterpret_cast< restinio::impl::http_parser_ctx_t * >( parser->data );
+		auto * ctx = get_http_parser_ctx( parser );
 
 		http_header_fields_t & fields = ctx->m_leading_headers_completed
 				? ctx->m_chunked_info_block.m_trailing_fields
 				: ctx->m_header;
 
-		if( !ctx->m_last_was_value )
-		{
-			fields.add_field(
-				std::move( ctx->m_current_field_name ),
-				std::string{ at, length } );
-
-			ctx->m_last_value_total_size = length;
-			ctx->m_last_was_value = true;
-
-			// At this point the number of parsed fields can be incremented.
-			ctx->m_total_field_count += 1u;
-		}
-		else
-		{
-			append_last_field_accessor( fields, std::string{ at, length } );
-			ctx->m_last_value_total_size += length;
-		}
-
-		if( ctx->m_last_value_total_size >=
+		if( ctx->m_last_value_total_size + length >=
 				ctx->m_limits.max_field_value_size() )
 		{
 			return -1;
 		}
+
+		ctx->m_last_value_total_size += length;
+
+		append_last_field_accessor( fields, std::string{ at, length } );
 	}
 	catch( const std::exception & )
 	{
@@ -119,13 +132,18 @@ restinio_header_value_cb( llhttp_t * parser, const char *at, size_t length )
 
 	return 0;
 }
+inline int
+restinio_header_value_complete_cb( llhttp_t * parser )
+{
+	// Reset value size counter for the next time.
+	get_http_parser_ctx( parser )->m_last_value_total_size = 0;
+	return 0;
+}
 
 inline int
 restinio_headers_complete_cb( llhttp_t * parser )
 {
-	auto * ctx =
-		reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
-			parser->data );
+	auto * ctx = get_http_parser_ctx( parser );
 	// Next time header_name/header_value callback should store
 	// values of trailing fields.
 	ctx->m_leading_headers_completed = true;
@@ -160,9 +178,7 @@ restinio_body_cb( llhttp_t * parser, const char *at, size_t length )
 {
 	try
 	{
-		auto * ctx =
-			reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
-				parser->data );
+		auto * ctx = get_http_parser_ctx( parser );
 
 		// The total size of the body should be checked.
 		const auto total_length = static_cast<std::uint64_t>(
@@ -193,9 +209,7 @@ restinio_chunk_header_cb( llhttp_t * parser )
 		// ignored.
 		if( 0u != parser->content_length )
 		{
-			auto * ctx =
-				reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
-					parser->data );
+			auto * ctx = get_http_parser_ctx( parser );
 
 			// Store an info about the new chunk.
 			// If there will be an error at the next stage of parsing
@@ -225,17 +239,7 @@ template< typename Http_Methods >
 int
 restinio_message_complete_cb( llhttp_t * parser )
 {
-	auto * ctx =
-		reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
-			parser->data );
-
-	// Maybe the last trailing header is not handled yet.
-	if( !ctx->m_last_was_value && !ctx->m_current_field_name.empty() )
-	{
-		ctx->m_chunked_info_block.m_trailing_fields.add_field(
-				std::move( ctx->m_current_field_name ),
-				std::string{} );
-	}
+	auto * ctx = get_http_parser_ctx( parser );
 
 	ctx->m_message_complete = true;
 	ctx->m_header.method( Http_Methods::from_nodejs( parser->method ) );
