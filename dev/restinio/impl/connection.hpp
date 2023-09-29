@@ -69,6 +69,13 @@ struct http_parser_ctx_t
 	chunked_input_info_block_t m_chunked_info_block;
 
 	/*!
+	 * @brief Chunk extnsion's params if any.
+	 *
+	 * @since v.0.7.0
+	 */
+	chunk_ext_params_unique_ptr_t m_chunk_ext_params;
+
+	/*!
 	 * @brief How many bytes were parsed for current request.
 	 *
 	 * @since v.0.7.0

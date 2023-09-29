@@ -22,6 +22,24 @@ namespace restinio
 {
 
 //
+// chunk_ext_param_t
+//
+
+/**
+ * @brief Chunk extension parameter.
+ *
+ * @since v.0.7.0
+ */
+struct chunk_ext_param_t
+{
+	std::string m_name;
+	std::string m_value;
+};
+
+using chunk_ext_params_t = std::vector< chunk_ext_param_t >;
+using chunk_ext_params_unique_ptr_t = std::unique_ptr< chunk_ext_params_t >;
+
+//
 // chunk_info_t
 //
 /*!
@@ -42,13 +60,23 @@ class chunk_info_t
 	std::size_t m_started_at;
 	std::size_t m_size;
 
+	/**
+	 * @brief Storage of chunk extension parameters
+	 *
+	 * The instance will be allocated only if chunk has extension's parameters.
+	 *
+	 * @since v.0.7.0
+	 */
+	chunk_ext_params_unique_ptr_t m_ext_params;
 public:
 	//! Initializing constructor.
 	chunk_info_t(
 		std::size_t started_at,
-		std::size_t size )
+		std::size_t size,
+		chunk_ext_params_unique_ptr_t ext_params )
 		:	m_started_at{ started_at }
 		,	m_size{ size }
+		,	m_ext_params{ std::move( ext_params ) }
 	{}
 
 	//! Get the starting offset of chunk.
@@ -69,7 +97,7 @@ public:
 	 * is undefined behavior.
 	 */
 	RESTINIO_NODISCARD
-	string_view_t
+	[[nodiscard]] string_view_t
 	make_string_view_nonchecked( string_view_t full_body ) const noexcept
 	{
 		return full_body.substr( m_started_at, m_size );
@@ -82,7 +110,7 @@ public:
 	 * @throw exception_t if @a full_body is too small to hold the chunk.
 	 */
 	RESTINIO_NODISCARD
-	string_view_t
+	[[nodiscard]] string_view_t
 	make_string_view( string_view_t full_body ) const
 	{
 		if( m_started_at >= full_body.size() ||
@@ -100,6 +128,17 @@ public:
 		}
 
 		return make_string_view_nonchecked( full_body );
+	}
+
+	/**
+	 * @brief Get a list of chunk extension's params.
+	 *
+	 * @since v.0.7.0
+	 */
+	[[nodiscard]] nullable_pointer_t< const chunk_ext_params_t >
+	ext_params() const noexcept
+	{
+		return m_ext_params.get();
 	}
 };
 

@@ -132,6 +132,7 @@ restinio_header_value_cb( llhttp_t * parser, const char *at, size_t length )
 
 	return 0;
 }
+
 inline int
 restinio_header_value_complete_cb( llhttp_t * parser )
 {
@@ -217,7 +218,8 @@ restinio_chunk_header_cb( llhttp_t * parser )
 			// So there is no need to care about that new item in m_chunks.
 			ctx->m_chunked_info_block.m_chunks.emplace_back(
 				ctx->m_body.size(),
-				::restinio::utils::impl::uint64_to_size_t(parser->content_length) );
+				::restinio::utils::impl::uint64_to_size_t(parser->content_length),
+				std::move( ctx->m_chunk_ext_params ) );
 		}
 	}
 	catch( const std::exception & )
@@ -263,34 +265,94 @@ restinio_message_complete_cb( llhttp_t * parser )
  */
 /// @{
 inline int
-restinio_chunk_extension_name_cb( llhttp_t * /*parser*/, const char * /*at*/, size_t /*length*/  )
+restinio_chunk_extension_name_cb( llhttp_t * parser, const char * at, size_t length )
 {
-	// TODO: make use of chunk attributes name-value pairs
-	//       by extending chunked_input_info_block_t or chunk_info_t.
+	try
+	{
+		auto * ctx = get_http_parser_ctx( parser );
+
+		if( !ctx->m_chunk_ext_params )
+		{
+			ctx->m_chunk_ext_params = std::make_unique<chunk_ext_params_t>();
+		}
+
+		// If we execute this calback, then we know
+		// we need to attach ext_params to this chunk.
+		// So we use `write_access_ext_params()` which
+		// will also create an instance of ext_params if
+		// it doesn't exist yet:
+		auto * ext_params = ctx->m_chunk_ext_params.get();
+
+		// Maybe there are too many fields?
+		if( ext_params->size() == ctx->m_limits.max_field_count() )
+		{
+			return -1;
+		}
+
+		if( ctx->m_current_field_name.size() + length >
+				ctx->m_limits.max_field_name_size() )
+		{
+			return -1;
+		}
+
+		ctx->m_current_field_name.append( at, length );
+	}
+	catch( const std::exception & )
+	{
+		return -1;
+	}
+
 	return 0;
 }
 
 inline int
-restinio_chunk_extension_value_cb( llhttp_t * /*parser*/, const char * /*at*/, size_t /*length*/  )
+restinio_chunk_extension_name_complete_cb( llhttp_t * parser )
 {
-	// TODO: make use of chunk attributes name-value pairs
-	//       by extending chunked_input_info_block_t or chunk_info_t.
+	try
+	{
+		auto * ctx = get_http_parser_ctx( parser );
+		auto * ext_params = ctx->m_chunk_ext_params.get();
+
+		ext_params->emplace_back(
+			chunk_ext_param_t{ std::move( ctx->m_current_field_name ), {} } );
+	}
+	catch( const std::exception & )
+	{
+		return -1;
+	}
+
 	return 0;
 }
 
 inline int
-restinio_chunk_extension_name_complete_cb( llhttp_t * /*parser*/ )
+restinio_chunk_extension_value_cb( llhttp_t * parser, const char * at, size_t length )
 {
-	// TODO: make use of chunk attributes name-value pairs
-	//       by extending chunked_input_info_block_t or chunk_info_t.
+	try
+	{
+		auto * ctx = get_http_parser_ctx( parser );
+		auto & value_receiver_str =
+			ctx->m_chunk_ext_params->back().m_value;
+
+		if( value_receiver_str.size() + length >
+				ctx->m_limits.max_field_value_size() )
+		{
+			return -1;
+		}
+
+		value_receiver_str.append( at, length );
+	}
+	catch( const std::exception & )
+	{
+		return -1;
+	}
+
 	return 0;
 }
 
 inline int
 restinio_chunk_extension_value_complete_cb( llhttp_t * /*parser*/ )
 {
-	// TODO: make use of chunk attributes name-value pairs
-	//       by extending chunked_input_info_block_t or chunk_info_t.
+	// There is nothing to do.
 	return 0;
 }
 /// @}
