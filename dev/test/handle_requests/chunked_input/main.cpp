@@ -244,7 +244,7 @@ TEST_CASE( "Simple incoming request" , "[chunked-input][simple]" )
 			"\r\n"
 			"6;novalue_field;f1=v1\r\n"
 			"Hello,\r\n"
-			"1;f=\" 1 2 3 ! \";a;b\r\n"
+			"1;f=\" \\\\1 \\\"2\\\" 3 ! \";a;b\r\n"
 			" \r\n"
 			"0\r\n"
 			"\r\n"
@@ -257,7 +257,7 @@ TEST_CASE( "Simple incoming request" , "[chunked-input][simple]" )
 				Catch::Matchers::EndsWith(
 						"chunks:2;"
 						"[0,6;ext:('novalue_field',''),('f1','v1')]"
-						"[6,1;ext:('f','\" 1 2 3 ! \"'),('a',''),('b','')];"
+						"[6,1;ext:('f','\" \\\\1 \\\"2\\\" 3 ! \"'),('a',''),('b','')];"
 						"trailing_fields:0;" ) );
 	}
 
