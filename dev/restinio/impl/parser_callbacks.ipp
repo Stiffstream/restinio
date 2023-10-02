@@ -276,11 +276,6 @@ restinio_chunk_extension_name_cb( llhttp_t * parser, const char * at, size_t len
 			ctx->m_chunk_ext_params = std::make_unique<chunk_ext_params_t>();
 		}
 
-		// If we execute this calback, then we know
-		// we need to attach ext_params to this chunk.
-		// So we use `write_access_ext_params()` which
-		// will also create an instance of ext_params if
-		// it doesn't exist yet:
 		auto * ext_params = ctx->m_chunk_ext_params.get();
 
 		// Maybe there are too many fields?

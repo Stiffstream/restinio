@@ -97,7 +97,7 @@ public:
 	 * is undefined behavior.
 	 */
 	RESTINIO_NODISCARD
-	[[nodiscard]] string_view_t
+	string_view_t
 	make_string_view_nonchecked( string_view_t full_body ) const noexcept
 	{
 		return full_body.substr( m_started_at, m_size );
@@ -110,7 +110,7 @@ public:
 	 * @throw exception_t if @a full_body is too small to hold the chunk.
 	 */
 	RESTINIO_NODISCARD
-	[[nodiscard]] string_view_t
+	string_view_t
 	make_string_view( string_view_t full_body ) const
 	{
 		if( m_started_at >= full_body.size() ||
