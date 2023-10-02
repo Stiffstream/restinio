@@ -97,9 +97,9 @@ jobs:
             ar: gcc-ar-12
             cppstd: 20
 
-          - cname: clang-12
-            cxxname: clang++-12
-            ar: llvm-ar-12
+          - cname: clang-13
+            cxxname: clang++-13
+            ar: llvm-ar-13
             cppstd: 17
 
           - cname: clang-15
