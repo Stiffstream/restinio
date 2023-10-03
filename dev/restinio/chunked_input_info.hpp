@@ -133,6 +133,43 @@ public:
 	/**
 	 * @brief Get a list of chunk extension's params.
 	 *
+	 * In case this chunk has extensions this function returns a valid pointer
+	 * to a vector of ext parameters (name-value pairs).
+	 *
+	 * @code
+	 * auto handle_request( restinio::request_t req ) {
+	 *     const auto * chunked_input = req.chunked_input_info();
+	 *     if( !chunked_input )
+	 *     {
+	 *         return restinio::request_rejected();
+	 *     }
+	 *     auto resp = req->create_response()
+	 *         .append_header_date_field()
+	 *         .append_header( "Content-Type", "text/plain; charset=utf-8" );
+	 *
+	 *     int i = 0;
+	 *     for( const auto & ch : chunked_input->chunks() )
+	 *     {
+	 *         if( const auto * params = ch.ext_params(); params )
+	 *         {
+	 *             resp.append_body(
+	 *                 fmt::format(
+	 *                     FMT_STRING( "Chunk #{} has {} ext param(s)\r\n" ),
+	 *                     i++,
+	 *                     params->size() ) );
+	 *         }
+	 *         else
+	 *         {
+	 *             resp.append_body(
+	 *                 fmt::format(
+	 *                     FMT_STRING( "Chunk #{} has no ext params\r\n" ),
+	 *                     i++ ) );
+	 *         }
+	 *     }
+	 *     return resp.done();
+	 * }
+	 * @endcode
+	 *
 	 * @since v.0.7.0
 	 */
 	[[nodiscard]] nullable_pointer_t< const chunk_ext_params_t >
