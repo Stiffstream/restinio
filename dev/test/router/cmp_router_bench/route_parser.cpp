@@ -118,7 +118,7 @@ parse_route( const std::string & request_target )
 				// Fallthrough.
 				parser_internal_state = parser_state_t::wait_for_entity_id;
 
-				RESTINIO_FALLTHROUGH;
+				[[fallthrough]];
 
 			case parser_state_t::wait_for_entity_id:
 				if( '0' <= c && '9' >= c )

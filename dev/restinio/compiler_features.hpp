@@ -16,18 +16,6 @@
 // It's necessary for __cpp_lib_launder and std::launder.
 #include <new>
 
-// Try to use __has_cpp_attribute if it is supported.
-#if defined(__has_cpp_attribute)
-	#if __has_cpp_attribute(fallthrough) && \
-			!(defined(__clang__) && __cplusplus < 201703L)
-		#define RESTINIO_FALLTHROUGH [[fallthrough]]
-	#endif
-#endif
-
-#if !defined( RESTINIO_FALLTHROUGH )
-	#define RESTINIO_FALLTHROUGH
-#endif
-
 // Handle the presence of std::launder.
 #if defined(__cpp_lib_launder)
 	#define RESTINIO_STD_LAUNDER(x) std::launder(x)
