@@ -57,7 +57,6 @@ struct http_parser_ctx_t
 	//! \{
 	std::string m_current_field_name;
 	std::size_t m_last_value_total_size{ 0u };
-	bool m_last_was_value{ true };
 
 	/*!
 	 * @since v.0.6.9
@@ -68,6 +67,13 @@ struct http_parser_ctx_t
 	 * @since v.0.6.9
 	 */
 	chunked_input_info_block_t m_chunked_info_block;
+
+	/*!
+	 * @brief Chunk extnsion's params if any.
+	 *
+	 * @since v.0.7.0
+	 */
+	chunk_ext_params_unique_ptr_t m_chunk_ext_params;
 
 	/*!
 	 * @brief How many bytes were parsed for current request.
@@ -116,7 +122,6 @@ struct http_parser_ctx_t
 		m_body.clear();
 		m_current_field_name.clear();
 		m_last_value_total_size = 0u;
-		m_last_was_value = true;
 		m_leading_headers_completed = false;
 		m_bytes_parsed = 0;
 		m_message_complete = false;
@@ -173,9 +178,19 @@ create_parser_settings() noexcept
 			return restinio_header_field_cb( parser, at, length );
 		};
 
+	parser_settings.on_header_field_complete =
+		[]( llhttp_t * parser ) -> int {
+			return restinio_header_field_complete_cb( parser );
+		};
+
 	parser_settings.on_header_value =
 			[]( llhttp_t * parser, const char * at, size_t length ) -> int {
 			return restinio_header_value_cb( parser, at, length );
+		};
+
+	parser_settings.on_header_value_complete =
+		[]( llhttp_t * parser ) -> int {
+			return restinio_header_value_complete_cb( parser );
 		};
 
 	parser_settings.on_headers_complete =

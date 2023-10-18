@@ -20,7 +20,7 @@ MxxRu::arch_externals :asio do |e|
 end
 
 MxxRu::arch_externals :llhttp do |e|
-  e.url 'https://github.com/nodejs/llhttp/archive/refs/tags/release/v9.1.2.tar.gz'
+  e.url 'https://github.com/nodejs/llhttp/archive/refs/tags/release/v9.1.3.tar.gz'
 
   e.map_dir 'include' => 'dev/nodejs/llhttp'
   e.map_dir 'src' => 'dev/nodejs/llhttp'
