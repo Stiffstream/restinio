@@ -19,6 +19,7 @@
 #include <array>
 #include <functional>
 #include <iosfwd>
+#include <new>
 
 namespace restinio
 {
@@ -174,7 +175,7 @@ public:
 	{
 		// Because the content of m_data.data() is rewritten by
 		// placement new we have to use std::launder to avoid UB.
-		return RESTINIO_STD_LAUNDER(
+		return std::launder(
 				reinterpret_cast<Extra_Data *>(m_data.data()) );
 	}
 
@@ -184,7 +185,7 @@ public:
 	{
 		// Because the content of m_data.data() is rewritten by
 		// placement new we have to use std::launder to avoid UB.
-		return RESTINIO_STD_LAUNDER(
+		return std::launder(
 				reinterpret_cast<const Extra_Data *>(m_data.data()) );
 	}
 };
