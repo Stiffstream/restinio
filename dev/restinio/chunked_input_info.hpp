@@ -22,6 +22,24 @@ namespace restinio
 {
 
 //
+// chunk_ext_param_t
+//
+
+/**
+ * @brief Chunk extension parameter.
+ *
+ * @since v.0.7.0
+ */
+struct chunk_ext_param_t
+{
+	std::string m_name;
+	std::string m_value;
+};
+
+using chunk_ext_params_t = std::vector< chunk_ext_param_t >;
+using chunk_ext_params_unique_ptr_t = std::unique_ptr< chunk_ext_params_t >;
+
+//
 // chunk_info_t
 //
 /*!
@@ -42,13 +60,23 @@ class chunk_info_t
 	std::size_t m_started_at;
 	std::size_t m_size;
 
+	/**
+	 * @brief Storage of chunk extension parameters
+	 *
+	 * The instance will be allocated only if chunk has extension's parameters.
+	 *
+	 * @since v.0.7.0
+	 */
+	chunk_ext_params_unique_ptr_t m_ext_params;
 public:
 	//! Initializing constructor.
 	chunk_info_t(
 		std::size_t started_at,
-		std::size_t size )
+		std::size_t size,
+		chunk_ext_params_unique_ptr_t ext_params )
 		:	m_started_at{ started_at }
 		,	m_size{ size }
+		,	m_ext_params{ std::move( ext_params ) }
 	{}
 
 	//! Get the starting offset of chunk.
@@ -100,6 +128,54 @@ public:
 		}
 
 		return make_string_view_nonchecked( full_body );
+	}
+
+	/**
+	 * @brief Get a list of chunk extension's params.
+	 *
+	 * In case this chunk has extensions this function returns a valid pointer
+	 * to a vector of ext parameters (name-value pairs).
+	 *
+	 * @code
+	 * auto handle_request( restinio::request_t req ) {
+	 *     const auto * chunked_input = req.chunked_input_info();
+	 *     if( !chunked_input )
+	 *     {
+	 *         return restinio::request_rejected();
+	 *     }
+	 *     auto resp = req->create_response()
+	 *         .append_header_date_field()
+	 *         .append_header( "Content-Type", "text/plain; charset=utf-8" );
+	 *
+	 *     int i = 0;
+	 *     for( const auto & ch : chunked_input->chunks() )
+	 *     {
+	 *         if( const auto * params = ch.ext_params(); params )
+	 *         {
+	 *             resp.append_body(
+	 *                 fmt::format(
+	 *                     FMT_STRING( "Chunk #{} has {} ext param(s)\r\n" ),
+	 *                     i++,
+	 *                     params->size() ) );
+	 *         }
+	 *         else
+	 *         {
+	 *             resp.append_body(
+	 *                 fmt::format(
+	 *                     FMT_STRING( "Chunk #{} has no ext params\r\n" ),
+	 *                     i++ ) );
+	 *         }
+	 *     }
+	 *     return resp.done();
+	 * }
+	 * @endcode
+	 *
+	 * @since v.0.7.0
+	 */
+	[[nodiscard]] nullable_pointer_t< const chunk_ext_params_t >
+	ext_params() const noexcept
+	{
+		return m_ext_params.get();
 	}
 };
 
