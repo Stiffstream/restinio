@@ -594,7 +594,7 @@ class basic_server_settings_t
 			return std::move( this->port( p ) );
 		}
 
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		std::uint16_t
 		port() const
 		{
@@ -614,7 +614,7 @@ class basic_server_settings_t
 			return std::move( this->protocol( p ) );
 		}
 
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		asio_ns::ip::tcp
 		protocol() const
 		{
@@ -711,7 +711,7 @@ class basic_server_settings_t
 			return std::move( this->address( addr ) );
 		}
 
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		const details::address_variant_t &
 		address() const
 		{
@@ -1078,7 +1078,7 @@ class basic_server_settings_t
 		 * changed or removed in future versions of RESTinio without any
 		 * notice.
 		 */
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		cleanup_functor_t
 		giveaway_cleanup_func()
 		{
@@ -1387,7 +1387,7 @@ class basic_server_settings_t
 		 *
 		 * @since v.0.6.11
 		 */
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		acceptor_post_bind_hook_t
 		giveaway_acceptor_post_bind_hook()
 		{
@@ -1407,7 +1407,7 @@ class basic_server_settings_t
 		 *
 		 * @since v.0.6.12
 		 */
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		const incoming_http_msg_limits_t &
 		incoming_http_msg_limits() const noexcept
 		{
@@ -1639,7 +1639,7 @@ class basic_server_settings_t
 		 * @brief Extractor for extra-data-factory.
 		 * @since v.0.6.13
 		 */
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		extra_data_factory_handle_t
 		giveaway_extra_data_factory() const noexcept
 		{

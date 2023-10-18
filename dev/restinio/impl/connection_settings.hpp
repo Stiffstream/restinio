@@ -208,7 +208,7 @@ struct connection_settings_t final
 	 *
 	 * @since v.0.6.13
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	auto &
 	extra_data_factory() const noexcept
 	{

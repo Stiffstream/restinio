@@ -25,7 +25,7 @@ namespace accept_language_details
 namespace ep_impl = restinio::easy_parser::impl;
 namespace hfp_impl = restinio::http_field_parsers::impl;
 
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 make_language_tag_p()
 {
@@ -38,7 +38,7 @@ make_language_tag_p()
 	);
 }
 
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 make_language_range_p()
 {
@@ -90,7 +90,7 @@ struct accept_language_value_t
 	 *
 	 * @since v.0.6.2
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static auto
 	make_parser()
 	{
@@ -111,7 +111,7 @@ struct accept_language_value_t
 	 *
 	 * @since v.0.6.2
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static expected_t< accept_language_value_t, restinio::easy_parser::parse_error_t >
 	try_parse( string_view_t what )
 	{

@@ -10,7 +10,7 @@
 
 using namespace std::string_literals;
 
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 make_dummy_endpoint()
 {

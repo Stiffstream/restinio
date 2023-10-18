@@ -25,7 +25,7 @@ public:
 		std::shared_ptr< restinio::tcp_connection_ctx_base_t > & /*self*/ ) override
 	{ /* Nothing to do! */ }
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static auto
 	make( restinio::connection_id_t id )
 	{
@@ -34,7 +34,7 @@ public:
 
 };
 
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 make_dummy_endpoint()
 {

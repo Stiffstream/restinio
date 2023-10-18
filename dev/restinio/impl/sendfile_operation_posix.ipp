@@ -170,7 +170,7 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 {
 	private:
 
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		bool
 		try_turn_non_blocking_mode() noexcept
 		{
@@ -192,7 +192,7 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 		}
 
 #if defined( RESTINIO_FREEBSD_TARGET )
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		auto
 		call_native_sendfile() noexcept
 		{
@@ -234,7 +234,7 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 			return n;
 		}
 #elif defined( RESTINIO_MACOS_TARGET )
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		auto
 		call_native_sendfile() noexcept
 		{
@@ -270,7 +270,7 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 			return n;
 		}
 #else
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		auto
 		call_native_sendfile() noexcept
 		{
@@ -282,7 +282,7 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 		}
 #endif
 
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		bool
 		try_initiate_waiting_for_write_readiness() noexcept
 		{

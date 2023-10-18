@@ -147,7 +147,7 @@ suffix-length = 1*DIGIT
  * @since v.0.6.2
  */
 template< typename T >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 make_byte_range_spec_parser()
 {
@@ -179,7 +179,7 @@ make_byte_range_spec_parser()
  *
  * @since v.0.6.2
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 make_bytes_prefix_parser()
 {
@@ -206,7 +206,7 @@ suffix-length = 1*DIGIT
  * @since v.0.6.2
  */
 template< typename T >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 make_byte_ranges_specifier_parser()
 {
@@ -234,7 +234,7 @@ other-range-set = 1*VCHAR
  *
  * @since v.0.6.2
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 make_other_ranges_specifier_parser()
 {
@@ -448,7 +448,7 @@ struct range_value_t
 	 *
 	 * @since v.0.6.2
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static auto
 	make_parser()
 	{
@@ -469,7 +469,7 @@ struct range_value_t
 	 *
 	 * @since v.0.6.2
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static expected_t< range_value_t, restinio::easy_parser::parse_error_t >
 	try_parse( string_view_t what )
 	{

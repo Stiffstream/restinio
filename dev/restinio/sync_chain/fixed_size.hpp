@@ -218,7 +218,7 @@ public:
 		store_to< 0u >( std::forward<Handlers>(handlers)... );
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	request_handling_status_t
 	operator()( const actual_request_handle_t & req ) const
 	{

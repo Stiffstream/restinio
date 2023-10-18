@@ -80,7 +80,7 @@ namespace impl
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 constexpr enumeration_error_t
 translate_enumeration_error(
 	restinio::multipart_body::enumeration_error_t original )
@@ -216,7 +216,7 @@ struct part_description_t
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline expected_t< part_description_t, enumeration_error_t >
 analyze_part( restinio::multipart_body::parsed_part_t parsed_part )
 {

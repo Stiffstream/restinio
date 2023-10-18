@@ -106,12 +106,12 @@ public:
 	{}
 
 	//! Get the position in the input stream where error was detected.
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::size_t
 	position() const noexcept { return m_position; }
 
 	//! Get the reason of the error.
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	error_reason_t
 	reason() const noexcept { return m_reason; }
 };
@@ -146,7 +146,7 @@ struct nothing_t {};
  * 	static void
  * 	as_result( wrapped_type & to, result_type && what );
  *
- * 	RESTINIO_NODISCARD static result_type &&
+ * 	[[nodiscard]] static result_type &&
  * 	unwrap_value( wrapped_type & from );
  * };
  * @endcode
@@ -168,7 +168,7 @@ struct nothing_t {};
  * 	static void
  * 	to_container( wrapped_type & to, value_type && item );
  *
- * 	RESTINIO_NODISCARD static result_type &&
+ * 	[[nodiscard]] static result_type &&
  * 	unwrap_value( wrapped_type & from );
  * };
  * @endcode
@@ -187,7 +187,7 @@ struct result_value_wrapper
 		to = std::move(what);
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static result_type &&
 	unwrap_value( wrapped_type & v )
 	{
@@ -268,7 +268,7 @@ struct result_value_wrapper< std::vector< T, Args... > >
 		to.push_back( std::move(what) );
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static result_type &&
 	unwrap_value( wrapped_type & v )
 	{
@@ -330,7 +330,7 @@ struct result_value_wrapper< std::array< T, S > >
 		++to.m_index;
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static result_type &&
 	unwrap_value( wrapped_type & v )
 	{
@@ -388,7 +388,7 @@ struct result_value_wrapper< std::basic_string< Char, Args... > >
 		to.append( what );
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static result_type &&
 	unwrap_value( wrapped_type & v )
 	{
@@ -418,7 +418,7 @@ struct result_value_wrapper< std::map< K, V, Args... > >
 		to.emplace( std::move(what) );
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static result_type &&
 	unwrap_value( wrapped_type & v )
 	{
@@ -439,7 +439,7 @@ struct result_value_wrapper< nothing_t >
 	static void
 	to_container( wrapped_type &, value_type && ) noexcept {}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static result_type &&
 	unwrap_value( wrapped_type & v )
 	{
@@ -502,17 +502,17 @@ public:
 	{}
 
 	//! Get the minimal value.
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	constexpr auto
 	min() const noexcept { return m_min; }
 
 	//! Get the maximum value.
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	constexpr auto
 	max() const noexcept { return m_max; }
 
 	//! Get the value that means that maximum is not limited.
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	constexpr static auto
 	unlimited_max() noexcept
 	{
@@ -522,7 +522,7 @@ public:
 	/*!
 	 * Returns `digits_to_consume_t{1, unlimited_max()}`.
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	constexpr static auto
 	from_one_to_max() noexcept
 	{
@@ -544,7 +544,7 @@ public:
  *
  * @since v.0.6.6
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline constexpr digits_to_consume_t
 expected_digits( digits_to_consume_t::underlying_int_t total ) noexcept
 {
@@ -565,7 +565,7 @@ expected_digits( digits_to_consume_t::underlying_int_t total ) noexcept
  *
  * @since v.0.6.6
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline constexpr digits_to_consume_t
 expected_digits(
 	digits_to_consume_t::underlying_int_t min,
@@ -595,14 +595,14 @@ struct character_t
 	char m_ch;
 };
 
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline bool
 operator==( const character_t & a, const character_t & b ) noexcept
 {
 	return (a.m_eof == b.m_eof && a.m_ch == b.m_ch);
 }
 
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline bool
 operator!=( const character_t & a, const character_t & b ) noexcept
 {
@@ -630,7 +630,7 @@ constexpr char	HTAB = '\x09';
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline constexpr bool
 is_space( const char ch ) noexcept
 {
@@ -648,7 +648,7 @@ is_space( const char ch ) noexcept
  */
 struct is_space_predicate_t
 {
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	bool
 	operator()( const char actual ) const noexcept
 	{
@@ -664,7 +664,7 @@ struct is_space_predicate_t
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline constexpr bool
 is_digit( const char ch ) noexcept
 {
@@ -681,7 +681,7 @@ is_digit( const char ch ) noexcept
  */
 struct is_digit_predicate_t
 {
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	bool
 	operator()( const char actual ) const noexcept
 	{
@@ -697,7 +697,7 @@ struct is_digit_predicate_t
  *
  * @since v.0.6.6
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline constexpr bool
 is_hexdigit( const char ch ) noexcept
 {
@@ -717,7 +717,7 @@ is_hexdigit( const char ch ) noexcept
  */
 struct is_hexdigit_predicate_t
 {
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	bool
 	operator()( const char actual ) const noexcept
 	{
@@ -760,7 +760,7 @@ public:
 	 * EOF can be returned in the case if there is no more data in
 	 * the input stream.
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	character_t
 	getch() noexcept
 	{
@@ -781,7 +781,7 @@ public:
 	}
 
 	//! Get the current position in the stream.
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	position_t
 	current_position() const noexcept
 	{
@@ -798,7 +798,7 @@ public:
 	}
 
 	//! Is EOF has been reached?
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	bool
 	eof() const noexcept
 	{
@@ -811,7 +811,7 @@ public:
 	 * The value of \a from should be lesser than the size of the
 	 * input stream.
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	string_view_t
 	fragment(
 		//! Starting position for the fragment required.
@@ -1047,7 +1047,7 @@ template< typename Result_Type >
 struct transformer_invoker
 {
 	template< typename Transformer, typename Input_Type >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static Result_Type
 	invoke(
 		source_t &,
@@ -1068,7 +1068,7 @@ template< typename Result_Type >
 struct transformer_invoker< expected_t< Result_Type, error_reason_t > >
 {
 	template< typename Transformer, typename Input_Type >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static expected_t< Result_Type, parse_error_t >
 	invoke(
 		// source_t is necessary to get the position in the case of an error.
@@ -1200,7 +1200,7 @@ public :
 		,	m_transformer{ std::move(transformer) }
 	{}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	expected_t< result_type, parse_error_t >
 	try_parse( source_t & source )
 	{
@@ -1226,7 +1226,7 @@ public :
  * @since v.0.6.1
  */
 template< typename P, typename T >
-RESTINIO_NODISCARD
+[[nodiscard]]
 std::enable_if_t<
 	is_producer_v<P> & is_transformer_v<T>,
 	transformed_value_producer_t< P, T > >
@@ -1301,7 +1301,7 @@ template<
 	typename S = std::enable_if_t<
 			is_producer_v<P> & is_transformer_proxy_v<T>,
 			void > >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 operator>>(
 	P producer,
@@ -1485,7 +1485,7 @@ public :
 	{}
 
 	template< typename Target_Type >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::optional< parse_error_t >
 	try_process( source_t & from, Target_Type & target )
 	{
@@ -1506,7 +1506,7 @@ public :
  * @since v.0.6.1
  */
 template< typename P, typename C >
-RESTINIO_NODISCARD
+[[nodiscard]]
 std::enable_if_t<
 	is_producer_v<P> && is_consumer_v<C>,
 	consume_value_clause_t< P, C > >
@@ -1541,7 +1541,7 @@ public :
 		:	m_producer{ std::move(producer) }
 	{}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	auto
 	try_process( source_t & from )
 	{
@@ -1561,7 +1561,7 @@ public :
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline std::optional< parse_error_t >
 ensure_no_remaining_content(
 	source_t & from )
@@ -1589,7 +1589,7 @@ ensure_no_remaining_content(
  *
  * @since v.0.6.7
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline string_view_t
 remove_trailing_spaces( string_view_t from ) noexcept
 {
@@ -1643,7 +1643,7 @@ public :
 	{}
 
 	template< typename Target_Type >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::optional< parse_error_t >
 	try_process( source_t & from, Target_Type & target )
 	{
@@ -1724,7 +1724,7 @@ public :
 	{}
 
 	template< typename Target_Type >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::optional< parse_error_t >
 	try_process( source_t & from, Target_Type & target )
 	{
@@ -1787,7 +1787,7 @@ public :
 	{}
 
 	template< typename Target_Type >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::optional< parse_error_t >
 	try_process( source_t & from, Target_Type & )
 	{
@@ -1855,7 +1855,7 @@ public :
 	{}
 
 	template< typename Target_Type >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::optional< parse_error_t >
 	try_process( source_t & from, Target_Type & )
 	{
@@ -1916,7 +1916,7 @@ public :
 	{}
 
 	template< typename Target_Type >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::optional< parse_error_t >
 	try_process( source_t & from, Target_Type & target )
 	{
@@ -1966,7 +1966,7 @@ public :
 	using base_type_t::base_type_t;
 
 	template< typename Target_Type >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::optional< parse_error_t >
 	try_process( source_t & from, Target_Type & target )
 	{
@@ -2018,7 +2018,7 @@ public :
 		:	m_subitems{ std::move(subitems) }
 	{}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	expected_t< Target_Type, parse_error_t >
 	try_parse( source_t & from )
 	{
@@ -2075,7 +2075,7 @@ public :
 	{}
 
 	template< typename Target_Type >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::optional< parse_error_t >
 	try_process( source_t & from, Target_Type & dest )
 	{
@@ -2137,7 +2137,7 @@ public:
 		:	 Predicate{ std::forward<Args>(args)... }
 	{}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	expected_t< char, parse_error_t >
 	try_parse( source_t & from ) const noexcept
 	{
@@ -2177,7 +2177,7 @@ public:
  */
 struct any_symbol_predicate_t
 {
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	constexpr bool
 	operator()( const char ) const noexcept
 	{
@@ -2198,7 +2198,7 @@ struct particular_symbol_predicate_t
 {
 	char m_expected;
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	bool
 	operator()( const char actual ) const noexcept
 	{
@@ -2219,7 +2219,7 @@ struct not_particular_symbol_predicate_t
 {
 	char m_sentinel;
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	bool
 	operator()( const char actual ) const noexcept
 	{
@@ -2244,7 +2244,7 @@ struct caseless_particular_symbol_predicate_t
 		:	m_expected{ restinio::impl::to_lower_case( v ) }
 	{}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	bool
 	operator()( const char actual ) const noexcept
 	{
@@ -2268,7 +2268,7 @@ struct symbol_from_range_predicate_t
 	char m_left;
 	char m_right;
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	bool
 	operator()( const char actual ) const noexcept
 	{
@@ -2432,7 +2432,7 @@ public:
  * @since v.0.6.6
  */
 template< typename T, typename Value_Accumulator >
-RESTINIO_NODISCARD
+[[nodiscard]]
 expected_t< T, parse_error_t >
 try_parse_digits_with_digits_limit(
 	source_t & from,
@@ -2496,7 +2496,7 @@ try_parse_digits_with_digits_limit(
  * @since v.0.6.6
  */
 template< typename T, typename Value_Accumulator >
-RESTINIO_NODISCARD
+[[nodiscard]]
 expected_t< T, parse_error_t >
 try_parse_hexdigits_with_digits_limit(
 	source_t & from,
@@ -2570,7 +2570,7 @@ template< typename T >
 class non_negative_decimal_number_producer_t : public producer_tag< T >
 {
 public:
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	expected_t< T, parse_error_t >
 	try_parse( source_t & from ) const noexcept
 	{
@@ -2606,7 +2606,7 @@ public:
 		:	m_digits_limit{ digits_limit }
 	{}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	expected_t< T, parse_error_t >
 	try_parse( source_t & from ) const noexcept
 	{
@@ -2635,7 +2635,7 @@ class hexadecimal_number_producer_t : public producer_tag< T >
 			"T is expected to be unsigned type" );
 
 public:
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	expected_t< T, parse_error_t >
 	try_parse( source_t & from ) const noexcept
 	{
@@ -2671,7 +2671,7 @@ public:
 		:	m_digits_limit{ digits_limit }
 	{}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	expected_t< T, parse_error_t >
 	try_parse( source_t & from ) const noexcept
 	{
@@ -2702,7 +2702,7 @@ class decimal_number_producer_t : public producer_tag<T>
 public:
 	using try_parse_result_type = expected_t< T, parse_error_t >;
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	try_parse_result_type
 	try_parse( source_t & from ) const noexcept
 	{
@@ -2714,7 +2714,7 @@ public:
 
 protected:
 	template< typename Digits_Limit_Maker >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	try_parse_result_type
 	try_parse_impl(
 		source_t & from,
@@ -2744,7 +2744,7 @@ protected:
 
 private:
 	template< typename Digits_Limit_Maker >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static try_parse_result_type
 	try_parse_with_this_first_symbol(
 		source_t & from,
@@ -2818,7 +2818,7 @@ public:
 		:	m_digits_limit{ digits_limit }
 	{}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	auto
 	try_parse( source_t & from ) const noexcept
 	{
@@ -2995,7 +2995,7 @@ public :
  * @since v.0.6.1
  */
 template< typename P, typename F, typename C >
-RESTINIO_NODISCARD
+[[nodiscard]]
 std::enable_if_t<
 	is_producer_v<P>,
 	consume_value_clause_t< P, field_setter_consumer_t<F,C> > >
@@ -3052,7 +3052,7 @@ struct to_lower_transformer_t< std::string >
 {
 	using input_type = std::string;
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	result_type
 	transform( input_type && input ) const noexcept
 	{
@@ -3078,7 +3078,7 @@ struct to_lower_transformer_t< char >
 {
 	using input_type = char;
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	result_type
 	transform( input_type && input ) const noexcept
 	{
@@ -3099,7 +3099,7 @@ struct to_lower_transformer_t< std::array< char, S > >
 	using input_type = std::array< char, S >;
 	using base_type = transformer_tag< input_type >;
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	typename base_type::result_type
 	transform( input_type && input ) const noexcept
 	{
@@ -3124,7 +3124,7 @@ struct to_lower_transformer_t< std::array< char, S > >
 struct to_lower_transformer_proxy_t : public transformer_proxy_tag
 {
 	template< typename Input_Type >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	auto
 	make_transformer() const noexcept
 	{
@@ -3152,7 +3152,7 @@ public :
 	{}
 
 	template< typename Input >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	T
 	transform( Input && ) const noexcept(noexcept(T{m_value}))
 	{
@@ -3190,7 +3190,7 @@ public :
 	 * expected_t<Output_Type, error_reason_t>.
 	 */
 	template< typename Input >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	auto
 	transform( Input && input ) const
 		noexcept(noexcept(m_converter(std::forward<Input>(input))))
@@ -3278,7 +3278,7 @@ public :
 	{}
 
 	template< typename Input_Type >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	auto
 	make_transformer() const &
 		noexcept(noexcept(Converter{m_converter}))
@@ -3289,7 +3289,7 @@ public :
 	}
 
 	template< typename Input_Type >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	auto
 	make_transformer() &&
 		noexcept(noexcept(Converter{std::move(m_converter)}))
@@ -3308,7 +3308,7 @@ public :
 
 // Requires that begin is not equal to end.
 template< typename It >
-RESTINIO_NODISCARD
+[[nodiscard]]
 expected_t< bool, parse_error_t >
 try_parse_exact_fragment( source_t & from, It begin, It end )
 {
@@ -3366,7 +3366,7 @@ public:
 		std::copy( &f[ 0 ], &f[ m_fragment.size() ], m_fragment.data() );
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	expected_t< bool, parse_error_t >
 	try_parse( source_t & from )
 	{
@@ -3398,7 +3398,7 @@ public:
 					"can't be empty!" );
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	expected_t< bool, parse_error_t >
 	try_parse( source_t & from )
 	{
@@ -3414,7 +3414,7 @@ public:
 // Requires that begin is not equal to end.
 // It assumes that content in [begin, end) is already in lower case.
 template< typename It >
-RESTINIO_NODISCARD
+[[nodiscard]]
 expected_t< bool, parse_error_t >
 try_parse_caseless_exact_fragment( source_t & from, It begin, It end )
 {
@@ -3480,7 +3480,7 @@ public:
 				} );
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	expected_t< bool, parse_error_t >
 	try_parse( source_t & from )
 	{
@@ -3518,7 +3518,7 @@ public:
 			ch = restinio::impl::to_lower_case( ch );
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	expected_t< bool, parse_error_t >
 	try_parse( source_t & from )
 	{
@@ -3549,7 +3549,7 @@ public:
 template<
 	typename Target_Type,
 	typename... Clauses >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 produce( Clauses &&... clauses )
 {
@@ -3590,7 +3590,7 @@ produce( Clauses &&... clauses )
  * @since v.0.6.1
  */
 template< typename... Clauses >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 alternatives( Clauses &&... clauses )
 {
@@ -3629,7 +3629,7 @@ alternatives( Clauses &&... clauses )
  * @since v.0.6.1
  */
 template< typename... Clauses >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 maybe( Clauses &&... clauses )
 {
@@ -3671,7 +3671,7 @@ maybe( Clauses &&... clauses )
  * @since v.0.6.1
  */
 template< typename... Clauses >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 not_clause( Clauses &&... clauses )
 {
@@ -3713,7 +3713,7 @@ not_clause( Clauses &&... clauses )
  * @since v.0.6.1
  */
 template< typename... Clauses >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 and_clause( Clauses &&... clauses )
 {
@@ -3753,7 +3753,7 @@ and_clause( Clauses &&... clauses )
  * @since v.0.6.1
  */
 template< typename... Clauses >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 sequence( Clauses &&... clauses )
 {
@@ -3816,7 +3816,7 @@ v = "key" '=' token
  * @since v.0.6.7
  */
 template< typename... Clauses >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 force_only_this_alternative( Clauses &&... clauses )
 {
@@ -3871,7 +3871,7 @@ force_only_this_alternative( Clauses &&... clauses )
  */
 template<
 	typename... Clauses >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 repeat(
 	//! Minimal occurences of the sequences in the repetition.
@@ -3917,7 +3917,7 @@ repeat(
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 skip() noexcept { return impl::any_value_skipper_t{}; }
 
@@ -3932,7 +3932,7 @@ skip() noexcept { return impl::any_value_skipper_t{}; }
  * 
  * @since v.0.6.6
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 any_symbol_p() noexcept
 {
@@ -3950,7 +3950,7 @@ any_symbol_p() noexcept
  * 
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 symbol_p( char expected ) noexcept
 {
@@ -3968,7 +3968,7 @@ symbol_p( char expected ) noexcept
  * 
  * @since v.0.6.6
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 any_symbol_if_not_p( char sentinel ) noexcept
 {
@@ -3988,7 +3988,7 @@ any_symbol_if_not_p( char sentinel ) noexcept
  * 
  * @since v.0.6.6
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 caseless_symbol_p( char expected ) noexcept
 {
@@ -4006,7 +4006,7 @@ caseless_symbol_p( char expected ) noexcept
  * 
  * @since v.0.6.9
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 symbol_from_range_p( char left, char right ) noexcept
 {
@@ -4027,7 +4027,7 @@ symbol_from_range_p( char left, char right ) noexcept
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 symbol( char expected ) noexcept
 {
@@ -4050,7 +4050,7 @@ symbol( char expected ) noexcept
  *
  * @since v.0.6.6
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 caseless_symbol( char expected ) noexcept
 {
@@ -4071,7 +4071,7 @@ caseless_symbol( char expected ) noexcept
  * 
  * @since v.0.6.9
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 symbol_from_range( char left, char right ) noexcept
 {
@@ -4089,7 +4089,7 @@ symbol_from_range( char left, char right ) noexcept
  * 
  * @since v.0.6.4
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 space_p() noexcept
 {
@@ -4110,7 +4110,7 @@ space_p() noexcept
  *
  * @since v.0.6.4
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 space() noexcept
 {
@@ -4128,7 +4128,7 @@ space() noexcept
  * 
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 digit_p() noexcept
 {
@@ -4149,7 +4149,7 @@ digit_p() noexcept
  *
  * @since v.0.6.6
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 digit() noexcept
 {
@@ -4167,7 +4167,7 @@ digit() noexcept
  * 
  * @since v.0.6.6
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 hexdigit_p() noexcept
 {
@@ -4188,7 +4188,7 @@ hexdigit_p() noexcept
  *
  * @since v.0.6.6
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 hexdigit() noexcept
 {
@@ -4213,7 +4213,7 @@ hexdigit() noexcept
  * @since v.0.6.2
  */
 template< typename T >
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 non_negative_decimal_number_p() noexcept
 {
@@ -4252,7 +4252,7 @@ non_negative_decimal_number_p() noexcept
  * @since v.0.6.2
  */
 template< typename T >
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 non_negative_decimal_number_p( digits_to_consume_t digits_limit ) noexcept
 {
@@ -4274,7 +4274,7 @@ non_negative_decimal_number_p( digits_to_consume_t digits_limit ) noexcept
  * @since v.0.6.2
  */
 template< typename T >
-[[deprecated]] RESTINIO_NODISCARD
+[[deprecated]] [[nodiscard]]
 inline auto
 positive_decimal_number_producer() noexcept
 {
@@ -4302,7 +4302,7 @@ positive_decimal_number_producer() noexcept
  * @since v.0.6.6
  */
 template< typename T >
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 hexadecimal_number_p() noexcept
 {
@@ -4344,7 +4344,7 @@ hexadecimal_number_p() noexcept
  * @since v.0.6.6
  */
 template< typename T >
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 hexadecimal_number_p( digits_to_consume_t digits_limit ) noexcept
 {
@@ -4382,7 +4382,7 @@ sign   := '-' | '+'
  * @since v.0.6.6
  */
 template< typename T >
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 decimal_number_p() noexcept
 {
@@ -4435,7 +4435,7 @@ sign   := '-' | '+'
  * @since v.0.6.6
  */
 template< typename T >
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 decimal_number_p( digits_to_consume_t digits_limit ) noexcept
 {
@@ -4465,7 +4465,7 @@ decimal_number_p( digits_to_consume_t digits_limit ) noexcept
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 as_result() noexcept { return impl::as_result_consumer_t{}; }
 
@@ -4511,7 +4511,7 @@ as_result() noexcept { return impl::as_result_consumer_t{}; }
  * @since v.0.6.1
  */
 template< typename F >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 custom_consumer( F consumer )
 {
@@ -4578,7 +4578,7 @@ struct to_container_consumer_t : public consumer_tag
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 to_container()
 {
@@ -4605,7 +4605,7 @@ to_container()
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 to_lower() noexcept { return impl::to_lower_transformer_proxy_t{}; }
 
@@ -4630,7 +4630,7 @@ to_lower() noexcept { return impl::to_lower_transformer_proxy_t{}; }
  * @since v.0.6.6
  */
 template< typename T >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 just( T value ) noexcept(noexcept(impl::just_value_transformer_t<T>{value}))
 {
@@ -4659,7 +4659,7 @@ just( T value ) noexcept(noexcept(impl::just_value_transformer_t<T>{value}))
  * @since v.0.6.6
  */
 template< typename T >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 just_result( T value )
 	noexcept(noexcept(impl::just_result_consumer_t<T>{value}))
@@ -4732,7 +4732,7 @@ just_result( T value )
  * @since v.0.6.6
  */
 template< typename Converter >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 convert( Converter && converter )
 {
@@ -4763,7 +4763,7 @@ convert( Converter && converter )
  *
  * @since v.0.6.6
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 exact_p( string_view_t fragment )
 {
@@ -4807,7 +4807,7 @@ exact_p( string_view_t fragment )
  * @since v.0.6.6
  */
 template< std::size_t Size >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 exact_p( const char (&fragment)[Size] )
 {
@@ -4828,7 +4828,7 @@ exact_p( const char (&fragment)[Size] )
  *
  * @since v.0.6.6
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 exact( string_view_t fragment )
 {
@@ -4866,7 +4866,7 @@ exact( string_view_t fragment )
  * @since v.0.6.6
  */
 template< std::size_t Size >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 exact( const char (&fragment)[Size] )
 {
@@ -4892,7 +4892,7 @@ exact( const char (&fragment)[Size] )
  *
  * @since v.0.6.9
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 caseless_exact_p( string_view_t fragment )
 {
@@ -4936,7 +4936,7 @@ caseless_exact_p( string_view_t fragment )
  * @since v.0.6.9
  */
 template< std::size_t Size >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 caseless_exact_p( const char (&fragment)[Size] )
 {
@@ -4957,7 +4957,7 @@ caseless_exact_p( const char (&fragment)[Size] )
  *
  * @since v.0.6.9
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 caseless_exact( string_view_t fragment )
 {
@@ -4995,7 +4995,7 @@ caseless_exact( string_view_t fragment )
  * @since v.0.6.9
  */
 template< std::size_t Size >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 caseless_exact( const char (&fragment)[Size] )
 {
@@ -5037,7 +5037,7 @@ caseless_exact( const char (&fragment)[Size] )
  * @since v.0.6.1
  */
 template< typename Producer >
-RESTINIO_NODISCARD
+[[nodiscard]]
 expected_t< typename Producer::result_type, parse_error_t >
 try_parse(
 	string_view_t from,
@@ -5098,7 +5098,7 @@ try_parse(
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline std::string
 make_error_description(
 	const parse_error_t & error,

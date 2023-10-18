@@ -52,12 +52,12 @@ public:
 	{}
 
 	//! Get the starting offset of chunk.
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::size_t
 	started_at() const noexcept { return m_started_at; }
 
 	//! Get the size of chunk.
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::size_t
 	size() const noexcept { return m_size; }
 
@@ -68,7 +68,7 @@ public:
 	 * An attempt of extraction of chunk from a body that is too small
 	 * is undefined behavior.
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	string_view_t
 	make_string_view_nonchecked( string_view_t full_body ) const noexcept
 	{
@@ -81,7 +81,7 @@ public:
 	 *
 	 * @throw exception_t if @a full_body is too small to hold the chunk.
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	string_view_t
 	make_string_view( string_view_t full_body ) const
 	{
@@ -164,7 +164,7 @@ public:
 	/*!
 	 * @retval 0 if there is no chunks in the incoming request.
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::size_t
 	chunk_count() const noexcept { return m_info.m_chunks.size(); }
 
@@ -174,7 +174,7 @@ public:
 	 * This method doesn't check the validity of @a index.
 	 * An attempt to access non-existent chunk is undefined behavior.
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	const chunk_info_t &
 	chunk_at_nochecked( std::size_t index ) const noexcept
 	{
@@ -185,7 +185,7 @@ public:
 	/*!
 	 * @throw std::exception if @a index is invalid.
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	const chunk_info_t &
 	chunk_at( std::size_t index ) const
 	{
@@ -199,7 +199,7 @@ public:
 	 * be changed from version to version. But this container
 	 * can be sequentially enumerated from begin() to the end().
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	const auto &
 	chunks() const noexcept
 	{
@@ -212,7 +212,7 @@ public:
 	 * This can be an empty container if there is no trailing fields
 	 * in the incoming request.
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	const http_header_fields_t &
 	trailing_fields() const noexcept
 	{

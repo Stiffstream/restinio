@@ -128,7 +128,7 @@ struct http_parser_ctx_t
 	/*!
 	 * @since v.0.6.9
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	chunked_input_info_unique_ptr_t
 	make_chunked_input_info_if_necessary()
 	{

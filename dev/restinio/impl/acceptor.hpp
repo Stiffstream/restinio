@@ -601,7 +601,7 @@ class acceptor_t final
 		 *
 		 * @since v.0.6.11
 		 */
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		static std::optional< asio_ns::ip::address >
 		try_extract_actual_address_from_variant(
 			const restinio::details::address_variant_t & from )

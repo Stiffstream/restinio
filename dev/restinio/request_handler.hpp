@@ -57,7 +57,7 @@ class extra_data_buffer_t
 public:
 	extra_data_buffer_t( void * buffer ) : m_buffer{ buffer } {}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	void *
 	get() const noexcept { return m_buffer; }
 };
@@ -168,7 +168,7 @@ public:
 		get_ptr()->~Extra_Data();
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	Extra_Data *
 	get_ptr() noexcept
 	{
@@ -178,7 +178,7 @@ public:
 				reinterpret_cast<Extra_Data *>(m_data.data()) );
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	const Extra_Data *
 	get_ptr() const noexcept
 	{
@@ -344,7 +344,7 @@ class generic_request_t final
 		 *
 		 * @since v.0.6.13
 		 */
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		Extra_Data &
 		extra_data() noexcept
 		{
@@ -390,7 +390,7 @@ class generic_request_t final
 		 *
 		 * @since v.0.6.13
 		 */
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		const Extra_Data &
 		extra_data() const noexcept
 		{

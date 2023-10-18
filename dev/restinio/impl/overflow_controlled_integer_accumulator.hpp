@@ -36,7 +36,7 @@ namespace overflow_controlled_integer_accumulator_details
 {
 
 template< typename T, typename Storage_Type >
-RESTINIO_NODISCARD
+[[nodiscard]]
 typename std::enable_if< std::is_signed<T>::value, bool >::type
 is_greater_than_maximum( Storage_Type v, Storage_Type maximum )
 {
@@ -45,7 +45,7 @@ is_greater_than_maximum( Storage_Type v, Storage_Type maximum )
 
 // If T is unsigned type then this comparison has no sense.
 template< typename T, typename Storage_Type >
-RESTINIO_NODISCARD
+[[nodiscard]]
 typename std::enable_if< !std::is_signed<T>::value, bool >::type
 is_greater_than_maximum( Storage_Type, Storage_Type )
 {

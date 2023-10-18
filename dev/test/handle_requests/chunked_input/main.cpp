@@ -11,7 +11,7 @@
 
 #include <iterator>
 
-RESTINIO_NODISCARD
+[[nodiscard]]
 restinio::fmt_minimal_memory_buffer_t
 format_chunked_input_info(
 	const restinio::request_t & req )

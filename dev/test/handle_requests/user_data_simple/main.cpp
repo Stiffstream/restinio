@@ -52,21 +52,21 @@ public:
 		new(buffer.get()) data_t{ m_ctor_dtor_monitors, ++m_index_counter };
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	int
 	current_value() noexcept
 	{
 		return m_index_counter.load( std::memory_order_acquire );
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	int
 	constructors_called() noexcept
 	{
 		return m_ctor_dtor_monitors.m_constructors.load( std::memory_order_acquire );
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	int
 	destructors_called() noexcept
 	{

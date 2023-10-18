@@ -41,14 +41,14 @@ enum class request_handling_status_t : std::uint8_t
 //! @name Helper funcs for working with request_handling_status_t
 //! \see request_handling_status_t.
 ///@{
-RESTINIO_NODISCARD
+[[nodiscard]]
 constexpr request_handling_status_t
 request_accepted() noexcept
 {
 	return request_handling_status_t::accepted;
 }
 
-RESTINIO_NODISCARD
+[[nodiscard]]
 constexpr request_handling_status_t
 request_rejected() noexcept
 {
@@ -58,7 +58,7 @@ request_rejected() noexcept
 /*!
  * @since v.0.6.13
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 constexpr request_handling_status_t
 request_not_handled() noexcept
 {

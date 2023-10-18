@@ -76,7 +76,7 @@ class incoming_http_msg_limits_t
 public:
 	incoming_http_msg_limits_t() noexcept = default;
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::size_t
 	max_url_size() const noexcept { return m_max_url_size; }
 
@@ -93,7 +93,7 @@ public:
 		return std::move(max_url_size(value));
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::size_t
 	max_field_name_size() const noexcept { return m_max_field_name_size; }
 
@@ -110,7 +110,7 @@ public:
 		return std::move(max_field_name_size(value));
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::size_t
 	max_field_value_size() const noexcept { return m_max_field_value_size; }
 
@@ -127,7 +127,7 @@ public:
 		return std::move(max_field_value_size(value));
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::size_t
 	max_field_count() const noexcept { return m_max_field_count; }
 
@@ -144,7 +144,7 @@ public:
 		return std::move(max_field_count(value));
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::uint64_t
 	max_body_size() const noexcept { return m_max_body_size; }
 

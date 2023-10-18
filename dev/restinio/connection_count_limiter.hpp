@@ -164,7 +164,7 @@ class actual_limiter_t
 	 */
 	std::vector< std::size_t > m_pending_indexes;
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	bool
 	has_free_slots() const noexcept
 	{

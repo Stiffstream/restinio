@@ -13,7 +13,7 @@
 #include <initializer_list>
 #include <string>
 
-RESTINIO_NODISCARD
+[[nodiscard]]
 std::string
 make_from( std::initializer_list<int> values )
 {

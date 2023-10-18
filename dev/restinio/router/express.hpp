@@ -542,7 +542,7 @@ class generic_express_route_entry_t
 
 		//! Checks if request header matches entry,
 		//! and if so, set route params.
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		bool
 		match(
 			const http_request_header_t & h,
@@ -553,7 +553,7 @@ class generic_express_route_entry_t
 		}
 
 		//! Calls a handler of given request with given params.
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		request_handling_status_t
 		handle( actual_request_handle_t rh, route_params_t rp ) const
 		{
@@ -629,7 +629,7 @@ class generic_express_router_t
 		generic_express_router_t() = default;
 		generic_express_router_t( generic_express_router_t && ) = default;
 
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		request_handling_status_t
 		operator()( actual_request_handle_t req ) const
 		{

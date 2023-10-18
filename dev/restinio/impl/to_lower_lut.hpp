@@ -9,7 +9,7 @@ namespace impl
 {
 
 template< typename C >
-RESTINIO_NODISCARD
+[[nodiscard]]
 const C * to_lower_lut()
 {
 	static constexpr C table[] = {
@@ -34,7 +34,7 @@ const C * to_lower_lut()
 	return table;
 }
 
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline char
 to_lower_case( char ch )
 {
@@ -43,7 +43,7 @@ to_lower_case( char ch )
 		);
 }
 
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline char
 to_lower_case( unsigned char ch )
 {

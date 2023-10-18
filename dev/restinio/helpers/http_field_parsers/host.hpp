@@ -43,7 +43,7 @@ namespace hfp_details = restinio::http_field_parsers::details;
  */
 struct unreserved_predicate_t
 {
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	bool
 	operator()( const char actual ) const noexcept
 	{
@@ -67,7 +67,7 @@ struct unreserved_predicate_t
  *
  * @since v.0.6.9
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 unreserved_symbol_p()
 {
@@ -87,7 +87,7 @@ unreserved_symbol_p()
  */
 struct sub_delims_predicate_t
 {
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	bool
 	operator()( const char actual ) const noexcept
 	{
@@ -116,7 +116,7 @@ struct sub_delims_predicate_t
  *
  * @since v.0.6.9
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 sub_delims_symbol_p()
 {
@@ -144,7 +144,7 @@ dec-octet     = DIGIT                 ; 0-9
  *
  * @since v.0.6.9
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 ipv4_address_p()
 {
@@ -193,7 +193,7 @@ struct debug_printer : public ep_impl::clause_tag
 	debug_printer( std::string v ) noexcept : m_tag{ std::move(v) } {}
 
 	template< typename Target_Type >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::optional< parse_error_t >
 	try_process( ep_impl::source_t & from, Target_Type & /*target*/ )
 	{
@@ -230,7 +230,7 @@ struct debug_printer : public ep_impl::clause_tag
  *
  * @since v.0.6.9
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 ipv6_address_p()
 {
@@ -348,7 +348,7 @@ reg-name      = 1*( unreserved / pct-encoded / sub-delims )
  *
  * @since v.0.6.9
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 reg_name_p()
 {
@@ -411,7 +411,7 @@ struct raw_host_value_t
 			return a.v < b.v;
 		}
 
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		static reg_name_t
 		from_string( std::string v ) noexcept
 		{
@@ -444,7 +444,7 @@ struct raw_host_value_t
 			return a.v < b.v;
 		}
 
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		static ipv4_address_t
 		from_string( std::string v ) noexcept
 		{
@@ -477,7 +477,7 @@ struct raw_host_value_t
 			return a.v < b.v;
 		}
 
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		static ipv6_address_t
 		from_string( std::string v ) noexcept
 		{
@@ -500,7 +500,7 @@ struct raw_host_value_t
 	 *
 	 * @since v.0.6.9
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static auto
 	make_parser()
 	{
@@ -545,7 +545,7 @@ struct raw_host_value_t
 	 *
 	 * @since v.0.6.9
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static expected_t< raw_host_value_t, restinio::easy_parser::parse_error_t >
 	try_parse( string_view_t what )
 	{

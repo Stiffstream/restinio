@@ -94,7 +94,7 @@ enum class extraction_error_t
  *
  * @since v.0.6.9
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline string_view_t
 to_string_view( extraction_error_t what ) noexcept
 {
@@ -178,7 +178,7 @@ to_string_view( extraction_error_t what ) noexcept
  *
  * @since v.0.6.8
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline expected_t< params_t, extraction_error_t >
 try_extract_params(
 	const authorization_value_t & http_field )
@@ -210,7 +210,7 @@ try_extract_params(
 namespace impl
 {
 
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline expected_t< params_t, extraction_error_t >
 perform_extraction_attempt(
 	const std::optional< string_view_t > opt_field_value )
@@ -256,7 +256,7 @@ perform_extraction_attempt(
  *
  * @since v.0.6.9
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline expected_t< params_t, extraction_error_t >
 try_extract_params(
 	//! A set of HTTP-fields.
@@ -290,7 +290,7 @@ try_extract_params(
  * @since v.0.6.7
  */
 template< typename Extra_Data >
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline expected_t< params_t, extraction_error_t >
 try_extract_params(
 	//! A request that should hold a HTTP-field with authentification
@@ -323,7 +323,7 @@ try_extract_params(
  *
  * @since v.0.6.9
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline expected_t< params_t, extraction_error_t >
 try_extract_params(
 	//! A set of HTTP-fields.
@@ -357,7 +357,7 @@ try_extract_params(
  * @since v.0.6.7
  */
 template< typename Extra_Data >
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline expected_t< params_t, extraction_error_t >
 try_extract_params(
 	//! A request that should hold a HTTP-field with authentification

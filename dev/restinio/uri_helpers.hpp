@@ -350,7 +350,7 @@ public:
 	{}
 
 	//! Get a reference to the description of the failure.
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	const std::string &
 	description() const noexcept { return m_description; }
 
@@ -360,7 +360,7 @@ public:
 	 * elsewhere (to another object like parse_query_failure_t or to some
 	 * exception-like object).
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::string
 	giveout_description() noexcept { return m_description; }
 };
@@ -394,7 +394,7 @@ public:
  * @since v.0.6.5
  */
 template< typename Parse_Traits >
-RESTINIO_NODISCARD
+[[nodiscard]]
 expected_t< query_string_params_t, parse_query_failure_t >
 try_parse_query(
 	//! Query part of the request target.
@@ -515,7 +515,7 @@ try_parse_query(
 	@endcode
 */
 template< typename Parse_Traits = parse_query_traits::restinio_defaults >
-RESTINIO_NODISCARD
+[[nodiscard]]
 query_string_params_t
 parse_query(
 	//! Query part of the request target.

@@ -55,19 +55,19 @@ struct transfer_encoding_value_t
 		gzip,
 	};
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static constexpr known_transfer_coding_t chunked() noexcept
 	{ return known_transfer_coding_t::chunked; }
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static constexpr known_transfer_coding_t compress() noexcept
 	{ return known_transfer_coding_t::compress; }
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static constexpr known_transfer_coding_t deflate() noexcept
 	{ return known_transfer_coding_t::deflate; }
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static constexpr known_transfer_coding_t gzip() noexcept
 	{ return known_transfer_coding_t::gzip; }
 
@@ -77,7 +77,7 @@ struct transfer_encoding_value_t
 		std::string token;
 		parameter_with_mandatory_value_container_t transfer_parameters;
 
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		bool
 		operator==( const transfer_extension_t & o ) const noexcept
 		{
@@ -101,7 +101,7 @@ struct transfer_encoding_value_t
 	 *
 	 * @since v.0.6.9
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static auto
 	make_parser()
 	{
@@ -135,7 +135,7 @@ struct transfer_encoding_value_t
 	 *
 	 * @since v.0.6.9
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static expected_t<
 		transfer_encoding_value_t,
 		restinio::easy_parser::parse_error_t >

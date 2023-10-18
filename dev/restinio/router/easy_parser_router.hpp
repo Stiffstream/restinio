@@ -67,7 +67,7 @@ public:
 	 *
 	 * If match failed then an instance of no_match_t is returned.
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	virtual expected_t< request_handling_status_t, no_match_t >
 	try_handle(
 		const actual_request_handle_t & req,
@@ -132,7 +132,7 @@ public:
 		assign( m_method_matcher, std::forward<Method_Matcher>(method_matcher) );
 	}
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	expected_t< request_handling_status_t, no_match_t >
 	try_handle(
 		const actual_request_handle_t & req,
@@ -168,7 +168,7 @@ struct unescape_transformer_t
 {
 	using input_type = std::string;
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	result_type
 	transform( input_type && input ) const
 	{
@@ -200,7 +200,7 @@ class special_produce_tuple_item_clause_t
 
 	// NOTE: this is just a workaround for VS2017.
 	template< typename Producer_Arg >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static Producer
 	make_producer( Producer_Arg && producer )
 	{
@@ -545,7 +545,7 @@ public:
 	using base_type_t::base_type_t;
 
 	template< typename Extra_Data, typename Handler >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static auto
 	invoke_handler(
 		const generic_request_handle_t< Extra_Data > & req,
@@ -628,7 +628,7 @@ public:
 	using base_type_t::base_type_t;
 
 	template< typename User_Type, typename Handler >
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static auto
 	invoke_handler(
 		const generic_request_handle_t< User_Type > & req,
@@ -686,7 +686,7 @@ using namespace restinio::easy_parser;
  * @since v.0.6.6
  */
 template< typename... Args >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 path_to_tuple( Args && ...args )
 {
@@ -740,7 +740,7 @@ path_to_tuple( Args && ...args )
  * @since v.0.6.6
  */
 template< typename... Args >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 path_to_params( Args && ...args )
 {
@@ -797,7 +797,7 @@ path_to_params( Args && ...args )
  *
  * @since v.0.6.6
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 path_fragment_p( char separator = '/' )
 {
@@ -854,7 +854,7 @@ path_fragment_p( char separator = '/' )
  */
 template< typename Unescape_Traits =
 		restinio::utils::restinio_default_unescape_traits >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 unescape()
 {
@@ -961,7 +961,7 @@ public:
 	generic_easy_parser_router_t &
 	operator=( generic_easy_parser_router_t && ) = default;
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	request_handling_status_t
 	operator()( actual_request_handle_t req ) const
 	{

@@ -41,7 +41,7 @@ struct is_token68_char_predicate_t
 {
 	using base_type_t = hfp_impl::is_alphanum_predicate_t;
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	bool
 	operator()( const char actual ) const noexcept
 	{
@@ -59,7 +59,7 @@ struct is_token68_char_predicate_t
 //
 // token68_symbol_p
 //
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 token68_symbol_p()
 {
@@ -92,7 +92,7 @@ operator<<( std::ostream & to, const token68_t & v )
 //
 // token68_p
 //
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 token68_p()
 {
@@ -180,7 +180,7 @@ struct authorization_value_t
 	 *
 	 * @since v.0.6.7
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static auto
 	make_parser()
 	{
@@ -231,7 +231,7 @@ struct authorization_value_t
 	 *
 	 * @since v.0.6.7
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static expected_t<
 			authorization_value_t,
 			restinio::easy_parser::parse_error_t >

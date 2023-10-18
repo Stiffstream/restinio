@@ -46,7 +46,7 @@ class regular_token_producer_t
 	:	public hfp_impl::token_producer_t
 {
 public:
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	expected_t< result_type, parse_error_t >
 	try_parse( ep_impl::source_t & from ) const
 	{
@@ -88,7 +88,7 @@ class ext_token_producer_t
 	:	public hfp_impl::token_producer_t
 {
 public:
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	expected_t< result_type, parse_error_t >
 	try_parse( ep_impl::source_t & from ) const
 	{
@@ -125,7 +125,7 @@ public:
  */
 struct mime_charsetc_predicate_t
 {
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	bool
 	operator()( const char actual ) const noexcept
 	{
@@ -158,7 +158,7 @@ struct mime_charsetc_predicate_t
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 mime_charsetc_symbol_p()
 {
@@ -183,7 +183,7 @@ mime_charsetc_symbol_p()
  */
 struct language_predicate_t
 {
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	bool
 	operator()( const char actual ) const noexcept
 	{
@@ -202,7 +202,7 @@ struct language_predicate_t
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 language_symbol_p()
 {
@@ -222,7 +222,7 @@ language_symbol_p()
  */
 struct attr_char_predicate_t
 {
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	bool
 	operator()( const char actual ) const noexcept
 	{
@@ -254,7 +254,7 @@ struct attr_char_predicate_t
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 attr_char_symbol_p()
 {
@@ -294,7 +294,7 @@ attr-char     = ALPHA / DIGIT
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 ext_parameter_value_p()
 {
@@ -347,7 +347,7 @@ struct content_disposition_value_t
 	 *
 	 * @since v.0.6.1
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static auto
 	make_parser()
 	{
@@ -390,7 +390,7 @@ struct content_disposition_value_t
 	 *
 	 * @since v.0.6.1
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	static expected_t< content_disposition_value_t, restinio::easy_parser::parse_error_t >
 	try_parse( string_view_t what )
 	{

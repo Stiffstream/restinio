@@ -52,7 +52,7 @@ using pct_encoded_result_type_t = std::array< char, 3 >;
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline auto
 pct_encoded_symbols_p()
 {

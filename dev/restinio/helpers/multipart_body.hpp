@@ -67,7 +67,7 @@ namespace multipart_body
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline std::vector< string_view_t >
 split_multipart_body(
 	string_view_t body,
@@ -183,7 +183,7 @@ constexpr char LF = '\n';
 struct body_producer_t
 	:	public easy_parser::impl::producer_tag< string_view_t >
 {
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	expected_t< string_view_t, easy_parser::parse_error_t >
 	try_parse( easy_parser::impl::source_t & from ) const noexcept
 	{
@@ -207,7 +207,7 @@ struct body_producer_t
 struct field_value_producer_t
 	:	public easy_parser::impl::producer_tag< std::string >
 {
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	expected_t< std::string, easy_parser::parse_error_t >
 	try_parse( easy_parser::impl::source_t & from ) const
 	{
@@ -249,7 +249,7 @@ part := *( token ':' OWS field-value CR LF ) CR LF body
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto
 make_parser()
 {
@@ -310,7 +310,7 @@ make_parser()
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 expected_t< parsed_part_t, restinio::easy_parser::parse_error_t >
 try_parse_part( string_view_t part )
 {
@@ -398,7 +398,7 @@ namespace boundary_value_checkers
 // bcharsnospace :=  DIGIT / ALPHA / "'" / "(" / ")" / "+" /"_"
 //                 / "," / "-" / "." / "/" / ":" / "=" / "?"
 //
-RESTINIO_NODISCARD
+[[nodiscard]]
 constexpr bool
 is_bcharnospace( char ch )
 {
@@ -418,7 +418,7 @@ is_bcharnospace( char ch )
 		|| ch == '?';
 }
 
-RESTINIO_NODISCARD
+[[nodiscard]]
 constexpr bool
 is_bchar( char ch )
 {
@@ -452,7 +452,7 @@ is_bchar( char ch )
  *
  * @since v.0.6.1
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline std::optional< enumeration_error_t >
 check_boundary_value( string_view_t value )
 {
@@ -492,7 +492,7 @@ check_boundary_value( string_view_t value )
  * @since v.0.6.1
  */
 template< typename Extra_Data >
-RESTINIO_NODISCARD
+[[nodiscard]]
 expected_t< std::string, enumeration_error_t >
 detect_boundary_for_multipart_body(
 	const generic_request_t< Extra_Data > & req,
@@ -565,7 +565,7 @@ namespace impl
  * @since v.0.6.1
  */
 template< typename Handler >
-RESTINIO_NODISCARD
+[[nodiscard]]
 expected_t< std::size_t, enumeration_error_t >
 enumerate_parts_of_request_body(
 	const std::vector< string_view_t > & parts,
@@ -681,7 +681,7 @@ struct valid_handler_type<
  * @since v.0.6.1
  */
 template< typename User_Type, typename Handler >
-RESTINIO_NODISCARD
+[[nodiscard]]
 expected_t< std::size_t, enumeration_error_t >
 enumerate_parts(
 	//! The request to be handled.

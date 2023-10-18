@@ -33,7 +33,7 @@ using index_sequence_for_tuple =
 		std::make_index_sequence< std::tuple_size<T>::value >;
 
 template< typename Predicate >
-RESTINIO_NODISCARD
+[[nodiscard]]
 bool
 all_of_impl( Predicate && /*p*/ )
 {
@@ -41,7 +41,7 @@ all_of_impl( Predicate && /*p*/ )
 }
 
 template< typename Predicate, typename T, typename... Vs >
-RESTINIO_NODISCARD
+[[nodiscard]]
 bool
 all_of_impl( Predicate && p, T && current, Vs &&... rest )
 {
@@ -50,7 +50,7 @@ all_of_impl( Predicate && p, T && current, Vs &&... rest )
 }
 
 template< typename Predicate, typename Tuple, std::size_t... I >
-RESTINIO_NODISCARD
+[[nodiscard]]
 bool
 perform_all_of(
 	Predicate && p,
@@ -63,7 +63,7 @@ perform_all_of(
 }
 
 template< typename Predicate >
-RESTINIO_NODISCARD
+[[nodiscard]]
 bool
 any_of_impl( Predicate && /*p*/ )
 {
@@ -71,7 +71,7 @@ any_of_impl( Predicate && /*p*/ )
 }
 
 template< typename Predicate, typename T, typename... Vs >
-RESTINIO_NODISCARD
+[[nodiscard]]
 bool
 any_of_impl( Predicate && p, T && current, Vs &&... rest )
 {
@@ -80,7 +80,7 @@ any_of_impl( Predicate && p, T && current, Vs &&... rest )
 }
 
 template< typename Predicate, typename Tuple, std::size_t... I >
-RESTINIO_NODISCARD
+[[nodiscard]]
 bool
 perform_any_of(
 	Predicate && p,
@@ -98,7 +98,7 @@ perform_any_of(
 // all_of
 //
 template< typename Tuple, typename Predicate >
-RESTINIO_NODISCARD
+[[nodiscard]]
 bool
 all_of( Tuple && tuple, Predicate && predicate )
 {
@@ -112,7 +112,7 @@ all_of( Tuple && tuple, Predicate && predicate )
 // any_of
 //
 template< typename Tuple, typename Predicate >
-RESTINIO_NODISCARD
+[[nodiscard]]
 bool
 any_of( Tuple && tuple, Predicate && predicate )
 {

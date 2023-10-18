@@ -168,7 +168,7 @@ public:
 	{}
 
 	//! Get a reference to the description of the failure.
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	const std::string &
 	description() const noexcept { return m_description; }
 
@@ -178,7 +178,7 @@ public:
 	 * elsewhere (to another object like unescape_percent_encoding_failure_t or
 	 * to some exception-like object).
 	 */
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	std::string
 	giveout_description() noexcept { return std::move(m_description); }
 };
@@ -232,7 +232,7 @@ extract_escaped_char( char c1,  char c2 )
 template<
 	typename Traits,
 	typename Chars_Collector >
-RESTINIO_NODISCARD
+[[nodiscard]]
 expected_t<
 	unescape_percent_encoding_success_t,
 	unescape_percent_encoding_failure_t >
@@ -330,7 +330,7 @@ do_unescape_percent_encoding(
 //! Percent encoding.
 //! \{
 template< typename Traits = restinio_default_unescape_traits >
-RESTINIO_NODISCARD
+[[nodiscard]]
 std::string
 escape_percent_encoding( const string_view_t data )
 {
@@ -365,7 +365,7 @@ escape_percent_encoding( const string_view_t data )
 }
 
 template< typename Traits = restinio_default_unescape_traits >
-RESTINIO_NODISCARD
+[[nodiscard]]
 std::string
 unescape_percent_encoding( const string_view_t data )
 {
@@ -394,7 +394,7 @@ unescape_percent_encoding( const string_view_t data )
  * @since v.0.6.5
  */
 template< typename Traits = restinio_default_unescape_traits >
-RESTINIO_NODISCARD
+[[nodiscard]]
 expected_t< std::string, unescape_percent_encoding_failure_t >
 try_unescape_percent_encoding( const string_view_t data )
 {
@@ -411,7 +411,7 @@ try_unescape_percent_encoding( const string_view_t data )
 }
 
 template< typename Traits = restinio_default_unescape_traits >
-RESTINIO_NODISCARD
+[[nodiscard]]
 std::size_t
 inplace_unescape_percent_encoding( char * data, std::size_t size )
 {
@@ -443,7 +443,7 @@ inplace_unescape_percent_encoding( char * data, std::size_t size )
  * @since v.0.6.5
  */
 template< typename Traits = restinio_default_unescape_traits >
-RESTINIO_NODISCARD
+[[nodiscard]]
 expected_t< std::size_t, unescape_percent_encoding_failure_t >
 try_inplace_unescape_percent_encoding( char * data, std::size_t size )
 {
@@ -480,7 +480,7 @@ namespace impl
  *
  * @since v.0.6.2
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 constexpr inline bool
 is_unreserved_char( const char ch ) noexcept
 {
@@ -614,7 +614,7 @@ run_normalization_algo(
  *
  * @since v.0.6.2
  */
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline std::size_t
 estimate_required_capacity(
 	string_view_t what )

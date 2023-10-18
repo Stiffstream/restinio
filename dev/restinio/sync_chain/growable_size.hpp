@@ -194,7 +194,7 @@ public:
 		 * The builder object should not be used after the calling of
 		 * that method.
 		 */
-		RESTINIO_NODISCARD
+		[[nodiscard]]
 		std::unique_ptr< growable_size_chain_t >
 		release() noexcept
 		{
@@ -249,7 +249,7 @@ public:
 	 */
 	growable_size_chain_t() = delete;
 
-	RESTINIO_NODISCARD
+	[[nodiscard]]
 	request_handling_status_t
 	operator()( const actual_request_handle_t & req ) const
 	{

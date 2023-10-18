@@ -79,7 +79,7 @@ struct valid_field_type<
 // try_extract_field_value_from
 //
 template< typename Parsed_Field_Type >
-RESTINIO_NODISCARD
+[[nodiscard]]
 result_variant_t< Parsed_Field_Type >
 try_extract_field_value_from(
 	std::optional< string_view_t > opt_value,
@@ -146,7 +146,7 @@ try_extract_field_value_from(
  * @since v.0.6.8
  */
 template< typename Parsed_Field_Type, typename Extra_Data >
-RESTINIO_NODISCARD
+[[nodiscard]]
 auto 
 try_parse_field(
 	//! A request that should hold a HTTP-field.
@@ -204,8 +204,8 @@ try_parse_field(
  * @since v.0.6.8
  */
 template< typename Parsed_Field_Type, typename Extra_Data >
-RESTINIO_NODISCARD
-auto 
+[[nodiscard]]
+auto
 try_parse_field(
 	//! A request that should hold a HTTP-field.
 	const generic_request_t< Extra_Data > & req,

@@ -14,7 +14,7 @@ namespace restinio
 namespace http_field_parsers
 {
 
-RESTINIO_NODISCARD
+[[nodiscard]]
 inline bool
 operator==(
 	const user_agent_value_t::product_t & a,
