@@ -17,7 +17,7 @@ add_subdirectory(websocket)
 add_subdirectory(websocket_detailed)
 add_subdirectory(using_external_io_context)
 
-if ( RESTINIO_SOBJECTIZER_ENABLED )
+if ( RESTINIO_WITH_SOBJECTIZER )
 	add_subdirectory(async_handling_with_sobjectizer)
 endif()
 
@@ -26,7 +26,7 @@ if (ZLIB_FOUND)
 	add_subdirectory(decompression)
 endif ()
 
-if ( RESTINIO_SOBJECTIZER_ENABLED )
+if ( RESTINIO_WITH_SOBJECTIZER )
 	add_subdirectory(notificators)
 endif()
 

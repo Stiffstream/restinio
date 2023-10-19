@@ -1,4 +1,4 @@
 set(UNITTEST _unit.test.notificators)
 include(${CMAKE_SOURCE_DIR}/cmake/unittest.cmake)
 
-TARGET_LINK_LIBRARIES(${UNITTEST} PRIVATE ${SOBJECTIZER_LIBS})
+TARGET_LINK_LIBRARIES(${UNITTEST} PRIVATE sobjectizer::StaticLib)
