@@ -6,8 +6,9 @@
 
 #include <restinio/all.hpp>
 
-#include <clara.hpp>
 #include <fmt/format.h>
+
+#include <restinio-helpers/cmd_line_args_helpers.hpp>
 
 #include "route_parser.hpp"
 
@@ -22,49 +23,23 @@ struct app_args_t
 	static app_args_t
 	parse( int argc, const char * argv[] )
 	{
-		using namespace clara;
-
 		app_args_t result;
 
-		const auto make_opt =
-			[]( auto & val, const char * name, const char * short_name,
-				const char * long_name, const char * description) {
+		using namespace restinio_helpers;
 
-				return Opt( val, name )[ short_name ][ long_name ]
-					( fmt::format(
-							restinio::fmtlib_tools::runtime_format_string(description),
-							val ) );
-		};
-
-		auto cli = make_opt(
-					result.m_address, "address",
-					"-a", "--address",
-					"address to listen (default: {})" )
-			| make_opt(
-					result.m_port, "port",
-					"-p", "--port",
-					"port to listen (default: {})" )
-			| make_opt(
-					result.m_pool_size, "thread-pool size",
-					"-n", "--thread-pool-size",
-					"The size of a thread pool to run server (default: {})" )
-			| Help(result.m_help);
-
-
-		auto parse_result = cli.parse( Args(argc, argv) );
-		if( !parse_result )
-		{
-			throw std::runtime_error{
-				fmt::format(
-					RESTINIO_FMT_FORMAT_STRING(
-						"Invalid command-line arguments: {}" ),
-					parse_result.errorMessage() ) };
-		}
-
-		if( result.m_help )
-		{
-			std::cout << cli << std::endl;
-		}
+		process_cmd_line_args( argc, argv, result,
+			cmd_line_arg_t{
+					result.m_address, "-a", "--address",
+					"address to listen (default: {})"
+				},
+			cmd_line_arg_t{
+					result.m_port, "-p", "--port",
+					"port to listen (default: {})"
+				},
+			cmd_line_arg_t{
+					result.m_pool_size, "-n", "--thread-pool-size",
+					"size of a thread pool to run server (default: {})"
+				} );
 
 		return result;
 	}

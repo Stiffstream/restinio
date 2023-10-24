@@ -172,6 +172,13 @@ if (RESTINIO_WITH_SOBJECTIZER)
     message("========================================")
 endif ()
 
+if (RESTINIO_TEST OR RESTINIO_SAMPLE OR RESTINIO_BENCHMARK)
+    message("========================================")
+    message("adding restinio-helpers")
+    add_subdirectory(restinio-helpers)
+    message("========================================")
+endif()
+
 find_package(ZLIB)
 if (ZLIB_FOUND)
   message(STATUS "ZLIB include dir: ${ZLIB_INCLUDE_DIRS}")

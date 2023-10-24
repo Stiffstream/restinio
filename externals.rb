@@ -51,12 +51,6 @@ MxxRu::arch_externals :json_dto do |e|
   e.map_dir 'dev/json_dto' => 'dev'
 end
 
-MxxRu::arch_externals :clara do |e|
-  e.url 'https://github.com/catchorg/Clara/archive/v1.1.5.tar.gz'
-
-  e.map_file 'single_include/clara.hpp' => 'dev/clara/*'
-end
-
 MxxRu::arch_externals :catch do |e|
   e.url 'https://github.com/catchorg/Catch2/archive/refs/tags/v3.4.0.tar.gz'
 

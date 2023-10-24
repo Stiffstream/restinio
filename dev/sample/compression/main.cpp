@@ -9,8 +9,9 @@
 #include <restinio/transforms/zlib.hpp>
 #include <restinio/helpers/http_field_parsers/accept-encoding.hpp>
 
-#include <clara.hpp>
 #include <fmt/format.h>
+
+#include <restinio-helpers/cmd_line_args_helpers.hpp>
 
 //
 // app_args_t
@@ -31,48 +32,31 @@ struct app_args_t
 	static app_args_t
 	parse( int argc, const char * argv[] )
 	{
-		using namespace clara;
+		using namespace restinio_helpers;
 
 		app_args_t result;
 
-		auto cli =
-			Opt( result.m_address, "address" )
-					["-a"]["--address"]
-					( fmt::format(
-							RESTINIO_FMT_FORMAT_STRING(
-								"address to listen (default: {})" ),
-							result.m_address ) )
-			| Opt( result.m_port, "port" )
-					["-p"]["--port"]
-					( fmt::format(
-							RESTINIO_FMT_FORMAT_STRING(
-								"port to listen (default: {})" ),
-							result.m_port ) )
-			| Opt( result.m_pool_size, "thread-pool size" )
-					[ "-n" ][ "--thread-pool-size" ]
-					( fmt::format(
-							RESTINIO_FMT_FORMAT_STRING(
-								"The size of a thread pool to run server (default: {})" ),
-						result.m_pool_size ) )
-			| Opt( result.m_trace_server )
-					[ "-t" ][ "--trace" ]
-					( "Enable trace server" )
-			| Help(result.m_help);
-
-		auto parse_result = cli.parse( Args(argc, argv) );
-		if( !parse_result )
-		{
-			throw std::runtime_error{
-				fmt::format(
-					RESTINIO_FMT_FORMAT_STRING(
-						"Invalid command-line arguments: {}" ),
-					parse_result.errorMessage() ) };
-		}
-
-		if( result.m_help )
-		{
-			std::cout << cli << std::endl;
-		}
+		process_cmd_line_args( argc, argv, result,
+				cmd_line_arg_t{
+						result.m_address,
+						"-a", "--address",
+						"address to listen (default: {})"
+					},
+				cmd_line_arg_t{
+						result.m_port,
+						"-p", "--port",
+						"port to listen (default: {})"
+					},
+				cmd_line_arg_t{
+						result.m_pool_size,
+						"-n", "--thread-pool-size",
+						"size of a thread pool to run server (default: {})"
+					},
+				cmd_line_arg_t{
+						result.m_trace_server,
+						"-t", "--trace",
+						"enable trace server"
+					} );
 
 		return result;
 	}
