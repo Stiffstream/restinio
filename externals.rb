@@ -39,18 +39,6 @@ MxxRu::arch_externals :expected_lite do |e|
   e.map_dir 'include' => 'dev/expected-lite'
 end
 
-MxxRu::arch_externals :rapidjson do |e|
-  e.url 'https://github.com/miloyip/rapidjson/archive/v1.1.0.zip'
-
-  e.map_dir 'include/rapidjson' => 'dev/rapidjson/include'
-end
-
-MxxRu::arch_externals :json_dto do |e|
-  e.url 'https://github.com/Stiffstream/json_dto/archive/v.0.2.15.tar.gz'
-
-  e.map_dir 'dev/json_dto' => 'dev'
-end
-
 MxxRu::arch_externals :catch do |e|
   e.url 'https://github.com/catchorg/Catch2/archive/refs/tags/v3.4.0.tar.gz'
 

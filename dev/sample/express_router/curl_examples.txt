@@ -1,0 +1,12 @@
+Add a new book:
+
+curl http://localhost:8080/ -X POST -H "Content-type: text/plain" -v -d @sample/express_router/new_book_1.txt
+
+Update an existing book:
+
+curl http://localhost:8080/3 -X PUT -v -d @sample/express_router/new_book_2.txt
+
+Delete an existing book:
+
+curl http://localhost:8080/3 -X DELETE
+
