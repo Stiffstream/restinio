@@ -60,17 +60,13 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/link_threads_if_necessary.cmake")
 option(RESTINIO_INSTALL "Generate the install target." ON)
 option(RESTINIO_TEST "Build the tests." ON)
 option(RESTINIO_SAMPLE "Build samples." ON)
-option(RESTINIO_INSTALL_SAMPLES "Build install samples." ON)
 option(RESTINIO_BENCHMARK "Build the benchmarks." ON)
-option(RESTINIO_INSTALL_BENCHMARK "Install benchmarks." ON)
 option(RESTINIO_WITH_SOBJECTIZER "Add RESTinio sobjectizer integration" ON)
 
 message(STATUS "RESTINIO_INSTALL:           ${RESTINIO_INSTALL}")
 message(STATUS "RESTINIO_TEST:              ${RESTINIO_TEST}")
 message(STATUS "RESTINIO_SAMPLE:            ${RESTINIO_SAMPLE}")
-message(STATUS "RESTINIO_INSTALL_SAMPLES:   ${RESTINIO_INSTALL_SAMPLES}")
 message(STATUS "RESTINIO_BENCHMARK:         ${RESTINIO_BENCHMARK}")
-message(STATUS "RESTINIO_INSTALL_BENCHMARK: ${RESTINIO_INSTALL_BENCHMARK}")
 message(STATUS "RESTINIO_WITH_SOBJECTIZER:  ${RESTINIO_WITH_SOBJECTIZER}")
 
 # By default we assume to use an embedded version of ASIO.
