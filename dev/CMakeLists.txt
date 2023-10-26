@@ -45,10 +45,13 @@ if (RESTINIO_EXPLICIT_CPPSTD)
                 "invalid RESTINIO_EXPLICIT_CPPSTD (value ='${RESTINIO_EXPLICIT_CPPSTD}')"
                 "must be on of: [17, 20, 23]")
     endif ()
-
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-    set(CMAKE_CXX_EXTENSIONS OFF)
+else()
+    message(STATUS "SET C++17 BY DEFAULT")
+    set(CMAKE_CXX_STANDARD 17)
 endif()
+
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 if (RESTINIO_EXPLICIT_LIBCXX)
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libcxx.cmake)
