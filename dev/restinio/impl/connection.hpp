@@ -1402,7 +1402,7 @@ class connection_t final
 					if( m_response_coordinator.empty() )
 					{
 						// Here upgrade req is the only request
-						// to by handled by this connection.
+						// to be handled by this connection.
 						// So it is safe to call a handler for it.
 						handle_upgrade_request();
 					}
