@@ -171,10 +171,6 @@ class fixed_size_chain_t
 
 	std::array< handler_holder_t, Size > m_handlers;
 
-	template< std::size_t >
-	void
-	store_to() noexcept {}
-
 	template<
 		std::size_t Index,
 		typename Head,
@@ -189,7 +185,8 @@ class fixed_size_chain_t
 				return handler( req );
 			};
 
-		store_to< Index + 1u >( std::forward<Tail>(tail)... );
+		if constexpr( 0u != sizeof...(tail) )
+			store_to< Index + 1u >( std::forward<Tail>(tail)... );
 	}
 
 public:
