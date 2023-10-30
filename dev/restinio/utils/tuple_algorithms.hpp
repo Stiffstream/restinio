@@ -29,25 +29,8 @@ namespace impl
 {
 
 template< typename T >
-using index_sequence_for_tuple = 
+using index_sequence_for_tuple =
 		std::make_index_sequence< std::tuple_size<T>::value >;
-
-template< typename Predicate >
-[[nodiscard]]
-bool
-all_of_impl( Predicate && /*p*/ )
-{
-	return true;
-}
-
-template< typename Predicate, typename T, typename... Vs >
-[[nodiscard]]
-bool
-all_of_impl( Predicate && p, T && current, Vs &&... rest )
-{
-	return p( std::forward<T>(current) ) &&
-			all_of_impl( std::forward<Predicate>(p), std::forward<Vs>(rest)... );
-}
 
 template< typename Predicate, typename Tuple, std::size_t... I >
 [[nodiscard]]
@@ -57,26 +40,8 @@ perform_all_of(
 	Tuple && t,
 	std::index_sequence<I...> )
 {
-	return all_of_impl(
-			std::forward<Predicate>(p),
-			std::get<I>(std::forward<Tuple>(t))... );
-}
-
-template< typename Predicate >
-[[nodiscard]]
-bool
-any_of_impl( Predicate && /*p*/ )
-{
-	return false;
-}
-
-template< typename Predicate, typename T, typename... Vs >
-[[nodiscard]]
-bool
-any_of_impl( Predicate && p, T && current, Vs &&... rest )
-{
-	return p( std::forward<T>(current) ) ||
-			any_of_impl( std::forward<Predicate>(p), std::forward<Vs>(rest)... );
+	// Use fold expression after switching to C++17.
+	return (p( std::get<I>(std::forward<Tuple>(t)) ) && ...);
 }
 
 template< typename Predicate, typename Tuple, std::size_t... I >
@@ -87,9 +52,8 @@ perform_any_of(
 	Tuple && t,
 	std::index_sequence<I...> )
 {
-	return any_of_impl(
-			std::forward<Predicate>(p),
-			std::get<I>(std::forward<Tuple>(t))... );
+	// Use fold expression after switching to C++17.
+	return (p( std::get<I>(std::forward<Tuple>(t)) ) || ...);
 }
 
 } /* namespace impl */
