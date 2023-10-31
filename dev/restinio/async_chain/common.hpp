@@ -33,12 +33,15 @@ template< typename Extra_Data_Factory = no_extra_data_factory_t >
 class async_handling_controller_t;
 
 //FIXME: document this!
+//FIXME: should Extra_Data_Factory be equal to no_extra_data_factory_t by default?
 template< typename Extra_Data_Factory >
 using unique_async_handling_controller_t =
 	std::unique_ptr< async_handling_controller_t< Extra_Data_Factory > >;
 
 //FIXME: document this!
+//FIXME: should Extra_Data_Factory be equal to no_extra_data_factory_t by default?
 template< typename Extra_Data_Factory >
+//FIXME: should this type be named async_request_handler_t?
 using generic_async_request_handler_t =
 	std::function<
 		schedule_result_t(unique_async_handling_controller_t<Extra_Data_Factory>)
