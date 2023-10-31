@@ -172,13 +172,12 @@ class fixed_size_chain_t
 	std::array< handler_holder_t, Size > m_handlers;
 
 	template<
-		std::size_t Index,
 		typename Head,
 		typename... Tail >
 	void
-	store_to( Head && head, Tail && ...tail )
+	store_to( std::size_t index, Head && head, Tail && ...tail )
 	{
-		m_handlers[ Index ] =
+		m_handlers[ index ] =
 			[handler = std::move(head)]
 			( const actual_request_handle_t & req ) -> request_handling_status_t
 			{
@@ -186,7 +185,7 @@ class fixed_size_chain_t
 			};
 
 		if constexpr( 0u != sizeof...(tail) )
-			store_to< Index + 1u >( std::forward<Tail>(tail)... );
+			store_to( index + 1u, std::forward<Tail>(tail)... );
 	}
 
 public:
@@ -212,7 +211,7 @@ public:
 				"Wrong number of parameters for the constructor of "
 				"fixed_size_chain_t<Size>. Exact `Size` parameters expected" );
 
-		store_to< 0u >( std::forward<Handlers>(handlers)... );
+		store_to( 0u, std::forward<Handlers>(handlers)... );
 	}
 
 	[[nodiscard]]

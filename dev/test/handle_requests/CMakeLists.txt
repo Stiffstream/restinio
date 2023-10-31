@@ -24,3 +24,4 @@ add_subdirectory(connection_count_limit)
 add_subdirectory(user_data_simple)
 
 add_subdirectory(sync_chained_handlers)
+add_subdirectory(async_chained_handlers_1)
