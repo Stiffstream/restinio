@@ -31,6 +31,7 @@ class fixed_size_chain_t
 	using actual_on_next_result_t =
 			typename async_handling_controller_t< Extra_Data_Factory >::actual_on_next_result_t;
 
+	//FIXME: document this!
 	class actual_controller_t final
 		: public async_handling_controller_t< Extra_Data_Factory >
 	{
@@ -112,8 +113,6 @@ public:
 
 		store_to( 0u, std::forward<Handlers>(handlers)... );
 	}
-
-	//FIXME: constructor has to be defined here!
 
 	[[nodiscard]]
 	request_handling_status_t

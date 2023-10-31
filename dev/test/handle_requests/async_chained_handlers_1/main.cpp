@@ -6,6 +6,7 @@
 
 #include <restinio/all.hpp>
 #include <restinio/async_chain/fixed_size.hpp>
+#include <restinio/async_chain/growable_size.hpp>
 
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
@@ -273,43 +274,46 @@ TEST_CASE( "async_chain::fixed_size_chain_accept_in_middle (test_user_data)" ,
 	tc_fixed_size_chain_accept_in_middle< test::ud_factory_t >();
 }
 
-#if 0
 template< typename Extra_Data_Factory >
 void
 tc_growable_size_chain()
 {
-	using request_handler_t = 
-			restinio::sync_chain::growable_size_chain_t<
+	using request_handler_t =
+			restinio::async_chain::growable_size_chain_t<
 					Extra_Data_Factory
 			>;
 
 	using http_server_t = restinio::http_server_t<
 			test_traits_t< request_handler_t, Extra_Data_Factory >
-	>;
+		>;
 
 	int stages_completed = 0;
 
 	typename request_handler_t::builder_t handler_builder;
 
 	handler_builder.add(
-			[&stages_completed]( auto /*req*/ ) {
+			[&stages_completed]( auto controller ) {
 				++stages_completed;
-				return restinio::request_not_handled();
+				next( std::move(controller) );
+				return restinio::async_chain::ok();
 			} );
 	handler_builder.add(
-			[&stages_completed]( const auto & /*req*/ ) {
+			[&stages_completed]( auto controller ) {
 				++stages_completed;
-				return restinio::request_not_handled();
+				next( std::move(controller) );
+				return restinio::async_chain::ok();
 			} );
 	handler_builder.add(
-			[&stages_completed]( const auto & /*req*/ ) {
+			[&stages_completed]( auto controller ) {
 				++stages_completed;
-				return restinio::request_not_handled();
+				next( std::move(controller) );
+				return restinio::async_chain::ok();
 			} );
 	handler_builder.add(
-			[&stages_completed]( auto req ) {
+			[&stages_completed]( auto controller ) {
 				++stages_completed;
 
+				const auto req = controller->request_handle();
 				req->create_response()
 					.append_header( "Server", "RESTinio utest server" )
 					.append_header_date_field()
@@ -318,7 +322,7 @@ tc_growable_size_chain()
 						restinio::const_buffer( req->header().method().c_str() ) )
 					.done();
 
-				return restinio::request_accepted();
+				return restinio::async_chain::ok();
 			} );
 
 	http_server_t http_server{
@@ -351,24 +355,24 @@ tc_growable_size_chain()
 	REQUIRE( 4 == stages_completed );
 }
 
-TEST_CASE( "growable_size_chain (no_user_data)" ,
-		"[growable_size_chain][no_user_data]" )
+TEST_CASE( "async_chain::growable_size_chain (no_user_data)" ,
+		"[async_chain][growable_size_chain][no_user_data]" )
 {
 	tc_growable_size_chain< restinio::no_extra_data_factory_t >();
 }
 
-TEST_CASE( "growable_size_chain (test_user_data)" ,
-		"[growable_size_chain][test_user_data]" )
+TEST_CASE( "async_chain::growable_size_chain (test_user_data)" ,
+		"[async_chain][growable_size_chain][test_user_data]" )
 {
 	tc_growable_size_chain< test::ud_factory_t >();
 }
 
 template< typename Extra_Data_Factory >
 void
-tc_growable_size_chain_with_rejection()
+tc_growable_size_chain_with_failure()
 {
-	using request_handler_t = 
-			restinio::sync_chain::growable_size_chain_t<
+	using request_handler_t =
+			restinio::async_chain::growable_size_chain_t<
 					Extra_Data_Factory
 			>;
 
@@ -381,24 +385,27 @@ tc_growable_size_chain_with_rejection()
 	typename request_handler_t::builder_t handler_builder;
 
 	handler_builder.add(
-			[&stages_completed]( auto /*req*/ ) {
+			[&stages_completed]( auto controller ) {
 				++stages_completed;
-				return restinio::request_not_handled();
+				next( std::move(controller) );
+				return restinio::async_chain::ok();
 			} );
 	handler_builder.add(
-			[&stages_completed]( const auto & /*req*/ ) {
+			[&stages_completed]( auto /*controller*/ ) {
 				++stages_completed;
-				return restinio::request_rejected();
+				return restinio::async_chain::failure();
 			} );
 	handler_builder.add(
-			[&stages_completed]( const auto & /*req*/ ) {
+			[&stages_completed]( auto controller ) {
 				++stages_completed;
-				return restinio::request_not_handled();
+				next( std::move(controller) );
+				return restinio::async_chain::ok();
 			} );
 	handler_builder.add(
-			[&stages_completed]( auto req ) {
+			[&stages_completed]( auto controller ) {
 				++stages_completed;
 
+				const auto req = controller->request_handle();
 				req->create_response()
 					.append_header( "Server", "RESTinio utest server" )
 					.append_header_date_field()
@@ -407,7 +414,7 @@ tc_growable_size_chain_with_rejection()
 						restinio::const_buffer( req->header().method().c_str() ) )
 					.done();
 
-				return restinio::request_accepted();
+					return restinio::async_chain::ok();
 			} );
 
 	http_server_t http_server{
@@ -434,31 +441,31 @@ tc_growable_size_chain_with_rejection()
 	REQUIRE_NOTHROW( response = do_request( request_str ) );
 
 	REQUIRE_THAT( response,
-			Catch::Matchers::StartsWith( "HTTP/1.1 501 Not Implemented" ) );
+			Catch::Matchers::StartsWith( "HTTP/1.1 500 Internal Server Error" ) );
 
 	other_thread.stop_and_join();
 
 	REQUIRE( 2 == stages_completed );
 }
 
-TEST_CASE( "growable_size_chain_with_rejection (no_user_data)" ,
-		"[growable_size_chain][no_user_data]" )
+TEST_CASE( "async_chain::growable_size_chain_with_rejection (no_user_data)" ,
+		"[async_chain][growable_size_chain][no_user_data]" )
 {
-	tc_growable_size_chain_with_rejection< restinio::no_extra_data_factory_t >();
+	tc_growable_size_chain_with_failure< restinio::no_extra_data_factory_t >();
 }
 
-TEST_CASE( "growable_size_chain_with_rejection (test_user_data)" ,
-		"[growable_size_chain][test_user_data]" )
+TEST_CASE( "async_chain::growable_size_chain_with_rejection (test_user_data)" ,
+		"[async_chain][growable_size_chain][test_user_data]" )
 {
-	tc_growable_size_chain_with_rejection< test::ud_factory_t >();
+	tc_growable_size_chain_with_failure< test::ud_factory_t >();
 }
 
 template< typename Extra_Data_Factory >
 void
 tc_growable_size_chain_accept_in_middle()
 {
-	using request_handler_t = 
-			restinio::sync_chain::growable_size_chain_t<
+	using request_handler_t =
+			restinio::async_chain::growable_size_chain_t<
 					Extra_Data_Factory
 			>;
 
@@ -471,14 +478,16 @@ tc_growable_size_chain_accept_in_middle()
 	typename request_handler_t::builder_t handler_builder;
 
 	handler_builder.add(
-			[&stages_completed]( auto /*req*/ ) {
+			[&stages_completed]( auto controller ) {
 				++stages_completed;
-				return restinio::request_not_handled();
+				next( std::move(controller) );
+				return restinio::async_chain::ok();
 			} );
 	handler_builder.add(
-			[&stages_completed]( auto req ) {
+			[&stages_completed]( auto controller ) {
 				++stages_completed;
 
+				const auto req = controller->request_handle();
 				req->create_response()
 					.append_header( "Server", "RESTinio utest server" )
 					.append_header_date_field()
@@ -487,17 +496,18 @@ tc_growable_size_chain_accept_in_middle()
 						restinio::const_buffer( req->header().method().c_str() ) )
 					.done();
 
-				return restinio::request_accepted();
+				return restinio::async_chain::ok();
 			} );
 	handler_builder.add(
-			[&stages_completed]( const auto & /*req*/ ) {
+			[&stages_completed]( auto controller ) {
 				++stages_completed;
-				return restinio::request_rejected();
+				next( std::move(controller) );
+				return restinio::async_chain::ok();
 			} );
 	handler_builder.add(
-			[&stages_completed]( const auto & /*req*/ ) {
+			[&stages_completed]( auto controller ) {
 				++stages_completed;
-				return restinio::request_not_handled();
+				return restinio::async_chain::ok();
 			} );
 
 	http_server_t http_server{
@@ -530,17 +540,15 @@ tc_growable_size_chain_accept_in_middle()
 	REQUIRE( 2 == stages_completed );
 }
 
-TEST_CASE( "growable_size_chain_accept_in_middle (no_user_data)" ,
-		"[growable_size_chain][no_user_data]" )
+TEST_CASE( "async_chain::growable_size_chain_accept_in_middle (no_user_data)" ,
+		"[async_chain][growable_size_chain][no_user_data]" )
 {
 	tc_growable_size_chain_accept_in_middle< restinio::no_extra_data_factory_t >();
 }
 
-TEST_CASE( "growable_size_chain_accept_in_middle (test_user_data)" ,
-		"[growable_size_chain][test_user_data]" )
+TEST_CASE( "async_chain::growable_size_chain_accept_in_middle (test_user_data)" ,
+		"[async_chain][growable_size_chain][test_user_data]" )
 {
 	tc_growable_size_chain_accept_in_middle< test::ud_factory_t >();
 }
-
-#endif
 
