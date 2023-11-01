@@ -276,6 +276,73 @@ TEST_CASE( "async_chain::fixed_size_chain_accept_in_middle (test_user_data)" ,
 
 template< typename Extra_Data_Factory >
 void
+tc_fixed_size_chain_no_response()
+{
+	using http_server_t = restinio::http_server_t<
+			test_traits_t<
+					restinio::async_chain::fixed_size_chain_t<
+							2u, Extra_Data_Factory>,
+					Extra_Data_Factory >
+	>;
+
+	int stages_completed = 0;
+
+	http_server_t http_server{
+		restinio::own_io_context(),
+		[&stages_completed]( auto & settings ){
+			settings
+				.port( utest_default_port() )
+				.address( "127.0.0.1" )
+				.handle_request_timeout( std::chrono::milliseconds{ 750 } )
+				.request_handler(
+					[&stages_completed]( auto controller ) {
+						++stages_completed;
+						next( std::move(controller) );
+						return restinio::async_chain::ok();
+					},
+					[&stages_completed]( auto controller ) {
+						++stages_completed;
+						next( std::move(controller) );
+						return restinio::async_chain::ok();
+					} );
+		} };
+
+	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
+	other_thread.run();
+
+	std::string response;
+	const char * request_str =
+		"GET / HTTP/1.1\r\n"
+		"Host: 127.0.0.1\r\n"
+		"User-Agent: unit-test\r\n"
+		"Accept: */*\r\n"
+		"Connection: close\r\n"
+		"\r\n";
+
+	REQUIRE_NOTHROW( response = do_request( request_str ) );
+
+	REQUIRE_THAT( response,
+			Catch::Matchers::StartsWith( "HTTP/1.1 404 Not Found" ) );
+
+	other_thread.stop_and_join();
+
+	REQUIRE( 2 == stages_completed );
+}
+
+TEST_CASE( "async_chain::fixed_size_chain_no_response (no_user_data)" ,
+		"[async_chain][fixed_size_chain_no_response][no_user_data]" )
+{
+	tc_fixed_size_chain_no_response< restinio::no_extra_data_factory_t >();
+}
+
+TEST_CASE( "async_chain::fixed_size_chain_no_response (test_user_data)" ,
+		"[async_chain][fixed_size_chain_no_response][test_user_data]" )
+{
+	tc_fixed_size_chain_no_response< test::ud_factory_t >();
+}
+
+template< typename Extra_Data_Factory >
+void
 tc_growable_size_chain()
 {
 	using request_handler_t =
