@@ -877,11 +877,42 @@ class basic_server_settings_t
 		//! \}
 
 
-		//! Timers manager.
+		//! \name Timers manager.
 		//! \{
+		/*!
+		 * @brief Short alias for timer_manager type.
+		 */
 		using timer_manager_t = typename Traits::timer_manager_t;
+		/*!
+		 * @brief Short alias for type of a factory that creates
+		 * instances of timer_manager.
+		 */
 		using timer_factory_t = typename timer_manager_t::factory_t;
 
+		/*!
+		 * @brief Creates a factory object that will be used for creation
+		 * of an actual timer_manager instance.
+		 *
+		 * An instance of @a Traits::timer_manager_t::factory_t is created
+		 * dynamically. All @a params are passed to std::make_unique call
+		 * and will be forwarded to the constructor of @a timer_factory_t.
+		 *
+		 * Usage example:
+		 * @code
+		 * struct my_traits : public restinio::traits_t<
+		 * 	restinio::asio_timer_manager_t, my_logger >
+		 * {
+		 * 	using request_handler_t = ...; // Some request handler type.
+		 * };
+		 * ...
+		 * restinio::run(
+		 * 	restinio::on_this_thread<my_traits>()
+		 * 		.port(8080)
+		 * 		.address("localhost")
+		 * 		.timer_manager(std::chrono::milliseconds{250})
+		 * 		.request_handler(...));
+		 * @endcode
+		 */
 		template< typename... Params >
 		Derived &
 		timer_manager( Params &&... params ) &
@@ -891,6 +922,13 @@ class basic_server_settings_t
 					std::forward< Params >( params )... );
 		}
 
+		/*!
+		 * @brief Creates a factory object that will be used for creation
+		 * of an actual timer_manager instance.
+		 *
+		 * For more information and usage example see the documentation
+		 * for another overload.
+		 */
 		template< typename... Params >
 		Derived &&
 		timer_manager( Params &&... params ) &&
@@ -907,7 +945,7 @@ class basic_server_settings_t
 		}
 		//! \}
 
-		//! Logger.
+		//! \name Logger.
 		//! \{
 		using logger_t = typename Traits::logger_t;
 
@@ -936,7 +974,7 @@ class basic_server_settings_t
 		}
 		//! \}
 
-		//! Acceptor options setter.
+		//! \name Acceptor options setter.
 		//! \{
 		Derived &
 		acceptor_options_setter( acceptor_options_setter_t aos ) &
@@ -964,7 +1002,7 @@ class basic_server_settings_t
 		}
 		//! \}
 
-		//! Socket options setter.
+		//! \name Socket options setter.
 		//! \{
 		Derived &
 		socket_options_setter( socket_options_setter_t sos ) &
@@ -1055,7 +1093,7 @@ class basic_server_settings_t
 		}
 		//! \}
 
-		//! Cleanup function.
+		//! \name Cleanup function.
 		//! \{
 		template< typename Func >
 		Derived &
