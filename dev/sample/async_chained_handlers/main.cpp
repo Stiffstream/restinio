@@ -29,7 +29,7 @@ class auth_performer
 {
 	// Stuff for generate random delays.
 	std::mt19937 m_generator{ std::random_device{}() };
-	std::uniform_int_distribution<> m_pause_generator{ 350, 3500 };
+	std::uniform_int_distribution<> m_pause_generator{ 75, 750 };
 
 	// Chain for sending messages related to authentification processing.
 	const so_5::mchain_t m_processing_ch;
@@ -44,6 +44,12 @@ public:
 		restinio::async_chain::unique_async_handling_controller_t<> m_controller;
 	};
 
+	//FIXME: document this!
+	struct ask_for_credentials
+	{
+		restinio::async_chain::unique_async_handling_controller_t<> m_controller;
+	};
+
 	auth_performer( so_5::mchain_t processing_ch )
 		: m_processing_ch{ std::move(processing_ch) }
 	{}
@@ -52,8 +58,6 @@ public:
 		restinio::async_chain::unique_async_handling_controller_t<> controller )
 	{
 		const auto req = controller->request_handle();
-
-		bool should_call_next{ true };
 
 		if( restinio::http_method_get() == req->header().method() )
 		{
@@ -64,9 +68,6 @@ public:
 
 			if( "/admin" == target || "/stats" == target )
 			{
-				// Authentification has to be processed first.
-				should_call_next = false;
-
 				// Try to parse Authorization header.
 				using namespace restinio::http_field_parsers::basic_auth;
 
@@ -74,23 +75,30 @@ public:
 						restinio::http_field::authorization );
 				if( result )
 				{
+					const std::chrono::milliseconds pause{
+							m_pause_generator( m_generator )
+						};
 					// Imitate a delay in credential check.
 					so_5::send_delayed< so_5::mutable_msg< do_auth > >(
 							m_processing_ch,
-							std::chrono::milliseconds{ m_pause_generator( m_generator ) },
+							pause,
 							result->username,
 							result->password,
 							std::move(controller) );
 				}
 				else
 				{
-					generate_unauthorized_response( req );
+					// Ask for credentials without a pause.
+					so_5::send< so_5::mutable_msg<ask_for_credentials> >(
+							m_processing_ch,
+							std::move(controller) );
 				}
 			}
 		}
 
-		if( should_call_next )
-			// Switch to the next handler in the chain.
+		// If the controller still has a value then the next
+		// handler in the chain can be activated.
+		if( controller )
 			next( std::move(controller) );
 	}
 
@@ -103,17 +111,18 @@ public:
 		}
 		else
 		{
-			//FIXME: a pause has to be used before returning the response.
-			generate_unauthorized_response( cmd.m_controller->request_handle() );
+			// Take a pause before asking for new credentials.
+			so_5::send_delayed< so_5::mutable_msg<ask_for_credentials> >(
+					m_processing_ch,
+					std::chrono::milliseconds{ 1750 },
+					std::move(cmd.m_controller) );
 		}
 	}
 
-private:
-	void generate_unauthorized_response(
-		const restinio::request_handle_t & req )
+	void on_ask_for_credentials( ask_for_credentials & cmd )
 	{
-		// Just ask for credentials.
-		init_resp( req->create_response( restinio::status_unauthorized() ) )
+		init_resp( cmd.m_controller->request_handle()->create_response(
+				restinio::status_unauthorized() ) )
 			.append_header( restinio::http_field::content_type,
 					"text/plain; charset=utf-8" )
 			.append_header( restinio::http_field::www_authenticate,
@@ -207,7 +216,7 @@ struct do_processing
 void auth_thread_func(const so_5::mchain_t& req_ch)
 {
 	//FIXME: document this!
-	auto auth_ch = so_5::create_mchain( req_ch->environment() );
+	const auto auth_ch = so_5::create_mchain( req_ch->environment() );
 
 	//FIXME: document this!
 	auth_performer authorither{ auth_ch };
@@ -221,17 +230,18 @@ void auth_thread_func(const so_5::mchain_t& req_ch)
 			// A predicate for stopping select() function.
 			.stop_on( [&stop]{ return stop; } ),
 
-		// Read and handle handle_request messages from req_ch.
 		so_5::receive_case( req_ch,
 			[&]( so_5::mutable_mhood_t<do_processing> cmd ) {
 				authorither.on_incoming_request( std::move(cmd->m_controller) );
 			} ),
 
-		// Read and handle timeout_elapsed messages from delayed_ch.
 		so_5::receive_case( auth_ch,
 			[&]( so_5::mutable_mhood_t<auth_performer::do_auth> cmd ) {
 				authorither.on_do_auth( *cmd );
-			})
+			},
+			[&]( so_5::mutable_mhood_t<auth_performer::ask_for_credentials> cmd ) {
+				authorither.on_ask_for_credentials( *cmd );
+			} )
 	);
 }
 
