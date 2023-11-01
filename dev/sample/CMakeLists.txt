@@ -19,6 +19,7 @@ add_subdirectory(using_external_io_context)
 
 if ( RESTINIO_WITH_SOBJECTIZER )
 	add_subdirectory(async_handling_with_sobjectizer)
+	add_subdirectory(async_chained_handlers)
 endif()
 
 if (ZLIB_FOUND)
