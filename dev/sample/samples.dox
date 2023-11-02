@@ -42,6 +42,7 @@
  * \example sample/file_upload/main.cpp
  *
  * \example sample/chained_handlers/main.cpp
+ * \example sample/async_chained_handlers/main.cpp
  * \example sample/extra_data_factory/main.cpp
  */
 
