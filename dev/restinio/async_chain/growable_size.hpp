@@ -61,6 +61,7 @@ class growable_size_chain_t
 		const actual_request_handle_t &
 		request_handle() const noexcept override { return m_request; }
 
+	private:
 		[[nodiscard]]
 		actual_on_next_result_t
 		on_next() override
