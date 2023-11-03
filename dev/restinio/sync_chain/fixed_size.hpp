@@ -75,7 +75,7 @@ namespace sync_chain
  * An instance of `fixed_size_chain_t` can also be created manually and
  * passed to server's settings by `unique_ptr`:
  * @code
- * auto chain = std::make_unique<restinio::fixed_size_chain_t<3>>(
+ * auto chain = std::make_unique<restinio::sync_chain::fixed_size_chain_t<3>>(
  * 	headers_checker, authentificator, actual_handler);
  * ...
  * restinio::run(
