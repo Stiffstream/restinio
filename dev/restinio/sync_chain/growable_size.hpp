@@ -63,7 +63,7 @@ namespace sync_chain
  * }
  *
  * // Building of a chain.
- * restinio::sync_chain::growable_size_chain_t::builder_t builder;
+ * restinio::sync_chain::growable_size_chain_t<>::builder_t builder;
  * if(config.force_headers_checking())
  * 	builder.add(headers_checker);
  * if(config.force_user_authentification())

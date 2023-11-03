@@ -182,7 +182,7 @@ class fixed_size_chain_t
 	//! Short alias for a request handler.
 	using handler_holder_t = generic_async_request_handler_t< Extra_Data_Factory >;
 
-	//! Short alias for arrya of request handlers.
+	//! Short alias for an array of request handlers.
 	using handlers_array_t = std::array< handler_holder_t, Size >;
 
 	//! Short alias to a smart pointer to the source request.
