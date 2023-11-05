@@ -180,10 +180,10 @@ class fixed_size_chain_t
 	using unique_controller_t = unique_async_handling_controller_t< Extra_Data_Factory >;
 
 	//! Short alias for a request handler.
-	using handler_holder_t = generic_async_request_handler_t< Extra_Data_Factory >;
+	using scheduler_holder_t = generic_async_request_scheduler_t< Extra_Data_Factory >;
 
 	//! Short alias for an array of request handlers.
-	using handlers_array_t = std::array< handler_holder_t, Size >;
+	using schedulers_array_t = std::array< scheduler_holder_t, Size >;
 
 	//! Short alias to a smart pointer to the source request.
 	using actual_request_handle_t =
@@ -205,11 +205,11 @@ class fixed_size_chain_t
 		//! The source request.
 		const actual_request_handle_t m_request;
 		//! Request handlers.
-		handlers_array_t m_handlers;
+		schedulers_array_t m_schedulers;
 		//! Index of the current handler to be used.
 		/*!
 		 * @note
-		 * May be equal to or greater than m_handlers.size() in the case
+		 * May be equal to or greater than m_schedulers.size() in the case
 		 * when all handlers are already processed.
 		 */
 		std::size_t m_current{};
@@ -218,9 +218,9 @@ class fixed_size_chain_t
 		//! Initializing constructor.
 		explicit actual_controller_t(
 			actual_request_handle_t request,
-			const handlers_array_t & handlers )
+			const schedulers_array_t & schedulers )
 			:	m_request{ request }
-			,	m_handlers{ handlers }
+			,	m_schedulers{ schedulers }
 		{}
 
 		[[nodiscard]]
@@ -235,13 +235,13 @@ class fixed_size_chain_t
 			const auto index_to_use = m_current;
 			++m_current;
 
-			if( index_to_use >= m_handlers.size() )
+			if( index_to_use >= m_schedulers.size() )
 			{
-				return { no_more_handlers_t{} };
+				return { no_more_schedulers_t{} };
 			}
 			else
 			{
-				return { m_handlers[ index_to_use ] };
+				return { m_schedulers[ index_to_use ] };
 			}
 		}
 	};
@@ -251,20 +251,20 @@ class fixed_size_chain_t
 	 * @note
 	 * It's initialized in the constructor and then never changed.
 	 */
-	handlers_array_t m_handlers;
+	schedulers_array_t m_schedulers;
 
-	//! Helper method to initialize the array of request handlers.
+	//! Helper method to initialize the array of schedulers.
 	template<
 		typename Head,
 		typename... Tail >
 	void
 	store_to( std::size_t index, Head && head, Tail && ...tail )
 	{
-		m_handlers[ index ] =
-			[handler = std::move(head)]
+		m_schedulers[ index ] =
+			[scheduler = std::move(head)]
 			( unique_controller_t controller ) -> schedule_result_t
 			{
-				return handler( std::move(controller) );
+				return scheduler( std::move(controller) );
 			};
 
 		if constexpr( 0u != sizeof...(tail) )
@@ -287,14 +287,14 @@ public:
 	 * The number of parameters should match the value of @a Size
 	 * template parameter.
 	 */
-	template< typename... Handlers >
-	fixed_size_chain_t( Handlers && ...handlers )
+	template< typename... Schedulers >
+	fixed_size_chain_t( Schedulers && ...schedulers )
 	{
-		static_assert( Size == sizeof...(handlers),
+		static_assert( Size == sizeof...(schedulers),
 				"Wrong number of parameters for the constructor of "
 				"fixed_size_chain_t<Size>. Exact `Size` parameters expected" );
 
-		store_to( 0u, std::forward<Handlers>(handlers)... );
+		store_to( 0u, std::forward<Schedulers>(schedulers)... );
 	}
 
 	/*!
@@ -310,7 +310,7 @@ public:
 		unique_controller_t controller =
 				std::make_unique< actual_controller_t >(
 						req,
-						m_handlers );
+						m_schedulers );
 		next( std::move(controller) );
 
 		return request_accepted();

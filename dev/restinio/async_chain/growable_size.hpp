@@ -22,7 +22,7 @@ namespace restinio::async_chain
 // growable_size_chain_t
 //
 /*!
- * @brief A holder of variable-size chain of synchronous handlers.
+ * @brief A holder of variable-size chain of asynchronous handlers.
  *
  * @note
  * Once a list of handler is filled and an instance of growable_size_chain_t
@@ -181,14 +181,14 @@ class growable_size_chain_t
 	// for the friends of growable_size_chain_t.
 	struct creation_token_t {};
 
-	//! Short alias for a request handler.
+	//! Short alias for a handling controller.
 	using unique_controller_t = unique_async_handling_controller_t< Extra_Data_Factory >;
 
-	//! Short alias for a request handler.
-	using handler_holder_t = generic_async_request_handler_t< Extra_Data_Factory >;
+	//! Short alias for a scheduler.
+	using scheduler_holder_t = generic_async_request_scheduler_t< Extra_Data_Factory >;
 
-	//! Short alias for a vector of request handlers.
-	using handlers_vector_t = std::vector< handler_holder_t >;
+	//! Short alias for a vector of schedulers.
+	using schedulers_vector_t = std::vector< scheduler_holder_t >;
 
 	//! Short alias to a smart pointer to the source request.
 	using actual_request_handle_t =
@@ -210,11 +210,11 @@ class growable_size_chain_t
 		//! The source request.
 		const actual_request_handle_t m_request;
 		//! Request handlers.
-		handlers_vector_t m_handlers;
-		//! Index of the current handler to be used.
+		schedulers_vector_t m_schedulers;
+		//! Index of the current scheduler to be used.
 		/*!
 		 * @note
-		 * May be equal to or greater than m_handlers.size() in the case
+		 * May be equal to or greater than m_schedulers.size() in the case
 		 * when all handlers are already processed.
 		 */
 		std::size_t m_current{};
@@ -223,9 +223,9 @@ class growable_size_chain_t
 		//! Initializing constructor.
 		explicit actual_controller_t(
 			actual_request_handle_t request,
-			const handlers_vector_t & handlers )
+			const schedulers_vector_t & schedulers )
 			:	m_request{ request }
-			,	m_handlers{ handlers }
+			,	m_schedulers{ schedulers }
 		{}
 
 		[[nodiscard]]
@@ -240,13 +240,13 @@ class growable_size_chain_t
 			const auto index_to_use = m_current;
 			++m_current;
 
-			if( index_to_use >= m_handlers.size() )
+			if( index_to_use >= m_schedulers.size() )
 			{
-				return { no_more_handlers_t{} };
+				return { no_more_schedulers_t{} };
 			}
 			else
 			{
-				return { m_handlers[ index_to_use ] };
+				return { m_schedulers[ index_to_use ] };
 			}
 		}
 	};
@@ -292,20 +292,20 @@ public:
 		}
 
 		/*!
-		 * @brief Add a new handler to the chain.
+		 * @brief Add a new scheduler to the chain.
 		 */
-		template< typename Handler >
+		template< typename Scheduler >
 		void
-		add( Handler && handler )
+		add( Scheduler && scheduler )
 		{
 			if( !m_chain )
-				throw exception_t{ "an attempt to add a handler to "
+				throw exception_t{ "an attempt to add a scheduler to "
 						"a growable-size-chain builder that already "
 						"released"
 				};
-			m_chain->m_handlers.push_back(
-					growable_size_chain_t::handler_holder_t{
-							std::forward<Handler>(handler)
+			m_chain->m_schedulers.push_back(
+					growable_size_chain_t::scheduler_holder_t{
+							std::forward<Scheduler>(scheduler)
 					} );
 		}
 
@@ -315,7 +315,7 @@ public:
 
 private:
 	//! The vector of request handlers.
-	handlers_vector_t m_handlers;
+	schedulers_vector_t m_schedulers;
 
 	/*!
 	 * @brief The main constructor.
@@ -346,7 +346,7 @@ public:
 		unique_controller_t controller =
 				std::make_unique< actual_controller_t >(
 						req,
-						m_handlers );
+						m_schedulers );
 		next( std::move(controller) );
 
 		return request_accepted();

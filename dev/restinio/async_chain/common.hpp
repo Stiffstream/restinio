@@ -12,9 +12,9 @@ namespace restinio::async_chain
 {
 
 /*!
- * @brief Type for return value of async handler in a chain.
+ * @brief Type for return value of a scheduler in a chain.
  *
- * Async handler should schedule the actual processing of a request and should
+ * A scheduler should schedule the actual processing of a request and should
  * tell whether this scheduling was successful or not. If it was successful,
  * schedule_result_t::ok must be returned, otherwise the
  * schedule_result_t::failure must be returned.
@@ -85,12 +85,12 @@ using unique_async_handling_controller_t =
 	std::unique_ptr< async_handling_controller_t< Extra_Data_Factory > >;
 
 /*!
- * @brief Short alias for a type of handler to be used in async handlers chains.
+ * @brief Short alias for a type of a scheduler to be used in async chains.
  *
  * @since v.0.7.0
  */
 template< typename Extra_Data_Factory = no_extra_data_factory_t >
-using generic_async_request_handler_t =
+using generic_async_request_scheduler_t =
 	std::function<
 		schedule_result_t(unique_async_handling_controller_t<Extra_Data_Factory>)
 	>;
@@ -103,7 +103,7 @@ using generic_async_request_handler_t =
  *
  * @since v.0.7.0
  */
-struct no_more_handlers_t {};
+struct no_more_schedulers_t {};
 
 /*!
  * @brief Special type to be used as result of async_handling_controller's
@@ -117,8 +117,8 @@ struct no_more_handlers_t {};
  */
 template< typename Extra_Data_Factory = no_extra_data_factory_t >
 using on_next_result_t = std::variant<
-		generic_async_request_handler_t< Extra_Data_Factory >,
-		no_more_handlers_t
+		generic_async_request_scheduler_t< Extra_Data_Factory >,
+		no_more_schedulers_t
 	>;
 
 // Just a forward declaration.
@@ -127,7 +127,7 @@ void
 next( unique_async_handling_controller_t< Extra_Data_Factory > controller );
 
 /*!
- * @brief Interface of a controller of an async handlers chan.
+ * @brief Interface of a controller of an async chan.
  *
  * All actual controllers have to implement this interface.
  *
@@ -154,9 +154,9 @@ public:
 	using actual_request_handle_t =
 			generic_request_handle_t< typename Extra_Data_Factory::data_t >;
 
-	//! Short alias for async_request_handler type.
-	using actual_async_request_handler_t =
-			generic_async_request_handler_t< typename Extra_Data_Factory::data_t >;
+	//! Short alias for async_request_scheduler type.
+	using actual_async_request_scheduler_t =
+			generic_async_request_scheduler_t< typename Extra_Data_Factory::data_t >;
 
 	//! Short alias for the result type of %on_next method.
 	using actual_on_next_result_t =
@@ -192,7 +192,7 @@ private:
 	 *
 	 * Implementation of async_handling_controller_t should switch to the
 	 * next handler in the chain and return the handler to be called next.
-	 * If there are no such handlers, no_more_handlers_t must be returned.
+	 * If there are no such handlers, no_more_schedulers_t must be returned.
 	 *
 	 * @note
 	 * This method is intended to be called by next() function.
@@ -242,11 +242,11 @@ make_internal_server_error_response( const Request_Handle & req )
 /*!
  * @brief Helper type to be used as handler of variant values in std::visit.
  *
- * If there is the next async handler to be called it will be called.
+ * If there is the next async scheduler to be called it will be called.
  * If it returns schedule_result_t::failure, then negative response will
  * be generated and processing will be stopped.
  *
- * If no_more_handlers_t is here, then negative response will be generated.
+ * If no_more_schedulers_t is here, then negative response will be generated.
  *
  * @since v.0.7.0
  */
@@ -257,7 +257,7 @@ struct on_next_result_visitor_t
 
 	void
 	operator()(
-		const generic_async_request_handler_t< Extra_Data_Factory > & handler ) const
+		const generic_async_request_scheduler_t< Extra_Data_Factory > & handler ) const
 	{
 		// We have to store request_handle before further processing because
 		// m_controller becomes empty after passing to the `handler`.
@@ -279,7 +279,7 @@ struct on_next_result_visitor_t
 
 	void
 	operator()(
-		const no_more_handlers_t & ) const
+		const no_more_schedulers_t & ) const
 	{
 		make_not_implemented_response( m_controller->request_handle() );
 	}
