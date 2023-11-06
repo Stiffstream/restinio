@@ -4,7 +4,7 @@
 
 #include <catch2/catch_all.hpp>
 
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 #include <restinio/websocket/websocket.hpp>
 
 #include <test/common/utest_logger.hpp>

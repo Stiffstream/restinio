@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 
 #include <fmt/format.h>
 

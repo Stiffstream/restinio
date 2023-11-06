@@ -8,7 +8,7 @@
 
 #include <catch2/catch_all.hpp>
 
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 #include <restinio/websocket/websocket.hpp>
 #include <restinio/utils/base64.hpp>
 #include <restinio/utils/sha1.hpp>

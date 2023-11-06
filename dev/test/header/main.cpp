@@ -11,7 +11,7 @@
 #include <iterator>
 #include <set>
 
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 
 using namespace restinio;
 

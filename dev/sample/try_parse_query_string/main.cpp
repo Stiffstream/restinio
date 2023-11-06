@@ -2,7 +2,7 @@
 #include <string>
 #include <iterator>
 
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 
 using namespace std::string_literals;
 

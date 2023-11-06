@@ -1,4 +1,4 @@
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 #include <restinio/router/boost_regex_engine.hpp>
 
 #define RESTINIO_EXPRESS_ROUTER_BENCH_APP_TITLE "Express router (boost_regex) benchmark"

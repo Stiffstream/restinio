@@ -6,7 +6,7 @@
 #include <random>
 #include <fstream>
 
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 
 #include <restinio/helpers/file_upload.hpp>
 

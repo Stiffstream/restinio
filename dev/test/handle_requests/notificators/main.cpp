@@ -8,7 +8,7 @@
 
 #include <catch2/catch_all.hpp>
 
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>

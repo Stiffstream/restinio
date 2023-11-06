@@ -1,4 +1,4 @@
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 
 int main()
 {

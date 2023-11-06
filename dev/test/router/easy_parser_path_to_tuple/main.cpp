@@ -10,7 +10,7 @@
 
 #include <iterator>
 
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 #include <restinio/router/easy_parser_router.hpp>
 
 using namespace restinio;

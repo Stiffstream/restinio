@@ -10,7 +10,7 @@
 
 #include <iterator>
 
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 
 #include "../../common/test_extra_data_factory.ipp"
 

@@ -8,7 +8,7 @@
 
 #include <catch2/catch_all.hpp>
 
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 
 class tagged_object_t
 {

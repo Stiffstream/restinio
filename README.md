@@ -13,7 +13,7 @@ RESTinio represents our solution for that task. Currently it is in stable beta s
 Lets see how it feels like in the simplest case:
 
 ```C++
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 int main()
 {
     restinio::run(
@@ -60,7 +60,7 @@ so you can apply a complex logic for handling requests.
 # Enhanced Example With Express Router
 
 ```C++
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 
 using namespace restinio;
 

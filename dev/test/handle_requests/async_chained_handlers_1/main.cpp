@@ -4,7 +4,7 @@
 
 #include <catch2/catch_all.hpp>
 
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 #include <restinio/async_chain/fixed_size.hpp>
 #include <restinio/async_chain/growable_size.hpp>
 

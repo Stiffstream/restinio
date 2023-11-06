@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 
 // Create request handler.
 auto create_request_handler( const std::string& tag )

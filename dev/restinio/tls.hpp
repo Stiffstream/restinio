@@ -23,7 +23,7 @@ namespace connection_state
  * @note
  * You have to manually include `restinio/tls.hpp` to get the definition
  * of that class. This definition is not present if you include only
- * `restinio/all.hpp`
+ * `restinio/core.hpp`
  *
  * @since v.0.6.0
  */

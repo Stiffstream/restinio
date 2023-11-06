@@ -1,4 +1,4 @@
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 
 #include <so_5/all.hpp>
 

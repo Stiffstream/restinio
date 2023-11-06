@@ -1,6 +1,6 @@
 #pragma once
 
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 
 class dummy_connection_t : public restinio::impl::connection_base_t
 {

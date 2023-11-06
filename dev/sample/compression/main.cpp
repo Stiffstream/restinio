@@ -5,7 +5,7 @@
 #include <iostream>
 #include <random>
 
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 #include <restinio/transforms/zlib.hpp>
 #include <restinio/helpers/http_field_parsers/accept-encoding.hpp>
 

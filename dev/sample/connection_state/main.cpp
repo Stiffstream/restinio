@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 
 // Class for connection state listener.
 class connection_listener_t

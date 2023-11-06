@@ -16,7 +16,7 @@
 
 #include <restinio/impl/include_fmtlib.hpp>
 
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 #include <restinio/impl/executor_wrapper.hpp>
 #include <restinio/impl/write_group_output_ctx.hpp>
 #include <restinio/websocket/message.hpp>

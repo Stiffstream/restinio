@@ -1,7 +1,7 @@
 #include <iostream>
 #include <map>
 
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 
 #include <fmt/format.h>
 

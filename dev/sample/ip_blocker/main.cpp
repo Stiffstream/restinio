@@ -3,7 +3,7 @@
 #include <map>
 #include <vector>
 
-#include <restinio/all.hpp>
+#include <restinio/core.hpp>
 
 // Class for connection state listener and IP-blocker.
 class blocker_t
