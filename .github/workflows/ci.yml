@@ -5,7 +5,7 @@ name: CI
 
 on:
   push:
-    branches: ["master"]
+    branches: ["master", "0.7-dev"]
   pull_request:
 
 jobs:
@@ -77,61 +77,81 @@ jobs:
 
   Build-Linux:
     # The type of runner that the job will run on
-    name: Ubuntu-22.04 (${{ matrix.compiler.cname }}, ${{ matrix.build_type }}, C++${{ matrix.compiler.cppstd }})
+    name: Ubuntu-22.04 (${{ matrix.build_settings.toolset }}-${{ matrix.build_settings.toolset_version }}, ${{ matrix.build_type }}, C++${{ matrix.build_settings.cppstd }}, ${{matrix.build_settings.asio_source}} asio)
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        compiler:
-          - cname: gcc-9
-            cxxname: g++-9
-            ar: gcc-ar-9
+        build_settings:
+          - toolset: gcc
+            toolset_version: 9
             cppstd: 17
+            asio_source: standalone
 
-          - cname: gcc-12
-            cxxname: g++-12
-            ar: gcc-ar-12
+          - toolset: gcc
+            toolset_version: 9
             cppstd: 17
-          - cname: gcc-12
-            cxxname: g++-12
-            ar: gcc-ar-12
+            asio_source: boost
+
+          - toolset: gcc
+            toolset_version: 12
+            cppstd: 17
+            asio_source: standalone
+          - toolset: gcc
+            toolset_version: 12
             cppstd: 20
-
-          - cname: clang-13
-            cxxname: clang++-13
-            ar: llvm-ar-13
-            cppstd: 17
-
-          - cname: clang-15
-            cxxname: clang++-15
-            ar: llvm-ar-15
-            cppstd: 17
-          - cname: clang-15
-            cxxname: clang++-15
-            ar: llvm-ar-15
+            asio_source: standalone
+          - toolset: gcc
+            toolset_version: 12
             cppstd: 20
+            asio_source: boost
+
+          - toolset: clang
+            toolset_version: 13
+            cppstd: 17
+            asio_source: standalone
+
+          - toolset: clang
+            toolset_version: 15
+            cppstd: 17
+            asio_source: standalone
+          - toolset: clang
+            toolset_version: 15
+            cppstd: 20
+            asio_source: standalone
 
         build_type:
           - Release
           - Debug
     env:
-      CC: ${{ matrix.compiler.cname }}
-      CXX: ${{ matrix.compiler.cxxname }}
-      AR: ${{ matrix.compiler.ar }}
-      RESTINIO_BUILD_DIR: _build_${{ matrix.compiler.cname }}_cpp${{ matrix.compiler.cppstd }}_${{ matrix.build_type }}
+      RESTINIO_BUILD_TAG: ${{ matrix.build_settings.toolset }}-${{ matrix.build_settings.toolset_version }}_cpp${{ matrix.build_settings.cppstd }}_${{ matrix.build_type }}_${{matrix.build_settings.asio_source}}_asio
     steps:
       - uses: actions/checkout@v3
 
-      - name: Print env
+      - name: Prepare env
         run: |
           echo github.event.action: ${{ github.event.action }}
           echo github.event_name: ${{ github.event_name }}
+          echo "RESTINIO_BUILD_DIR=_build_${RESTINIO_BUILD_TAG}" >> $GITHUB_ENV
+          echo "CC=${{ matrix.build_settings.toolset }}-${{ matrix.build_settings.toolset_version }}" >> $GITHUB_ENV
+          if [ "${{ matrix.build_settings.toolset }}" == "gcc" ]; then
+              echo "CXX=g++-${{ matrix.build_settings.toolset_version }}" >> $GITHUB_ENV
+              echo "AR=gcc-ar-${{ matrix.build_settings.toolset_version }}" >> $GITHUB_ENV
+          else
+              echo "CXX=clang++-${{ matrix.build_settings.toolset_version }}" >> $GITHUB_ENV
+              echo "AR=llvm-ar-${{ matrix.build_settings.toolset_version }}" >> $GITHUB_ENV
+          fi
 
       - name: Install dependencies
         run: |
           sudo gem install Mxx_ru
 
-      - name: Configure
+
+        # run: |
+        #   sudo apt-get update && sudo apt-get install -y libboost-all-dev
+
+      - name: Configure (standalone ASIO)
+        if: ${{ matrix.build_settings.asio_source == 'standalone' }}
         shell: bash
         run: |
           mxxruexternals
@@ -139,8 +159,33 @@ jobs:
           cmake \
             -B ${RESTINIO_BUILD_DIR} \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DRESTINIO_EXPLICIT_CPPSTD=${{ matrix.compiler.cppstd }} \
-            -DRESTINIO_TEST_SUFFIX=" [${{ matrix.compiler.cname }}_cpp${{ matrix.compiler.cppstd }}_${{ matrix.build_type }}]"
+            -DRESTINIO_EXPLICIT_CPPSTD=${{ matrix.build_settings.cppstd }} \
+            -DRESTINIO_TEST_SUFFIX=" [${RESTINIO_BUILD_TAG}]"
+
+      - name: Obtain Boost
+        if: ${{ matrix.build_settings.asio_source == 'boost' }}
+        uses: MarkusJx/install-boost@v2.4.4
+        id: install-boost
+        with:
+            boost_version: 1.83.0
+            boost_install_dir: ${{github.workspace}}/local_boost
+            toolset: ${{ matrix.build_settings.toolset }}
+            platform_version: 22.04
+
+      - name: Configure (Boost ASIO)
+        if: ${{ matrix.build_settings.asio_source == 'boost' }}
+        shell: bash
+        run: |
+          mxxruexternals
+          cd dev
+          cmake \
+            -B ${RESTINIO_BUILD_DIR} \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DRESTINIO_EXPLICIT_CPPSTD=${{ matrix.build_settings.cppstd }} \
+            -DRESTINIO_ASIO_SOURCE=boost \
+            -DBOOST_ROOT=${{ steps.install-boost.outputs.BOOST_ROOT }} \
+            -DRESTINIO_TEST_SUFFIX=" [${RESTINIO_BUILD_TAG}]"
+
       - name: Build
         working-directory: ./dev
         shell: bash

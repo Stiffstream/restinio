@@ -77,6 +77,8 @@ elseif (RESTINIO_ASIO_SOURCE STREQUAL "boost")
                 "Unable to identify how to depend on Boost::asio. "
                 "Giving up...")
     endif ()
+
+    target_compile_definitions(${RESTINIO_LIBRARY_NAME} INTERFACE RESTINIO_USE_BOOST_ASIO)
 else ()
     message(FATAL_ERROR "Invalid value for RESTINIO_ASIO_SOURCE (${RESTINIO_ASIO_SOURCE})")
 endif ()
