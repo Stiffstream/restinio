@@ -148,12 +148,12 @@ jobs:
         run: |
           sudo gem install Mxx_ru
 
-      - name: Install Boost
-        if: ${{ matrix.build_settings.asio_source == 'boost' }}
-        run: |
-          sudo apt-get update && sudo apt-get install -y libboost-all-dev
 
-      - name: Configure
+        # run: |
+        #   sudo apt-get update && sudo apt-get install -y libboost-all-dev
+
+      - name: Configure (standalone ASIO)
+        if: ${{ matrix.build_settings.asio_source == 'standalone' }}
         shell: bash
         run: |
           mxxruexternals
@@ -162,8 +162,32 @@ jobs:
             -B ${RESTINIO_BUILD_DIR} \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DRESTINIO_EXPLICIT_CPPSTD=${{ matrix.build_settings.cppstd }} \
-            -DRESTINIO_ASIO_SOURCE=${{matrix.build_settings.asio_source}} \
             -DRESTINIO_TEST_SUFFIX=" [${{ matrix.build_settings.cname }}_cpp${{ matrix.build_settings.cppstd }}_${{ matrix.build_type }}]"
+
+      - name: Obtain Boost
+        if: ${{ matrix.build_settings.asio_source == 'boost' }}
+        uses: MarkusJx/install-boost@v2.4.4
+        id: install-boost
+          with:
+            boost_version: 1.83.0
+            boost_install_dir: ${{github.workspace}}/local_boost
+            toolset: ${{ matrix.build_settings.cname }}
+            platform_version: 22.04
+
+      - name: Configure (Boost ASIO)
+        if: ${{ matrix.build_settings.asio_source == 'boost' }}
+        shell: bash
+        run: |
+          mxxruexternals
+          cd dev
+          cmake \
+            -B ${RESTINIO_BUILD_DIR} \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DRESTINIO_EXPLICIT_CPPSTD=${{ matrix.build_settings.cppstd }} \
+            -DRESTINIO_ASIO_SOURCE=boost \
+            -DBOOST_ROOT=${{ steps.install-boost.outputs.BOOST_ROOT }} \
+            -DRESTINIO_TEST_SUFFIX=" [${{ matrix.build_settings.cname }}_cpp${{ matrix.build_settings.cppstd }}_${{ matrix.build_type }}]"
+
       - name: Build
         working-directory: ./dev
         shell: bash
