@@ -77,62 +77,46 @@ jobs:
 
   Build-Linux:
     # The type of runner that the job will run on
-    name: Ubuntu-22.04 (${{ matrix.build_settings.cname }}, ${{ matrix.build_type }}, C++${{ matrix.build_settings.cppstd }}, ${{matrix.build_settings.asio_source}} asio)
+    name: Ubuntu-22.04 (${{ matrix.build_settings.toolset }}-${{ matrix.build_settings.toolset_version }}, ${{ matrix.build_type }}, C++${{ matrix.build_settings.cppstd }}, ${{matrix.build_settings.asio_source}} asio)
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         build_settings:
-          - cname: gcc
-            cxxname: g++
-            ar: gcc-ar
-            cversion: 9
+          - toolset: gcc
+            toolset_version: 9
             cppstd: 17
             asio_source: standalone
 
-          - cname: gcc-9
-            cxxname: g++-9
-            ar: gcc-ar-9
-            cversion: 9
+          - toolset: gcc
+            toolset_version: 9
             cppstd: 17
             asio_source: boost
 
-          - cname: gcc
-            cxxname: g++
-            ar: gcc-ar
-            cversion: 12
+          - toolset: gcc
+            toolset_version: 12
             cppstd: 17
             asio_source: standalone
-          - cname: gcc
-            cxxname: g++
-            ar: gcc-ar
-            cversion: 12
+          - toolset: gcc
+            toolset_version: 12
             cppstd: 20
             asio_source: standalone
-          - cname: gcc
-            cxxname: g++
-            ar: gcc-ar
-            cversion: 12
+          - toolset: gcc
+            toolset_version: 12
             cppstd: 20
             asio_source: boost
 
-          - cname: clang
-            cxxname: clang++
-            ar: llvm-ar
-            cversion: 13
+          - toolset: clang
+            toolset_version: 13
             cppstd: 17
             asio_source: standalone
 
-          - cname: clang
-            cxxname: clang++
-            ar: llvm-ar
-            cversion: 15
+          - toolset: clang
+            toolset_version: 15
             cppstd: 17
             asio_source: standalone
-          - cname: clang
-            cxxname: clang++
-            ar: llvm-ar
-            cversion: 15
+          - toolset: clang
+            toolset_version: 15
             cppstd: 20
             asio_source: standalone
 
@@ -140,18 +124,23 @@ jobs:
           - Release
           - Debug
     env:
-      CC: ${{ matrix.build_settings.cname }}-${{ matrix.build_settings.cversion }}
-      CXX: ${{ matrix.build_settings.cxxname }}-${{ matrix.build_settings.cversion }}
-      AR: ${{ matrix.build_settings.ar }}-${{ matrix.build_settings.cversion }}
-      RESTINIO_BUILD_TAG: ${{ matrix.build_settings.cname }}-${{ matrix.build_settings.cversion }}_cpp${{ matrix.build_settings.cppstd }}_${{ matrix.build_type }}_${{matrix.build_settings.asio_source}}_asio
+      RESTINIO_BUILD_TAG: ${{ matrix.build_settings.toolset }}-${{ matrix.build_settings.toolset_version }}_cpp${{ matrix.build_settings.cppstd }}_${{ matrix.build_type }}_${{matrix.build_settings.asio_source}}_asio
     steps:
       - uses: actions/checkout@v3
 
       - name: Prepare env
         run: |
-          echo "RESTINIO_BUILD_DIR=_build_${RESTINIO_BUILD_TAG}" >> $GITHUB_ENV
           echo github.event.action: ${{ github.event.action }}
           echo github.event_name: ${{ github.event_name }}
+          echo "RESTINIO_BUILD_DIR=_build_${RESTINIO_BUILD_TAG}" >> $GITHUB_ENV
+          echo "CC=${{ matrix.build_settings.toolset }}-${{ matrix.build_settings.toolset_version }}" >> $GITHUB_ENV
+          if [ "${{ matrix.build_settings.toolset }}" != "gcc" ]; then
+              echo "CXX=g++-${{ matrix.build_settings.toolset_version }}" >> $GITHUB_ENV
+              echo "AR=gcc-ar-${{ matrix.build_settings.toolset_version }}" >> $GITHUB_ENV
+          else
+              echo "CXX=clang++-${{ matrix.build_settings.toolset_version }}" >> $GITHUB_ENV
+              echo "AR=llvm-ar-${{ matrix.build_settings.toolset_version }}" >> $GITHUB_ENV
+          fi
 
       - name: Install dependencies
         run: |
@@ -180,7 +169,7 @@ jobs:
         with:
             boost_version: 1.83.0
             boost_install_dir: ${{github.workspace}}/local_boost
-            toolset: ${{ matrix.build_settings.cname }}
+            toolset: ${{ matrix.build_settings.toolset }}
             platform_version: 22.04
 
       - name: Configure (Boost ASIO)
