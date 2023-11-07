@@ -83,48 +83,56 @@ jobs:
       fail-fast: false
       matrix:
         build_settings:
+          - cname: gcc
+            cxxname: g++
+            ar: gcc-ar
+            cversion: 9
+            cppstd: 17
+            asio_source: standalone
+
           - cname: gcc-9
             cxxname: g++-9
             ar: gcc-ar-9
-            cppstd: 17
-            asio_source: standalone
-
-          - cname: gcc-9
-            cxxname: g++-12
-            ar: gcc-ar-12
+            cversion: 9
             cppstd: 17
             asio_source: boost
 
-          - cname: gcc-12
-            cxxname: g++-12
-            ar: gcc-ar-12
+          - cname: gcc
+            cxxname: g++
+            ar: gcc-ar
+            cversion: 12
             cppstd: 17
             asio_source: standalone
-          - cname: gcc-12
-            cxxname: g++-12
-            ar: gcc-ar-12
+          - cname: gcc
+            cxxname: g++
+            ar: gcc-ar
+            cversion: 12
             cppstd: 20
             asio_source: standalone
-          - cname: gcc-12
-            cxxname: g++-12
-            ar: gcc-ar-12
+          - cname: gcc
+            cxxname: g++
+            ar: gcc-ar
+            cversion: 12
             cppstd: 20
             asio_source: boost
 
-          - cname: clang-13
-            cxxname: clang++-13
-            ar: llvm-ar-13
+          - cname: clang
+            cxxname: clang++
+            ar: llvm-ar
+            cversion: 13
             cppstd: 17
             asio_source: standalone
 
-          - cname: clang-15
-            cxxname: clang++-15
-            ar: llvm-ar-15
+          - cname: clang
+            cxxname: clang++
+            ar: llvm-ar
+            cversion: 15
             cppstd: 17
             asio_source: standalone
-          - cname: clang-15
-            cxxname: clang++-15
-            ar: llvm-ar-15
+          - cname: clang
+            cxxname: clang++
+            ar: llvm-ar
+            cversion: 15
             cppstd: 20
             asio_source: standalone
 
@@ -132,15 +140,16 @@ jobs:
           - Release
           - Debug
     env:
-      CC: ${{ matrix.build_settings.cname }}
-      CXX: ${{ matrix.build_settings.cxxname }}
-      AR: ${{ matrix.build_settings.ar }}
-      RESTINIO_BUILD_DIR: _build_${{ matrix.build_settings.cname }}_cpp${{ matrix.build_settings.cppstd }}_${{ matrix.build_type }}_${{matrix.build_settings.asio_source}}_asio
+      CC: ${{ matrix.build_settings.cname }}-${{ matrix.build_settings.cversion }}
+      CXX: ${{ matrix.build_settings.cxxname }}-${{ matrix.build_settings.cversion }}
+      AR: ${{ matrix.build_settings.ar }}-${{ matrix.build_settings.cversion }}
+      RESTINIO_BUILD_TAG: ${{ matrix.build_settings.cname }}-${{ matrix.build_settings.cversion }}_cpp${{ matrix.build_settings.cppstd }}_${{ matrix.build_type }}_${{matrix.build_settings.asio_source}}_asio
     steps:
       - uses: actions/checkout@v3
 
-      - name: Print env
+      - name: Prepare env
         run: |
+          echo "RESTINIO_BUILD_DIR=_build_${RESTINIO_BUILD_TAG}" >> $GITHUB_ENV
           echo github.event.action: ${{ github.event.action }}
           echo github.event_name: ${{ github.event_name }}
 
@@ -162,7 +171,7 @@ jobs:
             -B ${RESTINIO_BUILD_DIR} \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DRESTINIO_EXPLICIT_CPPSTD=${{ matrix.build_settings.cppstd }} \
-            -DRESTINIO_TEST_SUFFIX=" [${{ matrix.build_settings.cname }}_cpp${{ matrix.build_settings.cppstd }}_${{ matrix.build_type }}]"
+            -DRESTINIO_TEST_SUFFIX=" [${RESTINIO_BUILD_TAG}]"
 
       - name: Obtain Boost
         if: ${{ matrix.build_settings.asio_source == 'boost' }}
@@ -186,7 +195,7 @@ jobs:
             -DRESTINIO_EXPLICIT_CPPSTD=${{ matrix.build_settings.cppstd }} \
             -DRESTINIO_ASIO_SOURCE=boost \
             -DBOOST_ROOT=${{ steps.install-boost.outputs.BOOST_ROOT }} \
-            -DRESTINIO_TEST_SUFFIX=" [${{ matrix.build_settings.cname }}_cpp${{ matrix.build_settings.cppstd }}_${{ matrix.build_type }}]"
+            -DRESTINIO_TEST_SUFFIX=" [${RESTINIO_BUILD_TAG}]"
 
       - name: Build
         working-directory: ./dev
