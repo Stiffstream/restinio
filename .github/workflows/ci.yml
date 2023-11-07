@@ -5,7 +5,7 @@ name: CI
 
 on:
   push:
-    branches: ["master"]
+    branches: ["master", "0.7-dev"]
   pull_request:
 
 jobs:
