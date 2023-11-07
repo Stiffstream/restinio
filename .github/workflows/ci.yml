@@ -77,48 +77,65 @@ jobs:
 
   Build-Linux:
     # The type of runner that the job will run on
-    name: Ubuntu-22.04 (${{ matrix.compiler.cname }}, ${{ matrix.build_type }}, C++${{ matrix.compiler.cppstd }})
+    name: Ubuntu-22.04 (${{ matrix.build_settings.cname }}, ${{ matrix.build_type }}, C++${{ matrix.build_settings.cppstd }}, ${{matrix.build_settings.asio_source}} asio)
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        compiler:
+        build_settings:
           - cname: gcc-9
             cxxname: g++-9
             ar: gcc-ar-9
             cppstd: 17
+            asio_source: standalone
+
+          - cname: gcc-9
+            cxxname: g++-12
+            ar: gcc-ar-12
+            cppstd: 17
+            asio_source: boost
 
           - cname: gcc-12
             cxxname: g++-12
             ar: gcc-ar-12
             cppstd: 17
+            asio_source: standalone
           - cname: gcc-12
             cxxname: g++-12
             ar: gcc-ar-12
             cppstd: 20
+            asio_source: standalone
+          - cname: gcc-12
+            cxxname: g++-12
+            ar: gcc-ar-12
+            cppstd: 20
+            asio_source: boost
 
           - cname: clang-13
             cxxname: clang++-13
             ar: llvm-ar-13
             cppstd: 17
+            asio_source: standalone
 
           - cname: clang-15
             cxxname: clang++-15
             ar: llvm-ar-15
             cppstd: 17
+            asio_source: standalone
           - cname: clang-15
             cxxname: clang++-15
             ar: llvm-ar-15
             cppstd: 20
+            asio_source: standalone
 
         build_type:
           - Release
           - Debug
     env:
-      CC: ${{ matrix.compiler.cname }}
-      CXX: ${{ matrix.compiler.cxxname }}
-      AR: ${{ matrix.compiler.ar }}
-      RESTINIO_BUILD_DIR: _build_${{ matrix.compiler.cname }}_cpp${{ matrix.compiler.cppstd }}_${{ matrix.build_type }}
+      CC: ${{ matrix.build_settings.cname }}
+      CXX: ${{ matrix.build_settings.cxxname }}
+      AR: ${{ matrix.build_settings.ar }}
+      RESTINIO_BUILD_DIR: _build_${{ matrix.build_settings.cname }}_cpp${{ matrix.build_settings.cppstd }}_${{ matrix.build_type }}_${{matrix.build_settings.asio_source}}_asio
     steps:
       - uses: actions/checkout@v3
 
@@ -131,6 +148,11 @@ jobs:
         run: |
           sudo gem install Mxx_ru
 
+      - name: Install Boost
+        if: ${{ matrix.build_settings.asio_source == 'boost' }}
+        run: |
+          sudo apt-get update && sudo apt-get install -y libboost-all-dev
+
       - name: Configure
         shell: bash
         run: |
@@ -139,8 +161,9 @@ jobs:
           cmake \
             -B ${RESTINIO_BUILD_DIR} \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DRESTINIO_EXPLICIT_CPPSTD=${{ matrix.compiler.cppstd }} \
-            -DRESTINIO_TEST_SUFFIX=" [${{ matrix.compiler.cname }}_cpp${{ matrix.compiler.cppstd }}_${{ matrix.build_type }}]"
+            -DRESTINIO_EXPLICIT_CPPSTD=${{ matrix.build_settings.cppstd }} \
+            -DRESTINIO_ASIO_SOURCE=${{matrix.build_settings.asio_source}} \
+            -DRESTINIO_TEST_SUFFIX=" [${{ matrix.build_settings.cname }}_cpp${{ matrix.build_settings.cppstd }}_${{ matrix.build_type }}]"
       - name: Build
         working-directory: ./dev
         shell: bash
