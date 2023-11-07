@@ -134,7 +134,7 @@ jobs:
           echo github.event_name: ${{ github.event_name }}
           echo "RESTINIO_BUILD_DIR=_build_${RESTINIO_BUILD_TAG}" >> $GITHUB_ENV
           echo "CC=${{ matrix.build_settings.toolset }}-${{ matrix.build_settings.toolset_version }}" >> $GITHUB_ENV
-          if [ "${{ matrix.build_settings.toolset }}" != "gcc" ]; then
+          if [ "${{ matrix.build_settings.toolset }}" == "gcc" ]; then
               echo "CXX=g++-${{ matrix.build_settings.toolset_version }}" >> $GITHUB_ENV
               echo "AR=gcc-ar-${{ matrix.build_settings.toolset_version }}" >> $GITHUB_ENV
           else
