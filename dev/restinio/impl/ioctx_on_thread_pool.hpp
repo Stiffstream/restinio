@@ -59,6 +59,21 @@ public:
 	auto & io_context() noexcept { return m_ioctx; }
 };
 
+namespace pool_size_checking
+{
+
+[[nodiscard]]
+inline std::size_t
+ensure_pool_size_non_zero( std::size_t pool_size )
+{
+	if( !pool_size )
+		throw exception_t{ "pool_size can't be 0" };
+
+	return pool_size;
+}
+
+} /* namespace pool_size_checking */
+
 /*!
  * Helper class for creating io_context and running it
  * (via `io_context::run()`) on a thread pool.
@@ -79,13 +94,12 @@ class ioctx_on_thread_pool_t
 		template< typename... Io_Context_Holder_Ctor_Args >
 		ioctx_on_thread_pool_t(
 			// Pool size.
-			//FIXME: better to use not_null from gsl.
 			std::size_t pool_size,
 			// Optional arguments for Io_Context_Holder instance.
 			Io_Context_Holder_Ctor_Args && ...ioctx_holder_args )
 			:	m_ioctx_holder{
 					std::forward<Io_Context_Holder_Ctor_Args>(ioctx_holder_args)... }
-			,	m_pool( pool_size )
+			,	m_pool( pool_size_checking::ensure_pool_size_non_zero( pool_size ) )
 			,	m_status( status_t::stopped )
 		{}
 
