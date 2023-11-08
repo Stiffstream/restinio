@@ -4261,26 +4261,6 @@ non_negative_decimal_number_p( digits_to_consume_t digits_limit ) noexcept
 	};
 }
 
-//FIXME: remove in v.0.7.0!
-//
-// positive_decimal_number_p
-//
-/*!
- * @brief A factory function to create a producer for non-negative
- * decimal numbers.
- *
- * @deprecated Use non_negative_decimal_number_p.
- *
- * @since v.0.6.2
- */
-template< typename T >
-[[deprecated]] [[nodiscard]]
-inline auto
-positive_decimal_number_producer() noexcept
-{
-	return non_negative_decimal_number_p<T>();
-}
-
 //
 // hexadecimal_number_p
 //
