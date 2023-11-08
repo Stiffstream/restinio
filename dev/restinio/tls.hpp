@@ -291,22 +291,6 @@ public:
 			return std::move( this->tls_context( std::move(shared_context) ) );
 		}
 
-		//FIXME: should be removed in v.0.7.
-		/*!
-		 * @deprecated
-		 * This method is going to be removed in v.0.7.
-		 * giveaway_tls_context() should be used instead.
-		 */
-		[[deprecated]]
-		asio_ns::ssl::context
-		tls_context()
-		{
-			asio_ns::ssl::context result{ std::move( *m_tls_context ) };
-			m_tls_context.reset();
-
-			return result;
-		}
-
 		//! Get away the TLS-context from settings.
 		/*!
 		 * @note
