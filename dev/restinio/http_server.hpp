@@ -228,7 +228,7 @@ class http_server_t
 			// allows to call operator() with server_settings_t& arg.
 			typename = decltype(
 					std::declval<Configurator>()(
-							*(static_cast<server_settings_t<Traits>*>(nullptr)))) >
+							std::declval<server_settings_t<Traits>&>() ) ) >
 		http_server_t(
 			io_context_holder_t io_context,
 			Configurator && configurator )
