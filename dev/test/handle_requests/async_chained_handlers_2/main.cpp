@@ -260,14 +260,17 @@ tc_fixed_size_chain_accept_in_middle()
 			env.introduce_coop(
 				so_5::disp::active_obj::make_dispatcher( env ).binder(),
 				[&]( so_5::coop_t & coop ) {
-					destinations[ 3u ] = coop.make_agent< dummy_stage_t >(
-							stages_completed, destinations[ 0u ] )->so_direct_mbox();
-					destinations[ 2u ] = coop.make_agent< dummy_stage_t >(
-							stages_completed, destinations[ 3u ] )->so_direct_mbox();
 					destinations[ 1u ] = coop.make_agent< response_maker_t >(
 							stages_completed )->so_direct_mbox();
 					destinations[ 0u ] = coop.make_agent< dummy_stage_t >(
 							stages_completed, destinations[ 1u ] )->so_direct_mbox();
+					destinations[ 3u ] = coop.make_agent< dummy_stage_t >(
+							stages_completed, destinations[ 0u ] )->so_direct_mbox();
+					destinations[ 2u ] = coop.make_agent< dummy_stage_t >(
+							stages_completed, destinations[ 3u ] )->so_direct_mbox();
+
+					// FIXME: THis code must be completed before
+					//        starting http server.
 				} );
 		}
 	};
@@ -280,21 +283,26 @@ tc_fixed_size_chain_accept_in_middle()
 				.address( "127.0.0.1" )
 				.request_handler(
 					[&destinations]( auto controller ) {
+						// TODO: assert can be removed once the above FIX is done.
+						assert(destinations[ 0u ]);
 						so_5::send< so_5::mutable_msg< your_turn_t > >(
 								destinations[ 0u ], std::move(controller) );
 						return restinio::async_chain::ok();
 					},
 					[&destinations]( auto controller ) {
+						assert(destinations[ 1u ]);
 						so_5::send< so_5::mutable_msg< your_turn_t > >(
 								destinations[ 1u ], std::move(controller) );
 						return restinio::async_chain::ok();
 					},
 					[&destinations]( auto controller ) {
+						assert(destinations[ 2u ]);
 						so_5::send< so_5::mutable_msg< your_turn_t > >(
 								destinations[ 2u ], std::move(controller) );
 						return restinio::async_chain::ok();
 					},
 					[&destinations]( auto controller ) {
+						assert(destinations[ 3u ]);
 						so_5::send< so_5::mutable_msg< your_turn_t > >(
 								destinations[ 3u ], std::move(controller) );
 						return restinio::async_chain::ok();
