@@ -686,6 +686,17 @@ initiate_shutdown( http_server_t<Traits> & server )
 		} );
 }
 
+//FIXME: document this!
+struct abort_app_in_error_callback_t
+{
+	[[noreturn]]
+	void
+	operator()( std::exception_ptr /*ex*/ ) const
+	{
+		std::abort();
+	}
+};
+
 //
 // on_pool_runner_t
 //
@@ -863,37 +874,33 @@ public :
 	bool
 	started() const noexcept { return m_pool.started(); }
 
-	//FIXME: there should be a version of stop() with callbacks like
-	//for start() method above.
+	//FIXME: fix the description of this method!
 	//! Stop the server.
 	/*!
 	 * @note
 	 * This method is noexcept since v.0.6.7
 	 */
+	template< typename Error_CB = abort_app_in_error_callback_t >
 	void
-	stop() noexcept
+	stop( Error_CB error_cb = Error_CB{} ) noexcept
 	{
+		// NOTE: m_pool.stop() call be called only inside lambda-functions
+		// because they may be executed some time later after the return
+		// from close_async().
 		m_server.close_async(
 			[this]{
 				// Stop running io_service.
 				m_pool.stop();
 			},
-			[]( std::exception_ptr /*ex*/ ){
-				//FIXME: the exception should be stored to be handled
-				//later in wait() method.
-				//NOTE: this fix is planned for v.0.7.0.
-				//std::rethrow_exception( ex );
+			[this, callback = std::move(error_cb)]( std::exception_ptr ex ) {
+				// Stop running io_service anyway.
+				m_pool.stop();
+
+				// We have to call error_cb in this case.
+				callback( std::move(ex) );
 			} );
 	}
 
-	//FIXME this method should be replaced by two new method in v.0.7.0:
-	//
-	// enum class action_on_exception_t { drop, rethrow };
-	// wait(action_on_exception_t action);
-	//
-	// template<typename Exception_Handler>
-	// wait(Exception_Handler && on_exception);
-	//
 	//! Wait for full stop of the server.
 	/*!
 	 * @note

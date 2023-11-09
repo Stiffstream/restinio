@@ -310,10 +310,12 @@ class acceptor_t final
 			}
 			else
 			{
-				m_logger.trace( [&]{
-					return fmt::format(
-							RESTINIO_FMT_FORMAT_STRING( "server already closed" ) );
-				} );
+				// v.0.7.0: suppress exceptions from logging.
+				restinio::utils::log_trace_noexcept( m_logger,
+					[&]{
+						return fmt::format(
+								RESTINIO_FMT_FORMAT_STRING( "server already closed" ) );
+					} );
 			}
 		}
 
@@ -548,11 +550,13 @@ class acceptor_t final
 
 			m_acceptor.close();
 
-			m_logger.info( [&]{
-				return fmt::format(
-						RESTINIO_FMT_FORMAT_STRING( "server closed on {}" ),
-						fmtlib_tools::streamed( ep ) );
-			} );
+			// v.0.7.0: Suppress exceptions from this logging too.
+			restinio::utils::log_info_noexcept( m_logger,
+				[&]{
+					return fmt::format(
+							RESTINIO_FMT_FORMAT_STRING( "server closed on {}" ),
+							fmtlib_tools::streamed( ep ) );
+				} );
 		}
 
 		//! Server endpoint.
