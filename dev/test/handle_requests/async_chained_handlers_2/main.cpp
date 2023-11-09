@@ -15,6 +15,8 @@
 
 #include "../../common/test_extra_data_factory.ipp"
 
+#include <future>
+
 using atomic_counter_t = std::atomic< unsigned int >;
 
 template< typename Extra_Data_Factory >
@@ -156,6 +158,7 @@ tc_fixed_size_chain()
 
 	std::array< so_5::mbox_t, 4u > destinations;
 
+	std::promise< void > coop_registered_promise;
 	so_5::wrapped_env_t sobjectizer{
 		[&]( so_5::environment_t & env ) {
 			env.introduce_coop(
@@ -170,8 +173,10 @@ tc_fixed_size_chain()
 					destinations[ 0u ] = coop.make_agent< dummy_stage_t >(
 							stages_completed, destinations[ 1u ] )->so_direct_mbox();
 				} );
+			coop_registered_promise.set_value();
 		}
 	};
+	coop_registered_promise.get_future().get();
 
 	http_server_t http_server{
 		restinio::own_io_context(),
@@ -255,22 +260,25 @@ tc_fixed_size_chain_accept_in_middle()
 
 	std::array< so_5::mbox_t, 4u > destinations;
 
+	std::promise< void > coop_registered_promise;
 	so_5::wrapped_env_t sobjectizer{
 		[&]( so_5::environment_t & env ) {
 			env.introduce_coop(
 				so_5::disp::active_obj::make_dispatcher( env ).binder(),
 				[&]( so_5::coop_t & coop ) {
-					destinations[ 3u ] = coop.make_agent< dummy_stage_t >(
-							stages_completed, destinations[ 0u ] )->so_direct_mbox();
-					destinations[ 2u ] = coop.make_agent< dummy_stage_t >(
-							stages_completed, destinations[ 3u ] )->so_direct_mbox();
 					destinations[ 1u ] = coop.make_agent< response_maker_t >(
 							stages_completed )->so_direct_mbox();
 					destinations[ 0u ] = coop.make_agent< dummy_stage_t >(
 							stages_completed, destinations[ 1u ] )->so_direct_mbox();
+					destinations[ 3u ] = coop.make_agent< dummy_stage_t >(
+							stages_completed, destinations[ 0u ] )->so_direct_mbox();
+					destinations[ 2u ] = coop.make_agent< dummy_stage_t >(
+							stages_completed, destinations[ 3u ] )->so_direct_mbox();
 				} );
+			coop_registered_promise.set_value();
 		}
 	};
+	coop_registered_promise.get_future().get();
 
 	http_server_t http_server{
 		restinio::own_io_context(),
@@ -354,6 +362,7 @@ tc_fixed_size_chain_response_with_pause()
 
 	std::array< so_5::mbox_t, 2u > destinations;
 
+	std::promise< void > coop_registered_promise;
 	so_5::wrapped_env_t sobjectizer{
 		[&]( so_5::environment_t & env ) {
 			env.introduce_coop(
@@ -364,8 +373,10 @@ tc_fixed_size_chain_response_with_pause()
 					destinations[ 0u ] = coop.make_agent< dummy_stage_t >(
 							stages_completed, destinations[ 1u ] )->so_direct_mbox();
 				} );
+			coop_registered_promise.set_value();
 		}
 	};
+	coop_registered_promise.get_future().get();
 
 	http_server_t http_server{
 		restinio::own_io_context(),
@@ -444,6 +455,7 @@ tc_growable_size_chain()
 
 	std::array< so_5::mbox_t, 4u > destinations;
 
+	std::promise< void > coop_registered_promise;
 	so_5::wrapped_env_t sobjectizer{
 		[&]( so_5::environment_t & env ) {
 			env.introduce_coop(
@@ -458,8 +470,10 @@ tc_growable_size_chain()
 					destinations[ 0u ] = coop.make_agent< dummy_stage_t >(
 							stages_completed, destinations[ 1u ] )->so_direct_mbox();
 				} );
+			coop_registered_promise.set_value();
 		}
 	};
+	coop_registered_promise.get_future().get();
 
 	typename request_handler_t::builder_t handler_builder;
 
@@ -552,6 +566,7 @@ tc_growable_size_chain_accept_in_middle()
 
 	std::array< so_5::mbox_t, 4u > destinations;
 
+	std::promise< void > coop_registered_promise;
 	so_5::wrapped_env_t sobjectizer{
 		[&]( so_5::environment_t & env ) {
 			env.introduce_coop(
@@ -566,8 +581,10 @@ tc_growable_size_chain_accept_in_middle()
 					destinations[ 0u ] = coop.make_agent< dummy_stage_t >(
 							stages_completed, destinations[ 1u ] )->so_direct_mbox();
 				} );
+			coop_registered_promise.set_value();
 		}
 	};
+	coop_registered_promise.get_future().get();
 
 	typename request_handler_t::builder_t handler_builder;
 

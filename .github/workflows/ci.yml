@@ -63,6 +63,7 @@ jobs:
           cmake \
             --build $RESTINIO_BUILD_DIR \
             --config ${{ matrix.build_type }} \
+            --parallel ${NUMBER_OF_PROCESSORS} \
             --verbose
       - name: Test
         shell: bash
@@ -92,6 +93,11 @@ jobs:
             toolset_version: 9
             cppstd: 17
             asio_source: boost
+
+          - toolset: gcc
+            toolset_version: 9
+            cppstd: 17
+            asio_source: boost-system-package
 
           - toolset: gcc
             toolset_version: 12
@@ -145,16 +151,15 @@ jobs:
       - name: Install dependencies
         run: |
           sudo gem install Mxx_ru
+          if [ "${{ matrix.build_settings.asio_source }}" == "boost-system-package" ]; then
+              sudo apt-get update && sudo apt-get install -y libboost-all-dev
+          fi
+          mxxruexternals
 
-
-        # run: |
-        #   sudo apt-get update && sudo apt-get install -y libboost-all-dev
-
-      - name: Configure (standalone ASIO)
+      - name: Configure
         if: ${{ matrix.build_settings.asio_source == 'standalone' }}
         shell: bash
         run: |
-          mxxruexternals
           cd dev
           cmake \
             -B ${RESTINIO_BUILD_DIR} \
@@ -172,11 +177,10 @@ jobs:
             toolset: ${{ matrix.build_settings.toolset }}
             platform_version: 22.04
 
-      - name: Configure (Boost ASIO)
+      - name: Configure
         if: ${{ matrix.build_settings.asio_source == 'boost' }}
         shell: bash
         run: |
-          mxxruexternals
           cd dev
           cmake \
             -B ${RESTINIO_BUILD_DIR} \
@@ -186,12 +190,25 @@ jobs:
             -DBOOST_ROOT=${{ steps.install-boost.outputs.BOOST_ROOT }} \
             -DRESTINIO_TEST_SUFFIX=" [${RESTINIO_BUILD_TAG}]"
 
+      - name: Configure
+        if: ${{ matrix.build_settings.asio_source == 'boost-system-package' }}
+        shell: bash
+        run: |
+          cd dev
+          cmake \
+            -B ${RESTINIO_BUILD_DIR} \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DRESTINIO_EXPLICIT_CPPSTD=${{ matrix.build_settings.cppstd }} \
+            -DRESTINIO_ASIO_SOURCE=boost \
+            -DRESTINIO_TEST_SUFFIX=" [${RESTINIO_BUILD_TAG}]"
+
       - name: Build
         working-directory: ./dev
         shell: bash
         run: |
           cmake \
             --build $RESTINIO_BUILD_DIR \
+             --parallel $(nproc) \
             --verbose
       - name: Test
         shell: bash
@@ -247,6 +264,7 @@ jobs:
         run: |
           cmake \
             --build $RESTINIO_BUILD_DIR \
+            --parallel $(sysctl -n hw.ncpu) \
             --verbose
       - name: Test
         shell: bash
