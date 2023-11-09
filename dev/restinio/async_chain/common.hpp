@@ -97,7 +97,7 @@ using generic_async_request_scheduler_t =
 
 /*!
  * @brief Special type to be used as an indicator that there are no more
- * handlers in an async chain.
+ * schedulers in an async chain.
  *
  * This type will be used in on_next_result_t variant.
  *
@@ -109,7 +109,7 @@ struct no_more_schedulers_t {};
  * @brief Special type to be used as result of async_handling_controller's
  * on_next method.
  *
- * The async_handling_controller_t::on_next may return an actual handler to
+ * The async_handling_controller_t::on_next may return an actual scheduler to
  * be called or (if there are no more handlers left) a special no_more_handler
  * value. This is described by on_next_result_t variant type.
  *
@@ -165,7 +165,7 @@ public:
 	virtual ~async_handling_controller_t() = default;
 
 	/*!
-	 * @brief Get reference to source request.
+	 * @brief Get reference to the source request.
 	 *
 	 * Usage example:
 	 * @code
@@ -188,11 +188,11 @@ public:
 
 private:
 	/*!
-	 * @brief Command to try find a next async handler to be invoked.
+	 * @brief Command to try find a next scheduler to be invoked.
 	 *
 	 * Implementation of async_handling_controller_t should switch to the
-	 * next handler in the chain and return the handler to be called next.
-	 * If there are no such handlers, no_more_schedulers_t must be returned.
+	 * next scheduler in the chain and return the scheduler to be called next.
+	 * If there are no such schedulers, no_more_schedulers_t must be returned.
 	 *
 	 * @note
 	 * This method is intended to be called by next() function.
@@ -208,7 +208,7 @@ namespace impl
 /*!
  * @brief Helper to make a negative response with "Not Implemented" status.
  *
- * This helper will be used if there is no more handlers to call, but
+ * This helper will be used if there is no more schedulers to call, but
  * the request is still not handled.
  *
  * @tparam Request_Handle Type of request handle that holds the source request.
@@ -225,7 +225,7 @@ make_not_implemented_response( const Request_Handle & req )
 /*!
  * @brief Helper to make a negative response with "Internal Server Error" status.
  *
- * This helper will be used if the current async handler returns
+ * This helper will be used if the current scheduler returns
  * schedule_result_t::failure.
  *
  * @tparam Request_Handle Type of request handle that holds the source request.

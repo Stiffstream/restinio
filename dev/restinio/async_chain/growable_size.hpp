@@ -25,14 +25,15 @@ namespace restinio::async_chain
  * @brief A holder of variable-size chain of asynchronous handlers.
  *
  * @note
- * Once a list of handler is filled and an instance of growable_size_chain_t
- * is created that instance can't be changed: a new handler can't be added, and
- * an old handler can be removed. The creation of growable_size_chain_t
+ * Once a list of schedulers is filled and an instance of growable_size_chain_t
+ * is created that instance can't be changed: a new scheduler can't be added, and
+ * an old scheduler can be removed. The creation of growable_size_chain_t
  * instance is performed by the help of growable_size_chain_t::builder_t
  * class.
  *
  * Usage example for the case when there is no extra-data in a request object
- * (please note that this is simplified example without actual asynchronous code):
+ * (please note that this is simplified example without actual asynchronous code,
+ * all schedulers work as synchronous handlers):
  * @code
  * struct my_traits : public restinio::default_traits_t {
  * 	using request_handler_t = restinio::async_chain::growable_size_chain_t;
@@ -90,7 +91,8 @@ namespace restinio::async_chain
  *
  * Usage example for the case when some extra-data is incorporated into
  * a request object:
- * (please note that this is simplified example without actual asynchronous code):
+ * (please note that this is simplified example without actual asynchronous code,
+ * all schedulers work as synchronous handlers):
  * @code
  * struct my_extra_data_factory {
  * 	// A data formed by checker of HTTP-fields.
@@ -202,20 +204,20 @@ class growable_size_chain_t
 	 * @brief Actual implementation of the controller interface.
 	 *
 	 * @note
-	 * Object of this type holds a copy of the source vector of handlers.
+	 * Object of this type holds a copy of the source vector of schedulers.
 	 */
 	class actual_controller_t final
 		: public async_handling_controller_t< Extra_Data_Factory >
 	{
 		//! The source request.
 		const actual_request_handle_t m_request;
-		//! Request handlers.
+		//! Request schedulers.
 		schedulers_vector_t m_schedulers;
 		//! Index of the current scheduler to be used.
 		/*!
 		 * @note
 		 * May be equal to or greater than m_schedulers.size() in the case
-		 * when all handlers are already processed.
+		 * when all schedulers are already processed.
 		 */
 		std::size_t m_current{};
 
@@ -261,7 +263,7 @@ public:
 	 * That instance can be obtained by release() method.
 	 *
 	 * @note
-	 * New handlers can be added to the chain by add() method until
+	 * New schedulers can be added to the chain by add() method until
 	 * release() is called.
 	 *
 	 * @attention
@@ -278,7 +280,7 @@ public:
 		{}
 
 		/*!
-		 * @brief Stop adding of new handlers and acquire the chain instance.
+		 * @brief Stop adding of new schedulers and acquire the chain instance.
 		 *
 		 * @note
 		 * The builder object should not be used after the calling of
@@ -314,7 +316,7 @@ public:
 	};
 
 private:
-	//! The vector of request handlers.
+	//! The vector of schedulers.
 	schedulers_vector_t m_schedulers;
 
 	/*!
@@ -334,7 +336,7 @@ public:
 	growable_size_chain_t() = delete;
 
 	/*!
-	 * Initiates execution of the first request handler in the chain.
+	 * Initiates execution of the first scheduler in the chain.
 	 *
 	 * @note
 	 * Always returns request_handling_status_t::accepted.

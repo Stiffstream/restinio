@@ -17,12 +17,13 @@ namespace restinio::async_chain
  * @brief A holder of fixed-size chain of asynchronous handlers.
  *
  * @note
- * An instance of that type is intended to be filled with actual handlers
- * at the creation time. After that new handlers can't be added to the chain,
+ * An instance of that type is intended to be filled with actual schedulers
+ * at the creation time. After that new schedulers can't be added to the chain,
  * and old handlers can't be removed from the chain.
  *
  * Usage example for the case when there is no extra-data in a request object
- * (please note that this is simplified example without actual asynchronous code):
+ * (please note that this is simplified example without actual asynchronous code,
+ * all schedulers work as synchronous handlers):
  * @code
  * struct my_traits : public restinio::default_traits_t {
  * 	using request_handler_t = restinio::async_chain::fixed_size_chain_t<3>;
@@ -90,7 +91,8 @@ namespace restinio::async_chain
  *
  * Usage example for the case when some extra-data is incorporated into
  * a request object
- * (please note that this is simplified example without actual asynchronous code):
+ * (please note that this is simplified example without actual asynchronous code,
+ * all schedulers work as synchronous handlers):
  * @code
  * struct my_extra_data_factory {
  * 	// A data formed by checker of HTTP-fields.
@@ -164,7 +166,7 @@ namespace restinio::async_chain
  * );
  * @endcode
  *
- * @tparam Size The exact number of handlers in the chain.
+ * @tparam Size The exact number of schedulers in the chain.
  *
  * @tparam Extra_Data_Factory The type of extra-data-factory specified in
  * the server's traits.
@@ -197,7 +199,7 @@ class fixed_size_chain_t
 	 * @brief Actual implementation of the controller interface.
 	 *
 	 * @note
-	 * Object of this type holds a copy of the source array of handlers.
+	 * Object of this type holds a copy of the source array of schedulers.
 	 */
 	class actual_controller_t final
 		: public async_handling_controller_t< Extra_Data_Factory >
@@ -206,7 +208,7 @@ class fixed_size_chain_t
 		const actual_request_handle_t m_request;
 		//! Request handlers.
 		schedulers_array_t m_schedulers;
-		//! Index of the current handler to be used.
+		//! Index of the current scheduler to be used.
 		/*!
 		 * @note
 		 * May be equal to or greater than m_schedulers.size() in the case
@@ -246,7 +248,7 @@ class fixed_size_chain_t
 		}
 	};
 
-	//! The array of request handlers.
+	//! The array of schedulers.
 	/*!
 	 * @note
 	 * It's initialized in the constructor and then never changed.
@@ -298,7 +300,7 @@ public:
 	}
 
 	/*!
-	 * Initiates execution of the first request handler in the chain.
+	 * Initiates execution of the first scheduler in the chain.
 	 *
 	 * @note
 	 * Always returns request_handling_status_t::accepted.
