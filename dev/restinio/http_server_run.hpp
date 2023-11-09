@@ -686,12 +686,38 @@ initiate_shutdown( http_server_t<Traits> & server )
 		} );
 }
 
-//FIXME: document this!
+/*!
+ * @brief Type of a function to be used as the default on_error-callback.
+ *
+ * Since v.0.7.0 on_pool_runner_t::stop() accept a on_error callback that
+ * will be passed to http_server_t::close_async() and will be called if
+ * an exception is thrown in http_server_t::close_async().
+ * This callback should perform some actions that can help the application
+ * to handle the problem.
+ *
+ * This type is intended to be used as the default on_error callback.
+ *
+ * If an exception in thrown inside http_server_t::close_async() then
+ * the application is in undefined state, it's unknown what can be done
+ * with http_server_t instance and whan can't be.
+ *
+ * Therefore the default on_error callback simply calls std::abort() to
+ * terminate the application and avoid the work in undefined state.
+ *
+ * If such behavour is not desirable the user can provide own
+ * on_error callback.
+ *
+ * @since v.0.7.0
+ */
 struct abort_app_in_error_callback_t
 {
+	/*!
+	 * @attention
+	 * It just calls std::abort().
+	 */
 	[[noreturn]]
 	void
-	operator()( std::exception_ptr /*ex*/ ) const
+	operator()( std::exception_ptr /*ex*/ ) const noexcept
 	{
 		std::abort();
 	}
@@ -846,8 +872,8 @@ public :
 				"On_Error_Callback should be noexcept" );
 
 		m_server.open_async(
-			[callback = std::move(on_ok)]{ callback(); },
-			[this, callback = std::move(on_error)]( std::exception_ptr ex ){
+			[callback = std::move(on_ok)]() noexcept { callback(); },
+			[this, callback = std::move(on_error)]( std::exception_ptr ex ) noexcept {
 				// There is no sense to run pool.
 				m_pool.stop();
 
@@ -874,11 +900,65 @@ public :
 	bool
 	started() const noexcept { return m_pool.started(); }
 
-	//FIXME: fix the description of this method!
 	//! Stop the server.
 	/*!
+	 * This method stops the server by calling http_server_t::close_async()
+	 * It means that stop will be performed asynchronously. To wait for the
+	 * completion of stop operation the wait() method has to be used.
+	 *
+	 * The simple usage:
+	 * @code
+	 * using my_http_server = restinio::http_server_t<some_traits>;
+	 *
+	 * my_http_server server{...};
+	 * restinio::on_pool_runner_t<my_http_server> runner{16, server};
+	 *
+	 * runner.start(...);
+	 *
+	 * ...
+	 * // Some time later.
+	 * runner.stop();
+	 *
+	 * ... // Some other actions.
+	 * // Have to wait the completion of the stop() operation.
+	 * runner.wait();
+	 * @endcode
+	 *
+	 * This method accepts @a error_cb callback that will be called
+	 * if an exception is thrown in http_server_t::close_async().
+	 *
+	 * The @a error_cb is an optional parameter, an instance of
+	 * abort_app_in_error_callback_t is used by default. It means that
+	 * if an exception is thrown on http_server_t::close_async() then
+	 * the whole application will be terminated. If such behavior is not
+	 * desirable a user has to provide own error callback:
+	 * @code
+	 * using my_http_server = restinio::http_server_t<some_traits>;
+	 *
+	 * my_http_server server{...};
+	 * restinio::on_pool_runner_t<my_http_server> runner{16, server};
+	 *
+	 * runner.start(...);
+	 *
+	 * ...
+	 * // Some time later.
+	 * runner.stop([](std::exception_ptr ex) {
+	 *      ... // Some handling of an exception.
+	 *   });
+	 * @endcode
+	 * But it's important to note that if an exception is thrown inside
+	 * http_server_t::close_async() then the instance of http_server_t
+	 * is in undefined state.
+	 *
 	 * @note
 	 * This method is noexcept since v.0.6.7
+	 *
+	 * @tparam Error_CB Type of the callback to be used if an exception
+	 * is thrown inside http_server_t::close_async(). This callback
+	 * should be noexcept functor (however, the noexceptness is not
+	 * checked at the compile-time to have a possibility to use
+	 * std::function as error callback). See abort_app_in_error_callback_t
+	 * for a prototype of Error_CB functor.
 	 */
 	template< typename Error_CB = abort_app_in_error_callback_t >
 	void
@@ -888,11 +968,11 @@ public :
 		// because they may be executed some time later after the return
 		// from close_async().
 		m_server.close_async(
-			[this]{
+			[this]() noexcept {
 				// Stop running io_service.
 				m_pool.stop();
 			},
-			[this, callback = std::move(error_cb)]( std::exception_ptr ex ) {
+			[this, callback = std::move(error_cb)]( std::exception_ptr ex ) noexcept {
 				// Stop running io_service anyway.
 				m_pool.stop();
 

@@ -137,7 +137,7 @@ external_io_context( asio_ns::io_context & ctx )
 	\endcode
 
 	Async way for starting and stopping a http_server can be used if
-	http_server_t::open_async() and http_server_t::open_async() can be
+	http_server_t::open_async() and http_server_t::close_async() can be
 	called from any other thread. For example:
 	\code
 	asio::io_context io_ctx;
@@ -150,14 +150,18 @@ external_io_context( asio_ns::io_context & ctx )
 			io_ctx.run();
 		} };
 
+	// This variable will be used for holding information about
+	// a possible exception in open_async.
+	std::exception_ptr exception_from_open_async;
+
 	// Start server in async way. Actual start will be performed
 	// on the context of server_thread.
 	server.open_async(
 			// Ok callback. Nothing to do.
-			[]{},
-			// Error callback. Rethrow an exception.
-			[]( auto ex_ptr ) {
-				std::rethrow_exception( ex_ptr );
+			[]() noexcept {},
+			// Error callback. Just store information about an exception.
+			[&]( std::exception_ptr ex_ptr ) noexcept {
+				exception_from_open_async = ex_ptr;
 			} );
 	...
 	// Wait while server_thread finishes its work.
@@ -303,15 +307,40 @@ class http_server_t
 
 		//! Closes server in async way.
 		/*!
-			\note It doesn't call io_context to stop
-			(\see stop_io_context()).
-
-			\attention
-			\a close_ok_cb and \a close_err_cb should be noexcept
-			functions/lambdas. This requirement is not enforced by
-			static_assert in RESTinio's code to avoid problems in
-			cases when `std::function` is used for these callbacks.
-		*/
+		 * Usage example:
+		 * \code
+		 * restinio::http_server_t< my_traits > server{ ... };
+		 *
+		 * server.open_async(...);
+		 *
+		 * // It's time to close the server.
+		 * server.close_async(
+		 * 	// OK callback. Will be called if acceptor and other
+		 * 	// stuff is closed without problems.
+		 * 	// Please note that OK callback should not throw exceptions.
+		 * 	[&]() noexcept {
+		 * 		... // Some actions to perform if everything is OK.
+		 * 		    // For example, shutting down worker threads.
+		 * 	},
+		 * 	// Error callback. Will be called if an exception is thrown
+		 * 	// during closing acceptor or other stuff.
+		 * 	// Please note that error callback should not throw exceptions.
+		 * 	[]( std::exception_ptr ex ) noexcept {
+		 * 		... // Some actions. Like storing `ex` somewhere.
+		 * 	} );
+		 * \endcode
+		 *
+		 * \attention
+		 * If an error is thrown during closing the acceptor and other stuff,
+		 * the \a close_err_cb is called, but the state of the http_server_t
+		 * is undefined.
+		 *
+		 * \attention
+		 * \a close_ok_cb and \a close_err_cb should be noexcept
+		 * functions/lambdas. This requirement is not enforced by
+		 * static_assert in RESTinio's code to avoid problems in
+		 * cases when `std::function` is used for these callbacks.
+		 */
 		template <
 				typename Server_Close_Ok_CB,
 				typename Server_Close_Error_CB >
