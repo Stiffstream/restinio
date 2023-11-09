@@ -15,6 +15,8 @@
 
 #include "../../common/test_extra_data_factory.ipp"
 
+#include <future>
+
 using atomic_counter_t = std::atomic< unsigned int >;
 
 template< typename Extra_Data_Factory >
@@ -156,6 +158,7 @@ tc_fixed_size_chain()
 
 	std::array< so_5::mbox_t, 4u > destinations;
 
+	std::promise< void > coop_registered_promise;
 	so_5::wrapped_env_t sobjectizer{
 		[&]( so_5::environment_t & env ) {
 			env.introduce_coop(
@@ -170,8 +173,10 @@ tc_fixed_size_chain()
 					destinations[ 0u ] = coop.make_agent< dummy_stage_t >(
 							stages_completed, destinations[ 1u ] )->so_direct_mbox();
 				} );
+			coop_registered_promise.set_value();
 		}
 	};
+	coop_registered_promise.get_future().get();
 
 	http_server_t http_server{
 		restinio::own_io_context(),
@@ -255,6 +260,7 @@ tc_fixed_size_chain_accept_in_middle()
 
 	std::array< so_5::mbox_t, 4u > destinations;
 
+	std::promise< void > coop_registered_promise;
 	so_5::wrapped_env_t sobjectizer{
 		[&]( so_5::environment_t & env ) {
 			env.introduce_coop(
@@ -268,12 +274,11 @@ tc_fixed_size_chain_accept_in_middle()
 							stages_completed, destinations[ 0u ] )->so_direct_mbox();
 					destinations[ 2u ] = coop.make_agent< dummy_stage_t >(
 							stages_completed, destinations[ 3u ] )->so_direct_mbox();
-
-					// FIXME: THis code must be completed before
-					//        starting http server.
 				} );
+			coop_registered_promise.set_value();
 		}
 	};
+	coop_registered_promise.get_future().get();
 
 	http_server_t http_server{
 		restinio::own_io_context(),
@@ -283,26 +288,21 @@ tc_fixed_size_chain_accept_in_middle()
 				.address( "127.0.0.1" )
 				.request_handler(
 					[&destinations]( auto controller ) {
-						// TODO: assert can be removed once the above FIX is done.
-						assert(destinations[ 0u ]);
 						so_5::send< so_5::mutable_msg< your_turn_t > >(
 								destinations[ 0u ], std::move(controller) );
 						return restinio::async_chain::ok();
 					},
 					[&destinations]( auto controller ) {
-						assert(destinations[ 1u ]);
 						so_5::send< so_5::mutable_msg< your_turn_t > >(
 								destinations[ 1u ], std::move(controller) );
 						return restinio::async_chain::ok();
 					},
 					[&destinations]( auto controller ) {
-						assert(destinations[ 2u ]);
 						so_5::send< so_5::mutable_msg< your_turn_t > >(
 								destinations[ 2u ], std::move(controller) );
 						return restinio::async_chain::ok();
 					},
 					[&destinations]( auto controller ) {
-						assert(destinations[ 3u ]);
 						so_5::send< so_5::mutable_msg< your_turn_t > >(
 								destinations[ 3u ], std::move(controller) );
 						return restinio::async_chain::ok();
@@ -362,6 +362,7 @@ tc_fixed_size_chain_response_with_pause()
 
 	std::array< so_5::mbox_t, 2u > destinations;
 
+	std::promise< void > coop_registered_promise;
 	so_5::wrapped_env_t sobjectizer{
 		[&]( so_5::environment_t & env ) {
 			env.introduce_coop(
@@ -372,8 +373,10 @@ tc_fixed_size_chain_response_with_pause()
 					destinations[ 0u ] = coop.make_agent< dummy_stage_t >(
 							stages_completed, destinations[ 1u ] )->so_direct_mbox();
 				} );
+			coop_registered_promise.set_value();
 		}
 	};
+	coop_registered_promise.get_future().get();
 
 	http_server_t http_server{
 		restinio::own_io_context(),
@@ -452,6 +455,7 @@ tc_growable_size_chain()
 
 	std::array< so_5::mbox_t, 4u > destinations;
 
+	std::promise< void > coop_registered_promise;
 	so_5::wrapped_env_t sobjectizer{
 		[&]( so_5::environment_t & env ) {
 			env.introduce_coop(
@@ -466,8 +470,10 @@ tc_growable_size_chain()
 					destinations[ 0u ] = coop.make_agent< dummy_stage_t >(
 							stages_completed, destinations[ 1u ] )->so_direct_mbox();
 				} );
+			coop_registered_promise.set_value();
 		}
 	};
+	coop_registered_promise.get_future().get();
 
 	typename request_handler_t::builder_t handler_builder;
 
@@ -560,6 +566,7 @@ tc_growable_size_chain_accept_in_middle()
 
 	std::array< so_5::mbox_t, 4u > destinations;
 
+	std::promise< void > coop_registered_promise;
 	so_5::wrapped_env_t sobjectizer{
 		[&]( so_5::environment_t & env ) {
 			env.introduce_coop(
@@ -574,8 +581,10 @@ tc_growable_size_chain_accept_in_middle()
 					destinations[ 0u ] = coop.make_agent< dummy_stage_t >(
 							stages_completed, destinations[ 1u ] )->so_direct_mbox();
 				} );
+			coop_registered_promise.set_value();
 		}
 	};
+	coop_registered_promise.get_future().get();
 
 	typename request_handler_t::builder_t handler_builder;
 
