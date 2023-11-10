@@ -144,8 +144,11 @@ TEST_CASE( "Ref-qualifiers" , "[settings][ref_qualifiers]" )
 
 			{
 				auto acceptor_option_setter = settings.acceptor_options_setter();
-				restinio::acceptor_options_t
-					acceptor_options{ *static_cast< restinio::asio_ns::ip::tcp::acceptor * >( nullptr ) };
+
+				restinio::asio_ns::io_service io_svc;
+				restinio::asio_ns::ip::tcp::acceptor dummy_acceptor{ io_svc };
+
+				restinio::acceptor_options_t acceptor_options{ dummy_acceptor };
 
 				(*acceptor_option_setter)( acceptor_options );
 			}
@@ -154,8 +157,11 @@ TEST_CASE( "Ref-qualifiers" , "[settings][ref_qualifiers]" )
 
 			{
 				auto socket_option_setter = settings.socket_options_setter();
-				restinio::socket_options_t
-					socket_options{ *static_cast< restinio::asio_ns::ip::tcp::socket * >( nullptr ) };
+
+				restinio::asio_ns::io_service io_svc;
+				restinio::asio_ns::ip::tcp::socket dummy_socket{ io_svc };
+
+				restinio::socket_options_t socket_options{ dummy_socket };
 
 				(*socket_option_setter)( socket_options );
 			}
