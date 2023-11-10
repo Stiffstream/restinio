@@ -47,7 +47,7 @@ endif()
 # --------------------------------------------------------------------
 # Handle ASIO dependency.
 if (RESTINIO_ASIO_SOURCE STREQUAL "standalone")
-    if (RESTINIO_DEPENDENCY_RESOLVE_HINT_STANDALONE_ASIO STREQUAL "system")
+    if (RESTINIO_DEP_STANDALONE_ASIO STREQUAL "system")
         message(STATUS "${RESTINIO_LIBRARY_NAME} target assumes standalone asio is available in system headers")
     elseif (TARGET asio::asio)
         target_link_libraries(${RESTINIO_LIBRARY_NAME} INTERFACE asio::asio)
@@ -61,7 +61,7 @@ if (RESTINIO_ASIO_SOURCE STREQUAL "standalone")
                 "Giving up...")
     endif()
 elseif (RESTINIO_ASIO_SOURCE STREQUAL "boost")
-    if (RESTINIO_DEPENDENCY_RESOLVE_HINT_BOOST_ASIO STREQUAL "system")
+    if (RESTINIO_DEP_BOOST_ASIO STREQUAL "system")
         message(STATUS "${RESTINIO_LIBRARY_NAME} target assumes Boost::asio is available in system headers")
     elseif (TARGET Boost::headers)
         target_link_libraries(${RESTINIO_LIBRARY_NAME} INTERFACE Boost::headers)
@@ -86,7 +86,7 @@ endif ()
 
 # --------------------------------------------------------------------
 # Handle LLHTTP dependency.
-if (RESTINIO_DEPENDENCY_RESOLVE_HINT_LLHTTP STREQUAL "system")
+if (RESTINIO_DEP_LLHTTP STREQUAL "system")
     message(STATUS "Using system llhttp")
     if (RESTINIO_LLHTTP_LIB_LINK_NAME)
         message(STATUS "Using system llhttp with linking to custom lib name: ${RESTINIO_LLHTTP_LIB_LINK_NAME}")
@@ -112,7 +112,7 @@ endif()
 
 # --------------------------------------------------------------------
 # Handle FMT dependency.
-if (RESTINIO_DEPENDENCY_RESOLVE_HINT_FMT STREQUAL "system")
+if (RESTINIO_DEP_FMT STREQUAL "system")
     if (RESTINIO_FMT_LIB_LINK_NAME)
         message(STATUS "Using system fmt with linking to ${RESTINIO_FMT_LIB_LINK_NAME}")
         # target_compile_definitions(${RESTINIO_LIBRARY_NAME} INTERFACE FMT_HEADER_ONLY=0 )
@@ -146,7 +146,7 @@ if ("${RESTINIO_EXPLICIT_CPPSTD}" STREQUAL "17"
     #       conditional block.
 endif()
 
-if (RESTINIO_DEPENDENCY_RESOLVE_HINT_FMT STREQUAL "system")
+if (RESTINIO_DEP_FMT STREQUAL "system")
     message(STATUS "Using system expected-lite")
 elseif (TARGET expected-lite::expected-lite)
     target_link_libraries(${RESTINIO_LIBRARY_NAME} INTERFACE expected-lite::expected-lite)
