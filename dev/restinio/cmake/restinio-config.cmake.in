@@ -20,7 +20,7 @@ else ()
     endif ()
 endif ()
 
-if (NOT RESTINIO_USE_SYSTEM_LLHTTP)
+if (RESTINIO_USE_SYSTEM_LLHTTP)
     find_dependency(llhttp)
 endif ()
 
