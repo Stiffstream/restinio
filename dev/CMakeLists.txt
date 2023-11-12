@@ -74,29 +74,29 @@ message(STATUS "RESTINIO_WITH_SOBJECTIZER:  ${RESTINIO_WITH_SOBJECTIZER}")
 
 # The considered ways to get the dependencies (varies per dependency):
 # * system - Assume dependency is installed as system library
-# * package - Assume dependency is available with a call to find_package.
+# * find - Assume dependency is available with a call to find_package.
 # * local - Rely on local sources of the dependency.
 
 # By default we assume to use an embedded version of ASIO.
-set(RESTINIO_DEP_STANDALONE_ASIO "package" CACHE STRING "How to get ASIO dependency)")
-set_property(CACHE RESTINIO_DEP_STANDALONE_ASIO PROPERTY STRINGS "system;package")
+set(RESTINIO_DEP_STANDALONE_ASIO "find" CACHE STRING "How to get ASIO dependency)")
+set_property(CACHE RESTINIO_DEP_STANDALONE_ASIO PROPERTY STRINGS "system;find")
 
 # By default we assume to use Boost::asio other than system.
 # to be more specific we will assume that find_package would do it.
-set(RESTINIO_DEP_BOOST_ASIO "package" CACHE STRING "How to get Boost.ASIO dependency)")
-set_property(CACHE RESTINIO_DEP_BOOST_ASIO PROPERTY STRINGS "system;package")
+set(RESTINIO_DEP_BOOST_ASIO "find" CACHE STRING "How to get Boost.ASIO dependency)")
+set_property(CACHE RESTINIO_DEP_BOOST_ASIO PROPERTY STRINGS "system;find")
 
 # By default we assume to use an embedded version of LLHTTP.
 set(RESTINIO_DEP_LLHTTP "local" CACHE STRING "How to get llhttp (http parser) dependency)")
-set_property(CACHE RESTINIO_DEP_LLHTTP PROPERTY STRINGS "system;package;local")
+set_property(CACHE RESTINIO_DEP_LLHTTP PROPERTY STRINGS "system;find;local")
 
 # By default we assume to use an embedded version of FMT.
 set(RESTINIO_DEP_FMT "local" CACHE STRING "How to get FMT dependency)")
-set_property(CACHE RESTINIO_DEP_FMT PROPERTY STRINGS "system;package;local")
+set_property(CACHE RESTINIO_DEP_FMT PROPERTY STRINGS "system;find;local")
 
 # By default we assume to use an embedded version of expected-lite.
 set(RESTINIO_DEP_EXPECTED_LITE "local" CACHE STRING "How to get expected-lite dependency)")
-set_property(CACHE RESTINIO_DEP_EXPECTED_LITE PROPERTY STRINGS "system;package;local")
+set_property(CACHE RESTINIO_DEP_EXPECTED_LITE PROPERTY STRINGS "system;find;local")
 
 message(STATUS "RESTINIO_DEP_STANDALONE_ASIO: ${RESTINIO_DEP_STANDALONE_ASIO}")
 message(STATUS "RESTINIO_DEP_BOOST_ASIO:      ${RESTINIO_DEP_BOOST_ASIO}")
@@ -137,7 +137,7 @@ message(STATUS "Defining RESTinio dependencies...")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 if (RESTINIO_ASIO_SOURCE STREQUAL "standalone")
-    if (RESTINIO_DEP_STANDALONE_ASIO STREQUAL "package")
+    if (RESTINIO_DEP_STANDALONE_ASIO STREQUAL "find")
         message(STATUS "Finding ASIO package...")
         set(RESTINIO_ASIO_PATH_HINT ${CMAKE_CURRENT_SOURCE_DIR}/asio)
         find_package(asio REQUIRED)
@@ -146,13 +146,13 @@ if (RESTINIO_ASIO_SOURCE STREQUAL "standalone")
         endif()
     endif ()
 else ()
-    if (RESTINIO_DEP_BOOST_ASIO STREQUAL "package")
+    if (RESTINIO_DEP_BOOST_ASIO STREQUAL "find")
         find_package(Boost REQUIRED)
         find_package(Boost REQUIRED COMPONENTS headers regex)
     endif ()
 endif ()
 
-if (RESTINIO_DEP_LLHTTP STREQUAL "package")
+if (RESTINIO_DEP_LLHTTP STREQUAL "find")
     find_package(llhttp REQUIRED)
 elseif (RESTINIO_DEP_LLHTTP STREQUAL "local")
     message("========================================")
@@ -161,7 +161,7 @@ elseif (RESTINIO_DEP_LLHTTP STREQUAL "local")
     message("========================================")
 endif ()
 
-if (RESTINIO_DEP_FMT STREQUAL "package")
+if (RESTINIO_DEP_FMT STREQUAL "find")
     find_package(fmt REQUIRED)
 elseif (RESTINIO_DEP_FMT STREQUAL "local")
     message("========================================")
@@ -170,7 +170,7 @@ elseif (RESTINIO_DEP_FMT STREQUAL "local")
     message("========================================")
 endif ()
 
-if (RESTINIO_DEP_EXPECTED_LITE STREQUAL "package")
+if (RESTINIO_DEP_EXPECTED_LITE STREQUAL "find")
     find_package(expected-lite REQUIRED)
 elseif (RESTINIO_DEP_EXPECTED_LITE STREQUAL "local")
     message("========================================")
