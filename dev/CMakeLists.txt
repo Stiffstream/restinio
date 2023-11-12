@@ -72,27 +72,37 @@ message(STATUS "RESTINIO_SAMPLE:            ${RESTINIO_SAMPLE}")
 message(STATUS "RESTINIO_BENCHMARK:         ${RESTINIO_BENCHMARK}")
 message(STATUS "RESTINIO_WITH_SOBJECTIZER:  ${RESTINIO_WITH_SOBJECTIZER}")
 
+# The considered ways to get the dependencies (varies per dependency):
+# * system - Assume dependency is installed as system library
+# * find - Assume dependency is available with a call to find_package.
+# * local - Rely on local sources of the dependency.
+
 # By default we assume to use an embedded version of ASIO.
-option(RESTINIO_USE_SYSTEM_STANDALONE_ASIO "Assume ASIO is available as system headers" OFF)
+set(RESTINIO_DEP_STANDALONE_ASIO "find" CACHE STRING "How to get ASIO dependency)")
+set_property(CACHE RESTINIO_DEP_STANDALONE_ASIO PROPERTY STRINGS "system;find")
 
 # By default we assume to use Boost::asio other than system.
 # to be more specific we will assume that find_package would do it.
-option(RESTINIO_USE_SYSTEM_BOOST_ASIO "Assume Boosr::asio is available as system headers" OFF)
+set(RESTINIO_DEP_BOOST_ASIO "find" CACHE STRING "How to get Boost.ASIO dependency)")
+set_property(CACHE RESTINIO_DEP_BOOST_ASIO PROPERTY STRINGS "system;find")
 
 # By default we assume to use an embedded version of LLHTTP.
-option(RESTINIO_USE_SYSTEM_LLHTTP "Assume llhttp (http parser) is available as system library" OFF)
+set(RESTINIO_DEP_LLHTTP "local" CACHE STRING "How to get llhttp (http parser) dependency)")
+set_property(CACHE RESTINIO_DEP_LLHTTP PROPERTY STRINGS "system;find;local")
 
 # By default we assume to use an embedded version of FMT.
-option(RESTINIO_USE_SYSTEM_FMT "Assume FMT is available as system headers" OFF)
+set(RESTINIO_DEP_FMT "local" CACHE STRING "How to get FMT dependency)")
+set_property(CACHE RESTINIO_DEP_FMT PROPERTY STRINGS "system;find;local")
 
 # By default we assume to use an embedded version of expected-lite.
-option(RESTINIO_USE_SYSTEM_EXPECTED_LITE "Assume expected lite is available as system headers" OFF)
+set(RESTINIO_DEP_EXPECTED_LITE "local" CACHE STRING "How to get expected-lite dependency)")
+set_property(CACHE RESTINIO_DEP_EXPECTED_LITE PROPERTY STRINGS "system;find;local")
 
-message(STATUS "RESTINIO_USE_SYSTEM_STANDALONE_ASIO: ${RESTINIO_USE_SYSTEM_STANDALONE_ASIO}")
-message(STATUS "RESTINIO_USE_SYSTEM_BOOST_ASIO:      ${RESTINIO_USE_SYSTEM_BOOST_ASIO}")
-message(STATUS "RESTINIO_USE_SYSTEM_LLHTTP:          ${RESTINIO_USE_SYSTEM_LLHTTP}")
-message(STATUS "RESTINIO_USE_SYSTEM_FMT:             ${RESTINIO_USE_SYSTEM_FMT}")
-message(STATUS "RESTINIO_USE_SYSTEM_EXPECTED_LITE:   ${RESTINIO_USE_SYSTEM_EXPECTED_LITE}")
+message(STATUS "RESTINIO_DEP_STANDALONE_ASIO: ${RESTINIO_DEP_STANDALONE_ASIO}")
+message(STATUS "RESTINIO_DEP_BOOST_ASIO:      ${RESTINIO_DEP_BOOST_ASIO}")
+message(STATUS "RESTINIO_DEP_LLHTTP:          ${RESTINIO_DEP_LLHTTP}")
+message(STATUS "RESTINIO_DEP_FMT:             ${RESTINIO_DEP_FMT}")
+message(STATUS "RESTINIO_DEP_EXPECTED_LITE:   ${RESTINIO_DEP_EXPECTED_LITE}")
 
 set(RESTINIO_ASIO_SOURCE "standalone" CACHE STRING "What source of ASIO to use (standalone, boost)")
 set(RESTINIO_ASIO_SOURCE_VALUES "standalone;boost")
@@ -127,7 +137,7 @@ message(STATUS "Defining RESTinio dependencies...")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 if (RESTINIO_ASIO_SOURCE STREQUAL "standalone")
-    if (NOT RESTINIO_USE_SYSTEM_STANDALONE_ASIO)
+    if (RESTINIO_DEP_STANDALONE_ASIO STREQUAL "find")
         message(STATUS "Finding ASIO package...")
         set(RESTINIO_ASIO_PATH_HINT ${CMAKE_CURRENT_SOURCE_DIR}/asio)
         find_package(asio REQUIRED)
@@ -136,32 +146,37 @@ if (RESTINIO_ASIO_SOURCE STREQUAL "standalone")
         endif()
     endif ()
 else ()
-    if (NOT RESTINIO_USE_SYSTEM_BOOST_ASIO)
+    if (RESTINIO_DEP_BOOST_ASIO STREQUAL "find")
+        find_package(Boost REQUIRED)
         find_package(Boost REQUIRED COMPONENTS headers regex)
     endif ()
 endif ()
 
-if (NOT RESTINIO_USE_SYSTEM_LLHTTP)
+if (RESTINIO_DEP_LLHTTP STREQUAL "find")
+    find_package(llhttp REQUIRED)
+elseif (RESTINIO_DEP_LLHTTP STREQUAL "local")
     message("========================================")
     message(STATUS "Add subdirectory nodejs/llhttp")
     add_subdirectory(nodejs/llhttp)
     message("========================================")
 endif ()
 
-if (NOT RESTINIO_USE_SYSTEM_FMT)
+if (RESTINIO_DEP_FMT STREQUAL "find")
+    find_package(fmt REQUIRED)
+elseif (RESTINIO_DEP_FMT STREQUAL "local")
     message("========================================")
     message(STATUS "Add subdirectory fmt")
     add_subdirectory(fmt)
     message("========================================")
 endif ()
 
-if (NOT RESTINIO_USE_SYSTEM_EXPECTED_LITE)
-    message(STATUS "Finding expected-lite package...")
-    set(RESTINIO_EXPECTED_LITE_PATH_HINT ${CMAKE_CURRENT_SOURCE_DIR}/expected-lite)
+if (RESTINIO_DEP_EXPECTED_LITE STREQUAL "find")
     find_package(expected-lite REQUIRED)
-    if (NOT expected-lite_FOUND)
-        message(FATAL_ERROR "Unable to find expected-lite")
-    endif()
+elseif (RESTINIO_DEP_EXPECTED_LITE STREQUAL "local")
+    message("========================================")
+    message(STATUS "Add subdirectory expected-lite")
+    add_subdirectory(expected-lite)
+    message("========================================")
 endif ()
 
 if (RESTINIO_WITH_SOBJECTIZER)
