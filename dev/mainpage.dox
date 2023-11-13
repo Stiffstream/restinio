@@ -3,9 +3,10 @@
  
 \section what_is_it What Is It?
 
-RESTinio is a header-only C++14 library that gives you an embedded
-HTTP/Websocket server. It is based on standalone version of ASIO and targeted
-primarily for asynchronous processing of HTTP-requests.
+RESTinio is a header-only C++ library that gives you an embedded
+HTTP(S)/Websocket server. It is based on standalone version of ASIO (but
+Boost.Asio is also supported) and targeted primarily for asynchronous
+processing of HTTP-requests.
 
 \section basic_example A Very Basic Example Of RESTinio
 
