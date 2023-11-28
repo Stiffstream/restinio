@@ -24,13 +24,14 @@
 #include <restinio/exception.hpp>
 #include <restinio/expected.hpp>
 
+#include <algorithm>
+#include <array>
+#include <cstring>
 #include <iostream>
 #include <limits>
 #include <map>
-#include <array>
-#include <vector>
-#include <cstring>
 #include <optional>
+#include <vector>
 
 namespace restinio
 {
