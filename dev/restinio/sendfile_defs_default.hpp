@@ -12,6 +12,10 @@
 
 #include <cstdio>
 
+// for fixing #199 (https://github.com/Stiffstream/restinio/issues/199)
+// fopen_s seems to be defained in the global namespace.
+#include <stdio.h>
+
 namespace restinio
 {
 
@@ -39,7 +43,7 @@ constexpr file_descriptor_t null_file_descriptor(){ return nullptr; }
 inline file_descriptor_t
 open_file( const char * file_path )
 {
-	file_descriptor_t file_descriptor = std::fopen( file_path, "rb" );
+	file_descriptor_t file_descriptor = fopen_s( file_path, "rb" );
 
 	if( null_file_descriptor() == file_descriptor )
 	{
