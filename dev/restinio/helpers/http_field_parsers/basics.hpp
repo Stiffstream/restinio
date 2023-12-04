@@ -163,7 +163,9 @@ private :
 		underlying_char_array_t result;
 		if( qvalue_details::maximum == m_value )
 		{
-			std::strcpy( &result[0], "1.000" );
+			static constexpr char fixed_value[]{ "1.000" };
+			std::copy( std::begin(fixed_value), std::end(fixed_value),
+					std::begin(result) );
 		}
 		else
 		{
