@@ -152,12 +152,14 @@ class file_descriptor_holder_t
 		}
 
 		//! Check if file descriptor is valid.
+		[[nodiscard]]
 		bool is_valid() const noexcept
 		{
 			return null_file_descriptor() != m_file_descriptor;
 		}
 
 		//Get file descriptor.
+		[[nodiscard]]
 		file_descriptor_t fd() const noexcept
 		{
 			return m_file_descriptor;
@@ -199,8 +201,10 @@ class file_meta_t
 			,	m_last_modified_at{ last_modified_at }
 		{}
 
+		[[nodiscard]]
 		file_size_t file_total_size() const noexcept { return m_file_total_size; }
 
+		[[nodiscard]]
 		auto last_modified_at() const noexcept { return m_last_modified_at; }
 
 	private:
@@ -291,18 +295,22 @@ class sendfile_t
 		///@}
 
 		//! Check if file is valid.
+		[[nodiscard]]
 		bool is_valid() const noexcept { return m_file_descriptor.is_valid(); }
 
 		//! Get file meta data.
+		[[nodiscard]]
 		const file_meta_t & meta() const
 		{
 			return m_meta;
 		}
 
 		//! Get offset of data to write.
+		[[nodiscard]]
 		auto offset() const noexcept { return m_offset; }
 
 		//! Get size of data to write.
+		[[nodiscard]]
 		auto size() const noexcept { return m_size; }
 
 		/** @name Set file offset and size.
@@ -374,6 +382,7 @@ class sendfile_t
 		}
 		///@}
 
+		[[nodiscard]]
 		auto timelimit() const noexcept { return m_timelimit; }
 
 		/** @name Set timelimit on  write operation..
@@ -398,6 +407,7 @@ class sendfile_t
 		///@}
 
 		//! Get the file descriptor of a given sendfile operation.
+		[[nodiscard]]
 		file_descriptor_t
 		file_descriptor() const noexcept
 		{
@@ -417,6 +427,7 @@ class sendfile_t
 
 			@since v.0.4.9
 		*/
+		[[nodiscard]]
 		friend file_descriptor_holder_t
 		takeaway_file_descriptor( sendfile_t & target )
 		{
@@ -465,6 +476,7 @@ class sendfile_t
  * @since v.0.4.3
 */
 ///@{
+[[nodiscard]]
 inline sendfile_t
 sendfile(
 	//! Native file descriptor.
@@ -477,6 +489,7 @@ sendfile(
 	return sendfile_t{ std::move( fd ), meta, chunk_size };
 }
 
+[[nodiscard]]
 inline sendfile_t
 sendfile(
 	//! Path to file.
@@ -491,6 +504,7 @@ sendfile(
 	return sendfile( std::move( fd ), meta, chunk_size );
 }
 
+[[nodiscard]]
 inline sendfile_t
 sendfile(
 	//! Path to file.
@@ -501,6 +515,7 @@ sendfile(
 	return sendfile( file_path.c_str(), chunk_size );
 }
 
+[[nodiscard]]
 inline sendfile_t
 sendfile(
 	//! Path to file.
@@ -516,3 +531,4 @@ sendfile(
 ///@}
 
 } /* namespace restinio */
+
