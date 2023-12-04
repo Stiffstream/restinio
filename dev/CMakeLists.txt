@@ -50,6 +50,10 @@ else()
     set(CMAKE_CXX_STANDARD 17)
 endif()
 
+if (NOT RESTINIO_EXPLICIT_WIN32_WINNT)
+	set(RESTINIO_EXPLICIT_WIN32_WINNT "0x0602") # Win8 by default
+endif()
+
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -123,6 +127,10 @@ endif ()
 # This effects llhttp and fmt.
 option(BUILD_SHARED_LIBS "Build shared libraries (.dll/.so)" OFF)
 option(BUILD_STATIC_LIBS "Build static libraries (.lib/.a)" ON)
+
+if (WIN32)
+    add_compile_definitions(_WIN32_WINNT=${RESTINIO_EXPLICIT_WIN32_WINNT})
+endif ()
 
 if (MSVC)
     add_compile_options(/W3)
