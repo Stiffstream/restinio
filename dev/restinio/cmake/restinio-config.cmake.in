@@ -16,7 +16,7 @@ if(RESTINIO_ASIO_SOURCE STREQUAL "standalone")
     endif ()
 else ()
     if (RESTINIO_DEP_BOOST_ASIO STREQUAL "find")
-        find_dependency(boost)
+        find_dependency(Boost)
     endif ()
 endif ()
 

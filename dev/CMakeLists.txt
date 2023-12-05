@@ -155,7 +155,7 @@ if (RESTINIO_ASIO_SOURCE STREQUAL "standalone")
 else ()
     if (RESTINIO_DEP_BOOST_ASIO STREQUAL "find")
         find_package(Boost REQUIRED)
-        find_package(Boost REQUIRED COMPONENTS headers regex)
+        find_package(Boost REQUIRED COMPONENTS regex)
     endif ()
 endif ()
 
