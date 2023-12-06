@@ -10,6 +10,8 @@
 
 #include <iterator>
 #include <set>
+#include <string_view>
+#include <sstream>
 
 #include <restinio/core.hpp>
 
@@ -713,6 +715,24 @@ TEST_CASE( "working with response header" , "[header][response]" )
 
 		h.status_code( restinio::status_code::not_found );
 		REQUIRE( restinio::status_code::not_found == h.status_code() );
+
+		{
+			std::ostringstream ss;
+			ss << h.status_code();
+
+			const std::string expected{ "404" };
+
+			REQUIRE( expected == ss.str() );
+		}
+
+		{
+			std::wostringstream wss;
+			wss << h.status_code();
+
+			const std::wstring expected{ L"404" };
+
+			REQUIRE( expected == wss.str() );
+		}
 	}
 
 	SECTION( "request target" )

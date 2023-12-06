@@ -19,6 +19,7 @@
 #include <llhttp.h>
 
 #include <iosfwd>
+#include <ostream>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -2028,6 +2029,19 @@ class http_status_code_t
 		//! Status code value.
 		std::uint16_t m_status_code{ 0 };
 };
+
+//! Helper for printing status_code to ostream.
+/*!
+ * @since v.0.7.1
+ */
+template< typename CharT, typename Traits >
+inline std::basic_ostream<CharT, Traits> &
+operator<<(
+	std::basic_ostream<CharT, Traits> & to,
+	const http_status_code_t & status_code )
+{
+	return to << status_code.raw_code();
+}
 
 namespace status_code
 {
