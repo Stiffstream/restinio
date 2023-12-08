@@ -42,9 +42,11 @@ using file_size_t = std::uint64_t;
 ///@{
 
 //! Get file descriptor which stands for null.
+[[nodiscard]]
 constexpr file_descriptor_t null_file_descriptor(){ return -1; }
 
 //! Open file.
+[[nodiscard]]
 inline file_descriptor_t
 open_file( const char * file_path)
 {
@@ -65,8 +67,31 @@ open_file( const char * file_path)
 	return file_descriptor;
 }
 
+/*!
+ * @brief Helper function that accepts std::filesystem::path.
+ *
+ * Just delegates all real work to open_file(const char *).
+ *
+ * @attention
+ * Uses std::filesystem::path::c_str() to get file name and pass it
+ * to the actual open_file implementation. It means that we assume
+ * that file systems on POSIX uses UTF-8 natively and that
+ * @a file_path is specified in UTF-8.
+ *
+ * @since v.0.7.1
+ */
+[[nodiscard]]
+inline file_descriptor_t
+open_file( const std::filesystem::path & file_path )
+{
+	// Use c_str() on POSIX, because it's assumed that
+	// filesystem uses UTF-8.
+	return open_file( file_path.c_str() );
+}
+
 //! Get file meta.
 template < typename META >
+[[nodiscard]]
 META
 get_file_meta( file_descriptor_t fd )
 {
