@@ -14,9 +14,6 @@
 
 #include <cstdio>
 
-//FIXME: remove after debugging!
-#include <iostream>
-
 namespace restinio
 {
 
@@ -68,8 +65,16 @@ open_file( const char * file_path )
 	return file_descriptor;
 }
 
-//FIXME: Document this!
 /*!
+ * @brief Version of %open_file that accepts std::filesystem::path.
+ *
+ * @attention
+ * It uses std::filesystem::path::wstring() to get the file name and
+ * calls CreateFileW. We assume that @a file_path contains a valid
+ * file name constructed from a wide-char string or from utf-8 string
+ * literal (as `const std::char8_t[N]` in C++20). Or @a file_path is
+ * specified as a narrow string, but it can be automatically converted
+ * to wide-string in the current code page.
  *
  * @since v.0.7.1
  */
@@ -77,9 +82,6 @@ open_file( const char * file_path )
 inline file_descriptor_t
 open_file( const std::filesystem::path & file_path )
 {
-//FIXME: remove after debugging!
-std::wcout << L"trying to open file: " << std::endl << "'" << file_path.wstring() << "'" << std::endl;
-	//FIXME: document this!
 	const auto wide_file_path = file_path.wstring();
 	file_descriptor_t file_descriptor =
 		// Use wide-char version of CreateFile.
@@ -94,11 +96,11 @@ std::wcout << L"trying to open file: " << std::endl << "'" << file_path.wstring(
 
 	if( null_file_descriptor() == file_descriptor )
 	{
-//FIXME: remove after debugging!
-std::cout << std::flush << "\nopen file failed, error: " << GetLastError() << std::endl;
-		//FIXME: is there a way to add `file_path` value into error message
-		//(with respect to the fact that file_path can contain name in Unicode,
-		//in UCS-2, but not in UTF-8)?
+		//NOTE(eao197): I don't know a simple way to add `file_path` value into
+		//error message (with respect to the fact that file_path can contain name
+		//in Unicode, in UCS-2, but not in UTF-8).
+		//Because of that the current version doesn't include file name in the
+		//error description.
 		throw exception_t{
 			fmt::format(
 					RESTINIO_FMT_FORMAT_STRING(
@@ -107,9 +109,6 @@ std::cout << std::flush << "\nopen file failed, error: " << GetLastError() << st
 					GetLastError() )
 		};
 	}
-
-//FIXME: remove after debugging!
-std::cout << "*** file opened!" << std::endl;
 
 	return file_descriptor;
 }
@@ -131,8 +130,6 @@ get_file_meta( file_descriptor_t fd )
 		if( GetFileSizeEx( fd, &file_size ) )
 		{
 			fsize = static_cast< file_size_t >( file_size.QuadPart );
-//FIXME: remove after debugging!
-std::cout << "*** file size: " << fsize << std::endl;
 		}
 		else
 		{
