@@ -14,6 +14,9 @@
 
 #include <cstdio>
 
+//FIXME: remove after debugging!
+#include <iostream>
+
 namespace restinio
 {
 
@@ -33,9 +36,11 @@ using file_size_t = std::uint64_t;
  */
 ///@{
 //! Get file descriptor which stands for null.
+[[nodiscard]]
 inline file_descriptor_t null_file_descriptor(){ return INVALID_HANDLE_VALUE; }
 
 //! Open file.
+[[nodiscard]]
 inline file_descriptor_t
 open_file( const char * file_path )
 {
@@ -63,8 +68,56 @@ open_file( const char * file_path )
 	return file_descriptor;
 }
 
+//FIXME: Document this!
+/*!
+ *
+ * @since v.0.7.1
+ */
+[[nodiscard]]
+inline file_descriptor_t
+open_file( const std::filesystem::path & file_path )
+{
+//FIXME: remove after debugging!
+std::wcout << L"trying to open file: " << std::endl << "'" << file_path.wstring() << "'" << std::endl;
+	//FIXME: document this!
+	const auto wide_file_path = file_path.wstring();
+	file_descriptor_t file_descriptor =
+		// Use wide-char version of CreateFile.
+		::CreateFileW(
+			wide_file_path.c_str(),
+			GENERIC_READ,
+			FILE_SHARE_READ,
+			0,
+			OPEN_EXISTING,
+			FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
+			0 );
+
+	if( null_file_descriptor() == file_descriptor )
+	{
+//FIXME: remove after debugging!
+std::cout << std::flush << "\nopen file failed, error: " << GetLastError() << std::endl;
+		//FIXME: is there a way to add `file_path` value into error message
+		//(with respect to the fact that file_path can contain name in Unicode,
+		//in UCS-2, but not in UTF-8)?
+		throw exception_t{
+			fmt::format(
+					RESTINIO_FMT_FORMAT_STRING(
+							"open_file(std::filesystem::path) "
+							"unable to openfile: error({})" ),
+					GetLastError() )
+		};
+	}
+
+//FIXME: remove after debugging!
+std::cout << "*** file opened!" << std::endl;
+
+	return file_descriptor;
+}
+
+
 //! Get file meta.
 template < typename META >
+[[nodiscard]]
 META
 get_file_meta( file_descriptor_t fd )
 {
@@ -78,6 +131,8 @@ get_file_meta( file_descriptor_t fd )
 		if( GetFileSizeEx( fd, &file_size ) )
 		{
 			fsize = static_cast< file_size_t >( file_size.QuadPart );
+//FIXME: remove after debugging!
+std::cout << "*** file size: " << fsize << std::endl;
 		}
 		else
 		{

@@ -135,6 +135,7 @@ endif ()
 if (MSVC)
     add_compile_options(/W3)
     add_compile_definitions(_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS)
+    add_compile_options(/utf-8)
 endif ()
 
 # ====================================================================

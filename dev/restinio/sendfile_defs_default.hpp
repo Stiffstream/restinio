@@ -37,9 +37,11 @@ using file_size_t = std::uint64_t;
 ///@{
 
 //! Get file descriptor which stands for null.
+[[nodiscard]]
 constexpr file_descriptor_t null_file_descriptor(){ return nullptr; }
 
 //! Open file.
+[[nodiscard]]
 inline file_descriptor_t
 open_file( const char * file_path )
 {
@@ -59,6 +61,7 @@ open_file( const char * file_path )
 
 //! Get file size.
 template < typename META >
+[[nodiscard]]
 META
 get_file_meta( file_descriptor_t fd )
 {

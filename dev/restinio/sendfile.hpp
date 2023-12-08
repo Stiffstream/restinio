@@ -10,9 +10,10 @@
 
 #pragma once
 
-#include <string>
-#include <chrono>
 #include <array>
+#include <chrono>
+#include <filesystem>
+#include <string>
 
 #include <restinio/impl/include_fmtlib.hpp>
 
@@ -88,6 +89,7 @@ class sendfile_chunk_size_guarded_value_t
 		{}
 
 		//! Get the valid value of a chunk size.
+		[[nodiscard]]
 		constexpr auto value() const noexcept { return m_chunk_size; }
 
 	private:
@@ -137,11 +139,9 @@ class file_descriptor_holder_t
 
 		file_descriptor_holder_t & operator = ( file_descriptor_holder_t && fdh ) noexcept
 		{
-			if( this != &fdh )
-			{
-				file_descriptor_holder_t tmp{ std::move( fdh ) };
-				swap( *this, tmp );
-			}
+			file_descriptor_holder_t tmp{ std::move( fdh ) };
+			swap( *this, tmp );
+
 			return *this;
 		}
 
@@ -284,11 +284,8 @@ class sendfile_t
 
 		sendfile_t & operator = ( sendfile_t && sf ) noexcept
 		{
-			if( this != &sf )
-			{
-				sendfile_t tmp{ std::move( sf ) };
-				swap( *this, tmp );
-			}
+			sendfile_t tmp{ std::move( sf ) };
+			swap( *this, tmp );
 
 			return *this;
 		}
@@ -358,6 +355,7 @@ class sendfile_t
 		}
 		///@}
 
+		[[nodiscard]]
 		auto chunk_size() const noexcept { return m_chunk_size; }
 
 		/** @name Set prefered chunk size to use in  write operation.
@@ -527,6 +525,25 @@ sendfile(
 		sendfile(
 			std::string{ file_path.data(), file_path.size() },
 			chunk_size );
+}
+
+//FIXME: document this!
+/*!
+ * @since v.0.7.1
+ */
+[[nodiscard]]
+inline sendfile_t
+sendfile(
+	//! Path to file.
+	const std::filesystem::path & file_path,
+	//! The max size of a data to be send on a single iteration.
+	file_size_t chunk_size = sendfile_default_chunk_size )
+{
+	file_descriptor_holder_t fd{ open_file( file_path ) };
+
+	auto meta = get_file_meta< file_meta_t >( fd.fd() );
+
+	return sendfile( std::move( fd ), meta, chunk_size );
 }
 ///@}
 
