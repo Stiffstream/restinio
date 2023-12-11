@@ -10,6 +10,12 @@
 
 #pragma once
 
+//eao197: this code has to be uncommented to check the default
+//implementation of sendfile operation.
+//#if defined(RESTINIO_ASIO_HAS_WINDOWS_OVERLAPPED_PTR)
+//#undef RESTINIO_ASIO_HAS_WINDOWS_OVERLAPPED_PTR
+//#endif
+
 #if defined(RESTINIO_ASIO_HAS_WINDOWS_OVERLAPPED_PTR)
 
 #include <cstdio>

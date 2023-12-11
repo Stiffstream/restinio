@@ -11,6 +11,7 @@
 #pragma once
 
 #include <cstdio>
+#include <cerrno>
 
 // for fixing #199 (https://github.com/Stiffstream/restinio/issues/199)
 // fopen_s seems to be defained in the global namespace.
@@ -45,18 +46,51 @@ constexpr file_descriptor_t null_file_descriptor(){ return nullptr; }
 inline file_descriptor_t
 open_file( const char * file_path )
 {
-	file_descriptor_t file_descriptor = fopen_s( file_path, "rb" );
+	file_descriptor_t file_descriptor{};
+	const auto result = fopen_s( &file_descriptor, file_path, "rb" );
 
-	if( null_file_descriptor() == file_descriptor )
+	if( result )
 	{
+		const auto err_code = errno;
 		throw exception_t{
 			fmt::format(
-					RESTINIO_FMT_FORMAT_STRING( "std::fopen failed: '{}'" ),
-					file_path )
+					RESTINIO_FMT_FORMAT_STRING( "fopen_s('{}') failed; errno={}" ),
+					file_path, err_code )
 		};
 	}
 
 	return file_descriptor;
+}
+
+//FIXME: document platform-specific behavior!
+/*!
+ * @brief Helper function that accepts std::filesystem::path.
+ *
+ * @since v.0.7.1
+ */
+[[nodiscard]]
+inline file_descriptor_t
+open_file( const std::filesystem::path & file_path )
+{
+#if defined( _WIN32 ) || defined( __WIN32__ )
+	file_descriptor_t file_descriptor{};
+	const auto result = _wfopen_s( &file_descriptor, file_path.c_str(), L"rb" );
+
+	if( result )
+	{
+		const auto err_code = errno;
+		throw exception_t{
+			fmt::format(
+					RESTINIO_FMT_FORMAT_STRING( "_wfopen_s failed; errno={}" ),
+					err_code )
+		};
+	}
+
+	return file_descriptor;
+#else
+	// Just delegate to ordinary open_file assuming that file_path is in UTF-8.
+	return open_file( file_path.c_str() );
+#endif
 }
 
 //! Get file size.

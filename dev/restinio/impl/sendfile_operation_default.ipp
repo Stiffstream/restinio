@@ -41,7 +41,9 @@ class sendfile_operation_runner_t final
 			const auto n =
 				std::fseek(
 					this->m_file_descriptor,
-					this->m_next_write_offset,
+					//eao197: suppress warning from a compiler if restinio::file_offset_t
+					//is not long.
+					static_cast<long>(this->m_next_write_offset),
 					SEEK_SET );
 
 			if( 0 == n )
