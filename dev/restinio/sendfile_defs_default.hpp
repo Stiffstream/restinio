@@ -14,7 +14,7 @@
 #include <cerrno>
 
 // for fixing #199 (https://github.com/Stiffstream/restinio/issues/199)
-// fopen_s seems to be defained in the global namespace.
+// fopen_s seems to be defined in the global namespace.
 #include <stdio.h>
 
 namespace restinio
@@ -41,11 +41,14 @@ using file_size_t = std::uint64_t;
 [[nodiscard]]
 constexpr file_descriptor_t null_file_descriptor(){ return nullptr; }
 
+//FIXME: document platform-specific behavior.
 //! Open file.
 [[nodiscard]]
 inline file_descriptor_t
 open_file( const char * file_path )
 {
+//NOTE: fopen_s is only used for VC++ compiler.
+#if defined(_MSC_VER)
 	file_descriptor_t file_descriptor{};
 	const auto result = fopen_s( &file_descriptor, file_path, "rb" );
 
@@ -60,6 +63,20 @@ open_file( const char * file_path )
 	}
 
 	return file_descriptor;
+#else
+	file_descriptor_t file_descriptor = std::fopen( file_path, "rb" );
+
+	if( null_file_descriptor() == file_descriptor )
+	{
+		throw exception_t{
+			fmt::format(
+					RESTINIO_FMT_FORMAT_STRING( "std::fopen failed: '{}'" ),
+					file_path )
+		};
+	}
+
+	return file_descriptor;
+#endif
 }
 
 //FIXME: document platform-specific behavior!
@@ -72,7 +89,8 @@ open_file( const char * file_path )
 inline file_descriptor_t
 open_file( const std::filesystem::path & file_path )
 {
-#if defined( _WIN32 ) || defined( __WIN32__ )
+//NOTE: _wfopen_s is only used for VC++ compiler.
+#if defined(_MSC_VER)
 	file_descriptor_t file_descriptor{};
 	const auto result = _wfopen_s( &file_descriptor, file_path.c_str(), L"rb" );
 

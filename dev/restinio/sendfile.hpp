@@ -10,16 +10,18 @@
 
 #pragma once
 
-#include <array>
-#include <chrono>
-#include <filesystem>
-#include <string>
-
 #include <restinio/impl/include_fmtlib.hpp>
 
 #include <restinio/asio_include.hpp>
 #include <restinio/string_view.hpp>
 #include <restinio/exception.hpp>
+
+#include <restinio/detect_os.hpp>
+
+#include <array>
+#include <chrono>
+#include <filesystem>
+#include <string>
 
 /*
 	Defenitions for:
@@ -28,9 +30,9 @@
 		file_size_t
 */
 
-#if defined( _MSC_VER ) || defined(__MINGW32__)
+#if defined(RESTINIO_OS_WINDOWS)
 	#include "sendfile_defs_win.hpp"
-#elif (defined( __clang__ ) || defined( __GNUC__ )) && !defined(__WIN32__)
+#elif defined(RESTINIO_OS_UNIX)
 	#include "sendfile_defs_posix.hpp"
 #else
 	#if defined (RESTINIO_ENABLE_SENDFILE_DEFAULT_IMPL)

@@ -98,9 +98,9 @@ make_error_code( const Error_Type & e ) noexcept
 	Concrete implementations.
 */
 
-#if defined( _MSC_VER ) || defined( __MINGW32__ )
+#if defined(RESTINIO_OS_WINDOWS)
 	#include "sendfile_operation_win.ipp"
-#elif (defined( __clang__ ) || defined( __GNUC__ )) && !defined(__WIN32__)
+#elif defined(RESTINIO_OS_UNIX)
 	#include "sendfile_operation_posix.ipp"
 #else
 	#if defined (RESTINIO_ENABLE_SENDFILE_DEFAULT_IMPL)
