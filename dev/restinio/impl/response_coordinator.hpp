@@ -95,17 +95,18 @@ class response_context_t
 			// Some STL implementation can have std::vector::erase that
 			// doesn't throw. So we use a kind of static if to select
 			// an appropriate behaviour.
-			static_if_else< noexcept(m_write_groups.erase(m_write_groups.begin())) >(
-					// This is for the case when std::vector::erase doesn't throw.
-					[this]() noexcept {
+			if constexpr( noexcept(m_write_groups.erase(m_write_groups.begin())) )
+			{
+				// This is for the case when std::vector::erase doesn't throw.
+				m_write_groups.erase( m_write_groups.begin() );
+			}
+			else
+			{
+				// This is for the case when std::vector::erase does throw.
+				restinio::utils::suppress_exceptions_quietly( [this] {
 						m_write_groups.erase( m_write_groups.begin() );
-					},
-					// This is for the case when std::vector::erase does throw.
-					[this]() {
-						restinio::utils::suppress_exceptions_quietly( [this] {
-								m_write_groups.erase( m_write_groups.begin() );
-						} );
-					} );
+				} );
+			}
 
 			return result;
 		}
