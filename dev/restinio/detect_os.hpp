@@ -26,7 +26,12 @@
 
 /*!
  * @def RESTINIO_OS_UNIX
- * @brief A marker for Unix platforms.
+ * @brief A marker for Unix platforms, but not macOS/iOS.
+ */
+
+/*!
+ * @def RESTINIO_OS_APPLE
+ * @brief A marker for macOS/iOS.
  */
 
 #if defined( _WIN64 )
@@ -43,5 +48,9 @@
 
 #if defined(unix) || defined(__unix__) || defined(__unix)
 	#define RESTINIO_OS_UNIX
+#endif
+
+#if defined(__APPLE__)
+	#define RESTINIO_OS_APPLE
 #endif
 

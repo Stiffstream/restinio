@@ -32,7 +32,7 @@
 
 #if defined(RESTINIO_OS_WINDOWS)
 	#include "sendfile_defs_win.hpp"
-#elif defined(RESTINIO_OS_UNIX)
+#elif defined(RESTINIO_OS_UNIX) || defined(RESTINIO_OS_APPLE)
 	#include "sendfile_defs_posix.hpp"
 #else
 	#if defined (RESTINIO_ENABLE_SENDFILE_DEFAULT_IMPL)
