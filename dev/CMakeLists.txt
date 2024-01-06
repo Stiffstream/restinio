@@ -311,7 +311,7 @@ message("========================================")
 
 if (RESTINIO_TEST)
     if (RESTINIO_DEP_CATCH2 STREQUAL "find")
-        find_package(catch2 REQUIRED)
+        find_package(Catch2 REQUIRED)
     elseif (RESTINIO_DEP_CATCH2 STREQUAL "local")
         message("========================================")
         message(STATUS "Add subdirectory catch2")
@@ -322,9 +322,10 @@ if (RESTINIO_TEST)
         add_subdirectory(catch2)
 
         set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/catch2/extras)
-        include(Catch)
         message("========================================")
     endif ()
+
+    include(Catch)
 
     enable_testing()
     add_subdirectory(test)
