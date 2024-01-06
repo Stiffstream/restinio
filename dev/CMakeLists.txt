@@ -311,7 +311,7 @@ message("========================================")
 
 if (RESTINIO_TEST)
     if (RESTINIO_DEP_CATCH2 STREQUAL "find")
-        find_package(fmt REQUIRED)
+        find_package(catch2 REQUIRED)
     elseif (RESTINIO_DEP_CATCH2 STREQUAL "local")
         message("========================================")
         message(STATUS "Add subdirectory catch2")
