@@ -106,12 +106,18 @@ set_property(CACHE RESTINIO_DEP_EXPECTED_LITE PROPERTY STRINGS "system;find;loca
 set(RESTINIO_DEP_CATCH2 "local" CACHE STRING "How to get Catch2 dependency)")
 set_property(CACHE RESTINIO_DEP_CATCH2 PROPERTY STRINGS "find;local")
 
+# By default we assume to use an embedded version of SObjectizer.
+set(RESTINIO_DEP_SOBJECTIZER "local" CACHE STRING "How to get SObjectizer dependency)")
+set_property(CACHE RESTINIO_DEP_SOBJECTIZER PROPERTY STRINGS "system;find;local")
+
+
 message(STATUS "RESTINIO_DEP_STANDALONE_ASIO: ${RESTINIO_DEP_STANDALONE_ASIO}")
 message(STATUS "RESTINIO_DEP_BOOST_ASIO:      ${RESTINIO_DEP_BOOST_ASIO}")
 message(STATUS "RESTINIO_DEP_LLHTTP:          ${RESTINIO_DEP_LLHTTP}")
 message(STATUS "RESTINIO_DEP_FMT:             ${RESTINIO_DEP_FMT}")
 message(STATUS "RESTINIO_DEP_EXPECTED_LITE:   ${RESTINIO_DEP_EXPECTED_LITE}")
 message(STATUS "RESTINIO_DEP_CATCH2:          ${RESTINIO_DEP_CATCH2}")
+message(STATUS "RESTINIO_DEP_SOBJECTIZER:     ${RESTINIO_DEP_SOBJECTIZER}")
 
 set(RESTINIO_ASIO_SOURCE "standalone" CACHE STRING "What source of ASIO to use (standalone, boost)")
 set(RESTINIO_ASIO_SOURCE_VALUES "standalone;boost")
@@ -194,8 +200,24 @@ endif ()
 
 if (RESTINIO_WITH_SOBJECTIZER)
     message("========================================")
-    SET(SOBJECTIZER_BUILD_STATIC ON)
-    add_subdirectory(so_5)
+    if (RESTINIO_DEP_SOBJECTIZER STREQUAL "local")
+        message(STATUS "Add subdirectory so_5")
+        SET(SOBJECTIZER_BUILD_STATIC ON)
+        add_subdirectory(so_5)
+
+        set(RESTINIO_SOBJECTIZER_LIB_LINK_NAME "sobjectizer::StaticLib")
+    elseif (RESTINIO_DEP_SOBJECTIZER STREQUAL "find")
+        find_package(sobjectizer CONFIG REQUIRED)
+
+        set(RESTINIO_SOBJECTIZER_LIB_LINK_NAME "sobjectizer::StaticLib")
+    elseif (RESTINIO_DEP_SOBJECTIZER STREQUAL "system")
+        if (NOT RESTINIO_SOBJECTIZER_LIB_LINK_NAME)
+            message(FATAL_ERROR "The RESTINIO_SOBJECTIZER_LIB_LINK_NAME has to be "
+                "specified explicitly when RESTINIO_DEP_SOBJECTIZER is 'system'")
+        endif()
+    endif()
+
+    message(STATUS "RESTINIO_SOBJECTIZER_LIB_LINK_NAME: ${RESTINIO_SOBJECTIZER_LIB_LINK_NAME}")
     message("========================================")
 endif ()
 
@@ -340,3 +362,5 @@ if (RESTINIO_BENCHMARK)
     include_directories("${CMAKE_SOURCE_DIR}/clara")
     add_subdirectory(benches)
 endif ()
+
+# vim:ts=4:sts=4:sw=4:expandtab:

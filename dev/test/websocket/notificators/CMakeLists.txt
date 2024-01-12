@@ -1,4 +1,8 @@
 set(UNITTEST _unit.test.notificators)
 include(${CMAKE_SOURCE_DIR}/cmake/unittest.cmake)
 
-TARGET_LINK_LIBRARIES(${UNITTEST} PRIVATE sobjectizer::StaticLib)
+if (RESTINIO_DEP_SOBJECTIZER STREQUAL "system")
+	target_compile_definitions(${UNITTEST} PRIVATE SO_5_STATIC_LIB)
+endif()
+
+target_link_libraries(${UNITTEST} PRIVATE ${RESTINIO_SOBJECTIZER_LIB_LINK_NAME})

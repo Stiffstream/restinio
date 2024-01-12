@@ -1,4 +1,8 @@
 set(SAMPLE sample.async_handling_with_sobjectizer)
 include(${CMAKE_SOURCE_DIR}/cmake/sample.cmake)
 
-TARGET_LINK_LIBRARIES(${SAMPLE} PRIVATE sobjectizer::StaticLib)
+if (RESTINIO_DEP_SOBJECTIZER STREQUAL "system")
+	target_compile_definitions(${SAMPLE} PRIVATE SO_5_STATIC_LIB)
+endif()
+
+target_link_libraries(${SAMPLE} PRIVATE ${RESTINIO_SOBJECTIZER_LIB_LINK_NAME})
