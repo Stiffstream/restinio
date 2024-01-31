@@ -146,7 +146,7 @@ if ("${RESTINIO_EXPLICIT_CPPSTD}" STREQUAL "17"
     #       conditional block.
 endif()
 
-if (RESTINIO_DEP_FMT STREQUAL "system")
+if (RESTINIO_DEP_EXPECTED_LITE STREQUAL "system")
     message(STATUS "Using system expected-lite")
 elseif (TARGET expected-lite::expected-lite)
     target_link_libraries(${RESTINIO_LIBRARY_NAME} INTERFACE expected-lite::expected-lite)
