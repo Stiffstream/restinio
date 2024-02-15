@@ -41,8 +41,15 @@ using file_size_t = std::uint64_t;
 [[nodiscard]]
 constexpr file_descriptor_t null_file_descriptor(){ return nullptr; }
 
-//FIXME: document platform-specific behavior.
 //! Open file.
+/*!
+ * @note
+ * It uses `fopen_s` if the compiler is VC++.
+ *
+ * @note
+ * It's expected that @a file_path contains names in ANSI encoding
+ * on Windows platform.
+ */
 [[nodiscard]]
 inline file_descriptor_t
 open_file( const char * file_path )
@@ -79,9 +86,15 @@ open_file( const char * file_path )
 #endif
 }
 
-//FIXME: document platform-specific behavior!
 /*!
  * @brief Helper function that accepts std::filesystem::path.
+ *
+ * @note
+ * It uses `_wfopen_s` if the compiler is VC++.
+ *
+ * @note
+ * It's expected that @a file_path contains names in ANSI encoding
+ * on Windows platform.
  *
  * @since v.0.7.1
  */

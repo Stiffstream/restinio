@@ -529,8 +529,18 @@ sendfile(
 			chunk_size );
 }
 
-//FIXME: document this!
 /*!
+ * @brief Creates an instance for service sendfile operation.
+ *
+ * This overload accepts `std::filesystem::path` as file name.
+ *
+ * @note
+ * On Windows it uses `std::filesystem::path::wstring()` for opening
+ * the file. It means that on Windows UNICODE-based version of
+ * file-related functions are used and file names with UNICODE symbols
+ * are supported. On UNIX platforms `std::filesystem::path::string()` is
+ * used and it's assumed that file names are in UTF-8.
+ *
  * @since v.0.7.1
  */
 [[nodiscard]]
