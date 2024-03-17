@@ -100,7 +100,7 @@ get_file_meta( file_descriptor_t fd )
 		throw exception_t{ "invalid file descriptor" };
 	}
 
-#if defined( RESTINIO_FREEBSD_TARGET ) || defined( RESTINIO_MACOS_TARGET )
+#if !defined( _LARGEFILE64_SOURCE )
 	struct stat file_stat;
 
 	const auto fstat_rc = ::fstat( fd, &file_stat );
