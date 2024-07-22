@@ -4,6 +4,8 @@
 
 #include <catch2/catch_all.hpp>
 
+#include <fmt/ranges.h>
+
 #include <restinio/core.hpp>
 
 #include <test/common/utest_logger.hpp>

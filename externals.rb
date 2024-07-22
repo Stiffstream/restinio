@@ -21,14 +21,14 @@ MxxRu::arch_externals :llhttp do |e|
 end
 
 MxxRu::arch_externals :fmt do |e|
-  e.url 'https://github.com/fmtlib/fmt/archive/10.1.1.zip'
+  e.url 'https://github.com/fmtlib/fmt/archive/11.0.2.zip'
 
   e.map_dir 'include' => 'dev/fmt'
   e.map_dir 'src' => 'dev/fmt'
   e.map_dir 'support' => 'dev/fmt'
   e.map_file 'CMakeLists.txt' => 'dev/fmt/*'
-  e.map_file 'README.rst' => 'dev/fmt/*'
-  e.map_file 'ChangeLog.rst' => 'dev/fmt/*'
+  e.map_file 'README.md' => 'dev/fmt/*'
+  e.map_file 'ChangeLog.md' => 'dev/fmt/*'
 end
 
 MxxRu::arch_externals :expected_lite do |e|
