@@ -40,7 +40,7 @@ MxxRu::arch_externals :expected_lite do |e|
 end
 
 MxxRu::arch_externals :catch do |e|
-  e.url 'https://github.com/catchorg/Catch2/archive/refs/tags/v3.5.0.tar.gz'
+  e.url 'https://github.com/catchorg/Catch2/archive/refs/tags/v3.7.0.tar.gz'
 
   e.map_dir 'src' => 'dev/catch2/'
   e.map_dir 'CMake' => 'dev/catch2/'
