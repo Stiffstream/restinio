@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 
 if(NOT RESTINIO_LIBRARY_NAME)
     # That must be the case we RESTinio is used as a dependency.
