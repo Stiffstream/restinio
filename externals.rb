@@ -32,11 +32,13 @@ MxxRu::arch_externals :fmt do |e|
 end
 
 MxxRu::arch_externals :expected_lite do |e|
-  e.url 'https://github.com/martinmoene/expected-lite/archive/refs/tags/v0.6.3.tar.gz'
+  e.url 'https://github.com/martinmoene/expected-lite/archive/refs/tags/v0.8.0.tar.gz'
 
   e.map_dir 'include' => 'dev/expected-lite'
   e.map_dir 'cmake' => 'dev/expected-lite'
   e.map_file 'CMakeLists.txt' => 'dev/expected-lite/*'
+  e.map_file 'LICENSE.txt' => 'dev/expected-lite/*'
+  e.map_file 'README.md' => 'dev/expected-lite/*'
 end
 
 MxxRu::arch_externals :catch do |e|
