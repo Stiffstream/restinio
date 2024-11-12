@@ -254,12 +254,6 @@ IF (PCRE2_FOUND)
   message( STATUS "PCRE2_INCLUDE_DIRS='" ${PCRE2_INCLUDE_DIRS} "'" )
 ENDIF ()
 
-# PCRE2
-find_package(PCRE2)
-IF (PCRE2_FOUND)
-  message( STATUS "PCRE2_LIBRARIES='" ${PCRE2_LIBRARIES} "'" )
-  message( STATUS "PCRE2_INCLUDE_DIRS='" ${PCRE2_INCLUDE_DIRS} "'" )
-ENDIF ()
 # ====================================================================
 
 option(RESTINIO_GCC_CODE_COVERAGE "Build code coverage targets" OFF)
