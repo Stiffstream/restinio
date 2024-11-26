@@ -41,7 +41,7 @@ class sendfile_operation_runner_t final
 		virtual void
 		start() override
 		{
-#if defined( RESTINIO_FREEBSD_TARGET ) || defined( RESTINIO_MACOS_TARGET )
+#if !defined( _LARGEFILE64_SOURCE )
 			auto const n = ::lseek( this->m_file_descriptor, this->m_next_write_offset, SEEK_SET );
 #else
 			auto const n = ::lseek64( this->m_file_descriptor, this->m_next_write_offset, SEEK_SET );
@@ -274,11 +274,19 @@ class sendfile_operation_runner_t< asio_ns::ip::tcp::socket > final
 		auto
 		call_native_sendfile() noexcept
 		{
+#if defined( _LARGEFILE64_SOURCE )
 			return ::sendfile64(
 					m_socket.native_handle(),
 					m_file_descriptor,
 					&m_next_write_offset,
 					std::min< file_size_t >( m_remained_size, m_chunk_size ) );
+#else
+			return ::sendfile(
+					m_socket.native_handle(),
+					m_file_descriptor,
+					&m_next_write_offset,
+					std::min< file_size_t >( m_remained_size, m_chunk_size ) );
+#endif
 		}
 #endif
 
