@@ -1131,8 +1131,8 @@ class connection_t final
 					m_logger.trace( [&]{
 						// Get status line:
 						const string_view_t status_line{
-								asio_ns::buffer_cast< const char * >(
-									next_write_group->first.items().front().buf() ),
+								static_cast< const char * >(
+									next_write_group->first.items().front().buf().data() ),
 								next_write_group->first.status_line_size() };
 
 						return fmt::format(

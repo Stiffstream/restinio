@@ -263,7 +263,7 @@ class acceptor_t final
 				ep = m_acceptor.local_endpoint();
 
 				// Now we can switch acceptor to listen state.
-				m_acceptor.listen( asio_ns::socket_base::max_connections );
+				m_acceptor.listen( asio_ns::socket_base::max_listen_connections );
 
 				// Call accept connections routine.
 				for( std::size_t i = 0; i< this->concurrent_accept_sockets_count(); ++i )
@@ -620,7 +620,7 @@ class acceptor_t final
 				else if( str_addr == "ip6-localhost" )
 					str_addr = "::1";
 
-				result = asio_ns::ip::address::from_string( str_addr );
+				result = asio_ns::ip::make_address( str_addr );
 			}
 			else if( auto * addr_v = std::get_if<asio_ns::ip::address>( &from ) )
 			{
