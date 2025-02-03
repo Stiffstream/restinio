@@ -11,7 +11,7 @@
 
 #pragma once
 
-// The current version is 0.7.3
+// The current version is 0.7.4
 //
 /*!
  * The major part of version number.
@@ -33,7 +33,7 @@
  *
  * If RESTinio's version is 0.6.23 then RESTINIO_VERSION_PATCH==23.
  */
-#define RESTINIO_VERSION_PATCH 3ull
+#define RESTINIO_VERSION_PATCH 4ull
 
 /*!
  * Helper macro for make single number representation of RESTinio's version.
