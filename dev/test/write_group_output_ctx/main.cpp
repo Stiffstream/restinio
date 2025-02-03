@@ -24,7 +24,7 @@ make_string( const asio_ns::const_buffer & buf )
 {
 	return
 		std::string{
-			asio_ns::buffer_cast< const char * >( buf ),
+			static_cast< const char * >( buf.data() ),
 			asio_ns::buffer_size( buf ) };
 }
 

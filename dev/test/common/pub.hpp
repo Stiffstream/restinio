@@ -40,7 +40,7 @@ do_with_socket(
 
 	socket.connect(
 		restinio::asio_ns::ip::tcp::endpoint{
-			restinio::asio_ns::ip::address::from_string( str_addr ),
+			restinio::asio_ns::ip::make_address( str_addr ),
 			port
 		} );
 

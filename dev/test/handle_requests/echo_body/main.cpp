@@ -116,7 +116,7 @@ perform_test()
 			[&request_handler]( auto & settings ){
 				settings
 					.port( utest_default_port() )
-					.address( restinio::asio_ns::ip::address::from_string( "127.0.0.1" ) )
+					.address( restinio::asio_ns::ip::make_address( "127.0.0.1" ) )
 					.request_handler( request_handler );
 			}
 		};
