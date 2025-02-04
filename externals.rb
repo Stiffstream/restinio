@@ -6,13 +6,13 @@ end
 
 MxxRu::arch_externals :asio do |e|
 #  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-18-0.tar.gz'
-  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-28-2.tar.gz'
+  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-32-0.tar.gz'
 
   e.map_dir 'asio/include' => 'dev/asio'
 end
 
 MxxRu::arch_externals :llhttp do |e|
-  e.url 'https://github.com/nodejs/llhttp/archive/refs/tags/release/v9.1.3.tar.gz'
+  e.url 'https://github.com/nodejs/llhttp/archive/refs/tags/release/v9.2.1.tar.gz'
 
   e.map_dir 'include' => 'dev/nodejs/llhttp'
   e.map_dir 'src' => 'dev/nodejs/llhttp'
@@ -21,7 +21,7 @@ MxxRu::arch_externals :llhttp do |e|
 end
 
 MxxRu::arch_externals :fmt do |e|
-  e.url 'https://github.com/fmtlib/fmt/archive/11.0.2.zip'
+  e.url 'https://github.com/fmtlib/fmt/archive/11.1.3.zip'
 
   e.map_dir 'include' => 'dev/fmt'
   e.map_dir 'src' => 'dev/fmt'
@@ -42,7 +42,7 @@ MxxRu::arch_externals :expected_lite do |e|
 end
 
 MxxRu::arch_externals :catch do |e|
-  e.url 'https://github.com/catchorg/Catch2/archive/refs/tags/v3.7.0.tar.gz'
+  e.url 'https://github.com/catchorg/Catch2/archive/refs/tags/v3.7.1.tar.gz'
 
   e.map_dir 'src' => 'dev/catch2/'
   e.map_dir 'CMake' => 'dev/catch2/'
