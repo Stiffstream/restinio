@@ -33,7 +33,7 @@ make_string( const BUF & buf )
 {
 	return
 		std::string{
-			asio_ns::buffer_cast< const char * >( buf.buf() ),
+			static_cast< const char * >( buf.buf().data() ),
 			asio_ns::buffer_size( buf.buf() ) };
 }
 

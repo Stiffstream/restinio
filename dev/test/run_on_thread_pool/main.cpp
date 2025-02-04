@@ -92,9 +92,11 @@ TEST_CASE( "on thread pool with break signals" , "[with_break_signal]" )
 
 	// Wait for HTTP server to run.
 	std::promise<void> started;
-	http_server.io_context().post( [&started] {
-			started.set_value();
-		} );
+	restinio::asio_ns::post(
+			http_server.io_context(),
+			[&started] {
+				started.set_value();
+			} );
 	started.get_future().get();
 
 	std::string response;
@@ -160,7 +162,9 @@ TEST_CASE( "on thread pool without break signals" , "[without_break_signal]" )
 
 	// Wait for HTTP server to run.
 	std::promise<void> started;
-	http_server.io_context().post( [&started] {
+	restinio::asio_ns::post(
+		http_server.io_context(),
+		[&started] {
 			started.set_value();
 		} );
 	started.get_future().get();
@@ -228,7 +232,9 @@ TEST_CASE( "server on thread pool runner" , "[on_pool_runner]" )
 
 	// Wait for HTTP server to run.
 	std::promise<void> started;
-	http_server.io_context().post( [&started] {
+	restinio::asio_ns::post(
+		http_server.io_context(),
+		[&started] {
 			started.set_value();
 		} );
 	started.get_future().get();

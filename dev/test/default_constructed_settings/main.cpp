@@ -291,7 +291,7 @@ TEST_CASE( "Acceptor options" , "[settings][acceptor_options]" )
 
 	acceptor_option_setter = s.acceptor_options_setter();
 
-	asio_ns::io_service io_svc;
+	asio_ns::io_context io_svc;
 	asio_ns::ip::tcp::acceptor dummy_acceptor{ io_svc };
 
 	restinio::acceptor_options_t acceptor_options{ dummy_acceptor };
@@ -318,7 +318,7 @@ TEST_CASE( "Socket options" , "[settings][socket_options]" )
 
 	socket_option_setter = s.socket_options_setter();
 
-	asio_ns::io_service io_svc;
+	asio_ns::io_context io_svc;
 	asio_ns::ip::tcp::socket dummy_socket{ io_svc };
 	restinio::socket_options_t socket_options{ dummy_socket };
 

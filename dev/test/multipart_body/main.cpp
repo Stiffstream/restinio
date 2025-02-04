@@ -39,7 +39,7 @@ auto
 make_dummy_endpoint()
 {
 	return restinio::endpoint_t{
-			restinio::asio_ns::ip::address::from_string("127.0.0.1"),
+			restinio::asio_ns::ip::make_address("127.0.0.1"),
 			12345u
 	};
 }
