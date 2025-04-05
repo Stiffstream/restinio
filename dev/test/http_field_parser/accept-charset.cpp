@@ -3,9 +3,9 @@
 	restinio
 */
 
-#include <catch2/catch_all.hpp>
-
 #include <restinio/helpers/http_field_parsers/accept-charset.hpp>
+
+#include <catch2/catch_all.hpp>
 
 namespace restinio
 {

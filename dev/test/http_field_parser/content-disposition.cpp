@@ -3,9 +3,9 @@
 	restinio
 */
 
-#include <catch2/catch_all.hpp>
-
 #include <restinio/helpers/http_field_parsers/content-disposition.hpp>
+
+#include <catch2/catch_all.hpp>
 
 TEST_CASE( "Content-Disposition", "[content-disposition]" )
 {

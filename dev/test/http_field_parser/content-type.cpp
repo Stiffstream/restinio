@@ -2,9 +2,9 @@
 	restinio
 */
 
-#include <catch2/catch_all.hpp>
-
 #include <restinio/helpers/http_field_parsers/content-type.hpp>
+
+#include <catch2/catch_all.hpp>
 
 TEST_CASE( "Content-Type", "[media-type][content-type]" )
 {

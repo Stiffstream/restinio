@@ -4,15 +4,15 @@
 
 #define NOMINMAX
 
-#include <catch2/catch_all.hpp>
-
-#include <fmt/format.h>
-
-#include <restinio/impl/include_fmtlib.hpp>
+#include <restinio/helpers/http_field_parsers/basics.hpp>
 
 #include <restinio/helpers/easy_parser.hpp>
 
-#include <restinio/helpers/http_field_parsers/basics.hpp>
+#include <restinio/impl/include_fmtlib.hpp>
+
+#include <fmt/format.h>
+
+#include <catch2/catch_all.hpp>
 
 #include <variant>
 

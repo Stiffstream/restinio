@@ -2,9 +2,9 @@
 	restinio
 */
 
-#include <catch2/catch_all.hpp>
-
 #include <restinio/helpers/http_field_parsers/user-agent.hpp>
+
+#include <catch2/catch_all.hpp>
 
 #include <tuple>
 

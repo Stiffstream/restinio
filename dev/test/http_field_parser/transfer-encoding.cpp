@@ -2,9 +2,9 @@
 	restinio
 */
 
-#include <catch2/catch_all.hpp>
-
 #include <restinio/helpers/http_field_parsers/transfer-encoding.hpp>
+
+#include <catch2/catch_all.hpp>
 
 TEST_CASE( "Transfer-Encoding", "[transfer-encoding]" )
 {

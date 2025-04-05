@@ -3,9 +3,9 @@
 	restinio
 */
 
-#include <catch2/catch_all.hpp>
-
 #include <restinio/helpers/http_field_parsers/accept.hpp>
+
+#include <catch2/catch_all.hpp>
 
 TEST_CASE( "Accept", "[media-type][accept]" )
 {
