@@ -6,7 +6,7 @@ end
 
 MxxRu::arch_externals :asio do |e|
 #  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-18-0.tar.gz'
-  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-32-0.tar.gz'
+  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-34-2.tar.gz'
 
   e.map_dir 'asio/include' => 'dev/asio'
 end
@@ -21,7 +21,7 @@ MxxRu::arch_externals :llhttp do |e|
 end
 
 MxxRu::arch_externals :fmt do |e|
-  e.url 'https://github.com/fmtlib/fmt/archive/11.1.3.zip'
+  e.url 'https://github.com/fmtlib/fmt/archive/11.1.4.zip'
 
   e.map_dir 'include' => 'dev/fmt'
   e.map_dir 'src' => 'dev/fmt'
@@ -42,6 +42,14 @@ MxxRu::arch_externals :expected_lite do |e|
 end
 
 MxxRu::arch_externals :catch do |e|
+  # NOTE: version 3.8.1 is not used because it leads to build errors
+  # somewhere in catch2/extras/CatchAddTests.cmake:234
+  # Something like:
+  #
+  # catch2/extras/CatchAddTests.cmake:138 (string):
+  # string sub-command JSON failed parsing json string: * Line 1, Column 1
+  #
+  # Syntax error: value, object or array expected.
   e.url 'https://github.com/catchorg/Catch2/archive/refs/tags/v3.7.1.tar.gz'
 
   e.map_dir 'src' => 'dev/catch2/'
