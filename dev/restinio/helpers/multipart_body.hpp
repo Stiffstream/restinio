@@ -250,7 +250,7 @@ part := *( token ':' OWS field-value CR LF ) CR LF body
  * @since v.0.6.1
  */
 [[nodiscard]]
-auto
+inline auto
 make_parser()
 {
 	using namespace parser_details;
@@ -311,7 +311,7 @@ make_parser()
  * @since v.0.6.1
  */
 [[nodiscard]]
-expected_t< parsed_part_t, restinio::easy_parser::parse_error_t >
+inline expected_t< parsed_part_t, restinio::easy_parser::parse_error_t >
 try_parse_part( string_view_t part )
 {
 	namespace easy_parser = restinio::easy_parser;

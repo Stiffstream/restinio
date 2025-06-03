@@ -21,7 +21,7 @@ namespace string_algo
 {
 
 [[nodiscard]]
-bool starts_with(
+inline bool starts_with(
 	const string_view_t & where,
 	const string_view_t & what ) noexcept
 {
@@ -30,7 +30,7 @@ bool starts_with(
 }
 
 [[nodiscard]]
-bool ends_with(
+inline bool ends_with(
 	const string_view_t & where,
 	const string_view_t & what ) noexcept
 {
