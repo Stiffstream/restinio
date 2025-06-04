@@ -34,7 +34,7 @@ jobs:
       RESTINIO_BUILD_DIR: _build_${{ matrix.config.cxx }}_cppstd${{ matrix.cppstd }}_${{ matrix.build_type }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Print env
         run: |
@@ -78,52 +78,48 @@ jobs:
 
   Build-Linux:
     # The type of runner that the job will run on
-    name: Ubuntu-22.04 (${{ matrix.build_settings.toolset }}-${{ matrix.build_settings.toolset_version }}, ${{ matrix.build_type }}, C++${{ matrix.build_settings.cppstd }}, ${{matrix.build_settings.asio_source}} asio)
-    runs-on: ubuntu-22.04
+    name: Ubuntu-24.04 (${{ matrix.build_settings.toolset }}-${{ matrix.build_settings.toolset_version }}, ${{ matrix.build_type }}, C++${{ matrix.build_settings.cppstd }}, ${{matrix.build_settings.asio_source}} asio)
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         build_settings:
           - toolset: gcc
-            toolset_version: 9
-            cppstd: 17
-            asio_source: standalone
-
-          - toolset: gcc
-            toolset_version: 9
-            cppstd: 17
-            asio_source: boost
-
-          - toolset: gcc
-            toolset_version: 9
-            cppstd: 17
-            asio_source: boost-system-package
-
-          - toolset: gcc
-            toolset_version: 12
-            cppstd: 17
-            asio_source: standalone
-          - toolset: gcc
-            toolset_version: 12
-            cppstd: 20
-            asio_source: standalone
-          - toolset: gcc
-            toolset_version: 12
-            cppstd: 20
-            asio_source: boost
-
-          - toolset: clang
             toolset_version: 13
             cppstd: 17
             asio_source: standalone
+          - toolset: gcc
+            toolset_version: 13
+            cppstd: 20
+            asio_source: standalone
+          - toolset: gcc
+            toolset_version: 13
+            cppstd: 20
+            asio_source: boost
+          - toolset: gcc
+            toolset_version: 13
+            cppstd: 23
+            asio_source: standalone
+          - toolset: gcc
+            toolset_version: 13
+            cppstd: 23
+            asio_source: standalone
+          - toolset: gcc
+            toolset_version: 13
+            cppstd: 23
+            asio_source: boost
 
           - toolset: clang
-            toolset_version: 15
+            toolset_version: 18
             cppstd: 17
             asio_source: standalone
           - toolset: clang
-            toolset_version: 15
+            toolset_version: 18
             cppstd: 20
+            asio_source: standalone
+          - toolset: clang
+            toolset_version: 18
+            cppstd: 23
             asio_source: standalone
 
         build_type:
@@ -132,7 +128,7 @@ jobs:
     env:
       RESTINIO_BUILD_TAG: ${{ matrix.build_settings.toolset }}-${{ matrix.build_settings.toolset_version }}_cpp${{ matrix.build_settings.cppstd }}_${{ matrix.build_type }}_${{matrix.build_settings.asio_source}}_asio
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Prepare env
         run: |
@@ -169,13 +165,13 @@ jobs:
 
       - name: Obtain Boost
         if: ${{ matrix.build_settings.asio_source == 'boost' }}
-        uses: MarkusJx/install-boost@v2.4.4
+        uses: MarkusJx/install-boost@v2.5.0
         id: install-boost
         with:
-            boost_version: 1.83.0
+            boost_version: 1.87.0
             boost_install_dir: ${{github.workspace}}/local_boost
             toolset: ${{ matrix.build_settings.toolset }}
-            platform_version: 22.04
+            platform_version: 24.04
 
       - name: Configure
         if: ${{ matrix.build_settings.asio_source == 'boost' }}
@@ -223,8 +219,8 @@ jobs:
 
   Build-Macos:
     # The type of runner that the job will run on
-    name: macos-12 (${{ matrix.build_type }}, C++${{ matrix.cppstd }})
-    runs-on: macos-12
+    name: macos-15 (${{ matrix.build_type }}, C++${{ matrix.cppstd }})
+    runs-on: macos-15
     strategy:
       fail-fast: false
       matrix:
@@ -237,7 +233,7 @@ jobs:
     env:
       RESTINIO_BUILD_DIR: _build_cpp${{ matrix.cppstd }}_${{ matrix.build_type }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Print env
         run: |
