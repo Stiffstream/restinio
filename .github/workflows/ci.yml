@@ -117,10 +117,6 @@ jobs:
             toolset_version: 18
             cppstd: 20
             asio_source: standalone
-          - toolset: clang
-            toolset_version: 18
-            cppstd: 23
-            asio_source: standalone
 
         build_type:
           - Release
