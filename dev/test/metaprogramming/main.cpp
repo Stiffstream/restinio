@@ -2,15 +2,16 @@
 	restinio
 */
 
-/*!
+/*
 	Tests for restinio::utils::metaprogramming.
 */
+#include <catch2/catch_all.hpp>
 
 #include <restinio/utils/metaprogramming.hpp>
 
 #include <tuple>
 
-int main()
+TEST_CASE( "utils_metaprogramming" , "[metaprogramming]" )
 {
 	using namespace restinio::utils::metaprogramming;
 
@@ -64,7 +65,5 @@ int main()
 				transform_t<std::decay, type_list<int &, char &, long&> > >;
 		static_assert(v, "!Ok");
 	}
-
-	return 0;
 }
 

@@ -50,7 +50,7 @@ MxxRu::arch_externals :catch do |e|
   # string sub-command JSON failed parsing json string: * Line 1, Column 1
   #
   # Syntax error: value, object or array expected.
-  e.url 'https://github.com/catchorg/Catch2/archive/refs/tags/v3.7.1.tar.gz'
+  e.url 'https://github.com/catchorg/Catch2/archive/refs/tags/v3.10.0.tar.gz'
 
   e.map_dir 'src' => 'dev/catch2/'
   e.map_dir 'CMake' => 'dev/catch2/'
