@@ -186,6 +186,7 @@ elseif (RESTINIO_DEP_FMT STREQUAL "local")
     message("========================================")
     message(STATUS "Add subdirectory fmt")
     add_subdirectory(fmt)
+	set(FMT_INSTALL ${RESTINIO_INSTALL})
     message("========================================")
 endif ()
 
