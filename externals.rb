@@ -21,7 +21,7 @@ MxxRu::arch_externals :llhttp do |e|
 end
 
 MxxRu::arch_externals :fmt do |e|
-  e.url 'https://github.com/fmtlib/fmt/archive/11.1.4.zip'
+  e.url 'https://github.com/fmtlib/fmt/archive/12.0.0.zip'
 
   e.map_dir 'include' => 'dev/fmt'
   e.map_dir 'src' => 'dev/fmt'
