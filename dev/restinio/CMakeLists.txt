@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
+cmake_policy(SET CMP0177 NEW)
+
 if(NOT RESTINIO_LIBRARY_NAME)
     # That must be the case when RESTinio is used as a dependency.
     set(RESTINIO_LIBRARY_NAME restinio)

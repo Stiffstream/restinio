@@ -42,14 +42,6 @@ MxxRu::arch_externals :expected_lite do |e|
 end
 
 MxxRu::arch_externals :catch do |e|
-  # NOTE: version 3.8.1 is not used because it leads to build errors
-  # somewhere in catch2/extras/CatchAddTests.cmake:234
-  # Something like:
-  #
-  # catch2/extras/CatchAddTests.cmake:138 (string):
-  # string sub-command JSON failed parsing json string: * Line 1, Column 1
-  #
-  # Syntax error: value, object or array expected.
   e.url 'https://github.com/catchorg/Catch2/archive/refs/tags/v3.10.0.tar.gz'
 
   e.map_dir 'src' => 'dev/catch2/'
