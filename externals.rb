@@ -6,13 +6,13 @@ end
 
 MxxRu::arch_externals :asio do |e|
 #  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-18-0.tar.gz'
-  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-34-2.tar.gz'
+  e.url 'https://github.com/chriskohlhoff/asio/archive/asio-1-36-0.tar.gz'
 
   e.map_dir 'asio/include' => 'dev/asio'
 end
 
 MxxRu::arch_externals :llhttp do |e|
-  e.url 'https://github.com/nodejs/llhttp/archive/refs/tags/release/v9.2.1.tar.gz'
+  e.url 'https://github.com/nodejs/llhttp/archive/refs/tags/release/v9.3.0.tar.gz'
 
   e.map_dir 'include' => 'dev/nodejs/llhttp'
   e.map_dir 'src' => 'dev/nodejs/llhttp'
@@ -42,7 +42,7 @@ MxxRu::arch_externals :expected_lite do |e|
 end
 
 MxxRu::arch_externals :catch do |e|
-  e.url 'https://github.com/catchorg/Catch2/archive/refs/tags/v3.10.0.tar.gz'
+  e.url 'https://github.com/catchorg/Catch2/archive/refs/tags/v3.11.0.tar.gz'
 
   e.map_dir 'src' => 'dev/catch2/'
   e.map_dir 'CMake' => 'dev/catch2/'
