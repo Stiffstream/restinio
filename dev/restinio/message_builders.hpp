@@ -32,17 +32,31 @@ namespace restinio
 inline std::string
 make_date_field_value( std::time_t t )
 {
+	constexpr const char * week_days[] = {
+		"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+	};
+	constexpr const char * months[] = {
+		"Jan", "Feb", "Mar",
+		"Apr", "May", "Jun",
+		"Jul", "Aug", "Sep",
+		"Oct", "Nov", "Dec"
+	};
 	const auto tpoint = make_gmtime( t );
 
 	std::array< char, 64 > buf;
-	// TODO: is there a faster way to get time string?
-	strftime(
-		buf.data(),
-		buf.size(),
-		"%a, %d %b %Y %H:%M:%S GMT",
-		&tpoint );
+	const auto format_result = fmt::format_to_n(
+			buf.data(), buf.size(),
+			RESTINIO_FMT_FORMAT_STRING(
+				"{}, {:02} {} {:04} {:02}:{:02}:{:02} GMT" ),
+			week_days[ tpoint.tm_wday ],
+			tpoint.tm_mday,
+			months[ tpoint.tm_mon ],
+			(1900 + tpoint.tm_year),
+			tpoint.tm_hour,
+			tpoint.tm_min,
+			tpoint.tm_sec);
 
-	return std::string{ buf.data() };
+	return std::string{ buf.data(), format_result.size };
 }
 
 inline std::string
