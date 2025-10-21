@@ -248,7 +248,7 @@ class write_group_output_ctx_t
 				trivial_write_operation_t,
 				file_write_operation_t >;
 
-		//! et an object with next write operation to perform.
+		//! Get an object with next write operation to perform.
 		solid_write_operation_variant_t
 		extract_next_write_operation()
 		{
