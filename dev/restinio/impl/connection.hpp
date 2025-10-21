@@ -1325,9 +1325,9 @@ class connection_t final
 						// the lambda because lambda object itself will be
 						// destroyed.
 						auto op_ctx_reseter = restinio::utils::at_scope_exit(
-								[&op_ctx] {
+								[op_ctx_copy = op_ctx] () mutable {
 									// Reset sendfile operation context.
-									RESTINIO_ENSURE_NOEXCEPT_CALL( op_ctx.reset() );
+									RESTINIO_ENSURE_NOEXCEPT_CALL( op_ctx_copy.reset() );
 								} );
 
 						if( !ec )
