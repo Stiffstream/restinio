@@ -13,6 +13,8 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+using namespace restinio::tests;
+
 TEST_CASE( "start-stop" , "[stop]" )
 {
 	using http_server_t =
@@ -21,12 +23,15 @@ TEST_CASE( "start-stop" , "[stop]" )
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[]( auto ){ return restinio::request_rejected(); } );
 		} };
@@ -47,12 +52,15 @@ TEST_CASE( "start-stop-stop" , "[stop]" )
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[]( auto ){ return restinio::request_rejected(); } );
 		} };
@@ -74,12 +82,15 @@ TEST_CASE( "start-start-stop" , "[stop]" )
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[]( auto ){ return restinio::request_rejected(); } );
 		} };
@@ -99,12 +110,15 @@ TEST_CASE( "Don't move std::function by lvalue reference in open-async",
 	using http_server_t = restinio::http_server_t<
 			restinio::traits_t< restinio::asio_timer_manager_t, utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[]( auto ){ return restinio::request_rejected(); } );
 		} };
@@ -137,12 +151,15 @@ TEST_CASE( "std::function by rvalue reference in open-async",
 	using http_server_t = restinio::http_server_t<
 			restinio::traits_t< restinio::asio_timer_manager_t, utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[]( auto ){ return restinio::request_rejected(); } );
 		} };
@@ -175,12 +192,15 @@ TEST_CASE( "Don't move std::function by lvalue reference in close-async",
 	using http_server_t = restinio::http_server_t<
 			restinio::traits_t< restinio::asio_timer_manager_t, utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[]( auto ){ return restinio::request_rejected(); } );
 		} };
@@ -213,12 +233,15 @@ TEST_CASE( "std::function by rvalue reference in close-async",
 	using http_server_t = restinio::http_server_t<
 			restinio::traits_t< restinio::asio_timer_manager_t, utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[]( auto ){ return restinio::request_rejected(); } );
 		} };

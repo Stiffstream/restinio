@@ -13,13 +13,15 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+using namespace restinio::tests;
+
 template< typename Traits >
 void
 perform_test()
 {
 	using http_server_t = restinio::http_server_t< Traits >;
 
-	const auto perform_checks = []() {
+	const auto perform_checks = [](std::uint16_t port) {
 		std::string response;
 		auto create_request = []( const std::string & body ){
 			return
@@ -35,7 +37,10 @@ perform_test()
 
 		{
 			const std::string body = "01234567890123456789";
-			REQUIRE_NOTHROW( response = do_request( create_request( body ) ) );
+			REQUIRE_NOTHROW( response = do_request(
+					create_request( body ),
+					default_ip_addr(),
+					port ) );
 
 			REQUIRE_THAT(
 				response,
@@ -51,7 +56,10 @@ perform_test()
 				"abcdefghijklmnopqrstuvwxyz\r\n"
 				"~!@#$%^&*()_+";
 
-			REQUIRE_NOTHROW( response = do_request( create_request( body ) ) );
+			REQUIRE_NOTHROW( response = do_request(
+					create_request( body ),
+					default_ip_addr(),
+					port ) );
 
 			REQUIRE_THAT(
 				response,
@@ -63,7 +71,10 @@ perform_test()
 		{
 			const std::string body( 2048, 'a' );
 
-			REQUIRE_NOTHROW( response = do_request( create_request( body ) ) );
+			REQUIRE_NOTHROW( response = do_request(
+					create_request( body ),
+					default_ip_addr(),
+					port ) );
 
 			REQUIRE_THAT(
 				response,
@@ -91,12 +102,15 @@ perform_test()
 
 	SECTION( "server address as a string" )
 	{
+		random_port_getter_t port_getter;
+
 		http_server_t http_server{
 			restinio::own_io_context(),
-			[&request_handler]( auto & settings ){
+			[&request_handler, &port_getter]( auto & settings ){
 				settings
-					.port( utest_default_port() )
-					.address( "127.0.0.1" )
+					.port( 0 )
+					.address( default_ip_addr() )
+					.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 					.request_handler( request_handler );
 			}
 		};
@@ -104,19 +118,21 @@ perform_test()
 		other_work_thread_for_server_t<http_server_t> other_thread(http_server);
 		other_thread.run();
 
-		perform_checks();
+		perform_checks( port_getter.port() );
 
 		other_thread.stop_and_join();
 	}
 
 	SECTION( "server address as an IP-address" )
 	{
+		random_port_getter_t port_getter;
 		http_server_t http_server{
 			restinio::own_io_context(),
-			[&request_handler]( auto & settings ){
+			[&request_handler, &port_getter]( auto & settings ){
 				settings
-					.port( utest_default_port() )
-					.address( restinio::asio_ns::ip::make_address( "127.0.0.1" ) )
+					.port( 0 )
+					.address( restinio::asio_ns::ip::make_address( default_ip_addr() ) )
+					.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 					.request_handler( request_handler );
 			}
 		};
@@ -124,20 +140,28 @@ perform_test()
 		other_work_thread_for_server_t<http_server_t> other_thread(http_server);
 		other_thread.run();
 
-		perform_checks();
+		perform_checks( port_getter.port() );
 
 		other_thread.stop_and_join();
 	}
 }
 
+namespace restinio::tests
+{
+
 struct no_connection_limiter_traits_t : public restinio::default_traits_t {
 	using logger_t = utest_logger_t;
 };
+
+} /* namespace restinio::tests */
 
 TEST_CASE( "HTTP echo server (noop_connection_limiter)" , "[echo]" )
 {
 	perform_test< no_connection_limiter_traits_t >();
 }
+
+namespace restinio::tests
+{
 
 struct thread_safe_connection_limiter_traits_t : public restinio::default_traits_t {
 	using logger_t = utest_logger_t;
@@ -145,16 +169,23 @@ struct thread_safe_connection_limiter_traits_t : public restinio::default_traits
 	static constexpr bool use_connection_count_limiter = true;
 };
 
+} /* namespace restinio::tests */
+
 TEST_CASE( "HTTP echo server (thread_safe_connection_limiter)" , "[echo]" )
 {
 	perform_test< thread_safe_connection_limiter_traits_t >();
 }
+
+namespace restinio::tests
+{
 
 struct single_thread_connection_limiter_traits_t : public restinio::default_single_thread_traits_t {
 	using logger_t = utest_logger_t;
 
 	static constexpr bool use_connection_count_limiter = true;
 };
+
+} /* namespace restinio::tests */
 
 TEST_CASE( "HTTP echo server (single_thread_connection_limiter)" , "[echo]" )
 {

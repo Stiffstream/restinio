@@ -21,6 +21,9 @@
 #pragma GCC diagnostic ignored "-Wparentheses"
 #endif
 
+namespace restinio::tests
+{
+
 // Global request handlers pool.
 request_handler_pool_t< 10 > g_request_handler_pool;
 
@@ -191,6 +194,10 @@ const std::string standard_response =
 	"0\r\n"
 	"\r\n";
 
+} /* namespace restinio::tests */
+
+using namespace restinio::tests;
+
 TEST_CASE( "Using user chunked output response builder" , "[chunked_output]" )
 {
 	using http_server_t =
@@ -200,12 +207,15 @@ TEST_CASE( "Using user chunked output response builder" , "[chunked_output]" )
 				utest_logger_t,
 				req_handler_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.read_next_http_message_timelimit( std::chrono::hours( 24 ) )
 				.handle_request_timeout( std::chrono::hours( 24 ) )
 				.max_pipelined_requests( 16 );
@@ -223,7 +233,10 @@ TEST_CASE( "Using user chunked output response builder" , "[chunked_output]" )
 			create_request( 0, standard_body, "close" );
 		std::string response;
 
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
@@ -245,7 +258,11 @@ TEST_CASE( "Using user chunked output response builder" , "[chunked_output]" )
 			create_request( 0, "LAST REQUEST\r\n" + standard_body, "close" );
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
+		REQUIRE_NOTHROW( response = do_request(
+				pipelinedrequests,
+				default_ip_addr(),
+				port_getter.port() ) );
+
 		std::vector < std::string::size_type > resp_bodies_start_positions;
 
 		resp_bodies_start_positions.emplace_back( response.find( "D\r\nFIRST REQUEST\r\n" ) );

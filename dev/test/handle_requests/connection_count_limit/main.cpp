@@ -2,10 +2,6 @@
 	restinio
 */
 
-/*!
-	Echo server.
-*/
-
 #include <catch2/catch_all.hpp>
 
 #include <restinio/core.hpp>
@@ -14,6 +10,8 @@
 
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
+
+using namespace restinio::tests;
 
 namespace details
 {
@@ -85,57 +83,68 @@ perform_test(
 	std::size_t server_threads_count,
 	details::client_load_t client_load )
 {
-	const auto perform_checks = []( std::size_t iterations ) {
-		std::string response;
-		auto create_request = []( const std::string & body ){
-			return
-				"POST /data HTTP/1.0\r\n"
-				"From: unit-test\r\n"
-				"User-Agent: unit-test\r\n"
-				"Content-Type: application/x-www-form-urlencoded\r\n"
-				"Content-Length: " + std::to_string( body.size() ) + "\r\n"
-				"Connection: close\r\n"
-				"\r\n" +
-				body;
-		};
-
-		using namespace restinio::string_algo;
-		for( std::size_t i = 0; i != iterations; ++i )
+	const auto perform_checks =
+		[]( std::size_t iterations, std::uint16_t port )
 		{
+			std::string response;
+			auto create_request = []( const std::string & body ){
+				return
+					"POST /data HTTP/1.0\r\n"
+					"From: unit-test\r\n"
+					"User-Agent: unit-test\r\n"
+					"Content-Type: application/x-www-form-urlencoded\r\n"
+					"Content-Length: " + std::to_string( body.size() ) + "\r\n"
+					"Connection: close\r\n"
+					"\r\n" +
+					body;
+			};
+
+			using namespace restinio::string_algo;
+			for( std::size_t i = 0; i != iterations; ++i )
 			{
-				const std::string body = "01234567890123456789";
-				response = do_request( create_request( body ) );
+				{
+					const std::string body = "01234567890123456789";
+					response = do_request(
+							create_request( body ),
+							default_ip_addr(),
+							port );
 
-				MY_REQUIRE( std::string::npos != response.find(
-						"Content-Length: " + std::to_string( body.size() ) ) );
-				MY_REQUIRE( ends_with( response, body ) );
+					MY_REQUIRE( std::string::npos != response.find(
+							"Content-Length: " + std::to_string( body.size() ) ) );
+					MY_REQUIRE( ends_with( response, body ) );
+				}
+
+				{
+					const std::string body =
+						"0123456789012345678901234567890123456789\r\n"
+						"ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n"
+						"abcdefghijklmnopqrstuvwxyz\r\n"
+						"~!@#$%^&*()_+";
+
+					response = do_request(
+							create_request( body ),
+							default_ip_addr(),
+							port );
+
+					MY_REQUIRE( std::string::npos != response.find(
+							"Content-Length: " + std::to_string( body.size() ) ) );
+					MY_REQUIRE( ends_with( response, body ) );
+				}
+
+				{
+					const std::string body( 2048, 'a' );
+
+					response = do_request(
+							create_request( body ),
+							default_ip_addr(),
+							port );
+
+					MY_REQUIRE( std::string::npos != response.find(
+							"Content-Length: " + std::to_string( body.size() ) ) );
+					MY_REQUIRE( ends_with( response, body ) );
+				}
 			}
-
-			{
-				const std::string body =
-					"0123456789012345678901234567890123456789\r\n"
-					"ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n"
-					"abcdefghijklmnopqrstuvwxyz\r\n"
-					"~!@#$%^&*()_+";
-
-				response = do_request( create_request( body ) );
-
-				MY_REQUIRE( std::string::npos != response.find(
-						"Content-Length: " + std::to_string( body.size() ) ) );
-				MY_REQUIRE( ends_with( response, body ) );
-			}
-
-			{
-				const std::string body( 2048, 'a' );
-
-				response = do_request( create_request( body ) );
-
-				MY_REQUIRE( std::string::npos != response.find(
-						"Content-Length: " + std::to_string( body.size() ) ) );
-				MY_REQUIRE( ends_with( response, body ) );
-			}
-		}
-	};
+		};
 
 	restinio::asio_ns::io_context ioctx;
 
@@ -168,11 +177,14 @@ perform_test(
 		return restinio::request_accepted();
 	};
 
+	random_port_getter_t port_getter;
+
 	auto server = restinio::run_async(
 			restinio::external_io_context( ioctx ),
 			restinio::server_settings_t< Traits >{}
-					.port( utest_default_port() )
-					.address( "127.0.0.1" )
+					.port( 0 )
+					.address( default_ip_addr() )
+					.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 					.request_handler( request_handler )
 					.concurrent_accepts_count( server_threads_count )
 					.separate_accept_and_create_connect(
@@ -186,7 +198,9 @@ perform_test(
 	for( std::size_t i = 0u; i != client_load.m_threads_count; ++i )
 	{
 		clients.emplace_back(
-				perform_checks, client_load.m_iterations_per_thread );
+				perform_checks,
+				client_load.m_iterations_per_thread,
+				port_getter.port() );
 	}
 
 	for( auto & t : clients )
@@ -198,13 +212,18 @@ perform_test(
 	REQUIRE( counter.result() <= max_parallel_connections );
 }
 
+namespace details
+{
+
 struct thread_safe_connection_limiter_traits_t : public restinio::default_traits_t {
 	static constexpr bool use_connection_count_limiter = true;
 };
 
+} /* namespace details */
+
 TEST_CASE( "thread_safe_connection_limiter, no accept-connect separation" , "[thread_safe][no_separate_accept]" )
 {
-	perform_test< thread_safe_connection_limiter_traits_t >(
+	perform_test< details::thread_safe_connection_limiter_traits_t >(
 			8,
 			false,
 			5,
@@ -213,20 +232,25 @@ TEST_CASE( "thread_safe_connection_limiter, no accept-connect separation" , "[th
 
 TEST_CASE( "thread_safe_connection_limiter, accept-connect separation" , "[thread_safe][separate_accept]" )
 {
-	perform_test< thread_safe_connection_limiter_traits_t >(
+	perform_test< details::thread_safe_connection_limiter_traits_t >(
 			8,
 			true,
 			5,
 			details::client_load_t{ 16, 40 } );
 }
 
+namespace details
+{
+
 struct single_thread_connection_limiter_traits_t : public restinio::default_single_thread_traits_t {
 	static constexpr bool use_connection_count_limiter = true;
 };
 
+} /* details */
+
 TEST_CASE( "single_thread_connection_limiter, no accept-connect separation" , "[single_thread][no_separate_accept]" )
 {
-	perform_test< single_thread_connection_limiter_traits_t >(
+	perform_test< details::single_thread_connection_limiter_traits_t >(
 			8,
 			false,
 			1,
@@ -235,7 +259,7 @@ TEST_CASE( "single_thread_connection_limiter, no accept-connect separation" , "[
 
 TEST_CASE( "single_thread_connection_limiter, accept-connect separation" , "[single_thread][separate_accept]" )
 {
-	perform_test< single_thread_connection_limiter_traits_t >(
+	perform_test< details::single_thread_connection_limiter_traits_t >(
 			8,
 			false,
 			1,

@@ -10,6 +10,9 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+namespace restinio::tests
+{
+
 struct state_listener_t
 {
 	std::atomic< int > m_accepted{ 0 };
@@ -153,6 +156,10 @@ struct state_listener_that_throws_on_ws_upgrade_t
 	}
 };
 
+} /* namespace restinio::tests */
+
+using namespace restinio::tests;
+
 TEST_CASE( "no connection state listener" , "[no_listener]" )
 {
 	struct test_traits : public restinio::traits_t<
@@ -169,8 +176,8 @@ TEST_CASE( "no connection state listener" , "[no_listener]" )
 				restinio::own_io_context(),
 				[]( auto & settings ){
 					settings
-						.port( utest_default_port() )
-						.address( "127.0.0.1" )
+						.port( 0 )
+						.address( default_ip_addr() )
 						.request_handler(
 							[]( auto ){
 								return restinio::request_rejected();
@@ -189,8 +196,9 @@ TEST_CASE( "settings for http_server" , "[http_server]" )
 	};
 
 	using server_settings_t = restinio::run_on_thread_pool_settings_t<test_traits>;
-	using http_server_t = restinio::http_server_t< test_traits >; 
+	using http_server_t = restinio::http_server_t< test_traits >;
 	server_settings_t settings{ 2u };
+	settings.port( 0 );
 	settings.connection_state_listener( std::make_shared< state_listener_t >() );
 	settings.request_handler( []( auto ){ return restinio::request_rejected(); } );
 
@@ -215,12 +223,15 @@ TEST_CASE( "ordinary connection" , "[ordinary_connection]" )
 
 	auto state_listener = std::make_shared< state_listener_t >();
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&endpoint_value, state_listener]( auto & settings ){
+		[&endpoint_value, state_listener, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.connection_state_listener( state_listener )
 				.request_handler(
 					[&endpoint_value]( auto req ){
@@ -253,7 +264,10 @@ TEST_CASE( "ordinary connection" , "[ordinary_connection]" )
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
@@ -307,12 +321,16 @@ TEST_CASE( "connection state for WS" , "[connection_state][ws]" )
 
 	auto state_listener = std::make_shared< state_listener_t >();
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&endpoint_value, &endpoint_value_ws, state_listener]( auto & settings ){
+		[&endpoint_value, &endpoint_value_ws, state_listener, &port_getter]
+		( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.connection_state_listener( state_listener )
 				.request_handler(
 					[&endpoint_value, &endpoint_value_ws]( auto req ){
@@ -356,7 +374,10 @@ TEST_CASE( "connection state for WS" , "[connection_state][ws]" )
 		"\r\n";
 
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	other_thread.stop_and_join();
 
@@ -384,12 +405,15 @@ TEST_CASE( "listener throws on accept" , "[throws_on_accept]" )
 	auto state_listener = std::make_shared<
 			state_listener_that_throws_on_accept_t >();
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&endpoint_value, state_listener]( auto & settings ){
+		[&endpoint_value, state_listener, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.connection_state_listener( state_listener )
 				.request_handler(
 					[&endpoint_value]( auto req ){
@@ -421,7 +445,10 @@ TEST_CASE( "listener throws on accept" , "[throws_on_accept]" )
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_THROWS( do_request( request_str ) );
+	REQUIRE_THROWS( do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	other_thread.stop_and_join();
 
@@ -447,12 +474,15 @@ TEST_CASE( "listener throws on close" , "[throws_on_close]" )
 	auto state_listener = std::make_shared<
 			state_listener_that_throws_on_close_t >();
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&endpoint_value, state_listener]( auto & settings ){
+		[&endpoint_value, state_listener, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.connection_state_listener( state_listener )
 				.request_handler(
 					[&endpoint_value]( auto req ){
@@ -485,7 +515,10 @@ TEST_CASE( "listener throws on close" , "[throws_on_close]" )
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
@@ -514,12 +547,16 @@ TEST_CASE( "listener throws on WS-upgrade" , "[throws_on_ws_upgrade]" )
 	auto state_listener = std::make_shared<
 			state_listener_that_throws_on_ws_upgrade_t >();
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&endpoint_value, &ws_upgrade_failed, state_listener]( auto & settings ){
+		[&endpoint_value, &ws_upgrade_failed, state_listener, &port_getter]
+		( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.connection_state_listener( state_listener )
 				.request_handler(
 					[&endpoint_value, &ws_upgrade_failed]( auto req ){
@@ -528,7 +565,8 @@ TEST_CASE( "listener throws on WS-upgrade" , "[throws_on_ws_upgrade]" )
 								restinio::fmtlib_tools::streamed(
 										req->remote_endpoint() ) );
 
-						if( restinio::http_connection_header_t::upgrade == req->header().connection() )
+						if( restinio::http_connection_header_t::upgrade
+								== req->header().connection() )
 						{
 							try
 							{
@@ -569,7 +607,10 @@ TEST_CASE( "listener throws on WS-upgrade" , "[throws_on_ws_upgrade]" )
 		"\r\n";
 
 
-	REQUIRE_THROWS( do_request( request_str ) );
+	REQUIRE_THROWS( do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	other_thread.stop_and_join();
 

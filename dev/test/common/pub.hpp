@@ -5,29 +5,29 @@
 
 #include <restinio/asio_include.hpp>
 
+#include <condition_variable>
+#include <future>
+#include <mutex>
+#include <optional>
 #include <string>
 #include <thread>
-#include <mutex>
-#include <condition_variable>
 
-
-constexpr std::uint16_t
-utest_default_port()
+namespace restinio::tests
 {
-// Make it possible to run unit-tests for g++/clang in parallel.
-#if defined(__clang__)
-	return 8086;
-#else
-	return 8085;
-#endif
+
+[[nodiscard]]
+inline std::string
+default_ip_addr()
+{
+	return "127.0.0.1";
 }
 
 template < typename LAMBDA >
 void
 do_with_socket(
 	LAMBDA && lambda,
-	const std::string & addr = "127.0.0.1",
-	std::uint16_t port = utest_default_port() )
+	const std::string & addr,
+	std::uint16_t port )
 {
 	restinio::asio_ns::io_context io_context;
 	restinio::asio_ns::ip::tcp::socket socket{ io_context };
@@ -51,8 +51,8 @@ do_with_socket(
 inline std::string
 do_request(
 	const std::string & request,
-	const std::string & addr = "127.0.0.1",
-	std::uint16_t port = utest_default_port() )
+	const std::string & addr,
+	std::uint16_t port )
 {
 	std::string result;
 	do_with_socket(
@@ -71,8 +71,14 @@ do_request(
 
 			// Read until EOF, writing data to output as we go.
 			restinio::asio_ns::error_code error;
-			while( restinio::asio_ns::read( socket, response_stream, restinio::asio_ns::transfer_at_least(1), error) )
+			while( restinio::asio_ns::read(
+					socket,
+					response_stream,
+					restinio::asio_ns::transfer_at_least(1),
+					error) )
+			{
 				sout << &response_stream;
+			}
 
 			if ( !restinio::error_is_eof( error ) )
 				throw std::runtime_error{
@@ -135,4 +141,36 @@ public:
 		m_thread.join();
 	}
 };
+
+class random_port_getter_t
+{
+	std::mutex m_lock;
+	std::optional< std::uint16_t > m_value{};
+
+	std::promise< std::uint16_t > m_port_promise;
+
+public:
+	[[nodiscard]]
+	std::uint16_t
+	port()
+	{
+		std::lock_guard< std::mutex > l{ m_lock };
+		if( !m_value )
+			m_value = m_port_promise.get_future().get();
+
+		return *m_value;
+	}
+
+	[[nodiscard]]
+	restinio::acceptor_post_bind_hook_t
+	as_post_bind_hook()
+	{
+		return [this](asio_ns::ip::tcp::acceptor & acceptor) {
+				m_port_promise.set_value(
+						acceptor.local_endpoint().port() );
+			};
+	}
+};
+
+} /* namespace restinio::tests */
 

@@ -13,6 +13,8 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+using namespace restinio::tests;
+
 TEST_CASE( "HTTP echo server" , "[echo]" )
 {
 	using http_server_t =
@@ -21,12 +23,15 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.incoming_http_msg_limits(
 						restinio::incoming_http_msg_limits_t{}
 							.max_url_size( 20 )
@@ -63,7 +68,10 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 		};
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response,
 				Catch::Matchers::EndsWith(
@@ -82,7 +90,10 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 		};
 
 		std::string response;
-		REQUIRE_THROWS( response = do_request( request ) );
+		REQUIRE_THROWS( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 	}
 
 	SECTION( "small field name" )
@@ -98,7 +109,10 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 		};
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response,
 				Catch::Matchers::EndsWith(
@@ -118,7 +132,10 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 		};
 
 		std::string response;
-		REQUIRE_THROWS( response = do_request( request ) );
+		REQUIRE_THROWS( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 	}
 
 	SECTION( "small field value" )
@@ -135,7 +152,10 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 		};
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response,
 				Catch::Matchers::EndsWith(
@@ -156,7 +176,10 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 		};
 
 		std::string response;
-		REQUIRE_THROWS( response = do_request( request ) );
+		REQUIRE_THROWS( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 	}
 
 	SECTION( "small body with Content-Length" )
@@ -173,7 +196,10 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 		};
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response,
 				Catch::Matchers::EndsWith(
@@ -194,7 +220,10 @@ TEST_CASE( "HTTP echo server" , "[echo]" )
 		};
 
 		std::string response;
-		REQUIRE_THROWS( response = do_request( request ) );
+		REQUIRE_THROWS( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 	}
 
 	other_thread.stop_and_join();

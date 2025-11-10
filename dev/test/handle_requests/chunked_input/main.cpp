@@ -13,6 +13,8 @@
 
 #include <iterator>
 
+using namespace restinio::tests;
+
 [[nodiscard]]
 restinio::fmt_minimal_memory_buffer_t
 format_chunked_input_info(
@@ -79,12 +81,15 @@ TEST_CASE( "Simple incoming request" , "[chunked-input][simple]" )
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[]( auto req ){
 						if( restinio::http_method_post() == req->header().method() )
@@ -123,7 +128,10 @@ TEST_CASE( "Simple incoming request" , "[chunked-input][simple]" )
 		};
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response,
 				Catch::Matchers::EndsWith(
@@ -151,7 +159,10 @@ TEST_CASE( "Simple incoming request" , "[chunked-input][simple]" )
 		};
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response,
 				Catch::Matchers::EndsWith(
@@ -185,7 +196,10 @@ TEST_CASE( "Simple incoming request" , "[chunked-input][simple]" )
 		};
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response,
 				Catch::Matchers::EndsWith(
@@ -219,7 +233,10 @@ TEST_CASE( "Simple incoming request" , "[chunked-input][simple]" )
 		};
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response,
 				Catch::Matchers::EndsWith(
@@ -250,7 +267,10 @@ TEST_CASE( "Simple incoming request" , "[chunked-input][simple]" )
 		};
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response,
 				Catch::Matchers::EndsWith(
@@ -279,7 +299,10 @@ TEST_CASE( "Simple incoming request" , "[chunked-input][simple]" )
 		};
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response,
 				Catch::Matchers::EndsWith(
@@ -300,15 +323,18 @@ TEST_CASE( "Limit violations" , "[chunked-input][simple][limits]" )
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.incoming_http_msg_limits(
 						restinio::incoming_http_msg_limits_t{}
-							.max_field_count( 16 ) 
+							.max_field_count( 16 )
 							.max_body_size( 100 )
 					)
 				.request_handler(
@@ -367,7 +393,10 @@ TEST_CASE( "Limit violations" , "[chunked-input][simple][limits]" )
 		};
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response,
 				Catch::Matchers::EndsWith(
@@ -410,7 +439,10 @@ TEST_CASE( "Limit violations" , "[chunked-input][simple][limits]" )
 		};
 
 		std::string response;
-		REQUIRE_THROWS( response = do_request( request ) );
+		REQUIRE_THROWS( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 	}
 
 	SECTION( "three chunks with allowed number of trailing headers" )
@@ -445,7 +477,10 @@ TEST_CASE( "Limit violations" , "[chunked-input][simple][limits]" )
 		};
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response,
 				Catch::Matchers::EndsWith(
@@ -496,7 +531,10 @@ TEST_CASE( "Limit violations" , "[chunked-input][simple][limits]" )
 		};
 
 		std::string response;
-		REQUIRE_THROWS( response = do_request( request ) );
+		REQUIRE_THROWS( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 	}
 
 	SECTION( "three chunks with trailing field without value" )
@@ -532,7 +570,10 @@ TEST_CASE( "Limit violations" , "[chunked-input][simple][limits]" )
 		};
 
 		std::string response;
-		REQUIRE_THROWS( response = do_request( request ) );
+		REQUIRE_THROWS( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 	}
 
 	SECTION( "total body length to long" )
@@ -572,7 +613,10 @@ TEST_CASE( "Limit violations" , "[chunked-input][simple][limits]" )
 		};
 
 		std::string response;
-		REQUIRE_THROWS( response = do_request( request ) );
+		REQUIRE_THROWS( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 	}
 
 	other_thread.stop_and_join();

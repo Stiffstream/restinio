@@ -13,6 +13,9 @@
 
 #include "../../common/test_extra_data_factory.ipp"
 
+namespace restinio::tests
+{
+
 template<
 	typename Request_Handler,
 	typename Extra_Data_Factory >
@@ -36,12 +39,15 @@ tc_fixed_size_chain()
 
 	int stages_completed = 0;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&stages_completed]( auto & settings ){
+		[&stages_completed, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&stages_completed]( auto controller ) {
 						++stages_completed;
@@ -86,7 +92,10 @@ tc_fixed_size_chain()
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
@@ -94,6 +103,10 @@ tc_fixed_size_chain()
 
 	REQUIRE( 4 == stages_completed );
 }
+
+} /* namespace restinio::tests */
+
+using namespace restinio::tests;
 
 TEST_CASE( "async_chain::fixed_size_chain (no_user_data)" ,
 		"[async_chain][fixed_size_chain][no_user_data]" )
@@ -106,6 +119,9 @@ TEST_CASE( "async_chain::fixed_size_chain (test_user_data)" ,
 {
 	tc_fixed_size_chain< test::ud_factory_t >();
 }
+
+namespace restinio::tests
+{
 
 template< typename Extra_Data_Factory >
 void
@@ -120,12 +136,15 @@ tc_fixed_size_chain_with_failure()
 
 	int stages_completed = 0;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&stages_completed]( auto & settings ){
+		[&stages_completed, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&stages_completed]( auto controller ) {
 						++stages_completed;
@@ -169,7 +188,10 @@ tc_fixed_size_chain_with_failure()
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response,
 			Catch::Matchers::StartsWith( "HTTP/1.1 500 Internal Server Error" ) );
@@ -178,6 +200,10 @@ tc_fixed_size_chain_with_failure()
 
 	REQUIRE( 2 == stages_completed );
 }
+
+} /* namespace restinio::tests */
+
+using namespace restinio::tests;
 
 TEST_CASE( "async_chain::fixed_size_chain_with_failure (no_user_data)" ,
 		"[async_chain][fixed_size_chain][no_user_data]" )
@@ -190,6 +216,9 @@ TEST_CASE( "async_chain::fixed_size_chain_with_failure (test_user_data)" ,
 {
 	tc_fixed_size_chain_with_failure< test::ud_factory_t >();
 }
+
+namespace restinio::tests
+{
 
 template< typename Extra_Data_Factory >
 void
@@ -204,12 +233,15 @@ tc_fixed_size_chain_accept_in_middle()
 
 	int stages_completed = 0;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&stages_completed]( auto & settings ){
+		[&stages_completed, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&stages_completed]( auto controller ) {
 						++stages_completed;
@@ -253,7 +285,10 @@ tc_fixed_size_chain_accept_in_middle()
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
@@ -261,6 +296,10 @@ tc_fixed_size_chain_accept_in_middle()
 
 	REQUIRE( 2 == stages_completed );
 }
+
+} /* namespace restinio::tests */
+
+using namespace restinio::tests;
 
 TEST_CASE( "async_chain::fixed_size_chain_accept_in_middle (no_user_data)" ,
 		"[async_chain][fixed_size_chain][no_user_data]" )
@@ -273,6 +312,9 @@ TEST_CASE( "async_chain::fixed_size_chain_accept_in_middle (test_user_data)" ,
 {
 	tc_fixed_size_chain_accept_in_middle< test::ud_factory_t >();
 }
+
+namespace restinio::tests
+{
 
 template< typename Extra_Data_Factory >
 void
@@ -287,12 +329,15 @@ tc_fixed_size_chain_no_response()
 
 	int stages_completed = 0;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&stages_completed]( auto & settings ){
+		[&stages_completed, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.handle_request_timeout( std::chrono::milliseconds{ 750 } )
 				.request_handler(
 					[&stages_completed]( auto controller ) {
@@ -319,7 +364,10 @@ tc_fixed_size_chain_no_response()
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response,
 			Catch::Matchers::StartsWith( "HTTP/1.1 404 Not Found" ) );
@@ -328,6 +376,10 @@ tc_fixed_size_chain_no_response()
 
 	REQUIRE( 2 == stages_completed );
 }
+
+} /* namespace restinio::tests */
+
+using namespace restinio::tests;
 
 TEST_CASE( "async_chain::fixed_size_chain_no_response (no_user_data)" ,
 		"[async_chain][fixed_size_chain_no_response][no_user_data]" )
@@ -340,6 +392,9 @@ TEST_CASE( "async_chain::fixed_size_chain_no_response (test_user_data)" ,
 {
 	tc_fixed_size_chain_no_response< test::ud_factory_t >();
 }
+
+namespace restinio::tests
+{
 
 template< typename Extra_Data_Factory >
 void
@@ -392,12 +447,15 @@ tc_growable_size_chain()
 				return restinio::async_chain::ok();
 			} );
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&handler_builder]( auto & settings ){
+		[&handler_builder, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler( handler_builder.release() );
 		} };
 
@@ -413,7 +471,10 @@ tc_growable_size_chain()
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
@@ -421,6 +482,10 @@ tc_growable_size_chain()
 
 	REQUIRE( 4 == stages_completed );
 }
+
+} /* namespace restinio::tests */
+
+using namespace restinio::tests;
 
 TEST_CASE( "async_chain::growable_size_chain (no_user_data)" ,
 		"[async_chain][growable_size_chain][no_user_data]" )
@@ -433,6 +498,9 @@ TEST_CASE( "async_chain::growable_size_chain (test_user_data)" ,
 {
 	tc_growable_size_chain< test::ud_factory_t >();
 }
+
+namespace restinio::tests
+{
 
 template< typename Extra_Data_Factory >
 void
@@ -484,12 +552,15 @@ tc_growable_size_chain_with_failure()
 					return restinio::async_chain::ok();
 			} );
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&handler_builder]( auto & settings ){
+		[&handler_builder, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler( handler_builder.release() );
 		} };
 
@@ -505,7 +576,10 @@ tc_growable_size_chain_with_failure()
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response,
 			Catch::Matchers::StartsWith( "HTTP/1.1 500 Internal Server Error" ) );
@@ -514,6 +588,10 @@ tc_growable_size_chain_with_failure()
 
 	REQUIRE( 2 == stages_completed );
 }
+
+} /* namespace restinio::tests */
+
+using namespace restinio::tests;
 
 TEST_CASE( "async_chain::growable_size_chain_with_rejection (no_user_data)" ,
 		"[async_chain][growable_size_chain][no_user_data]" )
@@ -526,6 +604,9 @@ TEST_CASE( "async_chain::growable_size_chain_with_rejection (test_user_data)" ,
 {
 	tc_growable_size_chain_with_failure< test::ud_factory_t >();
 }
+
+namespace restinio::tests
+{
 
 template< typename Extra_Data_Factory >
 void
@@ -577,12 +658,15 @@ tc_growable_size_chain_accept_in_middle()
 				return restinio::async_chain::ok();
 			} );
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&handler_builder]( auto & settings ){
+		[&handler_builder, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler( handler_builder.release() );
 		} };
 
@@ -598,7 +682,10 @@ tc_growable_size_chain_accept_in_middle()
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
@@ -606,6 +693,10 @@ tc_growable_size_chain_accept_in_middle()
 
 	REQUIRE( 2 == stages_completed );
 }
+
+} /* namespace restinio::tests */
+
+using namespace restinio::tests;
 
 TEST_CASE( "async_chain::growable_size_chain_accept_in_middle (no_user_data)" ,
 		"[async_chain][growable_size_chain][no_user_data]" )

@@ -13,6 +13,8 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+using namespace restinio::tests;
+
 TEST_CASE( "Socket options" , "[socket][options]" )
 {
 	bool socket_options_setter_was_called = false;
@@ -22,12 +24,15 @@ TEST_CASE( "Socket options" , "[socket][options]" )
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&socket_options_setter_was_called]( auto & settings ){
+		[&socket_options_setter_was_called, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[]( auto req ){
 						if( restinio::http_method_post() == req->header().method() )
@@ -70,7 +75,10 @@ TEST_CASE( "Socket options" , "[socket][options]" )
 
 	{
 		const std::string body = "01234567890123456789";
-		REQUIRE_NOTHROW( response = do_request( create_request( body ) ) );
+		REQUIRE_NOTHROW( response = do_request(
+				create_request( body ),
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
