@@ -13,6 +13,8 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+using namespace restinio::tests;
+
 TEST_CASE( "HTTP method" , "[method]" )
 {
 	using http_server_t =
@@ -21,12 +23,15 @@ TEST_CASE( "HTTP method" , "[method]" )
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[]( auto req ){
 						req->create_response()
@@ -55,7 +60,10 @@ TEST_CASE( "HTTP method" , "[method]" )
 			"Connection: close\r\n"
 			"\r\n";
 
-		REQUIRE_NOTHROW( response = do_request( request_str ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request_str,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 	}
@@ -73,7 +81,10 @@ TEST_CASE( "HTTP method" , "[method]" )
 			"\r\n"
 			"DATADATADATADATA";
 
-		REQUIRE_NOTHROW( response = do_request( request_str ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request_str,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response, Catch::Matchers::EndsWith( "POST" ) );
 	}
@@ -89,7 +100,10 @@ TEST_CASE( "HTTP method" , "[method]" )
 			"Connection: close\r\n"
 			"\r\n";
 
-		REQUIRE_NOTHROW( response = do_request( request_str ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request_str,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response, Catch::Matchers::EndsWith( "HEAD" ) );
 	}
@@ -108,7 +122,10 @@ TEST_CASE( "HTTP method" , "[method]" )
 			"DATADATADATADATA"
 			"DATADATADATADATA";
 
-		REQUIRE_NOTHROW( response = do_request( request_str ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request_str,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response, Catch::Matchers::EndsWith( "PUT" ) );
 	}
@@ -124,10 +141,14 @@ TEST_CASE( "HTTP method" , "[method]" )
 			"Connection: close\r\n"
 			"\r\n";
 
-		REQUIRE_NOTHROW( response = do_request( request_str ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request_str,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response, Catch::Matchers::EndsWith( "DELETE" ) );
 	}
 
 	other_thread.stop_and_join();
 }
+

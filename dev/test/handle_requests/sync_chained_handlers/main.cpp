@@ -13,6 +13,9 @@
 
 #include "../../common/test_extra_data_factory.ipp"
 
+namespace restinio::tests
+{
+
 template<
 	typename Request_Handler,
 	typename Extra_Data_Factory >
@@ -22,6 +25,10 @@ struct test_traits_t : public restinio::traits_t<
 	using request_handler_t = Request_Handler;
 	using extra_data_factory_t = Extra_Data_Factory;
 };
+
+} /* namespace restinio::tests */
+
+using namespace restinio::tests;
 
 template< typename Extra_Data_Factory >
 void
@@ -36,12 +43,15 @@ tc_fixed_size_chain()
 
 	int stages_completed = 0;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&stages_completed]( auto & settings ){
+		[&stages_completed, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&stages_completed]( auto /*req*/ ) {
 						++stages_completed;
@@ -82,7 +92,10 @@ tc_fixed_size_chain()
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
@@ -116,12 +129,15 @@ tc_fixed_size_chain_with_rejection()
 
 	int stages_completed = 0;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&stages_completed]( auto & settings ){
+		[&stages_completed, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&stages_completed]( auto /*req*/ ) {
 						++stages_completed;
@@ -162,7 +178,10 @@ tc_fixed_size_chain_with_rejection()
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response,
 			Catch::Matchers::StartsWith( "HTTP/1.1 501 Not Implemented" ) );
@@ -197,12 +216,15 @@ tc_fixed_size_chain_accept_in_middle()
 
 	int stages_completed = 0;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&stages_completed]( auto & settings ){
+		[&stages_completed, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&stages_completed]( auto /*req*/ ) {
 						++stages_completed;
@@ -243,7 +265,10 @@ tc_fixed_size_chain_accept_in_middle()
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
@@ -311,12 +336,15 @@ tc_growable_size_chain()
 				return restinio::request_accepted();
 			} );
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&handler_builder]( auto & settings ){
+		[&handler_builder, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler( handler_builder.release() );
 		} };
 
@@ -332,7 +360,10 @@ tc_growable_size_chain()
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
@@ -400,12 +431,15 @@ tc_growable_size_chain_with_rejection()
 				return restinio::request_accepted();
 			} );
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&handler_builder]( auto & settings ){
+		[&handler_builder, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler( handler_builder.release() );
 		} };
 
@@ -421,7 +455,10 @@ tc_growable_size_chain_with_rejection()
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response,
 			Catch::Matchers::StartsWith( "HTTP/1.1 501 Not Implemented" ) );
@@ -490,12 +527,15 @@ tc_growable_size_chain_accept_in_middle()
 				return restinio::request_not_handled();
 			} );
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&handler_builder]( auto & settings ){
+		[&handler_builder, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler( handler_builder.release() );
 		} };
 
@@ -511,7 +551,10 @@ tc_growable_size_chain_accept_in_middle()
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 

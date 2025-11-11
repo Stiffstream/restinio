@@ -21,6 +21,9 @@
 #pragma GCC diagnostic ignored "-Wparentheses"
 #endif
 
+namespace restinio::tests
+{
+
 // Global request handlers pool.
 request_handler_pool_t< 10 > g_request_handler_pool;
 
@@ -103,6 +106,10 @@ create_request(
 		body;
 }
 
+} /* namespace restinio::tests */
+
+using namespace restinio::tests;
+
 TEST_CASE( "Using user controlled output response builder" , "[user_controlled_output]" )
 {
 	using http_server_t =
@@ -112,12 +119,15 @@ TEST_CASE( "Using user controlled output response builder" , "[user_controlled_o
 				utest_logger_t,
 				req_handler_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.read_next_http_message_timelimit( std::chrono::hours( 24 ) )
 				.handle_request_timeout( std::chrono::hours( 24 ) )
 				.max_pipelined_requests( 20 );
@@ -145,7 +155,10 @@ TEST_CASE( "Using user controlled output response builder" , "[user_controlled_o
 			create_request( 8, "8:0123456789:8" ) +
 			create_request( 9, "9:0123456789:9", "close" );
 
-		REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
+		REQUIRE_NOTHROW( response = do_request(
+				pipelinedrequests,
+				default_ip_addr(),
+				port_getter.port() ) );
 		REQUIRE_THAT(
 			response,
 			Catch::Matchers::ContainsSubstring( "0:0123456789:0" ) );
@@ -194,7 +207,10 @@ TEST_CASE( "Using user controlled output response builder" , "[user_controlled_o
 			create_request( 8, "NOWAY" ) +
 			create_request( 9, "NOWAY" );
 
-		REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
+		REQUIRE_NOTHROW( response = do_request(
+				pipelinedrequests,
+				default_ip_addr(),
+				port_getter.port() ) );
 		REQUIRE_THAT(
 			response,
 			Catch::Matchers::ContainsSubstring( "0:0123456789:0" ) );
@@ -247,7 +263,10 @@ TEST_CASE( "Using user controlled output response builder" , "[user_controlled_o
 			create_request( 8, "NOWAY" ) +
 			create_request( 9, "NOWAY" );
 
-		REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
+		REQUIRE_NOTHROW( response = do_request(
+				pipelinedrequests,
+				default_ip_addr(),
+				port_getter.port() ) );
 		REQUIRE_THAT(
 			response,
 			Catch::Matchers::ContainsSubstring( "0:0123456789:0" ) );
@@ -305,7 +324,10 @@ TEST_CASE( "Using user controlled output response builder" , "[user_controlled_o
 		}
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
+		REQUIRE_NOTHROW( response = do_request(
+				pipelinedrequests,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		for( int i = 0; i < 20; ++i )
 		{
@@ -326,3 +348,4 @@ TEST_CASE( "Using user controlled output response builder" , "[user_controlled_o
 
 	other_thread.stop_and_join();
 }
+

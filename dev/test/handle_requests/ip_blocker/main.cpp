@@ -10,6 +10,9 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+namespace restinio::tests
+{
+
 class blocker_t
 {
 	std::mutex m_lock;
@@ -30,6 +33,10 @@ public :
 	}
 };
 
+} /* namespace restinio::tests */
+
+using namespace restinio::tests;
+
 TEST_CASE( "no blocker" , "[no_blocker]" )
 {
 	struct test_traits : public restinio::traits_t<
@@ -46,8 +53,8 @@ TEST_CASE( "no blocker" , "[no_blocker]" )
 				restinio::own_io_context(),
 				[]( auto & settings ){
 					settings
-						.port( utest_default_port() )
-						.address( "127.0.0.1" )
+						.port( 0 )
+						.address( default_ip_addr() )
 						.request_handler(
 							[]( auto ){
 								return restinio::request_rejected();
@@ -69,12 +76,15 @@ TEST_CASE( "ordinary connection" , "[ordinary_connection]" )
 
 	auto blocker = std::make_shared< blocker_t >();
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[blocker]( auto & settings ){
+		[blocker, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.ip_blocker( blocker )
 				.request_handler(
 					[]( auto req ){
@@ -102,18 +112,30 @@ TEST_CASE( "ordinary connection" , "[ordinary_connection]" )
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
 	// This request should be blocked.
-	REQUIRE_THROWS( response = do_request( request_str ) );
+	REQUIRE_THROWS( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	// This request shouldn't be blocked.
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
 	// This request should be blocked.
-	REQUIRE_THROWS( response = do_request( request_str ) );
+	REQUIRE_THROWS( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	other_thread.stop_and_join();
 }

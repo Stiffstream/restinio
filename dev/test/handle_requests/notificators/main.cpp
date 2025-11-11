@@ -13,6 +13,8 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+using namespace restinio::tests;
+
 const std::string g_raw_request{
 	"GET /1 HTTP/1.0\r\n"
 	"From: unit-test\r\n"
@@ -32,12 +34,15 @@ TEST_CASE( "notificators simple 1" , "[restinio_controlled_output]" )
 
 	std::atomic< bool > notificator_was_called{ false };
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&notificator_was_called]( auto & settings ){
+		[&notificator_was_called, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&notificator_was_called]( auto req ){
 						return
@@ -57,7 +62,10 @@ TEST_CASE( "notificators simple 1" , "[restinio_controlled_output]" )
 	other_thread.run();
 
 	std::string response;
-	REQUIRE_NOTHROW( response = do_request( g_raw_request ) );
+	REQUIRE_NOTHROW( response = do_request(
+			g_raw_request,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	other_thread.stop_and_join();
 
@@ -75,12 +83,15 @@ TEST_CASE( "notificators simple 2" , "[user_controlled_output]" )
 	std::atomic< bool > flush_notificator_was_called{ false };
 	std::atomic< bool > done_notificator_was_called{ false };
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
 		[&]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&]( const restinio::request_handle_t& req ){
 						using output_type_t = restinio::user_controlled_output_t;
@@ -109,7 +120,10 @@ TEST_CASE( "notificators simple 2" , "[user_controlled_output]" )
 	other_thread.run();
 
 	std::string response;
-	REQUIRE_NOTHROW( response = do_request( g_raw_request ) );
+	REQUIRE_NOTHROW( response = do_request(
+			g_raw_request,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	other_thread.stop_and_join();
 
@@ -129,12 +143,15 @@ TEST_CASE( "notificators simple 3" , "[chunked_output]" )
 	std::atomic< bool > flush2_notificator_was_called{ false };
 	std::atomic< bool > done_notificator_was_called{ false };
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
 		[&]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&]( const restinio::request_handle_t& req ){
 						using output_type_t = restinio::chunked_output_t;
@@ -170,7 +187,10 @@ TEST_CASE( "notificators simple 3" , "[chunked_output]" )
 	other_thread.run();
 
 	std::string response;
-	REQUIRE_NOTHROW( response = do_request( g_raw_request ) );
+	REQUIRE_NOTHROW( response = do_request(
+			g_raw_request,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	other_thread.stop_and_join();
 
@@ -193,12 +213,15 @@ TEST_CASE( "notificators user_controlled_output flush-flush" , "[user_controlled
 	std::atomic< int > flush2_notificator_was_called{ -1 };
 	std::atomic< int > done_notificator_was_called{ -1 };
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
 		[&]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&]( const restinio::request_handle_t& req ){
 						using output_type_t = restinio::user_controlled_output_t;
@@ -232,7 +255,10 @@ TEST_CASE( "notificators user_controlled_output flush-flush" , "[user_controlled
 	other_thread.run();
 
 	std::string response;
-	REQUIRE_NOTHROW( response = do_request( g_raw_request ) );
+	REQUIRE_NOTHROW( response = do_request(
+			g_raw_request,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	other_thread.stop_and_join();
 
@@ -255,12 +281,15 @@ TEST_CASE( "notificators chunked_output flush-flush" , "[chunked_output][flush]"
 	std::atomic< int > flush3_notificator_was_called{ -1 };
 	std::atomic< int > done_notificator_was_called{ -1 };
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
 		[&]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&]( const restinio::request_handle_t& req ){
 						using output_type_t = restinio::chunked_output_t;
@@ -301,7 +330,10 @@ TEST_CASE( "notificators chunked_output flush-flush" , "[chunked_output][flush]"
 	other_thread.run();
 
 	std::string response;
-	REQUIRE_NOTHROW( response = do_request( g_raw_request ) );
+	REQUIRE_NOTHROW( response = do_request(
+			g_raw_request,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	other_thread.stop_and_join();
 
@@ -321,12 +353,15 @@ TEST_CASE( "notificators error" , "[error]" )
 
 	std::promise< restinio::asio_ns::error_code > ec_promise;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
 		[&]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&]( const restinio::request_handle_t& req ){
 						auto resp = req->create_response();
@@ -360,7 +395,9 @@ TEST_CASE( "notificators error" , "[error]" )
 				req_stream << g_raw_request;
 				restinio::asio_ns::write( socket, b );
 				// Send req and close without reading.
-			} )
+			},
+			default_ip_addr(),
+			port_getter.port() )
 	);
 
 	auto ec = ec_promise.get_future();
@@ -385,12 +422,15 @@ TEST_CASE( "notificators on not written data" , "[error]" )
 	std::promise<void> resp_order_barrier;
 	auto resp_order_barrier_future = resp_order_barrier.get_future();
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
 		[&]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.max_pipelined_requests( 2 )
 				.request_handler(
 					[&]( restinio::request_handle_t req ){
@@ -440,7 +480,10 @@ TEST_CASE( "notificators on not written data" , "[error]" )
 		"\r\n" };
 
 	std::string response;
-	REQUIRE_NOTHROW( response = do_request( request ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	other_thread.stop_and_join();
 
@@ -466,12 +509,15 @@ TEST_CASE( "notificators on already closed connection" , "[error]" )
 	std::promise< void > done_notificator_barrier;
 	auto done_notificator_future = done_notificator_barrier.get_future();
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
 		[&]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.max_pipelined_requests( 2 )
 				.request_handler(
 					[&]( restinio::request_handle_t req ){
@@ -525,7 +571,10 @@ TEST_CASE( "notificators on already closed connection" , "[error]" )
 		"\r\n" };
 
 	std::string response;
-	REQUIRE_NOTHROW( response = do_request( request ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	other_thread.stop_and_join();
 
@@ -546,12 +595,15 @@ TEST_CASE( "notificators throw 1" , "[error][throw]" )
 	std::promise< restinio::asio_ns::error_code > ec2;
 	std::promise< restinio::asio_ns::error_code > ec3;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
 		[&]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.max_pipelined_requests( 2 )
 				.request_handler(
 					[&]( const restinio::request_handle_t& req ){
@@ -604,7 +656,9 @@ TEST_CASE( "notificators throw 1" , "[error][throw]" )
 		"User-Agent: unit-test\r\n"
 		"Content-Type: application/x-www-form-urlencoded\r\n"
 		"Connection: keep-alive\r\n"
-		"\r\n" ) );
+		"\r\n",
+		default_ip_addr(),
+		port_getter.port() ) );
 
 	{
 		auto ec = ec1.get_future();
@@ -626,7 +680,9 @@ TEST_CASE( "notificators throw 1" , "[error][throw]" )
 				"\r\n";
 				restinio::asio_ns::write( socket, b );
 				// Send req and close without reading.
-			} )
+			},
+			default_ip_addr(),
+			port_getter.port() )
 	);
 
 	{
@@ -647,7 +703,9 @@ TEST_CASE( "notificators throw 1" , "[error][throw]" )
 		"User-Agent: unit-test\r\n"
 		"Content-Type: application/x-www-form-urlencoded\r\n"
 		"Connection: keep-alive\r\n"
-		"\r\n" ) );
+		"\r\n",
+		default_ip_addr(),
+		port_getter.port() ) );
 
 	{
 		auto ec = ec3.get_future().get();
@@ -657,3 +715,4 @@ TEST_CASE( "notificators throw 1" , "[error][throw]" )
 
 	other_thread.stop_and_join();
 }
+

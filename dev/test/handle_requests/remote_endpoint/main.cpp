@@ -14,6 +14,8 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+using namespace restinio::tests;
+
 TEST_CASE( "remote_endpoint extraction" , "[remote_endpoint]" )
 {
 	std::string endpoint_value;
@@ -24,12 +26,15 @@ TEST_CASE( "remote_endpoint extraction" , "[remote_endpoint]" )
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&endpoint_value]( auto & settings ){
+		[&endpoint_value, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&endpoint_value]( auto req ){
 						endpoint_value = fmt::format(
@@ -61,7 +66,10 @@ TEST_CASE( "remote_endpoint extraction" , "[remote_endpoint]" )
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
@@ -109,12 +117,15 @@ TEST_CASE( "remote_endpoint for WS" , "[remote_endpoint][ws]" )
 	using http_server_t =
 		restinio::http_server_t< traits_t >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&endpoint_value,&endpoint_value_ws]( auto & settings ){
+		[&endpoint_value, &endpoint_value_ws, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&endpoint_value, &endpoint_value_ws]( auto req ){
 						endpoint_value = fmt::format(
@@ -158,7 +169,10 @@ TEST_CASE( "remote_endpoint for WS" , "[remote_endpoint][ws]" )
 		"\r\n";
 
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	other_thread.stop_and_join();
 

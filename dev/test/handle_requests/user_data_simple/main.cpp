@@ -82,6 +82,8 @@ struct test_traits_t : public restinio::traits_t<
 
 } /* namespace test */
 
+using namespace restinio::tests;
+
 TEST_CASE( "remote_endpoint extraction" , "[remote_endpoint]" )
 {
 	using namespace test;
@@ -93,12 +95,16 @@ TEST_CASE( "remote_endpoint extraction" , "[remote_endpoint]" )
 
 	auto extra_data_factory = std::make_shared< test_extra_data_factory_t >();
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&endpoint_value, &index_value, extra_data_factory]( auto & settings ){
+		[&endpoint_value, &index_value, extra_data_factory, &port_getter]
+		( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.extra_data_factory( extra_data_factory )
 				.request_handler(
 					[&endpoint_value, &index_value]( auto req ){
@@ -132,7 +138,10 @@ TEST_CASE( "remote_endpoint extraction" , "[remote_endpoint]" )
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 

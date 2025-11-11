@@ -5,6 +5,7 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+using namespace restinio::tests;
 
 TEST_CASE(
 	"RC & char* & single set & single buf" ,
@@ -18,14 +19,17 @@ TEST_CASE(
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[ = ]( auto & settings ){
+		[ & ]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
-					[ = ]( auto req ){
+					[ & ]( auto req ){
 						return
 							req->create_response()
 								.append_header( "Server", "RESTinio utest server" )
@@ -48,7 +52,10 @@ TEST_CASE(
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response,
 		Catch::Matchers::ContainsSubstring(
@@ -75,14 +82,17 @@ TEST_CASE(
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[ = ]( auto & settings ){
+		[ & ]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
-					[ = ]( auto req ){
+					[ & ]( auto req ){
 						auto resp = req->create_response();
 
 						resp.append_header( "Server", "RESTinio utest server" )
@@ -108,7 +118,10 @@ TEST_CASE(
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response,
 		Catch::Matchers::ContainsSubstring(
@@ -133,14 +146,17 @@ TEST_CASE(
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[ = ]( auto & settings ){
+		[ & ]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
-					[ = ]( auto req ){
+					[ & ]( auto req ){
 						const char * resp_msg = resp_message;
 						auto resp = req->create_response();
 
@@ -174,7 +190,10 @@ TEST_CASE(
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response,
 		Catch::Matchers::ContainsSubstring(
@@ -201,12 +220,15 @@ TEST_CASE(
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[ = ]( auto & settings ){
+		[ & ]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[ = ]( auto req ){
 						auto resp = req->create_response();
@@ -272,7 +294,10 @@ TEST_CASE(
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response,
 		Catch::Matchers::ContainsSubstring(
@@ -298,14 +323,17 @@ TEST_CASE(
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[ = ]( auto & settings ){
+		[ & ]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
-					[ = ]( const restinio::request_handle_t& req ){
+					[ & ]( const restinio::request_handle_t& req ){
 						using output_type_t = restinio::user_controlled_output_t;
 
 						return
@@ -331,7 +359,10 @@ TEST_CASE(
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response,
 		Catch::Matchers::ContainsSubstring(
@@ -358,14 +389,17 @@ TEST_CASE(
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[ = ]( auto & settings ){
+		[ & ]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
-					[ = ]( const restinio::request_handle_t& req ){
+					[ & ]( const restinio::request_handle_t& req ){
 						using output_type_t = restinio::user_controlled_output_t;
 
 						auto resp = req->create_response< output_type_t >();
@@ -394,7 +428,10 @@ TEST_CASE(
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response,
 		Catch::Matchers::ContainsSubstring(
@@ -419,12 +456,15 @@ TEST_CASE(
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[ = ]( auto & settings ){
+		[ & ]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[ = ]( const restinio::request_handle_t& req ){
 						using output_type_t = restinio::user_controlled_output_t;
@@ -463,7 +503,10 @@ TEST_CASE(
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response,
 		Catch::Matchers::ContainsSubstring(
@@ -489,14 +532,17 @@ TEST_CASE(
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[ = ]( auto & settings ){
+		[ & ]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
-					[ = ]( const restinio::request_handle_t& req ){
+					[ & ]( const restinio::request_handle_t& req ){
 						using output_type_t = restinio::user_controlled_output_t;
 
 						auto resp = req->create_response< output_type_t >();
@@ -563,7 +609,10 @@ TEST_CASE(
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response,
 		Catch::Matchers::ContainsSubstring(
@@ -611,12 +660,15 @@ TEST_CASE(
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[ = ]( auto & settings ){
+		[ & ]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[ = ]( const restinio::request_handle_t& req ){
 						using output_type_t = restinio::chunked_output_t;
@@ -654,7 +706,10 @@ TEST_CASE(
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response, !Catch::Matchers::ContainsSubstring( "Content-Length" ) );
 

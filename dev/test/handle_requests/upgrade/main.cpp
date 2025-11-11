@@ -15,6 +15,8 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+using namespace restinio::tests;
+
 template< typename Traits >
 void
 perform_test()
@@ -22,12 +24,15 @@ perform_test()
 	using http_server_t = restinio::http_server_t< Traits >;
 	namespace rws = restinio::websocket;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[]( auto req ){
 						if( restinio::http_connection_header_t::upgrade == req->header().connection() )
@@ -72,7 +77,10 @@ perform_test()
 		"User-Agent: unit-test\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = do_request( request_str ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT(
 		response,
@@ -85,14 +93,22 @@ perform_test()
 	other_thread.stop_and_join();
 }
 
+namespace restinio::tests
+{
+
 struct no_connection_limiter_traits_t : public restinio::default_traits_t {
 	using logger_t = utest_logger_t;
 };
+
+} /* namespace restinio::tests */
 
 TEST_CASE( "Upgrade (noop_connection_limiter)" , "[upgrade]" )
 {
 	perform_test< no_connection_limiter_traits_t >();
 }
+
+namespace restinio::tests
+{
 
 struct thread_safe_connection_limiter_traits_t : public restinio::default_traits_t {
 	using logger_t = utest_logger_t;
@@ -100,16 +116,23 @@ struct thread_safe_connection_limiter_traits_t : public restinio::default_traits
 	static constexpr bool use_connection_count_limiter = true;
 };
 
+} /* namespace restinio::tests */
+
 TEST_CASE( "Upgrade (thread_safe_connection_limiter)" , "[upgrade]" )
 {
 	perform_test< thread_safe_connection_limiter_traits_t >();
 }
+
+namespace restinio::tests
+{
 
 struct single_thread_connection_limiter_traits_t : public restinio::default_single_thread_traits_t {
 	using logger_t = utest_logger_t;
 
 	static constexpr bool use_connection_count_limiter = true;
 };
+
+} /* namespace restinio::tests */
 
 TEST_CASE( "Upgrade (single_thread_connection_limiter)" , "[upgrade]" )
 {
