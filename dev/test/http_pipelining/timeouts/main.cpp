@@ -17,6 +17,9 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+namespace restinio::tests
+{
+
 void
 send_response_if_needed( restinio::request_handle_t rh )
 {
@@ -47,6 +50,10 @@ struct req_handler_t
 
 restinio::request_handle_t req_handler_t::m_request;
 
+} /* namespace restinio::tests */
+
+using namespace restinio::tests;
+
 TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 {
 	using http_server_t =
@@ -56,12 +63,15 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 				utest_logger_t,
 				req_handler_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.timer_manager( std::chrono::milliseconds( 50 ) )
 				.read_next_http_message_timelimit( std::chrono::seconds( 5 ) )
 				.handle_request_timeout( std::chrono::milliseconds( 100 ) )
@@ -71,53 +81,59 @@ TEST_CASE( "HTTP piplining timout" , "[timeout]" )
 	other_work_thread_for_server_t<http_server_t> other_thread(http_server);
 	other_thread.run();
 
-	do_with_socket( [ & ]( auto & socket, auto & io_context ){
-		const std::string pipelinedrequests{
-			"GET / HTTP/1.1\r\n"
-			"Host: 127.0.0.1\r\n"
-			"User-Agent: unit-test\r\n"
-			"Accept: */*\r\n"
-			"Connection: keep-alive\r\n"
-			"\r\n"
-			"GET / HTTP/1.1\r\n"
-			"Host: 127.0.0.1\r\n"
-			"User-Agent: unit-test\r\n"
-			"Accept: */*\r\n"
-			"Connection: keep-alive\r\n"
-			"\r" }; // No \n for second request.
+	do_with_socket( [ & ]( auto & socket, auto & io_context )
+		{
+			const std::string pipelinedrequests{
+				"GET / HTTP/1.1\r\n"
+				"Host: 127.0.0.1\r\n"
+				"User-Agent: unit-test\r\n"
+				"Accept: */*\r\n"
+				"Connection: keep-alive\r\n"
+				"\r\n"
+				"GET / HTTP/1.1\r\n"
+				"Host: 127.0.0.1\r\n"
+				"User-Agent: unit-test\r\n"
+				"Accept: */*\r\n"
+				"Connection: keep-alive\r\n"
+				"\r" }; // No \n for second request.
 
-		const auto started_at = std::chrono::steady_clock::now();
+			const auto started_at = std::chrono::steady_clock::now();
 
-		REQUIRE_NOTHROW(
-			restinio::asio_ns::write( socket, restinio::asio_ns::buffer( pipelinedrequests ) )
-			);
+			REQUIRE_NOTHROW(
+				restinio::asio_ns::write(
+						socket,
+						restinio::asio_ns::buffer( pipelinedrequests ) )
+				);
 
-		std::array< char, 1024 > data;
+			std::array< char, 1024 > data;
 
-		socket.async_read_some(
-			restinio::asio_ns::buffer( data ),
-			[ & ]( auto ec, std::size_t length ){
+			socket.async_read_some(
+				restinio::asio_ns::buffer( data ),
+				[ & ]( auto ec, std::size_t length ){
 
-				REQUIRE( 0 == length );
-				REQUIRE( ec );
-				REQUIRE( ec == restinio::asio_ns::error::eof );
-			} );
-		io_context.run();
+					REQUIRE( 0 == length );
+					REQUIRE( ec );
+					REQUIRE( ec == restinio::asio_ns::error::eof );
+				} );
+			io_context.run();
 
-		const auto finished_at = std::chrono::steady_clock::now();
+			const auto finished_at = std::chrono::steady_clock::now();
 
-		const auto timeout =
-			std::chrono::duration_cast< std::chrono::milliseconds >(
-				finished_at - started_at );
+			const auto timeout =
+				std::chrono::duration_cast< std::chrono::milliseconds >(
+					finished_at - started_at );
 
-		// Timeout is about 200 msec.
-		REQUIRE( 100 <= timeout.count() );
-		// NOTE: there is no upper limit because if that unit-test
-		// is run under virtual machine there can be very slow execution
-		// speed and async_read_some can take more that 250ms.
-	} );
+			// Timeout is about 200 msec.
+			REQUIRE( 100 <= timeout.count() );
+			// NOTE: there is no upper limit because if that unit-test
+			// is run under virtual machine there can be very slow execution
+			// speed and async_read_some can take more that 250ms.
+		},
+		default_ip_addr(),
+		port_getter.port() );
 
 	other_thread.stop_and_join();
 
 	req_handler_t::m_request.reset();
 }
+

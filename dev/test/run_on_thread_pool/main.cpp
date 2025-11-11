@@ -14,10 +14,14 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+using namespace restinio::tests;
+
 // The first request can be refused because it can be issued when server
 // is not fully started yet.
 std::string
-repeat_request( const char * request )
+repeat_request( const char * request,
+	const std::string & ip_addr,
+	std::uint16_t port )
 {
 	std::string result;
 
@@ -26,7 +30,7 @@ repeat_request( const char * request )
 	{
 		try
 		{
-			result = do_request( request );
+			result = do_request( request, ip_addr, port );
 			return result;
 		}
 		catch( const std::exception & x )
@@ -58,12 +62,15 @@ TEST_CASE( "on thread pool with break signals" , "[with_break_signal]" )
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&endpoint_value]( auto & settings ){
+		[&endpoint_value, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&endpoint_value]( auto req ){
 						endpoint_value = fmt::format(
@@ -108,7 +115,10 @@ TEST_CASE( "on thread pool with break signals" , "[with_break_signal]" )
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = repeat_request( request_str ) );
+	REQUIRE_NOTHROW( response = repeat_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
@@ -128,12 +138,15 @@ TEST_CASE( "on thread pool without break signals" , "[without_break_signal]" )
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&endpoint_value]( auto & settings ){
+		[&endpoint_value, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&endpoint_value]( auto req ){
 						endpoint_value = fmt::format(
@@ -178,7 +191,10 @@ TEST_CASE( "on thread pool without break signals" , "[without_break_signal]" )
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = repeat_request( request_str ) );
+	REQUIRE_NOTHROW( response = repeat_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
@@ -198,12 +214,15 @@ TEST_CASE( "server on thread pool runner" , "[on_pool_runner]" )
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&endpoint_value]( auto & settings ){
+		[&endpoint_value, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&endpoint_value]( auto req ){
 						endpoint_value = fmt::format(
@@ -248,7 +267,10 @@ TEST_CASE( "server on thread pool runner" , "[on_pool_runner]" )
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = repeat_request( request_str ) );
+	REQUIRE_NOTHROW( response = repeat_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
@@ -266,11 +288,14 @@ TEST_CASE( "run_async with manual stop/wait" , "[run_async]" )
 			restinio::asio_timer_manager_t,
 			utest_logger_t >;
 
+	random_port_getter_t port_getter;
+
 	auto server_handle = restinio::run_async<traits_t>(
 		restinio::own_io_context(),
 		restinio::server_settings_t<traits_t>{}
-			.port( utest_default_port() )
-			.address( "127.0.0.1" )
+			.port( 0 )
+			.address( default_ip_addr() )
+			.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 			.request_handler(
 				[&endpoint_value]( auto req ){
 					endpoint_value = fmt::format(
@@ -299,7 +324,10 @@ TEST_CASE( "run_async with manual stop/wait" , "[run_async]" )
 		"Connection: close\r\n"
 		"\r\n";
 
-	REQUIRE_NOTHROW( response = repeat_request( request_str ) );
+	REQUIRE_NOTHROW( response = repeat_request(
+			request_str,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
@@ -318,11 +346,14 @@ TEST_CASE( "run_async with manual stop without wait" , "[run_async]" )
 				restinio::asio_timer_manager_t,
 				utest_logger_t >;
 
+		random_port_getter_t port_getter;
+
 		auto server_handle = restinio::run_async<traits_t>(
 			restinio::own_io_context(),
 			restinio::server_settings_t<traits_t>{}
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&endpoint_value]( auto req ){
 						endpoint_value = fmt::format(
@@ -351,7 +382,10 @@ TEST_CASE( "run_async with manual stop without wait" , "[run_async]" )
 			"Connection: close\r\n"
 			"\r\n";
 
-		REQUIRE_NOTHROW( response = repeat_request( request_str ) );
+		REQUIRE_NOTHROW( response = repeat_request(
+				request_str,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
@@ -371,11 +405,14 @@ TEST_CASE( "run_async with automatic stop/wait" , "[run_async]" )
 			utest_logger_t >;
 
 	{
+		random_port_getter_t port_getter;
+
 		auto server_handle = restinio::run_async<traits_t>(
 			restinio::own_io_context(),
 			restinio::server_settings_t<traits_t>{}
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[&endpoint_value]( auto req ){
 						endpoint_value = fmt::format(
@@ -404,7 +441,10 @@ TEST_CASE( "run_async with automatic stop/wait" , "[run_async]" )
 			"Connection: close\r\n"
 			"\r\n";
 
-		REQUIRE_NOTHROW( response = repeat_request( request_str ) );
+		REQUIRE_NOTHROW( response = repeat_request(
+				request_str,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT( response, Catch::Matchers::EndsWith( "GET" ) );
 
@@ -413,3 +453,4 @@ TEST_CASE( "run_async with automatic stop/wait" , "[run_async]" )
 
 	REQUIRE( "" != endpoint_value );
 }
+

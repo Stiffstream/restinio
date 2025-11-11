@@ -17,6 +17,9 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+namespace restinio::tests
+{
+
 void
 send_response_if_needed( restinio::request_handle_t rh )
 {
@@ -112,6 +115,10 @@ get_response_sequence( const std::string responses )
 	return result;
 }
 
+} /* namespace restinio::tests */
+
+using namespace restinio::tests;
+
 TEST_CASE( "Simple HTTP piplining " , "[reverse_handling]" )
 {
 	using http_server_t =
@@ -121,12 +128,15 @@ TEST_CASE( "Simple HTTP piplining " , "[reverse_handling]" )
 				utest_logger_t,
 				req_handler_t< 3 > > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 
 				// Must have notable timeouts:
 				.read_next_http_message_timelimit(
@@ -147,7 +157,10 @@ TEST_CASE( "Simple HTTP piplining " , "[reverse_handling]" )
 			create_request( 1 ) +
 			create_request( 2, "close" );
 
-		REQUIRE_NOTHROW( response = do_request( pipelinedrequests ) );
+		REQUIRE_NOTHROW( response = do_request(
+				pipelinedrequests,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		const auto resp_seq = get_response_sequence( response );
 		REQUIRE( 3 == resp_seq.size() );
@@ -170,7 +183,10 @@ TEST_CASE( "Simple HTTP piplining " , "[reverse_handling]" )
 					create_request( 0 ) +
 					create_request( 1, "close" );
 
-				std::string response = do_request( pipelinedrequests );
+				std::string response = do_request(
+						pipelinedrequests,
+						default_ip_addr(),
+						port_getter.port() );
 
 				final_checks = [ response ](){
 					const auto resp_seq =
@@ -192,7 +208,10 @@ TEST_CASE( "Simple HTTP piplining " , "[reverse_handling]" )
 		std::string response;
 		// Send 3rd reques through another connection.
 		REQUIRE_NOTHROW(
-			response = do_request( create_request( 2, "close" ) ) );
+			response = do_request(
+					create_request( 2, "close" ),
+					default_ip_addr(),
+					port_getter.port() ) );
 
 		// It must not contain responses on 1st and 2dn request
 		// leaved in handler.
@@ -219,12 +238,15 @@ TEST_CASE( "Long sequesnces HTTP piplining" , "[long_sequences]" )
 				utest_logger_t,
 				req_handler_t< 128 > > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 
 				// Must have notable timeouts:
 				.read_next_http_message_timelimit(
@@ -248,7 +270,10 @@ TEST_CASE( "Long sequesnces HTTP piplining" , "[long_sequences]" )
 		sout << create_request( 127, "close" );
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( sout.str() ) );
+		REQUIRE_NOTHROW( response = do_request(
+				sout.str(),
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		const auto resp_seq = get_response_sequence( response );
 		REQUIRE( 128 == resp_seq.size() );
@@ -277,7 +302,10 @@ TEST_CASE( "Long sequesnces HTTP piplining" , "[long_sequences]" )
 		seq.push_back( 127 );
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( sout.str() ) );
+		REQUIRE_NOTHROW( response = do_request(
+				sout.str(),
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		const auto resp_seq = get_response_sequence( response );
 		REQUIRE( 122 == resp_seq.size() );
@@ -302,12 +330,15 @@ TEST_CASE( "Interrupt sequesnces HTTP piplining" , "[long_sequences][interrupt]"
 				utest_logger_t,
 				req_handler_t< 20 > > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 
 				// Must have notable timeouts:
 				.read_next_http_message_timelimit(
@@ -330,7 +361,10 @@ TEST_CASE( "Interrupt sequesnces HTTP piplining" , "[long_sequences][interrupt]"
 	}
 
 	std::string response;
-	REQUIRE_NOTHROW( response = do_request( sout.str() ) );
+	REQUIRE_NOTHROW( response = do_request(
+			sout.str(),
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	const auto resp_seq = get_response_sequence( response );
 	REQUIRE( 10 == resp_seq.size() );
