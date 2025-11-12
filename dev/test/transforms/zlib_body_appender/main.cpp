@@ -16,6 +16,8 @@
 
 #include "../random_data_generators.ipp"
 
+using namespace restinio::tests;
+
 TEST_CASE( "restinio_controlled_output" , "[zlib][body_appender][restinio_controlled_output]" )
 {
 	std::srand( static_cast<unsigned int>(std::time( nullptr )) );
@@ -91,12 +93,15 @@ TEST_CASE( "restinio_controlled_output" , "[zlib][body_appender][restinio_contro
 				utest_logger_t,
 				router_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
 		[&]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler( std::move( router ) );
 		}
 	};
@@ -115,7 +120,10 @@ TEST_CASE( "restinio_controlled_output" , "[zlib][body_appender][restinio_contro
 		};
 		std::string response;
 
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
@@ -139,7 +147,10 @@ TEST_CASE( "restinio_controlled_output" , "[zlib][body_appender][restinio_contro
 		};
 		std::string response;
 
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
@@ -163,7 +174,10 @@ TEST_CASE( "restinio_controlled_output" , "[zlib][body_appender][restinio_contro
 		};
 		std::string response;
 
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
@@ -190,7 +204,10 @@ TEST_CASE( "restinio_controlled_output" , "[zlib][body_appender][restinio_contro
 
 			std::string response;
 
-			REQUIRE_NOTHROW( response = do_request( request ) );
+			REQUIRE_NOTHROW( response = do_request(
+					request,
+					default_ip_addr(),
+					port_getter.port() ) );
 
 			REQUIRE_THAT(
 				response,
@@ -217,7 +234,10 @@ TEST_CASE( "restinio_controlled_output" , "[zlib][body_appender][restinio_contro
 
 			std::string response;
 
-			REQUIRE_NOTHROW( response = do_request( request ) );
+			REQUIRE_NOTHROW( response = do_request(
+					request,
+					default_ip_addr(),
+					port_getter.port() ) );
 
 			REQUIRE_THAT(
 				response,
@@ -342,12 +362,15 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 				utest_logger_t,
 				router_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
 		[&]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler( std::move( router ) );
 		}
 	};
@@ -366,7 +389,10 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 		};
 		std::string response;
 
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
@@ -398,7 +424,10 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 		};
 		std::string response;
 
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
@@ -430,7 +459,10 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 		};
 		std::string response;
 
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
@@ -465,7 +497,10 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 
 			std::string response;
 
-			REQUIRE_NOTHROW( response = do_request( request ) );
+			REQUIRE_NOTHROW( response = do_request(
+					request,
+					default_ip_addr(),
+					port_getter.port() ) );
 
 			REQUIRE_THAT(
 				response,
@@ -499,7 +534,10 @@ TEST_CASE( "user_controlled_output" , "[zlib][body_appender][user_controlled_out
 
 			std::string response;
 
-			REQUIRE_NOTHROW( response = do_request( request ) );
+			REQUIRE_NOTHROW( response = do_request(
+					request,
+					default_ip_addr(),
+					port_getter.port() ) );
 
 			REQUIRE_THAT(
 				response,
@@ -640,12 +678,15 @@ TEST_CASE( "chunked_output" , "[zlib][body_appender][chunked_output]" )
 				utest_logger_t,
 				router_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
 		[&]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler( std::move( router ) );
 		}
 	};
@@ -664,7 +705,10 @@ TEST_CASE( "chunked_output" , "[zlib][body_appender][chunked_output]" )
 		};
 		std::string response;
 
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
@@ -683,7 +727,10 @@ TEST_CASE( "chunked_output" , "[zlib][body_appender][chunked_output]" )
 		};
 		std::string response;
 
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
@@ -702,7 +749,10 @@ TEST_CASE( "chunked_output" , "[zlib][body_appender][chunked_output]" )
 		};
 		std::string response;
 
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
@@ -711,3 +761,4 @@ TEST_CASE( "chunked_output" , "[zlib][body_appender][chunked_output]" )
 
 	other_thread.stop_and_join();
 }
+

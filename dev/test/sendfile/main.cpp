@@ -15,6 +15,8 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+using namespace restinio::tests;
+
 //using logger_to_use_t = restinio::null_logger_t;
 using logger_to_use_t = utest_logger_t;
 
@@ -32,12 +34,15 @@ TEST_CASE( "simple sendfile" , "[sendfile]" )
 				restinio::asio_timer_manager_t,
 				logger_to_use_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[]( auto req ){
 						if( restinio::http_method_get() == req->header().method() )
@@ -69,7 +74,10 @@ TEST_CASE( "simple sendfile" , "[sendfile]" )
 	};
 	std::string response;
 
-	REQUIRE_NOTHROW( response = do_request( request ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT(
 		response,
@@ -89,12 +97,15 @@ TEST_CASE( "simple sendfile with std::filesystem::path" , "[sendfile][std::files
 				restinio::asio_timer_manager_t,
 				logger_to_use_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[]( auto req ){
 						if( restinio::http_method_get() == req->header().method() )
@@ -132,7 +143,10 @@ TEST_CASE( "simple sendfile with std::filesystem::path" , "[sendfile][std::files
 	};
 	std::string response;
 
-	REQUIRE_NOTHROW( response = do_request( request ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT(
 		response,
@@ -150,12 +164,15 @@ TEST_CASE( "sendfile the same file several times" , "[sendfile][same-several-tim
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[]( auto req ){
 						if( restinio::http_method_get() == req->header().method() )
@@ -190,7 +207,10 @@ TEST_CASE( "sendfile the same file several times" , "[sendfile][same-several-tim
 	};
 	std::string response;
 
-	REQUIRE_NOTHROW( response = do_request( request ) );
+	REQUIRE_NOTHROW( response = do_request(
+			request,
+			default_ip_addr(),
+			port_getter.port() ) );
 
 	REQUIRE_THAT(
 		response,
@@ -253,12 +273,15 @@ TEST_CASE( "sendfile 2 files" , "[sendfile][n-files]" )
 				logger_to_use_t,
 				router_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
 		[&]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler( std::move( router ) );
 		}
 	};
@@ -277,7 +300,10 @@ TEST_CASE( "sendfile 2 files" , "[sendfile][n-files]" )
 		};
 		std::string response;
 
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
@@ -299,7 +325,10 @@ TEST_CASE( "sendfile 2 files" , "[sendfile][n-files]" )
 		};
 		std::string response;
 
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
@@ -322,7 +351,10 @@ TEST_CASE( "sendfile 2 files" , "[sendfile][n-files]" )
 		};
 		std::string response;
 
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
@@ -383,12 +415,15 @@ TEST_CASE( "sendfile offsets_and_size" , "[sendfile][offset][size]" )
 				logger_to_use_t,
 				router_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
 		[&]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler( std::move( router ) );
 		}
 	};
@@ -411,7 +446,10 @@ TEST_CASE( "sendfile offsets_and_size" , "[sendfile][offset][size]" )
 			};
 
 			std::string response;
-			REQUIRE_NOTHROW( response = do_request( request ) );
+			REQUIRE_NOTHROW( response = do_request(
+					request,
+					default_ip_addr(),
+					port_getter.port() ) );
 
 			REQUIRE_THAT(
 				response,
@@ -438,7 +476,10 @@ TEST_CASE( "sendfile offsets_and_size" , "[sendfile][offset][size]" )
 				};
 
 				std::string response;
-				REQUIRE_NOTHROW( response = do_request( request ) );
+				REQUIRE_NOTHROW( response = do_request(
+						request,
+						default_ip_addr(),
+						port_getter.port() ) );
 
 				REQUIRE_THAT(
 					response,
@@ -480,12 +521,15 @@ TEST_CASE( "sendfile chunks" , "[sendfile][chunk]" )
 				logger_to_use_t,
 				router_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
 		[&]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler( std::move( router ) );
 		}
 	};
@@ -504,7 +548,10 @@ TEST_CASE( "sendfile chunks" , "[sendfile][chunk]" )
 		};
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
@@ -525,7 +572,10 @@ TEST_CASE( "sendfile chunks" , "[sendfile][chunk]" )
 		};
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
@@ -544,7 +594,10 @@ TEST_CASE( "sendfile chunks" , "[sendfile][chunk]" )
 		};
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
@@ -565,7 +618,10 @@ TEST_CASE( "sendfile chunks" , "[sendfile][chunk]" )
 		};
 
 		std::string response;
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
@@ -622,12 +678,15 @@ TEST_CASE( "sendfile errors" , "[sendfile][error]" )
 				logger_to_use_t,
 				router_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
 		[&]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler( std::move( router ) );
 		}
 	};
@@ -646,7 +705,10 @@ TEST_CASE( "sendfile errors" , "[sendfile][error]" )
 		};
 
 		std::string response;
-		REQUIRE_THROWS( response = do_request( request ) );
+		REQUIRE_THROWS( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 	}
 
 	{
@@ -660,7 +722,10 @@ TEST_CASE( "sendfile errors" , "[sendfile][error]" )
 		};
 
 		std::string response;
-		REQUIRE_THROWS( response = do_request( request ) );
+		REQUIRE_THROWS( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 	}
 
 	other_thread.stop_and_join();
@@ -710,12 +775,15 @@ TEST_CASE( "sendfile with partially-read response" ,
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[]( auto & settings ){
+		[&port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[]( auto req ){
 						if( restinio::http_method_get() == req->header().method() )
@@ -767,8 +835,11 @@ TEST_CASE( "sendfile with partially-read response" ,
 				restinio::asio_ns::read( socket, restinio::asio_ns::buffer(body) );
 
 				socket.close();
-			} );
+			},
+			default_ip_addr(),
+			port_getter.port() );
 	}
 
 	other_thread.stop_and_join();
 }
+

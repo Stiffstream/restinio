@@ -16,6 +16,8 @@
 
 #include "../random_data_generators.ipp"
 
+using namespace restinio::tests;
+
 TEST_CASE( "body_handler" , "[zlib][body_handler]" )
 {
 	std::srand( static_cast<unsigned int>(std::time( nullptr )) );
@@ -51,12 +53,15 @@ TEST_CASE( "body_handler" , "[zlib][body_handler]" )
 				utest_logger_t,
 				router_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
 		[&]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler( std::move( router ) );
 		}
 	};
@@ -86,7 +91,10 @@ TEST_CASE( "body_handler" , "[zlib][body_handler]" )
 
 			std::string response;
 
-			REQUIRE_NOTHROW( response = do_request( request ) );
+			REQUIRE_NOTHROW( response = do_request(
+					request,
+					default_ip_addr(),
+					port_getter.port() ) );
 
 			REQUIRE_THAT(
 				response,
@@ -115,7 +123,10 @@ TEST_CASE( "body_handler" , "[zlib][body_handler]" )
 
 			std::string response;
 
-			REQUIRE_NOTHROW( response = do_request( request ) );
+			REQUIRE_NOTHROW( response = do_request(
+					request,
+					default_ip_addr(),
+					port_getter.port() ) );
 
 			REQUIRE_THAT(
 				response,
@@ -164,12 +175,15 @@ TEST_CASE( "body_handler void return" , "[zlib][body_handler][void-return]" )
 				utest_logger_t,
 				router_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
 		[&]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler( std::move( router ) );
 		}
 	};
@@ -195,7 +209,10 @@ TEST_CASE( "body_handler void return" , "[zlib][body_handler][void-return]" )
 
 		std::string response;
 
-		REQUIRE_NOTHROW( response = do_request( request ) );
+		REQUIRE_NOTHROW( response = do_request(
+				request,
+				default_ip_addr(),
+				port_getter.port() ) );
 
 		REQUIRE_THAT(
 			response,
@@ -206,3 +223,4 @@ TEST_CASE( "body_handler void return" , "[zlib][body_handler][void-return]" )
 
 	other_thread.stop_and_join();
 }
+

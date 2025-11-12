@@ -10,6 +10,8 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+using namespace restinio::tests;
+
 TEST_CASE( "zero as server port" , "[acceptor_post_bind_hook]" )
 {
 	struct test_traits : public restinio::traits_t<

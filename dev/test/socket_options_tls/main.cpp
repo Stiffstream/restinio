@@ -15,6 +15,8 @@
 #include <test/common/utest_logger.hpp>
 #include <test/common/pub.hpp>
 
+using namespace restinio::tests;
+
 TEST_CASE( "Socket_options TLS" , "[socket][options][tls]" )
 {
 	bool socket_options_setter_was_called = false;
@@ -24,12 +26,15 @@ TEST_CASE( "Socket_options TLS" , "[socket][options][tls]" )
 				restinio::asio_timer_manager_t,
 				utest_logger_t > >;
 
+	random_port_getter_t port_getter;
+
 	http_server_t http_server{
 		restinio::own_io_context(),
-		[&socket_options_setter_was_called]( auto & settings ){
+		[&socket_options_setter_was_called, &port_getter]( auto & settings ){
 			settings
-				.port( utest_default_port() )
-				.address( "127.0.0.1" )
+				.port( 0 )
+				.address( default_ip_addr() )
+				.acceptor_post_bind_hook( port_getter.as_post_bind_hook() )
 				.request_handler(
 					[]( auto req ){
 						if( restinio::http_method_post() == req->header().method() )
@@ -68,7 +73,9 @@ TEST_CASE( "Socket_options TLS" , "[socket][options][tls]" )
 
 			//! Ensure we closed.
 			std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
-		} );
+		},
+		default_ip_addr(),
+		port_getter.port() );
 
 	REQUIRE( socket_options_setter_was_called );
 

@@ -22,6 +22,9 @@
 
 namespace rws = restinio::websocket::basic;
 
+namespace restinio::tests
+{
+
 using traits_t =
 	restinio::traits_t<
 		restinio::asio_timer_manager_t,
@@ -47,7 +50,14 @@ struct msg_ws_message_t : public so_5::message_t
 	rws::message_handle_t m_msg;
 };
 
-struct server_started_t : public so_5::signal_t {};
+struct server_started_t : public so_5::message_t
+{
+	std::uint16_t m_port;
+
+	server_started_t( std::uint16_t port )
+		: m_port{ port }
+	{}
+};
 
 //
 // g_last_close_code
@@ -79,8 +89,9 @@ class a_server_t
 					[this]( auto & settings ){
 						auto mbox = this->so_direct_mbox();
 						settings
-							.port( utest_default_port() )
-							.address( "127.0.0.1" )
+							.port( 0 )
+							.address( default_ip_addr() )
+							.acceptor_post_bind_hook( m_port_getter.as_post_bind_hook() )
 							.request_handler(
 								[mbox]( auto req ){
 									if( restinio::http_connection_header_t::upgrade ==
@@ -113,7 +124,9 @@ class a_server_t
 		so_evt_start() override
 		{
 			m_other_thread.run();
-			so_5::send<server_started_t>( m_server_started_mchain );
+			so_5::send<server_started_t>(
+					m_server_started_mchain,
+					m_port_getter.port() );
 		}
 
 		virtual void
@@ -196,6 +209,9 @@ class a_server_t
 
 		const so_5::mchain_t m_server_started_mchain;
 		std::promise< void > * const m_notificator_promise;
+
+		random_port_getter_t m_port_getter;
+
 		http_server_t m_http_server;
 		other_work_thread_for_server_t<http_server_t> m_other_thread;
 		rws::ws_handle_t m_ws;
@@ -216,8 +232,10 @@ const std::string upgrade_request{
 class sobj_t
 {
 		so_5::wrapped_env_t m_sobj;
+		std::uint16_t m_port{};
 
-		static void
+		[[nodiscard]] static
+		std::uint16_t
 		init( so_5::environment_t & env, std::promise< void > & p )
 		{
 			auto server_started_mchain = so_5::create_mchain(env);
@@ -236,11 +254,16 @@ class sobj_t
 					coop.make_agent< a_server_t >( server_started_mchain, p );
 				} );
 			// Wait acknowledgement about successful server start.
+			std::uint16_t port{};
 			so_5::receive(
 					from(server_started_mchain)
 						.handle_n(1u)
 						.empty_timeout(std::chrono::seconds(5)),
-					[](so_5::mhood_t<server_started_t>) {});
+					[&port](so_5::mhood_t<server_started_t> cmd) {
+						port = cmd->m_port;
+					});
+
+			return port;
 		}
 
 	public:
@@ -249,7 +272,14 @@ class sobj_t
 
 		sobj_t( std::promise< void > & p )
 		{
-			init( m_sobj.environment(), p );
+			m_port = init( m_sobj.environment(), p );
+		}
+
+		[[nodiscard]]
+		std::uint16_t
+		port() const
+		{
+			return m_port;
 		}
 
 		void
@@ -272,6 +302,10 @@ fragmented_send( Socket & socket, void * buf, std::size_t n )
 			std::this_thread::sleep_for( std::chrono::milliseconds( n ) );
 	}
 }
+
+} /* namespace restinio::tests */
+
+using namespace restinio::tests;
 
 TEST_CASE( "Simple echo" , "[ws_connection][echo][notificator]" )
 {
@@ -338,9 +372,12 @@ TEST_CASE( "Simple echo" , "[ws_connection][echo][notificator]" )
 			REQUIRE( ec );
 			REQUIRE( restinio::asio_ns::error::eof == ec.value() );
 
-		} );
+		},
+		default_ip_addr(),
+		sobj.port() );
 
 	sobj.stop_and_join();
 
 	REQUIRE( 1000 == g_last_close_code );
 }
+
