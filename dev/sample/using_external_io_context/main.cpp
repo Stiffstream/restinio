@@ -54,7 +54,7 @@ int main()
 				.address( "localhost" )
 				.request_handler( create_request_handler( "server2" ) ) };
 
-		asio_ns::signal_set break_signals{ io_context, SIGINT };
+		asio_ns::signal_set break_signals{ io_context, SIGINT, SIGTERM };
 		break_signals.async_wait(
 			[&]( const asio_ns::error_code & ec, int ){
 				if( !ec )

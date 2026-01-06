@@ -229,7 +229,7 @@ run(
 
 	std::exception_ptr exception_caught;
 
-	asio_ns::signal_set break_signals{ server.io_context(), SIGINT };
+	asio_ns::signal_set break_signals{ server.io_context(), SIGINT, SIGTERM };
 	break_signals.async_wait(
 		[&]( const asio_ns::error_code & ec, int ){
 			if( !ec )
@@ -313,7 +313,7 @@ run(
 
 	std::exception_ptr exception_caught;
 
-	asio_ns::signal_set break_signals{ server.io_context(), SIGINT };
+	asio_ns::signal_set break_signals{ server.io_context(), SIGINT, SIGTERM };
 	break_signals.async_wait(
 		[&]( const asio_ns::error_code & ec, int ){
 			if( !ec )
@@ -523,7 +523,7 @@ run_with_break_signal_handling(
 {
 	std::exception_ptr exception_caught;
 
-	asio_ns::signal_set break_signals{ server.io_context(), SIGINT };
+	asio_ns::signal_set break_signals{ server.io_context(), SIGINT, SIGTERM };
 	break_signals.async_wait(
 		[&]( const asio_ns::error_code & ec, int ){
 			if( !ec )
