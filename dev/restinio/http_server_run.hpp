@@ -13,6 +13,12 @@
 
 #include <restinio/http_server.hpp>
 
+#if defined(RESTINIO_DEFAULT_BREAK_SIGNALS_LIST)
+#error "RESTINIO_DEFAULT_BREAK_SIGNALS_LIST symbol should not be defined by user"
+#else
+#define RESTINIO_DEFAULT_BREAK_SIGNALS_LIST SIGINT,SIGTERM
+#endif
+
 namespace restinio
 {
 
@@ -229,7 +235,10 @@ run(
 
 	std::exception_ptr exception_caught;
 
-	asio_ns::signal_set break_signals{ server.io_context(), SIGINT, SIGTERM };
+	asio_ns::signal_set break_signals{
+			server.io_context(),
+			RESTINIO_DEFAULT_BREAK_SIGNALS_LIST
+		};
 	break_signals.async_wait(
 		[&]( const asio_ns::error_code & ec, int ){
 			if( !ec )
@@ -313,7 +322,10 @@ run(
 
 	std::exception_ptr exception_caught;
 
-	asio_ns::signal_set break_signals{ server.io_context(), SIGINT, SIGTERM };
+	asio_ns::signal_set break_signals{
+			server.io_context(),
+			RESTINIO_DEFAULT_BREAK_SIGNALS_LIST
+		};
 	break_signals.async_wait(
 		[&]( const asio_ns::error_code & ec, int ){
 			if( !ec )
@@ -523,7 +535,10 @@ run_with_break_signal_handling(
 {
 	std::exception_ptr exception_caught;
 
-	asio_ns::signal_set break_signals{ server.io_context(), SIGINT, SIGTERM };
+	asio_ns::signal_set break_signals{
+			server.io_context(),
+			RESTINIO_DEFAULT_BREAK_SIGNALS_LIST
+		};
 	break_signals.async_wait(
 		[&]( const asio_ns::error_code & ec, int ){
 			if( !ec )
@@ -1216,4 +1231,6 @@ run_async(
 }
 
 } /* namespace restinio */
+
+#undef RESTINIO_DEFAULT_BREAK_SIGNALS_LIST
 
