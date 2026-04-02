@@ -11,6 +11,7 @@
 #include <functional>
 
 #include <restinio/utils/impl/bitops.hpp>
+#include <restinio/string_view.hpp>
 
 namespace restinio
 {
