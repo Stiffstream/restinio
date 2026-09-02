@@ -15,7 +15,9 @@
 
 #include <restinio/utils/tagged_scalar.hpp>
 
+#include <any>
 #include <cstdint>
+#include <memory>
 #include <mutex>
 #include <utility>
 
@@ -373,12 +375,17 @@ public:
 template< typename Count_Manager >
 class connection_lifetime_monitor_t
 {
+//FIXME: document this!
+	std::any m_acceptor;
 	not_null_pointer_t< Count_Manager > m_manager;
 
 public:
+	template< typename Acceptor_Type >
 	connection_lifetime_monitor_t(
+		Acceptor_Type & acceptor,
 		not_null_pointer_t< Count_Manager > manager ) noexcept
-		:	m_manager{ manager }
+		:	m_acceptor{ acceptor.shared_from_this() }
+		,	m_manager{ manager }
 	{
 		m_manager->increment_parallel_connections();
 	}
@@ -398,15 +405,19 @@ public:
 		connection_lifetime_monitor_t & b ) noexcept
 	{
 		using std::swap;
+		swap( a.m_acceptor, b.m_acceptor );
 		swap( a.m_manager, b.m_manager );
 	}
 
 	connection_lifetime_monitor_t(
 		connection_lifetime_monitor_t && other ) noexcept
-		:	m_manager{ other.m_manager }
-	{
-		other.m_manager = nullptr;
-	}
+		:	m_acceptor{
+				std::exchange(
+						other.m_acceptor,
+						std::any{} )
+			}
+		,	m_manager{ std::exchange( other.m_manager, nullptr ) }
+	{}
 
 	connection_lifetime_monitor_t &
 	operator=( connection_lifetime_monitor_t && other ) noexcept
@@ -432,7 +443,9 @@ template<>
 class connection_lifetime_monitor_t< noop_connection_count_limiter_t >
 {
 public:
+	template< typename Acceptor_Type >
 	connection_lifetime_monitor_t(
+		Acceptor_Type & /* acceptor */,
 		not_null_pointer_t< noop_connection_count_limiter_t > ) noexcept
 	{}
 };
@@ -454,7 +467,8 @@ public:
  *
  * @since v.0.6.12
  */
-template< typename Traits >
+template<
+	typename Traits >
 struct connection_count_limit_types
 {
 	using limiter_t = typename std::conditional
