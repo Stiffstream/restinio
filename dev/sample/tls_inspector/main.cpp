@@ -163,7 +163,7 @@ std::string extract_user_name_from_client_certificate(
 	if( !client_cert )
 		throw std::runtime_error( "Unable to get client certificate!" );
 
-	X509_NAME * subject_name = X509_get_subject_name( client_cert.get() );
+	const X509_NAME * subject_name = X509_get_subject_name( client_cert.get() );
 
 	int last_pos = -1;
 	last_pos = X509_NAME_get_index_by_NID(
