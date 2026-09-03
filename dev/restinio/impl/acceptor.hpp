@@ -168,8 +168,11 @@ class acceptor_t final
 		using ip_blocker_base_t = acceptor_details::ip_blocker_holder_t<
 				typename Traits::ip_blocker_t >;
 
+		/// An alias for actual connection count limiter type.
 		using connection_count_limiter_t =
 				typename connection_count_limit_types< Traits >::limiter_t;
+
+		/// An alias for actual connection lifetime monitor type.
 		using connection_lifetime_monitor_t =
 				typename connection_count_limit_types< Traits >::lifetime_monitor_t;
 
@@ -497,6 +500,7 @@ class acceptor_t final
 				factory = m_connection_factory,
 				ep = std::move(remote_endpoint),
 				lifetime_monitor = connection_lifetime_monitor_t{
+						*this,
 						&m_connection_count_limiter
 					},
 				logger = &m_logger]
