@@ -22,7 +22,7 @@ jobs:
             os: windows-latest
             cc: "cl"
             cxx: "cl"
-            generator: "Visual Studio 17 2022"
+            generator: "NMake Makefiles"
         build_type:
           - Release
           - Debug
