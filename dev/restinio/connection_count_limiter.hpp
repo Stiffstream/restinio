@@ -15,7 +15,6 @@
 
 #include <restinio/utils/tagged_scalar.hpp>
 
-#include <any>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -379,27 +378,18 @@ class connection_lifetime_monitor_t
 // instance. The std::any is used for a quick fix for
 // https://github.com/Stiffstream/restinio/issues/246
 
-	/// Holder of std::shared_ptr<acceptor_t>
-	///
-	/// The acceptor shouldn't be destroyed while this monitor object is alive.
-	/// To ensure this a shared_ptr has to be stored inside monitor instance.
-	/// But acceptor_t depends on Traits type that in not available here. For
-	/// simplicity shared_ptr is wrapped into std::any.
-	std::any m_acceptor;
-
 	/// Pointer to manager object that counts live connections.
 	///
 	/// @note
 	/// It may become nullptr if the object is moved.
-	Count_Manager * m_manager;
+	std::shared_ptr< Count_Manager > m_manager;
 
 public:
 	template< typename Acceptor_Type >
 	connection_lifetime_monitor_t(
 		Acceptor_Type & acceptor,
 		not_null_pointer_t< Count_Manager > manager ) noexcept
-		:	m_acceptor{ acceptor.shared_from_this() }
-		,	m_manager{ manager }
+		:	m_manager{ acceptor.shared_from_this(), manager }
 	{
 		m_manager->increment_parallel_connections();
 	}
@@ -419,18 +409,14 @@ public:
 		connection_lifetime_monitor_t & b ) noexcept
 	{
 		using std::swap;
-		swap( a.m_acceptor, b.m_acceptor );
 		swap( a.m_manager, b.m_manager );
 	}
 
 	connection_lifetime_monitor_t(
 		connection_lifetime_monitor_t && other ) noexcept
-		:	m_acceptor{
-				std::exchange(
-						other.m_acceptor,
-						std::any{} )
-			}
-		,	m_manager{ std::exchange( other.m_manager, nullptr ) }
+		:	m_manager{ std::exchange(
+				other.m_manager,
+				std::shared_ptr< Count_Manager >{} ) }
 	{}
 
 	connection_lifetime_monitor_t &
