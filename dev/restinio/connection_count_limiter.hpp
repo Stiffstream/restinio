@@ -375,9 +375,23 @@ public:
 template< typename Count_Manager >
 class connection_lifetime_monitor_t
 {
-//FIXME: document this!
+// FIXME: there should be a more efficient way that doesn't require std::any
+// instance. The std::any is used for a quick fix for
+// https://github.com/Stiffstream/restinio/issues/246
+
+	/// Holder of std::shared_ptr<acceptor_t>
+	///
+	/// The acceptor shouldn't be destroyed while this monitor object is alive.
+	/// To ensure this a shared_ptr has to be stored inside monitor instance.
+	/// But acceptor_t depends on Traits type that in not available here. For
+	/// simplicity shared_ptr is wrapped into std::any.
 	std::any m_acceptor;
-	not_null_pointer_t< Count_Manager > m_manager;
+
+	/// Pointer to manager object that counts live connections.
+	///
+	/// @note
+	/// It may become nullptr if the object is moved.
+	Count_Manager * m_manager;
 
 public:
 	template< typename Acceptor_Type >
